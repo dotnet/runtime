@@ -808,12 +808,15 @@ stop_session (EventPipeSessionID id)
 		// must run before the disable lock: emitting events re-enters the write path, which requires the
 		// lock not be held.
 		bool is_active_session = false;
+		uint64_t session_mask = 0;
 		EP_LOCK_ENTER (section1)
 			is_active_session = is_session_id_in_collection (id);
+			if (is_active_session)
+				session_mask = ep_session_get_mask ((EventPipeSession *)(uintptr_t)id);
 		EP_LOCK_EXIT (section1)
 
 		if (is_active_session)
-			ep_rt_session_stopping (id);
+			ep_rt_session_stopping (id, session_mask);
 
 		EP_LOCK_ENTER (section2)
 			if (is_session_id_in_collection (id))

@@ -240,12 +240,14 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider);
 
 // Invoked while a session is stopping, before its providers are disabled and its buffers are
 // flushed, so the runtime can emit any pending end-of-session data (e.g. block-count PGO) into the
-// still-open session identified by session_id (already validated as live by the caller). Runs on the
-// disabling thread before the EventPipe lock is taken, because emitting events re-enters the write
-// path and must not run with that lock held.
+// still-open session identified by session_id (already validated as live by the caller). session_mask
+// is the session's keyword mask captured under the EventPipe lock, so the runtime can test provider
+// keywords without dereferencing the session, which a concurrent stop may free once the lock is
+// released. Runs on the disabling thread before the EventPipe lock is taken, because emitting events
+// re-enters the write path and must not run with that lock held.
 static
 void
-ep_rt_session_stopping (EventPipeSessionID session_id);
+ep_rt_session_stopping (EventPipeSessionID session_id, uint64_t session_mask);
 
 /*
  * Arrays.

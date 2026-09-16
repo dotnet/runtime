@@ -175,21 +175,23 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
+ep_rt_coreclr_session_stopping (EventPipeSessionID session_id, uint64_t session_mask)
 {
 	STATIC_CONTRACT_NOTHROW;
 #if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
 	// Flush block-count PGO only into the session that enabled the JitInstrumentationData events, so an
 	// unrelated session's stop can't re-emit chunks into an open PGO session (dotnet-pgo drops a method
-	// once data arrives after its final chunk).
+	// once data arrives after its final chunk). session_mask was captured under the EventPipe lock.
 	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
-	EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
 	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
-		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, ep_session_get_mask (session)))
+		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, session_mask))
 	{
 		// Mark this thread as a rundown thread bound to the stopping session so the events emitted by the
 		// flush are routed to that single session (ep_session_write_event) instead of broadcast to every
-		// enabled session; the marker is cleared after the flush, including on exception.
+		// enabled session; the marker is cleared after the flush, including on exception. Dereferencing the
+		// session is safe here: this path is single-threaded (PERFTRACING_DISABLE_THREADS), so nothing frees
+		// it before section2 disables it.
+		EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
 		EventPipeThread *thread = ep_thread_get_or_create ();
 		if (thread != NULL)
 		{
@@ -206,17 +208,18 @@ ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
 #elif defined(FEATURE_PGO) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
 	// Multithreaded WASM: interpreter block-count PGO has no synchronized flush path yet. This hook runs for
 	// every stopping session, so only trip when the stopping session actually enabled the PGO keyword (a real
-	// collection attempt on this unsupported config); unrelated sessions (CPU/GC/counters) are unaffected.
+	// collection attempt on this unsupported config); unrelated sessions (CPU/GC/counters) are unaffected. Use
+	// the lock-captured session_mask so we never dereference a session that a concurrent stop may have freed.
 	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
-	EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
 	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
-		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, ep_session_get_mask (session)))
+		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, session_mask))
 	{
 		PORTABILITY_ASSERT ("Interpreter block-count PGO flush is not implemented for multithreaded WASM (requires PERFTRACING_DISABLE_THREADS).");
 	}
 	(void)session_id;
 #else
 	(void)session_id;
+	(void)session_mask;
 #endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 
