@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Emit;
 
 using crossgen2::ILCompiler;
+using crossgen2::ILCompiler.IBC;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::ILCompiler.PortableCallHelpers;
@@ -72,6 +73,49 @@ public class WasmArgumentLayoutTests
         }
 
         return data;
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public void PartialCompilationWithEmptyProfileIncludesRequiredHardwareIntrinsics(
+        bool targetAllowsRuntimeCodeGeneration,
+        bool expectedIntrinsicIncluded)
+    {
+        (ReadyToRunCompilerContext context, ReadyToRunSingleAssemblyCompilationModuleGroup compilationGroup) =
+            CreateWasmContext(targetAllowsRuntimeCodeGeneration);
+        EcmaModule coreLib = (EcmaModule)context.SystemModule;
+        var profileDataManager = new ProfileDataManager(
+            Logger.Null,
+            new ModuleDesc[] { coreLib },
+            new ModuleDesc[] { coreLib },
+            new ModuleDesc[] { coreLib },
+            Array.Empty<ModuleDesc>(),
+            nonLocalGenericsHome: null,
+            Array.Empty<string>(),
+            MIbcProfileParser.MibcGroupParseRules.VersionBubbleWithCrossModule1,
+            callChainProfile: null,
+            context,
+            compilationGroup,
+            embedPgoDataInR2RImage: false,
+            parseIbcData: false,
+            compilationGroup.VersionsWithMethodBody,
+            synthesizeRandomPgoData: false);
+        compilationGroup.ApplyProfileGuidedOptimizationData(profileDataManager, partial: true);
+
+        MetadataType[] intrinsicTypes =
+        [
+            context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "PackedSimd"u8),
+            context.SystemModule.GetType("System.Runtime.Intrinsics.Wasm"u8, "WasmBase"u8),
+        ];
+        MethodDesc nonIntrinsic = context.GetWellKnownType(WellKnownType.Object).GetMethod("ToString"u8, null);
+
+        foreach (MetadataType intrinsicType in intrinsicTypes)
+        {
+            MethodDesc intrinsic = intrinsicType.GetMethod("get_IsSupported"u8, null);
+            Assert.Equal(expectedIntrinsicIncluded, compilationGroup.ContainsMethodBody(intrinsic, unboxingStub: false));
+        }
+        Assert.False(compilationGroup.ContainsMethodBody(nonIntrinsic, unboxingStub: false));
     }
 
     /// <summary>
@@ -744,6 +788,10 @@ public class WasmArgumentLayoutTests
     /// app closure, which a real build always supplies alongside CoreLib.
     /// </summary>
     private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
+        => CreateWasmContext(targetAllowsRuntimeCodeGeneration: false, extraInputAssemblyPaths).Context;
+
+    private (ReadyToRunCompilerContext Context, ReadyToRunSingleAssemblyCompilationModuleGroup CompilationGroup)
+        CreateWasmContext(bool targetAllowsRuntimeCodeGeneration, params string[] extraInputAssemblyPaths)
     {
         string coreLibPath = TestPaths.SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
@@ -757,8 +805,7 @@ public class WasmArgumentLayoutTests
             inputFilePaths.Add(Path.GetFileNameWithoutExtension(path), path);
         }
 
-        // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
-        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
+        ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration, instructionSetSupport, oldTypeSystemContext: null)
         {
             InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
@@ -769,7 +816,7 @@ public class WasmArgumentLayoutTests
 
         // The R2R field layout algorithm reaches into the compilation group to decide whether base
         // offsets need aligning, so a context without one throws before computing any layout.
-        context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
+        var compilationGroup = new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
         {
             Context = context,
             IsInputBubble = true,
@@ -777,9 +824,10 @@ public class WasmArgumentLayoutTests
             VersionBubbleModuleSet = new ModuleDesc[] { coreLib },
             CrossModuleInlineable = Array.Empty<ModuleDesc>(),
             InstructionSetSupport = instructionSetSupport,
-        }));
+        });
+        context.SetCompilationGroup(compilationGroup);
 
-        return context;
+        return (context, compilationGroup);
     }
 
     private static DefType InstantiateVector(ReadyToRunCompilerContext context, string vectorType, WellKnownType elementType)
