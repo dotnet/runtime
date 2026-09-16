@@ -342,6 +342,9 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
     // As a result, we will only scan these roots on one context to ensure they are scanned exactly once.
     if (GCHeapUtilities::ShouldScanUnpinnedRoots(sc))
     {
+        // We are going to scan over possible byref values located not on any given thread's stack.
+        // Ensure that we don't try to check the stack limits of any particular thread while scanning these roots.
+        sc->thread_under_crawl = nullptr;
         ExternalMemoryHandle::GCScanRoots(fn, sc);
     }
 }
