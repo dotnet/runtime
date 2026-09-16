@@ -4779,7 +4779,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeAr
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     BASEARRAYREF arrayRef = NULL;
     GCPROTECT_BEGIN(arrayRef);
@@ -4810,7 +4810,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSaf
     CONTRACTL_END;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -4853,7 +4853,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeA
     CONTRACTL_END;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     if (*pNativeHome != NULL)
     {
@@ -4910,7 +4910,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSa
     CONTRACTL_END;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     SAFEARRAY* pNative = *(SAFEARRAY**)pNativeHome;
     BASEARRAYREF arrayRef = NULL;

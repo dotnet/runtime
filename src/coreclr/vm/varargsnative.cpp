@@ -469,7 +469,7 @@ extern "C" void* QCALLTYPE ArgIterator_GetNextArgType(VARARGS* data, QCallExcept
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     _ASSERT(value.data == NULL);
     GCPROTECT_BEGININTERIOR(value.data);
@@ -496,7 +496,7 @@ extern "C" void QCALLTYPE ArgIterator_GetNextArg(VARARGS* data, TypedByRef* pRes
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     GetNextArgHelper(data, pResult, TRUE);
 
     END_QCALL;
@@ -512,7 +512,7 @@ extern "C" void QCALLTYPE ArgIterator_GetNextArg2(VARARGS* data, QCall::TypeHand
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // IJW
 

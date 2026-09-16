@@ -2667,7 +2667,7 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF objRef = obj.Get();
     GCPROTECT_BEGIN(objRef);

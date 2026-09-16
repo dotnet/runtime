@@ -33,7 +33,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetValue(FieldDesc* fieldDesc, QCal
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     OBJECTREF target = instance.Get();
     GCPROTECT_BEGIN(target);
@@ -51,7 +51,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValue(FieldDesc* fieldDesc, QCal
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -106,7 +106,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_CreateInstanceForAnotherGenericParam
     _ASSERTE(!Nullable::IsNullableType(instantiatedType));
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         OBJECTREF newObj = instantiatedType.GetMethodTable()->Allocate();
         GCPROTECT_BEGIN(newObj);
@@ -127,7 +127,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAlloc(MethodTable* pMT, QCal
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     allocated.Set(pMT->Allocate());
 
@@ -142,7 +142,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_InternalAllocNoChecks(MethodTable* p
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     allocated.Set(pMT->AllocateNoChecks());
 
@@ -338,7 +338,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
     BEGIN_QCALL;
 
     Thread * pThread = GetThread();
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     struct
     {
@@ -848,7 +848,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     CorElementType fieldElType;
     TypeHandle fieldType = fieldTypeHandle.AsTypeHandle();
@@ -953,7 +953,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // The ARG_SLOT is used for primitive values.
     ARG_SLOT value = 0;
@@ -1204,7 +1204,7 @@ extern "C" void* QCALLTYPE RuntimeFieldHandle_GetEnCFieldAddr(QCall::ObjectHandl
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
 
     // Only handling EnC
     _ASSERTE(pFD->IsEnCNew());
@@ -1249,7 +1249,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetFieldDataReference(FieldDesc* pF
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     _ASSERTE(instance.Get() != NULL);
 
     fieldDataRef.Set((BYTE*)pField->GetInstanceAddress(instance.Get()));
@@ -1413,7 +1413,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_PrepareDelegate(QCall::ObjectHand
 
     MethodDesc* pMD = NULL;
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         pMD = COMDelegate::GetMethodDesc(delegate.Get());
     }
 
@@ -1474,7 +1474,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_InvokeDispMethod(
 
     BEGIN_QCALL;
 
-    GCX_COOP();
+    GCX_COOP_FROM_PREEMP();
     struct
     {
         REFLECTCLASSBASEREF refThis;
@@ -1543,7 +1543,7 @@ extern "C" void QCALLTYPE ReflectionInvocation_GetComObjectGuid(QCall::ObjectHan
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
     SyncBlock* pSyncBlock;
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         _ASSERTE(IsComObjectClass(TypeHandle{ type.Get()->GetMethodTable() }));
         pSyncBlock = type.Get()->GetSyncBlock();
     }
@@ -1699,7 +1699,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
     BEGIN_QCALL;
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         // We need to take the RuntimeType itself rather than the RuntimeTypeHandle,
         // as the COM CLSID is stored in the RuntimeType object's sync block, and we
@@ -1728,7 +1728,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_GetActivationInfo(
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         {
             // Need to enter cooperative mode to manipulate OBJECTREFs
-            GCX_COOP();
+            GCX_COOP_FROM_PREEMP();
             SyncBlock* pSyncBlock = pRuntimeType.Get()->GetSyncBlock();
             pClassFactory = (void*)pSyncBlock->GetInteropInfo()->GetComClassFactory();
         }
@@ -1823,7 +1823,7 @@ extern "C" void QCALLTYPE RuntimeTypeHandle_AllocateComObject(void* pClassFactor
         COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
         result.Set(((ComClassFactory*)pClassFactory)->CreateInstance(NULL));
     }
 #else
@@ -1959,7 +1959,7 @@ extern "C" void QCALLTYPE Enum_GetValuesAndNames(QCall::TypeHandle pEnumType, QC
     DWORD cFields = temps.GetCount();
 
     {
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
 
         struct {
             BASEARRAYREF values;

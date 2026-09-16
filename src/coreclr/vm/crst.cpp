@@ -712,7 +712,7 @@ CrstBase::CrstAndForbidSuspendForDebuggerHolder::CrstAndForbidSuspendForDebugger
         // the lock and pulse the GC mode to suspend for the debugger.
         ReleaseLock(pCrst);
         pThread->ExitForbidSuspendForDebuggerRegion();
-        GCX_COOP();
+        GCX_COOP_FROM_PREEMP();
     }
 }
 

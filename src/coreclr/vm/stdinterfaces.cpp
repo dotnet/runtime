@@ -687,7 +687,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
         {
             {
                 // Retrieve the ComCallWrapperTemplate from the type.
-                GCX_COOP();
+                GCX_COOP_FROM_PREEMP();
                 OBJECTREF pThrowable = NULL;
                 GCPROTECT_BEGIN(pThrowable);
                 {

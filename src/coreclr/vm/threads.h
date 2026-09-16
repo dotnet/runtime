@@ -4410,6 +4410,23 @@ protected:
         }
     }
 
+    FORCEINLINE_NONDEBUG
+    void PopInternalCoopFromPreemp()
+    {
+        WRAPPER_NO_CONTRACT;
+
+#ifdef ENABLE_CONTRACTS_IMPL
+        if (m_fPushedRecord)
+        {
+            *m_pClrDebugState = m_oldClrDebugState;
+        }
+        _ASSERTE(m_fThreadMustExist);
+#endif
+
+        m_Thread->EnablePreemptiveGC();
+        _ASSERTE(!m_Thread->PreemptiveGCDisabled());
+    }
+
     // NOTE: The rest of these methods are all FORCEINLINE so that the uses where 'conditional==true'
     // can have the if-checks removed by the compiler.  The callers are just the corresponding methods
     // in the derived types, not all sites that use GC holders.
@@ -4495,6 +4512,22 @@ protected:
             m_Thread->DisablePreemptiveGC();
             _ASSERTE(m_Thread->PreemptiveGCDisabled());
         }
+    }
+
+    FORCEINLINE_NONDEBUG
+    void EnterInternalCoopFromPreemp(Thread *pThread GCHOLDER_DECLARE_CONTRACT_ARGS_INTERNAL)
+    {
+        _ASSERTE(pThread == GetThread());
+#ifdef ENABLE_CONTRACTS_IMPL
+        m_fThreadMustExist = true;
+        const bool conditional = true;
+#endif
+        GCHOLDER_SETUP_CONTRACT_STACK_RECORD(Contract::MODE_Coop);
+
+        m_Thread = pThread;
+        m_WasCoop = FALSE;
+        m_Thread->DisablePreemptiveGC();
+        _ASSERTE(m_Thread->PreemptiveGCDisabled());
     }
 
     template <BOOL THREAD_EXISTS>
@@ -4625,6 +4658,24 @@ public:
     ~GCCoop()
     {
         this->PopInternal<TRUE>();  // Thread must be non-NULL
+    }
+};
+
+class GCCoopFromPreemp : public GCHolderBase
+{
+public:
+    DEBUG_NOINLINE
+    GCCoopFromPreemp(GCHOLDER_DECLARE_CONTRACT_ARGS_BARE)
+    {
+        STATIC_CONTRACT_MODE_COOPERATIVE;
+
+        this->EnterInternalCoopFromPreemp(GetThread() GCHOLDER_CONTRACT_ARGS_HasDtor);
+    }
+
+    DEBUG_NOINLINE
+    ~GCCoopFromPreemp()
+    {
+        this->PopInternalCoopFromPreemp();
     }
 };
 
