@@ -108,14 +108,6 @@ public sealed class IndentedTextWriter
         }
     }
 
-    internal void WriteVerbatim(string content)
-    {
-        // Input fragments can contain raw string literals whose whitespace and line endings
-        // are part of their value, rather than formatting owned by the generator.
-        _builder.Append(content);
-        _pendingCarriageReturn = false;
-    }
-
     /// <summary>Writes interpolated text directly through its handler.</summary>
     /// <param name="handler">The handler that writes the interpolation.</param>
     public void Write([InterpolatedStringHandlerArgument("")] ref WriteInterpolatedStringHandler handler)

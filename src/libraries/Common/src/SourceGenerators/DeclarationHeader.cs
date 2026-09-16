@@ -22,7 +22,7 @@ public readonly struct DeclarationHeader : IEquatable<DeclarationHeader>
     public string Keyword { get; init; }
     public string Identifier { get; init; }
 
-    /// <summary>The declaration name, including any generic parameters and their attributes.</summary>
+    /// <summary>The declaration name, including any generic parameters but not their attributes.</summary>
     public string Name { get; init; }
 
     public bool Equals(DeclarationHeader other)

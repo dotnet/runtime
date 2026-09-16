@@ -161,6 +161,31 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "GeneratedComClass");
         }
 
+        [Theory]
+        [InlineData("internal partial class C<T>", "public partial class C<T>")]
+        [InlineData("public partial class C<T>", "public sealed partial class C<T>")]
+        [InlineData("public partial class C<T>", "public partial class C<U>")]
+        public void DeclarationEditsInvalidateGeneratedText(string declaration, string updatedDeclaration)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                public partial interface I {}
+
+                [GeneratedComClass]
+                {{declaration}} : I {}
+                """;
+
+            GeneratedSourceVerification.VerifyIncrementalOutput(
+                new Microsoft.Interop.ComClassGenerator(),
+                source,
+                source.Replace(declaration, updatedDeclaration),
+                true,
+                1,
+                "GeneratedComClass");
+        }
+
         private static async Task VerifySourceGeneratorAsync(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)

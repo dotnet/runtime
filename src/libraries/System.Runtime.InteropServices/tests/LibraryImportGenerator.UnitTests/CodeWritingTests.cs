@@ -323,29 +323,66 @@ public class CodeWritingTests
         Assert.NotEqual(first, second with { Name = "@class<U>" });
     }
 
-    [Fact]
-    public void ContainingDeclarationsPreserveInputLiteralContents()
+    [Theory]
+    [InlineData("Marker", false)]
+    [InlineData("Marker", true)]
+    [InlineData("Alias", false)]
+    [InlineData("Alias", true)]
+    [InlineData("global::Attributes.Marker", false)]
+    [InlineData("global::Attributes.Marker", true)]
+    public void ContainingDeclarationsDoNotRepeatGenericParameterAttributes(string attributeName, bool allowMultiple)
     {
-        const string Source = """"
-            partial class C<[A("""
-                first
-                second
-                """)] T>
-            {
-                partial void M();
-            }
-            """";
+        string source = $$""""
+            using Attributes;
+            using Alias = Attributes.MarkerAttribute;
 
-        CompilationUnitSyntax input = SyntaxFactory.ParseCompilationUnit(Source);
+            namespace Attributes
+            {
+                [System.AttributeUsage(System.AttributeTargets.GenericParameter, AllowMultiple = {{(allowMultiple ? "true" : "false")}})]
+                public sealed class MarkerAttribute : System.Attribute
+                {
+                    public MarkerAttribute(string value) { }
+                }
+            }
+
+            namespace Example
+            {
+                partial class Outer<[{{attributeName}}("""
+                    first
+                    second
+                    """)] T>
+                {
+                    partial class Inner<[{{attributeName}}("inner")] U>
+                    {
+                        partial void M();
+                    }
+                }
+            }
+            """".ReplaceLineEndings("\n");
+
+        Compilation compilation = TestUtils.CreateCompilation(source);
+        SyntaxTree tree = Assert.Single(compilation.SyntaxTrees);
+        CompilationUnitSyntax input = tree.GetCompilationUnitRoot();
         MethodDeclarationSyntax method = input.DescendantNodes().OfType<MethodDeclarationSyntax>().Single();
         ContainingSyntaxContext context = method.GetContainingSyntaxContext();
-        CompilationUnitSyntax output = SyntaxFactory.ParseCompilationUnit(context.WrapMemberInContainingSyntax("partial void M() { }\r\n"));
+        SyntaxTree generatedTree = CSharpSyntaxTree.ParseText(
+            context.WrapMemberInContainingSyntax("partial void M() { }\r\n"),
+            (CSharpParseOptions)tree.Options);
+        Compilation output = compilation.AddSyntaxTrees(generatedTree);
 
-        Assert.False(output.ContainsDiagnostics);
-        Assert.Single(output.DescendantNodes().OfType<TypeParameterSyntax>().Single().AttributeLists);
-        Assert.Equal(
-            input.DescendantNodes().OfType<LiteralExpressionSyntax>().Single().Token.ValueText,
-            output.DescendantNodes().OfType<LiteralExpressionSyntax>().Single().Token.ValueText);
+        Assert.DoesNotContain(output.GetDiagnostics(), static diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        TypeParameterSyntax[] generatedParameters = generatedTree.GetRoot().DescendantNodes().OfType<TypeParameterSyntax>().ToArray();
+        Assert.Equal(2, generatedParameters.Length);
+        Assert.All(generatedParameters, static parameter => Assert.Empty(parameter.AttributeLists));
+
+        INamedTypeSymbol outer = output.GetTypeByMetadataName("Example.Outer`1")!;
+        INamedTypeSymbol inner = Assert.Single(outer.GetTypeMembers("Inner"));
+        string expectedValue = """
+            first
+            second
+            """.ReplaceLineEndings("\n");
+        Assert.Equal(expectedValue, Assert.Single(outer.TypeParameters[0].GetAttributes()).ConstructorArguments[0].Value);
+        Assert.Equal("inner", Assert.Single(inner.TypeParameters[0].GetAttributes()).ConstructorArguments[0].Value);
     }
 
     [Theory]

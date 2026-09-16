@@ -410,16 +410,22 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            // ContainingSyntax does not implement GetHashCode
-            return HashCode.Combine(Type, ThisInterfaceKey, BaseInterfaceKey, TypeDefinitionContext, InterfaceId);
+            int hash = HashCode.Combine(Type, ThisInterfaceKey, BaseInterfaceKey, TypeDefinitionContext, InterfaceId, Options, UseUpdatedMemorySafetyRules, IsExternallyDefined);
+            return HashCode.Combine(hash, IsExternallyDefined ? 0 : ContainingSyntax.GetHashCode());
         }
 
         public bool Equals(ComInterfaceInfo other)
         {
-            // ContainingSyntax and ContainingSyntaxContext are not used in the hash code
-            return Type == other.Type
+            return other is not null
+                && Type == other.Type
+                && ThisInterfaceKey == other.ThisInterfaceKey
+                && BaseInterfaceKey == other.BaseInterfaceKey
                 && TypeDefinitionContext == other.TypeDefinitionContext
-                && InterfaceId == other.InterfaceId;
+                && InterfaceId == other.InterfaceId
+                && Options == other.Options
+                && UseUpdatedMemorySafetyRules == other.UseUpdatedMemorySafetyRules
+                && IsExternallyDefined == other.IsExternallyDefined
+                && (IsExternallyDefined || ContainingSyntax.Equals(other.ContainingSyntax));
         }
     }
 }

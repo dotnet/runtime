@@ -17,8 +17,9 @@ information into value models. Emission operates on these models, not on syntax 
 `ContainingSyntaxContext` stores syntax-independent `DeclarationHeader` values shared
 with the JSON source generator. `ContainingTypeUtilities` in
 `src/libraries/Common/src/SourceGenerators` supplies containing-type traversal and
-declaration formatting; interop retains source-spelled names and type-parameter attributes,
-while JSON uses symbol-formatted names and requires every containing type to be partial.
+declaration formatting; interop retains source-spelled names, while JSON uses symbol-formatted
+names and requires every containing type to be partial. Generic-parameter attributes remain
+on the original declaration rather than being repeated on generated partial declarations.
 `GeneratedParameter` and `GeneratedMethodSignature` describe signatures, and
 `IndentedTextWriter` writes statements and scoped blocks with deterministic line endings.
 

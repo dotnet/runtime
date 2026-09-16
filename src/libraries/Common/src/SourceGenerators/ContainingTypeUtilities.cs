@@ -91,9 +91,9 @@ public static class ContainingTypeUtilities
             return null;
         }
 
+        // Attributes on generic parameters are merged across partial declarations, so do not repeat them.
         return "<" + string.Join(", ", typeParameters.Parameters.Select(static parameter =>
-            (parameter.AttributeLists.Count == 0 ? "" : string.Join(" ", parameter.AttributeLists.Select(static attributes => attributes.ToString())) + " ")
-            + (parameter.VarianceKeyword.RawKind == 0 ? "" : parameter.VarianceKeyword.Text + " ")
+            (parameter.VarianceKeyword.RawKind == 0 ? "" : parameter.VarianceKeyword.Text + " ")
             + parameter.Identifier.Text)) + ">";
     }
 }

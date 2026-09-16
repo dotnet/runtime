@@ -86,7 +86,7 @@ namespace Microsoft.Interop
                     writer.Write(' ');
                 }
                 writer.Write($"{syntax.Keyword} ");
-                writer.WriteVerbatim(syntax.Name);
+                writer.Write(syntax.Name);
                 writer.WriteLine();
                 writer.WriteLine('{');
                 writer.Indent++;

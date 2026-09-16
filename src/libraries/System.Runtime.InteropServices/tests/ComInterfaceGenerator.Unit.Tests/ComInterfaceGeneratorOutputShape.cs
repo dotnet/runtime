@@ -458,6 +458,62 @@ namespace ComInterfaceGenerator.Unit.Tests
                 "GeneratedComInterface");
         }
 
+        [Theory]
+        [InlineData("internal", "public")]
+        [InlineData("public", "internal")]
+        public void DeclarationEditsInvalidateGeneratedText(string accessibility, string updatedAccessibility)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                {{accessibility}} partial interface I {}
+                """;
+
+            GeneratedSourceVerification.VerifyIncrementalOutput(
+                new Microsoft.Interop.ComInterfaceGenerator(),
+                source,
+                source.Replace(accessibility, updatedAccessibility),
+                true,
+                1,
+                "GeneratedComInterface");
+        }
+
+        [Fact]
+        public void SafetyModeChangeInvalidatesGeneratedText()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                public partial interface I {}
+                """;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = TestUtils.CreateDriver(compilation, null, [new Microsoft.Interop.ComInterfaceGenerator()]);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation firstCompilation, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(firstCompilation);
+            GeneratedSourceResult firstSource = Assert.Single(Assert.Single(driver.GetRunResult().Results).GeneratedSources);
+            Assert.Contains("public unsafe partial interface I", firstSource.SourceText.ToString());
+
+            SyntaxTree tree = Assert.Single(compilation.SyntaxTrees);
+            var parseOptions = ((CSharpParseOptions)tree.Options).WithFeatures(
+                [new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
+            compilation = compilation.ReplaceSyntaxTree(tree, CSharpSyntaxTree.ParseText(source, parseOptions));
+            driver = driver.WithUpdatedParseOptions(parseOptions).RunGeneratorsAndUpdateCompilation(compilation, out Compilation secondCompilation, out diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(secondCompilation);
+            GeneratedSourceResult secondSource = Assert.Single(Assert.Single(driver.GetRunResult().Results).GeneratedSources);
+
+            Assert.NotEqual(firstSource.SourceText.ToString(), secondSource.SourceText.ToString());
+            Assert.Contains("public partial interface I", secondSource.SourceText.ToString());
+            Assert.DoesNotContain("public unsafe partial interface I", secondSource.SourceText.ToString());
+        }
+
         private static async Task VerifyGeneratedTypeShapes(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)

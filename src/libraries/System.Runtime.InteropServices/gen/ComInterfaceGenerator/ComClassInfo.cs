@@ -59,6 +59,7 @@ namespace Microsoft.Interop
             return other is not null
                 && ClassName == other.ClassName
                 && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                && ClassSyntax.Equals(other.ClassSyntax)
                 && UseUpdatedMemorySafetyRules == other.UseUpdatedMemorySafetyRules
                 && ImplementedInterfacesNames.SequenceEqual(other.ImplementedInterfacesNames);
         }
@@ -70,7 +71,7 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ClassName, ContainingSyntaxContext, ImplementedInterfacesNames);
+            return HashCode.Combine(ClassName, ContainingSyntaxContext, ClassSyntax, ImplementedInterfacesNames, UseUpdatedMemorySafetyRules);
         }
     }
 }
