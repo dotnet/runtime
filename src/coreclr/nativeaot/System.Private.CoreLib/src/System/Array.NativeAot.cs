@@ -519,7 +519,6 @@ namespace System
         private Array() { }
 
         [Intrinsic]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public new IEnumerator<T> GetEnumerator()
         {
             T[] @this = Unsafe.As<T[]>(this);
