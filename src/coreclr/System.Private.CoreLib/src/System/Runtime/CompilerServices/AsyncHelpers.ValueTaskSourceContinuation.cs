@@ -15,14 +15,14 @@ namespace System.Runtime.CompilerServices
             internal object? Source;
             internal short Token;
             internal delegate*<object, Action<object?>, object?, short, ValueTaskSourceOnCompletedFlags, void> OnCompletedValueTaskSource;
-            private delegate*<object, short, ref byte, void> _getResult;
+            private delegate*<object, short, Continuation?, ref byte, void> _getResult;
 
             public ValueTaskSourceContinuation()
             {
                 ResumeInfo = (ResumeInfo*)Unsafe.AsPointer(in ValueTaskSourceContinuationResume.ResumeInfo);
             }
 
-            public void GetResult(ref byte returnValue)
+            public void GetResult(Continuation? next, ref byte taskResult)
             {
                 Debug.Assert(Source != null);
 
@@ -30,7 +30,7 @@ namespace System.Runtime.CompilerServices
                 object source = Source;
                 Source = null;
 
-                _getResult(source, Token, ref returnValue);
+                _getResult(source, Token, next, ref taskResult);
             }
 
             public void Initialize(IValueTaskSource source, short token)
@@ -56,7 +56,7 @@ namespace System.Runtime.CompilerServices
                 typedSource.OnCompleted(continuation, state, token, flags);
             }
 
-            private static void GetResult(object source, short token, ref byte result)
+            private static void GetResult(object source, short token, Continuation? next, ref byte taskResult)
             {
                 Debug.Assert(source is IValueTaskSource);
                 IValueTaskSource typedSource = Unsafe.As<object, IValueTaskSource>(ref source);
@@ -70,11 +70,12 @@ namespace System.Runtime.CompilerServices
                 typedSource.OnCompleted(continuation, state, token, flags);
             }
 
-            private static void GetResult<T>(object source, short token, ref byte result)
+            private static void GetResult<T>(object source, short token, Continuation? next, ref byte taskResult)
             {
                 Debug.Assert(source is IValueTaskSource<T>);
                 IValueTaskSource<T> typedSource = Unsafe.As<object, IValueTaskSource<T>>(ref source);
-                Unsafe.As<byte, T>(ref result) = typedSource.GetResult(token);
+                T result = typedSource.GetResult(token);
+                Unsafe.As<byte, T>(ref GetResultStorage(next, ref taskResult)) = result;
             }
 
             private static class ValueTaskSourceContinuationResume
@@ -90,13 +91,14 @@ namespace System.Runtime.CompilerServices
                 private static Continuation? ResumeValueTaskSourceContinuation(Continuation cont, ref byte result)
                 {
                     var vtsCont = (ValueTaskSourceContinuation)cont;
+                    Continuation? next = vtsCont.Next;
                     vtsCont.Next = null;
 
                     Debug.Assert((vtsCont.Flags & ContinuationFlags.AllContinuationFlags) == 0);
 
                     t_runtimeAsyncAwaitState.CachedValueTaskSourceContinuation = vtsCont;
 
-                    vtsCont.GetResult(ref result);
+                    vtsCont.GetResult(next, ref result);
                     return null;
                 }
             }

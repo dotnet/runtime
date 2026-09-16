@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 29
+#define READYTORUN_MAJOR_VERSION 30
 #define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 26
+#define MINIMUM_READYTORUN_MAJOR_VERSION 30
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -71,6 +71,8 @@
 // R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
 // R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
 //     R2R 29 is not backward compatible with 28.x or earlier.
+// R2R Version 30 moves async result propagation into resumption stubs. Their byref argument
+//     now points to the root task's result rather than the next continuation's result storage.
 
 struct READYTORUN_CORE_HEADER
 {

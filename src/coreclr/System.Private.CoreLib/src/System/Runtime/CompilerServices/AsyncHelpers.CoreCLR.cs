@@ -56,6 +56,8 @@ namespace System.Runtime.CompilerServices
     // Keep in sync with CORINFO_AsyncResumeInfo in corinfo.h
     internal unsafe struct ResumeInfo
     {
+        // The byref points to the root task's result. On non-void completion,
+        // Resume stores into the next continuation, or the task if this is the root.
         public delegate*<Continuation, ref byte, Continuation?> Resume;
         // IP to use for diagnostics. Can be null for hand-rolled continuations
         // like ValueTaskSourceContinuation.
@@ -135,13 +137,18 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref byte GetResultStorageOrNull()
+        public ref byte GetNextResultStorage(ref byte taskResult) => ref GetResultStorage(Next, ref taskResult);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref byte GetResultStorage(Continuation? continuation, ref byte taskResult)
         {
+            if (continuation is null)
+                return ref taskResult;
+
             const uint mask = (1u << (int)ContinuationFlags.ResultIndexNumBits) - 1;
-            uint index = ((uint)Flags >> (int)ContinuationFlags.ResultIndexFirstBit) & mask;
-            if (index == 0)
-                return ref Unsafe.NullRef<byte>();
-            ref byte data = ref RuntimeHelpers.GetRawData(this);
+            uint index = ((uint)continuation.Flags >> (int)ContinuationFlags.ResultIndexFirstBit) & mask;
+            Debug.Assert(index != 0);
+            ref byte data = ref RuntimeHelpers.GetRawData(continuation);
             return ref Unsafe.Add(ref data, (DataOffset - PointerSize) + index * PointerSize);
         }
     }
@@ -976,9 +983,7 @@ namespace System.Runtime.CompilerServices
                             RestoreExecutionContext(awaitState.CurrentThread, execContext);
                         }
 
-                        ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
-
-                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref resultLoc);
+                        Continuation? newContinuation = curContinuation.ResumeInfo->Resume(curContinuation, ref GetResultStorage());
 
                         if (newContinuation != null)
                         {
@@ -1099,10 +1104,8 @@ namespace System.Runtime.CompilerServices
                             RestoreExecutionContext(awaitState.CurrentThread, execContext);
                         }
 
-                        ref byte resultLoc = ref nextContinuation != null ? ref nextContinuation.GetResultStorageOrNull() : ref GetResultStorage();
-
                         RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncMethod(ref asyncDispatcherInfo, flags, curContinuation);
-                        Continuation? newContinuation = RuntimeAsyncInstrumentationHelpers.ResumeContinuation(ref asyncDispatcherInfo, flags, curContinuation, ref resultLoc);
+                        Continuation? newContinuation = RuntimeAsyncInstrumentationHelpers.ResumeContinuation(ref asyncDispatcherInfo, flags, curContinuation, ref GetResultStorage());
 
                         if (newContinuation != null)
                         {
