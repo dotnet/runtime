@@ -3,8 +3,8 @@
     <DebugType>None</DebugType>
     <Optimize>False</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
-    <!-- Managed ilasm exhausts the 32-bit address space while assembling this merged runner. -->
-    <ManagedIlasmRoundTripIncompatible Condition="'$(TargetArchitecture)' == 'x86'">true</ManagedIlasmRoundTripIncompatible>
+    <!-- Test assets are architecture-neutral, so this x86 managed-ilasm OOM exclusion must be unconditional. -->
+    <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="arglist\vararg_TargetWindows.csproj" />
