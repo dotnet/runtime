@@ -5549,6 +5549,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6908,6 +6909,8 @@ public:
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
+
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 

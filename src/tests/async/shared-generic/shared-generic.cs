@@ -17,7 +17,7 @@ public class Async2SharedGeneric
         public T t;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         // simple cases

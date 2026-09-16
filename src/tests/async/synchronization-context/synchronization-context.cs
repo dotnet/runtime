@@ -10,7 +10,7 @@ using Xunit;
 
 public class Async2SynchronizationContext
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestSyncContextContinue()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;
@@ -138,7 +138,7 @@ public class Async2SynchronizationContext
         SynchronizationContext.SetSynchronizationContext(null);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestSyncContextNotRestored()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;
@@ -185,7 +185,7 @@ public class Async2SynchronizationContext
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestContinueOnCorrectSyncContext()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;
@@ -220,7 +220,7 @@ public class Async2SynchronizationContext
             await Task.Yield();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestNoSyncContextInRuntimeCallableThunk()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;

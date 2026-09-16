@@ -248,7 +248,7 @@ public:
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
-    void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
