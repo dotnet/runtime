@@ -374,13 +374,27 @@ namespace ILAssembler
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
+                    MethodBodyAttributes bodyAttributes = methodDef.BodyAttributes;
+                    if (methodDef.HasDynamicStackAllocation
+                        && methodDef.MaxStack < 8
+                        && methodDef.MethodBody.CodeBuilder.Count < 64
+                        && localsSigHandle.IsNil
+                        && methodDef.ExceptionRegions.Count == 0)
+                    {
+                        // COMPAT: ildasm omits InitLocals when there is no local signature. Native
+                        // ilasm reconstructs it for this shape while forcing a fat header. Preserve
+                        // the observable localloc zeroing behavior.
+                        bodyAttributes |= MethodBodyAttributes.InitLocals;
+                    }
+
                     bool requiresFatHeaderWhenExceptionRegionsAreOmitted =
-                        (methodDef.MaxStack < 8 || methodDef.BodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
+                        (methodDef.MaxStack < 8 || bodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
                         && methodDef.MethodBody.CodeBuilder.Count < 64
                         && localsSigHandle.IsNil;
                     if (requiresFatHeaderWhenExceptionRegionsAreOmitted && methodDef.ExceptionRegions.Count == 0)
                     {
-                        // A non-nil empty locals signature forces a fat header without changing InitLocals.
+                        // A non-nil empty locals signature forces a fat header without changing
+                        // InitLocals.
                         localsSigHandle = GetOrCreateEmptyLocalsSignature();
                     }
 
@@ -390,7 +404,7 @@ namespace ILAssembler
                             methodDef.MethodBody,
                             methodDef.MaxStack,
                             localsSigHandle,
-                            methodDef.BodyAttributes,
+                            bodyAttributes,
                             methodDef.HasDynamicStackAllocation);
                     }
                     catch (InvalidOperationException)
@@ -404,7 +418,7 @@ namespace ILAssembler
                             exceptionRegionCount: 0,
                             hasSmallExceptionRegions: true,
                             requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
-                            methodDef.BodyAttributes,
+                            bodyAttributes,
                             methodDef.HasDynamicStackAllocation);
                         bodyOffset = fallbackBody.Offset;
                         var writer1 = new BlobWriter(fallbackBody.Instructions);
@@ -421,7 +435,7 @@ namespace ILAssembler
                             exceptionRegionCount: 0,
                             hasSmallExceptionRegions: true,
                             requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
-                            methodDef.BodyAttributes,
+                            bodyAttributes,
                             methodDef.HasDynamicStackAllocation);
                         bodyOffset = fallbackBody.Offset;
                         var writer2 = new BlobWriter(fallbackBody.Instructions);

@@ -594,9 +594,11 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData("ret")]
-        [InlineData("ldc.i4.1\nlocalloc\npop\nret")]
-        public void MaxStackDirective_IsPreservedWithoutInitializingLocals(string instructions)
+        [InlineData("ret", false)]
+        [InlineData("ldc.i4.1\nlocalloc\npop\nret", true)]
+        public void MaxStackDirective_PreservesObservableInitializationBehavior(
+            string instructions,
+            bool expectedLocalVariablesInitialized)
         {
             string source = $$"""
                 .assembly Test { }
@@ -618,7 +620,7 @@ namespace ILAssembler.Tests
 
             MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
             Assert.Equal(3, body.MaxStack);
-            Assert.False(body.LocalVariablesInitialized);
+            Assert.Equal(expectedLocalVariablesInitialized, body.LocalVariablesInitialized);
         }
 
         [Fact]
