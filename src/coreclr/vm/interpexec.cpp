@@ -1244,8 +1244,9 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
 
     frames.interpMethodContextFrame.pRetVal = (int8_t*)returnValueLocation;
 
-    // resultStorage is an interior pointer into a managed continuation object, passed from DispatchContinuations
+    // resultStorage is an interior pointer into the root task, passed from DispatchContinuations
     // in AsyncHelpers. We must report it to the GC so it gets updated if the object moves.
+    GCPROTECT_BEGIN(contRef);
     GCPROTECT_BEGININTERIOR(resultStorage);
 
     InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
@@ -1255,6 +1256,12 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
         // We had a normal return, so copy out the return value
         if (returnValueSize > 0)
         {
+            CONTINUATIONREF next = contRef->GetNext();
+            if (next != NULL)
+            {
+                resultStorage = next->GetResultStorage();
+            }
+
             if (pSuspendData->asyncMethodReturnType != NULL && !pSuspendData->asyncMethodReturnType->IsValueType())
             {
                 // asyncMethodReturnType is set only for CORINFO_TYPE_VALUECLASS/STRING/CLASS
@@ -1273,6 +1280,7 @@ extern "C" ContinuationObject* AsyncHelpers_ResumeInterpreterContinuationWorker(
         }
     }
 
+    GCPROTECT_END();
     GCPROTECT_END();
 
     contRef = (CONTINUATIONREF)frames.interpreterFrame.GetContinuation();

@@ -1989,6 +1989,8 @@ struct CORINFO_VarArgInfo
 struct CORINFO_AsyncResumeInfo
 {
     // delegate*<Continuation, ref byte, Continuation>
+    // The byref points to the root task's result. On non-void completion, the
+    // stub stores into the next continuation, or the task if this is the root.
     TARGET_SIZE_T Resume;
     // Pointer in main code for diagnostics. See comments on
     // ICorDebugInfo::AsyncSuspensionPoint::DiagnosticNativeOffset and

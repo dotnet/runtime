@@ -880,6 +880,7 @@ DEFINE_FIELD(CONTINUATION,              NEXT,               Next)
 DEFINE_FIELD(CONTINUATION,              RESUME_INFO,        ResumeInfo)
 DEFINE_FIELD(CONTINUATION,              STATE,              State)
 DEFINE_FIELD(CONTINUATION,              FLAGS,              Flags)
+DEFINE_METHOD(CONTINUATION,             GET_NEXT_RESULT_STORAGE, GetNextResultStorage, NoSig)
 
 DEFINE_CLASS(RUNTIME_WRAPPED_EXCEPTION, CompilerServices,   RuntimeWrappedException)
 DEFINE_FIELD(RUNTIME_WRAPPED_EXCEPTION, WRAPPED_EXCEPTION,  _wrappedException)

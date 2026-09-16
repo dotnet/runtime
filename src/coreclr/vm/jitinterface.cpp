@@ -15309,7 +15309,7 @@ static Signature BuildResumptionStubSignature(LoaderAllocator* alloc, AllocMemTr
     sigBuilder.AppendData(2); // 2 arguments
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // return type
     sigBuilder.AppendElementType(ELEMENT_TYPE_OBJECT); // continuation
-    sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF); // result location
+    sigBuilder.AppendElementType(ELEMENT_TYPE_BYREF); // root task result location
     sigBuilder.AppendElementType(ELEMENT_TYPE_U1);
 
     return AllocateSignature(alloc, sigBuilder, pamTracker);
@@ -15507,7 +15507,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
         pCode->EmitLDLOC(newContinuationLoc);
         pCode->EmitBRTRUE(doneResult);
 
-        pCode->EmitLDARG(1); // resultLoc
+        pCode->EmitLDARG(0);
+        pCode->EmitLDARG(1); // root task result location
+        pCode->EmitCALL(METHOD__CONTINUATION__GET_NEXT_RESULT_STORAGE, 2, 1);
         pCode->EmitLDLOC(resultLoc);
         pCode->EmitSTOBJ(pCode->GetToken(resultTypeHnd));
 
