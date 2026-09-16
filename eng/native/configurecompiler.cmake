@@ -29,9 +29,9 @@ include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
 if(CLR_CMAKE_TARGET_BROWSER AND DEFINED TRYRUN_BROWSER_EMSCRIPTEN_VERSION)
     file(READ "${CMAKE_CURRENT_LIST_DIR}/../../src/mono/browser/emscripten-version.txt" CURRENT_EMSCRIPTEN_VERSION)
     string(STRIP "${CURRENT_EMSCRIPTEN_VERSION}" CURRENT_EMSCRIPTEN_VERSION)
-
+    
     if(NOT TRYRUN_BROWSER_EMSCRIPTEN_VERSION STREQUAL CURRENT_EMSCRIPTEN_VERSION)
-        message(WARNING
+        message(WARNING 
             "Emscripten version mismatch detected!\n"
             "  Current Emscripten: ${CURRENT_EMSCRIPTEN_VERSION}\n"
             "  Cached features for: ${TRYRUN_BROWSER_EMSCRIPTEN_VERSION}\n"

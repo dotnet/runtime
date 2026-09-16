@@ -8,7 +8,7 @@ using Xunit;
 
 public class CseArrayIndexByref
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         int[] arr = new int[1];

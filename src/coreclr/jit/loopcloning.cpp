@@ -169,7 +169,7 @@ GenTree* LC_Ident::ToGenTree(Compiler* comp, BasicBlock* bb)
             GenTree* node = comp->gtNewLclvNode(lclNum, comp->lvaTable[lclNum].lvType);
             if (offset != 0)
             {
-                node = comp->gtNewOperNode(GT_ADD, node->TypeGet(), node, comp->gtNewIconNode(offset));
+                node = comp->gtNewOperNode(GT_ADD, genActualType(node), node, comp->gtNewIconNode(offset));
             }
             return node;
         }

@@ -639,6 +639,12 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                     }
                 }
 
+                if (callInfo->thisTransform != CORINFO_NO_THIS_TRANSFORM)
+                {
+                    impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
+                                                   "LDVIRTFTN constrained call requires transforming 'this'"));
+                }
+
                 impPopCallArgs(sig, call->AsCall());
 
                 if (call->AsCall()->IsAsync())
@@ -1034,17 +1040,17 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // The main group of arguments, and the this pointer.
 
     // 'this' is pushed on the IL stack before all call args, but if this is a
-    // constrained call 'this' is a byref that may need to be dereferenced.
-    // That dereference should happen _after_ all args, so we need to spill
-    // them if they can interfere.
+    // constrained call 'this' is a byref that may need to be dereferenced or
+    // boxed. That transformation should happen _after_ all args, so we need
+    // to spill them if they can interfere.
     bool hasThis;
     hasThis = ((mflags & CORINFO_FLG_STATIC) == 0) && ((sig->callConv & CORINFO_CALLCONV_EXPLICITTHIS) == 0) &&
               ((opcode != CEE_NEWOBJ) || (newobjThis != nullptr));
 
-    if (hasThis && (constraintCallThisTransform == CORINFO_DEREF_THIS))
+    if (hasThis && (constraintCallThisTransform != CORINFO_NO_THIS_TRANSFORM))
     {
         impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG(
-                                       "constrained call requires dereference for 'this' right before call"));
+                                       "constrained call requires transforming 'this' right before call"));
     }
 
     impPopCallArgs(sig, call->AsCall());
@@ -4063,7 +4069,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
 
                 GenTree* index          = impPopStack().val;
-                GenTree* ptrToSpan      = impPopStack().val;
+                GenTree* ptrToSpan      = impStackTop().val;
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
@@ -4080,8 +4086,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // defined(DEBUG)
 
                 // We need to use both index and ptr-to-span twice, so clone or spill.
+                // Keep ptr-to-span on the stack so it is evaluated before any index spill.
                 index = impCloneExpr(index, &indexClone, CHECK_SPILL_ALL, nullptr DEBUGARG("Span.get_Item index"));
 
+                ptrToSpan = impPopStack().val;
                 if (impIsAddressInLocal(ptrToSpan))
                 {
                     ptrToSpanClone = gtCloneExpr(ptrToSpan);
@@ -4383,10 +4391,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case NI_System_Type_get_IsPrimitive:
                             // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
                             // because enums are not primitive types.
-                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
-                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            if (info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot)
                             {
-                                retNode = gtNewTrue();
+                                CorInfoType type = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
+                                retNode =
+                                    gtNewIconNode((type != CORINFO_TYPE_UNDEF) && (type != CORINFO_TYPE_VOID) ? 1 : 0);
                             }
                             else
                             {
@@ -5312,9 +5321,13 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                             assert(compDonotInline());
                             return nullptr;
                         }
+
                         GenTree* runtimeType =
                             gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, typeHandleOp);
-                        retNode = runtimeType;
+
+                        // Preserve receiver evaluation and the null check that boxing would perform.
+                        GenTree* sideEffects = fgAddrCouldBeNull(op1) ? gtNewNullCheck(op1) : op1;
+                        retNode              = gtWrapWithSideEffects(runtimeType, sideEffects, GTF_ALL_EFFECT);
                     }
                 }
 
@@ -5568,7 +5581,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_BitConverter_Int32BitsToSingle:
             {
                 GenTree* op1 = impPopStack().val;
-                assert(varTypeIsInt(op1));
+                assert(genActualTypeIsInt(op1));
 
                 if (op1->IsIntegralConst())
                 {
@@ -6945,15 +6958,13 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             if (op1->IsIntegralConst())
             {
-                // Pop the value from the stack
-                impPopStack();
-
                 if (varTypeIsLong(baseType))
                 {
                     uint64_t cns = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
 
                     if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int64_t>(cns) >= 0))
                     {
+                        impPopStack();
                         result = gtNewLconNode(BitOperations::Log2(cns));
                     }
                 }
@@ -6963,6 +6974,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
                     if (varTypeIsUnsigned(JitType2PreciseVarType(baseJitType)) || (static_cast<int32_t>(cns) >= 0))
                     {
+                        impPopStack();
                         result = gtNewIconNode(BitOperations::Log2(cns), baseType);
                     }
                 }
@@ -13575,6 +13587,12 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     if (intrinsicName == NI_Array_Set)
     {
+        // The array checks in the store's address must happen after the value is evaluated.
+        if ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            impSpillSideEffects(false, CHECK_SPILL_ALL DEBUGARG("Strict ordering of exceptions for MD Array store"));
+        }
+
         val = impPopStack().val;
         assert((genActualType(elemType) == genActualType(val->gtType)) ||
                (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) || (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||

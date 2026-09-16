@@ -156,34 +156,19 @@ namespace Wasm.Build.Tests
         [InlineData(true)]
         public void NativeRelinkResolvesCrossgen2WithoutReadyToRun(bool publish)
         {
+            string targetsFile = $"{nameof(NativeRelinkResolvesCrossgen2WithoutReadyToRun)}.Build.targets";
             ProjectInfo info = CopyTestAsset(
                 Configuration.Debug,
                 aot: false,
                 TestAsset.WasmBasicTestApp,
                 "coreclr_sdk_crossgen2",
-                extraProperties: """
+                extraProperties: $$"""
                     <PublishReadyToRun>false</PublishReadyToRun>
                     <WasmBuildNative>true</WasmBuildNative>
+                    <_WasmBuildTestExpectNestedPublish>{{publish}}</_WasmBuildTestExpectNestedPublish>
                     """,
-                insertAtEnd: $$"""
-                    <Target Name="CheckCrossgen2PackRequest" BeforeTargets="ProcessFrameworkReferences">
-                        <Error Condition="'$(RequiresCrossgen2Pack)' != 'true'"
-                               Text="Expected RequiresCrossgen2Pack=true before restore." />
-                    </Target>
-                    <Target Name="CheckSdkCrossgen2" AfterTargets="_CoreCLRGenerateManagedToNative">
-                        <Error Condition="'{{publish}}' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
-                               Text="Expected helper generation during nested publish." />
-                        <Error Condition="'$(PublishReadyToRun)' == 'true'"
-                               Text="Expected PublishReadyToRun=false." />
-                        <Error Condition="'$(Crossgen2InBuildDir)' != '' or '$(Crossgen2ToolPath)' != ''"
-                               Text="Expected SDK resolution without crossgen2 path overrides." />
-                        <Error Condition="'@(Crossgen2Tool)' == '' or '$(Crossgen2Path)' != '@(Crossgen2Tool)'"
-                               Text="Expected the generator path to match the SDK Crossgen2Tool item." />
-                        <Error Condition="!Exists('$(_WasmPInvokeTablePath)') or !Exists('$(_WasmReversePInvokeTablePath)') or !Exists('$(_WasmInterpToNativeTablePath)')"
-                               Text="A generated call-helper table is missing." />
-                        <Error Text="Stopping after validating SDK crossgen2" />
-                    </Target>
-                    """);
+                insertAtEnd: $"""<Import Project="{targetsFile}" />""");
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, targetsFile), Path.Combine(_projectDir, targetsFile));
 
             // Run the generator, then stop before native compilation.
             string output = publish
