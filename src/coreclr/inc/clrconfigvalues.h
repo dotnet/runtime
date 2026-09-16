@@ -531,9 +531,9 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_ScalableCountThreshold, W("Tiered
 
 #endif
 
-// When set, non-instrumented Tier1 and Tier1 OSR code use a separate
-// per-LoaderAllocator code heap. Instrumented, LCG, and interpreter code use
-// their regular heap paths.
+// When set, non-instrumented Tier1 and Tier1 OSR code in the global loader
+// allocator use a separate code heap. Instrumented, LCG, interpreter, and
+// collectible code use their regular heap paths.
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_SeparateOptimizedCodeHeaps, W("SeparateOptimizedCodeHeaps"), 1, "When non-zero, use a separate code heap for Tier1 JIT'd code")
 
 

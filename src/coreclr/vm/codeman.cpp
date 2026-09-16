@@ -3009,7 +3009,7 @@ HeapList* EECodeGenManager::NewCodeHeap(CodeHeapRequestInfo *pInfo, DomainCodeHe
         // (LCG) domain because callers gate SetOptimizedCode() on neither being
         // set. Tagging the RangeSection lets CanUseCodeHeap reject mismatched
         // requests, keeping optimized and non-optimized JIT'd code in separate
-        // per-LoaderAllocator heaps.
+        // heaps.
         _ASSERTE(!pInfo->IsInterpreted());
         _ASSERTE(!pInfo->IsDynamicDomain());
         flags |= RangeSection::RANGE_SECTION_OPTIMIZEDCODE;
@@ -3309,11 +3309,12 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
         static_assert(CODE_SIZE_ALIGN >= sizeof(void*));
     }
 
-    // Optionally route Tier1 code to its own per-LoaderAllocator heap. LCG and
-    // interpreter requests are excluded because they use separate heap paths.
-    if (!requestInfo.IsDynamicDomain()
+    // Optionally route Tier1 code in the global loader allocator to its own
+    // heap. LCG, interpreter, and collectible requests use their regular paths.
+    if (isTier1Code
+        && requestInfo.GetAllocator() == SystemDomain::GetGlobalLoaderAllocator()
+        && !requestInfo.IsDynamicDomain()
         && !requestInfo.IsInterpreted()
-        && isTier1Code
         && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SeparateOptimizedCodeHeaps) != 0)
     {
         requestInfo.SetOptimizedCode();
