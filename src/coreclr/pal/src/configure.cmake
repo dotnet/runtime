@@ -141,7 +141,25 @@ check_function_exists(vm_read HAVE_VM_READ)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
-check_function_exists(pipe2 HAVE_PIPE2)
+
+set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
+if(CLR_CMAKE_HOST_APPLE)
+  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability-new")
+endif()
+check_cxx_source_compiles("
+#include <fcntl.h>
+#include <unistd.h>
+int main()
+{
+  int pipeDescriptors[2];
+  return pipe2(pipeDescriptors, O_CLOEXEC);
+}" HAVE_PIPE2_USABLE)
+if(HAVE_PIPE2_USABLE)
+  set(HAVE_PIPE2 1)
+else()
+  set(HAVE_PIPE2 0)
+endif()
+set(CMAKE_REQUIRED_FLAGS ${PREVIOUS_CMAKE_REQUIRED_FLAGS})
 
 check_cxx_source_compiles("
 #include <pthread_np.h>
