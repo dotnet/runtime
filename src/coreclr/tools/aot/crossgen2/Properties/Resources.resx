@@ -121,7 +121,7 @@
     <value>Compile instantiations from reference modules used in the current module</value>
   </data>
   <data name="EmbedPgoDataOption" xml:space="preserve">
-    <value>Embed instrumentation data in generated file (ignored when targeting Wasm)</value>
+    <value>Embed instrumentation data in generated file</value>
   </data>
   <data name="CodeGenOptions" xml:space="preserve">
     <value>Define a codegen option</value>
