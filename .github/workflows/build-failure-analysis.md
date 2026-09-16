@@ -266,9 +266,8 @@ jobs:
           echo "Azure DevOps build id: '${BUILD_ID}'"
 
           # Fetch the build metadata once, up front: it is the authoritative
-          # source for the definition/result/revision validated in step 4.
-          # The PR number remains event-owned so safe outputs can be bound to
-          # the same trusted value before the fetch job runs.
+          # source for the definition/result/revision validated in step 4, and
+          # for the PR number on the fork-head path in step 2 below.
           ado_get "build metadata" "${ADO_API}/build/builds/${BUILD_ID}?api-version=7.1" || emit_none
           build_json="${ADO_DOC}"
           RESULT=$(printf '%s' "${build_json}" | jq -r '.result // empty')
@@ -280,12 +279,39 @@ jobs:
             PR_NUMBER="${DISPATCH_PR_NUMBER}"
             HEAD_SHA=""
           else
-            # Safe outputs are bound to check_run.pull_requests[0] below. Use
-            # that same event-owned PR number here and fail closed when it is
-            # absent; the sourceBranch validation in step 4 ensures the ADO
-            # build belongs to this exact PR before any analysis can run.
+            # Prefer the event-owned PR number; safe outputs read whichever
+            # value this job resolves, so they stay bound to it.
             PR_NUMBER="${CHECK_PR_NUMBER}"
             HEAD_SHA="${CHECK_HEAD_SHA}"
+            if [ -z "${PR_NUMBER}" ]; then
+              # `check_run.pull_requests` is empty when the check's head commit
+              # lives in a fork, which is most external-contributor PRs —
+              # precisely the ones `roles: all` exists to keep in scope. Taking
+              # the PR number from the event alone would leave them with an
+              # empty target and silently disable analysis, so fall back to the
+              # build's own PR metadata.
+              #
+              # That metadata is not event-owned, so bind it to the one value
+              # the event does own. `pr.sourceSha` is the PR head commit Azure
+              # Pipelines validated, and the Azure Pipelines app reports its
+              # check run against that same commit; requiring the two to be
+              # equal means a build can only ever resolve to the PR whose head
+              # this event is already about. Step 4 still requires sourceBranch
+              # to be `refs/pull/<PR>/merge`, and the head/merge staleness
+              # checks still run on top of that.
+              PR_NUMBER=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.number"] // empty')
+              # Reruns and older builds can omit `pr.number`; the merge ref
+              # carries the same value.
+              [ -z "${PR_NUMBER}" ] && PR_NUMBER=$(printf '%s' "${SRC_BRANCH}" | sed -nE 's#^refs/pull/([0-9]+)/merge$#\1#p')
+              BUILD_SOURCE_SHA=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.sourceSha"] // empty')
+              if [ -z "${CHECK_HEAD_SHA}" ] || [ -z "${BUILD_SOURCE_SHA}" ] || [ "${BUILD_SOURCE_SHA}" != "${CHECK_HEAD_SHA}" ]; then
+                echo "::warning::ADO build ${BUILD_ID} reports PR head '${BUILD_SOURCE_SHA}', which does not match the check run's head '${CHECK_HEAD_SHA}'; refusing to trust its PR number."
+                emit_none
+              fi
+              # Do NOT log the derived number yet — it is unvalidated ADO data
+              # until the numeric check below. Step 3 logs it once it is.
+              echo "check_run carried no PR number (fork head); derived it from ADO build ${BUILD_ID}, bound to the check run's head revision."
+            fi
           fi
           [ -z "${PR_NUMBER}" ] && { echo "::warning::Could not resolve a PR number."; emit_none; }
           # PR_NUMBER feeds `gh api .../pulls/<n>` and the `refs/pull/<n>/merge`
@@ -820,18 +846,24 @@ safe-outputs:
         enum: [analysis]
     required: [workflow_artifact, artifact_kind]
     additionalProperties: false
-  # Bind writes to the PR number in the trusted trigger rather than allowing
-  # untrusted binlog/source content to choose an arbitrary repository target.
-  # The fetch job uses the same value and verifies that the ADO build's
-  # sourceBranch belongs to it before the agent can run.
+  # Bind writes to the PR number `fetch-binlog` resolved and validated, rather
+  # than letting untrusted binlog/source content choose an arbitrary repository
+  # target. That output is the event's own `check_run.pull_requests[0]` (or the
+  # dispatch input) whenever one exists, and otherwise the fork-PR number
+  # derived from the Azure DevOps build and bound to the event's
+  # `check_run.head_sha`; either way the job has verified that the build's
+  # sourceBranch is `refs/pull/<that PR>/merge` before the agent can run.
+  # Reading the output here instead of re-deriving `check_run.pull_requests[0]`
+  # is what keeps fork PRs — whose check runs carry no `pull_requests` entry —
+  # from getting an empty target.
   report-failure-as-issue: false
   add-comment:
     max: 1
-    target: ${{ github.event.check_run.pull_requests[0].number || inputs['pr-number'] }}
+    target: ${{ needs.fetch-binlog.outputs.pr-number }}
     hide-older-comments: true
   create-pull-request-review-comment:
     max: 25
-    target: ${{ github.event.check_run.pull_requests[0].number || inputs['pr-number'] }}
+    target: ${{ needs.fetch-binlog.outputs.pr-number }}
     commit-id: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
   noop:
     max: 1

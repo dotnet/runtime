@@ -50,10 +50,33 @@ concurrency:
   # Distinct from the automatic workflow's group (`build-failure-analysis-<pr>`).
   # Concurrency groups are repository-global, so sharing the name made the two
   # workflows cancel each other for the same PR: a newly failing build would
-  # kill an on-demand analysis a maintainer had just asked for. Each still
-  # collapses its own repeat invocations for a PR.
-  group: build-failure-analysis-cmd-${{ github.event.issue.number || github.event.pull_request.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number || github.run_id }}
-  cancel-in-progress: true
+  # kill an on-demand analysis a maintainer had just asked for.
+  #
+  # Only comments that actually look like the command get the PR-scoped group.
+  # This group is acquired at the WORKFLOW level, i.e. for every created or
+  # edited issue comment on the PR — the slash command itself is matched later,
+  # in `pre_activation`. With every comment sharing one group, an unrelated one
+  # displaced the command's run, which then failed activation and posted
+  # nothing, so the command silently produced no result; the analysis comment
+  # this workflow posts at the end of its own run was enough to do it. Routing
+  # non-command comments to a per-run group that collides with nothing is the
+  # same trick `build-failure-analysis.md` uses for non-`runtime` check runs.
+  #
+  # `cancel-in-progress` is false so a later invocation cannot abort an analysis
+  # already running. GitHub evicts a *pending* run from the group regardless of
+  # that setting, which is the behaviour we want once only command comments are
+  # in it: a third invocation supersedes the second while the first finishes.
+  # Repeat commands are otherwise handled by idempotency rather than by
+  # cancellation — `add-comment` is capped at 1 with `hide-older-comments`, so a
+  # rerun replaces the previous summary instead of stacking on it.
+  #
+  # `startsWith` is the same deliberate superset as the `fetch-binlog` job's
+  # `if:`: it cannot express the `(?=$|\s)` token boundary, so a comment opening
+  # with `/analyze-build-failure-now` still lands in the PR-scoped group. That
+  # costs at most the pending slot — it never cancels a running analysis, and
+  # such a run exits in seconds at activation.
+  group: ${{ (github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/analyze-build-failure') && format('build-failure-analysis-cmd-run-{0}', github.run_id)) || format('build-failure-analysis-cmd-{0}', github.event.issue.number || github.event.pull_request.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number || github.run_id) }}
+  cancel-in-progress: false
 
 timeout-minutes: 30
 
@@ -142,20 +165,20 @@ jobs:
     # degrades safely without it — `repos/.../pulls/<issue#>` 404s and the script
     # emits no binlog — but it would pay for a runner first.
     #
-    # `contains(..., '/analyze-build-failure')` is a substring match anywhere in
-    # the body, whereas the authoritative `check_command_position` requires the
-    # command to be in a valid position. So a write-access user merely mentioning
-    # the command, or editing an old comment that quotes it (`types:` includes
-    # `edited`), still starts this job. Workflow `if:` expressions have no
-    # regex, and `startsWith` would reject the leading whitespace/newlines gh-aw
-    # accepts, so this stays a deliberate over-approximation — but it is now
-    # only a cheap pre-filter: the first step of the job reproduces gh-aw's real
-    # first-token check and bails out before anything is downloaded.
+    # `startsWith(..., '/analyze-build-failure')` mirrors gh-aw's own anchoring:
+    # `check_command_position` applies its regex to the RAW comment body, so the
+    # command has to sit at byte zero. A `contains()` substring test here would
+    # instead have started this job for a write-access user merely mentioning
+    # the command, or for an old comment edited to quote it (`types:` includes
+    # `edited`). What `startsWith` cannot express is the `(?=$|\s)` token
+    # boundary, so `/analyze-build-failure-now` still reaches the job; the first
+    # step below applies the full predicate and bails out before anything is
+    # downloaded.
     if: >-
       github.event.repository.fork == false &&
       github.event.issue.pull_request &&
       contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
-      contains(github.event.comment.body, '/analyze-build-failure')
+      startsWith(github.event.comment.body, '/analyze-build-failure')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -205,32 +228,44 @@ jobs:
         run: |
           set +e
           # --- 1. Command position (free; do this before the API call) ------
-          # The job-level `if:` can only use `contains()`, a plain substring
-          # test, so a comment that merely mentions the command — or an edited
-          # old comment quoting it — still reaches this job and pays for the
-          # download before `pre_activation` throws the result away. That check
-          # runs too late by construction, so reproduce it here.
+          # The job-level `if:` can only use `startsWith()`, which cannot
+          # express the token boundary, so `/analyze-build-failure-now` still
+          # reaches this job and would pay for the download before
+          # `pre_activation` throws the result away. That check runs too late by
+          # construction, so reproduce it here.
           #
-          # gh-aw trims the body and requires the command to be the FIRST token:
-          # `/^\/([a-zA-Z0-9][a-zA-Z0-9._-]*)(?=$|\s)/` over the trimmed text,
-          # then an equality comparison on the captured name
-          # (actions/setup/js/slash_command_matcher.cjs). `awk 'NF {print $1;
-          # exit}'` is the same rule: skip leading whitespace/blank lines, take
-          # the first whitespace-delimited token. The token is delimited by
-          # whitespace or end-of-input, exactly the `(?=$|\s)` lookahead, so
-          # `/analyze-build-failure-now` correctly does NOT match. `tr -d '\r'`
-          # is needed because JS `.trim()` and `\s` treat CR as whitespace while
-          # awk's default field splitting does not.
-          # KEEP IN SYNC with `on.command.name` below.
-          first_word=$(printf '%s' "${COMMENT_BODY}" | tr -d '\r' | awk 'NF {print $1; exit}')
-          if [ "${first_word}" != "/${COMMAND_NAME}" ]; then
-            # Never echo the raw token: it is attacker-controlled and `::`-
-            # prefixed text is interpreted by the runner as a workflow command.
-            safe_word=$(printf '%s' "${first_word}" | tr -cd 'A-Za-z0-9/._-' | cut -c1-40)
-            echo "Comment does not start with '/${COMMAND_NAME}' (first token: '${safe_word}'); skipping the binlog download."
-            echo "authorized=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          # gh-aw requires the command at byte ZERO of the comment body:
+          # `check_command_position.cjs` hands the raw `comment.body` to
+          # `resolveMatchedCommand`, which applies
+          # `/^\/([a-zA-Z0-9][a-zA-Z0-9._-]*)(?=$|\s)/` and compares the
+          # captured name (`slash_command_matcher.cjs`). The `trimStart()` in
+          # that file only builds the log/denial message — it is not part of the
+          # match, so a leading space or blank line is a non-match. The body is
+          # therefore tested unmodified: skipping leading whitespace (or
+          # stripping CR) here would admit comments activation is guaranteed to
+          # reject, after paying for the artifact download.
+          #
+          # The command must be the whole body or be followed by whitespace,
+          # which is the `(?=$|\s)` lookahead. gh-aw's effective predicate is
+          # that regex intersected with the compile-time activation expression
+          # it generates — exact body, `+ ' '`, or `+ '\n'` — so `[[:space:]]`
+          # is a deliberate superset: it also admits a tab or CR separator,
+          # which costs at most one wasted download and is preferred to a
+          # hand-written exact copy that would start silently rejecting real
+          # commands if gh-aw ever widened its own set. `/analyze-build-failure-now`
+          # still does not match either way.
+          # KEEP IN SYNC with `on.slash_command.name` above.
+          case "${COMMENT_BODY}" in
+            "/${COMMAND_NAME}" | "/${COMMAND_NAME}"[[:space:]]*) ;;
+            *)
+              # Never echo the raw body: it is attacker-controlled and `::`-
+              # prefixed text is interpreted by the runner as a workflow command.
+              safe_prefix=$(printf '%s' "${COMMENT_BODY}" | tr -cd 'A-Za-z0-9/._-' | cut -c1-40)
+              echo "Comment does not start with '/${COMMAND_NAME}' (body begins: '${safe_prefix}'); skipping the binlog download."
+              echo "authorized=false" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
           # --- 2. Repository permission -------------------------------------
           # `COMMENTER` is interpolated into an API path and into log output, so
           # give it the same shape check `PR_NUMBER` and `BUILD_ID` get below.
