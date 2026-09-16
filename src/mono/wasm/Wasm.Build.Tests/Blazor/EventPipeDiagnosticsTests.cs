@@ -77,20 +77,27 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             }
         ));
 
-        var methodFound = false;
+        bool appMethodFound = false;
+        bool readyToRunMethodFound = false;
         using (var source = TraceLog.OpenOrConvert(ConvertTrace(info, "cpuprofile.nettrace")))
         {
-            methodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName == "BlazorBasicTestApp.Pages.Counter.IncrementCount()");
-            if (!methodFound)
+            appMethodFound = source.CallStacks.Any(stack => stack.CodeAddress.FullMethodName == "BlazorBasicTestApp.Pages.Counter.IncrementCount()");
+            if (!appMethodFound)
             {
                 foreach (var stack in source.CallStacks)
                 {
                     _testOutput.WriteLine($"Stack: {stack.CodeAddress.FullMethodName}");
                 }
             }
+
+            readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove(", StringComparison.Ordinal));
         }
 
-        Assert.True(methodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
+        Assert.True(appMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
+        if (BuildTestBase.IsCoreClrRuntime)
+        {
+            Assert.True(readyToRunMethodFound, "The cpuprofile.nettrace should contain rundown information for the ReadyToRun 'System.Buffer.Memmove' method");
+        }
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
