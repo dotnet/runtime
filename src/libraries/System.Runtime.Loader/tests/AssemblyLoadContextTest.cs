@@ -99,6 +99,43 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        public static void AssemblyLoadEvent_ReentrantMethodCompilation()
+        {
+            var loadContext = new ResourceAssemblyLoadContext { LoadBy = LoadBy.Stream };
+            Assembly assembly = loadContext.LoadFromAssemblyName(new AssemblyName("MissingDependency.Root"));
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(assembly));
+            MethodInfo method = assembly.GetType("MissingDependency.Root.RootClass").GetMethod(nameof(MissingDependency.Root.RootClass.GetMiddleTypeName));
+            Assert.NotNull(method);
+
+            object nestedResult = null;
+            int nestedCalls = 0;
+            AssemblyLoadEventHandler handler = (_, args) =>
+            {
+                if (AssemblyLoadContext.GetLoadContext(args.LoadedAssembly) == loadContext &&
+                    args.LoadedAssembly.GetName().Name == "MissingDependency.Mid")
+                {
+                    nestedCalls++;
+                    nestedResult = method.Invoke(null, null);
+                }
+            };
+
+            AppDomain.CurrentDomain.AssemblyLoad += handler;
+            try
+            {
+                // Resolving MidClass during compilation raises AssemblyLoad, whose handler
+                // invokes this method again before the outer compilation finishes.
+                Assert.Equal("MissingDependency.Mid.MidClass", method.Invoke(null, null));
+                Assert.Equal(1, nestedCalls);
+                Assert.Equal("MissingDependency.Mid.MidClass", nestedResult);
+                Assert.Equal("MissingDependency.Mid.MidClass", method.Invoke(null, null));
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyLoad -= handler;
+            }
+        }
+
         [Fact]
         public static void LoadFromAssemblyName_AssemblyNotFound()
         {

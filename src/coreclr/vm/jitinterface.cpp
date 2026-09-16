@@ -13994,12 +13994,26 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (ret)
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
+            *isInterpreterCode = true;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
-            _ASSERTE(portableEntryPoint != NULL);
-            PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
-            ret = portableEntryPoint;
+            // Loading dependencies can compile this code version recursively. Preserve the
+            // winning publication rather than replacing its portable entrypoint's data.
+            PCODE publishedCode = config->IsJitCancellationRequested();
+            if (publishedCode != (PCODE)NULL)
+            {
+                LOG((LF_JIT, LL_INFO10000, "Reusing code 0x%zx published while compiling %p (IL version %zu, native version %u)\n",
+                    static_cast<size_t>(publishedCode), ftn, static_cast<size_t>(nativeCodeVersion.GetILCodeVersionId()), nativeCodeVersion.GetVersionId()));
+                ret = publishedCode;
+                *isInterpreterCode = PortableEntryPoint::HasInterpreterData(ret);
+            }
+            else
+            {
+                PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
+                _ASSERTE(portableEntryPoint != NULL);
+                PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
+                ret = portableEntryPoint;
+            }
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
             InterpreterPrecode* pPrecode = NULL;
@@ -14029,7 +14043,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
-            *isInterpreterCode = true;
             *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         }
     }
