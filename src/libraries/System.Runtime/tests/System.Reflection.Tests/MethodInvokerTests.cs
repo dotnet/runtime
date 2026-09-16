@@ -31,7 +31,7 @@ namespace System.Reflection.Tests
             object argument = new object();
             object?[] arguments = { target, null };
 
-            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
                 if (useByRef)
                 {
@@ -43,13 +43,13 @@ namespace System.Reflection.Tests
                     Assert.Same(argument, invoker.Invoke(target, argument));
                 }
 
-                if (i == 0 || i == IntrinsicInvokeSelectionAssertions.SpecializationThreshold - 1)
+                if (i == 0 || i == IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold - 1)
                 {
                     IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, i + 1);
                 }
             }
 
-            Assert.Equal(IntrinsicInvokeSelectionAssertions.SpecializationThreshold + 1, target.CallCount);
+            Assert.Equal(IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold + 1, target.CallCount);
             IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
         }
 
@@ -72,7 +72,7 @@ namespace System.Reflection.Tests
             MethodInvoker invoker = MethodInvoker.Create(constructor);
             var target = (RefConstructorTarget)RuntimeHelpers.GetUninitializedObject(typeof(RefConstructorTarget));
 
-            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
                 if (useSpan)
                 {

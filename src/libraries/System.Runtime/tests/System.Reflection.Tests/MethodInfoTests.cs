@@ -54,7 +54,7 @@ namespace System.Reflection.Tests
             MethodInfo method = target.GetMethod(nameof(ReturnValueTarget<int>.GetValue));
             MethodInvoker invoker = MethodInvoker.Create(method);
 
-            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
                 Assert.Equal(expected, method.Invoke(null, null));
                 Assert.Equal(expected, invoker.Invoke(null));
@@ -615,6 +615,94 @@ namespace System.Reflection.Tests
             AssertVirtualDispatchSharedThunk(method, receivers, expected);
         }
 
+        [Theory]
+        [InlineData(
+            typeof(IntrinsicInvokeThresholdCachedTarget),
+            nameof(IntrinsicInvokeThresholdCachedTarget.Echo),
+            typeof(IntrinsicInvokeThresholdCachedTarget),
+            false,
+            IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold,
+            false)]
+        [InlineData(
+            typeof(IntrinsicInvokeThresholdVirtualBase),
+            nameof(IntrinsicInvokeThresholdVirtualBase.Echo),
+            typeof(IntrinsicInvokeThresholdVirtualDerived),
+            false,
+            IntrinsicInvokeSelectionAssertions.ClassVirtualSpecializationThreshold,
+            true)]
+        [InlineData(
+            typeof(IIntrinsicInvokeThresholdInterface),
+            nameof(IIntrinsicInvokeThresholdInterface.Echo),
+            typeof(IntrinsicInvokeThresholdInterfaceTarget),
+            false,
+            IntrinsicInvokeSelectionAssertions.InterfaceOrGenericVirtualSpecializationThreshold,
+            true)]
+        [InlineData(
+            typeof(IntrinsicInvokeThresholdGenericMethodBase),
+            nameof(IntrinsicInvokeThresholdGenericMethodBase.Echo),
+            typeof(IntrinsicInvokeThresholdGenericMethodDerived),
+            true,
+            IntrinsicInvokeSelectionAssertions.InterfaceOrGenericVirtualSpecializationThreshold,
+            true)]
+        [InlineData(
+            typeof(IntrinsicInvokeThresholdGenericTypeBase<string>),
+            nameof(IntrinsicInvokeThresholdGenericTypeBase<string>.Echo),
+            typeof(IntrinsicInvokeThresholdGenericTypeDerived),
+            false,
+            IntrinsicInvokeSelectionAssertions.ClassVirtualSpecializationThreshold,
+            true)]
+        [InlineData(
+            typeof(IntrinsicInvokeThresholdFinalGenericMethodDerived),
+            nameof(IntrinsicInvokeThresholdFinalGenericMethodDerived.Echo),
+            typeof(IntrinsicInvokeThresholdFinalGenericMethodDerived),
+            true,
+            IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold,
+            false)]
+        public void Invoke_SharedThunkPromotesAtDispatchPathThreshold(
+            Type declaringType,
+            string methodName,
+            Type targetType,
+            bool makeGenericMethod,
+            int threshold,
+            bool useVirtualResolution)
+        {
+            MethodInfo method = declaringType.GetMethod(methodName)!;
+            if (makeGenericMethod)
+            {
+                method = method.MakeGenericMethod(typeof(int));
+            }
+
+            object target = Activator.CreateInstance(targetType)!;
+            MethodInvoker invoker = MethodInvoker.Create(method);
+            object argument = new object();
+            object?[] arguments = { argument };
+
+            for (int i = 0; i < threshold; i++)
+            {
+                Assert.Same(argument, method.Invoke(target, arguments));
+                Assert.Same(argument, invoker.Invoke(target, argument));
+            }
+
+            if (useVirtualResolution)
+            {
+                IntrinsicInvokeSelectionAssertions.AssertUsesVirtualResolution(method);
+                IntrinsicInvokeSelectionAssertions.AssertUsesVirtualResolution(invoker);
+            }
+            else
+            {
+                IntrinsicInvokeSelectionAssertions.AssertUsesCachedTarget(method);
+                IntrinsicInvokeSelectionAssertions.AssertUsesCachedTarget(invoker);
+            }
+
+            IntrinsicInvokeSelectionAssertions.AssertNotPromoted(method, threshold);
+            IntrinsicInvokeSelectionAssertions.AssertNotPromoted(invoker, threshold);
+
+            Assert.Same(argument, method.Invoke(target, arguments));
+            Assert.Same(argument, invoker.Invoke(target, argument));
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(method);
+            IntrinsicInvokeSelectionAssertions.AssertPromoted(invoker);
+        }
+
         [Fact]
         public void Invoke_GenericVirtualDispatch_SharedThunk()
         {
@@ -971,7 +1059,7 @@ namespace System.Reflection.Tests
             object expected = referenceArgument ? new object() : 42;
             object[] arguments = { expected };
 
-            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
                 Assert.Equal(expected, invoker is not null ? invoker.Invoke(null, expected) : method.Invoke(null, arguments));
             }
@@ -1752,7 +1840,9 @@ namespace System.Reflection.Tests
 
     internal static class IntrinsicInvokeSelectionAssertions
     {
-        internal const int SpecializationThreshold = 10_000;
+        internal const int CachedTargetSpecializationThreshold = 10_000;
+        internal const int ClassVirtualSpecializationThreshold = 3_000;
+        internal const int InterfaceOrGenericVirtualSpecializationThreshold = 1_000;
         private const string ForceEmitInvokeSwitch = "Switch.System.Reflection.ForceEmitInvoke";
         private const string ForceInterpretedInvokeSwitch = "Switch.System.Reflection.ForceInterpretedInvoke";
         private const string SharedThunkMethodName = "InvokeWithSharedThunk";
@@ -1811,12 +1901,20 @@ namespace System.Reflection.Tests
                 return;
             }
 
-            Assert.Equal(SpecializationThreshold, GetInvokeStateField<int>(invoker, "InvocationCount"));
+            Assert.Equal(
+                GetInvokeStateField<int>(invoker, "SpecializationThreshold"),
+                GetInvokeStateField<int>(invoker, "InvocationCount"));
             Assert.True(
                 GetRefArgsDelegate(invoker).Method.Name != SharedThunkMethodName ||
                 GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args") is not null ||
                 GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs") is not null);
         }
+
+        internal static void AssertPromoted(MethodBase method) =>
+            AssertPromoted(GetCachedInvoker(method));
+
+        internal static void AssertNotPromoted(MethodBase method, int invocationCount) =>
+            AssertNotPromoted(GetCachedInvoker(method), invocationCount);
 
         internal static void AssertNotPromoted(object invoker, int invocationCount)
         {
@@ -1829,6 +1927,22 @@ namespace System.Reflection.Tests
             Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_Obj4Args"));
             Assert.Null(GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs"));
             Assert.Equal(ShouldAssertPromotion ? invocationCount : 0, GetInvokeStateField<int>(invoker, "InvocationCount"));
+        }
+
+        internal static void AssertUsesCachedTarget(object stateOwner)
+        {
+            if (ShouldAssertSharedSelection)
+            {
+                Assert.NotEqual(IntPtr.Zero, GetInvokeStateField<IntPtr>(GetInvoker(stateOwner), "FunctionPointer"));
+            }
+        }
+
+        internal static void AssertUsesVirtualResolution(object stateOwner)
+        {
+            if (ShouldAssertSharedSelection)
+            {
+                Assert.Equal(IntPtr.Zero, GetInvokeStateField<IntPtr>(GetInvoker(stateOwner), "FunctionPointer"));
+            }
         }
 
         private static bool ShouldAssertSharedSelection =>
@@ -1856,6 +1970,9 @@ namespace System.Reflection.Tests
             Assert.NotNull(invoker);
             return invoker;
         }
+
+        private static object GetInvoker(object stateOwner) =>
+            stateOwner is MethodBase method ? GetCachedInvoker(method) : stateOwner;
 
         private static Delegate GetRefArgsDelegate(object invoker)
         {
@@ -1896,6 +2013,61 @@ namespace System.Reflection.Tests
         internal IntrinsicInvokeReference(int value) => Value = value;
 
         public int Value { get; }
+    }
+
+    internal sealed class IntrinsicInvokeThresholdCachedTarget
+    {
+        public object Echo(object value) => value;
+    }
+
+    internal class IntrinsicInvokeThresholdVirtualBase
+    {
+        public virtual object Echo(object value) => value;
+    }
+
+    internal sealed class IntrinsicInvokeThresholdVirtualDerived : IntrinsicInvokeThresholdVirtualBase
+    {
+        public override object Echo(object value) => value;
+    }
+
+    internal interface IIntrinsicInvokeThresholdInterface
+    {
+        object Echo(object value);
+    }
+
+    internal sealed class IntrinsicInvokeThresholdInterfaceTarget : IIntrinsicInvokeThresholdInterface
+    {
+        public object Echo(object value) => value;
+    }
+
+    internal class IntrinsicInvokeThresholdGenericMethodBase
+    {
+        public virtual object Echo<T>(object value) => value;
+    }
+
+    internal sealed class IntrinsicInvokeThresholdGenericMethodDerived : IntrinsicInvokeThresholdGenericMethodBase
+    {
+        public override object Echo<T>(object value) => value;
+    }
+
+    internal class IntrinsicInvokeThresholdFinalGenericMethodBase
+    {
+        public virtual object Echo<T>(object value) => value;
+    }
+
+    internal sealed class IntrinsicInvokeThresholdFinalGenericMethodDerived : IntrinsicInvokeThresholdFinalGenericMethodBase
+    {
+        public sealed override object Echo<T>(object value) => value;
+    }
+
+    internal class IntrinsicInvokeThresholdGenericTypeBase<T>
+    {
+        public virtual object Echo(object value) => value;
+    }
+
+    internal sealed class IntrinsicInvokeThresholdGenericTypeDerived : IntrinsicInvokeThresholdGenericTypeBase<string>
+    {
+        public override object Echo(object value) => value;
     }
 
     internal sealed class IntrinsicInvokeReferenceTarget
