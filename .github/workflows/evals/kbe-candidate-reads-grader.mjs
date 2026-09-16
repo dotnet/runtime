@@ -1,3 +1,7 @@
+import { fileURLToPath } from "node:url";
+
+const trustedHelperPath = fileURLToPath(new URL("./search-kbe-issues.cjs", import.meta.url));
+
 function callKey(event) {
     return JSON.stringify([event.agentId ?? null, event.data.toolCallId]);
 }
@@ -39,8 +43,18 @@ function isSearchHarnessCall(event) {
     }
 
     const command = event.data.arguments?.command;
-    return typeof command === "string" &&
-        /(?:^|[\\/])search-kbe-issues\.cjs(?:\s|$)/.test(command);
+    if (typeof command !== "string") {
+        return false;
+    }
+
+    const normalizedCommand = command.replaceAll("\\", "/");
+    const normalizedPath = (process.env.KBE_SEARCH_HELPER ?? trustedHelperPath).replaceAll("\\", "/");
+    const escapedPath = normalizedPath.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const invocation = new RegExp(
+        `^\\s*node(?:\\.exe)?\\s+(?:"${escapedPath}"|'${escapedPath}'|${escapedPath})(?:\\s|$)`,
+    );
+
+    return invocation.test(normalizedCommand);
 }
 
 function isIssueReadCall(event) {

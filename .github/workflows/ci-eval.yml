@@ -286,26 +286,14 @@ jobs:
             rm -f -- "$spec"
             cp -- "$RUNNER_TEMP/trusted-evals/$(basename "$spec")" "$spec"
           done
-          rm -f -- .github/workflows/evals/search-kbe-issues.cjs
-          if test -f "$RUNNER_TEMP/trusted-evals/search-kbe-issues.cjs"; then
-            cp -- "$RUNNER_TEMP/trusted-evals/search-kbe-issues.cjs" \
-              .github/workflows/evals/search-kbe-issues.cjs
-          fi
-          rm -f -- .github/workflows/evals/kbe-candidate-reads-grader.mjs
-          if test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
-            cp -- "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs" \
-              .github/workflows/evals/kbe-candidate-reads-grader.mjs
-          fi
-          rm -f -- .github/workflows/evals/kbe-search.test.mjs
-          if test -f "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"; then
-            cp -- "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs" \
-              .github/workflows/evals/kbe-search.test.mjs
-          fi
           if [ -f "$RUNNER_TEMP/trusted-evals/filter-scanner-kbes.sh" ]; then
             mkdir -p .github/workflows/shared
             cp -- "$RUNNER_TEMP/trusted-evals/filter-scanner-kbes.sh" \
               .github/workflows/shared/filter-scanner-kbes.sh
           fi
+          rm -f -- .github/workflows/evals/search-kbe-issues.cjs
+          rm -f -- .github/workflows/evals/kbe-candidate-reads-grader.mjs
+          rm -f -- .github/workflows/evals/kbe-search.test.mjs
 
       - name: Test the KBE search support
         if: steps.guard.outputs.run == 'true'
@@ -314,8 +302,8 @@ jobs:
         run: |
           scan_spec=.github/workflows/evals/ci-failure-scan.eval.yaml
           if [[ " $SPECS " == *" $scan_spec "* ]] &&
-             test -f .github/workflows/evals/kbe-search.test.mjs; then
-            node --test .github/workflows/evals/kbe-search.test.mjs
+             test -f "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"; then
+            node --test "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"
           fi
 
       - name: Lint the selected spec(s)
@@ -326,8 +314,8 @@ jobs:
           for spec in $SPECS; do
             grader_args=()
             if [[ "$(basename "$spec")" == "ci-failure-scan.eval.yaml" ]] &&
-               test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
-              grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
+               test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
+              grader_args+=(--grader-plugin "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs")
             fi
             vally lint --eval-spec "$spec" --strict "${grader_args[@]}"
           done
@@ -353,6 +341,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # The GitHub MCP server reads this name from its Docker container.
           GITHUB_PERSONAL_ACCESS_TOKEN: ${{ github.token }}
+          KBE_SEARCH_HELPER: ${{ runner.temp }}/trusted-evals/search-kbe-issues.cjs
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
           workdir="$RUNNER_TEMP/vally"
@@ -365,8 +354,8 @@ jobs:
             echo "## $name" >> "$report"
             grader_args=()
             if [[ "$name" == "ci-failure-scan" ]] &&
-               test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
-              grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
+               test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
+              grader_args+=(--grader-plugin "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs")
             fi
             if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
                  --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" \

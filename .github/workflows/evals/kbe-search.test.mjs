@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { registerGraders } from "./kbe-candidate-reads-grader.mjs";
@@ -7,6 +8,11 @@ import { registerGraders } from "./kbe-candidate-reads-grader.mjs";
 const require = createRequire(import.meta.url);
 const { runGhApi, searchKbeIssues } = require("./search-kbe-issues.cjs");
 const testToken = "test-token";
+const trustedHelperPath = process.env.KBE_SEARCH_HELPER ??
+    fileURLToPath(new URL("./search-kbe-issues.cjs", import.meta.url));
+const trustedSearchCommand = `node "${trustedHelperPath}" query`;
+const trustedWindowsSearchCommand =
+    `node "${trustedHelperPath.replaceAll("/", "\\")}" query`;
 
 function validResult() {
     return {
@@ -95,7 +101,7 @@ async function grade(events) {
 test("candidate-read grader requires successful unfiltered reads for every candidate", async () => {
     const events = [
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("bash", "search", {
             content: `Process exited with code 0\n${JSON.stringify([
@@ -120,7 +126,7 @@ test("candidate-read grader requires successful unfiltered reads for every candi
 test("candidate-read grader fails for filtered or missing candidate reads", async () => {
     const events = [
         call("powershell", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("powershell", "search", JSON.stringify([
             { number: 10, user: { login: "bot" } },
@@ -144,7 +150,7 @@ test("candidate-read grader does not accept a read made before search results", 
         }),
         result("mcp__github-issue_read", "read", { number: 10 }),
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("bash", "search", JSON.stringify([
             { number: 10, user: { login: "bot" } },
@@ -163,7 +169,7 @@ test("candidate-read grader accepts a repeated read after search results", async
         }),
         result("github-issue_read", "read-before", { number: 10 }),
         call("powershell", "search", {
-            command: "node .\\.github\\workflows\\evals\\search-kbe-issues.cjs query",
+            command: trustedWindowsSearchCommand,
         }),
         result("powershell", "search", JSON.stringify([
             { number: 10, user: { login: "bot" } },
@@ -181,7 +187,7 @@ test("candidate-read grader accepts a repeated read after search results", async
 test("candidate-read grader rejects result-level issue read errors", async () => {
     const events = [
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("bash", "search", JSON.stringify([
             { number: 10, user: { login: "bot" } },
@@ -200,7 +206,7 @@ test("candidate-read grader rejects result-level issue read errors", async () =>
 test("candidate-read grader rejects a read for the wrong issue", async () => {
     const events = [
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("bash", "search", JSON.stringify([
             { number: 10, user: { login: "bot" } },
@@ -219,7 +225,7 @@ test("candidate-read grader rejects a read for the wrong issue", async () => {
 test("candidate-read grader accepts searches with no candidates", async () => {
     const events = [
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("bash", "search", "[]"),
     ];
@@ -231,7 +237,7 @@ test("candidate-read grader accepts searches with no candidates", async () => {
 test("candidate-read grader fails for an unmatched search call", async () => {
     const events = [
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
     ];
 
@@ -243,7 +249,7 @@ test("candidate-read grader fails for an unmatched search call", async () => {
 test("candidate-read grader fails closed on search errors", async () => {
     const events = [
         call("bash", "search", {
-            command: "node .github/workflows/evals/search-kbe-issues.cjs query",
+            command: trustedSearchCommand,
         }),
         result("bash", "search", "request failed", false),
     ];
@@ -251,4 +257,19 @@ test("candidate-read grader fails closed on search errors", async () => {
     const gradeResult = await grade(events);
     assert.equal(gradeResult.passed, false);
     assert.match(gradeResult.evidence, /search-kbe-issues call failed/);
+});
+
+test("candidate-read grader rejects a lookalike helper outside the trusted directory", async () => {
+    const events = [
+        call("bash", "search", {
+            command: "node /tmp/search-kbe-issues.cjs query",
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, false);
+    assert.match(gradeResult.evidence, /search-kbe-issues was not called/);
 });
