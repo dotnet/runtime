@@ -948,9 +948,20 @@ if(CLR_CMAKE_HOST_UNIX_RISCV64)
     set(CLR_CMAKE_RISCV64_MABI "$ENV{CLR_CMAKE_RISCV64_MABI}")
   endif()
 
+  # Decide whether the ISA string selects the A extension. Only the single-letter
+  # part counts: a multi-letter extension whose name contains "a" (Zba, for one)
+  # is not the A extension, and "g" is shorthand for imafd and so implies it.
+  string(REGEX REPLACE "_.*$" "" _riscv_single_letter "${CLR_CMAKE_RISCV64_MARCH}")
+  string(REGEX REPLACE "^rv[0-9]+" "" _riscv_single_letter "${_riscv_single_letter}")
+  if(_riscv_single_letter MATCHES "[ag]")
+    set(_riscv_has_a ON)
+  else()
+    set(_riscv_has_a OFF)
+  endif()
+
   # Without the A extension every __atomic_* call is "not lock-free" and clang
   # warns; the runtime builds with -Werror, which would make that fatal.
-  if(NOT CLR_CMAKE_RISCV64_MARCH MATCHES "a")
+  if(NOT _riscv_has_a)
     add_compile_options(-Wno-atomic-alignment)
   endif()
 

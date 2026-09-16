@@ -372,8 +372,16 @@ elseif(TARGET_ARCH_NAME STREQUAL "riscv64")
   # Without the A extension the compiler lowers C/C++ atomics to __atomic_*
   # calls instead of emitting lr/sc, and those live in libatomic. Not every link
   # in the tree passes -latomic on its own.
-  if(DEFINED CLR_CMAKE_RISCV64_MARCH AND NOT CLR_CMAKE_RISCV64_MARCH MATCHES "a")
-    add_toolchain_linker_flag("-latomic")
+  #
+  # Only the single-letter part of the ISA string counts: a multi-letter extension
+  # whose name contains "a" (Zba, for one) is not the A extension, and "g" is
+  # shorthand for imafd and so implies it.
+  if(DEFINED CLR_CMAKE_RISCV64_MARCH)
+    string(REGEX REPLACE "_.*$" "" _riscv_single_letter "${CLR_CMAKE_RISCV64_MARCH}")
+    string(REGEX REPLACE "^rv[0-9]+" "" _riscv_single_letter "${_riscv_single_letter}")
+    if(NOT _riscv_single_letter MATCHES "[ag]")
+      add_toolchain_linker_flag("-latomic")
+    endif()
   endif()
 
   # persist variables across multiple try_compile passes
