@@ -61,8 +61,6 @@ void ExternalMemoryHandle::Remove(ExternalMemoryHandle* handle DEBUG_ARG(bool is
     }
 
     _ASSERTE(removed);
-    if (!removed)
-        return;
 
     delete handle;
 }
