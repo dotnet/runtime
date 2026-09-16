@@ -1056,9 +1056,12 @@ PALEXPORT int32_t SystemNative_EventFdWait(int32_t eventFd, int32_t timeoutMilli
  * still issues a plain, non-blocking IORING_ENTER_GETEVENTS call, rather than skipping the
  * io_uring_enter(2) call entirely: for a ring created with IORING_SETUP_DEFER_TASKRUN, this call
  * is what actually pumps the kernel's deferred completion task-work onto the CQ ring - without it,
- * completions never get posted at all, no matter how long the caller waits afterwards). Not
- * thread-safe with itself: the caller must ensure only one thread ever calls this for a given
- * ring at a time.
+ * completions never get posted at all, no matter how long the caller waits afterwards). As a side
+ * effect, this same io_uring_enter(2) call also flushes any SQEs already published to the SQ tail
+ * (e.g. via SystemNative_IoRingSubmit) but not yet asked the kernel to process - the caller does
+ * not need to separately call SystemNative_IoRingKick before this to have such entries picked up;
+ * calling this instead of Kick+WaitForCompletions separately saves a syscall. Not thread-safe with
+ * itself: the caller must ensure only one thread ever calls this for a given ring at a time.
  *
  * Returns 0 on success (with *completedCount set to the number of completions written into
  * the completions buffer, up to maxCompletions); otherwise, returns -1 and sets errno.

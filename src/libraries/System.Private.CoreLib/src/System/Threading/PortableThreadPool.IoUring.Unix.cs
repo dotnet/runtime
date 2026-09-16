@@ -317,6 +317,15 @@ namespace System.Threading
             /// <summary>
             /// Repeatedly pulls up to <see cref="MaxRequestsPerSubmitBatch"/> requests at a time off
             /// <see cref="s_pendingSubmissions"/> and submits each such batch, until the queue is empty.
+            /// Deliberately does *not* call <see cref="Interop.Sys.IoRingKick"/> after the final batch:
+            /// the entries it fills are left published to the SQ tail but not yet asked of the kernel,
+            /// since the <see cref="DrainCompletions"/> call that always immediately follows this one (see
+            /// <see cref="IssuerLoop"/>) submits them together with reaping completions, in a single
+            /// syscall - see <see cref="Interop.Sys.IoRingWaitForCompletions"/>'s doc comment. A kick is
+            /// only issued between batches, when there is more still queued to drain: that indicates an
+            /// unusually large burst (more than one batch's worth arrived at once), in which case it is
+            /// worth giving the kernel a chance to make room in the ring before filling more, rather than
+            /// leaving arbitrarily many batches' worth of entries unsubmitted until the end.
             /// </summary>
             private static unsafe void DrainAndSubmit(Interop.Sys.IoRingRequest[] batch)
             {
@@ -338,10 +347,13 @@ namespace System.Threading
                         SubmitBatchWithRetry(batchPtr, count);
                     }
 
-                    // This ring was created with IORING_SETUP_SINGLE_ISSUER (and IORING_SETUP_DEFER_TASKRUN),
-                    // so this call - like every other call touching this ring - is only ever made from this
-                    // one dedicated thread.
-                    Interop.Sys.IoRingKick(s_ringHandle);
+                    if (!s_pendingSubmissions.IsEmpty)
+                    {
+                        // More still queued - this ring was created with IORING_SETUP_SINGLE_ISSUER
+                        // (and IORING_SETUP_DEFER_TASKRUN), so this call - like every other call
+                        // touching this ring - is only ever made from this one dedicated thread.
+                        Interop.Sys.IoRingKick(s_ringHandle);
+                    }
                 }
             }
 
@@ -385,7 +397,12 @@ namespace System.Threading
             /// <summary>
             /// Drains and dispatches every completion currently available, looping until none are left,
             /// without blocking if none are ready yet (<c>minComplete: 0</c>) - any actual waiting for new
-            /// completions to arrive is done by the caller, in <see cref="IssuerLoop"/>.
+            /// completions to arrive is done by the caller, in <see cref="IssuerLoop"/>. Its first
+            /// underlying <c>io_uring_enter</c> call (see
+            /// <see cref="Interop.Sys.IoRingWaitForCompletions"/>) also flushes any SQEs
+            /// <see cref="DrainAndSubmit"/> published just before this call but did not itself submit to
+            /// the kernel, so in the common case (a single submit batch per <see cref="IssuerLoop"/>
+            /// iteration) submission and completion-reaping happen via one syscall total, not two.
             /// </summary>
             private static unsafe void DrainCompletions(Interop.Sys.IoRingCompletion[] completionsBatch, IThreadPoolWorkItem[] workItemBatch)
             {
