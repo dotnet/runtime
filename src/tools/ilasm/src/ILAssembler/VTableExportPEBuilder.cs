@@ -603,10 +603,15 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
         WriteInt32AtOffset(_textSectionBuilder, patchOffset + sizeof(int), _vtableFixupsSize);
     }
 
-    private int GetCorHeaderOffset() =>
-        VTableFixupSupport.GetEffectiveMachine(Header.Machine) == Machine.I386
+    private int GetCorHeaderOffset()
+    {
+        // ManagedTextSection places SizeOfImportAddressTable bytes before the COR header.
+        // Keep this machine check synchronized with ManagedTextSection.RequiresStartupStub
+        // and ManagedTextSection.SizeOfImportAddressTable in System.Reflection.Metadata.
+        return VTableFixupSupport.GetEffectiveMachine(Header.Machine) == Machine.I386
             ? 2 * sizeof(int)
             : 0;
+    }
 
     private static int Align(int value, int alignment) =>
         checked((value + alignment - 1) & ~(alignment - 1));
