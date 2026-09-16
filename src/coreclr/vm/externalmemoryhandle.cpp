@@ -74,8 +74,11 @@ void ExternalMemoryHandle::Cleanup()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        CAN_TAKE_LOCK;
     }
     CONTRACTL_END;
+
+    CrstHolder lock(&s_crst);
 
     while (!s_handles.IsEmpty())
     {
