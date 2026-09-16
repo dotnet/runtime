@@ -111,6 +111,16 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(max.Days, max.Hours, max.Minutes, max.Seconds, max.Milliseconds, max.Microseconds + 1));
         }
 
+        [Fact]
+        public static void Ctor_DayBased_IntermediateMicrosecondOverflow()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(213_503_983, 0, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(-213_503_983, 0, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(213_503_982, 8, 1, 49, 551, 616));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(213_503_983, 0, 0, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => new TimeSpan(213_503_983, 0, 0, 0, 0, 0));
+        }
+
         [Theory]
         [InlineData(100)]
         [InlineData(300)]
