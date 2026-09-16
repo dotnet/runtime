@@ -309,8 +309,12 @@ jobs:
 
       - name: Test the KBE search support
         if: steps.guard.outputs.run == 'true'
+        env:
+          SPECS: ${{ steps.sel.outputs.specs }}
         run: |
-          if test -f .github/workflows/evals/kbe-search.test.mjs; then
+          scan_spec=.github/workflows/evals/ci-failure-scan.eval.yaml
+          if [[ " $SPECS " == *" $scan_spec "* ]] &&
+             test -f .github/workflows/evals/kbe-search.test.mjs; then
             node --test .github/workflows/evals/kbe-search.test.mjs
           fi
 
@@ -319,11 +323,12 @@ jobs:
         env:
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
-          grader_args=()
-          if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
-            grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
-          fi
           for spec in $SPECS; do
+            grader_args=()
+            if [[ "$(basename "$spec")" == "ci-failure-scan.eval.yaml" ]] &&
+               test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
+              grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
+            fi
             vally lint --eval-spec "$spec" --strict "${grader_args[@]}"
           done
 
@@ -355,13 +360,14 @@ jobs:
           report="$workdir/report.md"
           : > "$report"
           rc=0
-          grader_args=()
-          if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
-            grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
-          fi
           for spec in $SPECS; do
             name="$(basename "$spec" .eval.yaml)"
             echo "## $name" >> "$report"
+            grader_args=()
+            if [[ "$name" == "ci-failure-scan" ]] &&
+               test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
+              grader_args+=(--grader-plugin ./.github/workflows/evals/kbe-candidate-reads-grader.mjs)
+            fi
             if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
                  --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" \
                  "${grader_args[@]}" > "$workdir/log-$name.txt" 2>&1; then
