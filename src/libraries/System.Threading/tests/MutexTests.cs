@@ -912,6 +912,50 @@ namespace System.Threading.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public async Task ConcurrentCreateOrOpenWithInitialOwnership()
+        {
+            const int IterationCount = 10_000;
+            string mutexName = Guid.NewGuid().ToString("N");
+            int createdCount = 0;
+            using var barrier = new Barrier(2);
+            using var cancellationTokenSource = new CancellationTokenSource();
+
+            Task CreateOrOpenMutex()
+            {
+                return Task.Run(
+                    () =>
+                    {
+                        try
+                        {
+                            for (int i = 0; i < IterationCount; i++)
+                            {
+                                barrier.SignalAndWait(cancellationTokenSource.Token);
+                                using (var mutex = new Mutex(initiallyOwned: true, mutexName, out bool createdNew))
+                                {
+                                    if (createdNew)
+                                    {
+                                        Interlocked.Increment(ref createdCount);
+                                        mutex.ReleaseMutex();
+                                    }
+                                }
+
+                                barrier.SignalAndWait(cancellationTokenSource.Token);
+                            }
+                        }
+                        catch
+                        {
+                            cancellationTokenSource.Cancel();
+                            throw;
+                        }
+                    });
+            }
+
+            await Task.WhenAll(CreateOrOpenMutex(), CreateOrOpenMutex());
+            Assert.True(createdCount > 0);
+        }
+
         private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
         {
             for (int i = 0; i < n; i++)
