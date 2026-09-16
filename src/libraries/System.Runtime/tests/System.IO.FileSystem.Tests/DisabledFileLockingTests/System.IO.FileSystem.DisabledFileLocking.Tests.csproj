@@ -39,8 +39,8 @@
   </ItemGroup>
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="false"
-                                    Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'" />
+                                    Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'" />
     <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="true"
-                                    Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'tvos'" />
+                                    Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" />
   </ItemGroup>
 </Project>
