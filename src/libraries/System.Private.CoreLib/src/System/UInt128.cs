@@ -838,10 +838,8 @@ namespace System
                 ulong chkLoHi = Math.BigMul(divLo, q, out ulong chkLo);
                 ulong chkMi = chkHiLo + chkLoHi;
 
-                if (chkMi < chkLoHi)
-                {
-                    chkHi++;
-                }
+                // Add the carry explicitly so the JIT can reuse the low addition's flags.
+                chkHi += (chkMi < chkLoHi) ? 1UL : 0UL;
 
                 UInt128 divisor = new UInt128(divHi, divLo);
                 UInt128 chkMiLo = new UInt128(chkMi, chkLo);
@@ -985,11 +983,19 @@ namespace System
                     Debug.Assert(new UInt128(valHi, valMiLo) < new UInt128(chkHi, chkLo));
 
                     q--;
+#if TARGET_64BIT
+                    // Subtract the low word first and consume its borrow in the
+                    // high word, allowing SUB/SBB or SUBS/SBC without a branch.
+                    ulong difference = chkLo - divisor;
+                    chkHi -= (difference > chkLo) ? 1U : 0U;
+                    chkLo = difference;
+#else
                     if (chkLo < divisor)
                     {
                         chkHi--;
                     }
                     chkLo -= divisor;
+#endif
                 }
 
                 ulong remainder = valMiLo - chkLo;
@@ -1412,12 +1418,14 @@ namespace System
             ulong bl = right._lower;
             ulong bh = right._upper;
 
-            UInt128 mull = Math.BigMul(al, bl);
-            UInt128 t = Math.BigMul(ah, bl) + mull._upper;
-            UInt128 tl = Math.BigMul(al, bh) + t._lower;
+            // Group products with the same first operand: MULX uses a fixed
+            // register for that operand, while the other operand can stay live.
+            UInt128 mull = Math.BigMul(bl, al);
+            UInt128 t = Math.BigMul(bl, ah) + mull._upper;
+            UInt128 tl = Math.BigMul(bh, al) + t._lower;
 
             lower = new UInt128(tl._lower, mull._lower);
-            return Math.BigMul(ah, bh) + t._upper + tl._upper;
+            return Math.BigMul(bh, ah) + t._upper + tl._upper;
         }
 
         //

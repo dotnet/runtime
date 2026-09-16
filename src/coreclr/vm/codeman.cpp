@@ -1546,6 +1546,11 @@ void EEJitManager::SetCpuInfo()
         CPUCompileFlags.Set(InstructionSet_AVX);
     }
 
+    if (((cpuFeatures & XArchIntrinsicConstants_Adx) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableADX))
+    {
+        CPUCompileFlags.Set(InstructionSet_ADX);
+    }
+
     if (((cpuFeatures & XArchIntrinsicConstants_Avx2) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableAVX2))
     {
         CPUCompileFlags.Set(InstructionSet_AVX2);

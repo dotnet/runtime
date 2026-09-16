@@ -238,6 +238,23 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 1;
             break;
 
+#ifdef TARGET_AMD64
+        case GT_ADX_SEED:
+            srcCount = 0;
+            break;
+        case GT_ADX_DRAIN:
+            srcCount = BuildOperandUses(tree->gtGetOp1(), lowGprRegs);
+            buildInternalIntRegisterDefForNode(tree, lowGprRegs);
+            setInternalRegsDelayFree = true;
+            buildInternalRegisterUses();
+            BuildDef(tree, lowGprRegs);
+            break;
+        case GT_JCMP:
+            assert(tree->gtGetOp2()->IsIntegralConst(0) && tree->gtGetOp2()->isContained());
+            m_hasCarryArithmetic    = true;
+            srcCount                = BuildOperandUses(tree->gtGetOp1(), SRBM_ECX);
+            break;
+#endif
         case GT_JCC:
             srcCount = 0;
             assert(dstCount == 0);
@@ -264,6 +281,30 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 1);
             // This defines a byte value (note that on x64 allByteRegs() is defined as RBM_ALLINT).
             BuildDef(tree, allByteRegs());
+            break;
+
+        case GT_PHYSREG:
+            if (tree->IsDivRemPair())
+            {
+                assert(tree->AsPhysReg()->gtSrcReg == REG_RDX);
+#ifdef DEBUG
+                // Sequencing may move IL markers between the two definitions.
+                // They emit no register-writing instructions.
+                GenTree* producer = tree->gtPrev;
+                while ((producer != nullptr) && producer->OperIs(GT_IL_OFFSET))
+                {
+                    producer = producer->gtPrev;
+                }
+                assert((producer != nullptr) && producer->IsDivRemPair());
+                assert(producer->OperIs(GT_DIV, GT_UDIV));
+#endif
+                srcCount = 0;
+                BuildDef(tree, SRBM_RDX);
+            }
+            else
+            {
+                srcCount = BuildSimple(tree);
+            }
             break;
 
         case GT_SELECT:
@@ -310,6 +351,19 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_SUB_LO:
         case GT_SUB_HI:
 #endif
+#ifdef TARGET_AMD64
+        case GT_ADCX:
+        case GT_ADOX:
+            m_hasCarryArithmetic = true;
+            srcCount = BuildBinaryUses(tree->AsOp(), lowGprRegs);
+            BuildDef(tree, lowGprRegs);
+            break;
+        case GT_SUB_BORROW:
+        case GT_ADD_BORROW:
+        case GT_ADD_CARRY:
+            m_hasCarryArithmetic = true;
+            FALLTHROUGH;
+#endif
         case GT_ADD:
         case GT_SUB:
         case GT_AND:
@@ -318,6 +372,16 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_BIT_SET:
         case GT_BIT_CLEAR:
         case GT_BIT_INVERT:
+            if (tree->IsFunnelShift())
+            {
+                // SHRD overwrites the low input. Keep the high input live until
+                // after the result is defined so the initial copy cannot clobber it.
+                tgtPrefUse = BuildUse(tree->gtGetOp1()->gtGetOp1(), lowGprRegs);
+                setDelayFree(BuildUse(tree->gtGetOp2()->gtGetOp1(), lowGprRegs));
+                srcCount = 2;
+                BuildDef(tree, lowGprRegs);
+                break;
+            }
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
@@ -2392,6 +2456,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
                 SingleTypeRegSet apxAwareRegCandidates =
                     ForceLowGprForApxIfNeeded(op1, RBM_NONE, canHWIntrinsicUseApxRegs);
+
+                if ((intrinsicTree->gtFlags & GTF_HW_MULX) != 0)
+                {
+                    // MULX allows both halves to stay in independently allocated registers.
+                    srcCount = BuildOperandUses(op1, SRBM_EDX);
+                    srcCount += BuildOperandUses(op2, ForceLowGprForApxIfNeeded(op2, availableIntRegs & ~SRBM_EDX,
+                                                                                canHWIntrinsicUseApxRegs));
+                    BuildDef(intrinsicTree, apxAwareRegCandidates, 0);
+                    BuildDef(intrinsicTree, apxAwareRegCandidates, 1);
+                    buildUses = false;
+                    break;
+                }
 
                 // mulEAX always uses EAX; if one operand is contained, force the other op into EAX.
                 // Otherwise don't force any register: the second parameter may already happen to be in EAX,

@@ -184,13 +184,18 @@ namespace System.Numerics
 
         /// <summary>
         /// Performs widening addition of two limbs plus a carry-in, returning the sum and carry-out.
-        /// On 64-bit: uses 128-bit arithmetic. On 32-bit: uses 64-bit arithmetic.
+        /// On 64-bit: uses limb additions and unsigned carry comparisons. On 32-bit: uses 64-bit arithmetic.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static nuint AddWithCarry(nuint a, nuint b, nuint carryIn, out nuint carryOut)
         {
             if (nint.Size == 8)
             {
+                // Keep each unsigned comparison tied to its own addition. Supporting JITs can reuse the
+                // addition's flags and, when carryIn is proven to be 0 or 1, fold both steps into ADC/ADCS.
+                // For a limb chain, initialize carry to zero and feed carryOut directly into the next limb.
+                // Then c1 and c2 cannot both be one, so carryOut remains a bit. An arbitrary full-limb
+                // carryIn can instead produce carryOut == 2 and must not be treated as a single carry flag.
                 nuint sum1 = a + b;
                 nuint c1 = (sum1 < a) ? 1 : (nuint)0;
                 nuint sum2 = sum1 + carryIn;
@@ -208,7 +213,8 @@ namespace System.Numerics
 
         /// <summary>
         /// Performs widening subtraction of two limbs with a borrow-in, returning the difference and borrow-out.
-        /// borrowOut is 0 (no borrow) or 1 (borrow occurred).
+        /// When borrowIn is 0 or 1, borrowOut is also 0 (no borrow) or 1 (borrow occurred).
+        /// An arbitrary full-limb borrowIn can produce borrowOut == 2.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static nuint SubWithBorrow(nuint a, nuint b, nuint borrowIn, out nuint borrowOut)
@@ -226,7 +232,7 @@ namespace System.Numerics
             else
             {
                 long diff = (long)a - (long)b - (long)borrowIn;
-                borrowOut = (uint)(-(int)(diff >> 32)); // 0 or 1
+                borrowOut = (uint)(-(int)(diff >> 32)); // 0 or 1 for a one-bit borrowIn; otherwise up to 2
                 return (uint)diff;
             }
         }
@@ -237,12 +243,30 @@ namespace System.Numerics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static nuint DivRem(nuint hi, nuint lo, nuint divisor, out nuint remainder)
         {
+            Debug.Assert(hi < divisor || divisor == 0);
+            // Callers ensure hi < divisor, so the quotient fits in one limb.
+            // Use the widening divide before splitting into smaller divisions;
+            // it produces both the quotient and remainder in one instruction.
+#pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
+            if (X86Base.X64.IsSupported)
+            {
+                (ulong q, ulong r) = X86Base.X64.DivRem(lo, hi, divisor);
+                remainder = (nuint)r;
+                return (nuint)q;
+            }
+
+            if (nint.Size == 4 && X86Base.IsSupported)
+            {
+                (uint q, uint r) = X86Base.DivRem((uint)lo, (uint)hi, (uint)divisor);
+                remainder = r;
+                return q;
+            }
+#pragma warning restore SYSLIB5004
+
             if (nint.Size == 8)
             {
                 // Compute (hi * 2^64 + lo) / divisor.
                 // hi < divisor is guaranteed by callers, so quotient fits in 64 bits.
-                Debug.Assert(hi < (ulong)divisor || divisor == 0);
-
                 if (hi == 0)
                 {
                     (ulong q, ulong r) = Math.DivRem(lo, (ulong)divisor);
@@ -267,18 +291,9 @@ namespace System.Numerics
                 }
 
                 {
-#pragma warning disable SYSLIB5004 // X86Base.DivRem is experimental
-                    if (X86Base.X64.IsSupported)
-                    {
-                        (ulong q, ulong r) = X86Base.X64.DivRem(lo, hi, divisor);
-                        remainder = (nuint)r;
-                        return (nuint)q;
-                    }
-#pragma warning restore SYSLIB5004
-
                     UInt128 value = ((UInt128)(ulong)hi << 64) | (ulong)lo;
-                    UInt128 digit = value / (ulong)divisor;
-                    remainder = (nuint)(ulong)(value - digit * (ulong)divisor);
+                    (UInt128 digit, UInt128 rem) = UInt128.DivRem(value, (ulong)divisor);
+                    remainder = (nuint)(ulong)rem;
                     return (nuint)(ulong)digit;
                 }
             }
@@ -295,6 +310,8 @@ namespace System.Numerics
         /// Multiply by scalar: result[0..left.Length] = left * multiplier.
         /// Returns the carry out. Unrolled by 4 on 64-bit.
         /// Unlike MulAdd1, this writes to result rather than accumulating.
+        /// Widen before multiplying, store the low limb, and pass the high limb to the next product.
+        /// This carry is a full limb, unlike the one-bit carry used by an addition chain.
         /// </summary>
         internal static nuint Mul1(Span<nuint> result, ReadOnlySpan<nuint> left, nuint multiplier)
         {
@@ -345,22 +362,29 @@ namespace System.Numerics
 
         /// <summary>
         /// Fused multiply-accumulate by scalar: result[0..left.Length] += left * multiplier.
-        /// Returns the carry out. Unrolled by 4 on 64-bit to overlap multiply latencies.
+        /// Returns the carry out. Processes four limbs per iteration on 64-bit platforms.
         /// </summary>
         internal static nuint MulAdd1(Span<nuint> result, ReadOnlySpan<nuint> left, nuint multiplier)
         {
-            Debug.Assert(result.Length >= left.Length);
-
             int length = left.Length;
+            // Give both spans the same bound so the loop checks cover every lane. This slice validates
+            // the destination once; Debug.Assert alone would not establish the bound in release builds.
+            result = result.Slice(0, length);
             int i = 0;
             nuint carry = 0;
 
             if (nint.Size == 8)
             {
-                // Unroll by 4: mulx has 3-5 cycle latency but 1 cycle throughput,
-                // so issuing 4 multiplies allows the CPU to pipeline them while
-                // carry chains complete sequentially behind.
-                for (; i + 3 < length; i += 4)
+                // Unroll by four to expose independent products while propagating carry between limbs.
+                // Widen before multiplication and keep both additions in UInt128: even the maximum product
+                // plus a destination limb and a full-limb carry fits. Store each low limb and feed its high
+                // limb directly into the next product; the last high limb also feeds the next iteration.
+                // Keep the i < length - 3 loop bound so the JIT can prove all four accesses are in range.
+                // On x64 with BMI2 and ADX, the JIT can use MULX with ADCX/ADOX and keep both carry
+                // flags live across loop iterations, materializing the carry before the remainder loop.
+                // ARM64 can similarly preserve C with MUL/UMULH/ADCS/ADC/ADDS. Let the JIT derive the
+                // countdown from this ascending loop; a separate index and countdown can obscure the proof.
+                for (; i < length - 3; i += 4)
                 {
                     UInt128 p0 = (UInt128)(ulong)left[i] * (ulong)multiplier + (ulong)result[i] + (ulong)carry;
                     result[i] = (nuint)(ulong)p0;
@@ -515,11 +539,14 @@ namespace System.Numerics
                 }
             }
 
-            // Establish cross-span length relationships so the JIT can
-            // elide bounds checks for left[i] and bits[i] in the loop.
+            // Establish cross-span length relationships so the JIT can elide bounds checks for left[i]
+            // and bits[i]. These executed checks, unlike Debug.Assert, establish the bounds in release builds.
             _ = left[right.Length - 1];
             _ = bits[right.Length];
 
+            // The zero seed and AddWithCarry recurrence prove that carry stays a bit. Keep the helper
+            // inlineable and use the same index for all spans: supporting JITs can keep CF (x64) or C
+            // (ARM64) live across a derived countdown loop and materialize carry only when leaving it.
             nuint carry = 0;
 
             for (int i = 0; i < right.Length; i++)
@@ -591,6 +618,8 @@ namespace System.Numerics
                 _ = left[right.Length - 1];
             }
 
+            // As in Add, keep the one-bit carry recurrence in this ascending loop. The final carry
+            // is still needed by the tail below, even when the JIT carries it in flags inside this loop.
             for (; i < right.Length; i++)
             {
                 left[i] = AddWithCarry(left[i], right[i], carry, out carry);
@@ -1772,10 +1801,8 @@ namespace System.Numerics
             nuint chkLoHi = nuint.BigMul(divLo, q, out nuint chkLoLo);
 
             chkHiLo += chkLoHi;
-            if (chkHiLo < chkLoHi)
-            {
-                chkHiHi++;
-            }
+            // Add the carry explicitly so the JIT can reuse the low addition's flags.
+            chkHiHi += (chkHiLo < chkLoHi) ? (nuint)1 : 0;
 
             return (chkHiHi > valHi1)
                 || ((chkHiHi == valHi1) && ((chkHiLo > valHi0) || ((chkHiLo == valHi0) && (chkLoLo > valLo))));

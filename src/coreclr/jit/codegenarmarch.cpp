@@ -232,6 +232,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SUB_HI:
 #endif // !defined(TARGET_64BIT)
 
+#ifdef TARGET_ARM64
+        case GT_SUB_BORROW:
+        case GT_ADD_BORROW:
+        case GT_ADD_CARRY:
+#endif
         case GT_ADD:
         case GT_SUB:
         case GT_MUL:

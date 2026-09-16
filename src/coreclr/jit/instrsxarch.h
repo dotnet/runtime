@@ -1289,6 +1289,10 @@ INST3(sar,              "sar",              IUM_RW, 0x0038D2,     BAD_CODE,     
 INST3(sar_1,            "sar",              IUM_RW, 0x0038D0,     0x0038D0,     0x0038D0,                                1C,                2X,         INS_TT_NONE,    Writes_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_HasWBit | Encoding_REX2 | INS_FLAGS_HasNDD | INS_FLAGS_HasNF)
 INST3(sar_N,            "sar",              IUM_RW, 0x0038C0,     0x0038C0,     BAD_CODE,                                1C,                2X,         INS_TT_NONE,    Undefined_OF   | Writes_SF     | Writes_ZF     | Undefined_AF  | Writes_PF     | Writes_CF             | INS_FLAGS_HasWBit | Encoding_REX2 | INS_FLAGS_HasNDD | INS_FLAGS_HasNF)
 
+// ADX carry chains. Keep these at the end of the three-encoding instruction table.
+INST3(adcx,             "adcx",             IUM_RW, BAD_CODE,     BAD_CODE,     PSSE38(0x66, 0xF6),                      1C,                2X,         INS_TT_NONE,    Reads_CF | Writes_CF)
+INST3(adox,             "adox",             IUM_RW, BAD_CODE,     BAD_CODE,     PSSE38(0xF3, 0xF6),                      1C,                2X,         INS_TT_NONE,    Reads_OF | Writes_OF)
+
 //    id                nm                  um      mr            mi                                                     lat                tp          tt              flags
 INST2(ret,              "ret",              IUM_RD, 0x0000C3,     0x0000C2,                                              ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_FLAGS_None)
 INST2(loop,             "loop",             IUM_RD, BAD_CODE,     0x0000E2,                                              ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_FLAGS_None)
@@ -1408,6 +1412,9 @@ INST0(l_jg,             "jg",               IUM_RD, 0x008F0F,                   
 
 INST0(align,            "align",            IUM_RD, BAD_CODE,                                                            ILLEGAL,           ILLEGAL,    INS_TT_NONE,    INS_FLAGS_None)
 INST0(data16,           "data16",           IUM_RD, 0x000066,                                                            ZERO,              4X,         INS_TT_NONE,    INS_FLAGS_None)
+
+// Flags-preserving loop branch.
+INST0(jrcxz,            "jrcxz",            IUM_RD, 0x0000E3,                                                            BRANCH_COND,       2X,         INS_TT_NONE,    INS_FLAGS_None)
 
 /*****************************************************************************/
 #undef  INST0

@@ -349,6 +349,11 @@ int minipal_getcpufeatures(void)
     {
         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
+        if ((cpuidInfo[CPUID_EBX] & (1 << 19)) != 0) // ADX
+        {
+            result |= XArchIntrinsicConstants_Adx;
+        }
+
         if ((result & XArchIntrinsicConstants_Avx) != 0)
         {
             if (((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0) &&                                                     // AVX2

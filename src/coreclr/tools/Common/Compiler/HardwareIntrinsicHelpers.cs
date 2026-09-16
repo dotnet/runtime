@@ -81,9 +81,12 @@ namespace ILCompiler
             public const int WaitPkg = (1 << 16);
             public const int X86Serialize = (1 << 17);
             public const int Avx512Bmm = (1 << 18); // NativeAOT does not currently consume this here.
+            public const int Adx = (1 << 19);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
+                if ((flags & Adx) != 0)
+                    builder.AddSupportedInstructionSet("adx");
                 if ((flags & Avx) != 0)
                     builder.AddSupportedInstructionSet("avx");
                 if ((flags & Avx2) != 0)
@@ -149,6 +152,7 @@ namespace ILCompiler
                     InstructionSet.X64_AVX => Avx,
                     InstructionSet.X64_AVX_X64 => Avx,
 
+                    InstructionSet.X64_ADX => Adx,
                     InstructionSet.X64_AVX2 => Avx2,
                     InstructionSet.X64_AVX2_X64 => Avx2,
 

@@ -2596,6 +2596,15 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 
             emitAttr attr = emitTypeSize(baseType);
 
+            if ((node->gtFlags & GTF_HW_MULX) != 0)
+            {
+                assert(!rmOp->isUsedFromReg() || (rmOp->GetRegNum() != REG_EDX) || (regOp->GetRegNum() == REG_EDX));
+                emit->emitIns_Mov(INS_mov, attr, REG_EDX, regOp->GetRegNum(), /* canSkip */ true);
+                inst_RV_RV_TT(INS_mulx, attr, node->GetRegByIndex(1), node->GetRegByIndex(0), rmOp,
+                              /* isRMW */ false, INS_OPTS_NONE);
+                break;
+            }
+
             // If rmOp is already in EAX, use that as implicit operand
             if (rmOp->isUsedFromReg() && rmOp->GetRegNum() == REG_EAX)
             {

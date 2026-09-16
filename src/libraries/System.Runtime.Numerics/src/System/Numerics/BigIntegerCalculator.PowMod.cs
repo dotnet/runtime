@@ -857,15 +857,28 @@ namespace System.Numerics
                 nuint m = value[i] * n0inv;
                 nuint carry = 0;
 
-                for (int j = 0; j < k; j++)
+                if (nint.Size == 8)
                 {
-                    if (nint.Size == 8)
+                    // Keep both spans the same length and index them with j, rather than value[i + j].
+                    // The slice checks the whole row once, allowing the JIT to eliminate per-limb bounds checks.
+                    // Use the ordinary ascending loop: the JIT can derive a countdown that preserves carry flags;
+                    // a separate hand-written countdown and index can obscure the bounds proof.
+                    // This multiply-add shape lets supporting JITs keep carry flags live across the backedge
+                    // (MULX/ADCX/ADOX on x64, MUL/UMULH/ADCS/ADC/ADDS on ARM64), without unrolling or a helper call.
+                    Span<nuint> row = value.Slice(i, k);
+                    for (int j = 0; j < row.Length; j++)
                     {
-                        UInt128 p = (UInt128)m * modulus[j] + value[i + j] + carry;
-                        value[i + j] = (nuint)(ulong)p;
+                        // Widen before multiplying and keep both additions in UInt128. The incoming carry is
+                        // a full limb, not a single bit: product + row[j] + carry fits in 128 bits. Store the low
+                        // limb and feed the high limb directly into the next iteration; preserve it on loop exit.
+                        UInt128 p = (UInt128)(ulong)modulus[j] * (ulong)m + (ulong)row[j] + (ulong)carry;
+                        row[j] = (nuint)(ulong)p;
                         carry = (nuint)(ulong)(p >> 64);
                     }
-                    else
+                }
+                else
+                {
+                    for (int j = 0; j < k; j++)
                     {
                         ulong p = (ulong)m * modulus[j] + value[i + j] + carry;
                         value[i + j] = (uint)p;

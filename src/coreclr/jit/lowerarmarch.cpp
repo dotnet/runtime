@@ -2791,8 +2791,27 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
+    if (TryContainFunnelShift(node))
+    {
+        return;
+    }
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
+
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_ADD_CARRY, GT_SUB_BORROW, GT_ADD_BORROW))
+    {
+        if (node->OperIs(GT_SUB_BORROW) && op1->IsIntegralConst(0))
+        {
+            MakeSrcContained(node, op1);
+        }
+        if (op2->IsIntegralConst(0))
+        {
+            MakeSrcContained(node, op2);
+        }
+        return;
+    }
+#endif
 
     if (CheckImmedAndMakeContained(node, op2))
     {

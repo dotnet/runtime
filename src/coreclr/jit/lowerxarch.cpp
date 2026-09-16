@@ -8064,6 +8064,178 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
+// TryLowerDivRem: Reuse the remainder of a divide for x - (x / y) * y.
+//
+// Arguments:
+//    div - The division producing the quotient.
+//
+// Notes:
+//    Keep the division (and its exceptions) in place. Capture RDX immediately
+//    after it, before any quotient use or intervening code can overwrite it.
+//    The pair's fixed definitions must not be reassigned by LSRA.
+//
+void Lowering::TryLowerDivRem(GenTreeOp* div)
+{
+    if (!m_compiler->opts.OptimizationEnabled() || !div->OperIs(GT_DIV, GT_UDIV) ||
+        !varTypeIsIntOrI(div) || div->IsDivRemPair())
+    {
+        return;
+    }
+
+#ifdef TARGET_AMD64
+    unsigned intRegCount = m_compiler->get_REG_INT_LAST() - REG_INT_FIRST;
+#else
+    unsigned intRegCount = REG_INT_COUNT - 1;
+#endif
+    // Conservatively leave large, register-heavy methods to the existing sequence. Keeping two
+    // fixed-register results can increase spills well beyond the multiply/subtract being removed.
+    // Make this decision for the whole method so partially pairing its divides does not produce
+    // unstable allocation tradeoffs between otherwise similar paths.
+    if (m_compiler->lvaTrackedCount > 2 * intRegCount)
+    {
+        return;
+    }
+
+    GenTree* dividend = div->gtGetOp1();
+    GenTree* divisor  = div->gtGetOp2();
+    if (!dividend->OperIs(GT_LCL_VAR) || !divisor->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    GenTree* quotientStore = div->gtNext;
+    if ((quotientStore == nullptr) || !quotientStore->OperIs(GT_STORE_LCL_VAR) ||
+        (quotientStore->gtGetOp1() != div))
+    {
+        quotientStore = nullptr;
+    }
+    else if (m_compiler->lvaGetDesc(quotientStore->AsLclVarCommon())->IsAddressExposed())
+    {
+        return;
+    }
+
+    unsigned budget = 64;
+    for (GenTree* node = div->gtNext; (node != nullptr) && (budget-- != 0); node = node->gtNext)
+    {
+        if ((quotientStore != nullptr) && (node != quotientStore) && node->OperIs(GT_STORE_LCL_VAR) &&
+            (node->AsLclVarCommon()->GetLclNum() == quotientStore->AsLclVarCommon()->GetLclNum()))
+        {
+            return;
+        }
+
+        if (!node->OperIs(GT_SUB) || node->gtOverflow() || node->gtSetFlags() ||
+            (node->TypeGet() != div->TypeGet()))
+        {
+            continue;
+        }
+
+        GenTree* original = node->gtGetOp1();
+        GenTree* mul      = node->gtGetOp2();
+        if (!original->OperIs(GT_LCL_VAR) || !GenTree::Compare(original, dividend) || !mul->OperIs(GT_MUL) ||
+            mul->gtOverflow() || mul->gtSetFlags() || (mul->TypeGet() != div->TypeGet()))
+        {
+            continue;
+        }
+
+        GenTree* quotient = mul->gtGetOp1();
+        GenTree* factor   = mul->gtGetOp2();
+        if (quotient->OperIs(GT_LCL_VAR) && GenTree::Compare(quotient, divisor))
+        {
+            std::swap(quotient, factor);
+        }
+
+        if (!factor->OperIs(GT_LCL_VAR) || !GenTree::Compare(factor, divisor))
+        {
+            continue;
+        }
+
+        if (quotientStore != nullptr)
+        {
+            if (!quotient->OperIs(GT_LCL_VAR) ||
+                (quotient->AsLclVarCommon()->GetLclNum() != quotientStore->AsLclVarCommon()->GetLclNum()) ||
+                (quotient->TypeGet() != div->TypeGet()))
+            {
+                continue;
+            }
+        }
+        else if (quotient != div)
+        {
+            continue;
+        }
+
+        // Either copy of an input can precede the other in LIR. Check both
+        // reads so assignments embedded in an expression cannot change it.
+        if (!IsInvariantInRange(dividend, node) || !IsInvariantInRange(divisor, node) ||
+            !IsInvariantInRange(original, node) || !IsInvariantInRange(factor, node))
+        {
+            return;
+        }
+
+        LIR::Use use;
+        if (!BlockRange().TryGetUse(node, &use))
+        {
+            return;
+        }
+
+        GenTree* remainder = m_compiler->gtNewPhysRegNode(REG_RDX, div->TypeGet());
+        remainder->gtFlags |= GTF_DIV_REM_PAIR;
+        div->gtFlags |= GTF_DIV_REM_PAIR;
+        // Reuse a local destination when it can be defined at the divide. Introducing another
+        // temporary for an immediately stored remainder needlessly perturbs register allocation.
+        // Do not cross an exception: a handler may observe the destination's old value.
+        GenTree* store      = use.User();
+        bool     reuseStore = store->OperIs(GT_STORE_LCL_VAR) &&
+                          !m_compiler->lvaGetDesc(store->AsLclVarCommon())->IsAddressExposed() &&
+                          !m_compiler->lvaGetDesc(store->AsLclVarCommon())->lvIsStructField;
+        if (reuseStore)
+        {
+            unsigned local       = store->AsLclVarCommon()->GetLclNum();
+            unsigned storeBudget = 64;
+            for (GenTree* between = div->gtNext; between != store; between = between->gtNext)
+            {
+                if ((between == nullptr) || (storeBudget-- == 0) ||
+                    ((between->gtFlags & (GTF_CALL | GTF_EXCEPT)) != 0) ||
+                    ((between != original) && between->OperIsLocal() &&
+                     (between->AsLclVarCommon()->GetLclNum() == local)))
+                {
+                    reuseStore = false;
+                    break;
+                }
+            }
+        }
+        if (reuseStore)
+        {
+            store->AsOp()->gtOp1 = remainder;
+            BlockRange().Remove(store);
+        }
+        else
+        {
+            unsigned temp = m_compiler->lvaGrabTemp(true DEBUGARG("division remainder"));
+            store         = m_compiler->gtNewTempStore(temp, remainder);
+            GenTree* read = m_compiler->gtNewLclvNode(temp, div->TypeGet());
+            BlockRange().InsertBefore(node, read);
+            use.ReplaceWith(read);
+        }
+        BlockRange().InsertAfter(div, remainder, store);
+
+        BlockRange().Remove(original);
+        BlockRange().Remove(factor);
+        if (quotient != div)
+        {
+            BlockRange().Remove(quotient);
+        }
+        else
+        {
+            div->SetUnusedValue();
+        }
+        BlockRange().Remove(mul);
+        BlockRange().Remove(node);
+        JITDUMP("Reusing the hardware remainder of division [%06u]\n", div->gtTreeID);
+        return;
+    }
+}
+
+//------------------------------------------------------------------------
 // ContainCheckDivOrMod: determine which operands of a div/mod should be contained.
 //
 // Arguments:
@@ -8584,6 +8756,11 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
     assert(node->OperIsBinary());
+
+    if (TryContainFunnelShift(node))
+    {
+        return;
+    }
 
     if (varTypeIsFloating(node))
     {

@@ -12008,6 +12008,22 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
     });
 }
 
+//------------------------------------------------------------------------
+// IsFunnelShift: Whether lowering contained two complementary shifts in an OR.
+//
+// Return Value:
+//    True for the canonical (lo >>> count) | (hi << (width - count)) form.
+//
+bool GenTree::IsFunnelShift() const
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    return OperIs(GT_OR) && gtGetOp1()->OperIs(GT_RSZ) && gtGetOp1()->isContained() &&
+           gtGetOp2()->OperIs(GT_LSH) && gtGetOp2()->isContained();
+#else
+    return false;
+#endif
+}
+
 bool GenTree::gtSetFlags() const
 {
     return (gtFlags & GTF_SET_FLAGS) != 0;
@@ -12061,6 +12077,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_JMP:
         case GT_JCC:
         case GT_SETCC:
+#ifdef TARGET_AMD64
+        case GT_ADX_SEED:
+#endif
         case GT_NO_OP:
         case GT_START_NONGC:
         case GT_START_PREEMPTGC:
@@ -12083,6 +12102,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
 
         // Standard unary operators
         case GT_STORE_LCL_VAR:
+#ifdef TARGET_AMD64
+        case GT_ADX_DRAIN:
+#endif
         case GT_STORE_LCL_FLD:
         case GT_NOT:
         case GT_NEG:
@@ -14294,6 +14316,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         }
         break;
 
+#ifdef TARGET_AMD64
+        case GT_ADX_SEED:
+            break;
+#endif
         case GT_PHYSREG:
             printf(" %s", getRegName(tree->AsPhysReg()->gtSrcReg));
             break;

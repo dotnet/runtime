@@ -116,6 +116,10 @@ code_t insEncodeOpreg(const instrDesc* id, regNumber reg, emitAttr size);
 unsigned insSSval(unsigned scale);
 
 static bool IsSSEInstruction(instruction ins);
+static bool IsLegacyMap38Instruction(instruction ins)
+{
+    return ins == INS_crc32 || ins == INS_adcx || ins == INS_adox;
+}
 static bool IsSSEOrAVXInstruction(instruction ins);
 static bool IsAvx512OnlyInstruction(instruction ins);
 static bool IsKMOVInstruction(instruction ins);

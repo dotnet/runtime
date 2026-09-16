@@ -516,7 +516,9 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             }
             else
             {
-                assert(isGeneralRegister(id->idReg3()));
+                assert(isGeneralRegister(id->idReg3()) || (((id->idIns() == INS_adc) || (id->idIns() == INS_adcs) ||
+                                                            (id->idIns() == INS_sbc) || (id->idIns() == INS_sbcs)) &&
+                                                           (id->idReg3() == REG_ZR)));
             }
             assert(insOptsNone(id->idInsOpt()));
             break;
@@ -6138,10 +6140,6 @@ void emitter::emitIns_R_R_R(instruction     ins,
         case INS_lsr:
         case INS_asr:
         case INS_ror:
-        case INS_adc:
-        case INS_adcs:
-        case INS_sbc:
-        case INS_sbcs:
         case INS_udiv:
         case INS_sdiv:
         case INS_mneg:
@@ -6171,6 +6169,18 @@ void emitter::emitIns_R_R_R(instruction     ins,
             {
                 assert(size == EA_8BYTE);
             }
+            fmt = IF_DR_3A;
+            break;
+
+        case INS_adc:
+        case INS_adcs:
+        case INS_sbc:
+        case INS_sbcs:
+            assert(insOptsNone(opt));
+            assert(isValidGeneralDatasize(size));
+            assert(isGeneralRegisterOrZR(reg1));
+            assert(isGeneralRegisterOrZR(reg2));
+            assert(isGeneralRegisterOrZR(reg3));
             fmt = IF_DR_3A;
             break;
 
