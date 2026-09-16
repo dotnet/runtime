@@ -232,11 +232,46 @@ extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint3
         "return\n" ::);
 }
 
+#ifdef _DEBUG
+// Answers whether the code at handlerFrameControlPC lives in a ReadyToRun image compiled with
+// --verify-gc-mode-transitions, and so ends its catch resumption points with a call to
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH. Only such an image can lift a GC mode switch restriction
+// once managed code resumes; forbidding switches for any other resume target would leave them
+// forbidden for the rest of the thread's life.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool verifies = false;
+
+#ifdef FEATURE_READYTORUN
+    if (ExecutionManager::IsVirtualIP(handlerFrameControlPC))
+    {
+        VirtualIPRangeSection *pSection = ExecutionManager::FindVirtualIPRangeSection(handlerFrameControlPC);
+        if (pSection != NULL)
+        {
+            PTR_Module pModule = pSection->rangeSection._pR2RModule;
+            if (pModule != NULL)
+            {
+                ReadyToRunInfo *pInfo = pModule->GetReadyToRunInfo();
+                verifies = (pInfo != NULL) && pInfo->VerifiesGCModeTransitions();
+            }
+        }
+    }
+#endif // FEATURE_READYTORUN
+
+    return verifies;
+}
+#endif // _DEBUG
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
     UNREFERENCED_PARAMETER(ContextRecord);
     UNREFERENCED_PARAMETER(ExceptionRecord);
 
+    // Resuming managed code at a catch continuation is done by throwing a native exception tag.
+    // Any GC mode restriction for the duration of that unwind is installed by
+    // ClrRestoreNonvolatileContext, which is the only caller that resumes into managed code.
     ThrowRtlRestoreContextTag();
 
     __builtin_unreachable();
@@ -385,6 +420,7 @@ EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, Inl
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -415,6 +451,7 @@ extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -438,6 +475,7 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
 
     Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -986,7 +1024,7 @@ namespace
             case ConvertType::ToF64:  c = 'd'; break;
             case ConvertType::ToV128: c = 'V'; break;
             default:
-                PORTABILITY_ASSERT("Unknown Wasm value type");
+                _ASSERTE(!"Unknown Wasm value type");
                 c = '?';
                 break;
         }
@@ -1274,7 +1312,7 @@ namespace
         return thunk;
     }
 
-    static void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    static void* ComputePortableEntryPointThunk(MetaSig& sig, const char* prefix, bool wasmCallingConventionOnly = false)
     {
         CONTRACTL
         {
@@ -1299,7 +1337,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1307,7 +1345,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1584,10 +1622,19 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
     else
     {
-        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        thunk = ComputePortableEntryPointThunk(sig, "I");
     }
 
     return thunk;
+}
+
+void* GetVirtualDispatchThunk(MethodDesc *pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!pMD->ContainsGenericVariables());
+
+    MetaSig sig(pMD);
+    return ComputePortableEntryPointThunk(sig, "V", true /* wasmCallingConventionOnly */);
 }
 
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
@@ -1638,8 +1685,22 @@ void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* p
         return nullptr;
     }
 
+    // Structural sharing can find a stub even when this particular managed signature
+    // was never compiled. Do not publish native code that the interpreter cannot call.
+    MetaSig unboxingSig(pMD);
+    if (ComputeCalliSigThunk(unboxingSig) == nullptr)
+    {
+        return nullptr;
+    }
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    if (!PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
+    {
+        return nullptr;
+    }
+
     *ppTargetMethodDesc = pTargetMethodDesc;
-    *pTargetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    *pTargetEntryPoint = targetEntryPoint;
     return unboxingStub;
 }
 
@@ -1791,7 +1852,9 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
     // frame pointer is found by unwinding to either its containing function, or to a CallFunclet location.
 
     TADDR internalFunctionFramePointer = GetWasmFramePointerFromStackPointer_Internal(sp);
-    _ASSERTE(internalFunctionFramePointer != 0);
+    if (internalFunctionFramePointer == 0)
+        return 0;
+
     uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(internalFunctionFramePointer + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
     _ASSERTE(GetWasmVirtualIPFromStackPointer(sp) == controlPC);
 

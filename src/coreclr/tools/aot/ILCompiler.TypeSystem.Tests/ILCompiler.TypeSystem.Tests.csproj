@@ -67,6 +67,11 @@
     <Compile Include="../../Common/Compiler/VectorFieldLayoutAlgorithm.cs" Link="Compiler/VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="../../Common/Compiler/Int128FieldLayoutAlgorithm.cs" Link="Compiler/Int128FieldLayoutAlgorithm.cs" />
     <Compile Include="../../Common/Compiler/DecimalFieldLayoutAlgorithm.cs" Link="Compiler/DecimalFieldLayoutAlgorithm.cs" />
+    <Compile Include="../../Common/JitInterface/CorInfoHelpFunc.cs" Link="JitInterface/CorInfoHelpFunc.cs" />
+    <Compile Include="../../Common/JitInterface/CorInfoInstructionSet.cs" Link="JitInterface/CorInfoInstructionSet.cs" />
+    <Compile Include="../../Common/JitInterface/CorInfoTypes.cs" Link="JitInterface/CorInfoTypes.cs" />
+    <Compile Include="../../Common/JitInterface/SwiftPhysicalLowering.cs" Link="JitInterface/SwiftPhysicalLowering.cs" />
+    <Compile Include="../../Common/Pgo/PgoFormat.cs" Link="Pgo/PgoFormat.cs" />
     <Compile Include="ArchitectureSpecificFieldLayoutTests.cs" />
     <Compile Include="CanonicalizationTests.cs" />
     <Compile Include="ConstraintsValidationTest.cs" />
@@ -78,6 +83,7 @@
     <Compile Include="InterfacesTests.cs" />
     <Compile Include="RuntimeDeterminedTypesTests.cs" />
     <Compile Include="SignatureTests.cs" />
+    <Compile Include="SwiftLoweringTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.cs" />
     <Compile Include="SyntheticVirtualOverrideTests.DiagnosticName.cs" />
     <Compile Include="TestMetadataFieldLayoutAlgorithm.cs" />

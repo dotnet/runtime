@@ -188,6 +188,27 @@ struct Test10<T> : ITest10
     public void SetValue(nint value) { }
 }
 
+struct Test11Result
+{
+    public long A;
+    public long B;
+    public long C;
+    public long D;
+    public long E;
+    public long F;
+    public long G;
+}
+
+interface ITest11
+{
+    Test11Result GetValue();
+}
+
+struct Test11<T> : ITest11
+{
+    public Test11Result GetValue() => new Test11Result();
+}
+
 // Entry points that drive dependency analysis
 static class NonGVMTests
 {
@@ -226,6 +247,9 @@ static class NonGVMTests
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void CallSetValue(ITest10 value) => value.SetValue(0);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Test11Result CallTest11(ITest11 value) => value.GetValue();
 
     static void Run()
     {
@@ -267,5 +291,10 @@ static class NonGVMTests
         ITest10 t10 = new Test10<object>();
         Console.WriteLine(CallGetValue(t10).A);
         CallSetValue(t10);
+
+        // Test11: the interpreter-to-R2R adapter for a shared generic unboxing thunk with a
+        // 56-byte struct return must be rooted along with the target method.
+        ITest11 t11 = new Test11<object>();
+        Console.WriteLine(CallTest11(t11).A);
     }
 }

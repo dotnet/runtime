@@ -14,16 +14,39 @@ namespace System.PrivateUri.Tests
         {
             UriCreationOptions options = default;
 
+            Assert.True(options.AllowImplicitFilePaths);
             Assert.False(options.DangerousDisablePathAndQueryCanonicalization);
         }
 
         [Fact]
         public void UriCreationOptions_StoresCorrectValues()
         {
-            var options = new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = true };
+            var options = new UriCreationOptions { AllowImplicitFilePaths = false };
+            Assert.False(options.AllowImplicitFilePaths);
+
+            options = new UriCreationOptions { AllowImplicitFilePaths = true };
+            Assert.True(options.AllowImplicitFilePaths);
+
+            options = new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = true };
             Assert.True(options.DangerousDisablePathAndQueryCanonicalization);
 
             options = new UriCreationOptions { DangerousDisablePathAndQueryCanonicalization = false };
+            Assert.False(options.DangerousDisablePathAndQueryCanonicalization);
+
+            options = new UriCreationOptions
+            {
+                AllowImplicitFilePaths = false,
+                DangerousDisablePathAndQueryCanonicalization = true
+            };
+            Assert.False(options.AllowImplicitFilePaths);
+            Assert.True(options.DangerousDisablePathAndQueryCanonicalization);
+
+            options.AllowImplicitFilePaths = true;
+            Assert.True(options.AllowImplicitFilePaths);
+            Assert.True(options.DangerousDisablePathAndQueryCanonicalization);
+
+            options.DangerousDisablePathAndQueryCanonicalization = false;
+            Assert.True(options.AllowImplicitFilePaths);
             Assert.False(options.DangerousDisablePathAndQueryCanonicalization);
         }
 
@@ -166,6 +189,7 @@ namespace System.PrivateUri.Tests
         public static IEnumerable<object[]> ImplicitFilePaths_TestData()
         {
             yield return Entry("C:/");
+            yield return Entry(@"C:\");
             yield return Entry("C|/");
 
             yield return Entry(@"//foo");
@@ -179,6 +203,59 @@ namespace System.PrivateUri.Tests
             }
 
             static object[] Entry(string filePath) => new object[] { $"{filePath}/{FilePathRawData}" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ImplicitFilePaths_TestData))]
+        public void AllowImplicitFilePaths_False_RejectsImplicitFilePaths(string implicitFilePath)
+        {
+            AssertRejected(new UriCreationOptions { AllowImplicitFilePaths = false });
+            AssertRejected(new UriCreationOptions
+            {
+                AllowImplicitFilePaths = false,
+                DangerousDisablePathAndQueryCanonicalization = true
+            });
+
+            void AssertRejected(UriCreationOptions options)
+            {
+                Assert.Throws<UriFormatException>(() => new Uri(implicitFilePath, options));
+                Assert.False(Uri.TryCreate(implicitFilePath, options, out Uri? uri));
+                Assert.Null(uri);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ImplicitFilePaths_TestData))]
+        public void AllowImplicitFilePaths_True_AllowsImplicitFilePaths(string implicitFilePath)
+        {
+            var options = new UriCreationOptions { AllowImplicitFilePaths = true };
+            var expected = new Uri(implicitFilePath);
+
+            var uri = new Uri(implicitFilePath, options);
+            Assert.True(uri.IsFile);
+            Assert.Equal(expected, uri);
+
+            Assert.True(Uri.TryCreate(implicitFilePath, options, out Uri? result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [InlineData("file:///C:/foo", true)]
+        [InlineData("file://server/share", true)]
+        [InlineData("file:///foo", true)]
+        [InlineData("file:c:/foo", true)]
+        [InlineData("http://host/path", false)]
+        public void AllowImplicitFilePaths_False_AllowsExplicitUris(string uriString, bool expectedIsFile)
+        {
+            var options = new UriCreationOptions { AllowImplicitFilePaths = false };
+            var expected = new Uri(uriString);
+
+            var uri = new Uri(uriString, options);
+            Assert.Equal(expectedIsFile, uri.IsFile);
+            Assert.Equal(expected, uri);
+
+            Assert.True(Uri.TryCreate(uriString, options, out Uri? result));
+            Assert.Equal(expected, result);
         }
 
         [Theory]

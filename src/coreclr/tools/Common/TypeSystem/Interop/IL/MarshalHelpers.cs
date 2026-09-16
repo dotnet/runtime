@@ -983,7 +983,7 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
         {
-            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+            return module.Assembly is EcmaAssembly assembly && !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
 
         public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)
