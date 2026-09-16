@@ -27,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _context = factory.TypeSystemContext;
             _signature = signature;
             _typeNode = factory.WasmTypeNode(signature);
-            _lookupString = GetLookupString(signature.FuncType);
+            _lookupString = GetLookupString("D", signature.FuncType);
         }
 
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_signature, _context);
@@ -101,44 +101,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 _signature.FuncType,
                 new[] { WasmValueType.I32 },
                 expressions.ToArray());
-        }
-
-        private static string GetLookupString(WasmFuncType funcType)
-        {
-            Utf8StringBuilder sb = new Utf8StringBuilder();
-            sb.Append('D');
-
-            if (funcType.Returns.Types.Length == 0)
-            {
-                sb.Append('v');
-            }
-            else
-            {
-                foreach (WasmValueType type in funcType.Returns.Types)
-                {
-                    AppendTypeCode(sb, type);
-                }
-            }
-
-            foreach (WasmValueType type in funcType.Params.Types)
-            {
-                AppendTypeCode(sb, type);
-            }
-
-            return sb.ToString();
-        }
-
-        private static void AppendTypeCode(Utf8StringBuilder sb, WasmValueType type)
-        {
-            sb.Append(type switch
-            {
-                WasmValueType.I32 => 'i',
-                WasmValueType.I64 => 'l',
-                WasmValueType.F32 => 'f',
-                WasmValueType.F64 => 'd',
-                WasmValueType.V128 => 'V',
-                _ => throw new UnreachableException(),
-            });
         }
 
         protected override void EmitCode(NodeFactory factory, ref X64.X64Emitter instructionEncoder, bool relocsOnly) => throw new NotSupportedException();

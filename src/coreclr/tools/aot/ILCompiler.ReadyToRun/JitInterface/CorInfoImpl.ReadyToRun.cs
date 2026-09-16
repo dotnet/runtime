@@ -3800,6 +3800,8 @@ namespace Internal.JitInterface
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
                     MethodDesc method = methodHandle is null ? null : HandleToObject(methodHandle);
+                    // A closed static delegate target needs an adapter only when Invoke returns
+                    // through a hidden buffer ('S') and has no async-continuation hidden argument.
                     if (method is not null &&
                         method.OwningType.IsDelegate &&
                         method.Name == "Invoke"u8 &&
@@ -3841,6 +3843,9 @@ namespace Internal.JitInterface
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
                     ReadOnlySpan<WasmValueType> parameters = wasmSig.FuncType.Params.Types;
+                    // The adapter accepts the managed instance shape
+                    // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
+                    // no async-continuation argument, and pointer-typed this/retbuf positions.
                     if (wasmSig.SignatureString[0] == 'S' &&
                         !wasmSig.SignatureString.Contains('a') &&
                         parameters.Length >= 4 &&
