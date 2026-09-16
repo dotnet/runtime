@@ -118,6 +118,8 @@ namespace ILCompiler
             new("--parallelism") { CustomParser = MakeParallelism, DefaultValueFactory = MakeParallelism, Description = "Maximum number of threads to use during compilation" };
         public Option<string> InstructionSet { get; } =
             new("--instruction-set") { Description = "Instruction set to allow or disallow" };
+        public Option<bool> AssumeNoConcurrency { get; } =
+            new("--assume-no-concurrency") { Description = "RISC-V: assert that the target runs on one hart and is never preempted. Required to build without the A extension, because Interlocked then lowers to a non-atomic read/modify/write" };
         public Option<int> MaxVectorTBitWidth { get; } =
             new("--max-vectort-bitwidth") { Description = "Maximum width, in bits, that Vector<T> is allowed to be" };
         public Option<string> Guard { get; } =
@@ -243,6 +245,7 @@ namespace ILCompiler
             Options.Add(RuntimeKnobs);
             Options.Add(Parallelism);
             Options.Add(InstructionSet);
+            Options.Add(AssumeNoConcurrency);
             Options.Add(MaxVectorTBitWidth);
             Options.Add(Guard);
             Options.Add(Dehydrate);
