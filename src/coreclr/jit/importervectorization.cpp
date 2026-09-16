@@ -517,6 +517,16 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
                                refEqualityColon);
         }
 
+        // We're about to append statements, so anything already on the evaluation stack
+        // below our arguments has to be evaluated first. Otherwise the unrolled comparison
+        // (which may dereference varStr) would be ordered ahead of those side effects.
+        //
+        assert(stackState.esStackDepth >= (unsigned)argsCount);
+        for (unsigned level = 0; level < stackState.esStackDepth - argsCount; level++)
+        {
+            impSpillSideEffect(false, level DEBUGARG("unrolled UTF16 string comparison"));
+        }
+
         impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
         if (unrolled->OperIs(GT_QMARK))
         {
@@ -688,6 +698,15 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
     if (unrolled != nullptr)
     {
+        // We're about to append statements, so anything already on the evaluation stack
+        // below our arguments has to be evaluated first.
+        //
+        assert(stackState.esStackDepth >= (unsigned)argsCount);
+        for (unsigned level = 0; level < stackState.esStackDepth - argsCount; level++)
+        {
+            impSpillSideEffect(false, level DEBUGARG("unrolled UTF16 span comparison"));
+        }
+
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
             impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
