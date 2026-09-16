@@ -25,7 +25,7 @@ public class Program
     public static S0[][] s_43 = new S0[][]{new S0[]{new S0()}};
 
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Assembly.LoadFrom", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134001", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static void TestEntryPoint()
     {
