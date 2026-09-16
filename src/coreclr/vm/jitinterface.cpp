@@ -14010,7 +14010,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             {
                 PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
                 _ASSERTE(portableEntryPoint != NULL);
-                PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
+                PortableEntryPoint::SetInterpreterDataInterlocked(portableEntryPoint, reinterpret_cast<void*>(PCODEToPINSTR(ret)));
                 ret = portableEntryPoint;
                 *isInterpreterCode = true;
             }
