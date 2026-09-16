@@ -15,16 +15,16 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Indicates that authenticated encryption uses AES-GCM with a 128-bit key.
         /// </summary>
-        AES_128_GCM = 1,
+        AES_128_GCM = 0x0001,
 
         /// <summary>
         ///   Indicates that authenticated encryption uses AES-GCM with a 256-bit key.
         /// </summary>
-        AES_256_GCM = 2,
+        AES_256_GCM = 0x0002,
 
         /// <summary>
         ///   Indicates that authenticated encryption uses ChaCha20-Poly1305.
         /// </summary>
-        ChaCha20Poly1305 = 3,
+        ChaCha20Poly1305 = 0x0003,
     }
 }

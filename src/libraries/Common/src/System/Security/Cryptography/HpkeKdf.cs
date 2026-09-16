@@ -15,26 +15,26 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Indicates that key derivation uses HKDF with SHA-256.
         /// </summary>
-        HKDF_SHA256 = 1,
+        HKDF_SHA256 = 0x0001,
 
         /// <summary>
         ///   Indicates that key derivation uses HKDF with SHA-384.
         /// </summary>
-        HKDF_SHA384 = 2,
+        HKDF_SHA384 = 0x0002,
 
         /// <summary>
         ///   Indicates that key derivation uses HKDF with SHA-512.
         /// </summary>
-        HKDF_SHA512 = 3,
+        HKDF_SHA512 = 0x0003,
 
         /// <summary>
         ///   Indicates that key derivation uses SHAKE128.
         /// </summary>
-        SHAKE128 = 16,
+        SHAKE128 = 0x0010,
 
         /// <summary>
         ///   Indicates that key derivation uses SHAKE256.
         /// </summary>
-        SHAKE256 = 17
+        SHAKE256 = 0x0011
     }
 }
