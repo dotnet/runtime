@@ -200,6 +200,9 @@ namespace System
 
                 ulong dividend = ((ulong)high << 32) | low;
                 uint quotient = (uint)(dividend / den);
+                // high < den guarantees that the quotient fits in uint. The remainder is
+                // below den and fits in uint too, so computing dividend - quotient * den
+                // modulo 2^32 gives the exact remainder using only the low limb.
                 return (quotient, low - quotient * den);
             }
 
