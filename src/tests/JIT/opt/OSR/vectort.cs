@@ -23,7 +23,7 @@ public class VectorT
         }
         return result;
     }
-    
+
     // Vector<T> is live into the loop.
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int G(int from, int to, Vector<int> cons)
@@ -34,6 +34,19 @@ public class VectorT
             // Force cons to live-in.
             var vec = Consume<Vector<int>>(cons);
 
+            result += Vector.Sum(vec);
+        }
+        return result;
+    }
+
+    // Vector<T> is live into the loop from a local.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int H(int from, int to, int cons)
+    {
+        Vector<int> vec = Vector.Create<int>(cons);
+        int result = 0;
+        for (int i = from; i < to; i++)
+        {
             result += Vector.Sum(vec);
         }
         return result;
@@ -54,5 +67,6 @@ public class VectorT
 
         Assert.Equal(expected, F(0, iterations, cons));
         Assert.Equal(expected, G(0, iterations, Vector.Create<int>(cons)));
-    }  
+        Assert.Equal(expected, H(0, iterations, cons));
+    }
 }
