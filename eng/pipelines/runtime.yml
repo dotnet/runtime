@@ -695,11 +695,14 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  # Remove this iOS exclusion if iOS NativeAOT device tests are re-enabled.
                   condition: >-
-                    or(
-                    eq(variables['librariesContainsChange'], true),
-                    eq(variables['coreclrContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+                    and(
+                      ne(variables['osGroup'], 'ios'),
+                      or(
+                        eq(variables['librariesContainsChange'], true),
+                        eq(variables['coreclrContainsChange'], true),
+                        eq(variables['isRollingBuild'], true)))
 
       #
       # MacCatalyst interp - requires AOT Compilation and Interp flags
