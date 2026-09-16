@@ -194,6 +194,11 @@ ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
 		EX_CATCH { }
 		EX_END_CATCH
 	}
+#elif defined(FEATURE_PGO) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
+	// Multithreaded WASM: interpreter block-count PGO has no synchronized flush path yet, so stopping
+	// a PGO trace here would silently drop the block-count events. Flag the unimplemented config.
+	PORTABILITY_ASSERT ("Interpreter block-count PGO flush is not implemented for multithreaded WASM (requires PERFTRACING_DISABLE_THREADS).");
+	(void)session_id;
 #else
 	(void)session_id;
 #endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS

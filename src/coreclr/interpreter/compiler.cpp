@@ -8719,7 +8719,7 @@ void InterpCompiler::InstrumentBlockCounts()
     TArray<InterpBasicBlock*, MemPoolAllocator> blocks(GetMemPoolAllocator(IMK_DataItem));
     for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
     {
-        if (bb->ilOffset < 0 || bb->ilOffset >= m_ILCodeSize || m_ppOffsetToBB[bb->ilOffset] != bb)
+        if (bb->ilOffset < 0 || bb->ilOffset >= m_ILCodeSizeFromILHeader || m_ppOffsetToBB[bb->ilOffset] != bb)
             continue;
         if (bb->ilOffset == 0 || isBranchTarget[bb->index])
             blocks.Add(bb);
