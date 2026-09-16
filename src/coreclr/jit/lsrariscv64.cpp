@@ -563,16 +563,38 @@ int LinearScan::BuildNode(GenTree* tree)
             GenTree* data = tree->gtGetOp2();
             assert(!addr->isContained());
 
-            srcCount = 1;
-            BuildUse(addr);
+            // Without the A extension genLockedInstructions expands this to a
+            // multi-instruction read/modify/write that reuses the address and data
+            // registers after the first instruction, so their lifetimes have to be
+            // extended past the def. The arithmetic and bitwise forms also need one
+            // scratch register for the new value.
+            const bool plainAtomic = !m_compiler->compOpportunisticallyDependsOn(InstructionSet_A);
+
+            srcCount             = 1;
+            RefPosition* addrUse = BuildUse(addr);
+            if (plainAtomic)
+            {
+                setDelayFree(addrUse);
+            }
             if (!data->isContained())
             {
                 srcCount++;
-                BuildUse(data);
+                RefPosition* dataUse = BuildUse(data);
+                if (plainAtomic)
+                {
+                    setDelayFree(dataUse);
+                }
             }
             else
             {
                 assert(data->IsIntegralConst(0));
+            }
+
+            if (plainAtomic && !tree->OperIs(GT_XCHG))
+            {
+                buildInternalIntRegisterDefForNode(tree);
+                setInternalRegsDelayFree = true;
+                buildInternalRegisterUses();
             }
 
             if (dstCount == 1)
