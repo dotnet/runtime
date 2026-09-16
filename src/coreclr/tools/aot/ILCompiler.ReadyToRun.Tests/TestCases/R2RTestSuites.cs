@@ -99,6 +99,32 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmIgnoresEmbedPgoData()
+    {
+        var assembly = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmIgnoresEmbedPgoData),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmIgnoresEmbedPgoData),
+            [
+                new(nameof(WasmIgnoresEmbedPgoData), [new CrossgenAssembly(assembly)])
+                {
+                    AdditionalArgs = ["--synthesize-random-mibc", "--embed-pgo-data"],
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.False(reader.ReadyToRunHeader.Sections.ContainsKey(ReadyToRunSectionType.PgoInstrumentationData));
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmWebcilModule()
     {
         var wasmWebcilModule = new CompiledAssembly
