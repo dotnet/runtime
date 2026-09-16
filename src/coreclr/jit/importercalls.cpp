@@ -13572,10 +13572,12 @@ GenTree* Compiler::impArrayAccessIntrinsic(
             info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
         }
 
-        // if it's not final, we can't do the optimization
-        if (!(info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL))
+        // If it's not exact, we can't do the optimization: for instance, array and variant
+        // types are sealed yet still covariant, so the runtime element type of the array may
+        // be a proper subtype of the call site's element type.
+        if (!info.compCompHnd->isExactType(actualElemClsHnd))
         {
-            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not final\n",
+            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not exact\n",
                     dspPtr(actualElemClsHnd));
             return nullptr;
         }
