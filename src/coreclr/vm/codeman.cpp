@@ -3312,7 +3312,7 @@ void EECodeGenManager::AllocCode(MethodDesc* pMD, size_t blockSize, size_t reser
     // Optionally route Tier1 code in the global loader allocator to its own
     // heap. LCG, interpreter, and collectible requests use their regular paths.
     if (isTier1Code
-        && requestInfo.GetAllocator() == SystemDomain::GetGlobalLoaderAllocator()
+        && !requestInfo.IsCollectible()
         && !requestInfo.IsDynamicDomain()
         && !requestInfo.IsInterpreted()
         && CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SeparateOptimizedCodeHeaps) != 0)
