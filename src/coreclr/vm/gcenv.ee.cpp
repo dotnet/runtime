@@ -336,11 +336,11 @@ void GCToEEInterface::GcScanRoots(promote_func* fn, int condemned, int max_gen, 
         }
     }
 
-    // Only mark external memory handles during non-concurrent scanning.
-    // During concurrent scanning, other EE threads may add or remove handles.
-    // To avoid taking a lock when we scan the external memory handles,
-    // we only scan during a non-concurrent phase when the EE threads are blocked.
-    if (!sc->concurrent)
+    // In server GC, we can be scanning GC roots from multiple GC threads concurrently.
+    // It's unsafe for us to scan unpinned roots from multiple threads concurrently
+    // as this could lead to invalid relocations during compaction.
+    // As a result, we will only scan these roots on one context to ensure they are scanned exactly once.
+    if (GCHeapUtilities::ShouldScanUnpinnedRoots(sc))
     {
         ExternalMemoryHandle::GCScanRoots(fn, sc);
     }
