@@ -1,6 +1,14 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
+    <UseXUnitV3 Condition="'$(MSBuildProjectName)' == 'System.Collections.Tests'
+      and '$(TestSingleFile)' != 'true'
+      and '$(TestNativeAot)' != 'true'
+      and '$(TestReadyToRun)' != 'true'
+      and '$(TargetsMobile)' != 'true'
+      and '$(TargetOS)' != 'android'
+      and '$(TargetOS)' != 'browser'
+      and '$(TargetOS)' != 'wasi'">true</UseXUnitV3>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
   </PropertyGroup>
 </Project>
