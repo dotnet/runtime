@@ -123,8 +123,7 @@ export function commandPgoTrace(options: DiagnosticCommandOptions) {
         requestRundown: true,
         providers: [
             {
-                // Microsoft-Windows-DotNETRuntime keyword 0x1F000080018, level 5 (Verbose) - matches the
-                // desktop dotnet-optimization IBC collection so dotnet-pgo sees the same event set:
+                // Microsoft-Windows-DotNETRuntime keyword 0x1F000080018, level 5 (Verbose):
                 //   0x8            Loader                  (ModuleLoadUnload - module identity)
                 //   0x10           Jit                     (MethodJittingStarted/MethodLoadVerbose - the method list)
                 //   0x80000        Type                    (GCBulkType - type identity for generics)
