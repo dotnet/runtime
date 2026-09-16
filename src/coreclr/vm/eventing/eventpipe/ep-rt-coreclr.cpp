@@ -187,12 +187,21 @@ ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
 	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
 		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, ep_session_get_mask (session)))
 	{
-		EX_TRY
+		// Mark this thread as a rundown thread bound to the stopping session so the events emitted by the
+		// flush are routed to that single session (ep_session_write_event) instead of broadcast to every
+		// enabled session; the marker is cleared after the flush, including on exception.
+		EventPipeThread *thread = ep_thread_get_or_create ();
+		if (thread != NULL)
 		{
-			PgoManager::FlushInstrumentationData ();
+			ep_thread_set_as_rundown_thread (thread, session);
+			EX_TRY
+			{
+				PgoManager::FlushInstrumentationData ();
+			}
+			EX_CATCH { }
+			EX_END_CATCH
+			ep_thread_set_as_rundown_thread (thread, NULL);
 		}
-		EX_CATCH { }
-		EX_END_CATCH
 	}
 #elif defined(FEATURE_PGO) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
 	// Multithreaded WASM: interpreter block-count PGO has no synchronized flush path yet, so stopping
