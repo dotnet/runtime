@@ -12,7 +12,7 @@ namespace System.Reflection;
 
 internal sealed partial class RuntimeParameterInfo : ParameterInfo
 {
-    private readonly ParameterHandle m_parameterHandle;
+    private readonly ParameterHandle m_tkParamDef;
     private readonly MetadataReader? m_scope;
     private readonly QSignatureTypeHandle m_signature;
     private readonly TypeContext m_typeContext;
@@ -102,7 +102,7 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
         MemberImpl = member;
         m_signature = signature;
         m_typeContext = typeContext;
-        m_parameterHandle = parameterHandle;
+        m_tkParamDef = parameterHandle;
         m_scope = scope;
         AttrsImpl = attributes;
     }
@@ -118,9 +118,9 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
 
     private object? GetDefaultValueFromMetadata(bool raw)
     {
-        Debug.Assert(m_scope is not null && !m_parameterHandle.IsNil);
+        Debug.Assert(m_scope is not null && !m_tkParamDef.IsNil);
         Type parameterType = ParameterType;
-        Handle constantHandle = m_scope.GetParameter(m_parameterHandle).DefaultValue;
+        Handle constantHandle = m_scope.GetParameter(m_tkParamDef).DefaultValue;
         if (constantHandle.IsNil)
             return DBNull.Value;
 
@@ -154,14 +154,14 @@ internal sealed partial class RuntimeParameterInfo : ParameterInfo
 
     internal CustomAttributeHandleCollection GetCustomAttributeHandles()
     {
-        if (m_parameterHandle.IsNil)
+        if (m_tkParamDef.IsNil)
             return default;
 
         Debug.Assert(m_scope is not null);
-        return m_scope.GetParameter(m_parameterHandle).CustomAttributes;
+        return m_scope.GetParameter(m_tkParamDef).CustomAttributes;
     }
 
-    public override int MetadataToken => m_parameterHandle.IsNil
+    public override int MetadataToken => m_tkParamDef.IsNil
         ? base.MetadataToken
         : throw new InvalidOperationException(SR.NoMetadataTokenAvailable);
 

@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 #if NATIVEAOT
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.PropertyInfos;
+using Internal.Metadata.NativeFormat;
 #else
 using MdToken = System.Reflection.MetadataToken;
 #endif
@@ -186,7 +187,7 @@ namespace System.Reflection
             // Strictly speaking, properties don't contain parameter tokens
             // However we need this to make ca's work... oh well...
 #if NATIVEAOT
-            m_parameterHandle = accessor.m_parameterHandle;
+            m_tkParamDef = accessor.m_tkParamDef;
             m_typeContext = accessor.m_typeContext;
 #else
             m_tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
@@ -267,20 +268,12 @@ namespace System.Reflection
             {
                 if (!m_nameIsCached)
                 {
-#if NATIVEAOT
-                    if (!m_parameterHandle.IsNil)
-                    {
-                        Debug.Assert(m_scope is not null);
-                        NameImpl = m_scope.GetParameter(m_parameterHandle).Name.GetStringOrNull(m_scope) ?? string.Empty;
-                    }
-#else
                     if (!MdToken.IsNullToken(m_tkParamDef))
                     {
                         string name = m_scope.GetName(m_tkParamDef).ToString();
                         GC.KeepAlive(this);
                         NameImpl = name;
                     }
-#endif
 
                     // other threads could only write it to true, so a race condition is OK
                     // this field is volatile, so the write ordering is guaranteed
@@ -368,11 +361,7 @@ namespace System.Reflection
         {
             Debug.Assert(!m_noMetadata);
 
-#if NATIVEAOT
-            if (m_noDefaultValue || m_parameterHandle.IsNil)
-#else
             if (m_noDefaultValue || MdToken.IsNullToken(m_tkParamDef))
-#endif
             {
                 defaultValue = DBNull.Value;
                 m_noDefaultValue = true;
@@ -494,11 +483,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-#if NATIVEAOT
-            if (m_parameterHandle.IsNil)
-#else
             if (MdToken.IsNullToken(m_tkParamDef))
-#endif
                 return [];
 
             return RuntimeCustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
@@ -511,11 +496,7 @@ namespace System.Reflection
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-#if NATIVEAOT
-            if (m_parameterHandle.IsNil)
-#else
             if (MdToken.IsNullToken(m_tkParamDef))
-#endif
                 return RuntimeCustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
 
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -525,11 +506,7 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(attributeType);
 
-#if NATIVEAOT
-            if (m_parameterHandle.IsNil)
-#else
             if (MdToken.IsNullToken(m_tkParamDef))
-#endif
                 return false;
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
@@ -540,15 +517,24 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-#if NATIVEAOT
-            if (m_parameterHandle.IsNil)
-#else
             if (MdToken.IsNullToken(m_tkParamDef))
-#endif
                 return Array.Empty<CustomAttributeData>();
 
             return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
         #endregion
     }
+#if NATIVEAOT
+
+    file static class MdToken
+    {
+        public static bool IsNullToken(ParameterHandle token) => token.IsNil;
+    }
+
+    file static class MetadataImportExtensions
+    {
+        public static string GetName(this MetadataReader? scope, ParameterHandle token) =>
+            scope!.GetParameter(token).Name.GetStringOrNull(scope!) ?? string.Empty;
+    }
+#endif
 }
