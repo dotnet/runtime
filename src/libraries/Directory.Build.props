@@ -11,6 +11,14 @@
 
   <Import Project="..\..\Directory.Build.props" />
 
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'TestUtilities' and '$(UseXUnitV3)' == 'true'">
+    <BaseOutputPath>$(ArtifactsBinDir)TestUtilities.XUnitV3/</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(ArtifactsObjDir)TestUtilities.XUnitV3/</BaseIntermediateOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)/</OutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)/</IntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
     <UseBootstrapLayout>true</UseBootstrapLayout>
   </PropertyGroup>
@@ -80,7 +88,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(SkipTestUtilitiesReference)' != 'true'">
-    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj"
+                      AdditionalProperties="UseXUnitV3=$(UseXUnitV3)" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">

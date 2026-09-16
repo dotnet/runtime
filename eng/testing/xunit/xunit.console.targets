@@ -23,16 +23,23 @@
 
   <PropertyGroup Condition="'$(TargetsMobile)' != 'true' and '$(TestSingleFile)' != 'true'">
     <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile $(AssemblyName).deps.json</_depsFileArgument>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) $(XunitConsolePath)</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">$(XunitConsolePath)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(UseXUnitV3)' != 'true'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) $(XunitConsolePath)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(UseXUnitV3)' != 'true'">$(XunitConsolePath)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(UseXUnitV3)' == 'true'">"$(RunScriptHost)" exec --runtimeconfig $(AssemblyName).runtimeconfig.json $(_depsFileArgument) $(TargetFileName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(UseXUnitV3)' == 'true' and '$(RunScriptWindowsCmd)' != 'true'">./$(AssemblyName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(UseXUnitV3)' == 'true' and '$(RunScriptWindowsCmd)' == 'true'">$(AssemblyName).exe</RunScriptCommand>
 
-    <RunScriptCommand>$(RunScriptCommand) $(TargetFileName)</RunScriptCommand>
+    <RunScriptCommand Condition="'$(UseXUnitV3)' != 'true'">$(RunScriptCommand) $(TargetFileName)</RunScriptCommand>
     <RunScriptCommand>$(RunScriptCommand) -xml $(TestResultsName)</RunScriptCommand>
-    <RunScriptCommand>$(RunScriptCommand) -nologo</RunScriptCommand>
-    <RunScriptCommand Condition="'$(ArchiveTests)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+    <RunScriptCommand Condition="'$(UseXUnitV3)' != 'true'">$(RunScriptCommand) -nologo</RunScriptCommand>
+    <RunScriptCommand Condition="'$(UseXUnitV3)' == 'true'">$(RunScriptCommand) -noLogo</RunScriptCommand>
+    <RunScriptCommand Condition="'$(ArchiveTests)' == 'true' and '$(UseXUnitV3)' != 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
+    <RunScriptCommand Condition="'$(ArchiveTests)' == 'true' and '$(UseXUnitV3)' == 'true'">$(RunScriptCommand) -noColor</RunScriptCommand>
     <RunScriptCommand Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(TestDisableAppDomain)' == 'true'">$(RunScriptCommand) -noappdomain</RunScriptCommand>
-    <RunScriptCommand Condition="'$(TestDisableParallelization)' == 'true'">$(RunScriptCommand) -maxthreads 1</RunScriptCommand>
-    <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TestDisableParallelization)' == 'true' and '$(UseXUnitV3)' != 'true'">$(RunScriptCommand) -maxthreads 1</RunScriptCommand>
+    <RunScriptCommand Condition="'$(TestDisableParallelization)' == 'true' and '$(UseXUnitV3)' == 'true'">$(RunScriptCommand) -maxThreads 1</RunScriptCommand>
+    <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true' and '$(UseXUnitV3)' != 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
+    <RunScriptCommand Condition="'$(XUnitShowProgress)' == 'true' and '$(UseXUnitV3)' == 'true'">$(RunScriptCommand) -reporter verbose</RunScriptCommand>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseXunitExcludesTxtFile)' != 'true'">
@@ -42,7 +49,8 @@
 
     <!-- Add to run argument string -->
     <RunScriptCommand>$(RunScriptCommand)$(_withCategories.Replace(';', ' -trait category='))</RunScriptCommand>
-    <RunScriptCommand>$(RunScriptCommand)$(_withoutCategories.Replace(';', ' -notrait category='))</RunScriptCommand>
+    <RunScriptCommand Condition="'$(UseXUnitV3)' != 'true'">$(RunScriptCommand)$(_withoutCategories.Replace(';', ' -notrait category='))</RunScriptCommand>
+    <RunScriptCommand Condition="'$(UseXUnitV3)' == 'true'">$(RunScriptCommand)$(_withoutCategories.Replace(';', ' -trait- category='))</RunScriptCommand>
 
     <!-- User passed in options. -->
     <RunScriptCommand Condition="'$(XUnitOptions)' != ''">$(RunScriptCommand) $(XUnitOptions)</RunScriptCommand>
@@ -60,11 +68,11 @@
   <ItemGroup Condition="'$(TestSingleFile)' != 'true'">
     <PackageReference Include="Microsoft.DotNet.XUnitConsoleRunner"
                       Version="$(MicrosoftDotNetXUnitConsoleRunnerVersion)"
-                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(UseXUnitV3)' != 'true'" />
     <PackageReference Include="xunit.runner.console"
                       Version="$(XUnitVersion)"
                       GeneratePathProperty="true"
-                      Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
+                      Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework' and '$(UseXUnitV3)' != 'true'" />
   </ItemGroup>
 
   <!-- Overwrite the runner config file with the app local one. -->
@@ -83,7 +91,7 @@
   </Target>
 
   <!-- ResolveAssemblyReferences is the target that populates ReferenceCopyLocalPaths which is what is copied to output directory. -->
-  <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences" Condition="'$(BundleXunitRunner)' == 'true'">
+  <Target Name="CopyRunnerToOutputDirectory" BeforeTargets="ResolveAssemblyReferences" Condition="'$(BundleXunitRunner)' == 'true' and '$(UseXUnitV3)' != 'true'">
     <ItemGroup>
       <None Include="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\*"
             Exclude="$([System.IO.Path]::GetDirectoryName('$(XunitConsole472Path)'))\xunit.console.*exe.config;
