@@ -247,6 +247,7 @@ namespace Internal.TypeSystem.Interop
                     // Allow ref returning blittable structs for IJW
                     if (type.IsValueType &&
                         (nativeType == NativeTypeKind.Struct || nativeType == NativeTypeKind.Default) &&
+                        IsValidForGenericMarshalling(type, isField) &&
                         MarshalUtils.IsBlittableType(type))
                     {
                         return MarshallerKind.BlittableValueClassByRefReturn;
@@ -665,6 +666,12 @@ namespace Internal.TypeSystem.Interop
             }
             else if (type.IsInterface)
             {
+                if (type.HasInstantiation)
+                {
+                    // Generic types cannot be marshaled.
+                    return MarshallerKind.Invalid;
+                }
+
                 if (context.Target.IsWindows)
                     return MarshallerKind.ComInterface;
                 else
@@ -976,7 +983,7 @@ namespace Internal.TypeSystem.Interop
 
         public static bool IsRuntimeMarshallingEnabled(ModuleDesc module)
         {
-            return module.Assembly is not EcmaAssembly assembly || !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
+            return module.Assembly is EcmaAssembly assembly && !assembly.HasAssemblyCustomAttribute("System.Runtime.CompilerServices", "DisableRuntimeMarshallingAttribute");
         }
 
         public static bool IsMarshallingRequired(MethodSignature methodSig, ModuleDesc moduleContext)

@@ -6279,13 +6279,9 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 #endif
 
 #if defined(TARGET_WASM)
-        CORINFO_CLASS_HANDLE clsHnd = layout->GetClassHandle();
-        if (clsHnd != NO_CLASS_HANDLE)
-        {
-            CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(clsHnd);
-            assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
-            regType = WasmClassifier::ToJitType(wasmAbiType);
-        }
+        CorInfoWasmType wasmAbiType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
+        assert(wasmAbiType != CORINFO_WASM_TYPE_VOID);
+        regType = WasmClassifier::ToJitType(wasmAbiType);
 #endif // TARGET_WASM
 
         store->ChangeType(regType);
@@ -10301,7 +10297,7 @@ bool Lowering::TryRemoveBitCast(GenTreeUnOp* node)
 
         changed = true;
     }
-    else if (op->OperIs(GT_LCL_FLD, GT_IND))
+    else if (op->OperIs(GT_LCL_FLD, GT_IND) && (genTypeSize(op) == genTypeSize(node)))
     {
         op->ChangeType(node->TypeGet());
         changed = true;
@@ -10426,15 +10422,11 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 
     LowerRange(rangeStart, rangeEnd);
 
-    // Finally move all GT_PUTARG_* nodes
-    // Re-use the existing logic for CFG call args here
-    MovePutArgNodesUpToCall(call);
-
     BlockRange().Remove(destPlaceholder);
     BlockRange().Remove(sizePlaceholder);
     BlockRange().Remove(dataPlaceholder);
 
-    // Add implicit nullchecks for dest and data if needed:
+    // Add implicit nullchecks after both addresses have been evaluated.
     //
     auto wrapWithNullcheck = [&](GenTree* node) {
         if (m_compiler->fgAddrCouldBeNull(node))
@@ -10443,7 +10435,7 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
             BlockRange().TryGetUse(node, &nodeUse);
             GenTree* nodeClone = m_compiler->gtNewLclvNode(nodeUse.ReplaceWithLclVar(m_compiler), genActualType(node));
             GenTree* nullcheck = m_compiler->gtNewNullCheck(nodeClone);
-            BlockRange().InsertAfter(nodeUse.Def(), nodeClone, nullcheck);
+            BlockRange().InsertBefore(call, nodeClone, nullcheck);
             LowerNode(nullcheck);
         }
     };
@@ -10457,6 +10449,10 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     {
         wrapWithNullcheck(data);
     }
+
+    // Finally move all GT_PUTARG_* nodes
+    // Re-use the existing logic for CFG call args here
+    MovePutArgNodesUpToCall(call);
 }
 
 //------------------------------------------------------------------------
