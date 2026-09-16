@@ -88,7 +88,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
                 }
             }
 
-            readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove("));
+            readyToRunMethodFound = source.CodeAddresses.Any(address => address.FullMethodName.StartsWith("System.Buffer.Memmove(", StringComparison.Ordinal));
         }
 
         Assert.True(appMethodFound, "The cpuprofile.nettrace should contain stack frames for the 'Counter.IncrementCount' method");
