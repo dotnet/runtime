@@ -1087,7 +1087,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 
 uint32_t GCToOSInterface::GetMaxProcessorCount()
 {
-    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+    return static_cast<uint32_t>(GetMaximumProcessorGroupCount()) * 64;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()
