@@ -1273,11 +1273,7 @@ namespace ILCompiler.DependencyAnalysis
                 emitPrecode: false,
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(HelperImports);
-
-            foreach (ReadyToRunHelper helper in JitHelperRoots.GetReadyToRunHelpers(Target))
-            {
-                graph.AddRoot(GetReadyToRunHelperCell(helper), "JIT helper root");
-            }
+            RootJitHelperMethods(graph);
 
 #if DEBUG
             JitHelperRootsDebugTableNode jitHelperRoots = new JitHelperRootsDebugTableNode(Target);
@@ -1319,6 +1315,115 @@ namespace ILCompiler.DependencyAnalysis
                 graph.AddRoot(Win32ResourcesNode, "Win32 Resources are placed if not empty");
 
             MetadataManager.AttachToDependencyGraph(graph, this);
+        }
+
+        private void RootJitHelperMethods(DependencyAnalyzerBase<NodeFactory> graph)
+        {
+            if (!CompilationModuleGroup.CompilationModuleSet.Contains(TypeSystemContext.SystemModule))
+            {
+                return;
+            }
+
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ConvertToInt32Checked");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ConvertToUInt32Checked");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ConvertToInt64Checked");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ConvertToUInt64Checked");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "MultiplyChecked");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "DivInt32");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "DivUInt32");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "DivInt64");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "DivUInt64");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ModInt32");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ModUInt32");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ModInt64");
+            RootJitHelperMethod(graph, "System"u8, "Math"u8, "ModUInt64");
+
+            RootJitHelperMethod(graph, "System"u8, "Array"u8, "Ctor");
+            RootJitHelperMethod(graph, "System"u8, "TypedReference"u8, "GetRefAny");
+            RootJitHelperMethod(graph, "System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeFromHandle");
+            RootJitHelperMethod(graph, "System"u8, "RuntimeMethodInfoStub"u8, "FromPtr");
+            RootJitHelperMethod(graph, "System"u8, "RuntimeFieldInfoStub"u8, "FromPtr");
+            RootJitHelperMethod(graph, "System"u8, "RuntimeFieldHandle"u8, "GetFieldAddr");
+            RootJitHelperMethod(graph, "System"u8, "RuntimeFieldHandle"u8, "GetStaticFieldAddr");
+            RootJitHelperMethod(graph, "System"u8, "Environment"u8, "get_CurrentManagedThreadId");
+            RootJitHelperMethod(graph, "System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier");
+            RootJitHelperMethod(graph, "System"u8, "SpanHelpers"u8, "Fill");
+            RootJitHelperMethod(graph, "System"u8, "SpanHelpers"u8, "ClearWithoutReferences");
+            RootJitHelperMethod(graph, "System"u8, "SpanHelpers"u8, "Memmove");
+
+            RootJitHelperMethod(graph, "System.Diagnostics"u8, "Debugger"u8, "UserBreakpoint");
+
+            RootJitHelperMethod(graph, "System.Threading"u8, "Monitor"u8, "SynchronizedMethodEnter");
+            RootJitHelperMethod(graph, "System.Threading"u8, "Monitor"u8, "SynchronizedMethodExit");
+            RootJitHelperMethod(graph, "System.Threading"u8, "Thread"u8, "PollGC");
+
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationMethod");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "IsInstanceOfAny");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "IsInstanceOfClass");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "IsInstanceOfInterface");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "ChkCastAny");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "ChkCastInterface");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "ChkCastClass");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "ChkCastClassSpecial");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Box");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Box_Nullable");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Unbox");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Unbox_TypeTest");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Unbox_Nullable");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "StelemRef");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "LdelemaRef");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "Method");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "GenericsHelpers"u8, "Class");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "InitHelpers"u8, "InitClass");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "InitHelpers"u8, "InitInstantiatedClass");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetNonGCStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicNonGCStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicGCStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetNonGCThreadStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCThreadStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicNonGCThreadStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetDynamicGCThreadStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetOptimizedNonGCThreadStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetOptimizedGCThreadStaticBase");
+            RootJitHelperMethod(graph, "System.Runtime.CompilerServices"u8, "VirtualDispatchHelpers"u8, "VirtualFunctionPointer");
+
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowArgumentException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowArgumentOutOfRangeException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowIndexOutOfRangeException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowNotImplementedException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowPlatformNotSupportedException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowTypeNotSupportedException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowOverflowException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowDivideByZeroException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowNullReferenceException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowVerificationException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowAmbiguousResolutionException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowEntryPointNotFoundException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowMethodAccessException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowFieldAccessException");
+            RootJitHelperMethod(graph, "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowClassAccessException");
+        }
+
+        private void RootJitHelperMethod(DependencyAnalyzerBase<NodeFactory> graph, ReadOnlySpan<byte> namespaceName, ReadOnlySpan<byte> typeName, string methodName)
+        {
+            MetadataType type = TypeSystemContext.SystemModule.GetType(namespaceName, typeName, throwIfNotFound: false);
+            if (type is null)
+            {
+                return;
+            }
+
+            foreach (MethodDesc method in type.GetMethods())
+            {
+                if (method.GetName() == methodName && !method.IsGenericMethodDefinition)
+                {
+                    MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                    Debug.Assert(CompilationModuleGroup.CompilationModuleSet.Contains(((MetadataType)canonMethod.GetTypicalMethodDefinition().OwningType).Module));
+                    graph.AddRoot(_localMethodCache.GetOrAdd(canonMethod), $"JIT helper {type}.{methodName}");
+                }
+            }
         }
 
         private void Graph_ComputingDependencyPhaseChange(int newPhase)
