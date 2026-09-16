@@ -103,6 +103,13 @@ public static unsafe class ThreadStateDestroyed
             return Fail;
         }
 
+        if (output.Contains("[managed] The runtime did not fail fast.") ||
+            !output.Contains("[native] invoking managed callback from the thread destruction callback"))
+        {
+            Console.WriteLine("The test scenario did not reach the expected thread-destruction failure.");
+            return Fail;
+        }
+
         if ((!OperatingSystem.IsWindows() || !TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime) && !output.Contains(ExpectedMessage))
         {
             Console.WriteLine($"The subprocess terminated for some other reason. Expected to find: {ExpectedMessage}");
