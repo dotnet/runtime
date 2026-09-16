@@ -113,7 +113,7 @@ public class Async2OsrInlinedContexts
         return total;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void ResumingInsideInlinedFrameOfOsrMethodKeepsContexts()
     {
         SynchronizationContext original = SynchronizationContext.Current;
@@ -127,7 +127,7 @@ public class Async2OsrInlinedContexts
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TailAwaitOnlyMethodCanResumeInOsrCode()
     {
         Run().GetAwaiter().GetResult();
