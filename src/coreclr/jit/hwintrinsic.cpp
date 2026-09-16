@@ -2898,7 +2898,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 //    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
-//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
+//    simdSize        -- size of the SIMD value, in bytes.
 //
 // Return Value:
 //    the expanded intrinsic.
@@ -2917,8 +2917,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                                      CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                      var_types             simdBaseType,
                                      var_types             retType,
-                                     unsigned              simdSize,
-                                     bool                  mustExpand)
+                                     unsigned              simdSize)
 {
     assert(HWIntrinsicInfo::lookupIsa(intrinsic) == InstructionSet_Vector);
 
@@ -5768,11 +5767,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
-
-        if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
-        {
-            return nullptr;
-        }
 
         op2 = impSIMDPopStack();
         op1 = impSIMDPopStack();

@@ -5834,7 +5834,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 }
 #endif // TARGET_RISCV64
             }
-            else if (!isNative || !BlockNonDeterministicIntrinsics(mustExpand))
+            else
             {
 #if defined(FEATURE_HW_INTRINSICS)
                 GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
@@ -5923,6 +5923,28 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     retNode = minMax;
                 }
 #endif // TARGET_RISCV64
+
+#if !defined(FEATURE_HW_INTRINSICS) && !defined(TARGET_RISCV64)
+                if (isNative)
+                {
+                    GenTree* op2 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1 = impImplicitR4orR8Cast(impPopStack().val, callType);
+                    GenTree* op1Clone;
+                    GenTree* op2Clone;
+
+                    assert(retNode == nullptr);
+                    op1 = impCloneExpr(op1, &op1Clone, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone first native min/max operand"));
+                    op2 = impCloneExpr(op2, &op2Clone, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("Clone second native min/max operand"));
+
+                    GenTree* compare = gtNewOperNode(isMax ? GT_GT : GT_LT, TYP_INT, op1, op2);
+                    GenTree* minMax  = gtNewQmarkNode(callType, compare, gtNewColonNode(callType, op1Clone, op2Clone));
+                    unsigned temp    = lvaGrabTemp(true DEBUGARG("Native min/max result"));
+                    impStoreToTemp(temp, minMax, CHECK_SPILL_NONE);
+                    retNode = gtNewLclvNode(temp, callType);
+                }
+#endif // !FEATURE_HW_INTRINSICS && !TARGET_RISCV64
             }
 
             // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
