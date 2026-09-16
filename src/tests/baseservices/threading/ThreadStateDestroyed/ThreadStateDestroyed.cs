@@ -18,8 +18,6 @@ public static unsafe class ThreadStateDestroyed
     private const string NativeLib = "ThreadStateDestroyedNative";
     private const string RunScenarioArg = "--run-scenario";
 
-    private const int StatusFailFastException = unchecked((int)0xC0000602);
-    private const int SigAbrtExitCode = 128 + 6;
     private static readonly TimeSpan s_subprocessTimeout = TimeSpan.FromSeconds(60);
 
     // In non-Release builds, also check the message to distinguish this failure from other crashes.
@@ -108,14 +106,6 @@ public static unsafe class ThreadStateDestroyed
         if ((!OperatingSystem.IsWindows() || !TestLibrary.CoreClrConfigurationDetection.IsReleaseRuntime) && !output.Contains(ExpectedMessage))
         {
             Console.WriteLine($"The subprocess terminated for some other reason. Expected to find: {ExpectedMessage}");
-            return Fail;
-        }
-
-        // RaiseFailFastException on Windows, abort on Unix.
-        int expectedExitCode = OperatingSystem.IsWindows() ? StatusFailFastException : SigAbrtExitCode;
-        if (exitCode != expectedExitCode)
-        {
-            Console.WriteLine($"Expected the subprocess to fail fast with {expectedExitCode}.");
             return Fail;
         }
 

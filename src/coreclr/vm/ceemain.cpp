@@ -1879,10 +1879,6 @@ void CheckThreadStateNotDestroyed()
         return;
     }
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
-    minipal_log_write_error("Attempt to execute managed code after the .NET runtime thread state has been destroyed.\n");
-    PAL_Abort();
-#else
     // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
     // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
     // suppress this assert in release builds if we have encountered any mixed mode binaries.
@@ -1894,7 +1890,6 @@ void CheckThreadStateNotDestroyed()
     {
         _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
     }
-#endif
 }
 
 #ifdef DEBUGGING_SUPPORTED
