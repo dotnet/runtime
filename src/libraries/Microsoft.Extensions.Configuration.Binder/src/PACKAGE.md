@@ -102,6 +102,22 @@ You can add the following property to enable the source generator.  This require
 </PropertyGroup>
 ```
 
+### Custom type conversion
+
+When binding a configuration section that has a string value, the reflection-based binder honors a `TypeConverterAttribute` applied to the target property. The property-level converter takes precedence over the converter registered for the property's type.
+
+Converters on virtual overrides are honored, while properties hidden with `new` retain their own converters. A property's converter also applies to a matching constructor parameter when the parameter and property have the same type. A default `TypeConverterAttribute`, an unresolved converter, or a converter that cannot convert from `string` preserves the binder's built-in conversion behavior.
+
+```cs
+class Settings
+{
+    [TypeConverter(typeof(TimeoutConverter))]
+    public TimeSpan Timeout { get; set; }
+}
+```
+
+The configuration binding source generator doesn't generate calls to property-level type converters. If an eligible property in the binding graph specifies a converter, the generator reports `SYSLIB1105` and leaves the binding call to the reflection-based binder. Such binding isn't compatible with trimming or Native AOT. Attributes on properties excluded from binding don't require this fallback.
+
 ## Main Types
 
 <!-- The main types provided in this library -->

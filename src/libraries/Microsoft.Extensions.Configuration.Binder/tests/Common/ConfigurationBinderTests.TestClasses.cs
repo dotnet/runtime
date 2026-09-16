@@ -50,6 +50,199 @@ namespace Microsoft.Extensions
             public T Value { get; }
         }
 
+        public sealed class PropertyTypeConverterOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; set; }
+
+            [TypeConverter(typeof(EmptyStringTypeConverter))]
+            public int? NullableValue { get; set; }
+
+            [TypeConverter(typeof(CommaSeparatedIntegersTypeConverter))]
+            public List<int> Values { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterConstructorOptions
+        {
+            public PropertyTypeConverterConstructorOptions(int value) => Value = value;
+
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterFailureOptions
+        {
+            [TypeConverter(typeof(ThrowingTypeConverter))]
+            public int Value { get; set; }
+        }
+
+        public sealed class NonPublicPropertyTypeConverterOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            private int Value { get; set; }
+
+            public int GetValue() => Value;
+        }
+
+        public class PropertyTypeConverterBaseOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterHiddenStringOptions : PropertyTypeConverterBaseOptions
+        {
+            public new string Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterHiddenIntOptions : PropertyTypeConverterBaseOptions
+        {
+            [TypeConverter(typeof(AddTenTypeConverter))]
+            public new int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterMismatchedConstructorOptions
+        {
+            public PropertyTypeConverterMismatchedConstructorOptions(string value) => Text = value;
+
+            public string Text { get; }
+
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; }
+        }
+
+        public class PropertyTypeConverterVirtualBaseOptions
+        {
+            public virtual int Value { get; set; }
+        }
+
+        public class PropertyTypeConverterOverrideOptions : PropertyTypeConverterVirtualBaseOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public override int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterInheritedOverrideOptions : PropertyTypeConverterOverrideOptions
+        {
+            public override int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterDefaultOverrideOptions : PropertyTypeConverterOverrideOptions
+        {
+            [TypeConverter]
+            public override int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterDefaultOptions
+        {
+            [TypeConverter]
+            public object Value { get; set; }
+
+            [TypeConverter(typeof(object))]
+            public object InvalidConverter { get; set; }
+
+            [TypeConverter("MissingConverter, MissingAssembly")]
+            public object MissingConverter { get; set; }
+
+            [TypeConverter]
+            public int? NullableValue { get; set; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterNonStringOptions
+        {
+            [TypeConverter(typeof(ExpandableObjectConverter))]
+            public int Value { get; set; } = 7;
+
+            [TypeConverter(typeof(ExpandableObjectConverter))]
+            public object RawValue { get; set; }
+
+            [TypeConverter(typeof(ExpandableObjectConverter))]
+            public int? NullableValue { get; set; } = 7;
+        }
+
+        public class PropertyTypeConverterAttributedVirtualBaseOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public virtual int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterPlainOverrideOptions : PropertyTypeConverterAttributedVirtualBaseOptions
+        {
+            public override int Value { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterHiddenConstructorOptions : PropertyTypeConverterBaseOptions
+        {
+            public PropertyTypeConverterHiddenConstructorOptions(int value) => Value = value;
+
+            [TypeConverter(typeof(AddTenTypeConverter))]
+            public new int Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterOptionalOptions
+        {
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public GenericOptions<int> Nested { get; set; }
+        }
+
+        public sealed class ThrowingConstructorTypeConverter : TypeConverter
+        {
+            public ThrowingConstructorTypeConverter() => throw new InvalidOperationException("Converter should not be created.");
+        }
+
+        public sealed class AddTenTypeConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+            public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                value is string text
+                    ? int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture) + 10
+                    : base.ConvertFrom(context, culture, value);
+        }
+
+        public sealed class AddOneTypeConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+            public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                value is string text
+                    ? int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture) + 1
+                    : base.ConvertFrom(context, culture, value);
+        }
+
+        public sealed class EmptyStringTypeConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+            public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                value is string text && text.Length == 0
+                    ? 42
+                    : base.ConvertFrom(context, culture, value);
+        }
+
+        public sealed class CommaSeparatedIntegersTypeConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+            public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                value is string text
+                    ? text.Split(',').Select(static item => int.Parse(item, NumberStyles.Integer, CultureInfo.InvariantCulture)).ToList()
+                    : base.ConvertFrom(context, culture, value);
+        }
+
+        public sealed class ThrowingTypeConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
+
+            public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                throw new NotSupportedException("Custom conversion failed.");
+        }
+
         public class OptionsWithNesting
         {
             public NestedOptions Nested { get; set; }

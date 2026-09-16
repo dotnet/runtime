@@ -24,7 +24,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public bool IsIgnored { get; init; }
 
+        public bool HasTypeConverter { get; init; }
+
+        public bool HasTypeConverterOnBindableProperty { get; init; }
+
         public bool IsStatic { get; }
+
+        public bool MatchingCtorParameterTypeMatches { get; set; }
 
         public bool SetOnInit { get; }
 

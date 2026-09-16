@@ -127,6 +127,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSpec typeSpec = _createdTypeSpecs[typeParseInfo.TypeSymbol];
                     MethodsToGen overload = typeParseInfo.BindingOverload;
 
+                    if (typeIndex.HasPropertyTypeConverter(typeSpec, overload))
+                    {
+                        RecordDiagnostic(
+                            DiagnosticDescriptors.PropertyTypeConverterRequiresReflection,
+                            typeParseInfo.BinderInvocation.Location);
+                        continue;
+                    }
+
                     if ((MethodsToGen.ConfigBinder_Any & overload) is not 0)
                     {
                         RegisterInterceptor_ConfigurationBinder(typeParseInfo, typeSpec);
@@ -631,13 +639,51 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private bool ConstructorParametersContainUnsupportedType(IMethodSymbol ctor)
+            private bool ConstructorParametersContainUnsupportedType(
+                IMethodSymbol ctor,
+                INamedTypeSymbol typeSymbol,
+                Dictionary<IPropertySymbol, IPropertySymbol> mostDerivedOverrides)
             {
                 foreach (IParameterSymbol parameter in ctor.Parameters)
                 {
-                    if (IsUnsupportedType(parameter.Type))
+                    if (IsUnsupportedType(parameter.Type) &&
+                        !HasMatchingPropertyTypeConverter(typeSymbol, parameter, mostDerivedOverrides))
                     {
                         return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private bool HasMatchingPropertyTypeConverter(
+                INamedTypeSymbol typeSymbol,
+                IParameterSymbol parameter,
+                Dictionary<IPropertySymbol, IPropertySymbol> mostDerivedOverrides)
+            {
+                for (INamedTypeSymbol? current = typeSymbol; current is not null; current = current.BaseType)
+                {
+                    foreach (IPropertySymbol property in current.GetMembers().OfType<IPropertySymbol>())
+                    {
+                        if (property is { IsIndexer: true } or { IsImplicitlyDeclared: true } ||
+                            property.IsOverride ||
+                            !string.Equals(property.Name, parameter.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+
+                        ImmutableArray<AttributeData> attributes = property.GetAttributes();
+                        if (attributes.Any(attribute =>
+                            SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute)))
+                        {
+                            continue;
+                        }
+
+                        IPropertySymbol converterProperty = mostDerivedOverrides.TryGetValue(property, out IPropertySymbol? mostDerivedOverride)
+                            ? mostDerivedOverride
+                            : property;
+                        return SymbolEqualityComparer.Default.Equals(property.Type, parameter.Type) &&
+                            HasTypeConverterAttribute(converterProperty);
                     }
                 }
 
@@ -650,9 +696,53 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     && ctor.Parameters.Any(parameter => string.Equals(parameter.Name, propertyName, StringComparison.OrdinalIgnoreCase));
             }
 
+            private bool HasTypeConverterAttribute(IPropertySymbol property)
+            {
+                for (IPropertySymbol? current = property; current is not null; current = current.OverriddenProperty)
+                {
+                    if (current.GetAttributes().Any(attribute =>
+                        SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.TypeConverterAttribute)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
+            private static Dictionary<IPropertySymbol, IPropertySymbol> GetMostDerivedOverrides(INamedTypeSymbol typeSymbol)
+            {
+                Dictionary<IPropertySymbol, IPropertySymbol> overrides = new(SymbolEqualityComparer.Default);
+
+                for (INamedTypeSymbol? current = typeSymbol; current is not null; current = current.BaseType)
+                {
+                    foreach (IPropertySymbol property in current.GetMembers().OfType<IPropertySymbol>())
+                    {
+                        if (!property.IsOverride || property.GetMethod is null)
+                        {
+                            continue;
+                        }
+
+                        IPropertySymbol baseProperty = property;
+                        while (baseProperty.OverriddenProperty is IPropertySymbol overriddenProperty)
+                        {
+                            baseProperty = overriddenProperty;
+                        }
+
+                        if (!overrides.ContainsKey(baseProperty))
+                        {
+                            overrides.Add(baseProperty, property);
+                        }
+                    }
+                }
+
+                return overrides;
+            }
+
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
+                Dictionary<IPropertySymbol, IPropertySymbol> mostDerivedOverrides = GetMostDerivedOverrides(typeSymbol);
 
                 ObjectInstantiationStrategy initializationStrategy = ObjectInstantiationStrategy.None;
                 DiagnosticDescriptor? initDiagDescriptor = null;
@@ -677,7 +767,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             parameterlessCtor = candidate;
                         }
-                        else if (!ConstructorParametersContainUnsupportedType(candidate))
+                        else if (!ConstructorParametersContainUnsupportedType(candidate, typeSymbol, mostDerivedOverrides))
                         {
                             if (parameterizedCtor is not null)
                             {
@@ -731,16 +821,53 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         if (member is IPropertySymbol { IsIndexer: false, IsImplicitlyDeclared: false } property)
                         {
                             string propertyName = property.Name;
-                            bool isDuplicateOrOverride = property.IsOverride || properties?.ContainsKey(propertyName) is true;
+
+                            if (property.IsOverride)
+                            {
+                                continue;
+                            }
+
+                            ImmutableArray<AttributeData> attributes = property.GetAttributes();
+                            AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
+                            string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
+                            bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
+                            IPropertySymbol converterProperty = mostDerivedOverrides.TryGetValue(property, out IPropertySymbol? mostDerivedOverride)
+                                ? mostDerivedOverride
+                                : property;
+                            bool hasTypeConverter = HasTypeConverterAttribute(converterProperty);
+
+                            PropertySpec spec = new(property, new TypeRef(property.Type))
+                            {
+                                ConfigurationKeyName = configKeyName,
+                                IsIgnored = isIgnored,
+                                HasTypeConverter = hasTypeConverter,
+                                HasTypeConverterOnBindableProperty = !isIgnored && property.GetMethod?.DeclaredAccessibility is Accessibility.Public && hasTypeConverter,
+                            };
+
+                            if (properties?.TryGetValue(propertyName, out PropertySpec? existingProperty) is true)
+                            {
+                                if (spec.HasTypeConverterOnBindableProperty && !existingProperty.HasTypeConverterOnBindableProperty)
+                                {
+                                    properties[propertyName] = existingProperty with { HasTypeConverterOnBindableProperty = true };
+                                }
+
+                                continue;
+                            }
 
                             if (IsUnsupportedType(property.Type))
                             {
-                                // Report the skip once per property name. The override/duplicate check covers an
-                                // error-typed property that is overridden or shadows an already-bound member, while
-                                // the name set covers a `new`-shadowed error-typed property: both the base and
-                                // derived copies are skipped (so neither lands in 'properties' to dedupe the other),
-                                // which would otherwise fire SYSLIB1101 twice for the same name.
-                                if (ContainsErrorType(property.Type) && !isDuplicateOrOverride &&
+                                if (hasTypeConverter &&
+                                    (spec.HasTypeConverterOnBindableProperty || BacksConstructorParameter(ctor, propertyName)))
+                                {
+                                    (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
+                                    continue;
+                                }
+
+                                // Report the skip once per property name. The name set covers a `new`-shadowed
+                                // error-typed property: both the base and derived copies are skipped (so neither
+                                // lands in 'properties' to dedupe the other), which would otherwise fire
+                                // SYSLIB1101 twice for the same name.
+                                if (ContainsErrorType(property.Type) &&
                                     (reportedUnsupportedProperties ??= new(StringComparer.OrdinalIgnoreCase)).Add(propertyName))
                                 {
                                     RecordDiagnostic(DiagnosticDescriptors.PropertyNotSupported, typeParseInfo.BinderInvocation?.Location, [propertyName, typeParseInfo.FullName]);
@@ -748,23 +875,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 continue;
                             }
-
-                            if (isDuplicateOrOverride)
-                            {
-                                continue;
-                            }
-
-                            ImmutableArray<AttributeData> attributes = property.GetAttributes();
-
-                            AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
-                            string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
-                            bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
-
-                            PropertySpec spec = new(property, new TypeRef(property.Type))
-                            {
-                                ConfigurationKeyName = configKeyName,
-                                IsIgnored = isIgnored,
-                            };
 
                             if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
                             {
@@ -799,12 +909,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
-                            ParameterSpec paramSpec = new ParameterSpec(parameter, propertySpec.TypeRef)
+                            TypeRef parameterTypeRef = new(parameter.Type);
+                            if (!IsUnsupportedType(parameter.Type))
+                            {
+                                EnqueueTransitiveType(
+                                    typeParseInfo,
+                                    parameter.Type,
+                                    DiagnosticDescriptors.PropertyNotSupported,
+                                    parameterName,
+                                    parameterTypeRef);
+                            }
+
+                            ParameterSpec paramSpec = new ParameterSpec(parameter, parameterTypeRef)
                             {
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
                             };
 
                             propertySpec.MatchingCtorParam = paramSpec;
+                            propertySpec.MatchingCtorParameterTypeMatches = parameterTypeRef.Equals(propertySpec.TypeRef);
                             (ctorParams ??= new()).Add(paramSpec);
                         }
                     }

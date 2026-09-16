@@ -187,10 +187,28 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 // HasBindableMembers is false (e.g. the only member is a ctor parameter backed
                                 // by a non-bindable read-only collection type), otherwise the emitter can end up
                                 // calling an Initialize method that was never generated.
-                                bool needsInitializeMethod = objectSpec is { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor, InitExceptionMessage: null };
+                                bool needsInitializeMethod = objectSpec is
+                                {
+                                    InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor,
+                                    InitExceptionMessage: null,
+                                    ConstructorParameters: { } constructorParameters
+                                } && constructorParameters.All(parameter => _typeIndex.TryGetTypeSpec(parameter.TypeRef, out _));
 
                                 if (hasBindableMembers || needsInitializeMethod)
                                 {
+                                    if (needsInitializeMethod)
+                                    {
+                                        foreach (ParameterSpec parameter in objectSpec.ConstructorParameters!)
+                                        {
+                                            TryRegisterTransitiveTypesForMethodGen(parameter.TypeRef);
+
+                                            if (_typeIndex.GetTypeSpec(parameter.TypeRef) is ComplexTypeSpec)
+                                            {
+                                                RegisterForGen_AsConfigWithChildrenHelper();
+                                            }
+                                        }
+                                    }
+
                                     foreach (PropertySpec property in objectSpec.Properties!)
                                     {
                                         // Skip types reachable only through non-bindable properties, unless the
@@ -201,9 +219,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                             continue;
                                         }
 
+                                        if (!_typeIndex.TryGetTypeSpec(property.TypeRef, out TypeSpec? propertyType))
+                                        {
+                                            continue;
+                                        }
+
                                         TryRegisterTransitiveTypesForMethodGen(property.TypeRef);
 
-                                        if (_typeIndex.GetTypeSpec(property.TypeRef) is ComplexTypeSpec)
+                                        if (propertyType is ComplexTypeSpec)
                                         {
                                             RegisterForGen_AsConfigWithChildrenHelper();
                                         }

@@ -234,7 +234,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1102`__ | Configuration binding generator: project's language version must be at least C# 12.|
 |  __`SYSLIB1103`__ | Configuration binding generator: value types are invalid inputs to configuration 'Bind' methods.* |
 |  __`SYSLIB1104`__ | Configuration binding generator: Generator cannot determine the target configuration type.* |
-|  __`SYSLIB1105`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
+|  __`SYSLIB1105`__ | Configuration binding generator: a property with 'TypeConverterAttribute' requires the reflection-based binder. |
 |  __`SYSLIB1106`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
 |  __`SYSLIB1107`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |
 |  __`SYSLIB1108`__ | _`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration._ |

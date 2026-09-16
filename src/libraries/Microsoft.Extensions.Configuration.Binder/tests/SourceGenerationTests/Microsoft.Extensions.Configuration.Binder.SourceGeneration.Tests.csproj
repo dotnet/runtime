@@ -7,6 +7,8 @@
     <NoWarn>$(NoWarn);SYSLIB1100,SYSLIB1101</NoWarn>
     <!-- Logic not generated for unknown/unsupported type. -->
     <NoWarn>$(NoWarn);SYSLIB1103,SYSLIB1104</NoWarn>
+    <!-- Property-level type converters intentionally use the reflection binder. -->
+    <NoWarn>$(NoWarn);SYSLIB1105</NoWarn>
     <InterceptorsPreviewNamespaces>$(InterceptorsPreviewNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration</InterceptorsPreviewNamespaces>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <StringResourcesPath>..\..\src\Resources\Strings.resx</StringResourcesPath>

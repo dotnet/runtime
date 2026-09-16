@@ -156,6 +156,12 @@
   <data name="PropertyNotSupportedTitle" xml:space="preserve">
     <value>Did not generate binding logic for a property on a type</value>
   </data>
+  <data name="PropertyTypeConverterRequiresReflectionMessageFormat" xml:space="preserve">
+    <value>Binding logic was not generated for a binder call because the target type contains a property with 'TypeConverterAttribute'. The call will use the reflection-based binder, which is not compatible with trimming or Native AOT.</value>
+  </data>
+  <data name="PropertyTypeConverterRequiresReflectionTitle" xml:space="preserve">
+    <value>Property type converters require reflection-based configuration binding</value>
+  </data>
   <data name="TypeNotSupported" xml:space="preserve">
     <value>The type is not supported: '{0}'.</value>
   </data>

@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Configuration
@@ -23,6 +24,7 @@ namespace Microsoft.Extensions.Configuration
         private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
+        private static readonly ConditionalWeakTable<Type, Dictionary<MethodInfo, (PropertyInfo Property, bool HasTypeConverter)>> s_typeConverterOverrides = new();
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -302,13 +304,17 @@ namespace Microsoft.Extensions.Configuration
             var propertyBindingPoint = new BindingPoint(
                 initialValueProvider: () => property.GetValue(instance),
                 isReadOnly: property.SetMethod is null || (!property.SetMethod.IsPublic && !options.BindNonPublicProperties));
+            string propertyName = GetPropertyName(property, out bool hasTypeConverter);
+            PropertyInfo converterProperty = GetTypeConverterProperty(property, instance.GetType(), ref hasTypeConverter);
 
             BindInstance(
                 property.PropertyType,
                 propertyBindingPoint,
-                config.GetSection(GetPropertyName(property)),
+                config.GetSection(propertyName),
                 options,
-                false);
+                false,
+                hasTypeConverter ? converterProperty : null,
+                instance);
 
             // For property binding, there are some cases when HasNewValue is not set in BindingPoint while a non-null Value inside that object can be retrieved from the property getter.
             // As example, when binding a property which not having a configuration entry matching this property and the getter can initialize the Value.
@@ -327,7 +333,9 @@ namespace Microsoft.Extensions.Configuration
             BindingPoint bindingPoint,
             IConfiguration config,
             BinderOptions options,
-            bool isParentCollection)
+            bool isParentCollection,
+            PropertyInfo? converterProperty = null,
+            object? instance = null)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
@@ -357,7 +365,11 @@ namespace Microsoft.Extensions.Configuration
                 isConfigurationExist = configValue != null;
             }
 
-            if (isConfigurationExist && TryConvertValue(type, configValue, section?.Path, out object? convertedValue, out Exception? error))
+            TypeConverter? typeConverter = isConfigurationExist && configValue is not null && converterProperty is not null
+                ? GetPropertyTypeConverter(converterProperty, instance)
+                : null;
+
+            if (isConfigurationExist && TryConvertValue(type, configValue, section?.Path, typeConverter, out object? convertedValue, out Exception? error))
             {
                 if (error != null)
                 {
@@ -591,7 +603,11 @@ namespace Microsoft.Extensions.Configuration
 
                 List<PropertyInfo> properties = GetAllProperties(type);
 
-                if (!DoAllParametersHaveEquivalentProperties(parameters, properties, out string nameOfInvalidParameters))
+                if (!DoAllParametersHaveEquivalentProperties(
+                    parameters,
+                    properties,
+                    out string nameOfInvalidParameters,
+                    out PropertyInfo?[] parameterProperties))
                 {
                     throw new InvalidOperationException(SR.Format(SR.Error_ConstructorParametersDoNotMatchProperties, type, nameOfInvalidParameters));
                 }
@@ -600,7 +616,9 @@ namespace Microsoft.Extensions.Configuration
 
                 for (int index = 0; index < parameters.Length; index++)
                 {
-                    parameterValues[index] = BindParameter(parameters[index], type, config, options);
+                    ParameterInfo parameter = parameters[index];
+                    PropertyInfo? property = parameterProperties[index];
+                    parameterValues[index] = BindParameter(parameter, property, type, config, options);
                 }
 
                 constructorParameters = parameters;
@@ -621,32 +639,44 @@ namespace Microsoft.Extensions.Configuration
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
-        private static bool DoAllParametersHaveEquivalentProperties(ParameterInfo[] parameters,
-            List<PropertyInfo> properties, out string missing)
+        private static bool DoAllParametersHaveEquivalentProperties(
+            ParameterInfo[] parameters,
+            List<PropertyInfo> properties,
+            out string missing,
+            out PropertyInfo?[] parameterProperties)
         {
-            HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
-            foreach (PropertyInfo prop in properties)
+            Dictionary<string, PropertyInfo> propertyMap = new(properties.Count, StringComparer.OrdinalIgnoreCase);
+            foreach (PropertyInfo property in properties)
             {
-                if (IsIgnoredProperty(prop))
+                if (!IsIgnoredProperty(property) && !propertyMap.ContainsKey(property.Name))
+                {
+                    propertyMap.Add(property.Name, property);
+                }
+            }
+
+            parameterProperties = new PropertyInfo?[parameters.Length];
+            List<string>? missingParameters = null;
+
+            for (int index = 0; index < parameters.Length; index++)
+            {
+                ParameterInfo parameter = parameters[index];
+                string? parameterName = parameter.Name;
+                if (parameterName is null)
                 {
                     continue;
                 }
 
-                propertyNames.Add(prop.Name);
-            }
-
-            List<string> missingParameters = new();
-
-            foreach (ParameterInfo parameter in parameters)
-            {
-                string name = parameter.Name!;
-                if (!propertyNames.Contains(name))
+                if (propertyMap.TryGetValue(parameterName, out PropertyInfo? property))
                 {
-                    missingParameters.Add(name);
+                    parameterProperties[index] = property;
+                }
+                else
+                {
+                    (missingParameters ??= new()).Add(parameterName);
                 }
             }
 
-            missing = string.Join(",", missingParameters);
+            missing = missingParameters is null ? string.Empty : string.Join(",", missingParameters);
 
             return missing.Length == 0;
         }
@@ -978,33 +1008,43 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static bool TryConvertValue(
             Type type,
-            string? value, string? path, out object? result, out Exception? error)
+            string? value,
+            string? path,
+            TypeConverter? typeConverter,
+            out object? result,
+            out Exception? error)
         {
             error = null;
             result = null;
-            if (type == typeof(object))
+            bool usePropertyConverter = typeConverter is not null && typeConverter.CanConvertFrom(typeof(string));
+            if (!usePropertyConverter && type == typeof(object))
             {
                 result = value;
                 return true;
             }
 
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (!usePropertyConverter && type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 if (string.IsNullOrEmpty(value))
                 {
                     return true;
                 }
-                return TryConvertValue(Nullable.GetUnderlyingType(type)!, value, path, out result, out error);
+                return TryConvertValue(Nullable.GetUnderlyingType(type)!, value, path, typeConverter: null, out result, out error);
             }
 
-            TypeConverter converter = TypeDescriptor.GetConverter(type);
-            if (converter.CanConvertFrom(typeof(string)))
+            if (!usePropertyConverter)
+            {
+                typeConverter = TypeDescriptor.GetConverter(type);
+            }
+
+            Debug.Assert(typeConverter is not null);
+            if (usePropertyConverter || typeConverter.CanConvertFrom(typeof(string)))
             {
                 try
                 {
                     if (value is not null)
                     {
-                        result = converter.ConvertFromInvariantString(value);
+                        result = typeConverter.ConvertFromInvariantString(value);
                     }
                 }
                 catch (Exception ex)
@@ -1038,7 +1078,7 @@ namespace Microsoft.Extensions.Configuration
             Type type,
             string value, string? path)
         {
-            TryConvertValue(type, value, path, out object? result, out Exception? error);
+            TryConvertValue(type, value, path, typeConverter: null, out object? result, out Exception? error);
             if (error != null)
             {
                 throw error;
@@ -1141,7 +1181,7 @@ namespace Microsoft.Extensions.Configuration
 
         [RequiresDynamicCode(DynamicCodeWarningMessage)]
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? BindParameter(ParameterInfo parameter, Type type, IConfiguration config,
+        private static object? BindParameter(ParameterInfo parameter, PropertyInfo? property, Type type, IConfiguration config,
             BinderOptions options)
         {
             string? parameterName = parameter.Name;
@@ -1152,13 +1192,24 @@ namespace Microsoft.Extensions.Configuration
             }
 
             var propertyBindingPoint = new BindingPoint(isReadOnly: false);
+            PropertyInfo? converterProperty = null;
+            if (property is not null && property.PropertyType == parameter.ParameterType)
+            {
+                bool hasTypeConverter = property.IsDefined(typeof(TypeConverterAttribute), inherit: false);
+                PropertyInfo candidate = GetTypeConverterProperty(property, type, ref hasTypeConverter);
+                if (hasTypeConverter)
+                {
+                    converterProperty = candidate;
+                }
+            }
 
             BindInstance(
                 parameter.ParameterType,
                 propertyBindingPoint,
                 config.GetSection(parameterName),
                 options,
-                false);
+                false,
+                converterProperty);
 
             if (propertyBindingPoint.Value is null)
             {
@@ -1178,13 +1229,108 @@ namespace Microsoft.Extensions.Configuration
 
         private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
 
-        private static string GetPropertyName(PropertyInfo property)
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static TypeConverter? GetPropertyTypeConverter(PropertyInfo property, object? instance)
+        {
+            Type? declaringType = property.DeclaringType;
+            Debug.Assert(declaringType is not null);
+
+            PropertyDescriptor? descriptor = instance is not null
+                ? TypeDescriptor.GetProperties(instance)[property.Name]
+                : TypeDescriptor.GetProperties(declaringType)[property.Name];
+
+            // Hidden properties share a name, but not their converters.
+            if (descriptor is null || descriptor.ComponentType != declaringType || descriptor.PropertyType != property.PropertyType)
+            {
+                descriptor = TypeDescriptor.GetProperties(declaringType)[property.Name];
+                if (descriptor is null || descriptor.ComponentType != declaringType || descriptor.PropertyType != property.PropertyType)
+                {
+                    descriptor = CreatePropertyDescriptor(property);
+                }
+            }
+
+            TypeConverter converter = descriptor.Converter;
+            // An unresolved converter attribute falls back to the type's converter.
+            // Preserve the binder's built-in object/nullable handling in that case.
+            if ((property.PropertyType == typeof(object) || Nullable.GetUnderlyingType(property.PropertyType) is not null) &&
+                ReferenceEquals(converter, TypeDescriptor.GetConverter(property.PropertyType)))
+            {
+                return null;
+            }
+
+            return converter;
+        }
+
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static PropertyDescriptor CreatePropertyDescriptor(PropertyInfo property)
+        {
+            Type? declaringType = property.DeclaringType;
+            Debug.Assert(declaringType is not null);
+            return TypeDescriptor.CreateProperty(
+                declaringType,
+                property.Name,
+                property.PropertyType,
+                Attribute.GetCustomAttributes(property));
+        }
+
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static PropertyInfo GetTypeConverterProperty(PropertyInfo property, Type type, ref bool hasTypeConverter)
+        {
+            MethodInfo? getter = property.GetMethod;
+            if (getter is null || !getter.IsVirtual || type == property.DeclaringType)
+            {
+                return property;
+            }
+
+            if (s_typeConverterOverrides.GetValue(type, GetTypeConverterOverrides)
+                .TryGetValue(getter.GetBaseDefinition(), out var metadata))
+            {
+                hasTypeConverter = metadata.HasTypeConverter;
+                return metadata.Property;
+            }
+
+            return property;
+        }
+
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static Dictionary<MethodInfo, (PropertyInfo Property, bool HasTypeConverter)> GetTypeConverterOverrides(Type type)
+        {
+            // Cache immutable reflection metadata, not converter instances or mutable TypeDescriptor metadata.
+            Dictionary<MethodInfo, (PropertyInfo, bool)> overrides = new();
+            for (Type? current = type; current is not null && current != typeof(object); current = current.BaseType)
+            {
+                foreach (PropertyInfo candidate in current.GetProperties(DeclaredOnlyLookup))
+                {
+                    if (candidate.GetMethod is MethodInfo { IsVirtual: true } candidateGetter)
+                    {
+                        MethodInfo baseGetter = candidateGetter.GetBaseDefinition();
+                        if (baseGetter != candidateGetter && !overrides.ContainsKey(baseGetter))
+                        {
+                            overrides.Add(baseGetter, (candidate, Attribute.IsDefined(candidate, typeof(TypeConverterAttribute), inherit: true)));
+                        }
+                    }
+                }
+            }
+
+            return overrides;
+        }
+
+        private static string GetPropertyName(PropertyInfo property, out bool hasTypeConverter)
         {
             ArgumentNullException.ThrowIfNull(property);
+
+            hasTypeConverter = false;
+            string? propertyName = null;
 
             // Check for a custom property name used for configuration key binding
             foreach (var attributeData in property.GetCustomAttributesData())
             {
+                if (attributeData.AttributeType == typeof(TypeConverterAttribute))
+                {
+                    hasTypeConverter = true;
+                    continue;
+                }
+
                 if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
                 {
                     continue;
@@ -1197,15 +1343,20 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // Assumes ConfigurationKeyName constructor first arg is the string key name
-                string? name = attributeData
+                propertyName = attributeData
                     .ConstructorArguments[0]
                     .Value?
                     .ToString();
 
-                return !string.IsNullOrWhiteSpace(name) ? name : property.Name;
+                if (string.IsNullOrWhiteSpace(propertyName))
+                {
+                    propertyName = property.Name;
+                }
             }
 
-            return property.Name;
+            return propertyName ?? property.Name;
         }
+
+        private static string GetPropertyName(PropertyInfo property) => GetPropertyName(property, out _);
     }
 }

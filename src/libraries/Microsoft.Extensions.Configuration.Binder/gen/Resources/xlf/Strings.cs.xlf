@@ -67,6 +67,16 @@
         <target state="translated">Negenerovala se logika vazby pro vlastnost typu</target>
         <note />
       </trans-unit>
+      <trans-unit id="PropertyTypeConverterRequiresReflectionMessageFormat">
+        <source>Binding logic was not generated for a binder call because the target type contains a property with 'TypeConverterAttribute'. The call will use the reflection-based binder, which is not compatible with trimming or Native AOT.</source>
+        <target state="new">Binding logic was not generated for a binder call because the target type contains a property with 'TypeConverterAttribute'. The call will use the reflection-based binder, which is not compatible with trimming or Native AOT.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyTypeConverterRequiresReflectionTitle">
+        <source>Property type converters require reflection-based configuration binding</source>
+        <target state="new">Property type converters require reflection-based configuration binding</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">Typ není podporován: „{0}“.</target>
