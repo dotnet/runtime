@@ -8076,8 +8076,8 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
 //
 void Lowering::TryLowerDivRem(GenTreeOp* div)
 {
-    if (!m_compiler->opts.OptimizationEnabled() || !div->OperIs(GT_DIV, GT_UDIV) ||
-        !varTypeIsIntOrI(div) || div->IsDivRemPair())
+    if (!m_compiler->opts.OptimizationEnabled() || !div->OperIs(GT_DIV, GT_UDIV) || !varTypeIsIntOrI(div) ||
+        div->IsDivRemPair())
     {
         return;
     }
@@ -8104,8 +8104,7 @@ void Lowering::TryLowerDivRem(GenTreeOp* div)
     }
 
     GenTree* quotientStore = div->gtNext;
-    if ((quotientStore == nullptr) || !quotientStore->OperIs(GT_STORE_LCL_VAR) ||
-        (quotientStore->gtGetOp1() != div))
+    if ((quotientStore == nullptr) || !quotientStore->OperIs(GT_STORE_LCL_VAR) || (quotientStore->gtGetOp1() != div))
     {
         quotientStore = nullptr;
     }
@@ -8123,8 +8122,7 @@ void Lowering::TryLowerDivRem(GenTreeOp* div)
             return;
         }
 
-        if (!node->OperIs(GT_SUB) || node->gtOverflow() || node->gtSetFlags() ||
-            (node->TypeGet() != div->TypeGet()))
+        if (!node->OperIs(GT_SUB) || node->gtOverflow() || node->gtSetFlags() || (node->TypeGet() != div->TypeGet()))
         {
             continue;
         }

@@ -251,8 +251,8 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
         case GT_JCMP:
             assert(tree->gtGetOp2()->IsIntegralConst(0) && tree->gtGetOp2()->isContained());
-            m_hasCarryArithmetic    = true;
-            srcCount                = BuildOperandUses(tree->gtGetOp1(), SRBM_ECX);
+            m_hasCarryArithmetic = true;
+            srcCount             = BuildOperandUses(tree->gtGetOp1(), SRBM_ECX);
             break;
 #endif
         case GT_JCC:
@@ -355,7 +355,7 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_ADCX:
         case GT_ADOX:
             m_hasCarryArithmetic = true;
-            srcCount = BuildBinaryUses(tree->AsOp(), lowGprRegs);
+            srcCount             = BuildBinaryUses(tree->AsOp(), lowGprRegs);
             BuildDef(tree, lowGprRegs);
             break;
         case GT_SUB_BORROW:

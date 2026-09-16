@@ -13906,7 +13906,7 @@ bool Lowering::TryLowerCarryCompare(GenTreeOp* cmp)
         }
         else
         {
-            GenTreeCC* carry = m_compiler->gtNewCC(GT_SETCC, TYP_INT, condition);
+            GenTreeCC* carry    = m_compiler->gtNewCC(GT_SETCC, TYP_INT, condition);
             m_blockMayHaveSetCC = true;
             BlockRange().InsertAfter(add, carry);
             use.ReplaceWith(carry);
@@ -15138,7 +15138,7 @@ bool Lowering::LowerFullAdders()
         examined.push_back(adder.carryLocal);
         bool       valid       = true;
         bool       initialized = false;
-        LclVarDsc* carryDsc     = m_compiler->lvaGetDesc(adder.carryLocal);
+        LclVarDsc* carryDsc    = m_compiler->lvaGetDesc(adder.carryLocal);
         for (BasicBlock* block : m_compiler->Blocks())
         {
             for (GenTree* node : LIR::AsRange(block))

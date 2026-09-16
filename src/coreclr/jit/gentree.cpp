@@ -12017,8 +12017,8 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
 bool GenTree::IsFunnelShift() const
 {
 #if defined(TARGET_AMD64) || defined(TARGET_ARM64)
-    return OperIs(GT_OR) && gtGetOp1()->OperIs(GT_RSZ) && gtGetOp1()->isContained() &&
-           gtGetOp2()->OperIs(GT_LSH) && gtGetOp2()->isContained();
+    return OperIs(GT_OR) && gtGetOp1()->OperIs(GT_RSZ) && gtGetOp1()->isContained() && gtGetOp2()->OperIs(GT_LSH) &&
+           gtGetOp2()->isContained();
 #else
     return false;
 #endif
