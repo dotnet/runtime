@@ -88,6 +88,55 @@ namespace System.Reflection.Tests
             Assert.False(parameterInfo.HasDefaultValue);
         }
 
+        public static IEnumerable<object[]> ParametersWithoutMetadata_TestData()
+        {
+            yield return new object[] { typeof(ParameterInfoMetadata).GetMethod(nameof(ParameterInfoMetadata.Method1)), -1 };
+
+            Type arrayType = typeof(int[,]);
+            foreach (ConstructorInfo constructor in arrayType.GetConstructors())
+            {
+                foreach (ParameterInfo parameter in constructor.GetParameters())
+                {
+                    yield return new object[] { constructor, parameter.Position };
+                }
+            }
+
+            foreach (string name in new[] { "Get", "Set", "Address" })
+            {
+                MethodInfo method = arrayType.GetMethod(name);
+                yield return new object[] { method, -1 };
+                foreach (ParameterInfo parameter in method.GetParameters())
+                {
+                    yield return new object[] { method, parameter.Position };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParametersWithoutMetadata_TestData))]
+        public void DefaultValue_WithoutParameterMetadata_ReturnsDBNull(MethodBase member, int position)
+        {
+            ParameterInfo parameter = GetParameterInfo(member, position);
+            Assert.Same(DBNull.Value, parameter.DefaultValue);
+            Assert.Same(DBNull.Value, parameter.RawDefaultValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParametersWithoutMetadata_TestData))]
+        public void HasDefaultValue_WithoutParameterMetadata_ReturnsFalse(MethodBase member, int position)
+        {
+            Assert.False(GetParameterInfo(member, position).HasDefaultValue);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParametersWithoutMetadata_TestData))]
+        public void ToString_UnnamedParameter_OmitsTrailingSpace(MethodBase member, int position)
+        {
+            ParameterInfo parameter = GetParameterInfo(member, position);
+            Assert.Null(parameter.Name);
+            Assert.Equal(parameter.ParameterType.Name, parameter.ToString());
+        }
+
         [Theory]
         [InlineData(typeof(ParameterInfoMetadata), "Method1", 0)]
         [InlineData(typeof(ParameterInfoMetadata), "VirtualMethod", 0)]
@@ -526,6 +575,66 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(string))]
+        public void GetModifiedParameterType_IndexParameter(Type indexType)
+        {
+            PropertyInfo property = typeof(ParameterInfoMetadata).GetProperty("Item", new[] { indexType });
+            ParameterInfo parameter = Assert.Single(property.GetIndexParameters());
+            Assert.Same(property, parameter.Member);
+            Assert.Equal(0, parameter.Position);
+            Assert.Equal("index", parameter.Name);
+            Assert.Equal(indexType, parameter.ParameterType);
+
+            Type modified = parameter.GetModifiedParameterType();
+            Assert.NotSame(indexType, modified);
+            Assert.Same(indexType, modified.UnderlyingSystemType);
+            Assert.Empty(modified.GetRequiredCustomModifiers());
+            Assert.Empty(modified.GetOptionalCustomModifiers());
+        }
+
+        [Theory]
+        [InlineData(typeof(int[,]))]
+        [InlineData(typeof(List<int>[,]))]
+        [InlineData(typeof(int[][,]))]
+        public void GetModifiedParameterType_SyntheticArrayParameters(Type arrayType)
+        {
+            foreach (ConstructorInfo constructor in arrayType.GetConstructors())
+            {
+                foreach (ParameterInfo parameter in constructor.GetParameters())
+                    Verify(parameter.ParameterType, parameter.GetModifiedParameterType());
+            }
+
+            foreach (string name in new[] { "Get", "Set", "Address" })
+            {
+                MethodInfo method = arrayType.GetMethod(name);
+                Verify(method.ReturnType, method.ReturnParameter.GetModifiedParameterType());
+                foreach (ParameterInfo parameter in method.GetParameters())
+                    Verify(parameter.ParameterType, parameter.GetModifiedParameterType());
+            }
+
+            static void Verify(Type expected, Type modified)
+            {
+                Assert.NotSame(expected, modified);
+                Assert.Same(expected, modified.UnderlyingSystemType);
+                Assert.Empty(modified.GetRequiredCustomModifiers());
+                Assert.Empty(modified.GetOptionalCustomModifiers());
+                if (expected.HasElementType)
+                {
+                    Verify(expected.GetElementType(), modified.GetElementType());
+                }
+                else if (expected.IsGenericType)
+                {
+                    Type[] expectedArguments = expected.GetGenericArguments();
+                    Type[] modifiedArguments = modified.GetGenericArguments();
+                    Assert.Equal(expectedArguments.Length, modifiedArguments.Length);
+                    for (int i = 0; i < expectedArguments.Length; i++)
+                        Verify(expectedArguments[i], modifiedArguments[i]);
+                }
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(VerifyParameterInfoGetRealObjectWorks_TestData))]
         public void VerifyParameterInfoGetRealObjectWorks(MemberInfo pretendMember, int pretendPosition, string expectedParameterName)
         {
@@ -545,6 +654,10 @@ namespace System.Reflection.Tests
             Assert.Equal(pretendPosition, result.Position);
             Assert.Equal(expectedParameterName, result.Name);
             Assert.Equal(pretendMember.Name, result.Member.Name);
+            ParameterInfo resolved = (ParameterInfo)result.GetRealObject(sc);
+            Assert.Equal(result.Member, resolved.Member);
+            Assert.Equal(result.Position, resolved.Position);
+            Assert.Equal(result.ParameterType, resolved.ParameterType);
         }
 
         public static IEnumerable<object[]> VerifyParameterInfoGetRealObjectWorks_TestData
@@ -571,6 +684,9 @@ namespace System.Reflection.Tests
             ParameterInfo[] parameters = GetMethod(type, name).GetParameters();
             return parameters[index];
         }
+
+        private static ParameterInfo GetParameterInfo(MethodBase member, int position) =>
+            position == -1 ? ((MethodInfo)member).ReturnParameter : member.GetParameters()[position];
 
         private static MethodInfo GetMethod(Type type, string name)
         {
@@ -630,6 +746,8 @@ namespace System.Reflection.Tests
             public void ObjectParamWithDateTimeConstantAttr([DateTimeConstant(42)] object obj) { }
             public void ObjectParamWithDecimalConstantAttr([DecimalConstant(1, 1, 2, 3, 4)] object obj) { }
             public void ObjectParamWithTwoCustomConstantAttr([DecimalConstant(1, 1, 2, 3, 4)][CustomIntConstant(Value = 42)] object obj) { }
+            public int this[int index] => index;
+            public int this[string index] { set { } }
 
             public void MethodWithCustomAttribute([My(2)]string str, int iValue, long lValue) { }
             public virtual void VirtualMethodWithCustomAttributes([My(3)]int val1, [My(4)]int val2, int val3) { }
