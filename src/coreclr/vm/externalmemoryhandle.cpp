@@ -65,25 +65,6 @@ void ExternalMemoryHandle::Remove(ExternalMemoryHandle* handle DEBUG_ARG(bool is
     delete handle;
 }
 
-void ExternalMemoryHandle::Cleanup()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    CrstHolder lock(&s_crst);
-
-    while (!s_handles.IsEmpty())
-    {
-        delete s_handles.RemoveHead();
-    }
-}
-
 #endif // !DACCESS_COMPILE
 
 void ExternalMemoryHandle::GCScanRoots(promote_func *fn, ScanContext *sc)
@@ -102,13 +83,6 @@ void ExternalMemoryHandle::GCScanRoots(promote_func *fn, ScanContext *sc)
     {
         handle->GCScanRoot(fn, sc);
     }
-}
-
-PTR_ExternalMemoryHandle ExternalMemoryHandle::GetHead()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    return s_handles.GetHead();
 }
 
 void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
@@ -154,6 +128,17 @@ void ExternalMemoryHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     TSIZE_T size = m_pMT->IsValueType() ? m_pMT->GetNumInstanceFieldBytes() : TARGET_POINTER_SIZE;
     DacEnumMemoryRegion(m_pMemory.GetAddr(), size);
+}
+
+void ExternalMemoryHandle::EnumMemoryRegionsForAllHandles(CLRDataEnumMemoryFlags flags)
+{
+    SUPPORTS_DAC;
+
+    for (ExternalMemoryHandle* handle = s_handles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
+    {
+        DacEnumMemoryRegion(dac_cast<TADDR>(handle), sizeof(ExternalMemoryHandle));
+        handle->EnumMemoryRegions(flags);
+    }
 }
 
 #endif // DACCESS_COMPILE

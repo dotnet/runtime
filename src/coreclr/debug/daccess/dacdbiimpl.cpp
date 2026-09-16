@@ -20,6 +20,7 @@
 #include "generics.h"
 #include "stackwalk.h"
 #include "virtualcallstub.h"
+#include "externalmemoryhandle.h"
 
 #include "dacdbiimpl.h"
 

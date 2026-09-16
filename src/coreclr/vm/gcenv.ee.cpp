@@ -14,6 +14,7 @@
 #include "threadsuspend.h"
 #include "interoplibinterface.h"
 #include "exinfo.h"
+#include "externalmemoryhandle.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"

@@ -88,7 +88,8 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
         bool resolveInteriorPointers)
     {
         TargetPointer obj = _target.ReadPointer(slotAddress.Value);
-        if (obj == TargetPointer.Null || obj.Value == ulong.MaxValue)
+        ulong invalidPointer = _target.PointerSize == 8 ? ulong.MaxValue : uint.MaxValue;
+        if (obj == TargetPointer.Null || obj.Value == invalidPointer)
             return;
 
         if (resolveInteriorPointers)

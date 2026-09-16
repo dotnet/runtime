@@ -90,6 +90,7 @@ class DebuggerEval;
 class DebuggerControllerQueue;
 class DebuggerController;
 class Crst;
+class ExternalMemoryHandle;
 
 typedef CUnorderedArray<DebuggerControllerPatch *, 17> PATCH_UNORDERED_ARRAY;
 template<class T> void DeleteInteropSafe(T *p);

@@ -28,6 +28,7 @@ public:
 
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+    static void EnumMemoryRegionsForAllHandles(CLRDataEnumMemoryFlags flags);
 #endif
 
     // Next pointer for SList linkage.
@@ -37,10 +38,8 @@ public:
     static void Init();
     static ExternalMemoryHandle* Add(PTR_MethodTable pMT, PTR_VOID pMemory, UINT gcFlags);
     static void Remove(ExternalMemoryHandle* handle DEBUG_ARG(bool isEESuspended = false));
-    static void Cleanup();
 #endif
     static void GCScanRoots(promote_func *fn, ScanContext *sc);
-    static PTR_ExternalMemoryHandle GetHead();
 
 private:
     PTR_MethodTable m_pMT;

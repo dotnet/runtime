@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include "appdomain.hpp"
+#include "externalmemoryhandle.h"
 #include "peimagelayout.inl"
 #include "field.h"
 #include "strongnameinternal.h"
@@ -1652,8 +1653,6 @@ AppDomain::~AppDomain()
     CONTRACTL_END;
 
     m_AssemblyCache.Clear();
-
-    ExternalMemoryHandle::Cleanup();
 }
 
 //*****************************************************************************
@@ -1678,7 +1677,6 @@ void AppDomain::Init()
     m_crstGenericDictionaryExpansionLock.Init(CrstGenericDictionaryExpansion);
     m_FileLoadLock.Init(CrstAssemblyLoader, CrstFlags(CRST_DEFAULT));
     m_DomainCacheCrst.Init(CrstAppDomainCache);
-    ExternalMemoryHandle::Init();
 
     // Has to switch thread to GC_NOTRIGGER while being held
     m_crstAssemblyList.Init(CrstAssemblyList, CrstFlags(
@@ -4206,11 +4204,7 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
         pAssembly->EnumMemoryRegions(flags);
     }
 
-    for (ExternalMemoryHandle* handle = ExternalMemoryHandle::GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(handle), sizeof(ExternalMemoryHandle));
-        handle->EnumMemoryRegions(flags);
-    }
+    ExternalMemoryHandle::EnumMemoryRegionsForAllHandles(flags);
 }
 
 void
