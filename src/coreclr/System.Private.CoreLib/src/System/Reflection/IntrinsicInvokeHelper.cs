@@ -13,7 +13,9 @@ namespace System.Reflection
     // This type is included in SystemDomain::IsReflectionInvocationMethod for caller stack walks.
     internal static class IntrinsicInvokeHelper
     {
-        private const int SpecializationThreshold = 10_000;
+        private const int CachedTargetSpecializationThreshold = 10_000;
+        private const int ClassVirtualSpecializationThreshold = 3_000;
+        private const int InterfaceOrGenericVirtualSpecializationThreshold = 1_000;
         private const MethodBase.InvokerStrategy StrategyDetermined =
             MethodBase.InvokerStrategy.StrategyDetermined_Obj4Args |
             MethodBase.InvokerStrategy.StrategyDetermined_ObjSpanArgs |
@@ -24,6 +26,7 @@ namespace System.Reflection
             internal IntPtr Thunk;
             internal IntPtr FunctionPointer;
             internal int InvocationCount;
+            internal int SpecializationThreshold;
         }
 
         internal static unsafe object? Invoke(
@@ -52,13 +55,14 @@ namespace System.Reflection
                     }
 
                     state.FunctionPointer = functionPointer;
+                    state.SpecializationThreshold = GetSpecializationThreshold(method, functionPointer);
                     strategy |= StrategyDetermined;
                     Volatile.Write(ref state.Thunk, (IntPtr)thunk);
                 }
 
                 if (RuntimeFeature.IsDynamicCodeCompiled &&
                     !(LocalAppContextSwitches.ForceInterpretedInvoke && !LocalAppContextSwitches.ForceEmitInvoke) &&
-                    Interlocked.Increment(ref state.InvocationCount) >= SpecializationThreshold)
+                    Interlocked.Increment(ref state.InvocationCount) >= state.SpecializationThreshold)
                 {
                     // Let the normal strategy selection specialize the next invocation's argument path.
                     strategy &= ~StrategyDetermined;
@@ -75,6 +79,19 @@ namespace System.Reflection
                 GC.KeepAlive(method);
                 return result;
             }
+        }
+
+        private static int GetSpecializationThreshold(MethodBase method, IntPtr functionPointer)
+        {
+            if (functionPointer != IntPtr.Zero)
+            {
+                return CachedTargetSpecializationThreshold;
+            }
+
+            RuntimeMethodInfo runtimeMethod = (RuntimeMethodInfo)method;
+            return runtimeMethod.DeclaringType!.IsInterface || runtimeMethod.IsGenericMethod
+                ? InterfaceOrGenericVirtualSpecializationThreshold
+                : ClassVirtualSpecializationThreshold;
         }
 
         private static unsafe object? InvokeEmitted(
