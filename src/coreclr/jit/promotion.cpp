@@ -1664,10 +1664,56 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 }
 
 //------------------------------------------------------------------------
+// ReplaceVisitor:
+//   Prepare state for propagating pending readbacks in reverse postorder.
+//
+// Parameters:
+//   prom       - Promotion phase.
+//   aggregates - Promoted aggregates.
+//   liveness   - Liveness of the replacements.
+//   dfsTree    - Traversal order, including exceptional flow.
+//
+ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
+                               AggregateInfoMap&  aggregates,
+                               PromotionLiveness* liveness,
+                               FlowGraphDfsTree*  dfsTree)
+    : GenTreeVisitor(prom->m_compiler)
+    , m_promotion(prom)
+    , m_aggregates(aggregates)
+    , m_liveness(liveness)
+    , m_dfsTree(dfsTree)
+{
+    unsigned index = 0;
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        for (Replacement& rep : agg->Replacements)
+        {
+            rep.ReadBackIndex = index++;
+        }
+    }
+
+    m_readBackTraits = new (m_compiler, CMK_Promotion) BitVecTraits(index, m_compiler);
+    m_blockStates    = new (m_compiler, CMK_Promotion) BlockState[m_compiler->fgBBNumMax + 1]{};
+
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        BasicBlock* block = dfsTree->GetPostOrder(i);
+        m_blockStates[block->bbNum].RequiresAlreadyReadBackOnEntry |= m_compiler->bbIsHandlerBeg(block);
+        block->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
+            if (succ->bbPostorderNum >= block->bbPostorderNum)
+            {
+                // This includes irreducible backedge targets: their incoming state
+                // must be settled before visiting predecessors later in RPO.
+                m_blockStates[succ->bbNum].RequiresAlreadyReadBackOnEntry = true;
+            }
+            return BasicBlockVisit::Continue;
+        });
+    }
+}
+
+//------------------------------------------------------------------------
 // StartBlock:
-//   Handle reaching the end of the currently started block by preparing
-//   internal state for upcoming basic blocks, and inserting any necessary
-//   readbacks.
+//   Reconcile predecessor states and restore pending readbacks for this block.
 //
 // Parameters:
 //   block - The block
@@ -1680,8 +1726,7 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
     m_currentBlock = block;
 
 #ifdef DEBUG
-    // At the start of every block we expect all replacements to be in their
-    // local home.
+    // Descriptors are reset between visits; restore this block's pending state below.
     for (AggregateInfo* agg : m_aggregates)
     {
         for (Replacement& rep : agg->Replacements)
@@ -1694,82 +1739,115 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
     assert(m_numPendingReadBacks == 0);
 #endif
 
-    // OSR locals and parameters may need an initial read back, which we mark
-    // when we start the initial BB.
-    if (block != m_compiler->fgFirstBB)
-    {
-        return block->firstStmt();
-    }
-
-    Statement* lastInsertedStmt = nullptr;
-
     for (AggregateInfo* agg : m_aggregates)
     {
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
-        if (!dsc->lvIsParam && !dsc->lvIsOSRLocal)
-        {
-            continue;
-        }
-
-        JITDUMP("Processing fields of %s V%02u in entry BB " FMT_BB "\n", dsc->lvIsParam ? "parameter" : "OSR-local",
-                agg->LclNum, block->bbNum);
-
         for (size_t i = 0; i < agg->Replacements.size(); i++)
         {
             Replacement& rep = agg->Replacements[i];
-            ClearNeedsWriteBack(rep);
             if (!m_liveness->IsReplacementLiveIn(block, agg->LclNum, (unsigned)i))
             {
-                JITDUMP("  V%02u (%s) ignored because it is not live-in to entry BB\n", rep.LclNum, rep.Description);
                 continue;
             }
 
-            if (!dsc->lvIsParam ||
-                !Promotion::MapsToParameterRegister(m_compiler, agg->LclNum, rep.Offset, rep.AccessType))
+            bool pending = false;
+            if (block == m_compiler->fgFirstBB)
             {
+                pending = dsc->lvIsParam || dsc->lvIsOSRLocal;
+            }
+            else if (!m_blockStates[block->bbNum].RequiresAlreadyReadBackOnEntry)
+            {
+                bool hasPred = false;
+                pending      = true;
+                for (FlowEdge* edge : block->PredEdges())
+                {
+                    BasicBlock* pred = edge->getSourceBlock();
+                    if (!m_dfsTree->Contains(pred))
+                    {
+                        continue;
+                    }
+
+                    BlockState& state = m_blockStates[pred->bbNum];
+                    assert(state.Processed);
+                    hasPred = true;
+                    pending &= BitVecOps::IsMember(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex);
+                }
+                pending &= hasPred;
+            }
+
+            if (pending)
+            {
+                ClearNeedsWriteBack(rep);
                 SetNeedsReadBack(rep);
-                JITDUMP("  V%02u (%s) marked as needing read back\n", rep.LclNum, rep.Description);
-                continue;
-            }
-
-            // Insert read backs of parameters mapping to registers eagerly to
-            // set the backend up for recognizing these as register accesses.
-            GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-            Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-            JITDUMP("  V%02u (%s) is read back eagerly because it is a register parameter\n", rep.LclNum,
-                    rep.Description);
-            DISPSTMT(stmt);
-            if (lastInsertedStmt == nullptr)
-            {
-                m_compiler->fgInsertStmtAtBeg(block, stmt);
             }
             else
             {
-                m_compiler->fgInsertStmtAfter(block, lastInsertedStmt, stmt);
+                // At a mixed join, read back only on predecessors whose struct is
+                // current. Loading unconditionally here could read stale fields
+                // from paths that have updated the replacement instead.
+                for (FlowEdge* edge : block->PredEdges())
+                {
+                    BasicBlock* pred = edge->getSourceBlock();
+                    if (!m_dfsTree->Contains(pred))
+                    {
+                        continue;
+                    }
+
+                    BlockState& state = m_blockStates[pred->bbNum];
+                    if (state.Processed &&
+                        BitVecOps::IsMember(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex))
+                    {
+                        InsertReadBackAtEnd(pred, agg->LclNum, rep);
+                        BitVecOps::RemoveElemD(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex);
+                    }
+                }
             }
-            lastInsertedStmt = stmt;
         }
     }
 
-    // Skip all the eager read-backs if any were inserted.
-    return lastInsertedStmt == nullptr ? block->firstStmt() : lastInsertedStmt->GetNextStmt();
+    return block->firstStmt();
+}
+
+//------------------------------------------------------------------------
+// InsertReadBackAtEnd:
+//   Materialize a pending replacement before leaving a block.
+//
+// Parameters:
+//   block        - Block in which the struct contains the current value.
+//   structLclNum - Struct local.
+//   rep          - Replacement to initialize.
+//
+void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, const Replacement& rep)
+{
+    JITDUMP("Reading back V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB "\n", structLclNum, rep.Offset,
+            rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, block->bbNum);
+
+    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, structLclNum, rep);
+    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
+    m_compiler->fgInsertStmtNearEnd(block, stmt);
 }
 
 //------------------------------------------------------------------------
 // EndBlock:
-//   Handle reaching the end of the currently started block by preparing
-//   internal state for upcoming basic blocks, and inserting any necessary
-//   readbacks.
+//   Save pending readbacks for successors, materializing them at loop/EH boundaries.
 //
 // Remarks:
-//   We currently expect all fields to be most up-to-date in their field locals
-//   at the beginning of every basic block. That means all replacements should
-//   have Replacement::NeedsReadBack == false and Replacement::NeedsWriteBack
-//   == true at the beginning of every block. This function makes it so that is
-//   the case.
+//   Field descriptors are reset between visits; the saved state determines
+//   which replacements StartBlock can continue to leave in their struct homes.
 //
 void ReplaceVisitor::EndBlock()
 {
+    bool materialize = m_currentBlock->HasPotentialEHSuccs(m_compiler) ||
+                       m_currentBlock->KindIs(BBJ_CALLFINALLY, BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
+    m_currentBlock->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
+        materialize |= m_blockStates[succ->bbNum].RequiresAlreadyReadBackOnEntry;
+        return BasicBlockVisit::Continue;
+    });
+
+    BlockState& state      = m_blockStates[m_currentBlock->bbNum];
+    state.PendingReadBacks = BitVecOps::MakeEmpty(m_readBackTraits);
+    state.Processed        = true;
+
     for (AggregateInfo* agg : m_aggregates)
     {
         for (size_t i = 0; i < agg->Replacements.size(); i++)
@@ -1780,14 +1858,14 @@ void ReplaceVisitor::EndBlock()
             {
                 if (m_liveness->IsReplacementLiveOut(m_currentBlock, agg->LclNum, (unsigned)i))
                 {
-                    JITDUMP("Reading back replacement V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB ":\n",
-                            agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
-                            m_currentBlock->bbNum);
-
-                    GenTree*   readBack = Promotion::CreateReadBack(m_compiler, agg->LclNum, rep);
-                    Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
-                    DISPSTMT(stmt);
-                    m_compiler->fgInsertStmtNearEnd(m_currentBlock, stmt);
+                    if (materialize)
+                    {
+                        InsertReadBackAtEnd(m_currentBlock, agg->LclNum, rep);
+                    }
+                    else
+                    {
+                        BitVecOps::AddElemD(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex);
+                    }
                 }
                 else
                 {
@@ -2177,7 +2255,7 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
 //   to its field local.
 //
 //   We normally do this before the first use of the field we find, or before
-//   we transfer control to any successor. This method handles the case of
+//   control flow requires a materialized value. This method handles the case of
 //   implicit control flow related to EH; when this basic block is in a
 //   try-region (or filter block) and we find a tree that may throw it eagerly
 //   inserts pending readbacks.
@@ -2936,11 +3014,19 @@ PhaseStatus Promotion::Run()
 
     JITDUMP("Making replacements\n\n");
 
-    // Make all replacements we decided on.
-    ReplaceVisitor replacer(this, aggregates, &liveness);
-    for (BasicBlock* bb : m_compiler->Blocks())
+    // Make all replacements in reverse postorder so that forward predecessor
+    // states are available before processing a block.
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        Statement* firstStmt = replacer.StartBlock(bb);
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+    }
+
+    FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
+    ReplaceVisitor    replacer(this, aggregates, &liveness, dfsTree);
+    for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
+    {
+        BasicBlock* bb        = dfsTree->GetPostOrder(i - 1);
+        Statement*  firstStmt = replacer.StartBlock(bb);
 
         JITDUMP("\nReplacing in ");
         DBEXEC(m_compiler->verbose, bb->dspBlockHeader());
