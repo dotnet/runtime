@@ -207,6 +207,7 @@ definearch         ,X64   ,64Bit     ,X64, X64, X86
 copyinstructionsets,X86   ,X64
 
 ; Append new instruction sets here to preserve existing JIT ISA numbers.
+; ADX is selected by JIT pattern recognition, so it has no managed intrinsic class name.
 instructionset     ,X86   ,                     ,Adx                ,96 ,ADX                   ,adx
 instructionset     ,X64   ,                     ,Adx                ,96 ,ADX                   ,adx
 

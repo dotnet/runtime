@@ -8082,6 +8082,8 @@ void Lowering::TryLowerDivRem(GenTreeOp* div)
         return;
     }
 
+    // The inclusive integer-register range includes SP, which is not allocatable.
+    // Exclude it from this rough capacity estimate; other reservations (such as FP) vary by method.
 #ifdef TARGET_AMD64
     unsigned intRegCount = m_compiler->get_REG_INT_LAST() - REG_INT_FIRST;
 #else

@@ -5269,8 +5269,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        // ADX uses a four-byte opcode encoding; its mandatory prefix was counted above.
-        sz += (IsSimdInstruction(ins) || (ins == INS_adcx) || (ins == INS_adox) || TakesEvexPrefix(id))
+        // Legacy map-38 instructions have their mandatory prefix counted above.
+        sz += (IsSimdInstruction(ins) || IsLegacyMap38Instruction(ins) || TakesEvexPrefix(id))
                   ? emitInsSize(id, code, includeRexPrefixSize)
                   : 5;
     }

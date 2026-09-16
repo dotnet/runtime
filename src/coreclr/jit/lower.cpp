@@ -13848,6 +13848,7 @@ bool Lowering::TryLowerCarryCompare(GenTreeOp* cmp)
 #ifdef TARGET_AMD64
             // Unlike a carry chain, a branch saves only a comparison. Avoid sacrificing LEA
             // or perturbing allocation in register-heavy methods for that small saving.
+            // LAST - FIRST excludes SP from the inclusive integer-register range.
             unsigned intRegCount = m_compiler->get_REG_INT_LAST() - REG_INT_FIRST;
             if (negatedConstant || (m_compiler->lvaTrackedCount > 2 * intRegCount))
             {
