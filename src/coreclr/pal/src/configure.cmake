@@ -146,14 +146,7 @@ set(PREVIOUS_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
 if(CLR_CMAKE_HOST_APPLE)
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability-new")
 endif()
-check_cxx_source_compiles("
-#include <fcntl.h>
-#include <unistd.h>
-int main()
-{
-  int pipeDescriptors[2];
-  return pipe2(pipeDescriptors, O_CLOEXEC);
-}" PAL_HAVE_PIPE2)
+check_cxx_symbol_exists(pipe2 unistd.h PAL_HAVE_PIPE2)
 if(PAL_HAVE_PIPE2)
   set(HAVE_PIPE2 1 CACHE INTERNAL "" FORCE)
 else()
