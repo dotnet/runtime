@@ -957,7 +957,7 @@ protected:
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
-    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
