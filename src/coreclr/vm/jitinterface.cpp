@@ -13994,7 +13994,6 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
         if (ret)
         {
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
-            *isInterpreterCode = true;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             // Loading dependencies can compile this code version recursively. Preserve the
@@ -14013,6 +14012,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
                 _ASSERTE(portableEntryPoint != NULL);
                 PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
                 ret = portableEntryPoint;
+                *isInterpreterCode = true;
             }
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -14040,6 +14040,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
+            *isInterpreterCode = true;
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
