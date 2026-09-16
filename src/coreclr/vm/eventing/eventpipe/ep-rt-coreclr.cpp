@@ -204,9 +204,16 @@ ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
 		}
 	}
 #elif defined(FEATURE_PGO) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
-	// Multithreaded WASM: interpreter block-count PGO has no synchronized flush path yet, so stopping
-	// a PGO trace here would silently drop the block-count events. Flag the unimplemented config.
-	PORTABILITY_ASSERT ("Interpreter block-count PGO flush is not implemented for multithreaded WASM (requires PERFTRACING_DISABLE_THREADS).");
+	// Multithreaded WASM: interpreter block-count PGO has no synchronized flush path yet. This hook runs for
+	// every stopping session, so only trip when the stopping session actually enabled the PGO keyword (a real
+	// collection attempt on this unsupported config); unrelated sessions (CPU/GC/counters) are unaffected.
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, ep_session_get_mask (session)))
+	{
+		PORTABILITY_ASSERT ("Interpreter block-count PGO flush is not implemented for multithreaded WASM (requires PERFTRACING_DISABLE_THREADS).");
+	}
 	(void)session_id;
 #else
 	(void)session_id;

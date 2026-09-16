@@ -90,7 +90,7 @@ OPDEF(INTOP_PROF_ENTER, "prof.enter", 2, 0, 0, InterpOpMethodHandle)
 OPDEF(INTOP_PROF_LEAVE, "prof.leave", 1, 0, 0, InterpOpNoArgs)
 #endif
 
-#if defined(TARGET_BROWSER) || defined(TARGET_WASI)
+#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
 OPDEF(INTOP_PGO_COUNT, "pgo.count", 2, 0, 0, InterpOpLdPtr)
 #endif
 
