@@ -70,6 +70,7 @@ enum CORINFO_InstructionSet
     InstructionSet_WasmBase=1,
     InstructionSet_PackedSimd=2,
     InstructionSet_Vector128=3,
+    InstructionSet_RelaxedSimd=4,
 #endif // TARGET_WASM
 #ifdef TARGET_AMD64
     InstructionSet_X86Base=1,
@@ -473,6 +474,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
 #ifdef TARGET_WASM
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_PackedSimd))
             resultflags.RemoveInstructionSet(InstructionSet_Vector128);
+        if (resultflags.HasInstructionSet(InstructionSet_RelaxedSimd) && !resultflags.HasInstructionSet(InstructionSet_PackedSimd))
+            resultflags.RemoveInstructionSet(InstructionSet_RelaxedSimd);
         if (resultflags.HasInstructionSet(InstructionSet_PackedSimd) && !resultflags.HasInstructionSet(InstructionSet_WasmBase))
             resultflags.RemoveInstructionSet(InstructionSet_PackedSimd);
 #endif // TARGET_WASM
@@ -785,6 +788,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "PackedSimd";
         case InstructionSet_Vector128 :
             return "Vector128";
+        case InstructionSet_RelaxedSimd :
+            return "RelaxedSimd";
 #endif // TARGET_WASM
 #ifdef TARGET_AMD64
         case InstructionSet_X86Base :
@@ -993,6 +998,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
 #ifdef TARGET_WASM
         case READYTORUN_INSTRUCTION_WasmBase: return InstructionSet_WasmBase;
         case READYTORUN_INSTRUCTION_PackedSimd: return InstructionSet_PackedSimd;
+        case READYTORUN_INSTRUCTION_RelaxedSimd: return InstructionSet_RelaxedSimd;
 #endif // TARGET_WASM
 #ifdef TARGET_AMD64
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
