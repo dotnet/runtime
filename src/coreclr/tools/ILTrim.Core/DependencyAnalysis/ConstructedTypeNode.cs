@@ -80,6 +80,24 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (factory.IsModuleTrimmed(_type.Module))
+            {
+                TypeDefinition typeDefinition = _type.MetadataReader.GetTypeDefinition(_type.Handle);
+                foreach (InterfaceImplementationHandle implementationHandle in typeDefinition.GetInterfaceImplementations())
+                {
+                    InterfaceImplementation implementation = _type.MetadataReader.GetInterfaceImplementation(implementationHandle);
+                    EcmaType interfaceType = _type.Module.TryGetType(implementation.Interface)?.GetTypeDefinition() as EcmaType;
+                    if (interfaceType != null)
+                    {
+                        result ??= new List<CombinedDependencyListEntry>();
+                        result.Add(new(
+                            factory.InterfaceImplementation(_type.Module, implementationHandle),
+                            factory.TypeDefinition(interfaceType.Module, interfaceType.Handle),
+                            "Interface implementation on constructed type"));
+                    }
+                }
+            }
+
             // For each interface, figure out what implements the individual interface methods on it.
             foreach (DefType intface in _type.RuntimeInterfaces)
             {

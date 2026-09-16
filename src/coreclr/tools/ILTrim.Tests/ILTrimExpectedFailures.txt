@@ -51,7 +51,6 @@ Attributes.StructLayout.ExplicitClass
 Attributes.StructLayout.SequentialClass
 Attributes.TypeWithDynamicInterfaceCastableImplementationAttributeIsKept
 Basic.InstantiatedTypeWithOverridesFromObject
-Basic.UsedGenericInterfaceIsKept
 BCLFeatures.ETW.CustomEventSource
 BCLFeatures.ETW.CustomLibraryEventSource
 CommandLine.AddCustomStep

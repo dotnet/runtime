@@ -133,6 +133,19 @@ namespace ILCompiler.DependencyAnalysis
             return _typeDefinitions.GetOrAdd(new HandleKey<TypeDefinitionHandle>(module, handle));
         }
 
+        NodeCache<HandleKey<InterfaceImplementationHandle>, InterfaceImplementationNode>
+            _interfaceImplementations =
+                new NodeCache<HandleKey<InterfaceImplementationHandle>, InterfaceImplementationNode>(
+                    key => new InterfaceImplementationNode(key.Module, key.Handle));
+
+        public InterfaceImplementationNode InterfaceImplementation(
+            EcmaModule module,
+            InterfaceImplementationHandle handle)
+        {
+            return _interfaceImplementations.GetOrAdd(
+                new HandleKey<InterfaceImplementationHandle>(module, handle));
+        }
+
         NodeCache<HandleKey<MethodImplementationHandle>, MethodImplementationNode> _methodImplementations
             = new NodeCache<HandleKey<MethodImplementationHandle>, MethodImplementationNode>(key
                 => new MethodImplementationNode(key.Module, key.Handle));
