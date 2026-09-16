@@ -223,7 +223,7 @@ HRESULT EEStartup();
 
 static void InitializeGarbageCollector();
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#ifdef TARGET_APPLE
 static void InitThreadStateKey();
 #endif
 
@@ -713,7 +713,7 @@ void EEStartupHelper()
         InitThreadManager();
         STRESS_LOG0(LF_STARTUP, LL_ALWAYS, "Returned successfully from InitThreadManager");
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#ifdef TARGET_APPLE
         InitThreadStateKey();
 #endif
 
@@ -1794,7 +1794,7 @@ void EnsureTlsDestructionMonitor()
 }
 
 #else
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#ifdef TARGET_APPLE
 static pthread_key_t g_threadStateKey;
 static byte g_threadStateDestroyedMarker;
 
@@ -1853,7 +1853,7 @@ struct TlsDestructionMonitor
             RuntimeThreadShutdown(GetThreadNULLOk());
         }
 
-#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+#ifdef TARGET_APPLE
         SetThreadStateDestroyed();
 #else
         t_threadStateDestroyed = true;
