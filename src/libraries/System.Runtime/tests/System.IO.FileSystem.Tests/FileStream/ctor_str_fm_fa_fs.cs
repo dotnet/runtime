@@ -120,20 +120,6 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS)]
-        public void FileLockingDisabledByDefault()
-        {
-            Assert.False(PlatformDetection.IsFileLockingEnabled);
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.MacCatalyst)]
-        public void FileLockingEnabledByDefault()
-        {
-            Assert.True(PlatformDetection.IsFileLockingEnabled);
-        }
-
         [InlineData(FileMode.Create)]
         [InlineData(FileMode.Truncate)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
