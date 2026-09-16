@@ -57,7 +57,7 @@ public class Async2Implement
     }
 
     [Fact]
-    [RuntimeAsyncMethodGeneration(false)]
+    [RuntimeAsyncMethodGeneration(false)] // Select the Task-returning interface implementations rather than runtime-async dispatch.
     public static async Task TestEntryPoint()
     {
         IBase1 b1 = new Derived1();

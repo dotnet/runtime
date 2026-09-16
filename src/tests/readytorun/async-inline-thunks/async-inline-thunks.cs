@@ -31,7 +31,7 @@ public class InlineThunks
         }
     }
 
-    [RuntimeAsyncMethodGeneration(false)]
+    [RuntimeAsyncMethodGeneration(false)] // Use async1 codegen so calls exercise the Task/ValueTask-returning entry points rather than runtime-async variants.
     public static async Task<int> Main()
     {
         // Task-returning thunk inlining (non-async caller → async callee)
