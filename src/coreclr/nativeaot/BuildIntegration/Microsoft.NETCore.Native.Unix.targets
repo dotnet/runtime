@@ -261,6 +261,12 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="--sysroot=&quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' != 'true'" Shim="true" />
       <LinkerArg Include="-isysroot &quot;$(SysRoot)&quot;" Condition="'$(SysRoot)' != '' and '$(_IsApplePlatform)' == 'true'" Shim="true" />
       <LinkerArg Include="--target=$(TargetTriple)" Condition="'$(TargetTriple)' != ''" Shim="true" />
+      <!-- The RISC-V lp64 (soft-float) target: the object writer already stamps the
+           soft-float ABI on what ilc emits (see _targetArchitectureWithAbi), but the
+           aggregate-executable shim is compiled from C by the native compiler, and
+           the final link picks the CRT by ABI. Both have to be told explicitly, or
+           the shim comes out lp64d and the linker refuses to mix it with the rest. -->
+      <LinkerArg Include="-mabi=lp64" Condition="'$(_targetArchitectureWithAbi)' == 'riscv64-lp64'" Shim="true" />
       <LinkerArg Include="-g" Condition="$(NativeDebugSymbols) == 'true'" Shim="true" />
       <LinkerArg Include="-Wl,--strip-debug" Condition="$(NativeDebugSymbols) != 'true' and '$(_IsApplePlatform)' != 'true'" />
       <LinkerArg Include="-Wl,-install_name,&quot;$(SharedLibraryInstallName)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(NativeLib)' == 'Shared'" />
