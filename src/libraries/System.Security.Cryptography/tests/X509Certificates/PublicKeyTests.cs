@@ -336,6 +336,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsX509Sha1Signatures))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134002", TestPlatforms.Android)]
         public static void TestKey_RSA384_ValidatesSignature()
         {
             byte[] signature =
