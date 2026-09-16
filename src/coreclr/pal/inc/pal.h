@@ -231,6 +231,21 @@ PALAPI
 PAL_TerminateEx(
     int exitCode);
 
+#if !defined(TARGET_WASM)
+/// <summary>
+/// Aborts the process without invoking PAL shutdown or PAL crash reporting.
+/// Restores the SIGABRT disposition saved by PAL, unblocks SIGABRT on the
+/// current thread, and sends SIGABRT to the process, falling back to an
+/// immediate exit if the signal does not terminate it.
+/// </summary>
+PALIMPORT
+PAL_NORETURN
+void
+PALAPI
+PAL_Abort(
+    void);
+#endif // !TARGET_WASM
+
 typedef VOID (*PSHUTDOWN_CALLBACK)(bool isExecutingOnAltStack);
 
 PALIMPORT
