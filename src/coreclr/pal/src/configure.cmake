@@ -153,8 +153,8 @@ int main()
 {
   int pipeDescriptors[2];
   return pipe2(pipeDescriptors, O_CLOEXEC);
-}" HAVE_PIPE2_USABLE)
-if(HAVE_PIPE2_USABLE)
+}" PAL_HAVE_PIPE2)
+if(PAL_HAVE_PIPE2)
   set(HAVE_PIPE2 1)
 else()
   set(HAVE_PIPE2 0)
