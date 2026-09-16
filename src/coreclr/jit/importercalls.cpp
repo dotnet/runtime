@@ -4391,10 +4391,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case NI_System_Type_get_IsPrimitive:
                             // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
                             // because enums are not primitive types.
-                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
-                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            if (info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot)
                             {
-                                retNode = gtNewTrue();
+                                CorInfoType type = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
+                                retNode =
+                                    gtNewIconNode((type != CORINFO_TYPE_UNDEF) && (type != CORINFO_TYPE_VOID) ? 1 : 0);
                             }
                             else
                             {
