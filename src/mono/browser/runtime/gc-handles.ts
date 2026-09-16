@@ -60,6 +60,8 @@ if (_use_finalization_registry) {
 export const js_owned_gc_handle_symbol = Symbol.for("wasm js_owned_gc_handle");
 export const cs_owned_js_handle_symbol = Symbol.for("wasm cs_owned_js_handle");
 export const do_not_force_dispose = Symbol.for("wasm do_not_force_dispose");
+// links an eagerly created Promise back to the JSHandle of its TaskHolder
+export const eager_task_handle_symbol = Symbol.for("wasm eager_task_handle");
 
 
 export function mono_wasm_get_jsobj_from_js_handle (js_handle: JSHandle): any {
