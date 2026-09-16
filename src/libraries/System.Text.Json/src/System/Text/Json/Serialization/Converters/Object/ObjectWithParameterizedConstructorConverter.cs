@@ -240,7 +240,7 @@ namespace System.Text.Json.Serialization.Converters
 
                             if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead || default(T) is not null)
                             {
-                                jsonPropertyInfo.Set(obj, propValue);
+                                jsonPropertyInfo.SetValueAsObject(obj, propValue);
                             }
                         }
                         else

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -1301,6 +1302,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        [RequiresUnreferencedCode("Uses a resolver modifier that relies on reflection-adjacent APIs.")]
+        [RequiresDynamicCode("Uses a resolver modifier that relies on reflection-adjacent APIs.")]
         public static void SourceGeneratedStruct_CustomizedCreateObject_DeserializesSuccessfully()
         {
             var options = new JsonSerializerOptions
@@ -1331,11 +1334,54 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void SourceGeneratedStruct_Parameterized_Callbacks_PreserveMutations()
         {
-            ParameterizedStructWithCallbacks result = JsonSerializer.Deserialize<ParameterizedStructWithCallbacks>("""{"myInt":10,"Extra":20}""", StructWithCallbacksContext.Default.ParameterizedStructWithCallbacks);
+            ParameterizedStructWithCallbacks result = JsonSerializer.Deserialize<ParameterizedStructWithCallbacks>("""{"MyInt":10,"Extra":20}""", StructWithCallbacksContext.Default.ParameterizedStructWithCallbacks);
             Assert.Equal(10, result.MyInt);
             Assert.Equal(20, result.Extra);
             Assert.Equal(1, result.OnDeserializingCount);
             Assert.Equal(1, result.OnDeserializedCount);
+        }
+
+        public struct StructWithLegacyAccessorContract
+        {
+            public int MyInt { get; set; }
+        }
+
+        [JsonSerializable(typeof(StructWithLegacyAccessorContract))]
+        internal partial class StructWithLegacyAccessorContractContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        [RequiresUnreferencedCode("Uses a resolver modifier that relies on reflection-adjacent APIs.")]
+        [RequiresDynamicCode("Uses a resolver modifier that relies on reflection-adjacent APIs.")]
+        public static void SourceGeneratedStruct_LegacyStylePropertyAccessors_StillWork()
+        {
+            // Simulates Get/Set delegates compiled against the pre-StrongBox<T> contract used
+            // by source generator versions that predate this feature (or a resolver modifier
+            // written against that historical contract): 'obj' is assumed to always be a genuine
+            // boxed StructWithLegacyAccessorContract, so the setter needs Unsafe.Unbox to obtain a
+            // mutable reference into it, exactly like pre-StrongBox<T> generated code did. The
+            // runtime must transparently detect and accommodate delegates like this so they keep
+            // working even though 'obj' is now a StrongBox<StructWithLegacyAccessorContract> for
+            // value-type source-generated properties.
+            var options = new JsonSerializerOptions
+            {
+                TypeInfoResolver = StructWithLegacyAccessorContractContext.Default.WithAddedModifier(ti =>
+                {
+                    if (ti.Type == typeof(StructWithLegacyAccessorContract))
+                    {
+                        JsonPropertyInfo property = ti.Properties.Single(p => p.Name == "MyInt");
+                        property.Get = static obj => ((StructWithLegacyAccessorContract)obj).MyInt;
+                        property.Set = static (obj, value) => unsafe(System.Runtime.CompilerServices.Unsafe.Unbox<StructWithLegacyAccessorContract>(obj)).MyInt = (int)value!;
+                    }
+                })
+            };
+
+            StructWithLegacyAccessorContract result = JsonSerializer.Deserialize<StructWithLegacyAccessorContract>("""{"MyInt":42}""", options);
+            Assert.Equal(42, result.MyInt);
+
+            string json = JsonSerializer.Serialize(result, options);
+            JsonTestHelper.AssertJsonEqual("""{"MyInt":42}""", json);
         }
     }
 }
