@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -71,6 +71,11 @@
 // R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
 // R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
 //     R2R 29 is not backward compatible with 28.x or earlier.
+// R2R Version 29.1 adds READYTORUN_HELPER_ResumeAfterCatch for WebAssembly exception resumption.
+// R2R Version 29.2 adds READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS, which records that the image was
+// compiled with the GC mode transition verification scaffolding (and therefore emits
+// READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
+// consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -111,6 +116,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_IL_BODIES          = 0x00000200,   // IL method bodies have been stripped from the image
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
+    READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -397,6 +403,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GCPoll                    = 0x44,
     READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
+    READYTORUN_HELPER_ResumeAfterCatch          = 0x47,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50, // No longer supported as of READYTORUN_MAJOR_VERSION 17.0

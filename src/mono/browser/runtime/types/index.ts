@@ -291,6 +291,7 @@ export type JsAsset = Asset & {
 
 export type SymbolsAsset = Asset & {
     name: string; // actually URL
+    hash?: string | null | "";
     cache?: RequestCache;
 }
 
