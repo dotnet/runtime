@@ -151,6 +151,57 @@ namespace Wasm.Build.Tests
             Assert.Equal(Path.Combine(GetObjDir(config), "R2R") + Path.DirectorySeparatorChar, match.Groups[1].Value);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeRelinkResolvesCrossgen2WithoutReadyToRun(bool publish)
+        {
+            string targetsFile = $"{nameof(NativeRelinkResolvesCrossgen2WithoutReadyToRun)}.Build.targets";
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_sdk_crossgen2",
+                extraProperties: $$"""
+                    <PublishReadyToRun>false</PublishReadyToRun>
+                    <WasmBuildNative>true</WasmBuildNative>
+                    <_WasmBuildTestExpectNestedPublish>{{publish}}</_WasmBuildTestExpectNestedPublish>
+                    """,
+                insertAtEnd: $"""<Import Project="{targetsFile}" />""");
+            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, targetsFile), Path.Combine(_projectDir, targetsFile));
+
+            // Run the generator, then stop before native compilation.
+            string output = publish
+                ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
+                : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
+
+            Assert.Contains("Stopping after validating SDK crossgen2", output);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void NativeRelinkWithoutCrossgen2PackReportsMissingGenerator(bool publish)
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_missing_crossgen2",
+                extraProperties: """
+                    <PublishReadyToRun>false</PublishReadyToRun>
+                    <RequiresCrossgen2Pack>false</RequiresCrossgen2Pack>
+                    <WasmBuildNative>true</WasmBuildNative>
+                    """);
+
+            string output = publish
+                ? PublishProject(info, Configuration.Debug, new PublishOptions(ExpectSuccess: false)).buildOutput
+                : BuildProject(info, Configuration.Debug, new BuildOptions(ExpectSuccess: false)).buildOutput;
+
+            Assert.Contains("Could not resolve crossgen2. Update the .NET SDK and restore the project, or set $(Crossgen2Path) to a crossgen2 executable.", output);
+            Assert.DoesNotContain("NETSDK1094", output);
+        }
+
         private string? BuildAndGetWasmBuildNativeLine(string projectPrefix, string extraProperties, bool expectSuccess)
             => BuildAndGetOutput(projectPrefix, extraProperties, extraItems: "", expectSuccess).line;
 

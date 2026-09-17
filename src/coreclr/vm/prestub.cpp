@@ -31,6 +31,7 @@
 
 #ifdef TARGET_WASM
 #include "wasmasynccontinuation.h"
+#include "wasm/helpers.hpp"
 #endif
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 #include "wasm/helpers.hpp"
@@ -2025,52 +2026,102 @@ static InterpThreadContext* GetInterpThreadContext()
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe);
 #endif
 
-extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+FORCEINLINE static void* ExecuteInterpretedMethodBody(
+    TransitionBlock* pTransitionBlock,
+    TADDR byteCodeAddr,
+    void* retBuff,
+    InterpThreadContext* threadContext,
+    int8_t* sp)
 {
-    // Argument registers are in the TransitionBlock
-    // The stack arguments are right after the pTransitionBlock
-    InterpThreadContext *threadContext = GetInterpThreadContext();
-    int8_t *sp = threadContext->pStackPointer;
+    // This construct ensures that the InterpreterFrame is always stored at a higher address than the
+    // InterpMethodContextFrame. This is important for the stack walking code.
+    struct Frames
+    {
+        InterpMethodContextFrame interpMethodContextFrame = {0};
+        InterpreterFrame interpreterFrame;
 
-    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+        Frames(TransitionBlock* pTransitionBlock)
+        : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
+        {
+        }
+    }
+    frames(pTransitionBlock);
+
+    frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+    frames.interpMethodContextFrame.pStack = sp;
+    frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frames.interpreterFrame);
+    InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
+    ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
+
+#if defined(TARGET_AMD64)
+    pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_ARM64)
+    pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_ARM)
+    pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+    pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
+#elif defined(TARGET_WASM)
+    // Wasm has no async-continuation-return register; write the value to the
+    // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
+    // R2R caller reads after the call. The transition-block register area is
+    // unused on wasm.
+    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
+#else
+    #error Unsupported architecture
+#endif
+
+    frames.interpreterFrame.Pop();
+
+    return frames.interpMethodContextFrame.pRetVal;
+}
+
+NOINLINE static void* ExecuteInterpretedMethodFromUnmanaged(
+    TransitionBlock* pTransitionBlock,
+    InterpByteCodeStart* pInterpreterCode,
+    void* retBuff,
+    InterpThreadContext* threadContext,
+    int8_t* sp)
+{
+    Thread* thread = GetThreadNULLOk();
+    if (thread == NULL)
+        CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
+
+    // Verify the current thread isn't in COOP mode.
+    if (thread->PreemptiveGCDisabled())
+        ReversePInvokeBadTransition();
+
 #if defined(PROFILING_SUPPORTED)
     MethodDesc* methodDescToReportAsTransition = nullptr;
 #endif
 
-    if (pInterpreterCode->Method->unmanagedCallersOnly)
-    {
-        Thread* thread = GetThreadNULLOk();
-        if (thread == NULL)
-            CREATETHREAD_IF_NULL_FAILFAST(thread, W("Failed to setup new thread during reverse P/Invoke"));
-
-        // Verify the current thread isn't in COOP mode.
-        if (thread->PreemptiveGCDisabled())
-            ReversePInvokeBadTransition();
-
 #ifdef PROFILING_SUPPORTED
-        if (CORProfilerTrackTransitions())
-        {
-            methodDescToReportAsTransition = pInterpreterCode->Method->methodHnd;
+    if (CORProfilerTrackTransitions())
+    {
+        methodDescToReportAsTransition = pInterpreterCode->Method->methodHnd;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
-            void* thunkDataMaybe = nullptr;
-            if (pInterpreterCode->Method->publishSecretStubParam)
-                thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
-            if (thunkDataMaybe != NULL)
-            {
-                methodDescToReportAsTransition = ((UMEntryThunkData*)thunkDataMaybe)->GetMethod();
-            }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-            ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
+        void* thunkDataMaybe = nullptr;
+        if (pInterpreterCode->Method->publishSecretStubParam)
+            thunkDataMaybe = GetMostRecentUMEntryThunkDataNonDestructive();
+        if (thunkDataMaybe != NULL)
+        {
+            methodDescToReportAsTransition = ((UMEntryThunkData*)thunkDataMaybe)->GetMethod();
         }
-#endif
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+        ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
     }
+#endif
 
     void* retVal;
     {
-        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
+        GCX_COOP_REGION_BEGIN();
 
 #ifdef DEBUGGING_SUPPORTED
-        if (pInterpreterCode->Method->unmanagedCallersOnly && g_TrapReturningThreads && CORDebuggerTraceCall())
+        if (g_TrapReturningThreads && CORDebuggerTraceCall())
         {
             void* thunkDataMaybe = nullptr;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -2081,51 +2132,8 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         }
 #endif // DEBUGGING_SUPPORTED
 
-        // This construct ensures that the InterpreterFrame is always stored at a higher address than the
-        // InterpMethodContextFrame. This is important for the stack walking code.
-        struct Frames
-        {
-            InterpMethodContextFrame interpMethodContextFrame = {0};
-            InterpreterFrame interpreterFrame;
-
-            Frames(TransitionBlock* pTransitionBlock)
-            : interpreterFrame(pTransitionBlock, &interpMethodContextFrame)
-            {
-            }
-        }
-        frames(pTransitionBlock);
-
-        frames.interpMethodContextFrame.startIp = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
-        frames.interpMethodContextFrame.pStack = sp;
-        frames.interpMethodContextFrame.pRetVal = (retBuff != NULL) ? (int8_t*)retBuff : sp;
-
-        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frames.interpreterFrame);
-        InterpExecMethod(&frames.interpreterFrame, &frames.interpMethodContextFrame, threadContext);
-        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
-
-        ArgumentRegisters *pArgumentRegisters = (ArgumentRegisters*)(((uint8_t*)pTransitionBlock) + TransitionBlock::GetOffsetOfArgumentRegisters());
-
-#if defined(TARGET_AMD64)
-        pArgumentRegisters->RCX = (INT_PTR)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_ARM64)
-        pArgumentRegisters->x[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_ARM)
-        pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-        pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-    #elif defined(TARGET_WASM)
-        // Wasm has no async-continuation-return register; write the value to the
-        // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
-        // R2R caller reads after the call. The transition-block register area is
-        // unused on wasm.
-        RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
-    #else
-        #error Unsupported architecture
-#endif
-
-        frames.interpreterFrame.Pop();
-
-        retVal = frames.interpMethodContextFrame.pRetVal;
+        retVal = ExecuteInterpretedMethodBody(pTransitionBlock, (TADDR)pInterpreterCode, retBuff, threadContext, sp);
+        GCX_COOP_REGION_END();
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2136,6 +2144,23 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
 #endif
 
     return retVal;
+}
+
+extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBlock, TADDR byteCodeAddr, void* retBuff)
+{
+    // Argument registers are in the TransitionBlock
+    // The stack arguments are right after the pTransitionBlock
+    InterpThreadContext *threadContext = GetInterpThreadContext();
+    int8_t *sp = threadContext->pStackPointer;
+
+    InterpByteCodeStart* pInterpreterCode = dac_cast<PTR_InterpByteCodeStart>(byteCodeAddr);
+    if (pInterpreterCode->Method->unmanagedCallersOnly)
+    {
+        return ExecuteInterpretedMethodFromUnmanaged(
+            pTransitionBlock, pInterpreterCode, retBuff, threadContext, sp);
+    }
+
+    return ExecuteInterpretedMethodBody(pTransitionBlock, byteCodeAddr, retBuff, threadContext, sp);
 }
 
 void ExecuteInterpretedMethodWithArgs(TADDR targetIp, int8_t* args, size_t argSize, void* retBuff, PCODE callerIp)
@@ -2198,24 +2223,19 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             {
-                GCX_PREEMP();
+                GCX_PREEMP_REGION_BEGIN();
                 (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
                 targetIp = pMethod->GetInterpreterCode();
+                GCX_PREEMP_REGION_END();
             }
 
             finishedPrestubPortion = true;
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
-#ifdef TARGET_WASM
-                // Keep the transition and argument roots while invoking R2R code, but report
-                // the managed activation through its R2R body rather than this prestub.
-                // An FCall can still need the prestub to represent its native implementation.
-                if (!pMethod->IsFCall())
-                {
-                    pPFrame->MarkPrestubComplete();
-                }
-#endif // TARGET_WASM
+                // Keep the transition and argument roots, but do not report an additional
+                // managed activation that would be absent on subsequent calls.
+                pPFrame->MarkPrestubComplete();
                 Object* continuationRet = nullptr;
                 Object** pContinuationRet = nullptr;
 #ifdef TARGET_WASM
@@ -2782,7 +2802,11 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
 // Some methods also have one-time prestubs we defer the patching until
 // we have the final stable method entry point.
 //
-EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBlock, TADDR pIndirection, DWORD sectionIndex, Module * pModule)
+EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
+    TransitionBlock * pTransitionBlock,
+    TADDR pIndirection,
+    DWORD sectionIndex,
+    Module * pModule)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -2809,6 +2833,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
     //
 
     PCODE         pCode   = (PCODE)NULL;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    void* virtualDispatchTarget = nullptr;
+    DWORD packedVirtualDispatchOffsets = 0;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     PreserveLastErrorHolder preserveLastError;
 
@@ -3022,6 +3050,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 #endif
 #if defined(FEATURE_CACHED_INTERFACE_DISPATCH)
             {
+#ifndef TARGET_WASM
                 if (ALIGN_UP(rva, sizeof(TADDR) * 2) == rva && pImportSection->EntrySize == sizeof(TADDR) * 2)
                 {
                     // The entry is aligned and the size is correct, so we can use the cached interface dispatch mechanism
@@ -3051,6 +3080,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                     }
 #endif
                 }
+#endif // !TARGET_WASM
 
                 GCX_COOP_THREAD_EXISTS(CURRENT_THREAD);
 
@@ -3089,6 +3119,41 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
                 }
             }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            if (!pMT->IsInterface())
+            {
+                DWORD offsetOfIndirection =
+                    MethodTable::GetVtableOffset() +
+                    MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
+                DWORD offsetAfterIndirection =
+                    MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
+
+                // The virtual dispatch thunk decodes both byte offsets from 16-bit fields.
+                // Wasm32 offsets always fit because MethodTable supports at most 65,536 virtual
+                // slots grouped into chunks of eight. This code is FEATURE_PORTABLE_ENTRYPOINTS
+                // gated rather than Wasm-gated, so a future wider-pointer target may exceed this
+                // range. In that case, leave the import cell on its delay-load thunk so it continues
+                // resolving through ExternalMethodFixupWorker.
+                bool offsetsFit =
+                    offsetOfIndirection <= UINT16_MAX && offsetAfterIndirection <= UINT16_MAX;
+#ifdef TARGET_32BIT
+                _ASSERTE(offsetsFit);
+#endif // TARGET_32BIT
+                if (offsetsFit)
+                {
+                    virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
+                    if (virtualDispatchTarget == nullptr)
+                    {
+                        // A missing thunk leaves the import cell on the correct, slower helper path.
+                        // Crossgen2 emits the required thunk dependency, so this should not happen in practice.
+                        _ASSERTE(!"ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
+                    }
+
+                    packedVirtualDispatchOffsets =
+                        offsetOfIndirection | (offsetAfterIndirection << 16);
+                }
+            }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
             _ASSERTE(pCode != (PCODE)NULL);
         }
         else
@@ -3132,7 +3197,34 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
-#endif
+    if (virtualDispatchTarget != nullptr)
+    {
+        READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
+            reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT**>(pIndirection);
+        READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pCurrentEntry = VolatileLoad(ppImportEntry);
+
+        if (pCurrentEntry->Target != virtualDispatchTarget)
+        {
+            AllocMemHolder<VirtualDispatchPortableEntryPoint> pNewEntry(
+                pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
+                    S_SIZE_T(sizeof(VirtualDispatchPortableEntryPoint))));
+            pNewEntry->Target = virtualDispatchTarget;
+            pNewEntry->PackedDispatchOffsets = packedVirtualDispatchOffsets;
+            pNewEntry->InitialEntry = pCurrentEntry;
+
+            READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pPublishedEntry =
+                InterlockedCompareExchangeT(
+                    ppImportEntry,
+                    reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT*>(
+                        static_cast<VirtualDispatchPortableEntryPoint*>(pNewEntry)),
+                    pCurrentEntry);
+            if (pPublishedEntry == pCurrentEntry)
+            {
+                pNewEntry.SuppressRelease();
+            }
+        }
+    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
@@ -3150,7 +3242,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(TransitionBlock * pTransitionBl
 
     return pCode;
 }
-
 
 #ifdef FEATURE_READYTORUN
 
