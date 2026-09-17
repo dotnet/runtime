@@ -1,0 +1,72 @@
+parameters:
+  - name: platforms
+    type: object
+  - name: testGroup
+    type: string
+    values:
+    - jitstress-isas-arm
+    - jitstress-isas-avx512
+    - jitstress-isas-x86
+
+stages:
+- stage: Libraries
+  displayName: Libraries Vector ISA Stress Tests
+  dependsOn: []
+  jobs:
+  - template: /eng/common/core-templates/job/helix-job-monitor.yml
+    parameters:
+      helixAccessToken: $(HelixApiAccessToken)
+      timeoutInMinutes: 540
+      allowNoHelixJobs: true
+
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/common/global-build-job.yml
+      buildConfig: Release
+      helixQueueGroup: libraries
+      helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+      platforms: ${{ parameters.platforms }}
+      jobParameters:
+        nameSuffix: Libraries_VectorTests
+        # Default timeout is 150 minutes (2.5 hours), which is not enough for stress.
+        timeoutInMinutes: 360
+        buildArgs: -s clr+libs+libs.tests -rc Checked -c $(_BuildConfig) /p:ArchiveTests=true /p:RunVectorTestsOnly=true
+        postBuildSteps:
+          - template: /eng/pipelines/libraries/helix.yml
+            parameters:
+              creator: dotnet-bot
+              extraHelixArguments: /maxcpucount:10
+              useHelixMonitor: true
+              # Match the CoreCLR ISA scenarios in run-test-job.yml.
+              ${{ if eq(parameters.testGroup, 'jitstress-isas-arm') }}:
+                scenarios:
+                - jitstress_isas_nohwintrinsic
+              ${{ if eq(parameters.testGroup, 'jitstress-isas-avx512') }}:
+                scenarios:
+                - jitstress_isas_x86_evex
+                - jitstress_isas_x86_noavx512
+                - jitstressregs0x2000
+              ${{ if eq(parameters.testGroup, 'jitstress-isas-x86') }}:
+                scenarios:
+                - jitstress_isas_nohwintrinsic
+                - jitstress_isas_x86_evex
+                - jitstress_isas_x86_noavx
+                - jitstress_isas_x86_noavx2
+                - jitstress_isas_x86_noavx512
+                - jitstress_isas_x86_vectort128
+                - jitstress_isas_x86_vectort512
+                - jitstress_isas_x86_noavx512_vectort128
+                - jitstress_isas_1_x86_evex
+                - jitstress_isas_1_x86_noavx
+                - jitstress_isas_1_x86_noavx2
+                - jitstress_isas_1_x86_noavx512
+                - jitstress_isas_1_x86_vectort128
+                - jitstress_isas_1_x86_vectort512
+                - jitstress_isas_1_x86_noavx512_vectort128
+                - jitstress_isas_2_x86_evex
+                - jitstress_isas_2_x86_noavx
+                - jitstress_isas_2_x86_noavx2
+                - jitstress_isas_2_x86_noavx512
+                - jitstress_isas_2_x86_vectort128
+                - jitstress_isas_2_x86_vectort512
+                - jitstress_isas_2_x86_noavx512_vectort128

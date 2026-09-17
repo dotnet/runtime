@@ -58,5 +58,10 @@ extends:
             testGroup: ${{ parameters.testGroup }}
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+    - ${{ if in(parameters.testGroup, 'jitstress-isas-arm', 'jitstress-isas-avx512', 'jitstress-isas-x86') }}:
+      - template: /eng/pipelines/coreclr/templates/jit-isas-libraries.yml
+        parameters:
+          platforms: ${{ parameters.platforms }}
+          testGroup: ${{ parameters.testGroup }}
     - ${{ each stage in parameters.stages }}:
         - ${{ stage }}
