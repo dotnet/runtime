@@ -369,11 +369,6 @@ internal sealed partial class GrammarActions
         }
 
         ILOpCode opcode = ParseOpCodeFromToken(opcodeToken);
-        if (opcode == ILOpCode.Localloc)
-        {
-            method.Definition.HasDynamicStackAllocation = true;
-        }
-
         return (method, opcode);
     }
 
