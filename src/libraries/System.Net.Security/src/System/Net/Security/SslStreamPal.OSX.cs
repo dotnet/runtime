@@ -498,6 +498,10 @@ namespace System.Net.Security
                 SafeDeleteNwContext.IsNetworkFrameworkAvailable &&
                 !sslAuthenticationOptions.ForceSyncPal &&
                 encryptionPolicyOk &&
+                // Network Framework has no API for advertising a custom CA list in the
+                // CertificateRequest, so a server configured with SslCertificateTrust has to keep
+                // using SecureTransport rather than silently dropping the caller's trust list.
+                sslAuthenticationOptions.CertificateContext?.Trust == null &&
                 (sslAuthenticationOptions.IsClient || sslAuthenticationOptions.CertificateContext != null) &&
                 (sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.None ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
