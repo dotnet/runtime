@@ -378,7 +378,7 @@ namespace ILCompiler
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
-                ICompilation compilation;
+                ReadyToRunCodegenCompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
@@ -702,6 +702,7 @@ namespace ILCompiler
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
+                        .UseVerifyGCModeTransitions(Get(_command.VerifyGCModeTransitions))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
                         .UseContainerFormat(format)
@@ -720,18 +721,19 @@ namespace ILCompiler
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
-                    compilation = builder.ToCompilation();
+                    compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
 
                 }
-                compilation.Compile(outFile);
+                using (compilation)
+                {
+                    compilation.Compile(outFile);
 
-                if (dgmlLogFileName != null)
-                    compilation.WriteDependencyLog(dgmlLogFileName);
+                    if (dgmlLogFileName != null)
+                        compilation.WriteDependencyLog(dgmlLogFileName);
 
-                compilation.Dispose();
-
-                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
-                    throw new Exception("Determinism Check Failed");
+                    if (compilation.DeterminismCheckFailed)
+                        throw new Exception("Determinism Check Failed");
+                }
             }
         }
 

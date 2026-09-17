@@ -2019,6 +2019,9 @@ struct NaturalLoopIterInfo
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
 
+    // The local that the limit depends on, or BAD_VAR_NUM for a constant limit.
+    unsigned LimitVar = BAD_VAR_NUM;
+
 #ifdef DEBUG
     // Tree that initializes induction variable outside the loop.
     // Only valid if HasConstInit is true.
@@ -5549,6 +5552,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6908,6 +6912,8 @@ public:
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
+
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
@@ -11753,6 +11759,7 @@ public:
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(RANDOM_INLINE)                                                              \
+        STRESS_MODE(ASYNC_INLINE) /* Randomly inline async callees that may suspend */          \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
@@ -11823,10 +11830,10 @@ public:
 
     // Is general runtime async inlining being stressed, i.e. are async callees inlined
     // with a decaying random probability? See AsyncStressPolicy.
-    static bool compAsyncInliningStress()
-    {
-        return JitConfig.JitStressAsyncInlining() != 0;
-    }
+    bool compAsyncInliningStress();
+
+    // External seed for the random decisions made when stressing general async inlining.
+    static int compAsyncInliningStressSeed();
 
     bool compPromoteFewerStructs(unsigned lclNum);
 
