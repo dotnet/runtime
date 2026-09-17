@@ -14,6 +14,10 @@ const DEFAULT_PGO_DURATION_SECONDS = 10;
 // the session currently collecting a PGO trace; stopped internally when the duration elapses
 let pgoSession: IDiagnosticSession | undefined = undefined;
 
+// one-shot latch: the interpreter's block-count counters are cumulative and flushed once per collection,
+// so a second collection would re-emit data dotnet-pgo rejects as duplicate chunks; allow one per process.
+let pgoCollected = false;
+
 export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: boolean): Promise<Uint8Array[]> {
     if (!options) options = {};
     if (!startup && !serverSession) {
@@ -21,6 +25,9 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
     }
     if (pgoSession) {
         throw new Error("A PGO trace collection is already in progress");
+    }
+    if (pgoCollected) {
+        throw new Error("PGO trace collection is one-shot per process; the counters were already flushed. Restart the app to collect again.");
     }
 
     const durationSeconds = options.durationSeconds ?? DEFAULT_PGO_DURATION_SECONDS;
@@ -47,6 +54,10 @@ export function collectPgoTrace(options?: DiagnosticCommandOptions, startup?: bo
             // clear only if this call's session is still the active one
             if (pgoSession === startedSession) {
                 pgoSession = undefined;
+            }
+            // latch one-shot once a collection actually ran, and therefore flushed the counters
+            if (startedSession !== undefined) {
+                pgoCollected = true;
             }
             if (stopTimeoutId !== undefined) {
                 globalThis.clearTimeout(stopTimeoutId);
