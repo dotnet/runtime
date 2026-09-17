@@ -36,30 +36,62 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return await response.Content.ReadAsStreamAsync();
         }
 
+        private static readonly object s_unobservedLock = new();
         private static readonly List<Exception> s_unobserved = new();
 
         private static void OnUnobserved(object sender, UnobservedTaskExceptionEventArgs e)
         {
-            s_unobserved.Add(e.Exception);
+            lock (s_unobservedLock)
+            {
+                s_unobserved.Add(e.Exception);
+            }
             e.SetObserved();
         }
 
-        // The orphaned promise only faults once the aborted fetch rejects, and the event only fires
-        // once the Task is finalized, so both need a chance to happen.
+        // Force any promise Task already orphaned by an earlier test to finalize now, while no handler
+        // is subscribed, so its UnobservedTaskException cannot drift into the next measurement window.
+        private static async Task DrainOrphanedPromises()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                await Task.Delay(50);
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+        }
+
+        // UnobservedTaskException only fires once the faulted promise Task is finalized, which depends
+        // on JS rejection, GC and finalizer timing - all noticeably slower on Mono than CoreCLR - so a
+        // fixed budget is unreliable (it was luck it passed on CoreCLR). Poll instead: stop as soon as
+        // anything surfaces, otherwise keep collecting long enough for a real leak to appear.
         private static async Task<string[]> CollectUnobservedJSExceptions(Func<Task> body)
         {
-            s_unobserved.Clear();
+            await DrainOrphanedPromises();
+            lock (s_unobservedLock)
+            {
+                s_unobserved.Clear();
+            }
+
             TaskScheduler.UnobservedTaskException += OnUnobserved;
             try
             {
                 await body();
 
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 60; i++)
                 {
                     await Task.Delay(50);
                     GC.Collect();
                     GC.WaitForPendingFinalizers();
                     GC.Collect();
+
+                    lock (s_unobservedLock)
+                    {
+                        if (s_unobserved.Count > 0)
+                        {
+                            break;
+                        }
+                    }
                 }
             }
             finally
@@ -67,10 +99,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 TaskScheduler.UnobservedTaskException -= OnUnobserved;
             }
 
-            return s_unobserved
-                .SelectMany(e => e is AggregateException ae ? ae.Flatten().InnerExceptions.Cast<Exception>() : new[] { e })
-                .Select(e => $"{e.GetType().Name}: {e.Message}")
-                .ToArray();
+            lock (s_unobservedLock)
+            {
+                return s_unobserved
+                    .SelectMany(e => e is AggregateException ae ? ae.Flatten().InnerExceptions.Cast<Exception>() : new[] { e })
+                    .Select(e => $"{e.GetType().Name}: {e.Message}")
+                    .ToArray();
+            }
         }
 
         // Guards the assertion used by the tests below: if dropping a rejected JS promise does not
@@ -88,7 +123,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.NotEmpty(unobserved);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public async Task CancelBeforeFirstBodyRead_DoesNotOrphanJsPromise()
         {
             string[] unobserved = await CollectUnobservedJSExceptions(async () =>
@@ -110,7 +145,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Empty(unobserved);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public async Task CancelBetweenStreamedBodyReads_DoesNotOrphanJsPromise()
         {
             // Echo.ashx?delay1sec writes 10 bytes, flushes, waits a second, then writes the rest,
@@ -135,7 +170,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Empty(unobserved);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserDomSupportedOrNodeJS))] // not V8 shell
         public async Task ReadWithoutCancellation_DoesNotOrphanJsPromise()
         {
             string[] unobserved = await CollectUnobservedJSExceptions(async () =>
