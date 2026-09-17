@@ -873,6 +873,57 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if each Wasm async resume target uses the RuntimeFunctions index immediately
+    /// following its parent async method and its funclets.
+    /// </summary>
+    public static bool WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(ReadyToRunReader reader, out string diagnostic)
+    {
+        var failures = new List<string>();
+        int checkedMethodCount = 0;
+
+        foreach (ReadyToRunMethod method in GetAllMethods(reader))
+        {
+            if (method.Fixups is null)
+                continue;
+
+            bool foundResumptionStub = false;
+            foreach (FixupCell cell in method.Fixups)
+            {
+                ReadyToRunImportSection importSection = reader.ImportSections[(int)cell.TableIndex];
+                ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)cell.CellOffset];
+                ReadyToRunFixupKind? kind = entry.Signature?.FixupKind;
+                if (kind is not (ReadyToRunFixupKind.ResumptionStubEntryPoint or ReadyToRunFixupKind.StoreMultiCallableAddrOfCode))
+                    continue;
+
+                foundResumptionStub |= kind == ReadyToRunFixupKind.ResumptionStubEntryPoint;
+                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
+                uint expectedIndex = checked((uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
+                if (targetIndex != expectedIndex)
+                {
+                    failures.Add(
+                        $"'{method.SignatureString}' has {kind} target {targetIndex}; " +
+                        $"expected RuntimeFunctions index {expectedIndex}.");
+                }
+            }
+
+            if (foundResumptionStub)
+                checkedMethodCount++;
+        }
+
+        if (checkedMethodCount == 0)
+        {
+            diagnostic = "No methods with ResumptionStubEntryPoint fixups were found.";
+            return false;
+        }
+
+        diagnostic = failures.Count == 0
+            ? $"Found {checkedMethodCount} async method(s) whose resume targets match RuntimeFunctions ordering."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one ContinuationLayout fixup.
     /// </summary>
     public static bool HasContinuationLayout(ReadyToRunReader reader, out string diagnostic)
