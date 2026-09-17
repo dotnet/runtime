@@ -570,7 +570,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
     public static void Verify_Generic_MethodConstraintEnforcement()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_MethodConstraintEnforcement)}");
@@ -578,14 +577,10 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}", CallMethod<ClassWithI1I2, I1>(new MethodWithConstraints()));
         Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}", CallStaticMethod<ClassWithI1I2, I1>(null));
 
-        // Skip validating error cases on Mono runtime
-        if (TestLibrary.Utilities.IsNotMonoRuntime)
-        {
-            Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<ClassWithI1I2, I1>(new MethodWithConstraints()));
-            Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<ClassWithI1I2, I1>(new MethodWithConstraints()));
-            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<ClassWithI1I2, I1>(null));
-            Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<ClassWithI1I2, I1>(null));
-        }
+        Assert.Throws<InvalidProgramException>(() => CallMethod_NoConstraints<ClassWithI1I2, I1>(new MethodWithConstraints()));
+        Assert.Throws<InvalidProgramException>(() => CallMethod_MissingConstraint<ClassWithI1I2, I1>(new MethodWithConstraints()));
+        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_NoConstraints<ClassWithI1I2, I1>(null));
+        Assert.Throws<InvalidProgramException>(() => CallStaticMethod_MissingConstraint<ClassWithI1I2, I1>(null));
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "M")]
         extern static string CallMethod<V,W>(MethodWithConstraints c) where V : W, I2<V>;
@@ -631,7 +626,6 @@ public static unsafe class UnsafeAccessorsTestsGenerics
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/102942", TestRuntimes.Mono)]
     public static void Verify_Generic_ClassConstraintEnforcement()
     {
         Console.WriteLine($"Running {nameof(Verify_Generic_ClassConstraintEnforcement)}");
@@ -639,12 +633,8 @@ public static unsafe class UnsafeAccessorsTestsGenerics
         Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}|{typeof(ClassWithI1)}", AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
         Assert.Equal($"{typeof(ClassWithI1I2)}|{typeof(I1)}|{typeof(ClassWithI1)}", AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod<ClassWithI1>(null));
 
-        // Skip validating error cases on Mono runtime
-        if (TestLibrary.Utilities.IsNotMonoRuntime)
-        {
-            Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod_MissingMethodConstraint<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
-            Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod_MissingMethodConstraint<ClassWithI1>(null));
-        }
+        Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallMethod_MissingMethodConstraint<ClassWithI1>(new ClassWithConstraints<ClassWithI1I2, I1>()));
+        Assert.Throws<InvalidProgramException>(() => AccessorsWithConstraints<ClassWithI1I2, I1>.CallStaticMethod_MissingMethodConstraint<ClassWithI1>(null));
     }
 
     class Invalid
