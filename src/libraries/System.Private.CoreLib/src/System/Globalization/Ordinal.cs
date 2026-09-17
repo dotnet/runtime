@@ -769,7 +769,9 @@ namespace System.Globalization
         private static void PreserveNlsOrdinalCasingClass(ReadOnlySpan<char> source, Span<char> destination)
         {
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(source.Length == destination.Length);
+            Debug.Assert(destination.Length >= source.Length);
+
+            destination = destination.Slice(0, source.Length);
 
             int i = source.IndexOfAnyInRange('\uD800', '\uDBFF');
             if (i < 0)
@@ -779,13 +781,10 @@ namespace System.Globalization
 
             while (i < source.Length - 1)
             {
-                // source[i] is a high surrogate located by the scan below.
                 if (char.IsLowSurrogate(source[i + 1]))
                 {
                     if (source[i] != destination[i] || source[i + 1] != destination[i + 1])
                     {
-                        // The supplementary scalar was changed by casing. Restore the original pair
-                        // only when the cased value moved outside its OrdinalIgnoreCase class.
                         if (CompareInfo.NlsCompareStringOrdinalIgnoreCase(
                                 ref MemoryMarshal.GetReference(source.Slice(i)), 2,
                                 ref MemoryMarshal.GetReference(destination.Slice(i)), 2) != 0)
@@ -798,13 +797,8 @@ namespace System.Globalization
                     }
                     else
                     {
-                        // Unchanged pair. Skip the whole unchanged run in one vectorized step so
-                        // surrogate-dense input (for example emoji) does not pay per-pair scanning.
                         i += source.Slice(i).CommonPrefixLength(destination.Slice(i));
 
-                        // A changed pair whose high surrogate matches (for example Deseret, where
-                        // both scalars share the same high surrogate) stops the run on its low
-                        // surrogate. Step back so the scan re-finds the start of that pair.
                         if (i < source.Length && char.IsLowSurrogate(source[i]) && char.IsHighSurrogate(source[i - 1]))
                         {
                             i--;
