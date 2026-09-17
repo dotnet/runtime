@@ -2130,18 +2130,15 @@ namespace System.Diagnostics
         /// </summary>
         internal static void SetSpanFromHexChars(ReadOnlySpan<char> charData, Span<byte> destination)
         {
-#if NET
-            OperationStatus status = Convert.FromHexString(charData, destination, out _, out int bytesWritten);
-            if (status != OperationStatus.Done || bytesWritten != destination.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(destination));
-            }
-#else
             if (destination.Length * 2 != charData.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(destination));
             }
 
+#if NET
+            OperationStatus status = Convert.FromHexString(charData, destination, out _, out _);
+            Debug.Assert(status == OperationStatus.Done);
+#else
             for (int i = 0; i < destination.Length; i++)
                 destination[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
 #endif
