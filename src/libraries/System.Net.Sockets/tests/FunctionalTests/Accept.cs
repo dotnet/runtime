@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -496,8 +497,11 @@ namespace System.Net.Sockets.Tests
 
     public sealed class AcceptDualStackResetTests
     {
-        [ConditionalTheory(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
-        [SkipOnPlatform(TestPlatforms.Wasi | TestPlatforms.OpenBSD, "These platforms don't support dual-mode sockets")]
+        public static bool SupportsIPv6DualMode =>
+            Socket.OSSupportsIPv6 && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
+
+        [ConditionalTheory(typeof(AcceptDualStackResetTests), nameof(SupportsIPv6DualMode))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "These platforms don't support dual-mode sockets")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task Accept_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy(bool useAsync)
