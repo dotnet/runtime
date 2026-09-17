@@ -185,7 +185,11 @@
     <ItemGroup>
       <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
       <_WasmReadyToRunNativeLibrary Remove="@(_WasmReadyToRunNativeLibrary)" />
-      <_WasmReadyToRunNativeLibrary Include="@(NativeLibrary->Exists())" />
+      <_WasmReadyToRunNativeLibrary Include="@(NativeLibrary->Exists())"
+                                     Condition="'%(NativeLibrary.Extension)' == '.a' or
+                                                '%(NativeLibrary.Extension)' == '.o' or
+                                                '%(NativeLibrary.Extension)' == '.c' or
+                                                '%(NativeLibrary.Extension)' == '.cpp'" />
       <_WasmReadyToRunPInvokeModuleCandidate Remove="@(_WasmReadyToRunPInvokeModuleCandidate)" />
       <_WasmReadyToRunPInvokeModuleCandidate Include="%(NativeFileReference.FileName)"
                                      Condition="'$(WasmBuildNative)' != 'false' and
