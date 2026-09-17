@@ -668,7 +668,7 @@ InlineResult::InlineResult(Compiler*             compiler,
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
 #ifdef DEBUG
-    if (Compiler::compAsyncInliningStress() && call->IsAsync() && call->IsInlineCandidate() &&
+    if (m_RootCompiler->compAsyncInliningStress() && call->IsAsync() && call->IsInlineCandidate() &&
         !call->IsGuardedDevirtualizationCandidate())
     {
         m_Policy->NoteInt(InlineObservation::CALLSITE_ASYNC_STRESS_INDEX,
