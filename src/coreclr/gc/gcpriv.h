@@ -5475,6 +5475,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
+    PER_HEAP_ISOLATED_METHOD void record_gc_pause(uint64_t duration_microseconds);
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_ephemeral_gc_info;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_full_blocking_gc_info;

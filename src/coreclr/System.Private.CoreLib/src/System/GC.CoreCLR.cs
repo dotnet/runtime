@@ -61,6 +61,12 @@ namespace System
 
     public static partial class GC
     {
+        /// <safety>Returns a scalar capability result without accessing caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_IsGCPauseReportingSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static safe partial bool IsGCPauseReportingSupported();
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
 

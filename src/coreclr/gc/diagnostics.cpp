@@ -1596,6 +1596,7 @@ void gc_heap::add_bgc_pause_duration_0()
         }
 
         total_suspended_time += last_gc_info->pause_durations[0];
+        record_gc_pause(last_gc_info->pause_durations[0]);
     }
 }
 

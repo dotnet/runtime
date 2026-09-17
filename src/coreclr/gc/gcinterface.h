@@ -11,11 +11,16 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 9
+#define GC_INTERFACE_MINOR_VERSION 10
 
-// The major version of the IGCToCLR interface. Breaking changes to this interface
-// require bumps in the major version number.
-#define EE_INTERFACE_MAJOR_VERSION 5
+#define GC_PAUSE_REPORTING_INTERFACE_MINOR_VERSION 10
+
+// The major version of the IGCToCLR and IGCToCLREventSink interfaces. Breaking
+// changes to these interfaces require bumps in the major version number.
+#define EE_INTERFACE_MAJOR_VERSION 6
+
+// First EE interface version with the typed pause-event callback; this minimum stays fixed.
+#define GC_PAUSE_EVENT_MINIMUM_EE_VERSION 6
 
 struct ScanContext;
 struct gc_alloc_context;
@@ -306,6 +311,7 @@ enum GCEventKeyword
     GCEventKeyword_ManagedHeapCollect            =  0x800000,
     GCEventKeyword_GCHeapAndTypeNames            = 0x1000000,
     GCEventKeyword_GCSampledObjectAllocationLow  = 0x2000000,
+    GCEventKeyword_GCPause                       = 0x4000000,
     GCEventKeyword_All = GCEventKeyword_GC
       | GCEventKeyword_GCPrivate
       | GCEventKeyword_GCHandle
@@ -316,6 +322,7 @@ enum GCEventKeyword
       | GCEventKeyword_ManagedHeapCollect
       | GCEventKeyword_GCHeapAndTypeNames
       | GCEventKeyword_GCSampledObjectAllocationLow
+      | GCEventKeyword_GCPause
 };
 
 // !!!!!!!!!!!!!!!!!!!!!!!

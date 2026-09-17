@@ -63,6 +63,8 @@
                              message="$(string.RuntimePublisher.GCHeapAndTypeNamesKeyword)" symbol="CLR_GCHEAPANDTYPENAMES_KEYWORD"/>
                     <keyword name="GCSampledObjectAllocationLowKeyword" mask="0x2000000"
                              message="$(string.RuntimePublisher.GCSampledObjectAllocationLowKeywordMessage)" symbol="CLR_GCHEAPALLOCLOW_KEYWORD"/>
+                    <keyword name="GCPauseKeyword" mask="0x4000000"
+                             message="$(string.RuntimePublisher.GCPauseKeywordMessage)" symbol="CLR_GCPAUSE_KEYWORD"/>
                     <keyword name="PerfTrackKeyword" mask="0x20000000"
                              message="$(string.RuntimePublisher.PerfTrackKeywordMessage)" symbol="CLR_PERFTRACK_KEYWORD"/>
                     <keyword name="StackKeyword" mask="0x40000000"
@@ -1533,6 +1535,14 @@
                         <data name="Name" inType="win:UnicodeString" />
                         <data name="DataSize" inType="win:UInt32" />
                         <data name="Data" inType="win:Binary" length="DataSize" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                    </template>
+
+                    <template tid="GCPause">
+                        <data name="CollectionIndex" inType="win:UInt64" />
+                        <data name="DurationMicroseconds" inType="win:UInt64" />
+                        <data name="Generation" inType="win:UInt32" />
+                        <data name="Kind" inType="win:UInt32" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                     </template>
 
@@ -4331,6 +4341,8 @@
                            keywords="AllocationSamplingKeyword"
                            task="AllocationSampling"
                            symbol="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledEventMessage)"/>
+                    <event value="304" version="1" level="win:Informational" template="GCPause"
+                           keywords="GCPauseKeyword" task="GarbageCollection" symbol="GCPause_V1"/>
                 </events>
             </provider>
 
@@ -9222,6 +9234,7 @@
 
                 <!-- Keyword Messages -->
                 <string id="RuntimePublisher.GCKeywordMessage" value="GC" />
+                <string id="RuntimePublisher.GCPauseKeywordMessage" value="GC pause contributions" />
                 <string id="RuntimePublisher.ThreadingKeywordMessage" value="Threading" />
                 <string id="RuntimePublisher.AssemblyLoaderKeywordMessage" value="AssemblyLoader" />
                 <string id="RuntimePublisher.LoaderKeywordMessage" value="Loader" />
