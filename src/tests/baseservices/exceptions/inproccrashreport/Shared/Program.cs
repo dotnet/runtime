@@ -1,0 +1,316 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+#if INPROC_ANDROID
+using System.IO.Compression;
+#endif
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+
+public static class Program
+{
+#if INPROC_SCENARIO_RICHSIGSEGV
+    private const int ScenarioId = 0;
+#else
+#error Define an INPROC_SCENARIO_* symbol for this test.
+#endif
+
+#if INPROC_ANDROID
+    private const string NativeLib = "libmonodroid";
+#else
+    private const string NativeLib = "InProcCrashReportNative";
+#endif
+
+    private const string ModuleGuid = "{11111111-2222-3333-4455-66778899aabb}";
+    private const string Separator = "*** *** *** *** *** *** *** *** *** *** *** *** *** *** *** ***";
+
+    [DllImport(NativeLib)]
+    private static extern int InProcCrashReportTest_DriveScenario(
+        int scenario, string reportRootPath, string consoleCapturePath);
+
+#if INPROC_ANDROID
+    public static int Main()
+#else
+    [Xunit.Fact]
+    public static int TestEntryPoint()
+#endif
+    {
+        return RunTest(RunScenario);
+    }
+
+    private static int RunTest(Action<string> scenario)
+    {
+#if INPROC_ANDROID
+        string outputRoot = Path.GetTempPath();
+        string? archivePath = null;
+#else
+        string? outputRoot = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
+        if (string.IsNullOrEmpty(outputRoot))
+        {
+            outputRoot = Path.GetTempPath();
+        }
+#endif
+        string outputDirectory = Directory.CreateDirectory(
+            Path.Combine(outputRoot, $"inproccrashreport-{Guid.NewGuid():N}")).FullName;
+        Stopwatch timer = Stopwatch.StartNew();
+        Console.WriteLine($"InProcCrashReport: starting {typeof(Program).Assembly.GetName().Name}; output={outputDirectory}");
+        Console.Out.Flush();
+
+        try
+        {
+#if INPROC_ANDROID
+            archivePath = Environment.GetEnvironmentVariable("DOTNET_InProcCrashReportTestArchive") ??
+                throw new InvalidOperationException("DOTNET_InProcCrashReportTestArchive was not configured");
+            // XHarness expects the configured artifact to exist even on success.
+            WriteArtifactArchive(archivePath);
+#endif
+            scenario(outputDirectory);
+            Directory.Delete(outputDirectory, recursive: true);
+            Console.WriteLine($"PASS: crash report assertions completed in {timer.ElapsedMilliseconds} ms");
+            return 100;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FAIL after {timer.ElapsedMilliseconds} ms: {ex}");
+            DumpOutputs(outputDirectory);
+#if INPROC_ANDROID
+            if (archivePath is not null)
+            {
+                try
+                {
+                    WriteArtifactArchive(archivePath, outputDirectory);
+                    Console.WriteLine($"Android failure artifacts: {archivePath}");
+                }
+                catch (Exception artifactException) when (artifactException is IOException or UnauthorizedAccessException)
+                {
+                    Console.WriteLine($"Could not archive failure artifacts: {artifactException}");
+                }
+            }
+#endif
+            Console.WriteLine($"Retained crash report outputs: {outputDirectory}");
+            return 1;
+        }
+    }
+
+#if INPROC_ANDROID
+    private static void WriteArtifactArchive(string archivePath, string? outputDirectory = null)
+    {
+        using ZipArchive archive = new ZipArchive(File.Create(archivePath), ZipArchiveMode.Create);
+        if (outputDirectory is not null)
+        {
+            foreach (string path in Directory.EnumerateFiles(outputDirectory, "*", SearchOption.AllDirectories))
+            {
+                string entryName = Path.GetRelativePath(outputDirectory, path).Replace(Path.DirectorySeparatorChar, '/');
+                archive.CreateEntryFromFile(path, entryName);
+            }
+        }
+    }
+#endif
+
+    private static void RunScenario(string outputDirectory)
+    {
+        string consolePath = Path.Combine(outputDirectory, "console.txt");
+        Stopwatch timer = Stopwatch.StartNew();
+        int result = InProcCrashReportTest_DriveScenario(ScenarioId, outputDirectory, consolePath);
+        Console.WriteLine($"Native scenario {ScenarioId} returned {result} in {timer.ElapsedMilliseconds} ms");
+        Check(result == 0, "native driver failed; see its diagnostics");
+
+        string reportDirectory = Path.Combine(outputDirectory, ".dotnet", "crash-reports");
+        string[] reports = Directory.GetFiles(reportDirectory);
+        Check(reports.Length == 1 && reports[0].EndsWith(".crashreport.json", StringComparison.Ordinal),
+            $"expected one completed report and no temporary files, found: {string.Join(", ", reports)}");
+        ValidateJson(reports[0]);
+        ValidateConsole(consolePath);
+    }
+
+    private static void ValidateJson(string path)
+    {
+        Console.WriteLine($"Validating JSON: {Path.GetFileName(path)}");
+        using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+        JsonElement root = document.RootElement;
+        JsonElement payload = root.GetProperty("payload");
+        CheckString(payload, "protocol_version", "1.0.0");
+        CheckString(payload.GetProperty("configuration"), "architecture", GetArchitecture());
+        CheckString(payload, "pid", Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
+        Check(!string.IsNullOrEmpty(payload.GetProperty("process_name").GetString()), "missing process name");
+        CheckString(root.GetProperty("parameters"), "signal", "11");
+
+        JsonElement threads = GetArray(payload, "threads", 3);
+        ulong crashTid = ReadHex(threads[0], "native_thread_id");
+        Check(crashTid != 0, "crashing thread ID is zero");
+        for (int i = 0; i < threads.GetArrayLength(); i++)
+        {
+            CheckString(threads[i], "crashed", i == 0 ? "true" : "false");
+            CheckHex(threads[i], "native_thread_id", crashTid + (ulong)i);
+            if (i != 0)
+            {
+                CheckAbsent(threads[i], "managed_exception_type");
+                CheckAbsent(threads[i], "managed_exception_hresult");
+            }
+        }
+
+        ValidateRichJson(threads);
+    }
+
+    private static void ValidateRichJson(JsonElement threads)
+    {
+        JsonElement crashed = threads[0];
+        CheckString(crashed, "managed_exception_type", "System.NullReferenceException");
+        CheckString(crashed, "managed_exception_hresult", "0x80004003");
+        CheckRegisters(crashed);
+        JsonElement frames = GetArray(crashed, "stack_frames", 5);
+        CheckContextFrame(frames[0]);
+        CheckManagedFrame(frames[1], 0x40aaaa, "Synthetic.App.Worker`1[System.Int32].DoWork", 0x06000001);
+        CheckNativeFrame(frames[2], 0x40bbbb, "libsynthetic.so");
+        CheckManagedFrame(frames[3], 0x40cccc, "Synthetic.App.Dictionary`2[System.String,System.Int32].Insert", 0x06000002);
+        CheckNativeFrame(frames[4], 0x40dddd, "libnative2.so");
+        CheckManagedFrame(GetArray(threads[1], "stack_frames", 1)[0], 0x40eeee, "Synthetic.App.Server.Listen", 0x06000003);
+        CheckNativeFrame(GetArray(threads[2], "stack_frames", 1)[0], 0x40ffff, "libsynthetic.so");
+    }
+
+    private static void ValidateConsole(string path)
+    {
+        Console.WriteLine($"Validating compact report: {Path.GetFileName(path)}");
+        string console = File.ReadAllText(path);
+        string[] lines = console.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(line => line.Trim()).ToArray();
+        Check(lines.Length != 0 && lines[0] == Separator && lines[^1] == Separator, "missing report delimiters");
+        Check(lines.Count(line => line == ".NET Crash Report v1.0.0") == 1, "expected one protocol header");
+        Check(lines.Contains($"ABI: {GetArchitecture()}"), "incorrect ABI");
+        Check(lines.Count(line => line.StartsWith("signal ", StringComparison.Ordinal)) == 1, "expected one signal line");
+        Check(lines.Contains("signal 11 (SIGSEGV)"), "incorrect signal");
+        Check(!lines.Any(line => line == "(no managed frames)" || line.StartsWith("... +", StringComparison.Ordinal)),
+            "compact report unexpectedly omitted frames");
+
+        string[][] expectedThreads =
+        [
+            [
+                "managed exception: System.NullReferenceException (0x80004003)",
+                "#00 [0] Synthetic.App.Worker`1[System.Int32].DoWork + 0x10 (token=0x6000001)",
+                "#01 [1] 0x40bbbb (libsynthetic.so + 0x40)",
+                "#02 [0] Synthetic.App.Dictionary`2[System.String,System.Int32].Insert + 0x10 (token=0x6000002)",
+                "#03 [2] 0x40dddd (libnative2.so + 0x40)",
+            ],
+            ["#00 [0] Synthetic.App.Server.Listen + 0x10 (token=0x6000003)"],
+            ["#00 [1] 0x40ffff (libsynthetic.so + 0x40)"],
+        ];
+
+        string[] blocks = console.Split("--- thread ", StringSplitOptions.None);
+        Check(blocks.Length == expectedThreads.Length + 1, $"expected {expectedThreads.Length} console threads, got {blocks.Length - 1}");
+        for (int i = 0; i < expectedThreads.Length; i++)
+        {
+            string[] blockLines = blocks[i + 1].Split('\n').Select(line => line.Trim()).ToArray();
+            Check(blockLines[0].Contains("(crashed)", StringComparison.Ordinal) == (i == 0), $"thread {i}: incorrect crashed marker");
+            string[] actual = blockLines.Skip(1).Where(line =>
+                line.StartsWith('#') || line.StartsWith("managed exception:", StringComparison.Ordinal)).ToArray();
+            Check(actual.SequenceEqual(expectedThreads[i]), $"thread {i}: expected compact lines:\n{string.Join("\n", expectedThreads[i])}\nactual:\n{string.Join("\n", actual)}");
+        }
+
+        string[] modules = ["synthetic.managed.dll", "libsynthetic.so", "libnative2.so"];
+        string[] actualModules = lines.Where(line => line.StartsWith('[')).ToArray();
+        string[] expectedModules = modules.Select((module, index) => $"[{index}] {module} {ModuleGuid}").ToArray();
+        Check(actualModules.SequenceEqual(expectedModules), "compact module table mismatch");
+        Check(lines.Count(line => line == "modules:") == (modules.Length == 0 ? 0 : 1), "incorrect module table header count");
+    }
+
+    private static void CheckRegisters(JsonElement thread)
+    {
+        JsonElement context = thread.GetProperty("ctx");
+        CheckHex(context, "IP", 0x40aaaa);
+        CheckHex(context, "SP", IntPtr.Size == 8 ? 0x7fff0000aaaaUL : 0x7fffaaaaUL);
+        CheckHex(context, "BP", IntPtr.Size == 8 ? 0x7fff0000aab0UL : 0x7fffaab0UL);
+    }
+
+    private static void CheckContextFrame(JsonElement frame)
+    {
+        CheckString(frame, "is_managed", "false");
+        CheckHex(frame, "native_address", 0x40aaaa);
+        CheckHex(frame, "stack_pointer", IntPtr.Size == 8 ? 0x7fff0000aaaaUL : 0x7fffaaaaUL);
+    }
+
+    private static void CheckManagedFrame(JsonElement frame, ulong ip, string method, uint token)
+    {
+        CheckString(frame, "is_managed", "true");
+        CheckString(frame, "method_name", method);
+        CheckString(frame, "filename", "synthetic.managed.dll");
+        CheckString(frame, "guid", ModuleGuid);
+        CheckHex(frame, "native_address", ip);
+        CheckHex(frame, "stack_pointer", ip + 0x1000);
+        CheckHex(frame, "native_offset", 0x20);
+        CheckHex(frame, "token", token);
+        CheckHex(frame, "il_offset", 0x10);
+        CheckHex(frame, "timestamp", 0x600dcafe);
+        CheckHex(frame, "sizeofimage", 0x10000);
+    }
+
+    private static void CheckNativeFrame(JsonElement frame, ulong ip, string module)
+    {
+        CheckString(frame, "is_managed", "false");
+        CheckString(frame, "native_module", module);
+        CheckHex(frame, "native_address", ip);
+        CheckHex(frame, "stack_pointer", ip + 0x1000);
+        CheckHex(frame, "native_offset", 0x40);
+        CheckAbsent(frame, "method_name");
+        CheckAbsent(frame, "token");
+    }
+
+    private static JsonElement GetArray(JsonElement parent, string property, int count)
+    {
+        JsonElement array = parent.GetProperty(property);
+        Check(array.GetArrayLength() == count, $"{property}: expected {count} entries, actual {array.GetArrayLength()}");
+        return array;
+    }
+
+    private static string GetArchitecture() =>
+        RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "amd64" : RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+
+    private static ulong ReadHex(JsonElement parent, string property) =>
+        ulong.Parse(parent.GetProperty(property).GetString()!.AsSpan(2), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture);
+
+    private static void CheckHex(JsonElement parent, string property, ulong expected) =>
+        CheckString(parent, property, $"0x{expected:x}");
+
+    private static void CheckString(JsonElement parent, string property, string expected)
+    {
+        string? actual = parent.GetProperty(property).GetString();
+        Check(actual == expected, $"{property}: expected '{expected}', actual '{actual}'");
+    }
+
+    private static void CheckAbsent(JsonElement parent, string property) =>
+        Check(!parent.TryGetProperty(property, out _), $"unexpected property '{property}'");
+
+    private static void Check(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException(message);
+        }
+    }
+
+    private static void DumpOutputs(string outputDirectory)
+    {
+        try
+        {
+            char[] buffer = new char[16 * 1024];
+            foreach (string path in Directory.EnumerateFiles(outputDirectory, "*", SearchOption.AllDirectories).Take(8))
+            {
+                Console.WriteLine($"--- {path} ---");
+                using StreamReader reader = File.OpenText(path);
+                int length = reader.ReadBlock(buffer, 0, buffer.Length);
+                Console.WriteLine(buffer.AsSpan(0, length));
+                if (!reader.EndOfStream)
+                {
+                    Console.WriteLine("[diagnostic output truncated]");
+                }
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Console.WriteLine($"Could not read diagnostic files: {ex}");
+        }
+    }
+}
