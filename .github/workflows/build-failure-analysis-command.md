@@ -485,27 +485,15 @@ jobs:
           ado_get "artifact list" "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1" || emit_none
           artifacts_json="${ADO_DOC}"
           mapfile -t all_names < <(printf '%s' "${artifacts_json}" | jq -r '.value // [] | map(select(.name | test("^Logs_Build_"))) | .[].name')
-          # Preserve original job identities: normalization can collapse distinct
-          # names such as Foo-Bar and Foo_Bar. Prefer literal names, then accept
-          # a normalized exact/prefix match only when it identifies one job.
-          # Prefixes cover Runtime's display-only monointerpreter/minijit/llvmaot
-          # suffixes without confusing NativeAOT and NativeAOT_Libraries.
+          # BuildArtifact.source identifies the producing timeline job. Names
+          # are only labels: normalization and prefix matching can associate an
+          # artifact with the wrong job. Missing/unknown sources fall back to hlx.
           if ! selected_names=$(printf '%s\n' "${timeline_json}" "${artifacts_json}" | jq -sr '
-            def key: ascii_downcase | gsub("[^a-z0-9]"; "");
             ([.[0].records[]? | select(.type == "Job") |
-              {name, result, key: (.name | key)}]) as $jobs |
+              {id, result}]) as $jobs |
             .[1].value[]? | select(.name | startswith("Logs_Build_")) |
-            (.name | sub("^Logs_Build_(Attempt[0-9]+_)?"; "")) as $name |
-            ($jobs | map(select(.name == $name))) as $literal |
-            (if ($literal | length) > 0 then $literal
-             else ($name | key) as $key |
-               if $key == "" then []
-               else ($jobs | map(select(.key == $key))) as $exact |
-                 if ($exact | length) > 0 then $exact
-                 else ($jobs | map(select(.key | startswith($key))))
-                 end
-               end
-             end) as $matches |
+            (.source | strings | select(length > 0)) as $source |
+            ($jobs | map(select(.id == $source))) as $matches |
             select(($matches | length) == 1) |
             select($matches[0].result == "failed" or $matches[0].result == "canceled") |
             .name
@@ -578,10 +566,9 @@ jobs:
             [ -z "${url}" ] && continue
             find "${AX_DIR:?}" -mindepth 1 -delete
             : > "${ZIP_TMP}"
-            # Bound this transfer by whatever is left of the cumulative budget
-            # as well as by the per-artifact cap, so the two limits together
-            # are a real ceiling on bytes pulled rather than
-            # `MAX_TOTAL_ZIP_BYTES + MAX_ZIP_BYTES`.
+            # Cap retained compressed bytes by both the per-artifact limit and
+            # the remaining cumulative allowance. Retries share the deadline
+            # below; this is not a cumulative network-egress meter.
             ZIP_CAP="${MAX_ZIP_BYTES}"
             ZIP_ALLOWANCE=$((MAX_TOTAL_ZIP_BYTES - TOTAL_ZIP_BYTES))
             [ "${ZIP_ALLOWANCE}" -lt "${ZIP_CAP}" ] && ZIP_CAP="${ZIP_ALLOWANCE}"
@@ -651,8 +638,7 @@ jobs:
             # uncompressed, ..."), so the total comes from a fixed column
             # instead of the shifting last row of `unzip -l`. Use `END{}`:
             # Info-ZIP prepends warnings on STDOUT for a recoverable archive,
-            # and a multi-line value would still pass the `grep -qE` check
-            # below, since `grep -q` matches if ANY line matches. `timeout`
+            # so take only the final summary and validate the entire value. `timeout`
             # bounds a hostile archive; pipefail + fail-closed because a killed
             # probe's partial output can end in a numeric column and undercount.
             UNCOMP=$(set -o pipefail; timeout 60 unzip -Zt "${ZIP_TMP}" 2>/dev/null | awk 'END{print $3}') \
@@ -713,7 +699,7 @@ jobs:
             leg_staged=0
             leg_failed=0
             count_before_leg="${count}"
-            while IFS= read -r bl; do
+            while IFS= read -r -d '' bl; do
               [ -f "${bl}" ] || continue
               # Prefixing with the artifact index (`ai`) and per-file counter
               # (`i`) keeps destinations unique, so neither a cross-artifact
@@ -736,7 +722,7 @@ jobs:
                 # the per-file counter and the sanitized artifact name.
                 echo "::warning::Failed to stage an entry of ${safe_name} as ${dest}; skipping."
               fi
-            done < <(find "${AX_DIR}" -type f -name '*.binlog')
+            done < <(find "${AX_DIR}" -type f -name '*.binlog' -print0)
             # Keep each artifact all-or-nothing. A partial leg can hide the
             # actual root cause, so discard its staged files and let hlx cover
             # the failed task logs instead.

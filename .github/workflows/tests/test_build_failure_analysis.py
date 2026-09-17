@@ -198,35 +198,77 @@ class BuildFailureAnalysisTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual("validated=42" in result.stdout, valid, result.stdout)
 
-    def test_artifact_matching_preserves_job_identity(self):
+    def test_artifact_matching_uses_producing_job_identity(self):
         cases = (
-            ([("Foo-Bar", "failed"), ("Foo_Bar", "succeeded")], ["Foo-Bar", "Foo_Bar"], ["Foo-Bar"]),
-            ([("Foo-Bar", "failed"), ("Foo_Bar", "succeeded")], ["FOOBAR"], []),
-            ([("Foo-Bar", "failed")], ["FOOBAR"], ["FOOBAR"]),
-            ([("Foo minijit", "failed")], ["Foo"], ["Foo"]),
-            ([("Foo minijit", "failed"), ("Foo llvmaot", "succeeded")], ["Foo"], []),
-            ([("NativeAOT", "succeeded"), ("NativeAOT_Libraries", "failed")], ["NativeAOT", "NativeAOT_Libraries"], ["NativeAOT_Libraries"]),
-            ([("Foo", "canceled")], ["Attempt2_Foo"], ["Attempt2_Foo"]),
-            ([("Foo", "failed"), ("Foo", "succeeded")], ["Foo"], []),
-            ([("Foo", "succeeded")], ["Foo"], []),
+            ([("Foo-Bar", "failed"), ("Foo_Bar", "succeeded")], [("Foo-Bar", "0"), ("Foo_Bar", "1")], ["Foo-Bar"]),
+            ([("Foo-Bar", "failed"), ("Foo_Bar", "succeeded")], [("Foo-Bar", "1")], []),
+            ([("Foo-Bar", "failed"), ("Foo_Bar", "succeeded")], [("Foo_Bar", "0")], ["Foo_Bar"]),
+            ([("Foo-Bar", "failed")], [("FOOBAR", "0")], ["FOOBAR"]),
+            ([("Foo minijit", "failed")], [("Foo", "0")], ["Foo"]),
+            ([("NativeAOT_Libraries", "failed")], [("NativeAOT", "unknown")], []),
+            ([("NativeAOT", "succeeded"), ("NativeAOT_Libraries", "failed")], [("NativeAOT", "0"), ("NativeAOT_Libraries", "1")], ["NativeAOT_Libraries"]),
+            ([("Foo", "canceled")], [("Attempt2_Foo", "0")], ["Attempt2_Foo"]),
+            ([("Foo", "failed"), ("Foo", "succeeded")], [("Foo", "1")], []),
+            ([("Foo", "succeeded")], [("Foo", "0")], []),
+            ([("Foo", "failed")], [("Foo", None)], []),
+            ([("Foo", "failed")], [("Foo", "")], []),
+            ([("Foo", "failed")], [("Foo", 0)], []),
         )
         for workflow_name, workflow in self.workflows.items():
             script = step(workflow["jobs"]["fetch-binlog"]["steps"], "fetch")["run"]
             script = script[script.index('timeline_json="${ADO_DOC}"'):script.index("# Guards for untrusted")]
-            for jobs, names, expected in cases:
-                with self.subTest(workflow=workflow_name, jobs=jobs, artifacts=names):
+            for jobs, artifacts, expected in cases:
+                with self.subTest(workflow=workflow_name, jobs=jobs, artifacts=artifacts):
                     result, _, _ = self.run_script(
                         "set +e\nemit_none() { exit 0; }\n"
                         'ado_get() { ADO_DOC="$ARTIFACTS"; }\n'
                         + script + '\nprintf "selected=%s\\n" "${names[@]}"\n',
                         {
                             "ADO_DOC": json.dumps({"records": [{"id": str(i), "type": "Job", "name": n, "result": r} for i, (n, r) in enumerate(jobs)]}),
-                            "ARTIFACTS": json.dumps({"value": [{"name": "Logs_Build_" + n} for n in names]}),
+                            "ARTIFACTS": json.dumps({"value": [{"name": "Logs_Build_" + n, "source": source} for n, source in artifacts]}),
                         },
                     )
                     self.assertEqual(result.returncode, 0, result.stderr)
                     actual = [line.removeprefix("selected=") for line in result.stdout.splitlines() if line.startswith("selected=") and line != "selected="]
                     self.assertEqual(actual, ["Logs_Build_" + name for name in expected], result.stdout)
+
+    def test_staging_preserves_newline_entry_names(self):
+        # Windows cannot create newline filenames. Model find/file existence at
+        # that boundary, then execute the production staging loop unchanged.
+        setup = r"""
+AX_DIR=archive
+ai=1
+safe_name=Logs_Build_Test
+count=0
+find() {
+  if [[ "${!#}" == "-print0" ]]; then
+    printf '%s\0' regular.binlog $'newline\nentry.binlog'
+  else
+    printf '%s\n' regular.binlog $'newline\nentry.binlog'
+  fi
+}
+function [ {
+  if [[ "$1" == "-f" ]]; then
+    [[ "$2" == "regular.binlog" || "$2" == $'newline\nentry.binlog' ]]
+  else
+    builtin [ "$@"
+  fi
+}
+cp() {
+  if [[ "$1" == $'newline\nentry.binlog' ]]; then
+    echo preserved-newline=true
+  fi
+}
+"""
+        for name, workflow in self.workflows.items():
+            with self.subTest(workflow=name):
+                script = step(workflow["jobs"]["fetch-binlog"]["steps"], "fetch")["run"]
+                start = script.index("i=0\n", script.index("TOTAL_BYTES=$((TOTAL_BYTES + UNCOMP))"))
+                script = script[start:script.index("# Keep each artifact all-or-nothing.")]
+                result, _, _ = self.run_script(setup + script + '\nprintf "staged=%s;failed=%s\\n" "$leg_staged" "$leg_failed"\n')
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("preserved-newline=true", result.stdout)
+                self.assertIn("staged=2;failed=0", result.stdout)
 
     def test_latest_build_and_revision_revalidation(self):
         for name, workflow in self.workflows.items():

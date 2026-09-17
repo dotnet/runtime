@@ -27,9 +27,14 @@ Agentic workflow safe outputs sanitize posted bodies and [remove agent-provided 
 
 With Python 3, PyYAML, Bash, jq, and Node.js installed, run
 `python -m unittest discover -s .github/workflows/tests -p test_build_failure_analysis.py`.
-The tests execute the workflow's own Bash and jq logic with mocked API responses;
+The tests execute the workflow's own Bash, jq, and JavaScript with mocked API responses;
 they do not download artifacts or post to GitHub. On Windows they use Git Bash
 by default; `BFA_BASH` can select another Bash executable.
+
+Artifacts are associated with failed/canceled timeline jobs using Azure DevOps'
+`BuildArtifact.source` job ID, not normalized names or prefixes. Missing or
+unknown source IDs leave those jobs to the mandatory hlx task-log analysis.
+
 Regenerate both locks with
 `gh aw compile build-failure-analysis build-failure-analysis-command --strict --validate --schedule-seed dotnet/runtime`
 before running the checks against a changed activation configuration.
