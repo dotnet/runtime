@@ -3634,7 +3634,7 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 //
                 const unsigned filterIndex             = block->getHndIndex();
                 const unsigned clauseIndex             = compEHTabOrderToVMClauseOrder[filterIndex];
-                clauses[clauseIndex].clause.ClassToken = virtualIP;
+                clauses[clauseIndex].clause.ClassToken = vipFirstInFunc ? func->startVirtualIP : virtualIP;
             }
 
             // Record the required Virtual IP and store-site/entry flags for each block.
