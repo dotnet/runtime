@@ -3,5 +3,12 @@
 
   <PropertyGroup>
     <NativeAotIncompatible>true</NativeAotIncompatible>
+    <!--
+      Profiler tests launch a second corerun process and load the profiler from a shared library
+      path. WebAssembly has neither process creation nor dynamic loading, so none of these tests
+      can run there.
+      Tracked by https://github.com/dotnet/runtime/issues/131811
+    -->
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 </Project>

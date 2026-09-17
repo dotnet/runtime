@@ -10,9 +10,13 @@
     <WasmEnableHotReload>false</WasmEnableHotReload>
     <CompressionEnabled>false</CompressionEnabled>
     <DisableBuildCompression>true</DisableBuildCompression>
+    <!-- WASM-TODO enable trimming https://github.com/dotnet/runtime/issues/133193 -->
     <PublishTrimmed>false</PublishTrimmed>
-    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
+    <!-- Merged runtime-test wrappers are not trim-safe (they crash ILLink); keep them untrimmed unless they explicitly opt in below. -->
+    <PublishTrimmed Condition="'$(TestFramework)' == 'GeneratedRunner'">false</PublishTrimmed>
+    <PublishTrimmed Condition="'$(RunAOTCompilation)' == 'true' or '$(PublishReadyToRun)' == 'true' or '$(TestTrimming)' == 'true'">true</PublishTrimmed>
     <_WasmInTreeDefaults>false</_WasmInTreeDefaults>
+    <WasmBuildNativeImplicitInReleaseConfiguration>false</WasmBuildNativeImplicitInReleaseConfiguration>
 
     <ResolveWasmOutputsDependsOn>
       $(ResolveWasmOutputsDependsOn);

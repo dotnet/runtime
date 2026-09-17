@@ -61,12 +61,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (impl.IsAbstract)
                     continue;
 
+                MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                if (factory.NeedsUnboxingStub(canonImpl))
+                {
+                    result.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), factory.VirtualMethodUse(decl), "Unbox for virtual method on VT"));
+                }
+
                 // Given we are scanning for non-GVMs here, if the type has no generic type arguments
                 // or they are Canon, they should already be included in the compilation
                 if (!impl.OwningType.HasInstantiation || !HasNonCanonicalInstantiationArguments(impl.OwningType))
                     continue;
 
-                MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 Debug.Assert(!canonImpl.OwningType.IsGenericDefinition);
                 DependencyNodeCore<NodeFactory> implNode = GetVirtualMethodImplNode(factory, canonImpl);
                 if (implNode is null)
@@ -114,6 +119,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         if (implMethod is not null)
                         {
                             implMethod = implMethod.InstantiateSignature(defType.Instantiation, Instantiation.Empty);
+                            implMethod = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+                            if (factory.NeedsUnboxingStub(implMethod))
+                            {
+                                result.Add(new CombinedDependencyListEntry(factory.UnboxingStub(implMethod), factory.VirtualMethodUse(interfaceMethod), "Unbox for interface method on VT"));
+                            }
 
                             if (implMethod.IsVirtual && !implMethod.IsFinal && !implMethod.OwningType.IsInterface)
                             {
@@ -124,8 +135,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             }
                             else
                             {
-                                MethodDesc canonImpl = implMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                                DependencyNodeCore<NodeFactory> implNode = GetVirtualMethodImplNode(factory, canonImpl);
+                                DependencyNodeCore<NodeFactory> implNode = GetVirtualMethodImplNode(factory, implMethod);
                                 if (implNode is not null)
                                 {
                                     result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(interfaceMethod), "Interface method"));

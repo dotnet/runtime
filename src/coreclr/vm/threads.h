@@ -329,7 +329,13 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-void InitThreadManagerPerfMapData();
+void InitThreadManagerTracingData();
+#ifndef FEATURE_PORTABLE_HELPERS
+void ReportCopiedWriteBarriersToPerfMap();
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions);
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -424,6 +430,43 @@ PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
+
+#if !defined(DACCESS_COMPILE) && defined(_DEBUG)
+// Tracks whether the current thread is allowed to transition between cooperative and preemptive
+// GC mode.
+//
+// This is normally true. It is cleared for the duration of the WebAssembly restore-context unwind
+// (see RtlRestoreContext in vm/wasm/helpers.cpp), which resumes managed code at a catch
+// continuation by throwing a native exception tag. That unwind runs arbitrary native cleanup
+// between the catch funclet and the resumed managed code, and any GC mode transition performed
+// there would leave the thread in the wrong mode when managed code resumes.
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH sets it back to true at the resumption point.
+//
+// Only asserts consume this, so the whole mechanism is debug-only; a release runtime neither
+// tracks nor checks it.
+extern thread_local bool t_gcModeSwitchPermitted;
+
+// Assert that a cooperative/preemptive GC mode transition is legal at this point.
+#define ASSERT_GC_MODE_SWITCH_PERMITTED()                                                                              \
+    _ASSERTE_MSG(t_gcModeSwitchPermitted,                                                                              \
+                 "GC mode transition while a restore-context unwind is in progress. The thread is between "            \
+                 "RtlRestoreContext and the managed catch continuation, where the mode must not change.")
+#else
+#define ASSERT_GC_MODE_SWITCH_PERMITTED()
+#endif // !DACCESS_COMPILE && _DEBUG
+
+#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE) && defined(_DEBUG)
+// True when a catch resuming into the frame at handlerFrameControlPC will call
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH, and so is able to lift a GC mode switch restriction
+// imposed for the duration of the restore-context unwind. See vm/wasm/helpers.cpp.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC);
+#else
+inline bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
+{
+    UNREFERENCED_PARAMETER(handlerFrameControlPC);
+    return false;
+}
+#endif // TARGET_WASM && !DACCESS_COMPILE && _DEBUG
 
 // #ThreadClass
 //
@@ -1187,6 +1230,7 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(this == GetThread());
         _ASSERTE(!m_fPreemptiveGCDisabled);
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         // holding a spin lock in preemp mode and transit to coop mode will cause other threads
         // spinning waiting for GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
@@ -1250,6 +1294,7 @@ public:
 #ifndef DACCESS_COMPILE
         _ASSERTE(this == GetThread());
         _ASSERTE(m_fPreemptiveGCDisabled);
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
@@ -2075,7 +2120,9 @@ public:
     DWORD          DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode);
     DWORD          DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode);
 private:
+#ifdef TARGET_WINDOWS
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
+#endif
 public:
 
     //************************************************************************
@@ -2574,9 +2621,20 @@ public:
         return m_ThreadHandle;
     }
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+    void SetThreadExited()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_ThreadExitedEvent.Set();
+    }
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
+#ifdef TARGET_UNIX
+    CLREvent        m_ThreadExitedEvent;
+#endif // TARGET_UNIX
 
     void        SetThreadHandle(HANDLE h)
     {
@@ -2596,12 +2654,11 @@ private:
 
     // <TODO> It would be nice to remove m_ThreadHandleForClose to simplify Thread.Join,
     //   but at the moment that isn't possible without extensive work.
-    //   This handle is used by SwitchOut to store the old handle which may need to be closed
-    //   if we are the owner.  The handle can't be closed before checking the external count
+    //   This handle is used by SwitchOut to store the old handle that needs to be closed.
+    //   The handle can't be closed before checking the external count,
     //   which we can't do in SwitchOut since that may require locking or switching threads.</TODO>
     HANDLE          m_ThreadHandleForClose;
     HANDLE          m_ThreadHandleForResume;
-    BOOL            m_WeOwnThreadHandle;
     SIZE_T          m_OSThreadId;
 
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
@@ -3789,6 +3846,8 @@ struct cdac_data<Thread>
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
+
+    static_assert(State == 0, "Thread.NativeThread depends on Thread::m_State being the first field");
 };
 
 // End of class Thread
@@ -4020,7 +4079,7 @@ public:
             CAN_TAKE_LOCK;
         }
         CONTRACTL_END;
-        s_pWaitForStackCrawlEvent->Wait(INFINITE,FALSE);
+        s_pWaitForStackCrawlEvent->Wait(INFINITE, FALSE, false);
     }
     static void SetStackCrawlEvent()
     {
