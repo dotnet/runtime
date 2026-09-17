@@ -121,6 +121,7 @@ namespace System.Runtime
         internal static extern unsafe void RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
 
+#if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumInitFromStackFrameIterator")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumInitFromStackFrameIterator(ref StackFrameIterator pFrameIter, out EH.MethodRegionInfo pMethodRegionInfo, void* pEHEnum);
@@ -128,6 +129,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpEHEnumNext(void* pEHEnum, void* pEHClause);
+#endif // !TARGET_WASM
 
         [RuntimeImport(RuntimeLibrary, "RhpGetClasslibFunctionFromCodeAddress")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -141,6 +143,7 @@ namespace System.Runtime
         // StackFrameIterator
         //
 
+#if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpSfiInit(ref StackFrameIterator pThis, void* pStackwalkCtx, bool instructionFault, bool* fIsExceptionIntercepted);
@@ -148,6 +151,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhpSfiNext")]
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern unsafe bool RhpSfiNext(ref StackFrameIterator pThis, uint* uExCollideClauseIdx, bool* fUnwoundReversePInvoke, bool* fIsExceptionIntercepted);
+#endif // !TARGET_WASM
 
         //
         // Miscellaneous helpers.

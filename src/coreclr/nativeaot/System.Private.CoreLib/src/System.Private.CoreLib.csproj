@@ -26,13 +26,13 @@
     <DefineConstants>SYSTEM_PRIVATE_CORELIB;$(DefineConstants)</DefineConstants>
     <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <FeatureNativeAot>true</FeatureNativeAot>
+    <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <RuntimeBasePath>..\..\Runtime.Base\src\</RuntimeBasePath>
+    <_TargetsBrowserWasm Condition="'$(TargetsBrowser)' == 'true' and '$(TargetsWasm)' == 'true'">true</_TargetsBrowserWasm>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(_TargetsBrowserWasm)' != 'true' or '$(TargetsSingleThreadedWasm)' != 'true'">
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
-  </PropertyGroup>
-  <PropertyGroup>
     <FeaturePortableTimer>true</FeaturePortableTimer>
   </PropertyGroup>
   <PropertyGroup>
@@ -206,7 +206,8 @@
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
-    <Compile Include="System\Runtime\ThunkPool.cs" />
+    <Compile Include="System\Runtime\ThunkPool.cs" Condition="'$(_TargetsBrowserWasm)' != 'true'" />
+    <Compile Include="System\Runtime\ThunkPool.NotSupported.cs" Condition="'$(_TargetsBrowserWasm)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
@@ -287,8 +288,9 @@
     <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)'=='true'">
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
+  <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(_TargetsBrowserWasm)'=='true'">
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" Condition="'$(_TargetsBrowserWasm)' != 'true'" />
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Wasm.cs" Condition="'$(_TargetsBrowserWasm)' == 'true'" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
@@ -298,9 +300,12 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs" Condition="'$(_TargetsBrowserWasm)' != 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.MProtect.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(_TargetsBrowserWasm)' == 'true'">
+    <Compile Include="System\Diagnostics\StackTrace.NativeAot.Browser.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
@@ -503,14 +508,20 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\GCStress.cs">
       <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(_TargetsBrowserWasm)' != 'true' or '$(TargetsSingleThreadedWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
+    </Compile>
+    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.SingleThreaded.cs" Condition="'$(_TargetsBrowserWasm)' == 'true' and '$(TargetsSingleThreadedWasm)' == 'true'">
+      <Link>Runtime.Base\src\System\Runtime\__Finalizer.SingleThreaded.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\MethodTable.Runtime.cs">
       <Link>Runtime.Base\src\System\Runtime\MethodTable.Runtime.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.cs">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.cs" Condition="'$(_TargetsBrowserWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.cs</Link>
+    </Compile>
+    <Compile Include="$(RuntimeBasePath)System\Runtime\ExceptionHandling.wasm.cs" Condition="'$(_TargetsBrowserWasm)' == 'true'">
+      <Link>Runtime.Base\src\System\Runtime\ExceptionHandling.wasm.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\InternalCalls.cs">
       <Link>Runtime.Base\src\System\Runtime\InternalCalls.cs</Link>
@@ -518,7 +529,7 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\RuntimeExports.cs">
       <Link>Runtime.Base\src\System\Runtime\RuntimeExports.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\StackFrameIterator.cs">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\StackFrameIterator.cs" Condition="'$(_TargetsBrowserWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\StackFrameIterator.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\TypeCast.cs">
@@ -528,7 +539,7 @@
       <Link>Common\TransitionBlock.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true'">
+  <ItemGroup Condition="'$(InPlaceRuntime)' == 'true' and '$(_TargetsBrowserWasm)' != 'true'">
     <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
 
