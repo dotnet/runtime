@@ -183,6 +183,22 @@ namespace System.Reflection
 
     internal sealed partial class CustomAttributeEncodedArgument
     {
+        private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
+            ref CustomAttributeDataParser parser, CustomAttributeType type, MetadataReader module)
+        {
+            return parser.ParseArgument(type);
+        }
+
+        private static CustomAttributeType ParseNamedArgumentTarget(
+            ref CustomAttributeDataParser parser, MetadataReader module, out string? argumentName)
+        {
+            NamedArgument namedArgument = parser.GetNamedArgument();
+            RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(module, default).ToType();
+            CustomAttributeType type = new CustomAttributeType(argumentType);
+            argumentName = namedArgument.Name.GetString(module);
+            return type;
+        }
+
         internal static object? ParseValue(MetadataReader reader, Handle value, RuntimeType argumentType)
         {
             try
@@ -200,10 +216,14 @@ namespace System.Reflection
         /// <summary>
         /// Used to parse NativeFormat custom attribute data.
         /// </summary>
-        private readonly struct CustomAttributeDataParser
+        private struct CustomAttributeDataParser
         {
             private readonly CustomAttribute _attribute;
             private readonly MetadataReader _reader;
+            private HandleCollection.Enumerator _fixedArguments;
+            private NamedArgumentHandleCollection.Enumerator _namedArguments;
+            private Handle _namedArgumentValue;
+            private bool _parsingNamedArguments;
 
             public CustomAttributeDataParser(CustomAttribute attribute, MetadataReader reader)
             {
@@ -213,7 +233,41 @@ namespace System.Reflection
 
             public CustomAttribute Attribute => _attribute;
 
-            public bool ValidateProlog() => _reader is not null;
+            public bool ValidateProlog()
+            {
+                if (_reader is null)
+                    return false;
+
+                _fixedArguments = _attribute.FixedArguments.GetEnumerator();
+                return true;
+            }
+
+            public NamedArgument GetNamedArgument()
+            {
+                if (!_parsingNamedArguments)
+                {
+                    _namedArguments = _attribute.NamedArguments.GetEnumerator();
+                    _parsingNamedArguments = true;
+                }
+
+                if (!_namedArguments.MoveNext())
+                    throw new BadImageFormatException();
+
+                NamedArgument namedArgument = _namedArguments.Current.GetNamedArgument(_reader);
+                _namedArgumentValue = namedArgument.Value;
+                return namedArgument;
+            }
+
+            public CustomAttributeEncodedArgument ParseArgument(CustomAttributeType type)
+            {
+                if (_parsingNamedArguments)
+                    return ParseValue(_namedArgumentValue, type);
+
+                if (!_fixedArguments.MoveNext())
+                    throw new BadImageFormatException();
+
+                return ParseValue(_fixedArguments.Current, type);
+            }
 
             public CustomAttributeEncodedArgument ParseValue(Handle value, CustomAttributeType type)
             {

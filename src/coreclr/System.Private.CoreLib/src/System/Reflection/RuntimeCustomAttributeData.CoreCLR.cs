@@ -198,6 +198,22 @@ namespace System.Reflection
             return arg;
         }
 
+        private static CustomAttributeType ParseNamedArgumentTarget(
+            ref CustomAttributeDataParser parser, RuntimeModule module, out string? argumentName)
+        {
+            // Determine if a field or property.
+            CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
+            if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
+                && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
+            {
+                throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
+            }
+
+            CustomAttributeType argumentType = ParseCustomAttributeType(ref parser, module);
+            argumentName = parser.GetString();
+            return argumentType;
+        }
+
         private static CustomAttributeType ParseCustomAttributeType(ref CustomAttributeDataParser parser, RuntimeModule module)
         {
             CustomAttributeEncoding arrayTag = CustomAttributeEncoding.Undefined;

@@ -687,24 +687,12 @@ namespace System.Reflection
             CustomAttributeCtorParameter[] customAttributeCtorParameters,
             ResolutionScope module)
         {
-#if NATIVEAOT
-            HandleCollection.Enumerator fixedArguments = parser.Attribute.FixedArguments.GetEnumerator();
-#endif
             foreach (CustomAttributeCtorParameter p in customAttributeCtorParameters)
             {
-#if NATIVEAOT
-                if (!fixedArguments.MoveNext())
-                {
-                    throw new BadImageFormatException();
-                }
-
-                p.EncodedArgument = parser.ParseValue(fixedArguments.Current, p.CustomAttributeType);
-#else
                 p.EncodedArgument = ParseCustomAttributeValue(
                     ref parser,
                     p.CustomAttributeType,
                     module);
-#endif
             }
         }
 
@@ -713,35 +701,17 @@ namespace System.Reflection
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             ResolutionScope module)
         {
-#if NATIVEAOT
-            foreach (NamedArgumentHandle namedArgumentHandle in parser.Attribute.NamedArguments)
-            {
-                NamedArgument namedArgument = namedArgumentHandle.GetNamedArgument(module);
-#else
             // Parse the named arguments in the custom attribute.
+#if NATIVEAOT
+            int argCount = parser.Attribute.NamedArguments.Count;
+#else
             int argCount = parser.GetI2();
+#endif
 
             for (int i = 0; i < argCount; ++i)
             {
-                // Determine if a field or property.
-                CustomAttributeEncoding namedArgFieldOrProperty = parser.GetTag();
-                if (namedArgFieldOrProperty is not CustomAttributeEncoding.Field
-                    && namedArgFieldOrProperty is not CustomAttributeEncoding.Property)
-                {
-                    throw new BadImageFormatException(SR.Arg_CustomAttributeFormatException);
-                }
-#endif
-
                 // Parse the encoded type for the named argument.
-#if NATIVEAOT
-                RuntimeType argumentType = (RuntimeType)namedArgument.Type.Resolve(module, default).ToType();
-                CustomAttributeType argType = new CustomAttributeType(argumentType);
-                string? argName = namedArgument.Name.GetString(module);
-#else
-                CustomAttributeType argType = ParseCustomAttributeType(ref parser, module);
-
-                string? argName = parser.GetString();
-#endif
+                CustomAttributeType argType = ParseNamedArgumentTarget(ref parser, module, out string? argName);
 
                 // Argument name must be non-null and non-empty.
                 if (string.IsNullOrEmpty(argName))
@@ -804,11 +774,7 @@ namespace System.Reflection
                     throw new BadImageFormatException(SR.Arg_CustomAttributeDuplicateNamedArgument);
                 }
 
-#if NATIVEAOT
-                parameterToUpdate.EncodedArgument = parser.ParseValue(namedArgument.Value, argType);
-#else
                 parameterToUpdate.EncodedArgument = ParseCustomAttributeValue(ref parser, argType, module);
-#endif
             }
         }
 
