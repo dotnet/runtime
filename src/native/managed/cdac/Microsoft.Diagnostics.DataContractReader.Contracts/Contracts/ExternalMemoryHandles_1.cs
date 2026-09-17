@@ -66,7 +66,8 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
 
         if (_rts.IsByRefLike(typeHandle))
         {
-            foreach (ulong slotAddress in EnumerateByRefLikeInteriorSlots(_rts, typeHandle, memory.Value, (uint)_target.PointerSize))
+            ByRefPointerOffsetsReporter reporter = new(_rts, memory, (uint)_target.PointerSize);
+            foreach (ulong slotAddress in reporter.Find(typeHandle, 0))
                 AddInteriorRoot(roots, new TargetPointer(slotAddress), resolveInteriorPointers);
         }
 
@@ -105,65 +106,5 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
             Address = slotAddress,
             Object = obj,
         });
-    }
-
-    private static IEnumerable<ulong> EnumerateByRefLikeInteriorSlots(
-        IRuntimeTypeSystem rts,
-        ITypeHandle typeHandle,
-        ulong baseAddress,
-        uint pointerSize)
-    {
-        bool isInlineArray = rts.IsInlineArray(typeHandle);
-
-        foreach (TargetPointer fieldDesc in rts.GetFieldDescList(typeHandle))
-        {
-            if (rts.IsFieldDescStatic(fieldDesc))
-                continue;
-
-            CorElementType fieldType = rts.GetFieldDescType(fieldDesc);
-            ITypeHandle? fieldTypeHandle = fieldType == CorElementType.ValueType
-                ? rts.GetFieldDescApproxTypeHandle(fieldDesc)
-                : null;
-
-            if (isInlineArray)
-            {
-                uint elementSize = fieldType == CorElementType.Byref
-                    ? pointerSize
-                    : fieldTypeHandle is not null ? rts.GetNumInstanceFieldBytes(fieldTypeHandle) : 0;
-                if (elementSize == 0)
-                    continue;
-
-                uint totalSize = rts.GetNumInstanceFieldBytes(typeHandle);
-                for (uint elementOffset = 0; elementOffset < totalSize; elementOffset += elementSize)
-                {
-                    foreach (ulong slot in EnumerateByRefLikeFieldSlots(rts, fieldType, fieldTypeHandle, baseAddress + elementOffset, pointerSize))
-                        yield return slot;
-                }
-            }
-            else
-            {
-                uint fieldOffset = rts.GetFieldDescOffset(fieldDesc, fieldDef: null);
-                foreach (ulong slot in EnumerateByRefLikeFieldSlots(rts, fieldType, fieldTypeHandle, baseAddress + fieldOffset, pointerSize))
-                    yield return slot;
-            }
-        }
-    }
-
-    private static IEnumerable<ulong> EnumerateByRefLikeFieldSlots(
-        IRuntimeTypeSystem rts,
-        CorElementType fieldType,
-        ITypeHandle? fieldTypeHandle,
-        ulong fieldAddress,
-        uint pointerSize)
-    {
-        if (fieldType == CorElementType.Byref)
-        {
-            yield return fieldAddress;
-        }
-        else if (fieldType == CorElementType.ValueType && fieldTypeHandle is not null && rts.IsByRefLike(fieldTypeHandle))
-        {
-            foreach (ulong slot in EnumerateByRefLikeInteriorSlots(rts, fieldTypeHandle, fieldAddress, pointerSize))
-                yield return slot;
-        }
     }
 }
