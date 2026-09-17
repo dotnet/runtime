@@ -598,6 +598,9 @@ DEFINE_FIELD_U(m_runtimeType,               ReflectModuleBaseObject,    m_runtim
 DEFINE_FIELD_U(m_runtimeAssembly,           ReflectModuleBaseObject,    m_runtimeAssembly)
 DEFINE_FIELD_U(m_pData,                     ReflectModuleBaseObject,    m_pData)
 DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(MODULE,               CTOR,                   .ctor,              IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)
 DEFINE_CLASS(ENUM_BUILDER,          ReflectionEmit,         EnumBuilder)
@@ -658,6 +661,9 @@ DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 DEFINE_CLASS(PARAMETER_MODIFIER,    Reflection,             ParameterModifier)
 
 DEFINE_CLASS(POINTER,               Reflection,             Pointer)
+#ifdef FOR_ILLINK
+DEFINE_METHOD(POINTER,              CTOR,                   .ctor,              IM_RetVoid)
+#endif // FOR_ILLINK
 
 DEFINE_CLASS_U(Reflection, Pointer, ReflectionPointer)
 DEFINE_FIELD_U(_ptr,                ReflectionPointer, _ptr)
