@@ -87,6 +87,13 @@ namespace System.Threading
             // this design replaced.
             private const int InFlightWaitTimeoutMs = 1000;
 
+            // Number of Thread.SpinWait(1) iterations the issuer thread performs, checking
+            // s_pendingSubmissions between each, before falling back to the real (blocking) EventFdWait
+            // call - see the spin loop in IssuerLoop for the full rationale. Only used when something is
+            // already in flight (i.e. the ring is actively being used), so this never spins while fully
+            // idle.
+            private const int SpinCountBeforeBlocking = 64;
+
             // Opt-out switch: io_uring integration is used by default on Linux when the kernel supports
             // it. Set DOTNET_USE_IO_URING=0 to fall back to the pre-existing (blocking-call-on-a-
             // ThreadPool-work-item) implementation unconditionally.
@@ -344,7 +351,36 @@ namespace System.Threading
                         continue;
                     }
 
-                    int timeoutMs = Volatile.Read(ref s_inFlightCount) > 0 ? InFlightWaitTimeoutMs : -1;
+                    bool anyInFlight = Volatile.Read(ref s_inFlightCount) > 0;
+
+                    // Under active use (something already in flight), briefly spin before parking via
+                    // the real blocking wait: at low-to-moderate concurrency, requests tend to arrive in
+                    // small, closely-spaced bursts rather than in a steady stream large enough to always
+                    // find this thread already awake and mid-drain. A full EventFdWait park-then-wake
+                    // round trip costs a real scheduling wake-up (which can be many microseconds under
+                    // load), whereas a short spin lets an imminent TrySubmit call be observed here almost
+                    // immediately instead, at the cost of a bounded bit of otherwise-idle CPU time on this
+                    // one dedicated thread. Skipped entirely when nothing is in flight, so a fully idle
+                    // ring never spins.
+                    if (anyInFlight)
+                    {
+                        for (int i = 0; i < SpinCountBeforeBlocking; i++)
+                        {
+                            if (!s_pendingSubmissions.IsEmpty)
+                            {
+                                break;
+                            }
+
+                            Thread.SpinWait(1);
+                        }
+
+                        if (!s_pendingSubmissions.IsEmpty)
+                        {
+                            continue;
+                        }
+                    }
+
+                    int timeoutMs = anyInFlight ? InFlightWaitTimeoutMs : -1;
                     Interop.Sys.EventFdWait(s_wakeEventFd, timeoutMs);
                 }
             }
