@@ -157,7 +157,7 @@ $env:CORE_ROOT = "path\to\Core_Root"
 | **Comprehensive** | All-in-one: every scenario in a single run |
 | **StructScenarios** | Struct returns, by-ref params |
 | **DynamicMethods** | DynamicMethod / IL emit |
-| **InlineArrayByRefLike** | IL-defined byref-like inline array containing two `Span<byte>` values, passed by value |
+| **InlineArrayByRefLike** | IL-defined byref-like inline array containing two `int32&` values, passed by value |
 | **CallSignatures** | Wide signature surface for the ARGITER sub-check (primitives, byref/ptr, structs, generics) |
 | **CrossModule** | Calls across multiple assemblies exercising cross-module type references |
 | **NotYetLoadedArgType** | Regression coverage for the cDAC dropping a GC-root whose argument type is not yet loaded when a `PrestubMethodFrame` is scanned. |
