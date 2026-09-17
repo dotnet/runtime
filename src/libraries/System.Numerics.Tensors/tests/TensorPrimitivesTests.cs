@@ -1846,6 +1846,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Max_LongLengths_AllZero() =>
             AssertMinMaxLongLengthsAllZero(Max);
+
+        [Fact]
+        public void Max_LongLengths_TwoDistinctNaNs_ReturnsOneOfThem() =>
+            AssertMinMaxLongLengthsTwoDistinctNaNs(Max, fill: ConvertFromSingle(2));
         #endregion
 
         #region MaxMagnitude
@@ -2057,6 +2061,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void MaxMagnitude_LongLengths_AllZero() =>
             AssertMinMaxLongLengthsAllZero(MaxMagnitude);
+
+        [Fact]
+        public void MaxMagnitude_LongLengths_TwoDistinctNaNs_ReturnsOneOfThem() =>
+            AssertMinMaxLongLengthsTwoDistinctNaNs(MaxMagnitude, fill: ConvertFromSingle(-2));
         #endregion
 
         #region Min
@@ -2341,6 +2349,62 @@ namespace System.Numerics.Tensors.Tests
             });
         }
 
+        /// <summary>
+        /// A NaN whose payload survives narrowing to <see cref="Half"/> (the low 13 bits of a single's payload are truncated),
+        /// so that two of them stay distinguishable through every floating-point <typeparamref name="T"/>.
+        /// </summary>
+        protected T NaNWithWidePayload(int payload) => ConvertFromSingle(BitConverter.Int32BitsToSingle(0x7FC00000 | (payload << 13)));
+
+        /// <summary>
+        /// Two NaNs with different payloads at block-boundary positions must reduce to one of those two NaNs, bit for bit.
+        /// Which one is only specified for float and double (the first); for Half the choice depends on how the lanes pair up,
+        /// but the result must still be an input NaN and not a canonical NaN or a value.
+        /// </summary>
+        protected void AssertMinMaxLongLengthsTwoDistinctNaNs(MinMaxReduction reduction, T fill)
+        {
+            if (!IsFloatingPoint) return;
+
+            T first = NaNWithWidePayload(1), second = NaNWithWidePayload(2);
+            Assert.NotEqual(ToBits(first), ToBits(second));
+
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                int[] positions = MinMaxLongPositions(tensorLength).ToArray();
+                foreach (int i in positions)
+                {
+                    foreach (int j in positions)
+                    {
+                        if (i == j) continue;
+
+                        using BoundedMemory<T> x = CreateTensor(tensorLength);
+                        x.Span.Fill(fill);
+                        x[i] = first;
+                        x[j] = second;
+
+                        T actual = reduction(x.Span);
+                        if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                        {
+                            AssertEqualBits(i < j ? first : second, actual);
+                        }
+                        else
+                        {
+                            long bits = ToBits(actual);
+                            Assert.True(bits == ToBits(first) || bits == ToBits(second),
+                                $"Length {tensorLength}, NaNs at {i} and {j}: got 0x{bits:X}, expected 0x{ToBits(first):X} or 0x{ToBits(second):X}");
+                        }
+                    }
+                }
+            });
+        }
+
+        /// <summary>The bit pattern of a floating-point value, for comparisons that must tell NaN payloads apart.</summary>
+        protected static long ToBits(T value) =>
+            typeof(T) == typeof(float) ? BitConverter.SingleToInt32Bits((float)(object)value) :
+            typeof(T) == typeof(double) ? BitConverter.DoubleToInt64Bits((double)(object)value) :
+            typeof(T) == typeof(Half) ? BitConverter.HalfToInt16Bits((Half)(object)value) :
+            typeof(T) == typeof(NFloat) ? BitConverter.DoubleToInt64Bits((double)(NFloat)(object)value) :
+            throw new NotSupportedException(typeof(T).Name);
+
         /// <summary>All +0 must reduce to +0 and all -0 to -0, bit for bit.</summary>
         protected void AssertMinMaxLongLengthsAllZero(MinMaxReduction reduction)
         {
@@ -2373,6 +2437,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void Min_LongLengths_AllZero() =>
             AssertMinMaxLongLengthsAllZero(Min);
+
+        [Fact]
+        public void Min_LongLengths_TwoDistinctNaNs_ReturnsOneOfThem() =>
+            AssertMinMaxLongLengthsTwoDistinctNaNs(Min, fill: ConvertFromSingle(-1)); // a smaller value must not beat either NaN
         #endregion
 
         #region MinMagnitude
@@ -2582,6 +2650,10 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void MinMagnitude_LongLengths_AllZero() =>
             AssertMinMaxLongLengthsAllZero(MinMagnitude);
+
+        [Fact]
+        public void MinMagnitude_LongLengths_TwoDistinctNaNs_ReturnsOneOfThem() =>
+            AssertMinMaxLongLengthsTwoDistinctNaNs(MinMagnitude, fill: ConvertFromSingle(-1));
         #endregion
 
         #region Multiply
