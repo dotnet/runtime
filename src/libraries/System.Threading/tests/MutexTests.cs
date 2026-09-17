@@ -912,7 +912,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsMultithreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public async Task ConcurrentCreateOrOpenWithInitialOwnership()
         {
