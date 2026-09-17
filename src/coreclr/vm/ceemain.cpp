@@ -1746,14 +1746,12 @@ void InitFlsSlot()
 }
 
 // Register the thread with OS to be notified when thread is about to be destroyed
-// It fails fast if a different thread was already registered with the current fiber.
 // Parameters:
 //  thread        - thread to attach
 static void OsAttachThread(void* thread)
 {
     _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
-
-    CheckThreadStateNotDestroyed();
+    _ASSERTE(t_flsState == FLS_STATE_CLEAR);
 
     t_flsState = FLS_STATE_ARMED;
 
