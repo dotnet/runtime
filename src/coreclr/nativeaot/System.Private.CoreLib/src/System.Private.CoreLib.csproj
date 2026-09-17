@@ -511,9 +511,6 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(_TargetsBrowserWasm)' != 'true' or '$(TargetsSingleThreadedWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.SingleThreaded.cs" Condition="'$(_TargetsBrowserWasm)' == 'true' and '$(TargetsSingleThreadedWasm)' == 'true'">
-      <Link>Runtime.Base\src\System\Runtime\__Finalizer.SingleThreaded.cs</Link>
-    </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\MethodTable.Runtime.cs">
       <Link>Runtime.Base\src\System\Runtime\MethodTable.Runtime.cs</Link>
     </Compile>
