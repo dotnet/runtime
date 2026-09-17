@@ -35,6 +35,8 @@ namespace
 {
     // Scenario ids -- must match the managed harness (Program.cs).
     const int kScenarioRichSigsegv = 0;
+    const int kScenarioAbort = 1;
+    const int kScenarioStackOverflow = 2;
 
     // Synthetic module handles, resolved by ModuleInfoCallback below.
     const void* const kManagedModule = reinterpret_cast<const void*>(0x1000);
@@ -193,6 +195,23 @@ namespace
         EmitNativeFrame(frameCallback, 0x000000000040ffff, "libsynthetic.so", kNativeModule, ctx);
     }
 
+    // A native-only crash stack without a managed exception, plus a second record
+    // with a managed frame, exercises SIGABRT and the null-exception path.
+    void EnumerateThreadsAbort(
+        uint64_t crashingTid,
+        InProcCrashReportThreadCallback threadCallback,
+        InProcCrashReportFrameCallback frameCallback,
+        void* ctx)
+    {
+        threadCallback(crashingTid, /*isCrashThread*/ true, /*exceptionType*/ nullptr, 0, ctx);
+        EmitNativeFrame(frameCallback, 0x000000000040aaaa, "libsynthetic.so", kNativeModule, ctx);
+        EmitNativeFrame(frameCallback, 0x000000000040bbbb, "libnative2.so", kNativeModule2, ctx);
+
+        threadCallback(crashingTid + 1, /*isCrashThread*/ false, nullptr, 0, ctx);
+        EmitManagedFrame(frameCallback, 0x000000000040cccc,
+            "Listen", "Synthetic.App.Server", 0x06000001, ctx);
+    }
+
     // Deterministic synthetic register state for the crash thread.
     void FillSyntheticContext(SyntheticContext* syntheticContext)
     {
@@ -337,15 +356,41 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveScenario(
     settings.frameLimitPerThread = 0;
 
     int signalNumber = SIGSEGV;
-    if (!Check(scenario == kScenarioRichSigsegv, "unknown scenario ID"))
+    switch (scenario)
     {
-        return -1;
+        case kScenarioRichSigsegv:
+            signalNumber = SIGSEGV;
+            settings.enumerateThreadsCallback = &EnumerateThreadsRichSigsegv;
+            break;
+        case kScenarioAbort:
+            signalNumber = SIGABRT;
+            settings.enumerateThreadsCallback = &EnumerateThreadsAbort;
+            break;
+        case kScenarioStackOverflow:
+            signalNumber = SIGSEGV;
+            settings.enumerateThreadsCallback = nullptr; // SO path does not enumerate threads
+            break;
+        default:
+            Check(false, "unknown scenario ID");
+            return -1;
     }
-    settings.enumerateThreadsCallback = &EnumerateThreadsRichSigsegv;
 
     InProcCrashReportInitialize(settings);
 
     InitializeServices(reporterRootPath, /*enableLifecycle*/ true);
+
+    if (scenario == kScenarioStackOverflow)
+    {
+        // Drive the captured-stack-overflow-trace path: the runtime SO helper
+        // would have recorded a compressed managed stack (with a repeated
+        // recursive sequence) for the reporter to emit later.
+        InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
+        InProcCrashReportBeginStackOverflowTrace(/*crashingTid*/ 0, /*totalFrameCount*/ 42);
+        InProcCrashReportAddStackOverflowTraceFrame("Synthetic.App.Program.Main", 1, 0);
+        InProcCrashReportAddStackOverflowTraceFrame("Synthetic.App.Recurse.Down", 40, 1);
+        InProcCrashReportAddStackOverflowTraceFrame("Synthetic.App.Recurse.Bottom", 1, 0);
+        InProcCrashReportEndStackOverflowTrace();
+    }
 
     SyntheticContext syntheticContext;
     FillSyntheticContext(&syntheticContext);

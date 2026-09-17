@@ -14,7 +14,11 @@ using System.Text.Json;
 
 public static class Program
 {
-#if INPROC_SCENARIO_RICHSIGSEGV
+#if INPROC_SCENARIO_ABORT
+    private const int ScenarioId = 1;
+#elif INPROC_SCENARIO_STACKOVERFLOW
+    private const int ScenarioId = 2;
+#elif INPROC_SCENARIO_RICHSIGSEGV
     private const int ScenarioId = 0;
 #else
 #error Define an INPROC_SCENARIO_* symbol for this test.
@@ -124,11 +128,11 @@ public static class Program
         string[] reports = Directory.GetFiles(reportDirectory);
         Check(reports.Length == 1 && reports[0].EndsWith(".crashreport.json", StringComparison.Ordinal),
             $"expected one completed report and no temporary files, found: {string.Join(", ", reports)}");
-        ValidateJson(reports[0]);
-        ValidateConsole(consolePath);
+        ValidateJson(reports[0], ScenarioId);
+        ValidateConsole(consolePath, ScenarioId);
     }
 
-    private static void ValidateJson(string path)
+    private static void ValidateJson(string path, int scenario)
     {
         Console.WriteLine($"Validating JSON: {Path.GetFileName(path)}");
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
@@ -138,23 +142,34 @@ public static class Program
         CheckString(payload.GetProperty("configuration"), "architecture", GetArchitecture());
         CheckString(payload, "pid", Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
         Check(!string.IsNullOrEmpty(payload.GetProperty("process_name").GetString()), "missing process name");
-        CheckString(root.GetProperty("parameters"), "signal", "11");
+        CheckString(root.GetProperty("parameters"), "signal", scenario == 1 ? "6" : "11");
 
-        JsonElement threads = GetArray(payload, "threads", 3);
+        JsonElement threads = GetArray(payload, "threads", scenario switch { 1 => 2, 2 => 1, _ => 3 });
         ulong crashTid = ReadHex(threads[0], "native_thread_id");
         Check(crashTid != 0, "crashing thread ID is zero");
         for (int i = 0; i < threads.GetArrayLength(); i++)
         {
             CheckString(threads[i], "crashed", i == 0 ? "true" : "false");
             CheckHex(threads[i], "native_thread_id", crashTid + (ulong)i);
-            if (i != 0)
+            if (i != 0 || scenario == 1)
             {
                 CheckAbsent(threads[i], "managed_exception_type");
                 CheckAbsent(threads[i], "managed_exception_hresult");
             }
         }
 
-        ValidateRichJson(threads);
+        switch (scenario)
+        {
+            case 1:
+                ValidateAbortJson(threads);
+                break;
+            case 2:
+                ValidateStackOverflowJson(threads[0]);
+                break;
+            default:
+                ValidateRichJson(threads);
+                break;
+        }
     }
 
     private static void ValidateRichJson(JsonElement threads)
@@ -173,7 +188,42 @@ public static class Program
         CheckNativeFrame(GetArray(threads[2], "stack_frames", 1)[0], 0x40ffff, "libsynthetic.so");
     }
 
-    private static void ValidateConsole(string path)
+    private static void ValidateAbortJson(JsonElement threads)
+    {
+        CheckRegisters(threads[0]);
+        JsonElement frames = GetArray(threads[0], "stack_frames", 3);
+        CheckContextFrame(frames[0]);
+        CheckNativeFrame(frames[1], 0x40aaaa, "libsynthetic.so");
+        CheckNativeFrame(frames[2], 0x40bbbb, "libnative2.so");
+        CheckManagedFrame(GetArray(threads[1], "stack_frames", 1)[0], 0x40cccc, "Synthetic.App.Server.Listen", 0x06000001);
+    }
+
+    private static void ValidateStackOverflowJson(JsonElement crashed)
+    {
+        CheckString(crashed, "is_managed", "true");
+        CheckString(crashed, "managed_exception_type", "System.StackOverflowException");
+        CheckString(crashed, "managed_exception_hresult", "0x800703e9");
+        CheckString(crashed, "stack_overflow_total_frames", "42");
+        CheckAbsent(crashed, "stack_frames_unavailable_reason");
+        CheckAbsent(crashed, "stack_overflow_trace_truncated_frames");
+        JsonElement frames = GetArray(crashed, "stack_frames", 3);
+        CheckString(frames[0], "method_name", "Synthetic.App.Program.Main");
+        CheckString(frames[1], "method_name", "Synthetic.App.Recurse.Down");
+        CheckString(frames[1], "stack_overflow_repeat_count", "40");
+        CheckString(frames[1], "stack_overflow_repeat_sequence_length", "1");
+        CheckString(frames[2], "method_name", "Synthetic.App.Recurse.Bottom");
+        foreach (JsonElement frame in frames.EnumerateArray())
+        {
+            CheckString(frame, "is_managed", "true");
+        }
+        foreach (int index in new[] { 0, 2 })
+        {
+            CheckAbsent(frames[index], "stack_overflow_repeat_count");
+            CheckAbsent(frames[index], "stack_overflow_repeat_sequence_length");
+        }
+    }
+
+    private static void ValidateConsole(string path, int scenario)
     {
         Console.WriteLine($"Validating compact report: {Path.GetFileName(path)}");
         string console = File.ReadAllText(path);
@@ -182,22 +232,41 @@ public static class Program
         Check(lines.Count(line => line == ".NET Crash Report v1.0.0") == 1, "expected one protocol header");
         Check(lines.Contains($"ABI: {GetArchitecture()}"), "incorrect ABI");
         Check(lines.Count(line => line.StartsWith("signal ", StringComparison.Ordinal)) == 1, "expected one signal line");
-        Check(lines.Contains("signal 11 (SIGSEGV)"), "incorrect signal");
+        Check(lines.Contains($"signal {(scenario == 1 ? "6 (SIGABRT)" : "11 (SIGSEGV)")}"), "incorrect signal");
         Check(!lines.Any(line => line == "(no managed frames)" || line.StartsWith("... +", StringComparison.Ordinal)),
             "compact report unexpectedly omitted frames");
 
-        string[][] expectedThreads =
-        [
+        string[][] expectedThreads = scenario switch
+        {
+            1 =>
             [
-                "managed exception: System.NullReferenceException (0x80004003)",
-                "#00 [0] Synthetic.App.Worker`1[System.Int32].DoWork + 0x10 (token=0x6000001)",
-                "#01 [1] 0x40bbbb (libsynthetic.so + 0x40)",
-                "#02 [0] Synthetic.App.Dictionary`2[System.String,System.Int32].Insert + 0x10 (token=0x6000002)",
-                "#03 [2] 0x40dddd (libnative2.so + 0x40)",
+                ["#00 [0] 0x40aaaa (libsynthetic.so + 0x40)", "#01 [1] 0x40bbbb (libnative2.so + 0x40)"],
+                ["#00 [2] Synthetic.App.Server.Listen + 0x10 (token=0x6000001)"],
             ],
-            ["#00 [0] Synthetic.App.Server.Listen + 0x10 (token=0x6000003)"],
-            ["#00 [1] 0x40ffff (libsynthetic.so + 0x40)"],
-        ];
+            2 =>
+            [
+                [
+                    "managed exception: System.StackOverflowException (0x800703e9)",
+                    "stack overflow frames: 42",
+                    "#00 Synthetic.App.Program.Main",
+                    "repeated 40 times:",
+                    "#01 Synthetic.App.Recurse.Down",
+                    "#02 Synthetic.App.Recurse.Bottom",
+                ],
+            ],
+            _ =>
+            [
+                [
+                    "managed exception: System.NullReferenceException (0x80004003)",
+                    "#00 [0] Synthetic.App.Worker`1[System.Int32].DoWork + 0x10 (token=0x6000001)",
+                    "#01 [1] 0x40bbbb (libsynthetic.so + 0x40)",
+                    "#02 [0] Synthetic.App.Dictionary`2[System.String,System.Int32].Insert + 0x10 (token=0x6000002)",
+                    "#03 [2] 0x40dddd (libnative2.so + 0x40)",
+                ],
+                ["#00 [0] Synthetic.App.Server.Listen + 0x10 (token=0x6000003)"],
+                ["#00 [1] 0x40ffff (libsynthetic.so + 0x40)"],
+            ],
+        };
 
         string[] blocks = console.Split("--- thread ", StringSplitOptions.None);
         Check(blocks.Length == expectedThreads.Length + 1, $"expected {expectedThreads.Length} console threads, got {blocks.Length - 1}");
@@ -206,11 +275,17 @@ public static class Program
             string[] blockLines = blocks[i + 1].Split('\n').Select(line => line.Trim()).ToArray();
             Check(blockLines[0].Contains("(crashed)", StringComparison.Ordinal) == (i == 0), $"thread {i}: incorrect crashed marker");
             string[] actual = blockLines.Skip(1).Where(line =>
-                line.StartsWith('#') || line.StartsWith("managed exception:", StringComparison.Ordinal)).ToArray();
+                line.StartsWith('#') || line.StartsWith("managed exception:", StringComparison.Ordinal) ||
+                line.StartsWith("stack overflow ", StringComparison.Ordinal) || line.StartsWith("repeated ", StringComparison.Ordinal)).ToArray();
             Check(actual.SequenceEqual(expectedThreads[i]), $"thread {i}: expected compact lines:\n{string.Join("\n", expectedThreads[i])}\nactual:\n{string.Join("\n", actual)}");
         }
 
-        string[] modules = ["synthetic.managed.dll", "libsynthetic.so", "libnative2.so"];
+        string[] modules = scenario switch
+        {
+            1 => ["libsynthetic.so", "libnative2.so", "synthetic.managed.dll"],
+            2 => [],
+            _ => ["synthetic.managed.dll", "libsynthetic.so", "libnative2.so"],
+        };
         string[] actualModules = lines.Where(line => line.StartsWith('[')).ToArray();
         string[] expectedModules = modules.Select((module, index) => $"[{index}] {module} {ModuleGuid}").ToArray();
         Check(actualModules.SequenceEqual(expectedModules), "compact module table mismatch");
