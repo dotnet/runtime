@@ -77,14 +77,6 @@ void PgoManager::Shutdown()
     }
 }
 
-void PgoManager::FlushInstrumentationData()
-{
-    WRAPPER_NO_CONTRACT;
-    // Only emit to EventPipe here. The text-file export (DOTNET_WritePGOData) is a separate concern owned
-    // by the process-shutdown path, not by on-demand trace collection.
-    EmitInstrumentationDataToEventPipe();
-}
-
 void PgoManager::VerifyAddress(void* address)
 {
     // TODO Insert an assert to check that an address is a valid pgo address
@@ -195,10 +187,6 @@ void PgoManager::EmitInstrumentationDataToEventPipe()
 void PgoManager::WritePgoData()
 {
 #ifndef PERFTRACING_DISABLE_THREADS
-    // On single-threaded WASM the session-stopping flush (FlushInstrumentationData) is the EventPipe
-    // emitter, so emitting here too would deliver each method twice to a session that EventPipe stops
-    // during shutdown, which dotnet-pgo rejects as a duplicate chunk after a method's final chunk.
-    // Threaded builds have no such flush, so the shutdown path emits the EventPipe data.
     EmitInstrumentationDataToEventPipe();
 #endif
 

@@ -17,7 +17,7 @@ class PgoManager
 public:
 
     static void Initialize();
-    static void FlushInstrumentationData();
+    static void EmitInstrumentationDataToEventPipe();
     static void Shutdown();
 
 #endif // FEATURE_PGO
@@ -164,7 +164,6 @@ private:
 
     static void ReadPgoData();
     static void WritePgoData();
-    static void EmitInstrumentationDataToEventPipe();
 
 private:
 
