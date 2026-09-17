@@ -72,6 +72,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132031")]
         [Theory, MemberData(nameof(UseSsl))]
         public Task SendAsync_Cancel_Success(bool useSsl) => RunEchoAsync(
             RunClient_SendAsync_Cancel_Success, useSsl);
