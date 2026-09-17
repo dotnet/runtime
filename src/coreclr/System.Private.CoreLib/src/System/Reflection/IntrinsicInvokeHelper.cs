@@ -1028,7 +1028,7 @@ namespace System.Reflection
             }
         }
 
-        // When calling a constuctor, we can be in one of two scenarios:
+        // When calling a constructor, we can be in one of two scenarios:
         // 1. The user has specified an instance and we are calling the constructor like a regular method
         //    on such instance.
         // 2. The user has not specified an instance and we need to allocate one and then call the constructor.
