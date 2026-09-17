@@ -716,7 +716,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             bool sourceValueIsKnown,
             DeconstructionInfo deconstructionInfo,
             IDeconstructionAssignmentOperation operation,
-            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            bool useTopForTupleElements = false)
         {
             target = UnwrapDeconstructionTarget(target);
 
@@ -839,6 +840,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             }
 
             var tupleValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+            useTopForTupleElements |= source is IFlowCaptureReferenceOperation flowCaptureReference &&
+                IsTupleExpressionFlowCapture(flowCaptureReference);
             for (int i = 0; i < targetTuple.Elements.Length; i++)
             {
                 IFieldSymbol tupleElement = tupleType.TupleElements[i];
@@ -846,17 +849,45 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     targetTuple.Elements[i],
                     source: null,
                     tupleElement.Type,
-                    GetTupleElementValue(tupleElement),
+                    useTopForTupleElements
+                        ? TopValue
+                        : GetTupleElementValue(tupleElement),
                     sourceValueIsKnown: true,
                     deconstructionInfo.Nested[i],
                     operation,
-                    state);
+                    state,
+                    useTopForTupleElements);
                 if (tupleValue.DoesNotReturn)
                     return DeconstructionValue.NonReturning;
                 tupleValues.Add(tupleValue);
             }
 
             return new DeconstructionValue(tupleValues.MoveToImmutable());
+        }
+
+        private bool IsTupleExpressionFlowCapture(IFlowCaptureReferenceOperation flowCaptureReference)
+        {
+            // A flow capture can also select an existing tuple value. Only treat it as a
+            // compiler temporary when every value-producing branch is a tuple expression.
+            return IsTupleExpressionOrThrow(_semanticModel.GetOperation(flowCaptureReference.Syntax));
+
+            static bool IsTupleExpressionOrThrow(IOperation? operation)
+            {
+                if (operation is null)
+                    return false;
+
+                operation = UnwrapDeconstructionSource(operation);
+                return operation switch
+                {
+                    ITupleOperation or IThrowOperation => true,
+                    IConditionalOperation conditional =>
+                        IsTupleExpressionOrThrow(conditional.WhenTrue) &&
+                        IsTupleExpressionOrThrow(conditional.WhenFalse),
+                    ISwitchExpressionOperation switchExpression =>
+                        switchExpression.Arms.All(arm => IsTupleExpressionOrThrow(arm.Value)),
+                    _ => false
+                };
+            }
         }
 
         private void AssignDeconstruction(
