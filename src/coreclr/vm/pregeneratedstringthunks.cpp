@@ -142,10 +142,9 @@ void ProcessInjectStringThunksFixup(ReadyToRunInfo * pR2RInfo, PCCOR_SIGNATURE p
 // =====================================================================
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
 
-// s_pendingThunkResolutionLock protects BOTH the global LA list AND the
-// per-LoaderAllocator m_pendingPortableEntryPointThunks arrays. This avoids
-// any lock-ordering issues and keeps LAs alive during the scan (Destroy
-// takes the same lock to unregister).
+// s_pendingThunkResolutionLock protects the global LA list and both pending
+// entrypoint arrays on each LoaderAllocator. This avoids lock-ordering issues
+// and keeps LAs alive during the scan (Destroy takes the same lock to unregister).
 
 static CrstStatic s_pendingThunkResolutionLock;
 static SArray<LoaderAllocator*> s_pendingThunkLoaderAllocators;
@@ -217,6 +216,55 @@ void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocato
     pLoaderAllocator->m_pendingPortableEntryPointThunks.Append(pMD);
 
     pMD->SetPendingThunkResolution(true);
+}
+
+static bool TryResolveClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
+{
+    STANDARD_VM_CONTRACT;
+
+    PortableEntryPoint* pep = pEntryPoint->GetEntryPoint();
+    if (pep->HasNativeCode())
+        return true;
+
+    void* thunk = GetClosedStaticRetBufThunk(pEntryPoint->_delegateInvoke);
+    if (thunk == nullptr)
+        return false;
+
+    PortableEntryPoint::SetActualCode((PCODE)pep, thunk);
+    return true;
+}
+
+void AddPendingClosedStaticRetBufThunkUnderLock(
+    LoaderAllocator* pLoaderAllocator,
+    ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    CrstHolder holder(&s_pendingThunkResolutionLock);
+
+    if (TryResolveClosedStaticRetBufThunk(pEntryPoint))
+        return;
+
+    if (!pLoaderAllocator->m_registeredForPendingThunkResolution)
+    {
+        s_pendingThunkLoaderAllocators.Append(pLoaderAllocator);
+        pLoaderAllocator->m_registeredForPendingThunkResolution = true;
+    }
+
+    SArray<ClosedStaticRetBufPortableEntryPoint*>& pending = pLoaderAllocator->m_pendingClosedStaticRetBufThunks;
+    for (COUNT_T i = 0; i < pending.GetCount(); i++)
+    {
+        if (pending[i] == pEntryPoint)
+            return;
+    }
+
+    pending.Append(pEntryPoint);
 }
 
 void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator* pLoaderAllocator)
@@ -327,6 +375,39 @@ void ResolvePendingPortableEntryPointThunksGlobal()
         else if (nullCount == count)
         {
             pending.Clear();
+        }
+
+        SArray<ClosedStaticRetBufPortableEntryPoint*>& pendingClosedStatic =
+            pLA->m_pendingClosedStaticRetBufThunks;
+        count = pendingClosedStatic.GetCount();
+        nullCount = 0;
+
+        for (COUNT_T i = 0; i < count; i++)
+        {
+            ClosedStaticRetBufPortableEntryPoint* pEntryPoint = pendingClosedStatic[i];
+            if (pEntryPoint == nullptr || TryResolveClosedStaticRetBufThunk(pEntryPoint))
+            {
+                pendingClosedStatic[i] = nullptr;
+                nullCount++;
+            }
+        }
+
+        if (nullCount > 0 && nullCount < count)
+        {
+            COUNT_T dest = 0;
+            for (COUNT_T src = 0; src < count; src++)
+            {
+                if (pendingClosedStatic[src] != nullptr)
+                {
+                    pendingClosedStatic[dest] = pendingClosedStatic[src];
+                    dest++;
+                }
+            }
+            pendingClosedStatic.SetCount(dest);
+        }
+        else if (nullCount == count)
+        {
+            pendingClosedStatic.Clear();
         }
     }
 }

@@ -874,25 +874,24 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
 
     PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode();
     void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
-    if (thunk == NULL)
-    {
-        // A compiled delegate invocation roots this thunk. Without one, interpreter delegate
-        // invocation can call the target MethodDesc directly and handle the closed-static shape inline.
-        // Do not cache this fallback: a subsequently loaded R2R image may register the missing thunk.
-        return targetEntryPoint;
-    }
 
     AllocMemTracker amt;
     ClosedStaticRetBufPortableEntryPoint* pNewStub =
         reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
             amt.Track(pStubLoaderAllocator->GetHighFrequencyHeap()->AllocMem(
                 S_SIZE_T(sizeof(ClosedStaticRetBufPortableEntryPoint)))));
-    pNewStub->Init(pTargetMD, targetEntryPoint, thunk);
+    pNewStub->Init(pTargetMD, pDelegateInvoke, targetEntryPoint, thunk);
 
     PCODE pNewEntryPoint = (PCODE)pNewStub->GetEntryPoint();
     PCODE pResult = pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, pNewEntryPoint);
     if (pResult == pNewEntryPoint)
         amt.SuppressRelease();
+
+    if (thunk == nullptr)
+    {
+        pStubLoaderAllocator->AddPendingClosedStaticRetBufThunk(
+            ClosedStaticRetBufPortableEntryPoint::FromEntryPoint(pResult));
+    }
 
     return pResult;
 }

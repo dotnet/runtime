@@ -288,10 +288,16 @@ public class WasmInterpreterTransitions
         il.Emit(OpCodes.Ldloca_S, result);
         il.Emit(OpCodes.Initobj, resultType);
         il.Emit(OpCodes.Ldloca_S, result);
-        il.Emit(OpCodes.Ldc_I4, A);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, typeof(int[]));
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ldelem_I4);
         il.Emit(OpCodes.Stfld, firstField);
         il.Emit(OpCodes.Ldloca_S, result);
-        il.Emit(OpCodes.Ldc_I4, B);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, typeof(int[]));
+        il.Emit(OpCodes.Ldc_I4_1);
+        il.Emit(OpCodes.Ldelem_I4);
         il.Emit(OpCodes.Stfld, secondField);
         il.Emit(OpCodes.Ldloc, result);
         il.Emit(OpCodes.Ret);
@@ -314,7 +320,7 @@ public class WasmInterpreterTransitions
         invoke.SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
         Type delegateType = delegateBuilder.CreateType();
 
-        object target = new();
+        int[] target = { A, B };
         Delegate callback = Delegate.CreateDelegate(delegateType, target, targetMethod);
         Assert.Same(target, callback.Target);
 
