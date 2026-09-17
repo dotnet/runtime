@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import { registerGraders } from "./kbe-candidate-reads-grader.mjs";
@@ -8,6 +10,7 @@ import { registerGraders } from "./kbe-candidate-reads-grader.mjs";
 const require = createRequire(import.meta.url);
 const { runGhApi, searchKbeIssues } = require("./search-kbe-issues.cjs");
 const testToken = "test-token";
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
 
 async function productionScript() {
     const workflow = await readFile(new URL("../ci-failure-scan.md", import.meta.url), "utf8");
@@ -21,6 +24,39 @@ async function productionScript() {
         .join("\n");
 
     return script;
+}
+
+async function runProductionSearch(result, query = "query") {
+    const script = await productionScript();
+    const directory = await mkdtemp(join(tmpdir(), "kbe-search-test-"));
+    const responsePath = join(directory, "response.json");
+    const ghPath = join(directory, "gh");
+    const originalEnvironment = {
+        GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+        MOCK_GH_RESPONSE: process.env.MOCK_GH_RESPONSE,
+        PATH: process.env.PATH,
+    };
+
+    await writeFile(responsePath, JSON.stringify(result));
+    await writeFile(ghPath, "#!/bin/sh\ncat \"$MOCK_GH_RESPONSE\"\n");
+    await chmod(ghPath, 0o755);
+
+    process.env.GITHUB_TOKEN = testToken;
+    process.env.MOCK_GH_RESPONSE = responsePath;
+    process.env.PATH = `${directory}:${originalEnvironment.PATH}`;
+
+    try {
+        return await new AsyncFunction("query", script)(query);
+    } finally {
+        for (const [name, value] of Object.entries(originalEnvironment)) {
+            if (value === undefined) {
+                delete process.env[name];
+            } else {
+                process.env[name] = value;
+            }
+        }
+        await rm(directory, { recursive: true, force: true });
+    }
 }
 
 function validResult() {
@@ -39,6 +75,34 @@ test("production wrapper uses authenticated gh api transport", async () => {
     assert.match(script, /execFile\)\("gh"/);
     assert.match(script, /"api",\s*"search\/issues"/);
     assert.match(script, /GITHUB_TOKEN/);
+});
+
+test("production wrapper rejects incomplete results", async () => {
+    await assert.rejects(
+        runProductionSearch({ ...validResult(), incomplete_results: true }),
+        /invalid response/
+    );
+});
+
+test("production wrapper rejects malformed candidates", async () => {
+    const malformed = validResult();
+    malformed.items[0].user = {};
+    await assert.rejects(runProductionSearch(malformed), /invalid candidate/);
+});
+
+test("production wrapper rejects pull requests and other repositories", async () => {
+    const pullRequest = validResult();
+    pullRequest.items[0].pull_request = {};
+    await assert.rejects(runProductionSearch(pullRequest), /invalid candidate/);
+
+    const otherRepository = validResult();
+    otherRepository.items[0].repository_url = "https://api.github.com/repos/dotnet/aspnetcore";
+    await assert.rejects(runProductionSearch(otherRepository), /invalid candidate/);
+});
+
+test("production wrapper projects validated candidate metadata", async () => {
+    const result = await runProductionSearch(validResult());
+    assert.deepEqual(result, [{ number: 132843, user: { login: "dotnet-bot" } }]);
 });
 
 test("eval search wrapper rejects incomplete results", async () => {
