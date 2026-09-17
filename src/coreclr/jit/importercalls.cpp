@@ -1553,6 +1553,25 @@ DONE:
     }
 
 DONE_CALL:
+    // Collect value profiles in optimized instrumented tiers too, before wrapping inline candidates.
+    if (opts.IsInstrumented() && JitConfig.JitProfileValues() && call->IsCall() && call->AsCall()->IsSpecialIntrinsic())
+    {
+        const NamedIntrinsic ni = lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd);
+        if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+        {
+            assert(!call->AsCall()->IsGuardedDevirtualizationCandidate());
+
+            // Reuse inline-candidate info: it derives from the probe info and shares the same union slot.
+            HandleHistogramProfileCandidateInfo* pInfo =
+                call->AsCall()->IsInlineCandidate() ? call->AsCall()->GetSingleInlineCandidateInfo()
+                                                    : new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+            pInfo->ilOffset                                       = rawILOffset;
+            pInfo->probeIndex                                     = 0;
+            call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+            compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+        }
+    }
+
     // Push or append the result of the call
     if (callRetTyp == TYP_VOID)
     {
@@ -1565,19 +1584,9 @@ DONE_CALL:
         else if (JitConfig.JitProfileValues() && call->IsCall() &&
                  call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
-            if (opts.IsOptimizedWithProfile())
+            if (opts.IsOptimizedWithProfile() && !opts.IsInstrumented())
             {
                 call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
-            }
-            else if (opts.IsInstrumented())
-            {
-                // We might want to instrument it for optimized versions too, but we don't currently.
-                HandleHistogramProfileCandidateInfo* pInfo =
-                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                pInfo->ilOffset                                       = rawILOffset;
-                pInfo->probeIndex                                     = 0;
-                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
@@ -1721,7 +1730,7 @@ DONE_CALL:
                 if (JitConfig.JitProfileValues() && call->IsCall() &&
                     call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
                 {
-                    if (opts.IsOptimizedWithProfile())
+                    if (opts.IsOptimizedWithProfile() && !opts.IsInstrumented())
                     {
                         call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
                         if (call->OperIs(GT_QMARK))
@@ -1731,16 +1740,6 @@ DONE_CALL:
                             impStoreToTemp(tmp, call, CHECK_SPILL_ALL);
                             call = gtNewLclvNode(tmp, call->TypeGet());
                         }
-                    }
-                    else if (opts.IsInstrumented())
-                    {
-                        // We might want to instrument it for optimized versions too, but we don't currently.
-                        HandleHistogramProfileCandidateInfo* pInfo =
-                            new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                        pInfo->ilOffset                                       = rawILOffset;
-                        pInfo->probeIndex                                     = 0;
-                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
                     }
                 }
             }
