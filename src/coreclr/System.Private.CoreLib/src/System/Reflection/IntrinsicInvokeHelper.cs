@@ -1027,15 +1027,20 @@ namespace System.Reflection
             }
         }
 
-        // Ctor thunks: `obj` non-null = call ctor on existing instance, null = allocate first.
-        // `string` excluded: `newobj String(...)` is JIT-lowered to a hidden static allocator
-        // (`METHOD__STRING__CTORF_*` in src/coreclr/vm/corelib.h, wired by
-        // `ECall::PopulateManagedStringConstructors`); the public ctor has no callable instance
-        // entry, and `GetUninitializedObject(typeof(string))` is runtime-rejected.
+        // When calling a constuctor, we can be in one of two scenarios:
+        // 1. The user has specified an instance and we are calling the constructor like a regular method
+        //    on such instance.
+        // 2. The user has not specified an instance and we need to allocate one and then call the constructor.
+        //
+        // This method unifies the two paths so our shared constructor thunks will always have a "this" instance
+        // when they go to invoke the constructor.
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2067:UnrecognizedReflectionPattern",
             Justification = "Caller anchors the ctor MethodBase, keeping its type reachable.")]
-        private static object GetConstructorInstance(object? obj, Type? declaringType) =>
-            obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+        private static object GetConstructorInstance(object? obj, Type? declaringType)
+        {
+            Debug.Assert(declaringType != typeof(string));
+            return obj ?? RuntimeHelpers.GetUninitializedObject(declaringType!);
+        }
 
         private static unsafe object? Ctor_0(IntPtr fn, object? obj, IntPtr* _, Type? declaringType)
         {
