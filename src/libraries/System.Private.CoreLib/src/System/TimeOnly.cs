@@ -424,6 +424,25 @@ namespace System
         /// <param name="value">The object to compare to this instance.</param>
         /// <returns>true if the value parameter equals the value of this instance; otherwise, false.</returns>
         public bool Equals(TimeOnly value) => _ticks == value._ticks;
+        
+        /// <summary>
+        /// Returns a value indicating whether the value of this instance is equal to the value of the specified TimeOnly instance, within an acceptance margin.
+        /// </summary>
+        /// <param name="value">The object to compare to this instance.</param>
+        /// <param name="margin">The acceptance time margin.</param>
+        /// <returns>true if the value parameter equals the value of this instance within the acceptance margin; otherwise, false.</returns>
+        public bool Equals(TimeOnly value, TimeSpan margin)
+        {
+            if (margin.Ticks < 0)
+            {
+                throw new ArgumentException(SR.Arg_TimeSpanMarginMustBePositive);
+            }
+            
+            long differenceInTicks = this._ticks - value._ticks;
+            return differenceInTicks >= 0 ?
+                differenceInTicks <= margin.Ticks :
+                -differenceInTicks < margin.Ticks;
+        }
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.

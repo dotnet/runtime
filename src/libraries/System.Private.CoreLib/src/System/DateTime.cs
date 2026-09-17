@@ -1193,6 +1193,19 @@ namespace System
         {
             return this == value;
         }
+        
+        public bool Equals(DateTime value, TimeSpan margin)
+        {
+            if (margin.Ticks < 0)
+            {
+                throw new ArgumentException(SR.Arg_TimeSpanMarginMustBePositive);
+            }
+            
+            long differenceInTicks = this.Ticks - value.Ticks;
+            return differenceInTicks >= 0 ?
+                differenceInTicks <= margin.Ticks :
+                -differenceInTicks < margin._ticks;
+        }
 
         // Compares two DateTime values for equality. Returns true if
         // the two DateTime values are equal, or false if they are
@@ -1202,6 +1215,8 @@ namespace System
         {
             return t1 == t2;
         }
+        
+        public static bool Equals(DateTime t1, DateTime t2, TimeSpan margin) => t1.Equals(t2, margin);
 
         public static DateTime FromBinary(long dateData)
         {

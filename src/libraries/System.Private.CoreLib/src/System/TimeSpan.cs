@@ -426,7 +426,22 @@ namespace System
 
         public bool Equals(TimeSpan obj) => Equals(this, obj);
 
+        public bool Equals(TimeSpan other, TimeSpan margin)
+        {
+            if (margin._ticks < 0)
+            {
+                throw new ArgumentException(SR.Arg_TimeSpanMarginMustBePositive);
+            }
+            
+            long differenceInTicks = this._ticks - other._ticks;
+            return differenceInTicks >= 0 ?
+                differenceInTicks <= margin._ticks :
+                -differenceInTicks < margin._ticks;
+        }
+
         public static bool Equals(TimeSpan t1, TimeSpan t2) => t1 == t2;
+        
+        public static bool Equals(TimeSpan t1, TimeSpan t2, TimeSpan margin) => t1.Equals(t2, margin);
 
         public override int GetHashCode() => _ticks.GetHashCode();
 

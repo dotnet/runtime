@@ -566,6 +566,8 @@ namespace System
             obj is DateTimeOffset && UtcTicks == ((DateTimeOffset)obj).UtcTicks;
 
         public bool Equals(DateTimeOffset other) => UtcTicks == other.UtcTicks;
+        
+        public bool Equals(DateTimeOffset other, TimeSpan margin) => this.UtcDateTime.Equals(other.UtcDateTime, margin);
 
         // returns true when the ClockDateTime, Kind, and Offset match
         public bool EqualsExact(DateTimeOffset other) => UtcTicks == other.UtcTicks && _offsetMinutes == other._offsetMinutes;
@@ -575,6 +577,8 @@ namespace System
         // not equal.
         //
         public static bool Equals(DateTimeOffset first, DateTimeOffset second) => first.UtcTicks == second.UtcTicks;
+        
+        public static bool Equals(DateTimeOffset first, DateTimeOffset second, TimeSpan margin) => first.Equals(second, margin);
 
         // Creates a DateTimeOffset from a Windows filetime. A Windows filetime is
         // a long representing the date and time as the number of

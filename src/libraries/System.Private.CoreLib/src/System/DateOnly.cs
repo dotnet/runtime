@@ -260,6 +260,14 @@ namespace System
         /// <param name="value">The object to compare to this instance.</param>
         /// <returns>true if the value parameter equals the value of this instance; otherwise, false.</returns>
         public bool Equals(DateOnly value) => _dayNumber == value._dayNumber;
+        
+        /// <summary>
+        /// Returns a value indicating whether the value of this instance is equal to the value of the specified DateOnly instance, within an TimeSpan acceptance margin.
+        /// </summary>
+        /// <param name="other">The object to compare to this instance.</param>
+        /// <param name="margin">The acceptance time margin.</param>
+        /// <returns>true if the value parameter equals the value of this instance within the acceptance margin; otherwise, false.</returns>
+        public bool Equals(DateOnly other, TimeSpan margin) => this.GetEquivalentDateTime().Equals(other.GetEquivalentDateTime(), margin);
 
         /// <summary>
         /// Returns a value indicating whether this instance is equal to a specified object.
