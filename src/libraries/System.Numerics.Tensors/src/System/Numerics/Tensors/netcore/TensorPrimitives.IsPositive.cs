@@ -50,6 +50,14 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsPositive<T>(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsPositive<T>(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsPositive<T>(x);
+
+            // A positive value is one whose sign bit is clear: whose bits lie below the sign bit.
+            public static bool HasThresholdForm => MayBeNegative<T>() && (IsPrimitiveBinaryInteger<T>() || typeof(T) == typeof(float) || typeof(T) == typeof(double));
+            public static bool TrueBelowThreshold => true;
+            public static ulong ThresholdBits => SignBit<T>();
+            public static Vector128<T> Key(Vector128<T> x) => x;
+            public static Vector256<T> Key(Vector256<T> x) => x;
+            public static Vector512<T> Key(Vector512<T> x) => x;
         }
     }
 }

@@ -5,13 +5,19 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
     public static unsafe partial class TensorPrimitives
     {
         /// <summary>Unary operator that produces a Boolean result for each element.</summary>
-        /// <remarks>For vector-based methods, the Boolean result is either all-bits-set or zero.</remarks>
+        /// <remarks>
+        /// For vector-based methods, the Boolean result is either all-bits-set or zero.
+        /// An operator may also have a threshold form (<see cref="HasThresholdForm"/>): its result is then a single unsigned comparison of a
+        /// key derived from the element's bits against a constant, which lets <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/> fold a
+        /// block of vectors with one unsigned minimum or maximum per vector and compare once per block.
+        /// </remarks>
         private interface IBooleanUnaryOperator<T>
         {
             static abstract bool Vectorizable { get; }
@@ -19,6 +25,77 @@ namespace System.Numerics.Tensors
             static abstract Vector128<T> Invoke(Vector128<T> x);
             static abstract Vector256<T> Invoke(Vector256<T> x);
             static abstract Vector512<T> Invoke(Vector512<T> x);
+
+            /// <summary>
+            /// Whether, reading the bits of the key and <see cref="ThresholdBits"/> as unsigned integers of the element size, <c>Invoke(x)</c>
+            /// is <c>Key(x) &lt; ThresholdBits</c> when <see cref="TrueBelowThreshold"/> and <c>Key(x) &gt; ThresholdBits</c> otherwise.
+            /// </summary>
+            static virtual bool HasThresholdForm => false;
+
+            /// <summary>Whether the operator is true for keys below the threshold rather than for keys above it.</summary>
+            static virtual bool TrueBelowThreshold => throw new NotSupportedException();
+
+            /// <summary>The threshold of the threshold form, as the bits of an unsigned integer of the element size.</summary>
+            static virtual ulong ThresholdBits => throw new NotSupportedException();
+
+            /// <summary>The key of the threshold form: the element's bits, transformed so that the operator is a single comparison of them.</summary>
+            static virtual Vector128<T> Key(Vector128<T> x) => throw new NotSupportedException();
+            /// <inheritdoc cref="Key(Vector128{T})"/>
+            static virtual Vector256<T> Key(Vector256<T> x) => throw new NotSupportedException();
+            /// <inheritdoc cref="Key(Vector128{T})"/>
+            static virtual Vector512<T> Key(Vector512<T> x) => throw new NotSupportedException();
+        }
+
+        /// <summary>The bits of the positive infinity of <typeparamref name="T"/>, <see cref="float"/> or <see cref="double"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong PositiveInfinityBits<T>()
+        {
+            Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+            return typeof(T) == typeof(float) ?
+                BitConverter.SingleToUInt32Bits(float.PositiveInfinity) :
+                BitConverter.DoubleToUInt64Bits(double.PositiveInfinity);
+        }
+
+        /// <summary>The bits of the smallest positive normal value of <typeparamref name="T"/>, <see cref="float"/> or <see cref="double"/>.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong SmallestNormalBits<T>()
+        {
+            Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+            return typeof(T) == typeof(float) ? 0x0080_0000u : 0x0010_0000_0000_0000ul;
+        }
+
+        /// <summary>The sign bit of <typeparamref name="T"/>, a primitive signed integer, <see cref="float"/> or <see cref="double"/>, as an unsigned integer of the element size.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static ulong SignBit<T>() => 1ul << ((sizeof(T) * 8) - 1);
+
+        /// <summary>Subtracts <paramref name="bits"/> from every element's bits, read as unsigned integers of the element size (<see cref="float"/> or <see cref="double"/>).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<T> SubtractBits<T>(Vector128<T> x, ulong bits)
+        {
+            Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+            return typeof(T) == typeof(float) ?
+                (x.AsUInt32() - Vector128.Create((uint)bits)).As<uint, T>() :
+                (x.AsUInt64() - Vector128.Create(bits)).As<ulong, T>();
+        }
+
+        /// <summary>Subtracts <paramref name="bits"/> from every element's bits, read as unsigned integers of the element size (<see cref="float"/> or <see cref="double"/>).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<T> SubtractBits<T>(Vector256<T> x, ulong bits)
+        {
+            Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+            return typeof(T) == typeof(float) ?
+                (x.AsUInt32() - Vector256.Create((uint)bits)).As<uint, T>() :
+                (x.AsUInt64() - Vector256.Create(bits)).As<ulong, T>();
+        }
+
+        /// <summary>Subtracts <paramref name="bits"/> from every element's bits, read as unsigned integers of the element size (<see cref="float"/> or <see cref="double"/>).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<T> SubtractBits<T>(Vector512<T> x, ulong bits)
+        {
+            Debug.Assert(typeof(T) == typeof(float) || typeof(T) == typeof(double));
+            return typeof(T) == typeof(float) ?
+                (x.AsUInt32() - Vector512.Create((uint)bits)).As<uint, T>() :
+                (x.AsUInt64() - Vector512.Create(bits)).As<ulong, T>();
         }
 
         /// <summary>
@@ -120,6 +197,16 @@ namespace System.Numerics.Tensors
             where TAnyAll : struct, IAnyAllAggregator<T>
         {
             Debug.Assert(!x.IsEmpty);
+
+            if (TOperator.HasThresholdForm)
+            {
+                // The keys are folded as unsigned integers of the element size. Their 64-bit minimum and maximum are single instructions
+                // only with AVX-512; elsewhere the operator's own comparison is cheaper.
+                if (sizeof(T) == 1) return AggregateAnyAllThreshold<T, byte, TOperator, TAnyAll>(x);
+                if (sizeof(T) == 2) return AggregateAnyAllThreshold<T, ushort, TOperator, TAnyAll>(x);
+                if (sizeof(T) == 4) return AggregateAnyAllThreshold<T, uint, TOperator, TAnyAll>(x);
+                if (sizeof(T) == 8 && Avx512F.VL.IsSupported) return AggregateAnyAllThreshold<T, ulong, TOperator, TAnyAll>(x);
+            }
 
             if (Vector512.IsHardwareAccelerated && TOperator.Vectorizable && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
             {
@@ -379,6 +466,323 @@ namespace System.Numerics.Tensors
             }
 
             return TAnyAll.DefaultResult;
+        }
+
+        /// <summary>
+        /// <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/> for an operator with a threshold form, whose keys are folded as
+        /// <typeparamref name="TKey"/>, the unsigned integer of the element size.
+        /// </summary>
+        private static bool AggregateAnyAllThreshold<T, TKey, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TKey : unmanaged, IBinaryInteger<TKey>
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(TOperator.HasThresholdForm);
+            Debug.Assert(sizeof(TKey) == sizeof(T));
+            Debug.Assert(!x.IsEmpty);
+
+            // The fold is chosen by type rather than by a branch on the direction so that the loops contain a single use of each key,
+            // which the JIT then folds into the fold instruction's memory operand.
+            return ThresholdFoldsMax<T, TOperator, TAnyAll>() ?
+                AggregateAnyAllThreshold<T, TKey, MaxOperator<TKey>, TOperator, TAnyAll>(x) :
+                AggregateAnyAllThreshold<T, TKey, MinOperator<TKey>, TOperator, TAnyAll>(x);
+        }
+
+        /// <summary>
+        /// Whether the threshold form of <typeparamref name="TOperator"/> aggregated by <typeparamref name="TAnyAll"/> folds the keys of a block
+        /// with their maximum rather than their minimum. Any looks for an element for which the operator holds and All for one for which it
+        /// does not: with the operator true below the threshold, those are a key below it (the minimum decides) and a key at or above it (the
+        /// maximum decides); with the operator true above the threshold, it is the other way round.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ThresholdFoldsMax<T, TOperator, TAnyAll>()
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T> =>
+            TOperator.TrueBelowThreshold == TAnyAll.DefaultResult;
+
+        /// <summary>
+        /// <see cref="AggregateAnyAllThreshold{T, TKey, TOperator, TAnyAll}"/> with the fold of the keys, <typeparamref name="TFold"/>, chosen:
+        /// <see cref="MaxOperator{T}"/> or <see cref="MinOperator{T}"/> over <typeparamref name="TKey"/> (see <see cref="ThresholdFoldsMax{T, TOperator, TAnyAll}"/>).
+        /// </summary>
+        private static bool AggregateAnyAllThreshold<T, TKey, TFold, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TKey : unmanaged, IBinaryInteger<TKey>
+            where TFold : struct, IBinaryOperator<TKey>
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(typeof(TFold) == (ThresholdFoldsMax<T, TOperator, TAnyAll>() ? typeof(MaxOperator<TKey>) : typeof(MinOperator<TKey>)));
+
+            if (Vector512.IsHardwareAccelerated && TOperator.Vectorizable && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
+            {
+                return AggregateAnyAllThreshold512<T, TKey, TFold, TOperator, TAnyAll>(x);
+            }
+
+            if (Vector256.IsHardwareAccelerated && TOperator.Vectorizable && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
+            {
+                return AggregateAnyAllThreshold256<T, TKey, TFold, TOperator, TAnyAll>(x);
+            }
+
+            if (Vector128.IsHardwareAccelerated && TOperator.Vectorizable && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
+            {
+                return AggregateAnyAllThreshold128<T, TKey, TFold, TOperator, TAnyAll>(x);
+            }
+
+            return AggregateAnyAllScalar<T, TOperator, TAnyAll>(x);
+        }
+
+        /// <summary>The 512-bit path of <see cref="AggregateAnyAllThreshold{T, TKey, TFold, TOperator, TAnyAll}"/>: the whole vectors in blocks, then one final vector that overlaps the last whole one.</summary>
+        /// <remarks>
+        /// The shape of <see cref="AggregateAnyAllVectorized512{T, TOperator, TAnyAll}"/>, except that a block is folded with the unsigned
+        /// minimum or maximum of the elements' keys, one instruction per vector with no comparison, and the fold is compared against the
+        /// threshold once per block.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator inlined
+        private static bool AggregateAnyAllThreshold512<T, TKey, TFold, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TKey : unmanaged, IBinaryInteger<TKey>
+            where TFold : struct, IBinaryOperator<TKey>
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(Vector512.IsHardwareAccelerated && TOperator.Vectorizable && Vector512<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector512<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            nuint length = (uint)x.Length;
+            nuint oneVectorFromEnd = length - (uint)Vector512<T>.Count;
+            nuint i = 0;
+
+            Vector512<TKey> identity = ThresholdFoldsMax<T, TOperator, TAnyAll>() ? Vector512<TKey>.Zero : Vector512<TKey>.AllBitsSet;
+            Vector512<TKey> threshold = Vector512.Create(TKey.CreateTruncating(TOperator.ThresholdBits));
+
+            // Whole blocks: two accumulators, one decision per block.
+            nuint blockLength = (uint)(AnyAllBlockVectors * Vector512<T>.Count);
+            if (length >= blockLength)
+            {
+                nuint oneBlockFromEnd = length - blockLength;
+                do
+                {
+                    Vector512<TKey> accumulator0 = identity;
+                    Vector512<TKey> accumulator1 = identity;
+                    nuint blockEnd = i + blockLength;
+                    do
+                    {
+                        accumulator0 = TFold.Invoke(accumulator0, TOperator.Key(Vector512.LoadUnsafe(ref xRef, i)).As<T, TKey>());
+                        accumulator1 = TFold.Invoke(accumulator1, TOperator.Key(Vector512.LoadUnsafe(ref xRef, i + (uint)Vector512<T>.Count)).As<T, TKey>());
+                        i += (uint)(2 * Vector512<T>.Count);
+                    }
+                    while (i < blockEnd);
+
+                    if (Settles(TFold.Invoke(accumulator0, accumulator1), threshold))
+                    {
+                        return !TAnyAll.DefaultResult;
+                    }
+                }
+                while (i <= oneBlockFromEnd);
+            }
+
+            // The remaining whole vectors, fewer than a block.
+            if (i <= oneVectorFromEnd)
+            {
+                Vector512<TKey> accumulator = identity;
+                do
+                {
+                    accumulator = TFold.Invoke(accumulator, TOperator.Key(Vector512.LoadUnsafe(ref xRef, i)).As<T, TKey>());
+                    i += (uint)Vector512<T>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                if (Settles(accumulator, threshold))
+                {
+                    return !TAnyAll.DefaultResult;
+                }
+            }
+
+            // Handle any remaining elements with a final vector.
+            if (i != length &&
+                Settles(TOperator.Key(Vector512.LoadUnsafe(ref xRef, oneVectorFromEnd)).As<T, TKey>(), threshold))
+            {
+                return !TAnyAll.DefaultResult;
+            }
+
+            return TAnyAll.DefaultResult;
+
+            // Whether the keys folded into the accumulator include one that settles the result: for Any a key on the operator's side of
+            // the threshold, for All a key on the other side (or on the threshold).
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool Settles(Vector512<TKey> accumulator, Vector512<TKey> threshold) =>
+                TAnyAll.DefaultResult ?
+                    (TOperator.TrueBelowThreshold ? Vector512.GreaterThanOrEqualAny(accumulator, threshold) : Vector512.LessThanOrEqualAny(accumulator, threshold)) :
+                    (TOperator.TrueBelowThreshold ? Vector512.LessThanAny(accumulator, threshold) : Vector512.GreaterThanAny(accumulator, threshold));
+        }
+
+        /// <summary>The 256-bit path of <see cref="AggregateAnyAllThreshold{T, TKey, TFold, TOperator, TAnyAll}"/>: the whole vectors in blocks, then one final vector that overlaps the last whole one.</summary>
+        /// <remarks>
+        /// The shape of <see cref="AggregateAnyAllVectorized256{T, TOperator, TAnyAll}"/>, except that a block is folded with the unsigned
+        /// minimum or maximum of the elements' keys, one instruction per vector with no comparison, and the fold is compared against the
+        /// threshold once per block.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator inlined
+        private static bool AggregateAnyAllThreshold256<T, TKey, TFold, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TKey : unmanaged, IBinaryInteger<TKey>
+            where TFold : struct, IBinaryOperator<TKey>
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(Vector256.IsHardwareAccelerated && TOperator.Vectorizable && Vector256<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector256<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            nuint length = (uint)x.Length;
+            nuint oneVectorFromEnd = length - (uint)Vector256<T>.Count;
+            nuint i = 0;
+
+            Vector256<TKey> identity = ThresholdFoldsMax<T, TOperator, TAnyAll>() ? Vector256<TKey>.Zero : Vector256<TKey>.AllBitsSet;
+            Vector256<TKey> threshold = Vector256.Create(TKey.CreateTruncating(TOperator.ThresholdBits));
+
+            // Whole blocks: two accumulators, one decision per block.
+            nuint blockLength = (uint)(AnyAllBlockVectors * Vector256<T>.Count);
+            if (length >= blockLength)
+            {
+                nuint oneBlockFromEnd = length - blockLength;
+                do
+                {
+                    Vector256<TKey> accumulator0 = identity;
+                    Vector256<TKey> accumulator1 = identity;
+                    nuint blockEnd = i + blockLength;
+                    do
+                    {
+                        accumulator0 = TFold.Invoke(accumulator0, TOperator.Key(Vector256.LoadUnsafe(ref xRef, i)).As<T, TKey>());
+                        accumulator1 = TFold.Invoke(accumulator1, TOperator.Key(Vector256.LoadUnsafe(ref xRef, i + (uint)Vector256<T>.Count)).As<T, TKey>());
+                        i += (uint)(2 * Vector256<T>.Count);
+                    }
+                    while (i < blockEnd);
+
+                    if (Settles(TFold.Invoke(accumulator0, accumulator1), threshold))
+                    {
+                        return !TAnyAll.DefaultResult;
+                    }
+                }
+                while (i <= oneBlockFromEnd);
+            }
+
+            // The remaining whole vectors, fewer than a block.
+            if (i <= oneVectorFromEnd)
+            {
+                Vector256<TKey> accumulator = identity;
+                do
+                {
+                    accumulator = TFold.Invoke(accumulator, TOperator.Key(Vector256.LoadUnsafe(ref xRef, i)).As<T, TKey>());
+                    i += (uint)Vector256<T>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                if (Settles(accumulator, threshold))
+                {
+                    return !TAnyAll.DefaultResult;
+                }
+            }
+
+            // Handle any remaining elements with a final vector.
+            if (i != length &&
+                Settles(TOperator.Key(Vector256.LoadUnsafe(ref xRef, oneVectorFromEnd)).As<T, TKey>(), threshold))
+            {
+                return !TAnyAll.DefaultResult;
+            }
+
+            return TAnyAll.DefaultResult;
+
+            // Whether the keys folded into the accumulator include one that settles the result: for Any a key on the operator's side of
+            // the threshold, for All a key on the other side (or on the threshold).
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool Settles(Vector256<TKey> accumulator, Vector256<TKey> threshold) =>
+                TAnyAll.DefaultResult ?
+                    (TOperator.TrueBelowThreshold ? Vector256.GreaterThanOrEqualAny(accumulator, threshold) : Vector256.LessThanOrEqualAny(accumulator, threshold)) :
+                    (TOperator.TrueBelowThreshold ? Vector256.LessThanAny(accumulator, threshold) : Vector256.GreaterThanAny(accumulator, threshold));
+        }
+
+        /// <summary>The 128-bit path of <see cref="AggregateAnyAllThreshold{T, TKey, TFold, TOperator, TAnyAll}"/>: the whole vectors in blocks, then one final vector that overlaps the last whole one.</summary>
+        /// <remarks>
+        /// The shape of <see cref="AggregateAnyAllVectorized128{T, TOperator, TAnyAll}"/>, except that a block is folded with the unsigned
+        /// minimum or maximum of the elements' keys, one instruction per vector with no comparison, and the fold is compared against the
+        /// threshold once per block.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator inlined
+        private static bool AggregateAnyAllThreshold128<T, TKey, TFold, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TKey : unmanaged, IBinaryInteger<TKey>
+            where TFold : struct, IBinaryOperator<TKey>
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(Vector128.IsHardwareAccelerated && TOperator.Vectorizable && Vector128<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector128<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            nuint length = (uint)x.Length;
+            nuint oneVectorFromEnd = length - (uint)Vector128<T>.Count;
+            nuint i = 0;
+
+            Vector128<TKey> identity = ThresholdFoldsMax<T, TOperator, TAnyAll>() ? Vector128<TKey>.Zero : Vector128<TKey>.AllBitsSet;
+            Vector128<TKey> threshold = Vector128.Create(TKey.CreateTruncating(TOperator.ThresholdBits));
+
+            // Whole blocks: two accumulators, one decision per block.
+            nuint blockLength = (uint)(AnyAllBlockVectors * Vector128<T>.Count);
+            if (length >= blockLength)
+            {
+                nuint oneBlockFromEnd = length - blockLength;
+                do
+                {
+                    Vector128<TKey> accumulator0 = identity;
+                    Vector128<TKey> accumulator1 = identity;
+                    nuint blockEnd = i + blockLength;
+                    do
+                    {
+                        accumulator0 = TFold.Invoke(accumulator0, TOperator.Key(Vector128.LoadUnsafe(ref xRef, i)).As<T, TKey>());
+                        accumulator1 = TFold.Invoke(accumulator1, TOperator.Key(Vector128.LoadUnsafe(ref xRef, i + (uint)Vector128<T>.Count)).As<T, TKey>());
+                        i += (uint)(2 * Vector128<T>.Count);
+                    }
+                    while (i < blockEnd);
+
+                    if (Settles(TFold.Invoke(accumulator0, accumulator1), threshold))
+                    {
+                        return !TAnyAll.DefaultResult;
+                    }
+                }
+                while (i <= oneBlockFromEnd);
+            }
+
+            // The remaining whole vectors, fewer than a block.
+            if (i <= oneVectorFromEnd)
+            {
+                Vector128<TKey> accumulator = identity;
+                do
+                {
+                    accumulator = TFold.Invoke(accumulator, TOperator.Key(Vector128.LoadUnsafe(ref xRef, i)).As<T, TKey>());
+                    i += (uint)Vector128<T>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                if (Settles(accumulator, threshold))
+                {
+                    return !TAnyAll.DefaultResult;
+                }
+            }
+
+            // Handle any remaining elements with a final vector.
+            if (i != length &&
+                Settles(TOperator.Key(Vector128.LoadUnsafe(ref xRef, oneVectorFromEnd)).As<T, TKey>(), threshold))
+            {
+                return !TAnyAll.DefaultResult;
+            }
+
+            return TAnyAll.DefaultResult;
+
+            // Whether the keys folded into the accumulator include one that settles the result: for Any a key on the operator's side of
+            // the threshold, for All a key on the other side (or on the threshold).
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            static bool Settles(Vector128<TKey> accumulator, Vector128<TKey> threshold) =>
+                TAnyAll.DefaultResult ?
+                    (TOperator.TrueBelowThreshold ? Vector128.GreaterThanOrEqualAny(accumulator, threshold) : Vector128.LessThanOrEqualAny(accumulator, threshold)) :
+                    (TOperator.TrueBelowThreshold ? Vector128.LessThanAny(accumulator, threshold) : Vector128.GreaterThanAny(accumulator, threshold));
         }
 
         /// <summary>Performs an element-wise operation on <paramref name="x"/> and writes the results to <paramref name="destination"/>.</summary>

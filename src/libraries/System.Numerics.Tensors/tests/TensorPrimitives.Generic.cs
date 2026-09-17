@@ -3406,6 +3406,256 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IsZeroAny_LongLengths() =>
             AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAny, fill: ConvertFromSingle(1), hit: Zero, expectedWithoutHit: false);
+
+        // The vectorized Any/All paths of the classifications below decide from the bits of the elements (an unsigned minimum or maximum
+        // of the block's bit patterns compared against a threshold) rather than from the operator, so these place the values whose
+        // bits lie next to the thresholds: the sign bit alone (-0), the smallest subnormal, the largest subnormal, the smallest normal,
+        // the largest finite value, infinity and the NaN whose bits follow it.
+        [Fact]
+        public void IsNegativeAll_LongLengths()
+        {
+            if (!HasNegativeValues) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAll, fill: ConvertFromSingle(-1), hit: ConvertFromSingle(1), expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAll, fill: MinValue, hit: Zero, expectedWithoutHit: true);
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAll, fill: NegativeZero, hit: Zero, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAll, fill: -FirstNaN, hit: FirstNaN, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsNegativeAny_LongLengths_SignBitOnly()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAny, fill: Zero, hit: NegativeZero, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAny, fill: FirstNaN, hit: -FirstNaN, expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsPositiveAll_LongLengths()
+        {
+            if (!HasNegativeValues) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAll, fill: ConvertFromSingle(1), hit: ConvertFromSingle(-1), expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAll, fill: Zero, hit: MinValue, expectedWithoutHit: true);
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAll, fill: Zero, hit: NegativeZero, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAll, fill: FirstNaN, hit: -FirstNaN, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsPositiveAny_LongLengths_SignBitOnly()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAny, fill: NegativeZero, hit: Zero, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAny, fill: -FirstNaN, hit: FirstNaN, expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsZeroAll_LongLengths_SignBitAndEpsilon()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAll, fill: NegativeZero, hit: SmallestSubnormal, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAll, fill: Zero, hit: -SmallestSubnormal, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsZeroAny_LongLengths_SignBitAndEpsilon()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAny, fill: SmallestSubnormal, hit: NegativeZero, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAny, fill: NaN, hit: Zero, expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsNaNAny_LongLengths_Boundaries()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAny, fill: PositiveInfinity, hit: FirstNaN, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAny, fill: -PositiveInfinity, hit: -FirstNaN, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAny, fill: T.MaxValue, hit: -NaN, expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsNaNAll_LongLengths_Boundaries()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAll, fill: FirstNaN, hit: PositiveInfinity, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAll, fill: -NaN, hit: -PositiveInfinity, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsFiniteAll_LongLengths_Boundaries()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAll, fill: T.MaxValue, hit: -PositiveInfinity, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAll, fill: MinValue, hit: FirstNaN, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAll, fill: SmallestSubnormal, hit: -NaN, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsFiniteAny_LongLengths_Boundaries()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAny, fill: NaN, hit: T.MaxValue, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAny, fill: PositiveInfinity, hit: MinValue, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAny, fill: FirstNaN, hit: NegativeZero, expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsRealNumberAll_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsRealNumberAll, fill: ConvertFromSingle(1), hit: FirstNaN, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsRealNumberAll, fill: PositiveInfinity, hit: NaN, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsRealNumberAll, fill: -PositiveInfinity, hit: -NaN, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsRealNumberAny_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsRealNumberAny, fill: NaN, hit: PositiveInfinity, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsRealNumberAny, fill: FirstNaN, hit: -PositiveInfinity, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsRealNumberAny, fill: -NaN, hit: ConvertFromSingle(1), expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsNormalAll_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAll, fill: ConvertFromSingle(1), hit: Zero, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAll, fill: SmallestNormal, hit: LargestSubnormal, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAll, fill: -SmallestNormal, hit: -LargestSubnormal, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAll, fill: T.MaxValue, hit: PositiveInfinity, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAll, fill: MinValue, hit: NaN, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAll, fill: ConvertFromSingle(-1), hit: NegativeZero, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsNormalAny_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAny, fill: Zero, hit: ConvertFromSingle(1), expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAny, fill: LargestSubnormal, hit: SmallestNormal, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAny, fill: -LargestSubnormal, hit: -SmallestNormal, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAny, fill: PositiveInfinity, hit: T.MaxValue, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAny, fill: NaN, hit: MinValue, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNormalAny, fill: NegativeZero, hit: ConvertFromSingle(-1), expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsSubnormalAll_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAll, fill: SmallestSubnormal, hit: Zero, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAll, fill: -SmallestSubnormal, hit: NegativeZero, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAll, fill: LargestSubnormal, hit: SmallestNormal, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAll, fill: -LargestSubnormal, hit: -SmallestNormal, expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAll, fill: SmallestSubnormal, hit: NaN, expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsSubnormalAny_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAny, fill: Zero, hit: SmallestSubnormal, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAny, fill: NegativeZero, hit: -SmallestSubnormal, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAny, fill: SmallestNormal, hit: LargestSubnormal, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAny, fill: -SmallestNormal, hit: -LargestSubnormal, expectedWithoutHit: false);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsSubnormalAny, fill: NaN, hit: SmallestSubnormal, expectedWithoutHit: false);
+        }
+
+        /// <summary>The value of a floating-point <typeparamref name="T"/> with the given bits.</summary>
+        private static T FromBits(ulong bits) =>
+            Unsafe.SizeOf<T>() == 2 ? Unsafe.BitCast<ushort, T>((ushort)bits) :
+            Unsafe.SizeOf<T>() == 4 ? Unsafe.BitCast<uint, T>((uint)bits) :
+            Unsafe.BitCast<ulong, T>(bits);
+
+        private static (ulong PositiveInfinity, ulong SmallestNormal) FloatingPointBits =>
+            Unsafe.SizeOf<T>() == 2 ? (0x7C00ul, 0x0400ul) :
+            Unsafe.SizeOf<T>() == 4 ? (0x7F80_0000ul, 0x0080_0000ul) :
+            (0x7FF0_0000_0000_0000ul, 0x0010_0000_0000_0000ul);
+
+        private static T PositiveInfinity => FromBits(FloatingPointBits.PositiveInfinity);
+        /// <summary>The NaN whose bits follow those of positive infinity.</summary>
+        private static T FirstNaN => FromBits(FloatingPointBits.PositiveInfinity + 1);
+        private static T SmallestNormal => FromBits(FloatingPointBits.SmallestNormal);
+        private static T LargestSubnormal => FromBits(FloatingPointBits.SmallestNormal - 1);
+        private static T SmallestSubnormal => FromBits(1);
+
+        public static IEnumerable<object[]> IsAnyAllFunctionsToTest()
+        {
+            yield return Create(TensorPrimitives.IsCanonicalAny, TensorPrimitives.IsCanonicalAll, T.IsCanonical);
+            yield return Create(TensorPrimitives.IsComplexNumberAny, TensorPrimitives.IsComplexNumberAll, T.IsComplexNumber);
+            yield return Create(TensorPrimitives.IsEvenIntegerAny, TensorPrimitives.IsEvenIntegerAll, T.IsEvenInteger);
+            yield return Create(TensorPrimitives.IsFiniteAny, TensorPrimitives.IsFiniteAll, T.IsFinite);
+            yield return Create(TensorPrimitives.IsImaginaryNumberAny, TensorPrimitives.IsImaginaryNumberAll, T.IsImaginaryNumber);
+            yield return Create(TensorPrimitives.IsInfinityAny, TensorPrimitives.IsInfinityAll, T.IsInfinity);
+            yield return Create(TensorPrimitives.IsIntegerAny, TensorPrimitives.IsIntegerAll, T.IsInteger);
+            yield return Create(TensorPrimitives.IsNaNAny, TensorPrimitives.IsNaNAll, T.IsNaN);
+            yield return Create(TensorPrimitives.IsNegativeAny, TensorPrimitives.IsNegativeAll, T.IsNegative);
+            yield return Create(TensorPrimitives.IsNegativeInfinityAny, TensorPrimitives.IsNegativeInfinityAll, T.IsNegativeInfinity);
+            yield return Create(TensorPrimitives.IsNormalAny, TensorPrimitives.IsNormalAll, T.IsNormal);
+            yield return Create(TensorPrimitives.IsOddIntegerAny, TensorPrimitives.IsOddIntegerAll, T.IsOddInteger);
+            yield return Create(TensorPrimitives.IsPositiveAny, TensorPrimitives.IsPositiveAll, T.IsPositive);
+            yield return Create(TensorPrimitives.IsPositiveInfinityAny, TensorPrimitives.IsPositiveInfinityAll, T.IsPositiveInfinity);
+            yield return Create(TensorPrimitives.IsRealNumberAny, TensorPrimitives.IsRealNumberAll, T.IsRealNumber);
+            yield return Create(TensorPrimitives.IsSubnormalAny, TensorPrimitives.IsSubnormalAll, T.IsSubnormal);
+            yield return Create(TensorPrimitives.IsZeroAny, TensorPrimitives.IsZeroAll, T.IsZero);
+
+            static object[] Create(SpanIsAllAnyDelegate anyMethod, SpanIsAllAnyDelegate allMethod, Func<T, bool> predicate)
+                => new object[] { anyMethod, allMethod, predicate };
+        }
+
+        /// <summary>
+        /// Checks Any and All against the scalar predicate for long spans filled with each special value, and for a span filled with one
+        /// special value in which another one is placed at every block, vector and ragged boundary.
+        /// </summary>
+        [Theory]
+        [MemberData(nameof(IsAnyAllFunctionsToTest))]
+        public void IsAnyAll_SpecialValues(SpanIsAllAnyDelegate anyMethod, SpanIsAllAnyDelegate allMethod, Func<T, bool> predicate)
+        {
+            List<T> values = [Zero, One, NegativeOne, MinValue, T.MaxValue, ConvertFromSingle(2), ConvertFromSingle(3), .. GetSpecialValues()];
+            if (IsFloatingPoint)
+            {
+                values.AddRange([NegativeZero, FirstNaN, -FirstNaN, SmallestNormal, -SmallestNormal, LargestSubnormal, -LargestSubnormal, SmallestSubnormal, -SmallestSubnormal]);
+            }
+
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateTensor(tensorLength);
+                foreach (T value in values)
+                {
+                    x.Span.Fill(value);
+                    Assert.Equal(predicate(value), anyMethod(x));
+                    Assert.Equal(predicate(value), allMethod(x));
+                }
+            });
+
+            // Two lengths that cover several blocks of every vector width, with a ragged end.
+            Assert.All(new[] { 1025, 4097 }, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateTensor(tensorLength);
+                foreach (T fill in values)
+                {
+                    foreach (T hit in values)
+                    {
+                        if (predicate(hit) == predicate(fill))
+                        {
+                            continue;
+                        }
+
+                        x.Span.Fill(fill);
+                        foreach (int position in IsAnyAllLongPositions(tensorLength))
+                        {
+                            x[position] = hit;
+                            Assert.True(anyMethod(x));
+                            Assert.False(allMethod(x));
+                            x[position] = fill;
+                        }
+                    }
+                }
+            });
+        }
         #endregion
 
         #region HammingDistance
