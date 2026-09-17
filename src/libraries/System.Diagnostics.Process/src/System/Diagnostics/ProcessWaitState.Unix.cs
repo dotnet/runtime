@@ -665,7 +665,7 @@ namespace System.Diagnostics
                     }
                 } while (pid > 0);
 
-                if (checkAll && !reapAll)
+                if (checkAll)
                 {
                     // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
                     ProcessWaitState? firstToRemove = null;
@@ -705,8 +705,14 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (reapAll)
+                if (reapAll && !checkAll)
                 {
+                    // Only run the wildcard reap-all scan when checkAll is false: if checkAll is set, we
+                    // know pidToSkip has a pending non-exit notification, and waitpid(-1, ...) cannot be
+                    // targeted to avoid selecting that specific pid -- so calling it here could still
+                    // consume/steal that notification from whoever else needs to observe it (e.g. an
+                    // external tracer). The checkAll scan above already reaps every other known child;
+                    // any remaining untracked/orphaned child will be picked up on a subsequent SIGCHLD.
                     do
                     {
                         int exitCode;
