@@ -27,6 +27,14 @@ function resultText(result) {
 }
 
 function resultIssueNumber(result) {
+    if (typeof result === "string") {
+        try {
+            return resultIssueNumber(JSON.parse(result));
+        } catch {
+            return undefined;
+        }
+    }
+
     if (typeof result !== "object" || result === null) {
         return undefined;
     }
@@ -34,7 +42,51 @@ function resultIssueNumber(result) {
     const issue = typeof result.issue === "object" && result.issue !== null
         ? result.issue
         : result;
-    return issue.number;
+    if (Number.isInteger(issue.number)) {
+        return issue.number;
+    }
+
+    if (result.structuredContent !== undefined) {
+        const number = resultIssueNumber(result.structuredContent);
+        if (number !== undefined) {
+            return number;
+        }
+    }
+
+    if (typeof result.content === "string") {
+        const number = resultIssueNumber(result.content);
+        if (number !== undefined) {
+            return number;
+        }
+    }
+
+    if (Array.isArray(result.content)) {
+        for (const content of result.content) {
+            if (typeof content?.text !== "string") {
+                continue;
+            }
+
+            const number = resultIssueNumber(content.text);
+            if (number !== undefined) {
+                return number;
+            }
+        }
+    }
+
+    if (Array.isArray(result.contents)) {
+        for (const content of result.contents) {
+            if (typeof content?.text !== "string") {
+                continue;
+            }
+
+            const number = resultIssueNumber(content.text);
+            if (number !== undefined) {
+                return number;
+            }
+        }
+    }
+
+    return undefined;
 }
 
 function isSearchHarnessCall(event) {

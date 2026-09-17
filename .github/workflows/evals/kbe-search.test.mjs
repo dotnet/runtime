@@ -203,6 +203,49 @@ test("candidate-read grader rejects result-level issue read errors", async () =>
     assert.deepEqual(gradeResult.metadata.missing, [10]);
 });
 
+test("candidate-read grader decodes MCP issue-read content envelopes", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("github-issue_read", "read-content", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("github-issue_read", "read-content", {
+            content: [{
+                type: "text",
+                text: JSON.stringify({ number: 10 }),
+            }],
+        }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, true);
+});
+
+test("candidate-read grader decodes structured MCP issue-read content", async () => {
+    const events = [
+        call("bash", "search", {
+            command: trustedSearchCommand,
+        }),
+        result("bash", "search", JSON.stringify([
+            { number: 10, user: { login: "bot" } },
+        ])),
+        call("mcp__github-issue_read", "read-structured", {
+            owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
+        }),
+        result("mcp__github-issue_read", "read-structured", {
+            structuredContent: { issue: { number: 10 } },
+        }),
+    ];
+
+    const gradeResult = await grade(events);
+    assert.equal(gradeResult.passed, true);
+});
+
 test("candidate-read grader rejects a read for the wrong issue", async () => {
     const events = [
         call("bash", "search", {

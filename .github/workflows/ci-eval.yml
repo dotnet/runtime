@@ -314,6 +314,7 @@ jobs:
           for spec in $SPECS; do
             grader_args=()
             if [[ "$(basename "$spec")" == "ci-failure-scan.eval.yaml" ]] &&
+               grep -qF 'search-kbe-issues' "$spec" &&
                test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
               grader_args+=(--grader-plugin "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs")
             fi
@@ -354,6 +355,7 @@ jobs:
             echo "## $name" >> "$report"
             grader_args=()
             if [[ "$name" == "ci-failure-scan" ]] &&
+               grep -qF 'search-kbe-issues' "$spec" &&
                test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
               grader_args+=(--grader-plugin "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs")
             fi
