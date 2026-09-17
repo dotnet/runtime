@@ -10,6 +10,7 @@ using Xunit;
 // no merge in between. The helpers emitted on the later await's suspension path
 // (RestoreContextsOnSuspension, the inlined frame transition captures) no-op
 // when the indicator is set, so they could be folded away entirely.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2ResumedKnownTrue
 {
     [Fact]

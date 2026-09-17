@@ -5369,6 +5369,17 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
                 }
                 break;
 
+                case GT_IND:
+                case GT_BLK:
+                {
+                    if (tree->AsIndir()->IsVolatile())
+                    {
+                        // On a loop backedge, memory operations in a subsequent iteration may follow this acquire.
+                        memoryHavoc |= memoryKindSet(GcHeap, ByrefExposed);
+                    }
+                }
+                break;
+
                 case GT_STOREIND:
                 case GT_STORE_BLK:
                 {

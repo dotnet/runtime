@@ -12,6 +12,7 @@ using Xunit;
 // caller's instead: doing so leaves the inlined frame's own resumed indicator unset, so
 // after a suspension its context restore runs as if the frame had never resumed, over
 // state that the resumption skipped capturing.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameLdvirtftnAwait
 {
     private class Dispatcher

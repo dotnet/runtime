@@ -1398,14 +1398,14 @@ typedef DPTR(class PrestubMethodFrame) PTR_PrestubMethodFrame;
 
 class PrestubMethodFrame : public FramedMethodFrame
 {
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
     bool m_isPrestubComplete = false;
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 public:
     PrestubMethodFrame(TransitionBlock * pTransitionBlock, MethodDesc * pMD);
 
-#ifdef TARGET_WASM
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
     void MarkPrestubComplete()
     {
         CONTRACTL
@@ -1424,7 +1424,7 @@ public:
         LIMITED_METHOD_DAC_CONTRACT;
         return m_isPrestubComplete ? FRAME_ATTR_NO_MANAGED_ACTIVATION : FRAME_ATTR_NONE;
     }
-#endif // TARGET_WASM
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
     {
