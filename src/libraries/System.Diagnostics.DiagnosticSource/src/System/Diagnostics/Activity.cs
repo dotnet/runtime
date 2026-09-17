@@ -2137,7 +2137,11 @@ namespace System.Diagnostics
                 throw new ArgumentOutOfRangeException(nameof(destination));
             }
 #else
-            Debug.Assert(destination.Length * 2 == charData.Length);
+            if (destination.Length * 2 != charData.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
             for (int i = 0; i < destination.Length; i++)
                 destination[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
 #endif
