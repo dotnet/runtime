@@ -258,7 +258,10 @@ namespace System.Threading
                         if (created && acquireLockIfCreated)
                         {
                             MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0, ref creationDeletionProcessLock);
-                            Debug.Assert(acquireResult == MutexTryAcquireLockResult.AcquiredLock);
+                            if (acquireResult != MutexTryAcquireLockResult.AcquiredLock)
+                            {
+                                throw new InvalidOperationException();
+                            }
                         }
                     }
 

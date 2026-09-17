@@ -914,11 +914,10 @@ namespace System.Threading.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsMultithreadingSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public async Task ConcurrentCreateOrOpenWithInitialOwnership()
+        public async Task NamedMutex_ConcurrentCreateOrOpen_CreatingThreadGetsInitialOwnership()
         {
             const int IterationCount = 10_000;
             string mutexName = Guid.NewGuid().ToString("N");
-            int createdCount = 0;
             using var barrier = new Barrier(2);
             using var cancellationTokenSource = new CancellationTokenSource();
 
@@ -936,12 +935,15 @@ namespace System.Threading.Tests
                                 {
                                     if (createdNew)
                                     {
-                                        Interlocked.Increment(ref createdCount);
+                                        barrier.SignalAndWait(cancellationTokenSource.Token);
                                         mutex.ReleaseMutex();
                                     }
+                                    else
+                                    {
+                                        Assert.False(mutex.WaitOne(0));
+                                        barrier.SignalAndWait(cancellationTokenSource.Token);
+                                    }
                                 }
-
-                                barrier.SignalAndWait(cancellationTokenSource.Token);
                             }
                         }
                         catch
@@ -953,7 +955,6 @@ namespace System.Threading.Tests
             }
 
             await Task.WhenAll(CreateOrOpenMutex(), CreateOrOpenMutex());
-            Assert.True(createdCount > 0);
         }
 
         private static void IncrementValueInFileNTimes(Mutex mutex, string fileName, int n)
