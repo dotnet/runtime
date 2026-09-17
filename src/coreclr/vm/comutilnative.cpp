@@ -1207,26 +1207,6 @@ uint64_t GCInterface::GetGenerationBudget(int generation)
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
-extern VersionInfo g_gc_version_info;
-
-static bool IsGCPauseReportingSupported()
-{
-    LIMITED_METHOD_CONTRACT;
-    return (g_gc_version_info.MajorVersion > GC_INTERFACE_MAJOR_VERSION) ||
-        ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
-         (g_gc_version_info.MinorVersion >= GC_PAUSE_REPORTING_INTERFACE_MINOR_VERSION));
-}
-
-extern "C" BOOL QCALLTYPE GCInterface_IsGCPauseReportingSupported(QCallExceptionStatus* qcallError)
-{
-    QCALL_CONTRACT;
-    BOOL result = FALSE;
-    BEGIN_QCALL;
-    result = IsGCPauseReportingSupported();
-    END_QCALL;
-    return result;
-}
-
 #ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
 #else // HOST_64BIT

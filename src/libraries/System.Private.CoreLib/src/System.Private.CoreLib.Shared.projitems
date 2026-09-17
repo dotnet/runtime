@@ -343,7 +343,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Function.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\GC.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\GCMemoryInfo.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\GCPauseReporting.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Gen2GcCallback.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />

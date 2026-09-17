@@ -3,29 +3,13 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Diagnostics.Metrics;
 
 internal static partial class RuntimeMetrics
 {
-    private const string GCPauseReportingTypeName = "System.GCPauseReporting, System.Private.CoreLib";
-
-    private static void InitializeGCPauseMetrics()
-    {
-        // A newer package may run with a CoreLib that predates this internal bridge.
-        if (Type.GetType(GCPauseReportingTypeName, throwOnError: false) is null || !IsGCPauseReportingSupported(null))
-        {
-            return;
-        }
-
-        _ = new GCPauseMetrics(s_meter);
-    }
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "IsSupported")]
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static extern bool IsGCPauseReportingSupported([UnsafeAccessorType(GCPauseReportingTypeName)] object? _);
+    private static void InitializeGCPauseMetrics() => _ = new GCPauseMetrics(s_meter);
 
     private sealed class GCPauseMetrics
     {
@@ -40,7 +24,7 @@ internal static partial class RuntimeMetrics
             _histogram = meter.CreateHistogram<double>(
                 "dotnet.gc.pause.duration",
                 unit: "s",
-                description: "The duration of each GC-accounted pause contribution. Measurements are delivered asynchronously through EventPipe while listeners are enabled. Buffer overflow and session reconfiguration can drop measurements; loss counts are unavailable.");
+                description: "The duration of each GC-accounted pause contribution. Measurements are delivered asynchronously through EventPipe while listeners are enabled. No measurements are emitted when the runtime does not provide these events. Buffer overflow and session reconfiguration can drop measurements; loss counts are unavailable.");
             _histogram.SetMeasurementStateCallback(SubscriptionsChanged);
         }
 
@@ -132,9 +116,12 @@ internal static partial class RuntimeMetrics
 
             internal void Start()
             {
-                Debug.Assert(_eventSource is not null);
-                Volatile.Write(ref _active, true);
-                EnableEvents(_eventSource, EventLevel.Informational, GCPauseKeyword);
+                // The runtime provider is absent when EventSource support is disabled.
+                if (_eventSource is not null)
+                {
+                    Volatile.Write(ref _active, true);
+                    EnableEvents(_eventSource, EventLevel.Informational, GCPauseKeyword);
+                }
             }
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)

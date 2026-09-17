@@ -11,9 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 10
-
-#define GC_PAUSE_REPORTING_INTERFACE_MINOR_VERSION 10
+#define GC_INTERFACE_MINOR_VERSION 9
 
 // The major version of the IGCToCLR and IGCToCLREventSink interfaces. Breaking
 // changes to these interfaces require bumps in the major version number.

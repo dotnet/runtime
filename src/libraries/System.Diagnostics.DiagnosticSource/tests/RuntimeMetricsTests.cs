@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Runtime;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -57,6 +58,30 @@ namespace System.Diagnostics.Metrics.Tests
         private readonly ITestOutputHelper _output = output;
 
         public static bool IsCoreClrRemoteExecutorSupported => PlatformDetection.IsCoreCLR && RemoteExecutor.IsSupported;
+        public static bool IsCoreClrOrNativeAot => PlatformDetection.IsCoreCLR || PlatformDetection.IsNativeAot;
+
+        [ConditionalFact(nameof(IsCoreClrOrNativeAot))]
+        public void GcPauseDurationInProcess()
+        {
+            using InstrumentRecorder<double> recorder = new("dotnet.gc.pause.duration");
+            Assert.Equal("s", Assert.IsType<Histogram<double>>(recorder.Instrument).Unit);
+
+            // Other in-process EventListeners can reconfigure the shared session and discard an event.
+            long deadline = Environment.TickCount64 + 30_000;
+            while (!recorder.Measurements.Any(measurement => PauseTag(measurement, "gc.pause.type") == "blocking"))
+            {
+                Assert.True(Environment.TickCount64 < deadline, "No blocking GC pause was delivered after repeated collections.");
+                GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+                Thread.Sleep(10);
+            }
+            foreach (Measurement<double> measurement in recorder.Measurements)
+            {
+                Assert.True(measurement.Value >= 0);
+                Assert.Equal(2, measurement.Tags.Length);
+                Assert.True(PauseTag(measurement, "gc.heap.generation") is "gen0" or "gen1" or "gen2");
+                Assert.True(PauseTag(measurement, "gc.pause.type") is "blocking" or "background");
+            }
+        }
 
         [ConditionalTheory(nameof(IsCoreClrRemoteExecutorSupported))]
         [InlineData(false)]
@@ -70,12 +95,15 @@ namespace System.Diagnostics.Metrics.Tests
                 using InstrumentRecorder<double> recorder = new("dotnet.gc.pause.duration");
                 Assert.Equal("s", Assert.IsType<Histogram<double>>(recorder.Instrument).Unit);
 
+                HashSet<string> expectedGenerations = new();
                 for (int generation = 0; generation <= GC.MaxGeneration; generation++)
                 {
                     GC.Collect(generation, GCCollectionMode.Forced, blocking: true);
+                    expectedGenerations.Add(s_genNames[GC.GetGCMemoryInfo().Generation]);
                 }
 
-                WaitFor(() => recorder.Measurements.Select(m => PauseTag(m, "gc.heap.generation")).Distinct().Count() == 3);
+                WaitFor(() => expectedGenerations.All(generation =>
+                    recorder.Measurements.Any(measurement => PauseTag(measurement, "gc.heap.generation") == generation)));
                 Measurement<double>[] measurements = recorder.Measurements;
                 double totalPauseSeconds = GC.GetTotalPauseDuration().TotalSeconds;
                 foreach (Measurement<double> measurement in measurements)
@@ -160,17 +188,32 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 using MeterListener listener = new();
                 List<string> instruments = new();
-                listener.InstrumentPublished = (instrument, _) =>
+                int observed = 0;
+                listener.SetMeasurementEventCallback<double>((_, _, _, _) => Interlocked.Increment(ref observed));
+                listener.InstrumentPublished = (instrument, subscriber) =>
                 {
                     if (instrument.Meter.Name == "System.Runtime")
                     {
                         instruments.Add(instrument.Name);
+                        if (instrument.Name == "dotnet.gc.pause.duration")
+                        {
+                            subscriber.EnableMeasurementEvents(instrument);
+                        }
                     }
                 };
                 listener.Start();
-                Assert.Equal(bool.Parse(enabledValue), instruments.Contains("dotnet.gc.pause.duration"));
+                Assert.Contains("dotnet.gc.pause.duration", instruments);
                 Assert.Contains("dotnet.gc.pause.time", instruments);
                 Assert.DoesNotContain("dotnet.gc.pause.dropped", instruments);
+                GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+                if (bool.Parse(enabledValue))
+                {
+                    WaitFor(() => Volatile.Read(ref observed) > 0);
+                }
+                else
+                {
+                    Assert.Equal(0, Volatile.Read(ref observed));
+                }
             }, enabled.ToString(), options).Dispose();
         }
 
@@ -382,8 +425,8 @@ namespace System.Diagnostics.Metrics.Tests
             internal readonly GCPauseNode? Next = next;
         }
 
-        private static void WaitFor(Func<bool> condition) =>
-            Assert.True(SpinWait.SpinUntil(condition, TimeSpan.FromSeconds(30)), "Timed out waiting for GC pause delivery.");
+        private static void WaitFor(Func<bool> condition, [CallerArgumentExpression(nameof(condition))] string? expression = null) =>
+            Assert.True(SpinWait.SpinUntil(condition, TimeSpan.FromSeconds(30)), $"Timed out waiting for GC pause condition: {expression}");
 
         private static string PauseTag(Measurement<double> measurement, string key) =>
             Assert.IsType<string>(measurement.Tags.ToArray().Single(tag => tag.Key == key).Value);
@@ -607,6 +650,86 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.False(histogram.Enabled);
                 monitor.WaitForDisable(disableCommands);
             }, CreateGCPauseOptions(serverGc: false)).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsCoreClrRemoteExecutorSupported))]
+        public void GcPauseDurationSubscriptionBeforeDispatchStarts()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                using ManualResetEventSlim entered = new();
+                using ManualResetEventSlim release = new();
+                using ManualResetEventSlim returned = new();
+                bool released = false;
+                using DispatchStartListener blocker = new(() =>
+                {
+                    entered.Set();
+                    try
+                    {
+                        released = release.Wait(TimeSpan.FromSeconds(30));
+                    }
+                    finally
+                    {
+                        returned.Set();
+                    }
+                });
+                using MeterListener listener = new();
+                Histogram<double>? histogram = null;
+                int observed = 0;
+                listener.InstrumentPublished = (instrument, _) =>
+                {
+                    if (instrument.Meter.Name == "System.Runtime" && instrument.Name == "dotnet.gc.pause.duration")
+                    {
+                        histogram = Assert.IsType<Histogram<double>>(instrument);
+                    }
+                };
+                listener.SetMeasurementEventCallback<double>((_, _, _, _) => Interlocked.Increment(ref observed));
+                listener.Start();
+                Assert.NotNull(histogram);
+
+                blocker.Arm();
+                using PauseRecorder previousSession = new(keywords: (EventKeywords)0x1);
+                try
+                {
+                    Assert.True(entered.Wait(TimeSpan.FromSeconds(30)));
+                    listener.EnableMeasurementEvents(histogram);
+                }
+                finally
+                {
+                    release.Set();
+                }
+                Assert.True(returned.Wait(TimeSpan.FromSeconds(30)));
+                Assert.True(released);
+
+                GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+                WaitFor(() => Volatile.Read(ref observed) > 0);
+            }, CreateGCPauseOptions(serverGc: false)).Dispose();
+        }
+
+        private sealed class DispatchStartListener(Action callback) : EventListener
+        {
+            private int _armed;
+            private int _entered;
+
+            internal void Arm() => Volatile.Write(ref _armed, 1);
+
+            protected override void OnEventSourceCreated(EventSource source)
+            {
+                if (source.Name == "System.Threading.Tasks.TplEventSource")
+                {
+                    EnableEvents(source, EventLevel.Informational, (EventKeywords)2);
+                }
+            }
+
+            protected override void OnEventWritten(EventWrittenEventArgs eventData)
+            {
+                // TaskStarted is synchronous and precedes invocation of the queued delegate.
+                if (eventData.EventId == 8 && !Thread.CurrentThread.IsThreadPoolThread && Volatile.Read(ref _armed) != 0 &&
+                    Interlocked.CompareExchange(ref _entered, 1, 0) == 0)
+                {
+                    callback();
+                }
+            }
         }
 
         [ConditionalFact(nameof(IsCoreClrRemoteExecutorSupported))]

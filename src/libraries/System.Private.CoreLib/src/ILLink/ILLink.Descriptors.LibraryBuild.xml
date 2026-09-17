@@ -8,10 +8,6 @@
       <!-- Used by VS4Mac via reflection to symbolize stack traces -->
       <method name="GetMethodFromNativeIP" />
     </type>
-    <type fullname="System.GCPauseReporting">
-      <!-- Accessed by System.Diagnostics.DiagnosticSource through UnsafeAccessor. -->
-      <method name="IsSupported" />
-    </type>
     <type fullname="System.Reflection.Emit.AssemblyBuilder">
       <!-- Used by System.Linq.Expressions via reflection -->
       <method name="ForceAllowDynamicCode" />
