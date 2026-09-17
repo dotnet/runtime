@@ -560,11 +560,12 @@ namespace System.Diagnostics
                     {
                         EventLogEntry entry = GetEntryWithOldest(i);
                         EntryWrittenEventHandler? handler = onEntryWrittenHandler;
-                        if (handler != null)
+                        if (handler is not null)
                         {
-                            if (this.SynchronizingObject != null && this.SynchronizingObject.InvokeRequired)
+                            ISynchronizeInvoke? synchronizingObject = SynchronizingObject;
+                            if (synchronizingObject is not null && synchronizingObject.InvokeRequired)
                             {
-                                this.SynchronizingObject.BeginInvoke(handler, new object[] { this, new EntryWrittenEventArgs(entry) });
+                                synchronizingObject.BeginInvoke(handler, new object[] { this, new EntryWrittenEventArgs(entry) });
                             }
                             else
                             {
