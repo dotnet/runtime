@@ -141,9 +141,6 @@ jobs:
       - name: MSBUILDDEBUGPATH
         value: $(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/MsbuildDebugLogs
 
-      - name: _compilerCacheBuildArgs
-        value: ''
-
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
           parameters:
@@ -227,7 +224,7 @@ jobs:
     # Build
     - template: /eng/pipelines/common/templates/global-build-step.yml
       parameters:
-        buildArgs: ${{ parameters.buildArgs }} $(_compilerCacheBuildArgs)
+        buildArgs: ${{ parameters.buildArgs }}
         useContinueOnErrorDuringBuild: ${{ parameters.useContinueOnErrorDuringBuild }}
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
 

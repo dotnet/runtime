@@ -25,6 +25,4 @@ steps:
       set -euo pipefail
       echo "##vso[task.setvariable variable=ROSLYN_CACHE_PATH]$(Pipeline.Workspace)/.roslyn-cache"
       echo "##vso[task.setvariable variable=ROSLYN_CACHE_BUILD_START]$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-      echo "##vso[task.setvariable variable=EnableSourceLink]false"
-      echo "##vso[task.setvariable variable=_compilerCacheBuildArgs]/p:EnableSourceLink=false"
     displayName: Configure Roslyn compiler cache
