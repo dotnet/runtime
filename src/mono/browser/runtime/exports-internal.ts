@@ -25,7 +25,7 @@ import { mono_wasm_bind_cs_function } from "./invoke-cs";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
-export function export_internal(): any {
+export function export_internal (): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => {
@@ -115,7 +115,7 @@ export function export_internal(): any {
     };
 }
 
-export function cwraps_internal(internal: any): void {
+export function cwraps_internal (internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
         mono_wasm_profiler_init_aot: profiler_c_functions.mono_wasm_profiler_init_aot,
@@ -126,7 +126,7 @@ export function cwraps_internal(internal: any): void {
 }
 
 /* @deprecated not GC safe, legacy support for Blazor */
-export function monoObjectAsBoolOrNullUnsafe(obj: MonoObject): boolean | null {
+export function monoObjectAsBoolOrNullUnsafe (obj: MonoObject): boolean | null {
     // TODO https://github.com/dotnet/runtime/issues/100411
     // after Blazor stops using monoObjectAsBoolOrNullUnsafe
 
