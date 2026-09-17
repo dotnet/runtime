@@ -21,6 +21,12 @@ namespace System.Numerics.Tensors
             static abstract Vector512<T> Invoke(Vector512<T> x);
         }
 
+        /// <summary>
+        /// Combines the results of <see cref="IBooleanUnaryOperator{T}"/> into an Any/All decision. The vectorized loops of
+        /// <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/> fold the per-vector results of a block of vectors into an accumulator
+        /// with <c>Accumulate</c>, starting from zero, and decide once per block: a lane of the accumulator with all bits set means
+        /// that the block contains an element which settles the result, and the loop exits with <c>!DefaultResult</c>.
+        /// </summary>
         private interface IAnyAllAggregator<T>
         {
             static abstract bool DefaultResult { get; }
@@ -28,6 +34,13 @@ namespace System.Numerics.Tensors
             static abstract bool ShouldEarlyExit(Vector128<T> result);
             static abstract bool ShouldEarlyExit(Vector256<T> result);
             static abstract bool ShouldEarlyExit(Vector512<T> result);
+
+            /// <summary>Folds an operator result into a block accumulator: a lane of the accumulator ends up with all bits set if <see cref="ShouldEarlyExit(Vector128{T})"/> holds for any result folded into it.</summary>
+            static abstract Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result);
+            /// <inheritdoc cref="Accumulate(Vector128{T}, Vector128{T})"/>
+            static abstract Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result);
+            /// <inheritdoc cref="Accumulate(Vector128{T}, Vector128{T})"/>
+            static abstract Vector512<T> Accumulate(Vector512<T> accumulator, Vector512<T> result);
         }
 
         private readonly struct AnyAggregator<T> : IAnyAllAggregator<T>
@@ -39,6 +52,11 @@ namespace System.Numerics.Tensors
             public static bool ShouldEarlyExit(Vector128<T> result) => Vector128.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector256<T> result) => Vector256.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector512<T> result) => Vector512.AnyWhereAllBitsSet(result);
+
+            // A lane where the operator was true stays set.
+            public static Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result) => accumulator | result;
+            public static Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result) => accumulator | result;
+            public static Vector512<T> Accumulate(Vector512<T> accumulator, Vector512<T> result) => accumulator | result;
         }
 
         private readonly struct AllAggregator<T> : IAnyAllAggregator<T>
@@ -61,6 +79,13 @@ namespace System.Numerics.Tensors
                 typeof(T) == typeof(float) ? Vector512.EqualsAny(result.AsUInt32(), Vector512<uint>.Zero) :
                 typeof(T) == typeof(double) ? Vector512.EqualsAny(result.AsUInt64(), Vector512<ulong>.Zero) :
                 Vector512.EqualsAny(result, Vector512<T>.Zero);
+
+            // A lane where the operator was false (its result is zero) becomes all bits set and stays set. Accumulating the
+            // complement rather than AND-ing the results keeps the block test the same as for Any and lets the JIT fold the
+            // complement into an operator that ends in a negation (such as IsFinite).
+            public static Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result) => accumulator | ~result;
+            public static Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result) => accumulator | ~result;
+            public static Vector512<T> Accumulate(Vector512<T> accumulator, Vector512<T> result) => accumulator | ~result;
         }
 
         private static bool All<T, TOperator>(ReadOnlySpan<T> x)
@@ -71,107 +96,253 @@ namespace System.Numerics.Tensors
             where TOperator : struct, IBooleanUnaryOperator<T> =>
             AggregateAnyAll<T, TOperator, AnyAggregator<T>>(x);
 
+        /// <summary>Vectors per block in the vectorized paths of <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/>. Must be even.</summary>
+        private const int AnyAllBlockVectors = 32;
+
         private static bool AggregateAnyAll<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
             where TOperator : struct, IBooleanUnaryOperator<T>
             where TAnyAll : struct, IAnyAllAggregator<T>
         {
             Debug.Assert(!x.IsEmpty);
 
+            if (Vector512.IsHardwareAccelerated && TOperator.Vectorizable && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
+            {
+                return AggregateAnyAllVectorized512<T, TOperator, TAnyAll>(x);
+            }
+
+            if (Vector256.IsHardwareAccelerated && TOperator.Vectorizable && Vector256<T>.IsSupported && x.Length >= Vector256<T>.Count)
+            {
+                return AggregateAnyAllVectorized256<T, TOperator, TAnyAll>(x);
+            }
+
+            if (Vector128.IsHardwareAccelerated && TOperator.Vectorizable && Vector128<T>.IsSupported && x.Length >= Vector128<T>.Count)
+            {
+                return AggregateAnyAllVectorized128<T, TOperator, TAnyAll>(x);
+            }
+
             ref T xRef = ref MemoryMarshal.GetReference(x);
-            int i = 0, oneVectorFromEnd;
-
-            if (Vector512.IsHardwareAccelerated && TOperator.Vectorizable && Vector512<T>.IsSupported)
-            {
-                oneVectorFromEnd = x.Length - Vector512<T>.Count;
-                if (i <= oneVectorFromEnd)
-                {
-                    // Loop handling one vector at a time.
-                    do
-                    {
-                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)i))))
-                        {
-                            return !TAnyAll.DefaultResult;
-                        }
-
-                        i += Vector512<T>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // Handle any remaining elements with a final vector.
-                    if (i != x.Length &&
-                        TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, (uint)(x.Length - Vector512<T>.Count)))))
-                    {
-                        return !TAnyAll.DefaultResult;
-                    }
-
-                    return TAnyAll.DefaultResult;
-                }
-            }
-
-            if (Vector256.IsHardwareAccelerated && TOperator.Vectorizable && Vector256<T>.IsSupported)
-            {
-                oneVectorFromEnd = x.Length - Vector256<T>.Count;
-                if (i <= oneVectorFromEnd)
-                {
-                    // Loop handling one vector at a time.
-                    do
-                    {
-                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)i))))
-                        {
-                            return !TAnyAll.DefaultResult;
-                        }
-
-                        i += Vector256<T>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // Handle any remaining elements with a final vector.
-                    if (i != x.Length &&
-                        TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, (uint)(x.Length - Vector256<T>.Count)))))
-                    {
-                        return !TAnyAll.DefaultResult;
-                    }
-
-                    return TAnyAll.DefaultResult;
-                }
-            }
-
-            if (Vector128.IsHardwareAccelerated && TOperator.Vectorizable && Vector128<T>.IsSupported)
-            {
-                oneVectorFromEnd = x.Length - Vector128<T>.Count;
-                if (i <= oneVectorFromEnd)
-                {
-                    // Loop handling one vector at a time.
-                    do
-                    {
-                        if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)i))))
-                        {
-                            return !TAnyAll.DefaultResult;
-                        }
-
-                        i += Vector128<T>.Count;
-                    }
-                    while (i <= oneVectorFromEnd);
-
-                    // Handle any remaining elements with a final vector.
-                    if (i != x.Length &&
-                        TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, (uint)(x.Length - Vector128<T>.Count)))))
-                    {
-                        return !TAnyAll.DefaultResult;
-                    }
-
-                    return TAnyAll.DefaultResult;
-                }
-            }
-
-            while (i < x.Length)
+            for (int i = 0; i < x.Length; i++)
             {
                 if (TAnyAll.ShouldEarlyExit(TOperator.Invoke(Unsafe.Add(ref xRef, i))))
                 {
                     return !TAnyAll.DefaultResult;
                 }
+            }
 
-                i++;
+            return TAnyAll.DefaultResult;
+        }
+
+        /// <summary>The 512-bit path of <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/>: the whole vectors in blocks, then one final vector that overlaps the last whole one.</summary>
+        /// <remarks>
+        /// Every block of up to <see cref="AnyAllBlockVectors"/> vectors is folded into two independent accumulators with no branch on the
+        /// data, and the exit decision is made once per block, so a hit is detected after at most one block of extra reads.
+        /// Blocks are visited in order and the whole input lies within the span, so the result is the same as with a test per vector.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator and the aggregator inlined
+        private static bool AggregateAnyAllVectorized512<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(Vector512.IsHardwareAccelerated && TOperator.Vectorizable && Vector512<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector512<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            nuint length = (uint)x.Length;
+            nuint oneVectorFromEnd = length - (uint)Vector512<T>.Count;
+            nuint i = 0;
+
+            // Whole blocks: two accumulators, one decision per block.
+            nuint blockLength = (uint)(AnyAllBlockVectors * Vector512<T>.Count);
+            if (length >= blockLength)
+            {
+                nuint oneBlockFromEnd = length - blockLength;
+                do
+                {
+                    Vector512<T> accumulator0 = Vector512<T>.Zero;
+                    Vector512<T> accumulator1 = Vector512<T>.Zero;
+                    nuint blockEnd = i + blockLength;
+                    do
+                    {
+                        accumulator0 = TAnyAll.Accumulate(accumulator0, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i)));
+                        accumulator1 = TAnyAll.Accumulate(accumulator1, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i + (uint)Vector512<T>.Count)));
+                        i += (uint)(2 * Vector512<T>.Count);
+                    }
+                    while (i < blockEnd);
+
+                    if (Vector512.AnyWhereAllBitsSet(accumulator0 | accumulator1))
+                    {
+                        return !TAnyAll.DefaultResult;
+                    }
+                }
+                while (i <= oneBlockFromEnd);
+            }
+
+            // The remaining whole vectors, fewer than a block.
+            if (i <= oneVectorFromEnd)
+            {
+                Vector512<T> accumulator = Vector512<T>.Zero;
+                do
+                {
+                    accumulator = TAnyAll.Accumulate(accumulator, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i)));
+                    i += (uint)Vector512<T>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                if (Vector512.AnyWhereAllBitsSet(accumulator))
+                {
+                    return !TAnyAll.DefaultResult;
+                }
+            }
+
+            // Handle any remaining elements with a final vector.
+            if (i != length &&
+                TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, oneVectorFromEnd))))
+            {
+                return !TAnyAll.DefaultResult;
+            }
+
+            return TAnyAll.DefaultResult;
+        }
+
+        /// <summary>The 256-bit path of <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/>: the whole vectors in blocks, then one final vector that overlaps the last whole one.</summary>
+        /// <remarks>
+        /// Every block of up to <see cref="AnyAllBlockVectors"/> vectors is folded into two independent accumulators with no branch on the
+        /// data, and the exit decision is made once per block, so a hit is detected after at most one block of extra reads.
+        /// Blocks are visited in order and the whole input lies within the span, so the result is the same as with a test per vector.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator and the aggregator inlined
+        private static bool AggregateAnyAllVectorized256<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(Vector256.IsHardwareAccelerated && TOperator.Vectorizable && Vector256<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector256<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            nuint length = (uint)x.Length;
+            nuint oneVectorFromEnd = length - (uint)Vector256<T>.Count;
+            nuint i = 0;
+
+            // Whole blocks: two accumulators, one decision per block.
+            nuint blockLength = (uint)(AnyAllBlockVectors * Vector256<T>.Count);
+            if (length >= blockLength)
+            {
+                nuint oneBlockFromEnd = length - blockLength;
+                do
+                {
+                    Vector256<T> accumulator0 = Vector256<T>.Zero;
+                    Vector256<T> accumulator1 = Vector256<T>.Zero;
+                    nuint blockEnd = i + blockLength;
+                    do
+                    {
+                        accumulator0 = TAnyAll.Accumulate(accumulator0, TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, i)));
+                        accumulator1 = TAnyAll.Accumulate(accumulator1, TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, i + (uint)Vector256<T>.Count)));
+                        i += (uint)(2 * Vector256<T>.Count);
+                    }
+                    while (i < blockEnd);
+
+                    if (Vector256.AnyWhereAllBitsSet(accumulator0 | accumulator1))
+                    {
+                        return !TAnyAll.DefaultResult;
+                    }
+                }
+                while (i <= oneBlockFromEnd);
+            }
+
+            // The remaining whole vectors, fewer than a block.
+            if (i <= oneVectorFromEnd)
+            {
+                Vector256<T> accumulator = Vector256<T>.Zero;
+                do
+                {
+                    accumulator = TAnyAll.Accumulate(accumulator, TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, i)));
+                    i += (uint)Vector256<T>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                if (Vector256.AnyWhereAllBitsSet(accumulator))
+                {
+                    return !TAnyAll.DefaultResult;
+                }
+            }
+
+            // Handle any remaining elements with a final vector.
+            if (i != length &&
+                TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, oneVectorFromEnd))))
+            {
+                return !TAnyAll.DefaultResult;
+            }
+
+            return TAnyAll.DefaultResult;
+        }
+
+        /// <summary>The 128-bit path of <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/>: the whole vectors in blocks, then one final vector that overlaps the last whole one.</summary>
+        /// <remarks>
+        /// Every block of up to <see cref="AnyAllBlockVectors"/> vectors is folded into two independent accumulators with no branch on the
+        /// data, and the exit decision is made once per block, so a hit is detected after at most one block of extra reads.
+        /// Blocks are visited in order and the whole input lies within the span, so the result is the same as with a test per vector.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator and the aggregator inlined
+        private static bool AggregateAnyAllVectorized128<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
+            Debug.Assert(Vector128.IsHardwareAccelerated && TOperator.Vectorizable && Vector128<T>.IsSupported);
+            Debug.Assert(x.Length >= Vector128<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            nuint length = (uint)x.Length;
+            nuint oneVectorFromEnd = length - (uint)Vector128<T>.Count;
+            nuint i = 0;
+
+            // Whole blocks: two accumulators, one decision per block.
+            nuint blockLength = (uint)(AnyAllBlockVectors * Vector128<T>.Count);
+            if (length >= blockLength)
+            {
+                nuint oneBlockFromEnd = length - blockLength;
+                do
+                {
+                    Vector128<T> accumulator0 = Vector128<T>.Zero;
+                    Vector128<T> accumulator1 = Vector128<T>.Zero;
+                    nuint blockEnd = i + blockLength;
+                    do
+                    {
+                        accumulator0 = TAnyAll.Accumulate(accumulator0, TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, i)));
+                        accumulator1 = TAnyAll.Accumulate(accumulator1, TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, i + (uint)Vector128<T>.Count)));
+                        i += (uint)(2 * Vector128<T>.Count);
+                    }
+                    while (i < blockEnd);
+
+                    if (Vector128.AnyWhereAllBitsSet(accumulator0 | accumulator1))
+                    {
+                        return !TAnyAll.DefaultResult;
+                    }
+                }
+                while (i <= oneBlockFromEnd);
+            }
+
+            // The remaining whole vectors, fewer than a block.
+            if (i <= oneVectorFromEnd)
+            {
+                Vector128<T> accumulator = Vector128<T>.Zero;
+                do
+                {
+                    accumulator = TAnyAll.Accumulate(accumulator, TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, i)));
+                    i += (uint)Vector128<T>.Count;
+                }
+                while (i <= oneVectorFromEnd);
+
+                if (Vector128.AnyWhereAllBitsSet(accumulator))
+                {
+                    return !TAnyAll.DefaultResult;
+                }
+            }
+
+            // Handle any remaining elements with a final vector.
+            if (i != length &&
+                TAnyAll.ShouldEarlyExit(TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, oneVectorFromEnd))))
+            {
+                return !TAnyAll.DefaultResult;
             }
 
             return TAnyAll.DefaultResult;

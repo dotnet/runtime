@@ -3313,6 +3313,99 @@ namespace System.Numerics.Tensors.Tests
                 Assert.Equal(expected, actual);
             });
         }
+
+        // The vectorized Any/All paths decide once per block of vectors. These place the element that settles the result at every
+        // block, vector and ragged boundary of long inputs, where the block loop, the ragged vectors and the final overlapping vector meet.
+        private static IEnumerable<int> IsAnyAllLongPositions(int tensorLength)
+        {
+            var positions = new List<int> { 0, 1, tensorLength / 2, tensorLength - 2, tensorLength - 1 };
+            foreach (int vectorBytes in new[] { 16, 32, 64 })
+            {
+                int vector = vectorBytes / sizeof(T), block = 32 * vector;
+                int afterLastWholeVector = tensorLength - (tensorLength % vector), afterLastWholeBlock = tensorLength - (tensorLength % block);
+                positions.AddRange([vector - 1, vector, vector + 1, block - 1, block, block + 1, (2 * block) - 1, 2 * block,
+                    afterLastWholeVector - 1, afterLastWholeVector, afterLastWholeBlock - 1, afterLastWholeBlock]);
+            }
+
+            return positions.Where(i => i >= 0 && i < tensorLength).Distinct();
+        }
+
+        /// <summary>
+        /// Filled with <paramref name="fill"/> the aggregation must return <paramref name="expectedWithoutHit"/> for every long length; with
+        /// <paramref name="hit"/> placed at any boundary position, alone or together with one at the end, it must return the opposite.
+        /// </summary>
+        private void AssertIsAnyAllLongLengths(SpanIsAllAnyDelegate tensorPrimitivesMethod, T fill, T hit, bool expectedWithoutHit)
+        {
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateTensor(tensorLength);
+                x.Span.Fill(fill);
+                Assert.Equal(expectedWithoutHit, tensorPrimitivesMethod(x));
+
+                foreach (int position in IsAnyAllLongPositions(tensorLength))
+                {
+                    x[position] = hit;
+                    Assert.Equal(!expectedWithoutHit, tensorPrimitivesMethod(x));
+
+                    x[tensorLength - 1] = hit;
+                    Assert.Equal(!expectedWithoutHit, tensorPrimitivesMethod(x));
+
+                    x[position] = fill;
+                    x[tensorLength - 1] = fill;
+                }
+            });
+        }
+
+        [Fact]
+        public void IsNaNAny_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAny, fill: ConvertFromSingle(1), hit: ConvertFromSingle(float.NaN), expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsNaNAll_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNaNAll, fill: ConvertFromSingle(float.NaN), hit: ConvertFromSingle(1), expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsFiniteAll_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAll, fill: ConvertFromSingle(1), hit: ConvertFromSingle(float.PositiveInfinity), expectedWithoutHit: true);
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAll, fill: ConvertFromSingle(-1), hit: ConvertFromSingle(float.NaN), expectedWithoutHit: true);
+        }
+
+        [Fact]
+        public void IsFiniteAny_LongLengths()
+        {
+            if (!IsFloatingPoint) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsFiniteAny, fill: ConvertFromSingle(float.NegativeInfinity), hit: Zero, expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsNegativeAny_LongLengths()
+        {
+            if (!HasNegativeValues) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsNegativeAny, fill: ConvertFromSingle(1), hit: ConvertFromSingle(-1), expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsPositiveAny_LongLengths()
+        {
+            if (!HasNegativeValues) return;
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsPositiveAny, fill: ConvertFromSingle(-1), hit: ConvertFromSingle(1), expectedWithoutHit: false);
+        }
+
+        [Fact]
+        public void IsZeroAll_LongLengths() =>
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAll, fill: Zero, hit: ConvertFromSingle(1), expectedWithoutHit: true);
+
+        [Fact]
+        public void IsZeroAny_LongLengths() =>
+            AssertIsAnyAllLongLengths(TensorPrimitives.IsZeroAny, fill: ConvertFromSingle(1), hit: Zero, expectedWithoutHit: false);
         #endregion
 
         #region HammingDistance
