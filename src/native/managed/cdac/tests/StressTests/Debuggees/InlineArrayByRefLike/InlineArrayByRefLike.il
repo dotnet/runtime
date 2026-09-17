@@ -8,7 +8,38 @@
 
 .assembly InlineArrayByRefLike { }
 
-.class private sequential ansi sealed beforefieldinit InlineArrayOfSpans
+.class private sequential ansi sealed beforefieldinit ByRef
+    extends [System.Runtime]System.ValueType
+{
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.IsByRefLikeAttribute::.ctor() = (
+        01 00 00 00
+    )
+
+    .field assembly int32& _value
+
+    .method public hidebysig specialname rtspecialname instance void .ctor(
+        int32&) cil managed
+    {
+        .maxstack 2
+
+        ldarg.0
+        ldarg.1
+        stfld int32& ByRef::_value
+        ret
+    }
+
+    .method public hidebysig instance int32 GetValue() cil managed
+    {
+        .maxstack 1
+
+        ldarg.0
+        ldfld int32& ByRef::_value
+        ldind.i4
+        ret
+    }
+}
+
+.class private sequential ansi sealed beforefieldinit InlineArrayOfByRefs
     extends [System.Runtime]System.ValueType
 {
     .custom instance void [System.Runtime]System.Runtime.CompilerServices.InlineArrayAttribute::.ctor(int32) = {
@@ -18,25 +49,25 @@
         01 00 00 00
     )
 
-    .field assembly valuetype [System.Runtime]System.Span`1<uint8> _element0
+    .field assembly valuetype ByRef _element0
 
     .method public hidebysig specialname rtspecialname instance void .ctor(
-        valuetype [System.Runtime]System.Span`1<uint8> first,
-        valuetype [System.Runtime]System.Span`1<uint8> second) cil managed
+        valuetype ByRef first,
+        valuetype ByRef second) cil managed
     {
         .maxstack 2
 
         ldarg.0
         ldarg.1
-        stfld valuetype [System.Runtime]System.Span`1<uint8> InlineArrayOfSpans::_element0
+        stfld valuetype ByRef InlineArrayOfByRefs::_element0
 
         ldarg.0
-        ldflda valuetype [System.Runtime]System.Span`1<uint8> InlineArrayOfSpans::_element0
-        sizeof valuetype [System.Runtime]System.Span`1<uint8>
+        ldflda valuetype ByRef InlineArrayOfByRefs::_element0
+        sizeof valuetype ByRef
         conv.i
         add
         ldarg.2
-        stobj valuetype [System.Runtime]System.Span`1<uint8>
+        stobj valuetype ByRef
         ret
     }
 }
@@ -46,138 +77,88 @@
 {
     .field private static object s_sink
 
-    .method private hidebysig static valuetype [System.Runtime]System.Span`1<uint8> CreateSpan(
-        int32 x,
-        int32 length) cil managed noinlining
-    {
-        .maxstack 3
-        .locals init (
-            uint8[] values
-        )
-
-        ldarg.1
-        newarr [System.Runtime]System.Byte
-        stloc.0
-
-        ldloc.0
-        ldarg.0
-        conv.u1
-        call void [System.Runtime]System.Array::Fill<uint8>(!!0[], !!0)
-
-        ldloc.0
-        call valuetype [System.Runtime]System.Span`1<!0> valuetype [System.Runtime]System.Span`1<uint8>::op_Implicit(!0[])
-        ret
-    }
-
     .method private hidebysig static int32 SumValues(
-        valuetype InlineArrayOfSpans spans) cil managed noinlining
+        valuetype InlineArrayOfByRefs values) cil managed noinlining
     {
-        .maxstack 3
+        .maxstack 2
         .locals init (
-            valuetype [System.Runtime]System.Span`1<uint8> first,
-            valuetype [System.Runtime]System.Span`1<uint8> second,
-            int32 sum,
-            int32 index
+            valuetype ByRef first,
+            valuetype ByRef second
         )
 
-        newobj instance void [System.Runtime]System.Object::.ctor()
+        ldc.i4 65536
+        newarr [System.Runtime]System.Byte
         stsfld object Program::s_sink
 
-        ldarga.s spans
-        ldfld valuetype [System.Runtime]System.Span`1<uint8> InlineArrayOfSpans::_element0
+        ldarga.s values
+        ldfld valuetype ByRef InlineArrayOfByRefs::_element0
         stloc.0
 
-        ldarga.s spans
-        ldflda valuetype [System.Runtime]System.Span`1<uint8> InlineArrayOfSpans::_element0
-        sizeof valuetype [System.Runtime]System.Span`1<uint8>
+        ldarga.s values
+        ldflda valuetype ByRef InlineArrayOfByRefs::_element0
+        sizeof valuetype ByRef
         conv.i
         add
-        ldobj valuetype [System.Runtime]System.Span`1<uint8>
+        ldobj valuetype ByRef
         stloc.1
 
-        ldc.i4.0
-        stloc.2
-        ldc.i4.0
-        stloc.3
-        br.s FIRST_CHECK
-
-    FIRST_ADD:
-        ldloc.2
         ldloca.s first
-        ldloc.3
-        call instance !0& valuetype [System.Runtime]System.Span`1<uint8>::get_Item(int32)
-        ldind.u1
-        add
-        stloc.2
-
-        ldloc.3
-        ldc.i4.1
-        add
-        stloc.3
-
-    FIRST_CHECK:
-        ldloc.3
-        ldloca.s first
-        call instance int32 valuetype [System.Runtime]System.Span`1<uint8>::get_Length()
-        blt.s FIRST_ADD
-
-        ldc.i4.0
-        stloc.3
-        br.s SECOND_CHECK
-
-    SECOND_ADD:
-        ldloc.2
+        call instance int32 ByRef::GetValue()
         ldloca.s second
-        ldloc.3
-        call instance !0& valuetype [System.Runtime]System.Span`1<uint8>::get_Item(int32)
-        ldind.u1
+        call instance int32 ByRef::GetValue()
         add
-        stloc.2
-
-        ldloc.3
-        ldc.i4.1
-        add
-        stloc.3
-
-    SECOND_CHECK:
-        ldloc.3
-        ldloca.s second
-        call instance int32 valuetype [System.Runtime]System.Span`1<uint8>::get_Length()
-        blt.s SECOND_ADD
-
-        ldloc.2
         ret
     }
 
     .method public hidebysig static int32 Main() cil managed
     {
         .entrypoint
-        .maxstack 2
+        .maxstack 3
         .locals init (
-            valuetype [System.Runtime]System.Span`1<uint8> first,
-            valuetype [System.Runtime]System.Span`1<uint8> second,
-            valuetype InlineArrayOfSpans spans
+            int32[] firstValues,
+            int32[] secondValues,
+            valuetype ByRef first,
+            valuetype ByRef second,
+            valuetype InlineArrayOfByRefs values
         )
 
-        ldc.i4.s 10
-        ldc.i4.4
-        call valuetype [System.Runtime]System.Span`1<uint8> Program::CreateSpan(int32, int32)
+        ldc.i4.1
+        newarr [System.Runtime]System.Int32
         stloc.0
+        ldloc.0
+        ldc.i4.0
+        ldc.i4.s 40
+        stelem.i4
 
-        ldc.i4.s 20
-        ldc.i4.3
-        call valuetype [System.Runtime]System.Span`1<uint8> Program::CreateSpan(int32, int32)
+        ldc.i4.1
+        newarr [System.Runtime]System.Int32
         stloc.1
+        ldloc.1
+        ldc.i4.0
+        ldc.i4.s 60
+        stelem.i4
 
         ldloc.0
-        ldloc.1
-        newobj instance void InlineArrayOfSpans::.ctor(
-            valuetype [System.Runtime]System.Span`1<uint8>,
-            valuetype [System.Runtime]System.Span`1<uint8>)
+        ldc.i4.0
+        ldelema [System.Runtime]System.Int32
+        newobj instance void ByRef::.ctor(int32&)
         stloc.2
 
+        ldloc.1
+        ldc.i4.0
+        ldelema [System.Runtime]System.Int32
+        newobj instance void ByRef::.ctor(int32&)
+        stloc.3
+
         ldloc.2
-        call int32 Program::SumValues(valuetype InlineArrayOfSpans)
+        ldloc.3
+        newobj instance void InlineArrayOfByRefs::.ctor(
+            valuetype ByRef,
+            valuetype ByRef)
+        stloc.s 4
+
+        ldloc.s 4
+        call int32 Program::SumValues(valuetype InlineArrayOfByRefs)
         ret
     }
 }
