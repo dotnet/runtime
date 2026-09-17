@@ -15,7 +15,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
     // Chromium only: draining a proxy requires forcing a JS collection, and globalThis.gc is exposed
     // by the --expose-gc engine argument this project passes for Chrome. Elsewhere the proxies are
     // released on the engine's own schedule and the counts would not settle within a test.
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium))]
+    //
+    // Single-threaded only: with managed threads the census also counts proxies held by other
+    // threads, which drain independently of this test, and getAssemblyExports never settles.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsChromium), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public class ProxyLeakTest : JSInteropTestBase, IAsyncLifetime
     {
         private const int Iterations = 100;
@@ -53,10 +56,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             // response to this test. The GCHandle table behind them is drained by the JS
             // FinalizationRegistry a few entries per turn, so it lags by an unbounded amount and
             // would make these assertions fragile rather than stricter.
+            // The contract is that a round trip must not add a proxy, so this asserts on growth
+            // rather than equality: an unrelated proxy draining mid-test lowers a count without
+            // saying anything about the path under test, while a missed release adds Iterations.
             string census = "[csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]"
                 + $"{Environment.NewLine}before: {string.Join(", ", before)}"
                 + $"{Environment.NewLine}after:  {string.Join(", ", after)}";
-            Assert.True(before[0] == after[0] && before[1] == after[1], census);
+            Assert.True(after[0] <= before[0] && after[1] <= before[1], census);
         }
 
         // managed Task -> JS Promise, as the return value of a [JSExport]
