@@ -2126,14 +2126,23 @@ namespace System.Diagnostics
 
         /// <summary>
         /// Converts 'idData' which is assumed to be HEX Unicode characters to binary
-        /// puts it in 'outBytes'
+        /// puts it in 'outBytes'. outBytes.Length * 2 must equal charData.Length.
         /// </summary>
         internal static void SetSpanFromHexChars(ReadOnlySpan<char> charData, Span<byte> outBytes)
         {
+#if NET
+            OperationStatus status = Convert.FromHexString(charData, outBytes, out _, out int bytesWritten);
+            if (status != OperationStatus.Done || bytesWritten != outBytes.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(outBytes));
+            }
+#else
             Debug.Assert(outBytes.Length * 2 == charData.Length);
             for (int i = 0; i < outBytes.Length; i++)
                 outBytes[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
+#endif
         }
+
         internal static byte HexByteFromChars(char char1, char char2)
         {
             int hi = HexConverter.FromLowerChar(char1);
