@@ -109,7 +109,7 @@ private:
 
     void ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALARG_TP keepAliveVars);
     bool IsTrackedCallDefinition(LIR::Range& range, GenTree* node);
-    void RemoveDeadStoreLIR(GenTree* store, BasicBlock* block);
+    bool TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block);
     bool TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockRange);
     bool CanUncontainOrRemoveOperands(GenTree* node);
 
@@ -2359,36 +2359,38 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                         {
                             GenTreeIndir* const store = addrUse.User()->AsIndir();
 
-                            RemoveDeadStoreLIR(store, block);
-
-                            JITDUMP("Removing dead LclVar address:\n");
-                            DISPNODE(node);
-                            blockRange.Remove(node);
-
-                            GenTree* data = store->AsIndir()->Data();
-                            data->SetUnusedValue();
-
-                            if (data->isIndir())
+                            if (TryRemoveDeadStoreLIR(store, node->AsLclVarCommon(), block))
                             {
-                                Lowering::TransformUnusedIndirection(data->AsIndir(), m_compiler, block);
-                            }
-                            else if (data->OperIs(GT_LCL_VAR, GT_LCL_FLD))
-                            {
-                                // The unused lcl_var or lcl_field on the rhs of a removed block store may be a
-                                // struct which cannot always be loaded onto the Wasm evaluation stack or into
-                                // native registers, so we need to make sure to remove the node. In some cases the
-                                // node is after us in the iteration order and will be automatically removed, but we
-                                // may have already iterated over it without removing it, so it's necessary to clean
-                                // up here.
-                                JITDUMP("Removing dead store data:\n");
-                                DISPNODE(data);
-                                if (next == data)
+
+                                JITDUMP("Removing dead LclVar address:\n");
+                                DISPNODE(node);
+                                blockRange.Remove(node);
+
+                                GenTree* data = store->AsIndir()->Data();
+                                data->SetUnusedValue();
+
+                                if (data->isIndir())
                                 {
-                                    next = data->gtPrev;
+                                    Lowering::TransformUnusedIndirection(data->AsIndir(), m_compiler, block);
                                 }
-                                assert(end != data);
-                                blockRange.Delete(m_compiler, block, data);
-                                // fgStmtRemoved was already set by RemoveDeadStoreLIR
+                                else if (data->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+                                {
+                                    // The unused lcl_var or lcl_field on the rhs of a removed block store may be a
+                                    // struct which cannot always be loaded onto the Wasm evaluation stack or into
+                                    // native registers, so we need to make sure to remove the node. In some cases the
+                                    // node is after us in the iteration order and will be automatically removed, but we
+                                    // may have already iterated over it without removing it, so it's necessary to clean
+                                    // up here.
+                                    JITDUMP("Removing dead store data:\n");
+                                    DISPNODE(data);
+                                    if (next == data)
+                                    {
+                                        next = data->gtPrev;
+                                    }
+                                    assert(end != data);
+                                    blockRange.Delete(m_compiler, block, data);
+                                    // fgStmtRemoved was already set by TryRemoveDeadStoreLIR
+                                }
                             }
                         }
                     }
@@ -2410,10 +2412,8 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     isDeadStore = ComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode);
                 }
 
-                if (TLiveness::EliminateDeadCode && isDeadStore)
+                if (TLiveness::EliminateDeadCode && isDeadStore && TryRemoveDeadStoreLIR(node, lclVarNode, block))
                 {
-                    RemoveDeadStoreLIR(node, block);
-
                     GenTree* value = lclVarNode->Data();
                     value->SetUnusedValue();
 
@@ -2595,20 +2595,40 @@ bool Liveness<TLiveness>::IsTrackedCallDefinition(LIR::Range& range, GenTree* no
 }
 
 //---------------------------------------------------------------------
-// RemoveDeadStoreLIR - remove a dead store from LIR
+// fgTryRemoveDeadStoreLIR - try to remove a dead store from LIR
 //
 // Arguments:
 //   store   - A store tree
+//   lclNode - The node representing the local being stored to
 //   block   - Block that the store is part of
 //
+// Return Value:
+//    Whether the store was successfully removed from "block"'s range.
+//
 template <typename TLiveness>
-void Liveness<TLiveness>::RemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
+bool Liveness<TLiveness>::TryRemoveDeadStoreLIR(GenTree* store, GenTreeLclVarCommon* lclNode, BasicBlock* block)
 {
+    // We cannot remove stores to (tracked) TYP_STRUCT locals with GC pointers marked as "explicit init",
+    // as said locals will be reported to the GC untracked, and deleting the explicit initializer risks
+    // exposing uninitialized references.
+    if ((lclNode->gtFlags & GTF_VAR_USEASG) == 0)
+    {
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNode);
+        if (varDsc->lvHasExplicitInit && varDsc->TypeIs(TYP_STRUCT) && varDsc->HasGCPtr() && (varDsc->lvRefCnt() > 1))
+        {
+            JITDUMP("Not removing a potential explicit init [%06u] of V%02u\n", Compiler::dspTreeID(store),
+                    lclNode->GetLclNum());
+            return false;
+        }
+    }
+
     JITDUMP("Removing dead %s:\n", store->OperIsIndir() ? "indirect store" : "local store");
     DISPNODE(store);
 
     LIR::AsRange(block).Remove(store);
     m_compiler->fgStmtRemoved = true;
+
+    return true;
 }
 
 //---------------------------------------------------------------------
