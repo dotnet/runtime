@@ -30,7 +30,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <!-- The framework P/Invoke modules, shared with the build that generates the checked-in product
        call tables so that the two cannot be edited apart. -->
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)" />
 
   <!-- The shared wasm tool cache (eng/wasm/WasmToolCache.props) is already populated by the native
        CoreCLR build that produced the link kit, so nothing needs provisioning here. -->

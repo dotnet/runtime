@@ -120,7 +120,7 @@ namespace ILCompiler
                 return true;
             }
 
-            foreach (string variation in TypeExtensions.GetPInvokeModuleNameVariations(method.Context.Target, module))
+            foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(method.Context.Target, module))
             {
                 if (_directPInvokeModules.Contains(variation))
                 {

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.Build.NoTargets">
 
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props"
+  <Import Project="$(WasmPInvokeModulesPropsPath)"
           Condition="'$(TargetArchitecture)' == 'wasm'" />
 
   <ItemGroup>

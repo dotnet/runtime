@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
@@ -116,7 +117,7 @@ namespace ILCompiler
         {
             var pInvokeMetadata = method.GetPInvokeMethodMetadata();
 
-            foreach (var moduleName in TypeExtensions.GetPInvokeModuleNameVariations(_target, pInvokeMetadata.Module))
+            foreach (var moduleName in MarshalHelpers.GetPInvokeModuleNameVariations(_target, pInvokeMetadata.Module))
             {
                 if (_directPInvokes.TryGetValue(moduleName, out HashSet<string> entrypoints))
                 {

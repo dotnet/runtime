@@ -6,7 +6,7 @@
   </PropertyGroup>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.SharedFramework.Sdk" />
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props"
+  <Import Project="$(WasmPInvokeModulesPropsPath)"
           Condition="'$(TargetOS)' == 'browser'" />
 
   <PropertyGroup>

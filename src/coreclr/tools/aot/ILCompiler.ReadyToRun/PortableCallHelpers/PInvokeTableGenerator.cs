@@ -10,6 +10,7 @@ using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.PortableCallHelpers
 {
@@ -32,7 +33,7 @@ namespace ILCompiler.PortableCallHelpers
             var linkedModules = new HashSet<string>(StringComparer.Ordinal);
             foreach (string module in pinvokeModules)
             {
-                foreach (string variation in TypeExtensions.GetPInvokeModuleNameVariations(target, module))
+                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, module))
                 {
                     linkedModules.Add(variation);
                 }
@@ -44,7 +45,7 @@ namespace ILCompiler.PortableCallHelpers
                     continue;
 
                 bool isLinked = false;
-                foreach (string variation in TypeExtensions.GetPInvokeModuleNameVariations(target, pinvoke.Module))
+                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, pinvoke.Module))
                 {
                     if (linkedModules.Contains(variation))
                     {
