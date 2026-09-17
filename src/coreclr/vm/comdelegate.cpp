@@ -851,41 +851,6 @@ static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
 }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-static MethodDesc* CreateILClosedStaticRetBufDelegateThunk(
-    MethodDesc* pTargetMD,
-    MethodDesc* pDelegateInvoke,
-    MethodDesc* pStubOwner)
-{
-    SigTypeContext typeContext(pDelegateInvoke);
-    MetaSig delegateSig(pDelegateInvoke);
-    MetaSig targetSig(pTargetMD);
-    _ASSERTE(delegateSig.HasThis());
-    _ASSERTE(pTargetMD->IsStatic());
-    _ASSERTE(targetSig.NumFixedArgs() == delegateSig.NumFixedArgs() + 1);
-    _ASSERTE(!delegateSig.IsReturnTypeVoid());
-
-    Module* pModule = delegateSig.GetModule();
-    Signature signature = pDelegateInvoke->GetSignature();
-    ILStubLinkerFlags flags = ILSTUB_LINKER_FLAG_STUB_HAS_THIS;
-    ILStubLinker stubLinker(pModule, signature, &typeContext, pDelegateInvoke, flags);
-    ILCodeStream* pCode = stubLinker.NewCodeStream(ILStubLinker::kDispatch);
-
-    pCode->EmitLoadThis();
-    for (unsigned i = 0; i < delegateSig.NumFixedArgs(); i++)
-        pCode->EmitLDARG(i);
-    pCode->EmitCALL(pCode->GetToken(pTargetMD), targetSig.NumFixedArgs(), 1);
-    pCode->EmitRET();
-
-    Module* pLoaderModule = pStubOwner->GetLoaderModule();
-    MethodTable* pStubMT = pLoaderModule->GetILStubCache()->GetOrCreateStubMethodTable(pLoaderModule);
-    MethodDesc* pStubMD = ILStubCache::CreateAndLinkNewILStubMethodDesc(
-        pStubMT->GetLoaderAllocator(), pStubMT, ILSTUB_CLOSED_STATIC_RETBUF,
-        pModule, signature.GetRawSig(), signature.GetRawSigLen(), &typeContext, &stubLinker);
-    pStubMD->AsDynamicMethodDesc()->GetILStubResolver()->SetStubTargetMethodDesc(pTargetMD);
-
-    return pStubMD;
-}
-
 static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke)
 {
     STANDARD_VM_CONTRACT;
@@ -894,7 +859,6 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
     LoaderAllocator* pDelegateLoaderAllocator = pDelegateInvoke->GetLoaderAllocator();
     LoaderAllocator* pStubLoaderAllocator =
         pDelegateLoaderAllocator->IsCollectible() ? pDelegateLoaderAllocator : pTargetLoaderAllocator;
-    MethodDesc* pStubOwner = pStubLoaderAllocator == pDelegateLoaderAllocator ? pDelegateInvoke : pTargetMD;
 
     if (pStubLoaderAllocator->IsCollectible() &&
         pTargetLoaderAllocator != pDelegateLoaderAllocator &&
@@ -908,17 +872,13 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
     if (pStub != (PCODE)NULL)
         return pStub;
 
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode();
     void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
     if (thunk == NULL)
     {
-        MethodDesc* pStubMD = CreateILClosedStaticRetBufDelegateThunk(pTargetMD, pDelegateInvoke, pStubOwner);
-        if (pStubMD == nullptr)
-            COMPlusThrowOM();
-
-        return pFuncPtrStubs->AddClosedStaticRetBufStub(
-            pTargetMD,
-            pDelegateInvoke,
-            pStubMD->GetMultiCallableAddrOfCode());
+        // A missing thunk means there is no R2R caller for this signature. Interpreted delegate
+        // invocation calls the target MethodDesc directly and handles the closed-static shape inline.
+        return pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, targetEntryPoint);
     }
 
     AllocMemTracker amt;
@@ -926,7 +886,7 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
         reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
             amt.Track(pStubLoaderAllocator->GetHighFrequencyHeap()->AllocMem(
                 S_SIZE_T(sizeof(ClosedStaticRetBufPortableEntryPoint)))));
-    pNewStub->Init(pTargetMD, pTargetMD->GetMultiCallableAddrOfCode(), thunk);
+    pNewStub->Init(pTargetMD, targetEntryPoint, thunk);
 
     PCODE pNewEntryPoint = (PCODE)pNewStub->GetEntryPoint();
     PCODE pResult = pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, pNewEntryPoint);
