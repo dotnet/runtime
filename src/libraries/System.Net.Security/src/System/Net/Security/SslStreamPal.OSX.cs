@@ -359,6 +359,16 @@ namespace System.Net.Security
             ProtocolToken token = default;
             consumed = 0;
 
+            if (context is SafeDeleteNwContext)
+            {
+                // The only path that reaches here with a Network Framework context is the shutdown
+                // token, and ApplyShutdownToken has already cancelled the connection, which makes
+                // Network Framework emit close_notify itself. There is no token for SslStream to
+                // send, so report success rather than falling into the SecureTransport path.
+                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                return token;
+            }
+
             try
             {
                 if ((null == context) || context.IsInvalid)
