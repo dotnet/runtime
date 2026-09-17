@@ -13233,11 +13233,17 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     }
 
     PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
-    PrepareCodeConfig::JitOptimizationTier optimizationTier =
-        PrepareCodeConfig::GetJitOptimizationTier(config, m_pMethodBeingCompiled);
+    _ASSERTE(config != nullptr);
+
+    // The JIT may change the requested optimization level before allocMem, but
+    // the VM updates the NativeCodeVersion's tier only after the JIT completes.
+    // Use the requested tier here and account for a switch to MinOpt separately.
+    NativeCodeVersion::OptimizationTier optimizationTier =
+        config->GetCodeVersion().GetOptimizationTier();
     bool isTier1Code =
-        optimizationTier == PrepareCodeConfig::JitOptimizationTier::OptimizedTier1 ||
-        optimizationTier == PrepareCodeConfig::JitOptimizationTier::OptimizedTier1OSR;
+        !config->JitSwitchedToMinOpt() &&
+        (optimizationTier == NativeCodeVersion::OptimizationTier1 ||
+         optimizationTier == NativeCodeVersion::OptimizationTier1OSR);
 
     m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, isTier1Code, &m_CodeHeader,
         &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
