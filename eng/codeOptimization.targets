@@ -16,8 +16,8 @@
     <_MibcConfiguration Condition="'$(CoreCLRConfiguration)' == ''">$(Configuration)</_MibcConfiguration>
     <_MibcConfiguration Condition="'$(CoreCLRConfiguration)' != ''">$(CoreCLRConfiguration)</_MibcConfiguration>
     <UseMibcProjectReference Condition="'$(UseMibcProjectReference)' == '' and
-                                        '$(PublishReadyToRun)' == 'true' and
-                                        '$(DotNetBuildSourceOnly)' != 'true'">true</UseMibcProjectReference>
+                                        '$(DotNetBuildSourceOnly)' != 'true' and
+                                        ('$(PublishReadyToRun)' == 'true' or '$(BuildNativeAOTRuntimePack)' == 'true')">true</UseMibcProjectReference>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseMibcProjectReference)' == 'true'">

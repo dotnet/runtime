@@ -58,7 +58,8 @@
           BeforeTargets="AddRuntimeFilesToPackage"
           DependsOnTargets="ResolveProjectReferences">
     <ItemGroup>
-      <RuntimeFiles Include="@(_RuntimeCoreLibFile)" />
+      <RuntimeFiles Include="@(_RuntimeCoreLibFile)"
+                    IsNative="true" />
     </ItemGroup>
   </Target>
 
