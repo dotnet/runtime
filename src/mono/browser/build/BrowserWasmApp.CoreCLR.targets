@@ -197,11 +197,14 @@
       <_WasmReadyToRunPInvokeModuleCandidate Include="%(_WasmReadyToRunNativeLibrary.FileName)"
                                      Condition="'$(WasmBuildNative)' != 'false' and
                                                 '%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
-      <!-- Direct P/Invoke matches configured names exactly, so libFoo must contribute both
-           its archive-derived name and the managed Foo variation. -->
-      <_WasmReadyToRunPInvokeModule Include="@(_WasmReadyToRunPInvokeModuleCandidate)" />
+      <!-- Convert the physical libFoo archive name to the logical Foo module name, mirroring
+           the compiler's platform-name variation. Keep the degenerate exact name "lib". -->
+      <_WasmReadyToRunPInvokeModule Include="@(_WasmReadyToRunPInvokeModuleCandidate)"
+                                     Condition="!$([System.String]::Copy('%(_WasmReadyToRunPInvokeModuleCandidate.Identity)').StartsWith('lib', StringComparison.Ordinal)) or
+                                                '%(_WasmReadyToRunPInvokeModuleCandidate.Identity)' == 'lib'" />
       <_WasmReadyToRunPInvokeModule Include="$([System.String]::Copy('%(_WasmReadyToRunPInvokeModuleCandidate.Identity)').Substring(3))"
-                                     Condition="$([System.String]::Copy('%(_WasmReadyToRunPInvokeModuleCandidate.Identity)').StartsWith('lib', StringComparison.Ordinal))" />
+                                     Condition="$([System.String]::Copy('%(_WasmReadyToRunPInvokeModuleCandidate.Identity)').StartsWith('lib', StringComparison.Ordinal)) and
+                                                '%(_WasmReadyToRunPInvokeModuleCandidate.Identity)' != 'lib'" />
       <_WasmReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
       <_WasmReadyToRunPInvokeModule Remove="System.Globalization.Native"
                                      Condition="'$(InvariantGlobalization)' == 'true'" />
