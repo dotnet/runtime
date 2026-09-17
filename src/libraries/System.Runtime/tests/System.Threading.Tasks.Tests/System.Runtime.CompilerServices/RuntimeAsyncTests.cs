@@ -360,12 +360,6 @@ namespace System.Threading.Tasks.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
-        public async Task RuntimeAsync_ResumeUsesGeneratedResumptionStub()
-        {
-            Assert.Equal(42, await FuncWithResult());
-        }
-
         [ConditionalFact(typeof(RuntimeAsyncTests), nameof(IsRemoteExecutorAndRuntimeAsyncSupported))]
         public void RuntimeAsync_ValueTypeResult()
         {

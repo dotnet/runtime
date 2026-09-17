@@ -14813,9 +14813,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             pBlob += sizeof(DWORD);
 
 #ifdef TARGET_WASM
-            // Wasm code is a function-table index, not imageBase+RVA; resolve it the same way as
-            // READYTORUN_FIXUP_ResumptionStubEntryPoint, which registered this exact entry point.
-            PCODE targetEntryPoint = pR2RInfo->GetMinFunctionTableIndex() + targetRVA;
+            // Wasm code is a function-table index, not imageBase+RVA; but what we actually need is the virtual ip
+            PCODE targetEntryPoint = pR2RInfo->R2RRelativeFunctionIndexToVirtualIP(targetRVA);
 #else
             PCODE targetEntryPoint = dac_cast<TADDR>(pR2RInfo->GetImage()->GetBase()) + targetRVA;
 #endif // TARGET_WASM
