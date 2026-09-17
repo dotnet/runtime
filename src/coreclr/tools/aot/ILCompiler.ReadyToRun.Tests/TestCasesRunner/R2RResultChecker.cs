@@ -880,6 +880,7 @@ internal static class R2RAssert
     {
         var failures = new List<string>();
         int checkedMethodCount = 0;
+        int checkedStoreMultiCount = 0;
 
         foreach (ReadyToRunMethod method in GetAllMethods(reader))
         {
@@ -896,6 +897,7 @@ internal static class R2RAssert
                     continue;
 
                 foundResumptionStub |= kind == ReadyToRunFixupKind.ResumptionStubEntryPoint;
+                checkedStoreMultiCount += kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode ? 1 : 0;
                 int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
                 uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
                 uint expectedIndex = checked((uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
@@ -917,10 +919,52 @@ internal static class R2RAssert
             return false;
         }
 
+        if (checkedStoreMultiCount == 0)
+        {
+            diagnostic = "No StoreMultiCallableAddrOfCode fixups were found.";
+            return false;
+        }
+
+        if (!HasWasmVirtualDispatchThunk(reader))
+        {
+            diagnostic = "No virtual-dispatch thunk was found.";
+            return false;
+        }
+
         diagnostic = failures.Count == 0
-            ? $"Found {checkedMethodCount} async method(s) whose resume targets match RuntimeFunctions ordering."
+            ? $"Found {checkedMethodCount} async method(s) and {checkedStoreMultiCount} StoreMultiCallableAddrOfCode fixup(s) whose resume targets match RuntimeFunctions ordering in an image containing a virtual-dispatch thunk."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
+    }
+
+    private static bool HasWasmVirtualDispatchThunk(ReadyToRunReader reader)
+    {
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if (section.Entries is null)
+                continue;
+
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                if (entry.Signature?.FixupKind != ReadyToRunFixupKind.InjectStringThunks)
+                    continue;
+
+                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                while (reader.Image[offset] != 0)
+                {
+                    int terminator = reader.Image.AsSpan(offset).IndexOf((byte)0);
+                    if (terminator < 0)
+                        return false;
+
+                    if (reader.Image[offset] == (byte)'V')
+                        return true;
+
+                    offset += terminator + 1 + sizeof(uint);
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
