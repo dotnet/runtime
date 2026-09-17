@@ -13232,6 +13232,8 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
     }
 
+    bool isTier1Code = false;
+#ifdef FEATURE_TIERED_COMPILATION
     PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
     _ASSERTE(config != nullptr);
 
@@ -13240,10 +13242,11 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
     // Use the requested tier here and account for a switch to MinOpt separately.
     NativeCodeVersion::OptimizationTier optimizationTier =
         config->GetCodeVersion().GetOptimizationTier();
-    bool isTier1Code =
+    isTier1Code =
         !config->JitSwitchedToMinOpt() &&
         (optimizationTier == NativeCodeVersion::OptimizationTier1 ||
          optimizationTier == NativeCodeVersion::OptimizationTier1OSR);
+#endif // FEATURE_TIERED_COMPILATION
 
     m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, isTier1Code, &m_CodeHeader,
         &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
