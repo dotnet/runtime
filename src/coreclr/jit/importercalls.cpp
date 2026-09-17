@@ -3693,6 +3693,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_TypeHandle:
             case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_RuntimeTypeHandle_ToIntPtr:
+            case NI_System_Buffer_Memmove:
 
             // This one is not simple, but it will help us
             // to avoid some unnecessary boxing
@@ -5517,6 +5518,57 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
+                break;
+            }
+
+            case NI_System_Buffer_Memmove:
+            {
+                if (sig->sigInst.methInstCount != 1)
+                {
+                    break;
+                }
+
+                const CorInfoType primitiveType =
+                    info.compCompHnd->getTypeForPrimitiveValueClass(sig->sigInst.methInst[0]);
+                if (primitiveType == CORINFO_TYPE_UNDEF)
+                {
+                    break;
+                }
+
+                const var_types elementType = JITtype2varType(primitiveType);
+                if (!varTypeIsArithmetic(elementType))
+                {
+                    break;
+                }
+
+                CORINFO_METHOD_HANDLE memmoveHnd = NO_METHOD_HANDLE;
+                info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMCPY, nullptr, &memmoveHnd);
+                if (memmoveHnd == NO_METHOD_HANDLE)
+                {
+                    break;
+                }
+
+                assert(sig->numArgs == 3);
+                assert(sig->retType == CORINFO_TYPE_VOID);
+
+                GenTree*       length      = impImplicitIorI4Cast(impPopStack().val, TYP_I_IMPL, /* zeroExtend */ true);
+                GenTree*       source      = impPopStack().val;
+                GenTree*       destination = impPopStack().val;
+                const unsigned elementSize = genTypeSize(elementType);
+                if (elementSize != 1)
+                {
+                    length =
+                        gtFoldExpr(gtNewOperNode(GT_MUL, TYP_I_IMPL, length, gtNewIconNode(elementSize, TYP_I_IMPL)));
+                }
+
+                // Keep the byte-length probe at this call site, rather than inside the generic wrapper.
+                GenTreeCall* memmove = gtNewUserCallNode(memmoveHnd, TYP_VOID, impCurStmtDI);
+                memmove->gtArgs.PushBack(this, NewCallArg::Primitive(destination));
+                memmove->gtArgs.PushBack(this, NewCallArg::Primitive(source));
+                memmove->gtArgs.PushBack(this, NewCallArg::Primitive(length));
+                memmove->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+                gtUpdateNodeSideEffects(memmove);
+                retNode = memmove;
                 break;
             }
 
@@ -11746,6 +11798,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "UInt64BitsToDouble") == 0)
                         {
                             result = NI_System_BitConverter_Int64BitsToDouble;
+                        }
+                    }
+                    else if (strcmp(className, "Buffer") == 0)
+                    {
+                        if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_Buffer_Memmove;
                         }
                     }
                     break;
