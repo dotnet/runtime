@@ -437,7 +437,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string args = string.Join(", ", ctorArgList);
                 return type.ConstructionRequiresAccessor
-                    ? $"{UnsafeAccessorEmitter.GetConstructorAccessorName(type.IdentifierCompatibleSubstring)}({args})"
+                    ? $"{UnsafeAccessorEmitter.GetQualifiedConstructorAccessorName(type.ConstructorCanUseUnsafeAccessor, type.DeclaringTypeParameterNames, type.TypeRef.FullyQualifiedName, type.IdentifierCompatibleSubstring)}({args})"
                     : $"new {type.TypeRef.FullyQualifiedName}({args})";
             }
 
@@ -448,6 +448,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static string GetInitOnlySetterAccessorName(ObjectSpec type, PropertySpec property) =>
                 UnsafeAccessorEmitter.GetQualifiedAccessorName(
                     property.DeclaringTypeParameterNames,
+                    property.DeclaringTypeIndex,
                     (property.AccessorDeclaringTypeRef ?? type.TypeRef).FullyQualifiedName,
                     type.IdentifierCompatibleSubstring,
                     accessorKind: "set",
@@ -560,17 +561,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         {
                             TypeFQN = parameter.TypeRef.FullyQualifiedName,
                             Index = index++,
+                            RefKind = parameter.RefKind,
+                            OpenTypeFQN = parameter.OpenTypeFQN,
                         });
                     }
                 }
 
                 _writer.WriteLine();
-                UnsafeAccessorEmitter.EmitConstructorAccessor(_writer, new UnsafeAccessorEmitter.UnsafeAccessorConstructorSpec
+                UnsafeAccessorEmitter.EmitConstructorAccessor(_writer, _useUpdatedMemorySafetyRules, new UnsafeAccessorEmitter.UnsafeAccessorConstructorSpec
                 {
                     TypeFriendlyName = type.IdentifierCompatibleSubstring,
                     TypeFQN = type.TypeRef.FullyQualifiedName,
                     CanUseUnsafeAccessor = type.ConstructorCanUseUnsafeAccessor,
                     Parameters = parameters.ToImmutableEquatableArray(),
+                    DeclaringTypeParameterNames = type.DeclaringTypeParameterNames,
+                    OpenDeclaringTypeFQN = type.OpenTypeFQN,
+                    DeclaringTypeParameterConstraintClauses = type.DeclaringTypeParameterConstraintClauses,
                 });
             }
 
@@ -588,6 +594,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         CanUseUnsafeAccessors = property.SetterCanUseUnsafeAccessor,
                         DeclaringTypeFQN = (property.AccessorDeclaringTypeRef ?? type.TypeRef).FullyQualifiedName,
                         MemberTypeFQN = property.TypeRef.FullyQualifiedName,
+                        DeclaringTypeIndex = property.DeclaringTypeIndex,
                         DeclaringTypeParameterNames = property.DeclaringTypeParameterNames,
                         OpenDeclaringTypeFQN = property.OpenDeclaringTypeFQN,
                         OpenMemberTypeFQN = property.OpenPropertyTypeFQN,
@@ -595,7 +602,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     });
                 }
 
-                return UnsafeAccessorEmitter.EmitMemberAccessors(_writer, type.IdentifierCompatibleSubstring, type.IsValueType, memberSpecs);
+                return UnsafeAccessorEmitter.EmitMemberAccessors(_writer, type.IdentifierCompatibleSubstring, type.IsValueType, _useUpdatedMemorySafetyRules, memberSpecs);
             }
 
             private void EmitHelperMethods()

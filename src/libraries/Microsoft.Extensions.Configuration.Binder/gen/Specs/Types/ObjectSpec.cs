@@ -31,11 +31,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         /// <summary>
         /// Whether the constructor accessor for this type can use <c>[UnsafeAccessor(Constructor)]</c>. Requires the
-        /// framework to support <c>[UnsafeAccessor]</c> (.NET 8+) and the type to be non-generic (a flat constructor
-        /// accessor cannot target a closed generic type; those fall back to reflection). When <see langword="false"/>
-        /// the constructor accessor uses a cached <see cref="System.Reflection.ConstructorInfo"/>.
+        /// framework to support <c>[UnsafeAccessor]</c> (.NET 8+); a generic type additionally requires generic
+        /// <c>[UnsafeAccessor]</c> support (.NET 9+) and that it is not nested in a generic type, in which case the extern
+        /// is emitted inside a generic wrapper class. When <see langword="false"/> the constructor accessor uses a cached
+        /// <see cref="System.Reflection.ConstructorInfo"/>.
         /// </summary>
         public bool ConstructorCanUseUnsafeAccessor { get; init; }
+
+        /// <summary>Type-parameter names of the type when a generic constructor-accessor wrapper class is used (.NET 9+), otherwise <see langword="null"/>.</summary>
+        public ImmutableEquatableArray<string>? DeclaringTypeParameterNames { get; init; }
+        public string? OpenTypeFQN { get; init; }
+        public string? DeclaringTypeParameterConstraintClauses { get; init; }
 
         /// <summary>
         /// Whether the type has required members that are not satisfied by a <c>[SetsRequiredMembers]</c> constructor, so

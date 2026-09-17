@@ -14,5 +14,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public required bool EmitGenericParseEnum { get; set; }
         public required bool EmitNotNullIfNotNull { get; set; }
         public required bool EmitThrowIfNullMethod { get; set; }
+
+        /// <summary>
+        /// Whether the compilation uses the updated memory-safety rules, under which <c>[UnsafeAccessor]</c> externs must
+        /// be marked <c>safe</c>. Threaded to the shared accessor emitter so it emits the correct modifier.
+        /// </summary>
+        public required bool UseUpdatedMemorySafetyRules { get; init; }
     }
 }

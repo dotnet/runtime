@@ -58,8 +58,32 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitEnumParseMethod = _emitEnumParseMethod,
                     EmitGenericParseEnum = _emitGenericParseEnum,
                     EmitNotNullIfNotNull = _typeSymbols.NotNullIfNotNullAttribute is not null,
-                    EmitThrowIfNullMethod = IsThrowIfNullMethodToBeEmitted()
+                    EmitThrowIfNullMethod = IsThrowIfNullMethodToBeEmitted(),
+                    UseUpdatedMemorySafetyRules = UsesUpdatedMemorySafetyRules(_typeSymbols.Compilation),
                 };
+            }
+
+            // OverloadResolutionPriorityAttribute-era compilers expose the memory-safety rules version on the module; the
+            // enum-valued API is unavailable in older Roslyn hosts, so it is bound through its underlying int type.
+            private static readonly Func<IModuleSymbol, int>? s_memorySafetyRulesVersionAccessor = CreateMemorySafetyRulesVersionAccessor();
+
+            private static Func<IModuleSymbol, int>? CreateMemorySafetyRulesVersionAccessor()
+            {
+                System.Reflection.MethodInfo? getter = typeof(IModuleSymbol).GetProperty("MemorySafetyRulesVersion")?.GetMethod;
+                return getter is null
+                    ? null
+                    : (Func<IModuleSymbol, int>)getter.CreateDelegate(typeof(Func<IModuleSymbol, int>));
+            }
+
+            private static bool UsesUpdatedMemorySafetyRules(Compilation compilation)
+            {
+                const int UpdatedMemorySafetyRulesVersion = 2;
+
+                // The module API includes both the compilation option and the legacy feature flag.
+                // Older compiler hosts expose only the temporary feature-flag opt-in.
+                return s_memorySafetyRulesVersionAccessor is { } getVersion
+                    ? getVersion(compilation.SourceModule) >= UpdatedMemorySafetyRulesVersion
+                    : compilation.SyntaxTrees.FirstOrDefault()?.Options.Features.ContainsKey("updated-memory-safety-rules") is true;
             }
 
             private bool IsValidRootConfigType([NotNullWhen(true)] ITypeSymbol? type)
@@ -735,8 +759,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 bool hasRequiredMember = false;
 
                 INamedTypeSymbol? current = typeSymbol;
+                int declaringTypeIndex = -1;
                 while (current is not null)
                 {
+                    declaringTypeIndex++;
                     ImmutableArray<ISymbol> members = current.GetMembers();
                     foreach (ISymbol member in members)
                     {
@@ -787,6 +813,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 OpenDeclaringTypeFQN = genericInfo.OpenDeclaringTypeFQN,
                                 OpenPropertyTypeFQN = genericInfo.OpenMemberTypeFQN,
                                 DeclaringTypeParameterConstraintClauses = genericInfo.ConstraintClauses,
+                                DeclaringTypeIndex = declaringTypeIndex,
                             };
 
                             if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
@@ -822,9 +849,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         }
                         else
                         {
+                            // For a generic type using a constructor-accessor wrapper, the parameter type inside the
+                            // wrapper is expressed with open type parameters; capture it when it differs from the closed form.
+                            string? openParameterTypeFQN = typeSymbol.IsGenericType &&
+                                !SymbolEqualityComparer.Default.Equals(parameter.Type, parameter.OriginalDefinition.Type)
+                                ? parameter.OriginalDefinition.Type.GetFullyQualifiedName() : null;
+
                             ParameterSpec paramSpec = new ParameterSpec(parameter, propertySpec.TypeRef)
                             {
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
+                                OpenTypeFQN = openParameterTypeFQN,
                             };
 
                             propertySpec.MatchingCtorParam = paramSpec;
@@ -864,10 +898,24 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     initializationStrategy is ObjectInstantiationStrategy.ParameterlessConstructor && !hasExplicitParameterlessCtor;
                 bool constructionRequiresAccessor = needsRequiredMemberBypass && !constructValueTypeWithDefault;
 
-                // [UnsafeAccessor] is available on .NET 8+. It is used for init-only setters (via a generic wrapper class
-                // for generic types on .NET 9+) and, for non-generic types, the constructor accessor. Downlevel
-                // frameworks (and generic types for the constructor accessor) fall back to reflection.
-                bool constructorCanUseUnsafeAccessor = _typeSymbols.UnsafeAccessorAttribute is not null && !typeSymbol.IsGenericType;
+                // [UnsafeAccessor] is available on .NET 8+. It is used for init-only setters and the constructor accessor.
+                // A generic type additionally requires generic [UnsafeAccessor] support (.NET 9+) and must not be nested
+                // in a generic type; when used, the constructor extern is emitted inside a generic wrapper class.
+                // Downlevel frameworks (and unsupported generic shapes) fall back to reflection.
+                bool typeIsGeneric = typeSymbol.IsGenericType;
+                bool constructorCanUseUnsafeAccessor = _typeSymbols.UnsafeAccessorAttribute is not null &&
+                    (!typeIsGeneric || (_typeSymbols.SupportsGenericUnsafeAccessors && typeSymbol.ContainingType is not { IsGenericType: true }));
+
+                ImmutableEquatableArray<string>? ctorTypeParameterNames = null;
+                string? ctorOpenTypeFQN = null;
+                string? ctorConstraintClauses = null;
+                if (constructorCanUseUnsafeAccessor && typeIsGeneric)
+                {
+                    INamedTypeSymbol definition = typeSymbol.OriginalDefinition;
+                    ctorTypeParameterNames = definition.TypeParameters.Select(static tp => tp.Name).ToImmutableEquatableArray();
+                    ctorOpenTypeFQN = definition.GetFullyQualifiedName();
+                    ctorConstraintClauses = GetTypeParameterConstraintClauses(definition);
+                }
 
                 return new ObjectSpec(
                     typeSymbol,
@@ -879,6 +927,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ConstructorCanUseUnsafeAccessor = constructorCanUseUnsafeAccessor,
                     ConstructionRequiresAccessor = constructionRequiresAccessor,
                     ConstructValueTypeWithDefault = constructValueTypeWithDefault,
+                    DeclaringTypeParameterNames = ctorTypeParameterNames,
+                    OpenTypeFQN = ctorOpenTypeFQN,
+                    DeclaringTypeParameterConstraintClauses = ctorConstraintClauses,
                 };
             }
 

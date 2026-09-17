@@ -2197,6 +2197,22 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(42, result.FromCtor);
             Assert.Equal(7, result.Req);
         }
+
+        /// <summary>
+        /// A generic type with a required init-only member is constructed through an accessor that bypasses the
+        /// required-member check, then the member is set post-construction. On frameworks with generic
+        /// <c>[UnsafeAccessor]</c> support the constructor and setter accessors are emitted inside a generic wrapper
+        /// class; otherwise the reflection fallback is used. Both must bind the member, matching the reflection binder.
+        /// </summary>
+        [Fact]
+        public void CanBind_GenericTypeWithRequiredInitMember()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "hello" }""");
+
+            GenericRequiredInitProperty<string> result = config.Get<GenericRequiredInitProperty<string>>();
+
+            Assert.Equal("hello", result.Value);
+        }
 #endif
 
         /// <summary>

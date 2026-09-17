@@ -67,5 +67,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public string? OpenDeclaringTypeFQN { get; init; }
         public string? OpenPropertyTypeFQN { get; init; }
         public string? DeclaringTypeParameterConstraintClauses { get; init; }
+
+        /// <summary>
+        /// The zero-based position of the property's declaring type in the bound type's inheritance hierarchy (the bound
+        /// type itself is 0, its base 1, and so on). Disambiguates the generic setter-accessor wrapper class between
+        /// members inherited from different generic base types.
+        /// </summary>
+        public int DeclaringTypeIndex { get; init; }
     }
 }

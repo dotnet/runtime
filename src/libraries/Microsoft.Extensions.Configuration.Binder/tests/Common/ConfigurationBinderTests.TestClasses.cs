@@ -391,6 +391,11 @@ namespace Microsoft.Extensions
             public StructWithExplicitParameterlessCtorAndRequiredMember() { FromCtor = 42; }
             public required int Req { get; set; }
         }
+
+        public sealed class GenericRequiredInitProperty<T>
+        {
+            public required T Value { get; init; }
+        }
 #endif
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
