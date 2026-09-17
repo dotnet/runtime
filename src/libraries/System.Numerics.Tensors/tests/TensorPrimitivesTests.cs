@@ -1825,6 +1825,27 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => Max(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
+
+        // The same multi-block coverage as Min_LongLengths_* for the other reductions that share the block-reduction core.
+        [Fact]
+        public void Max_LongLengths() =>
+            AssertMinMaxLongLengths(Max, Max);
+
+        [Fact]
+        public void Max_LongLengths_MaximumAtBlockBoundaries() =>
+            AssertMinMaxLongLengthsValues(Max, fill: ConvertFromSingle(1), best: ConvertFromSingle(2));
+
+        [Fact]
+        public void Max_LongLengths_FirstNaNReturned() =>
+            AssertMinMaxLongLengthsFirstNaN(Max, fill: ConvertFromSingle(1), better: ConvertFromSingle(2)); // a larger value in an earlier block must not beat the NaN
+
+        [Fact]
+        public void Max_LongLengths_Positive0GreaterThanNegative0() =>
+            AssertMinMaxLongLengthsValues(Max, fill: NegativeZero, best: Zero);
+
+        [Fact]
+        public void Max_LongLengths_AllZero() =>
+            AssertMinMaxLongLengthsAllZero(Max);
         #endregion
 
         #region MaxMagnitude
@@ -2010,6 +2031,32 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => MaxMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
+
+        [Fact]
+        public void MaxMagnitude_LongLengths() =>
+            AssertMinMaxLongLengths(MaxMagnitude, MaxMagnitude);
+
+        [Fact]
+        public void MaxMagnitude_LongLengths_MaximumAtBlockBoundaries()
+        {
+            AssertMinMaxLongLengthsValues(MaxMagnitude, fill: ConvertFromSingle(1), best: ConvertFromSingle(2));
+            if (HasNegativeValues)
+            {
+                AssertMinMaxLongLengthsValues(MaxMagnitude, fill: ConvertFromSingle(1), best: ConvertFromSingle(-2));
+            }
+        }
+
+        [Fact]
+        public void MaxMagnitude_LongLengths_FirstNaNReturned() =>
+            AssertMinMaxLongLengthsFirstNaN(MaxMagnitude, fill: ConvertFromSingle(1), better: ConvertFromSingle(-2));
+
+        [Fact]
+        public void MaxMagnitude_LongLengths_Positive0GreaterThanNegative0() =>
+            AssertMinMaxLongLengthsValues(MaxMagnitude, fill: NegativeZero, best: Zero);
+
+        [Fact]
+        public void MaxMagnitude_LongLengths_AllZero() =>
+            AssertMinMaxLongLengthsAllZero(MaxMagnitude);
         #endregion
 
         #region Min
@@ -2195,6 +2242,137 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => Min(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
+
+        // Lengths that span several blocks of the block reduction behind Min/Max/MinMagnitude/MaxMagnitude/MinNumber/MaxNumber
+        // (Helpers.TensorLengths stops at 256).
+        protected static readonly int[] s_minMaxLongLengths = [255, 256, 257, 511, 512, 513, 1023, 1024, 1025, 2047, 2048, 2049, 4097, 65539];
+
+        protected static IEnumerable<int> MinMaxLongPositions(int tensorLength) =>
+            new[] { 0, 1, 15, 16, 17, 255, 256, 257, 511, 512, 513, tensorLength / 2, tensorLength - 2, tensorLength - 1 }.Where(i => i < tensorLength).Distinct();
+
+        protected delegate T MinMaxReduction(ReadOnlySpan<T> x);
+
+        /// <summary>Whether <typeparamref name="T"/> represents -1 (the magnitude tests place a negative value only then).</summary>
+        protected bool HasNegativeValues => !ConvertFromSingle(-1).Equals(Zero) && Min(ConvertFromSingle(-1), Zero).Equals(ConvertFromSingle(-1));
+
+        /// <summary>A NaN whose payload identifies it, so that a test can tell which NaN of the input was returned.</summary>
+        protected T NaNWithPayload(int payload) => ConvertFromSingle(BitConverter.Int32BitsToSingle(0x7FC00000 | payload));
+
+        /// <summary>Asserts bit-for-bit equality, which unlike <see cref="Assert.Equal{T}(T, T)"/> tells -0 from +0 and one NaN payload from another.</summary>
+        protected static void AssertEqualBits(T expected, T actual)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                Assert.Equal(BitConverter.SingleToInt32Bits((float)(object)expected), BitConverter.SingleToInt32Bits((float)(object)actual));
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                Assert.Equal(BitConverter.DoubleToInt64Bits((double)(object)expected), BitConverter.DoubleToInt64Bits((double)(object)actual));
+            }
+            else if (typeof(T) == typeof(Half))
+            {
+                Assert.Equal(BitConverter.HalfToInt16Bits((Half)(object)expected), BitConverter.HalfToInt16Bits((Half)(object)actual));
+            }
+            else
+            {
+                Assert.Equal(expected, actual);
+            }
+        }
+
+        /// <summary>The reduction of random data of every long length must equal the scalar fold with the operator.</summary>
+        protected void AssertMinMaxLongLengths(MinMaxReduction reduction, Func<T, T, T> scalar)
+        {
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+                T expected = x[0];
+                for (int i = 1; i < tensorLength; i++)
+                {
+                    expected = scalar(expected, x[i]);
+                }
+
+                AssertEqualBits(expected, reduction(x.Span));
+            });
+        }
+
+        /// <summary>Fills with <paramref name="fill"/> and places <paramref name="best"/> at each block-boundary position; the reduction must return <paramref name="best"/> bit for bit.</summary>
+        protected void AssertMinMaxLongLengthsValues(MinMaxReduction reduction, T fill, T best)
+        {
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                foreach (int position in MinMaxLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(fill);
+                    x[position] = best;
+                    AssertEqualBits(best, reduction(x.Span));
+                }
+            });
+        }
+
+        /// <summary>
+        /// A NaN at any block-boundary position must be returned although a better value sits in an earlier block and a second NaN at the end;
+        /// for float and double it must be that first NaN, payload included.
+        /// </summary>
+        protected void AssertMinMaxLongLengthsFirstNaN(MinMaxReduction reduction, T fill, T better)
+        {
+            if (!IsFloatingPoint) return;
+
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                foreach (int position in MinMaxLongPositions(tensorLength))
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(fill);
+                    x[0] = better;
+                    x[tensorLength - 1] = NaNWithPayload(2);
+                    x[position] = NaNWithPayload(1);
+
+                    T actual = reduction(x.Span);
+                    if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                    {
+                        AssertEqualBits(NaNWithPayload(1), actual);
+                    }
+                    else
+                    {
+                        Assert.Equal(ConvertFromSingle(float.NaN), actual);
+                    }
+                }
+            });
+        }
+
+        /// <summary>All +0 must reduce to +0 and all -0 to -0, bit for bit.</summary>
+        protected void AssertMinMaxLongLengthsAllZero(MinMaxReduction reduction)
+        {
+            Assert.All(s_minMaxLongLengths, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateTensor(tensorLength);
+                x.Span.Fill(Zero);
+                AssertEqualBits(Zero, reduction(x.Span));
+                x.Span.Fill(NegativeZero);
+                AssertEqualBits(NegativeZero, reduction(x.Span));
+            });
+        }
+
+        [Fact]
+        public void Min_LongLengths() =>
+            AssertMinMaxLongLengths(Min, Min);
+
+        [Fact]
+        public void Min_LongLengths_MinimumAtBlockBoundaries() =>
+            AssertMinMaxLongLengthsValues(Min, fill: ConvertFromSingle(2), best: ConvertFromSingle(1));
+
+        [Fact]
+        public void Min_LongLengths_FirstNaNReturned() =>
+            AssertMinMaxLongLengthsFirstNaN(Min, fill: ConvertFromSingle(1), better: ConvertFromSingle(-1)); // a smaller value in an earlier block must not beat the NaN
+
+        [Fact]
+        public void Min_LongLengths_Negative0LesserThanPositive0() =>
+            AssertMinMaxLongLengthsValues(Min, fill: Zero, best: NegativeZero);
+
+        [Fact]
+        public void Min_LongLengths_AllZero() =>
+            AssertMinMaxLongLengthsAllZero(Min);
         #endregion
 
         #region MinMagnitude
@@ -2378,6 +2556,32 @@ namespace System.Numerics.Tensors.Tests
             AssertExtensions.Throws<ArgumentException>("destination", () => MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(3, 2)));
             AssertExtensions.Throws<ArgumentException>("destination", () => MinMagnitude(array.AsSpan(1, 2), array.AsSpan(4, 2), array.AsSpan(5, 2)));
         }
+
+        [Fact]
+        public void MinMagnitude_LongLengths() =>
+            AssertMinMaxLongLengths(MinMagnitude, MinMagnitude);
+
+        [Fact]
+        public void MinMagnitude_LongLengths_MinimumAtBlockBoundaries()
+        {
+            AssertMinMaxLongLengthsValues(MinMagnitude, fill: ConvertFromSingle(2), best: ConvertFromSingle(1));
+            if (HasNegativeValues)
+            {
+                AssertMinMaxLongLengthsValues(MinMagnitude, fill: ConvertFromSingle(2), best: ConvertFromSingle(-1));
+            }
+        }
+
+        [Fact]
+        public void MinMagnitude_LongLengths_FirstNaNReturned() =>
+            AssertMinMaxLongLengthsFirstNaN(MinMagnitude, fill: ConvertFromSingle(2), better: ConvertFromSingle(-1));
+
+        [Fact]
+        public void MinMagnitude_LongLengths_Negative0LesserThanPositive0() =>
+            AssertMinMaxLongLengthsValues(MinMagnitude, fill: Zero, best: NegativeZero);
+
+        [Fact]
+        public void MinMagnitude_LongLengths_AllZero() =>
+            AssertMinMaxLongLengthsAllZero(MinMagnitude);
         #endregion
 
         #region Multiply

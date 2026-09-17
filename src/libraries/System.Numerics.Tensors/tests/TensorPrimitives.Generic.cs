@@ -3115,6 +3115,56 @@ namespace System.Numerics.Tensors.Tests
         }
         #endregion
 
+        #region MinNumber/MaxNumber
+        // The multi-block coverage of Min_LongLengths_* for the Number variants, which share the block-reduction core.
+        [Fact]
+        public void MinNumber_LongLengths() =>
+            AssertMinMaxLongLengths(TensorPrimitives.MinNumber, T.MinNumber);
+
+        [Fact]
+        public void MaxNumber_LongLengths() =>
+            AssertMinMaxLongLengths(TensorPrimitives.MaxNumber, T.MaxNumber);
+
+        [Fact]
+        public void MinNumber_LongLengths_MinimumAtBlockBoundaries() =>
+            AssertMinMaxLongLengthsValues(TensorPrimitives.MinNumber, fill: ConvertFromSingle(2), best: ConvertFromSingle(1));
+
+        [Fact]
+        public void MaxNumber_LongLengths_MaximumAtBlockBoundaries() =>
+            AssertMinMaxLongLengthsValues(TensorPrimitives.MaxNumber, fill: ConvertFromSingle(1), best: ConvertFromSingle(2));
+
+        [Fact]
+        public void MinNumber_LongLengths_Negative0LesserThanPositive0() =>
+            AssertMinMaxLongLengthsValues(TensorPrimitives.MinNumber, fill: Zero, best: NegativeZero);
+
+        [Fact]
+        public void MaxNumber_LongLengths_Positive0GreaterThanNegative0() =>
+            AssertMinMaxLongLengthsValues(TensorPrimitives.MaxNumber, fill: NegativeZero, best: Zero);
+
+        [Fact]
+        public void MinNumber_LongLengths_AllZero() =>
+            AssertMinMaxLongLengthsAllZero(TensorPrimitives.MinNumber);
+
+        [Fact]
+        public void MaxNumber_LongLengths_AllZero() =>
+            AssertMinMaxLongLengthsAllZero(TensorPrimitives.MaxNumber);
+
+        // The vectorized float/double paths return the first NaN of the input, as Min/Max do; this pins that behavior across block boundaries.
+        [Fact]
+        public void MinNumber_LongLengths_FirstNaNReturned()
+        {
+            if (typeof(T) != typeof(float) && typeof(T) != typeof(double)) return;
+            AssertMinMaxLongLengthsFirstNaN(TensorPrimitives.MinNumber, fill: ConvertFromSingle(1), better: ConvertFromSingle(-1));
+        }
+
+        [Fact]
+        public void MaxNumber_LongLengths_FirstNaNReturned()
+        {
+            if (typeof(T) != typeof(float) && typeof(T) != typeof(double)) return;
+            AssertMinMaxLongLengthsFirstNaN(TensorPrimitives.MaxNumber, fill: ConvertFromSingle(1), better: ConvertFromSingle(2));
+        }
+        #endregion
+
         #region IsXx
         public static IEnumerable<object[]> SpanDestinationIsFunctionsToTest()
         {
