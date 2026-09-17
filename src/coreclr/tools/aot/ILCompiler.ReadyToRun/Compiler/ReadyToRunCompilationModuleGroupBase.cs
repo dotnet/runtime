@@ -89,14 +89,7 @@ namespace ILCompiler
             _crossModuleInlineableModuleSet.UnionWith(_versionBubbleModuleSet);
 
             _compileGenericDependenciesFromVersionBubbleModuleSet = config.CompileGenericDependenciesFromVersionBubbleModuleSet;
-            _directPInvokeModules = new HashSet<string>(StringComparer.Ordinal);
-            foreach (string module in config.DirectPInvokeModules)
-            {
-                foreach (string variation in TypeExtensions.GetPInvokeModuleNameVariations(config.Context.Target, module))
-                {
-                    _directPInvokeModules.Add(variation);
-                }
-            }
+            _directPInvokeModules = new HashSet<string>(config.DirectPInvokeModules, StringComparer.Ordinal);
 
             _tokenResolver = new ModuleTokenResolver(this, config.Context);
 

@@ -186,27 +186,33 @@
       <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
       <_WasmReadyToRunNativeLibrary Remove="@(_WasmReadyToRunNativeLibrary)" />
       <_WasmReadyToRunNativeLibrary Include="@(NativeLibrary->Exists())" />
-      <_WasmReadyToRunPInvokeModule Include="%(NativeFileReference.FileName)"
+      <_WasmReadyToRunPInvokeModuleCandidate Remove="@(_WasmReadyToRunPInvokeModuleCandidate)" />
+      <_WasmReadyToRunPInvokeModuleCandidate Include="%(NativeFileReference.FileName)"
                                      Condition="'$(WasmBuildNative)' != 'false' and
                                                 '%(NativeFileReference.ScanForPInvokes)' != 'false' and
                                                 ('%(NativeFileReference.Extension)' == '.a' or
                                                  '%(NativeFileReference.Extension)' == '.o' or
                                                  '%(NativeFileReference.Extension)' == '.c' or
                                                  '%(NativeFileReference.Extension)' == '.cpp')" />
-      <_WasmReadyToRunPInvokeModule Include="%(_WasmReadyToRunNativeLibrary.FileName)"
+      <_WasmReadyToRunPInvokeModuleCandidate Include="%(_WasmReadyToRunNativeLibrary.FileName)"
                                      Condition="'$(WasmBuildNative)' != 'false' and
                                                 '%(_WasmReadyToRunNativeLibrary.ScanForPInvokes)' != 'false'" />
+      <!-- Direct P/Invoke matches configured names exactly, so libFoo must contribute both
+           its archive-derived name and the managed Foo variation. -->
+      <_WasmReadyToRunPInvokeModule Include="@(_WasmReadyToRunPInvokeModuleCandidate)" />
+      <_WasmReadyToRunPInvokeModule Include="$([System.String]::Copy('%(_WasmReadyToRunPInvokeModuleCandidate.Identity)').Substring(3))"
+                                     Condition="$([System.String]::Copy('%(_WasmReadyToRunPInvokeModuleCandidate.Identity)').StartsWith('lib', StringComparison.Ordinal))" />
       <_WasmReadyToRunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))" />
       <_WasmReadyToRunPInvokeModule Remove="System.Globalization.Native"
                                      Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasmReadyToRunPInvokeManifest>
-      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->Distinct()->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
     </PropertyGroup>
     <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
     <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
-                      Lines="@(_WasmReadyToRunPInvokeModule)"
+                      Lines="@(_WasmReadyToRunPInvokeModule->Distinct())"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>
