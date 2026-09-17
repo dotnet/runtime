@@ -108,11 +108,10 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
 
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnExportDecapsulationKeyCore = destination => destination.Fill(0x42),
-            })
-            {
+                hpke.OnExportDecapsulationKeyCore = destination => destination.Fill(0x42);
+
                 byte[] privateKey = hpke.ExportDecapsulationKey();
                 Assert.Equal(suite.DecapsulationKeySizeInBytes, privateKey.Length);
                 AssertExtensions.FilledWith<byte>(0x42, privateKey);
@@ -126,11 +125,10 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
 
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnExportEncapsulationKeyCore = destination => destination.Fill(0xE7),
-            })
-            {
+                hpke.OnExportEncapsulationKeyCore = destination => destination.Fill(0xE7);
+
                 byte[] publicKey = hpke.ExportEncapsulationKey();
                 Assert.Equal(suite.EncapsulationKeySizeInBytes, publicKey.Length);
                 AssertExtensions.FilledWith<byte>(0xE7, publicKey);
@@ -146,15 +144,14 @@ namespace System.Security.Cryptography.Tests
             byte[] privateBuffer = Filled(suite.DecapsulationKeySizeInBytes + 2, 0xA5);
             Memory<byte> privateKey = privateBuffer.AsMemory(1, suite.DecapsulationKeySizeInBytes);
 
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnExportDecapsulationKeyCore = destination =>
+                hpke.OnExportDecapsulationKeyCore = destination =>
                 {
                     AssertExtensions.Same(privateKey.Span, destination);
                     destination.Fill(0x42);
-                },
-            })
-            {
+                };
+
                 hpke.ExportDecapsulationKey(privateKey.Span);
                 AssertGuardedOutput(privateBuffer, 0x42);
                 Assert.Equal(1, hpke.ExportDecapsulationKeyCoreCount);
@@ -169,15 +166,14 @@ namespace System.Security.Cryptography.Tests
             byte[] publicBuffer = Filled(suite.EncapsulationKeySizeInBytes + 2, 0xA5);
             Memory<byte> publicKey = publicBuffer.AsMemory(1, suite.EncapsulationKeySizeInBytes);
 
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnExportEncapsulationKeyCore = destination =>
+                hpke.OnExportEncapsulationKeyCore = destination =>
                 {
                     AssertExtensions.Same(publicKey.Span, destination);
                     destination.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 hpke.ExportEncapsulationKey(publicKey.Span);
                 AssertGuardedOutput(publicBuffer, 0xE7);
                 Assert.Equal(1, hpke.ExportEncapsulationKeyCoreCount);
@@ -229,18 +225,17 @@ namespace System.Security.Cryptography.Tests
                 byte[] associatedData = [0x51, 0x52, 0x53];
                 byte[] info = [0x71, 0x72];
 
-                using (HpkeContract hpke = new(suite)
+                using (HpkeContract hpke = new(suite))
                 {
-                    OnSealCore = (p, enc, ct, aad, context) =>
+                    hpke.OnSealCore = (p, enc, ct, aad, context) =>
                     {
                         AssertSameBuffer(plaintext, p);
                         AssertSameBuffer(associatedData, aad);
                         AssertSameBuffer(info, context);
                         enc.Fill(0x42);
                         ct.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     byte[] encapsulatedSecret;
                     byte[] ciphertext;
 
@@ -285,9 +280,9 @@ namespace System.Security.Cryptography.Tests
                 Memory<byte> encapsulatedSecret = encBuffer.AsMemory(1, encBuffer.Length - 2);
                 Memory<byte> ciphertext = ctBuffer.AsMemory(1, ctBuffer.Length - 2);
 
-                using (HpkeContract hpke = new(suite)
+                using (HpkeContract hpke = new(suite))
                 {
-                    OnSealCore = (p, enc, ct, aad, context) =>
+                    hpke.OnSealCore = (p, enc, ct, aad, context) =>
                     {
                         AssertSameBuffer(plaintext, p);
                         AssertSameBuffer(associatedData, aad);
@@ -296,9 +291,8 @@ namespace System.Security.Cryptography.Tests
                         AssertExtensions.Same(ciphertext.Span, ct);
                         enc.Fill(0x42);
                         ct.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     hpke.Seal(plaintext, encapsulatedSecret.Span, ciphertext.Span, associatedData, info);
                     AssertGuardedOutput(encBuffer, 0x42);
                     AssertGuardedOutput(ctBuffer, 0xE7);
@@ -355,18 +349,17 @@ namespace System.Security.Cryptography.Tests
                 byte[] associatedData = [0x51, 0x52, 0x53];
                 byte[] info = [0x71, 0x72];
 
-                using (HpkeContract hpke = new(suite)
+                using (HpkeContract hpke = new(suite))
                 {
-                    OnOpenCore = (enc, ct, p, aad, context) =>
+                    hpke.OnOpenCore = (enc, ct, p, aad, context) =>
                     {
                         AssertSameBuffer(encapsulatedSecret, enc);
                         AssertSameBuffer(ciphertext, ct);
                         AssertSameBuffer(associatedData, aad);
                         AssertSameBuffer(info, context);
                         p.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     byte[] plaintext = useSpan
                         ? hpke.Open(
                             encapsulatedSecret.AsSpan(),
@@ -400,9 +393,9 @@ namespace System.Security.Cryptography.Tests
                 byte[] buffer = Filled(length + 2, 0xA5);
                 Memory<byte> plaintext = buffer.AsMemory(1, length);
 
-                using (HpkeContract hpke = new(suite)
+                using (HpkeContract hpke = new(suite))
                 {
-                    OnOpenCore = (enc, ct, p, aad, context) =>
+                    hpke.OnOpenCore = (enc, ct, p, aad, context) =>
                     {
                         AssertSameBuffer(encapsulatedSecret, enc);
                         AssertSameBuffer(ciphertext, ct);
@@ -410,9 +403,8 @@ namespace System.Security.Cryptography.Tests
                         AssertSameBuffer(info, context);
                         AssertSameBuffer(plaintext.Span, p);
                         p.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     hpke.Open(encapsulatedSecret, ciphertext, plaintext.Span, associatedData, info);
                     AssertGuardedOutput(buffer, 0xE7);
                     Assert.Equal(1, hpke.OpenCoreCount);
@@ -514,16 +506,15 @@ namespace System.Security.Cryptography.Tests
             byte[] info = [0x71, 0x72];
 
             using (ReturnedRecipient expected = new(suite))
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnCreateRecipientCore = (enc, context) =>
+                hpke.OnCreateRecipientCore = (enc, context) =>
                 {
                     AssertSameBuffer(encapsulatedSecret, enc);
                     AssertSameBuffer(info, context);
                     return expected;
-                },
-            })
-            {
+                };
+
                 Assert.Same(expected, hpke.CreateRecipient(encapsulatedSecret, info));
                 Assert.Same(expected, hpke.CreateRecipient(encapsulatedSecret.AsSpan(), info.AsSpan()));
                 AssertExtensions.FilledWith<byte>(0x31, encapsulatedSecret);
@@ -592,18 +583,17 @@ namespace System.Security.Cryptography.Tests
             byte[] info = [0x71, 0x72];
 
             using (ReturnedRecipient expected = new(suite))
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnCreatePskRecipientCore = (enc, context, key, id) =>
+                hpke.OnCreatePskRecipientCore = (enc, context, key, id) =>
                 {
                     AssertSameBuffer(encapsulatedSecret, enc);
                     AssertSameBuffer(psk, key);
                     AssertSameBuffer(pskId, id);
                     AssertSameBuffer(info, context);
                     return expected;
-                },
-            })
-            {
+                };
+
                 Assert.Same(expected, hpke.CreatePskRecipient(encapsulatedSecret, psk, pskId, info));
                 Assert.Same(expected, hpke.CreatePskRecipient(
                     encapsulatedSecret.AsSpan(),
@@ -759,12 +749,11 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeSuite suite = new(HpkeKem.MLKEM_768, kdf, HpkeAead.AES_128_GCM);
 
-            using (HpkeContract hpke = new(suite)
+            using (HpkeContract hpke = new(suite))
             {
-                OnCreatePskSenderCore = (enc, info, psk, id) => new ReturnedSender(suite),
-                OnCreatePskRecipientCore = (enc, info, psk, id) => new ReturnedRecipient(suite),
-            })
-            {
+                hpke.OnCreatePskSenderCore = (enc, info, psk, id) => new ReturnedSender(suite);
+                hpke.OnCreatePskRecipientCore = (enc, info, psk, id) => new ReturnedRecipient(suite);
+
                 foreach ((int keyLength, int idLength) in new[]
                 {
                     (32, 1),
@@ -843,42 +832,41 @@ namespace System.Security.Cryptography.Tests
             byte[] psk = new byte[32];
             byte[] pskId = [1];
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnSealCore = (p, e, c, aad, info) =>
+                hpke.OnSealCore = (p, e, c, aad, info) =>
                 {
                     Assert.True(p.IsEmpty);
                     Assert.True(aad.IsEmpty);
                     Assert.True(info.IsEmpty);
-                },
-                OnOpenCore = (e, c, p, aad, info) =>
+                };
+                hpke.OnOpenCore = (e, c, p, aad, info) =>
                 {
                     Assert.True(p.IsEmpty);
                     Assert.True(aad.IsEmpty);
                     Assert.True(info.IsEmpty);
-                },
-                OnCreateSenderCore = (e, info) =>
+                };
+                hpke.OnCreateSenderCore = (e, info) =>
                 {
                     Assert.True(info.IsEmpty);
                     return new ReturnedSender(s_suite);
-                },
-                OnCreateRecipientCore = (e, info) =>
+                };
+                hpke.OnCreateRecipientCore = (e, info) =>
                 {
                     Assert.True(info.IsEmpty);
                     return new ReturnedRecipient(s_suite);
-                },
-                OnCreatePskSenderCore = (e, info, key, id) =>
+                };
+                hpke.OnCreatePskSenderCore = (e, info, key, id) =>
                 {
                     Assert.True(info.IsEmpty);
                     return new ReturnedSender(s_suite);
-                },
-                OnCreatePskRecipientCore = (e, info, key, id) =>
+                };
+                hpke.OnCreatePskRecipientCore = (e, info, key, id) =>
                 {
                     Assert.True(info.IsEmpty);
                     return new ReturnedRecipient(s_suite);
-                },
-            })
-            {
+                };
+
                 hpke.Seal(Array.Empty<byte>(), out _, out _);
                 hpke.Seal(ReadOnlySpan<byte>.Empty, out _, out _);
                 hpke.Seal(ReadOnlySpan<byte>.Empty, enc, ct);
@@ -1085,18 +1073,17 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] buffer = Filled(32 + s_suite.EncapsulatedSecretSizeInBytes + s_suite.GetCiphertextLength(32), 0xA5);
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnSealCore = (p, enc, ct, aad, info) =>
+                hpke.OnSealCore = (p, enc, ct, aad, info) =>
                 {
                     AssertSameBuffer(buffer.AsSpan(0, 32), p);
                     AssertSameBuffer(buffer.AsSpan(0, 16), aad);
                     AssertSameBuffer(buffer.AsSpan(0, 16), info);
                     enc.Fill(0x42);
                     ct.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 hpke.Seal(
                     buffer.AsSpan(0, 32),
                     buffer.AsSpan(32, s_suite.EncapsulatedSecretSizeInBytes),
@@ -1115,11 +1102,10 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] buffer = Filled(s_suite.EncapsulatedSecretSizeInBytes + 32, 0xA5);
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnOpenCore = (enc, ct, p, aad, info) => p.Fill(0xE7),
-            })
-            {
+                hpke.OnOpenCore = (enc, ct, p, aad, info) => p.Fill(0xE7);
+
                 hpke.Open(
                     buffer.AsSpan(0, s_suite.EncapsulatedSecretSizeInBytes),
                     buffer.AsSpan(0, s_suite.GetCiphertextLength(32)),
@@ -1137,14 +1123,13 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] buffer = Filled(s_suite.EncapsulatedSecretSizeInBytes + 32, 0xA5);
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnCreateSenderCore = (enc, info) => new ReturnedSender(s_suite),
-                OnCreateRecipientCore = (enc, info) => new ReturnedRecipient(s_suite),
-                OnCreatePskSenderCore = (enc, info, psk, id) => new ReturnedSender(s_suite),
-                OnCreatePskRecipientCore = (enc, info, psk, id) => new ReturnedRecipient(s_suite),
-            })
-            {
+                hpke.OnCreateSenderCore = (enc, info) => new ReturnedSender(s_suite);
+                hpke.OnCreateRecipientCore = (enc, info) => new ReturnedRecipient(s_suite);
+                hpke.OnCreatePskSenderCore = (enc, info, psk, id) => new ReturnedSender(s_suite);
+                hpke.OnCreatePskRecipientCore = (enc, info, psk, id) => new ReturnedRecipient(s_suite);
+
                 hpke.CreateSender(buffer.AsSpan(32), buffer.AsSpan(0, 32)).Dispose();
                 hpke.CreateRecipient(
                     buffer.AsSpan(0, s_suite.EncapsulatedSecretSizeInBytes),
@@ -1168,13 +1153,12 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] buffer = new byte[s_suite.EncapsulatedSecretSizeInBytes + s_suite.AeadTagSizeInBytes];
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnSealCore = (p, enc, ct, aad, info) => { },
-                OnOpenCore = (enc, ct, p, aad, info) => { },
-                OnCreateSenderCore = (enc, info) => new ReturnedSender(s_suite),
-            })
-            {
+                hpke.OnSealCore = (p, enc, ct, aad, info) => { };
+                hpke.OnOpenCore = (enc, ct, p, aad, info) => { };
+                hpke.OnCreateSenderCore = (enc, info) => new ReturnedSender(s_suite);
+
                 hpke.Seal(buffer.AsSpan(0, 0), buffer.AsSpan(0, s_suite.EncapsulatedSecretSizeInBytes),
                     buffer.AsSpan(s_suite.EncapsulatedSecretSizeInBytes), buffer.AsSpan(1, 0), buffer.AsSpan(2, 0));
                 hpke.Open(buffer.AsSpan(0, s_suite.EncapsulatedSecretSizeInBytes),
@@ -1194,18 +1178,17 @@ namespace System.Security.Cryptography.Tests
         {
             CryptographicException exception = new();
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnExportDecapsulationKeyCore = destination => throw exception,
-                OnExportEncapsulationKeyCore = destination => throw exception,
-                OnSealCore = (p, enc, ct, aad, info) => throw exception,
-                OnOpenCore = (enc, ct, p, aad, info) => throw exception,
-                OnCreateSenderCore = (enc, info) => throw exception,
-                OnCreateRecipientCore = (enc, info) => throw exception,
-                OnCreatePskSenderCore = (enc, info, psk, id) => throw exception,
-                OnCreatePskRecipientCore = (enc, info, psk, id) => throw exception,
-            })
-            {
+                hpke.OnExportDecapsulationKeyCore = destination => throw exception;
+                hpke.OnExportEncapsulationKeyCore = destination => throw exception;
+                hpke.OnSealCore = (p, enc, ct, aad, info) => throw exception;
+                hpke.OnOpenCore = (enc, ct, p, aad, info) => throw exception;
+                hpke.OnCreateSenderCore = (enc, info) => throw exception;
+                hpke.OnCreateRecipientCore = (enc, info) => throw exception;
+                hpke.OnCreatePskSenderCore = (enc, info, psk, id) => throw exception;
+                hpke.OnCreatePskRecipientCore = (enc, info, psk, id) => throw exception;
+
                 foreach (Action operation in InstanceOperations(hpke))
                 {
                     Assert.Same(exception, Assert.Throws<CryptographicException>(operation));
@@ -1233,16 +1216,15 @@ namespace System.Security.Cryptography.Tests
             byte[] enc = originalEnc;
             byte[] ciphertext = originalCiphertext;
 
-            using (HpkeContract hpke = new(s_suite)
+            using (HpkeContract hpke = new(s_suite))
             {
-                OnSealCore = (p, e, ct, aad, info) =>
+                hpke.OnSealCore = (p, e, ct, aad, info) =>
                 {
                     e.Fill(0x42);
                     ct.Fill(0xE7);
                     throw exception;
-                },
-            })
-            {
+                };
+
                 if (useSpan)
                 {
                     Assert.Same(exception, Assert.Throws<CryptographicException>(() =>

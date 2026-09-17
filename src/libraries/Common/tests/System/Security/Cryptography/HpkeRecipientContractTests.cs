@@ -106,16 +106,15 @@ namespace System.Security.Cryptography.Tests
                 byte[] expectedCiphertext = (byte[])ciphertext.Clone();
                 byte[] associatedData = [0x71, 0x72, 0x73];
 
-                using (HpkeRecipientContract recipient = new(suite)
+                using (HpkeRecipientContract recipient = new(suite))
                 {
-                    OnOpenCore = (ct, p, aad) =>
+                    recipient.OnOpenCore = (ct, p, aad) =>
                     {
                         AssertExtensions.SequenceEqual(expectedCiphertext.AsSpan(), ct);
                         AssertExtensions.SequenceEqual(associatedData.AsSpan(), aad);
                         p.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     byte[] plaintext = useSpan
                         ? recipient.Open(ciphertext.AsSpan(), associatedData: associatedData.AsSpan())
                         : recipient.Open(ciphertext, associatedData: associatedData);
@@ -145,16 +144,15 @@ namespace System.Security.Cryptography.Tests
                 byte[] output = new byte[length + 2];
                 output.AsSpan().Fill(0xA5);
 
-                using (HpkeRecipientContract recipient = new(suite)
+                using (HpkeRecipientContract recipient = new(suite))
                 {
-                    OnOpenCore = (ct, p, aad) =>
+                    recipient.OnOpenCore = (ct, p, aad) =>
                     {
                         AssertExtensions.SequenceEqual(expected.AsSpan(), ct);
                         AssertExtensions.SequenceEqual(associatedData.Span, aad);
                         p.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     recipient.Open(ciphertext.Span, output.AsSpan(1, length), associatedData.Span);
                     AssertGuardedOutput(output);
                     Assert.Equal(Data(input.Length), input);
@@ -170,16 +168,15 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] ciphertext = Data(s_suite.GetCiphertextLength(1));
 
-            using (HpkeRecipientContract recipient = new(s_suite)
+            using (HpkeRecipientContract recipient = new(s_suite))
             {
-                OnOpenCore = (ct, p, aad) =>
+                recipient.OnOpenCore = (ct, p, aad) =>
                 {
                     AssertExtensions.SequenceEqual(ciphertext.AsSpan(), ct);
                     Assert.True(aad.IsEmpty);
                     p.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 byte[] first = recipient.Open(ciphertext);
                 byte[] second = recipient.Open(ciphertext.AsSpan());
                 byte[] third = recipient.Open(ciphertext, associatedData: null);
@@ -309,16 +306,15 @@ namespace System.Security.Cryptography.Tests
             byte[] buffer = Data(ciphertextLength + 32);
             byte[] expected = buffer.AsSpan(0, ciphertextLength).ToArray();
 
-            using (HpkeRecipientContract recipient = new(s_suite)
+            using (HpkeRecipientContract recipient = new(s_suite))
             {
-                OnOpenCore = (ct, p, aad) =>
+                recipient.OnOpenCore = (ct, p, aad) =>
                 {
                     AssertExtensions.SequenceEqual(expected.AsSpan(), ct);
                     AssertExtensions.SequenceEqual(expected.AsSpan(0, 16), aad);
                     p.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 recipient.Open(
                     buffer.AsSpan(0, ciphertextLength), buffer.AsSpan(ciphertextLength), buffer.AsSpan(0, 16));
                 AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.AsSpan(0, ciphertextLength));
@@ -333,16 +329,15 @@ namespace System.Security.Cryptography.Tests
             byte[] buffer = Data(s_suite.AeadTagSizeInBytes);
             byte[] original = (byte[])buffer.Clone();
 
-            using (HpkeRecipientContract recipient = new(s_suite)
+            using (HpkeRecipientContract recipient = new(s_suite))
             {
-                OnOpenCore = (ct, p, aad) =>
+                recipient.OnOpenCore = (ct, p, aad) =>
                 {
                     AssertExtensions.SequenceEqual(original.AsSpan(), ct);
                     Assert.True(p.IsEmpty);
                     Assert.True(aad.IsEmpty);
-                },
-            })
-            {
+                };
+
                 recipient.Open(buffer.AsSpan(), buffer.AsSpan(1, 0), buffer.AsSpan(2, 0));
                 Assert.Equal(original, buffer);
                 Assert.Equal(1, recipient.OpenCoreCount);
@@ -363,16 +358,15 @@ namespace System.Security.Cryptography.Tests
                 byte[] output = new byte[length + 2];
                 output.AsSpan().Fill(0xA5);
 
-                using (HpkeRecipientContract recipient = new(suite)
+                using (HpkeRecipientContract recipient = new(suite))
                 {
-                    OnExportCore = (c, destination) =>
+                    recipient.OnExportCore = (c, destination) =>
                     {
                         AssertExtensions.SequenceEqual(expectedContext.AsSpan(), c);
                         Assert.Equal(length, destination.Length);
                         destination.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     byte[] first = recipient.Export(context, length);
                     byte[] second = recipient.Export(context.AsSpan(), length);
                     recipient.Export(context, output.AsSpan(1, length));
@@ -455,16 +449,15 @@ namespace System.Security.Cryptography.Tests
             byte[] buffer = Data(contextLength + outputLength + 1);
             byte[] original = (byte[])buffer.Clone();
 
-            using (HpkeRecipientContract recipient = new(s_suite)
+            using (HpkeRecipientContract recipient = new(s_suite))
             {
-                OnExportCore = (context, destination) =>
+                recipient.OnExportCore = (context, destination) =>
                 {
                     AssertExtensions.SequenceEqual(original.AsSpan(0, contextLength), context);
                     Assert.Equal(outputLength, destination.Length);
                     destination.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 recipient.Export(buffer.AsSpan(0, contextLength), buffer.AsSpan(contextLength, outputLength));
                 AssertExtensions.SequenceEqual(original.AsSpan(0, contextLength), buffer.AsSpan(0, contextLength));
                 AssertExtensions.FilledWith<byte>(0xE7, buffer.AsSpan(contextLength, outputLength));
@@ -483,11 +476,10 @@ namespace System.Security.Cryptography.Tests
                 : new CryptographicException();
             byte[] ciphertext = new byte[s_suite.AeadTagSizeInBytes];
 
-            using (HpkeRecipientContract recipient = new(s_suite)
+            using (HpkeRecipientContract recipient = new(s_suite))
             {
-                OnOpenCore = (ct, p, aad) => throw exception,
-            })
-            {
+                recipient.OnOpenCore = (ct, p, aad) => throw exception;
+
                 Assert.Same(exception, Assert.Throws(exception.GetType(), () => recipient.Open(ciphertext)));
                 Assert.Same(exception, Assert.Throws(exception.GetType(), () => recipient.Open(ciphertext.AsSpan())));
                 Assert.Same(exception, Assert.Throws(exception.GetType(),
@@ -502,11 +494,10 @@ namespace System.Security.Cryptography.Tests
         {
             CryptographicException exception = new();
 
-            using (HpkeRecipientContract recipient = new(s_suite)
+            using (HpkeRecipientContract recipient = new(s_suite))
             {
-                OnExportCore = (context, destination) => throw exception,
-            })
-            {
+                recipient.OnExportCore = (context, destination) => throw exception;
+
                 Assert.Same(exception, Assert.Throws<CryptographicException>(
                     () => recipient.Export(Array.Empty<byte>(), 0)));
                 Assert.Same(exception, Assert.Throws<CryptographicException>(

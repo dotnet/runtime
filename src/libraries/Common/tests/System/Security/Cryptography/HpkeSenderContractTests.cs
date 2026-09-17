@@ -105,16 +105,15 @@ namespace System.Security.Cryptography.Tests
                 byte[] plaintext = Data(length);
                 byte[] associatedData = [0x71, 0x72, 0x73];
 
-                using (HpkeSenderContract sender = new(suite)
+                using (HpkeSenderContract sender = new(suite))
                 {
-                    OnSealCore = (p, ct, aad) =>
+                    sender.OnSealCore = (p, ct, aad) =>
                     {
                         AssertExtensions.SequenceEqual(plaintext.AsSpan(), p);
                         AssertExtensions.SequenceEqual(associatedData.AsSpan(), aad);
                         ct.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     byte[] ciphertext = useSpan
                         ? sender.Seal(plaintext.AsSpan(), associatedData: associatedData.AsSpan())
                         : sender.Seal(plaintext, associatedData: associatedData);
@@ -144,16 +143,15 @@ namespace System.Security.Cryptography.Tests
                 byte[] output = new byte[suite.GetCiphertextLength(length) + 2];
                 output.AsSpan().Fill(0xA5);
 
-                using (HpkeSenderContract sender = new(suite)
+                using (HpkeSenderContract sender = new(suite))
                 {
-                    OnSealCore = (p, ct, aad) =>
+                    sender.OnSealCore = (p, ct, aad) =>
                     {
                         AssertExtensions.SequenceEqual(expected.AsSpan(), p);
                         AssertExtensions.SequenceEqual(associatedData.Span, aad);
                         ct.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     sender.Seal(plaintext.Span, output.AsSpan(1, output.Length - 2), associatedData.Span);
                     AssertGuardedOutput(output);
                     Assert.Equal(Data(length + 2), input);
@@ -167,16 +165,15 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void Seal_OptionalAssociatedDataIsEmpty()
         {
-            using (HpkeSenderContract sender = new(s_suite)
+            using (HpkeSenderContract sender = new(s_suite))
             {
-                OnSealCore = (p, ct, aad) =>
+                sender.OnSealCore = (p, ct, aad) =>
                 {
                     Assert.True(p.IsEmpty);
                     Assert.True(aad.IsEmpty);
                     ct.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 byte[] first = sender.Seal(Array.Empty<byte>());
                 byte[] second = sender.Seal(ReadOnlySpan<byte>.Empty);
                 byte[] third = sender.Seal(Array.Empty<byte>(), associatedData: null);
@@ -282,16 +279,15 @@ namespace System.Security.Cryptography.Tests
             byte[] buffer = Data(32 + s_suite.GetCiphertextLength(32));
             byte[] expected = buffer.AsSpan(0, 32).ToArray();
 
-            using (HpkeSenderContract sender = new(s_suite)
+            using (HpkeSenderContract sender = new(s_suite))
             {
-                OnSealCore = (p, ct, aad) =>
+                sender.OnSealCore = (p, ct, aad) =>
                 {
                     AssertExtensions.SequenceEqual(expected.AsSpan(), p);
                     AssertExtensions.SequenceEqual(expected.AsSpan(0, 16), aad);
                     ct.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 sender.Seal(buffer.AsSpan(0, 32), buffer.AsSpan(32), buffer.AsSpan(0, 16));
                 AssertExtensions.SequenceEqual(expected.AsSpan(), buffer.AsSpan(0, 32));
                 AssertExtensions.FilledWith<byte>(0xE7, buffer.AsSpan(32));
@@ -304,16 +300,15 @@ namespace System.Security.Cryptography.Tests
         {
             byte[] buffer = new byte[s_suite.AeadTagSizeInBytes];
 
-            using (HpkeSenderContract sender = new(s_suite)
+            using (HpkeSenderContract sender = new(s_suite))
             {
-                OnSealCore = (p, ct, aad) =>
+                sender.OnSealCore = (p, ct, aad) =>
                 {
                     Assert.True(p.IsEmpty);
                     Assert.True(aad.IsEmpty);
                     ct.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 sender.Seal(buffer.AsSpan(0, 0), buffer.AsSpan(), buffer.AsSpan(1, 0));
                 AssertExtensions.FilledWith<byte>(0xE7, buffer);
                 Assert.Equal(1, sender.SealCoreCount);
@@ -334,16 +329,15 @@ namespace System.Security.Cryptography.Tests
                 byte[] output = new byte[length + 2];
                 output.AsSpan().Fill(0xA5);
 
-                using (HpkeSenderContract sender = new(suite)
+                using (HpkeSenderContract sender = new(suite))
                 {
-                    OnExportCore = (c, destination) =>
+                    sender.OnExportCore = (c, destination) =>
                     {
                         AssertExtensions.SequenceEqual(expectedContext.AsSpan(), c);
                         Assert.Equal(length, destination.Length);
                         destination.Fill(0xE7);
-                    },
-                })
-                {
+                    };
+
                     byte[] first = sender.Export(context, length);
                     byte[] second = sender.Export(context.AsSpan(), length);
                     sender.Export(context, output.AsSpan(1, length));
@@ -426,16 +420,15 @@ namespace System.Security.Cryptography.Tests
             byte[] buffer = Data(contextLength + outputLength + 1);
             byte[] original = (byte[])buffer.Clone();
 
-            using (HpkeSenderContract sender = new(s_suite)
+            using (HpkeSenderContract sender = new(s_suite))
             {
-                OnExportCore = (context, destination) =>
+                sender.OnExportCore = (context, destination) =>
                 {
                     AssertExtensions.SequenceEqual(original.AsSpan(0, contextLength), context);
                     Assert.Equal(outputLength, destination.Length);
                     destination.Fill(0xE7);
-                },
-            })
-            {
+                };
+
                 sender.Export(buffer.AsSpan(0, contextLength), buffer.AsSpan(contextLength, outputLength));
                 AssertExtensions.SequenceEqual(original.AsSpan(0, contextLength), buffer.AsSpan(0, contextLength));
                 AssertExtensions.FilledWith<byte>(0xE7, buffer.AsSpan(contextLength, outputLength));
@@ -449,12 +442,11 @@ namespace System.Security.Cryptography.Tests
         {
             CryptographicException exception = new();
 
-            using (HpkeSenderContract sender = new(s_suite)
+            using (HpkeSenderContract sender = new(s_suite))
             {
-                OnSealCore = (p, ct, aad) => throw exception,
-                OnExportCore = (context, destination) => throw exception,
-            })
-            {
+                sender.OnSealCore = (p, ct, aad) => throw exception;
+                sender.OnExportCore = (context, destination) => throw exception;
+
                 foreach (Action operation in Operations(sender))
                 {
                     Assert.Same(exception, Assert.Throws<CryptographicException>(operation));
