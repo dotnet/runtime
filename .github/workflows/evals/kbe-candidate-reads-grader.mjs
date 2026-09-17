@@ -33,8 +33,10 @@ function isSearchHarnessCall(event) {
 }
 
 function isIssueReadCall(event) {
+    const toolName = event.data?.toolName;
     return event.type === "tool_call" &&
-        (event.data.toolName === "issue_read" || event.data.toolName.endsWith(".issue_read"));
+        typeof toolName === "string" &&
+        (toolName === "issue_read" || /^(?:mcp__)?github[-_.]+issue_read$/.test(toolName));
 }
 
 function parseCandidates(result) {

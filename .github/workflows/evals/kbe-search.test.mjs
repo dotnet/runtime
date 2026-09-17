@@ -125,14 +125,14 @@ test("candidate-read grader requires successful unfiltered reads for every candi
                 { number: 20, user: { login: "user" } },
             ])}`,
         }),
-        call("issue_read", "read-10", {
+        call("github-issue_read", "read-10", {
             owner: "dotnet", repo: "runtime", method: "get", issue_number: 10,
         }),
-        result("issue_read", "read-10", { number: 10 }),
-        call("issue_read", "read-20", {
+        result("github-issue_read", "read-10", { number: 10 }),
+        call("github-issue_read", "read-20", {
             owner: "dotnet", repo: "runtime", method: "get", issue_number: 20,
         }),
-        result("issue_read", "read-20", { number: 20 }),
+        result("github-issue_read", "read-20", { number: 20 }),
     ];
 
     const gradeResult = await grade(events);
