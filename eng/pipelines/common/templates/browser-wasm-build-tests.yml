@@ -1,6 +1,7 @@
 # Depends on other builds to get runtime packs, and nugets
 # And then runs Wasm.Build.Tests
 parameters:
+  useHelixMonitor: false
   alwaysRun: false
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
@@ -122,6 +123,7 @@ jobs:
         postBuildSteps:
           - template: /eng/pipelines/libraries/helix.yml
             parameters:
+              useHelixMonitor: ${{ parameters.useHelixMonitor }}
               creator: dotnet-bot
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
               extraHelixArguments: /p:BrowserHost=$(_hostedOs)

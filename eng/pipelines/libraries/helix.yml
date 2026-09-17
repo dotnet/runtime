@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   runtimeFlavor: ''
   archType: ''
   buildConfig: ''
@@ -38,6 +39,7 @@ steps:
             /p:TestScope=${{ parameters.testScope }}
             /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
             /p:HelixBuild=$(Build.BuildNumber)
+            /p:EnableHelixJobMonitor=${{ parameters.useHelixMonitor }}
             /p:FailOnWorkItemFailure=${{ parameters.failOnTestFailures }}
             /p:FailOnTestFailure=${{ parameters.failOnTestFailures }}
             /p:WarnOnHelixTestFailure=${{ parameters.warnOnTestFailures }}
