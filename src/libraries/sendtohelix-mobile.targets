@@ -40,6 +40,25 @@
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
+  <!-- Android emulator lifecycle.
+
+       The Windows Android queues drive physically tethered devices, so there is no emulator to
+       manage there; the Linux queues are the emulator ones. On the legacy
+       Ubuntu.2204.Amd64.Android.<api> queues a systemd unit boots one emulator per machine that
+       every work item shares, while container based queues have no systemd and each work item boots
+       its own. start-emulator.sh detects which of the two it is running under, so the same payload
+       works on both and the queues can be migrated incrementally. -->
+  <PropertyGroup Condition="'$(TargetOS)' == 'android' and !$(HelixTargetQueue.ToLowerInvariant().Contains('windows'))">
+    <_AndroidEmulatorScriptsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'eng', 'testing', 'Android'))</_AndroidEmulatorScriptsDir>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(_AndroidEmulatorScriptsDir)' != ''">
+    <HelixCorrelationPayload Include="$(_AndroidEmulatorScriptsDir)" Destination="android-emulator" />
+    <HelixPreCommand Include="chmod +x $HELIX_CORRELATION_PAYLOAD/android-emulator/*.sh" />
+    <HelixPreCommand Include="$HELIX_CORRELATION_PAYLOAD/android-emulator/start-emulator.sh" />
+    <HelixPostCommand Include="$HELIX_CORRELATION_PAYLOAD/android-emulator/stop-emulator.sh" />
+  </ItemGroup>
+
   <Target Name="PrepareForBuildHelixWorkItems_Mobile">
 
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
