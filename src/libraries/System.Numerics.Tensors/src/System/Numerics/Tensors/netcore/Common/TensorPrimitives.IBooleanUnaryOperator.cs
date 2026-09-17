@@ -24,8 +24,12 @@ namespace System.Numerics.Tensors
         /// <summary>
         /// Combines the results of <see cref="IBooleanUnaryOperator{T}"/> into an Any/All decision. The vectorized loops of
         /// <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/> fold the per-vector results of a block of vectors into an accumulator
-        /// with <c>Accumulate</c>, starting from zero, and decide once per block: a lane of the accumulator with all bits set means
-        /// that the block contains an element which settles the result, and the loop exits with <c>!DefaultResult</c>.
+        /// and decide once per block whether the block contains an element which settles the result, in which case they exit with
+        /// <c>!DefaultResult</c>. At 128 and 256 bits the accumulator is a result itself, the fold of the block's results with
+        /// <c>Accumulate</c> starting from the result that equals <c>DefaultResult</c>, so <c>ShouldEarlyExit</c> decides. At 512 bits
+        /// the operator's comparison leaves its result in a mask register, which a select consumes as it is (a masked blend) whereas a
+        /// bitwise operation would first have to expand the mask into a vector, so the accumulator starts from all bits set and
+        /// <c>ClearSettled</c> clears the lanes whose result settles the aggregation, which a zero lane then signals.
         /// </summary>
         private interface IAnyAllAggregator<T>
         {
@@ -35,12 +39,13 @@ namespace System.Numerics.Tensors
             static abstract bool ShouldEarlyExit(Vector256<T> result);
             static abstract bool ShouldEarlyExit(Vector512<T> result);
 
-            /// <summary>Folds an operator result into a block accumulator: a lane of the accumulator ends up with all bits set if <see cref="ShouldEarlyExit(Vector128{T})"/> holds for any result folded into it.</summary>
+            /// <summary>Folds an operator result into the aggregation of the results folded so far, a result itself: the OR of Any results, the AND of All results.</summary>
             static abstract Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result);
             /// <inheritdoc cref="Accumulate(Vector128{T}, Vector128{T})"/>
             static abstract Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result);
-            /// <inheritdoc cref="Accumulate(Vector128{T}, Vector128{T})"/>
-            static abstract Vector512<T> Accumulate(Vector512<T> accumulator, Vector512<T> result);
+
+            /// <summary>Clears the lanes of <paramref name="accumulator"/> whose lane of <paramref name="result"/> settles the aggregation, that is, for which <see cref="ShouldEarlyExit(Vector512{T})"/> would hold.</summary>
+            static abstract Vector512<T> ClearSettled(Vector512<T> accumulator, Vector512<T> result);
         }
 
         private readonly struct AnyAggregator<T> : IAnyAllAggregator<T>
@@ -53,10 +58,12 @@ namespace System.Numerics.Tensors
             public static bool ShouldEarlyExit(Vector256<T> result) => Vector256.AnyWhereAllBitsSet(result);
             public static bool ShouldEarlyExit(Vector512<T> result) => Vector512.AnyWhereAllBitsSet(result);
 
-            // A lane where the operator was true stays set.
             public static Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result) => accumulator | result;
             public static Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result) => accumulator | result;
-            public static Vector512<T> Accumulate(Vector512<T> accumulator, Vector512<T> result) => accumulator | result;
+
+            // A lane where the operator was true is cleared: the select's constant is the zero vector, which costs no instruction,
+            // and the JIT folds the selection of the other lanes into a zero-masking move under the inverted comparison.
+            public static Vector512<T> ClearSettled(Vector512<T> accumulator, Vector512<T> result) => Vector512.ConditionalSelect(result, Vector512<T>.Zero, accumulator);
         }
 
         private readonly struct AllAggregator<T> : IAnyAllAggregator<T>
@@ -65,28 +72,37 @@ namespace System.Numerics.Tensors
 
             public static bool ShouldEarlyExit(bool result) => !result;
 
-            public static bool ShouldEarlyExit(Vector128<T> result) =>
-                typeof(T) == typeof(float) ? Vector128.EqualsAny(result.AsUInt32(), Vector128<uint>.Zero) :
-                typeof(T) == typeof(double) ? Vector128.EqualsAny(result.AsUInt64(), Vector128<ulong>.Zero) :
-                Vector128.EqualsAny(result, Vector128<T>.Zero);
+            public static bool ShouldEarlyExit(Vector128<T> result) => AnyLaneZero(result);
+            public static bool ShouldEarlyExit(Vector256<T> result) => AnyLaneZero(result);
+            public static bool ShouldEarlyExit(Vector512<T> result) => AnyLaneZero(result);
 
-            public static bool ShouldEarlyExit(Vector256<T> result) =>
-                typeof(T) == typeof(float) ? Vector256.EqualsAny(result.AsUInt32(), Vector256<uint>.Zero) :
-                typeof(T) == typeof(double) ? Vector256.EqualsAny(result.AsUInt64(), Vector256<ulong>.Zero) :
-                Vector256.EqualsAny(result, Vector256<T>.Zero);
+            public static Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result) => accumulator & result;
+            public static Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result) => accumulator & result;
 
-            public static bool ShouldEarlyExit(Vector512<T> result) =>
-                typeof(T) == typeof(float) ? Vector512.EqualsAny(result.AsUInt32(), Vector512<uint>.Zero) :
-                typeof(T) == typeof(double) ? Vector512.EqualsAny(result.AsUInt64(), Vector512<ulong>.Zero) :
-                Vector512.EqualsAny(result, Vector512<T>.Zero);
-
-            // A lane where the operator was false (its result is zero) becomes all bits set and stays set. Accumulating the
-            // complement rather than AND-ing the results keeps the block test the same as for Any and lets the JIT fold the
-            // complement into an operator that ends in a negation (such as IsFinite).
-            public static Vector128<T> Accumulate(Vector128<T> accumulator, Vector128<T> result) => accumulator | ~result;
-            public static Vector256<T> Accumulate(Vector256<T> accumulator, Vector256<T> result) => accumulator | ~result;
-            public static Vector512<T> Accumulate(Vector512<T> accumulator, Vector512<T> result) => accumulator | ~result;
+            // A lane where the operator was false (its result is zero) is cleared (see AnyAggregator).
+            public static Vector512<T> ClearSettled(Vector512<T> accumulator, Vector512<T> result) => Vector512.ConditionalSelect(result, accumulator, Vector512<T>.Zero);
         }
+
+        /// <summary>Whether any lane of <paramref name="vector"/> is zero. For the floating-point types the lanes are compared as integers: a lane of an operator result or of an accumulator is either all bits set (a NaN) or zero.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AnyLaneZero<T>(Vector128<T> vector) =>
+            typeof(T) == typeof(float) ? Vector128.EqualsAny(vector.AsUInt32(), Vector128<uint>.Zero) :
+            typeof(T) == typeof(double) ? Vector128.EqualsAny(vector.AsUInt64(), Vector128<ulong>.Zero) :
+            Vector128.EqualsAny(vector, Vector128<T>.Zero);
+
+        /// <summary>Whether any lane of <paramref name="vector"/> is zero. For the floating-point types the lanes are compared as integers: a lane of an operator result or of an accumulator is either all bits set (a NaN) or zero.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AnyLaneZero<T>(Vector256<T> vector) =>
+            typeof(T) == typeof(float) ? Vector256.EqualsAny(vector.AsUInt32(), Vector256<uint>.Zero) :
+            typeof(T) == typeof(double) ? Vector256.EqualsAny(vector.AsUInt64(), Vector256<ulong>.Zero) :
+            Vector256.EqualsAny(vector, Vector256<T>.Zero);
+
+        /// <summary>Whether any lane of <paramref name="vector"/> is zero. For the floating-point types the lanes are compared as integers: a lane of an operator result or of an accumulator is either all bits set (a NaN) or zero.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool AnyLaneZero<T>(Vector512<T> vector) =>
+            typeof(T) == typeof(float) ? Vector512.EqualsAny(vector.AsUInt32(), Vector512<uint>.Zero) :
+            typeof(T) == typeof(double) ? Vector512.EqualsAny(vector.AsUInt64(), Vector512<ulong>.Zero) :
+            Vector512.EqualsAny(vector, Vector512<T>.Zero);
 
         private static bool All<T, TOperator>(ReadOnlySpan<T> x)
             where TOperator : struct, IBooleanUnaryOperator<T> =>
@@ -120,6 +136,14 @@ namespace System.Numerics.Tensors
                 return AggregateAnyAllVectorized128<T, TOperator, TAnyAll>(x);
             }
 
+            return AggregateAnyAllScalar<T, TOperator, TAnyAll>(x);
+        }
+
+        /// <summary>The scalar path of <see cref="AggregateAnyAll{T, TOperator, TAnyAll}"/>, used when vectorization is not supported or the input is too small to vectorize.</summary>
+        private static bool AggregateAnyAllScalar<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
+            where TOperator : struct, IBooleanUnaryOperator<T>
+            where TAnyAll : struct, IAnyAllAggregator<T>
+        {
             ref T xRef = ref MemoryMarshal.GetReference(x);
             for (int i = 0; i < x.Length; i++)
             {
@@ -137,6 +161,7 @@ namespace System.Numerics.Tensors
         /// Every block of up to <see cref="AnyAllBlockVectors"/> vectors is folded into two independent accumulators with no branch on the
         /// data, and the exit decision is made once per block, so a hit is detected after at most one block of extra reads.
         /// Blocks are visited in order and the whole input lies within the span, so the result is the same as with a test per vector.
+        /// The accumulators start from all bits set and have the lanes of the settling results cleared (see <see cref="IAnyAllAggregator{T}"/>).
         /// </remarks>
         [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator and the aggregator inlined
         private static bool AggregateAnyAllVectorized512<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
@@ -158,18 +183,18 @@ namespace System.Numerics.Tensors
                 nuint oneBlockFromEnd = length - blockLength;
                 do
                 {
-                    Vector512<T> accumulator0 = Vector512<T>.Zero;
-                    Vector512<T> accumulator1 = Vector512<T>.Zero;
+                    Vector512<T> accumulator0 = Vector512<T>.AllBitsSet;
+                    Vector512<T> accumulator1 = Vector512<T>.AllBitsSet;
                     nuint blockEnd = i + blockLength;
                     do
                     {
-                        accumulator0 = TAnyAll.Accumulate(accumulator0, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i)));
-                        accumulator1 = TAnyAll.Accumulate(accumulator1, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i + (uint)Vector512<T>.Count)));
+                        accumulator0 = TAnyAll.ClearSettled(accumulator0, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i)));
+                        accumulator1 = TAnyAll.ClearSettled(accumulator1, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i + (uint)Vector512<T>.Count)));
                         i += (uint)(2 * Vector512<T>.Count);
                     }
                     while (i < blockEnd);
 
-                    if (Vector512.AnyWhereAllBitsSet(accumulator0 | accumulator1))
+                    if (AnyLaneZero(accumulator0 & accumulator1))
                     {
                         return !TAnyAll.DefaultResult;
                     }
@@ -180,15 +205,15 @@ namespace System.Numerics.Tensors
             // The remaining whole vectors, fewer than a block.
             if (i <= oneVectorFromEnd)
             {
-                Vector512<T> accumulator = Vector512<T>.Zero;
+                Vector512<T> accumulator = Vector512<T>.AllBitsSet;
                 do
                 {
-                    accumulator = TAnyAll.Accumulate(accumulator, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i)));
+                    accumulator = TAnyAll.ClearSettled(accumulator, TOperator.Invoke(Vector512.LoadUnsafe(ref xRef, i)));
                     i += (uint)Vector512<T>.Count;
                 }
                 while (i <= oneVectorFromEnd);
 
-                if (Vector512.AnyWhereAllBitsSet(accumulator))
+                if (AnyLaneZero(accumulator))
                 {
                     return !TAnyAll.DefaultResult;
                 }
@@ -209,6 +234,8 @@ namespace System.Numerics.Tensors
         /// Every block of up to <see cref="AnyAllBlockVectors"/> vectors is folded into two independent accumulators with no branch on the
         /// data, and the exit decision is made once per block, so a hit is detected after at most one block of extra reads.
         /// Blocks are visited in order and the whole input lies within the span, so the result is the same as with a test per vector.
+        /// The accumulators are results themselves: the fold of the block's results, starting from the result that equals the default
+        /// (see <see cref="IAnyAllAggregator{T}"/>).
         /// </remarks>
         [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator and the aggregator inlined
         private static bool AggregateAnyAllVectorized256<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
@@ -223,6 +250,8 @@ namespace System.Numerics.Tensors
             nuint oneVectorFromEnd = length - (uint)Vector256<T>.Count;
             nuint i = 0;
 
+            Vector256<T> defaultResult = TAnyAll.DefaultResult ? Vector256<T>.AllBitsSet : Vector256<T>.Zero;
+
             // Whole blocks: two accumulators, one decision per block.
             nuint blockLength = (uint)(AnyAllBlockVectors * Vector256<T>.Count);
             if (length >= blockLength)
@@ -230,8 +259,8 @@ namespace System.Numerics.Tensors
                 nuint oneBlockFromEnd = length - blockLength;
                 do
                 {
-                    Vector256<T> accumulator0 = Vector256<T>.Zero;
-                    Vector256<T> accumulator1 = Vector256<T>.Zero;
+                    Vector256<T> accumulator0 = defaultResult;
+                    Vector256<T> accumulator1 = defaultResult;
                     nuint blockEnd = i + blockLength;
                     do
                     {
@@ -241,7 +270,7 @@ namespace System.Numerics.Tensors
                     }
                     while (i < blockEnd);
 
-                    if (Vector256.AnyWhereAllBitsSet(accumulator0 | accumulator1))
+                    if (TAnyAll.ShouldEarlyExit(TAnyAll.Accumulate(accumulator0, accumulator1)))
                     {
                         return !TAnyAll.DefaultResult;
                     }
@@ -252,7 +281,7 @@ namespace System.Numerics.Tensors
             // The remaining whole vectors, fewer than a block.
             if (i <= oneVectorFromEnd)
             {
-                Vector256<T> accumulator = Vector256<T>.Zero;
+                Vector256<T> accumulator = defaultResult;
                 do
                 {
                     accumulator = TAnyAll.Accumulate(accumulator, TOperator.Invoke(Vector256.LoadUnsafe(ref xRef, i)));
@@ -260,7 +289,7 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                if (Vector256.AnyWhereAllBitsSet(accumulator))
+                if (TAnyAll.ShouldEarlyExit(accumulator))
                 {
                     return !TAnyAll.DefaultResult;
                 }
@@ -281,6 +310,8 @@ namespace System.Numerics.Tensors
         /// Every block of up to <see cref="AnyAllBlockVectors"/> vectors is folded into two independent accumulators with no branch on the
         /// data, and the exit decision is made once per block, so a hit is detected after at most one block of extra reads.
         /// Blocks are visited in order and the whole input lies within the span, so the result is the same as with a test per vector.
+        /// The accumulators are results themselves: the fold of the block's results, starting from the result that equals the default
+        /// (see <see cref="IAnyAllAggregator{T}"/>).
         /// </remarks>
         [MethodImpl(MethodImplOptions.NoInlining)] // called once per aggregation; its own inlining budget keeps the operator and the aggregator inlined
         private static bool AggregateAnyAllVectorized128<T, TOperator, TAnyAll>(ReadOnlySpan<T> x)
@@ -295,6 +326,8 @@ namespace System.Numerics.Tensors
             nuint oneVectorFromEnd = length - (uint)Vector128<T>.Count;
             nuint i = 0;
 
+            Vector128<T> defaultResult = TAnyAll.DefaultResult ? Vector128<T>.AllBitsSet : Vector128<T>.Zero;
+
             // Whole blocks: two accumulators, one decision per block.
             nuint blockLength = (uint)(AnyAllBlockVectors * Vector128<T>.Count);
             if (length >= blockLength)
@@ -302,8 +335,8 @@ namespace System.Numerics.Tensors
                 nuint oneBlockFromEnd = length - blockLength;
                 do
                 {
-                    Vector128<T> accumulator0 = Vector128<T>.Zero;
-                    Vector128<T> accumulator1 = Vector128<T>.Zero;
+                    Vector128<T> accumulator0 = defaultResult;
+                    Vector128<T> accumulator1 = defaultResult;
                     nuint blockEnd = i + blockLength;
                     do
                     {
@@ -313,7 +346,7 @@ namespace System.Numerics.Tensors
                     }
                     while (i < blockEnd);
 
-                    if (Vector128.AnyWhereAllBitsSet(accumulator0 | accumulator1))
+                    if (TAnyAll.ShouldEarlyExit(TAnyAll.Accumulate(accumulator0, accumulator1)))
                     {
                         return !TAnyAll.DefaultResult;
                     }
@@ -324,7 +357,7 @@ namespace System.Numerics.Tensors
             // The remaining whole vectors, fewer than a block.
             if (i <= oneVectorFromEnd)
             {
-                Vector128<T> accumulator = Vector128<T>.Zero;
+                Vector128<T> accumulator = defaultResult;
                 do
                 {
                     accumulator = TAnyAll.Accumulate(accumulator, TOperator.Invoke(Vector128.LoadUnsafe(ref xRef, i)));
@@ -332,7 +365,7 @@ namespace System.Numerics.Tensors
                 }
                 while (i <= oneVectorFromEnd);
 
-                if (Vector128.AnyWhereAllBitsSet(accumulator))
+                if (TAnyAll.ShouldEarlyExit(accumulator))
                 {
                     return !TAnyAll.DefaultResult;
                 }
