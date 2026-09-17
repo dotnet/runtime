@@ -42,6 +42,10 @@ namespace System.Net
         private static readonly object s_protocolTypeTcp = Enum.Parse(Type.GetType(ProtocolTypeEnumName, throwOnError: true)!, "Tcp");
         private static readonly object s_socketFlagsPeek = Enum.Parse(Type.GetType(SocketFlagsTypeName, throwOnError: true)!, "Peek");
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties,
+            "System.Net.Sockets.Socket", "System.Net.Sockets")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors,
+            "System.Net.Sockets.SafeSocketHandle", "System.Net.Sockets")]
         public DnsSocket(AddressFamily addressFamily, bool stream)
         {
             try

@@ -24,6 +24,9 @@ namespace System.Net.NameResolution.Tests
         public static bool IsSupportedPlatform =>
             PlatformDetection.IsNotMobile && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi;
 
+        private static DnsResolver CreateResolver() =>
+            new DnsResolver(new DnsResolverOptions { Servers = { new IPEndPoint(IPAddress.Loopback, 53) } });
+
         // ---- Cross-platform argument-validation tests ----
 
         [Fact]
@@ -48,7 +51,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_NullName_Throws()
         {
-            using DnsResolver r = new DnsResolver();
+            using DnsResolver r = CreateResolver();
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveAddressesAsync(null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveSrvAsync(null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveMxAsync(null!));
@@ -62,7 +65,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public void DnsResolver_NullName_Throws_Sync()
         {
-            using DnsResolver r = new DnsResolver();
+            using DnsResolver r = CreateResolver();
             Assert.Throws<ArgumentNullException>(() => r.ResolveAddresses(null!));
             Assert.Throws<ArgumentNullException>(() => r.ResolveSrv(null!));
             Assert.Throws<ArgumentNullException>(() => r.ResolveMx(null!));
@@ -75,7 +78,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_EmptyName_Throws()
         {
-            using DnsResolver r = new DnsResolver();
+            using DnsResolver r = CreateResolver();
             await Assert.ThrowsAsync<ArgumentException>(() => r.ResolveAddressesAsync(string.Empty));
             Assert.Throws<ArgumentException>(() => r.ResolveAddresses(string.Empty));
         }
@@ -96,7 +99,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_Disposed_Throws()
         {
-            DnsResolver r = new DnsResolver();
+            DnsResolver r = CreateResolver();
             r.Dispose();
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveSrvAsync(TestSrv));
@@ -109,7 +112,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_DisposeAsync_ThrowsOnUse()
         {
-            DnsResolver r = new DnsResolver();
+            DnsResolver r = CreateResolver();
             await r.DisposeAsync();
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
         }
