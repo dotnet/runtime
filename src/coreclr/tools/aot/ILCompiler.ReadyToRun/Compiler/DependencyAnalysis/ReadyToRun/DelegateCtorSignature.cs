@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.TypeSystem;
 using Internal.JitInterface;
 using Internal.Text;
@@ -66,29 +65,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList
-            {
-                new DependencyListEntry(_targetMethod, "Delegate target method")
-            };
-
-            if (factory.Target.IsWasm &&
-                _targetMethod.Method.Signature.IsStatic &&
-                !_targetMethod.Method.IsAsyncCall())
-            {
-                MethodDesc invokeMethod = _delegateType.GetMethod("Invoke"u8, null);
-                if (invokeMethod is not null)
+            return new DependencyList(
+                new DependencyListEntry[]
                 {
-                    WasmSignature signature = WasmLowering.GetSignature(invokeMethod);
-                    if (signature.SignatureString[0] == 'S' && !signature.SignatureString.Contains('a'))
-                    {
-                        dependencies.Add(
-                            factory.WasmClosedStaticRetBufThunk(signature),
-                            "Delegate constructor requires closed static return-buffer thunk");
-                    }
+                    new DependencyListEntry(_targetMethod, "Delegate target method")
                 }
-            }
-
-            return dependencies;
+            );
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

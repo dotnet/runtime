@@ -876,9 +876,10 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
     void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
     if (thunk == NULL)
     {
-        // A missing thunk means there is no R2R caller for this signature. Interpreted delegate
-        // invocation calls the target MethodDesc directly and handles the closed-static shape inline.
-        return pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, targetEntryPoint);
+        // A compiled delegate invocation roots this thunk. Without one, interpreter delegate
+        // invocation can call the target MethodDesc directly and handle the closed-static shape inline.
+        // Do not cache this fallback: a subsequently loaded R2R image may register the missing thunk.
+        return targetEntryPoint;
     }
 
     AllocMemTracker amt;

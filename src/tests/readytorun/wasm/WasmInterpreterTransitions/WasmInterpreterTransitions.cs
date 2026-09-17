@@ -86,7 +86,6 @@ public class WasmInterpreterTransitions
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
-    private delegate ObjectPair CreationOnlyObjectPairDelegate(double value);
     private delegate SingleInt ReturnsSingleIntDelegate();
     private delegate SmallEnum ReturnsSmallEnumDelegate();
     private delegate ObjectPair ReturnsObjectPairDelegate();
@@ -148,12 +147,6 @@ public class WasmInterpreterTransitions
 
             ReturnsSmallEnumDelegate enumCallback = target.GetSmallEnum;
             Assert.Equal(SmallEnum.Value, enumCallback());
-
-            CreationOnlyObjectPairDelegate creationOnlyCallback = target.GetPairWithUnusedDouble;
-            Assert.Same(target, creationOnlyCallback.Target);
-
-            Func<double, ObjectPair> genericCreationOnlyCallback = target.GetPairWithUnusedDouble;
-            Assert.Same(target, genericCreationOnlyCallback.Target);
 
             VerifyDynamicClosedStaticDelegate();
         }
@@ -602,8 +595,6 @@ public static class ObjectPairTargetExtensions
     public static SingleInt GetSingleInt(this ObjectPairTarget target) => new SingleInt { Value = 0x11223344 };
 
     public static SmallEnum GetSmallEnum(this ObjectPairTarget target) => SmallEnum.Value;
-
-    public static ObjectPair GetPairWithUnusedDouble(this ObjectPairTarget target, double value) => target.Pair;
 
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
