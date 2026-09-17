@@ -1709,8 +1709,8 @@ namespace System.IO.Ports
                     //       but CE_BREAK is returned from ClreaCommError.
                     // TODO: what about other error conditions not covered by the enum?  Should those produce some other error?
 
-                    // if error events occurred and an event handler exists to handle them, queue a work item to handle them
-                    if (errors != 0 && stream?.ErrorReceived != null)
+                    // if error events occurred queue a work item to handle them because SerialPort unconditionally attaches its own handler
+                    if (errors != 0)
                     {
                         ThreadPool.QueueUserWorkItem(callErrorEvents, errors);
                     }
