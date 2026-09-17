@@ -134,6 +134,7 @@ namespace
             case DynamicMethodDesc::StubVirtualStaticMethodDispatch: return "IL_STUB_VirtualStaticMethodDispatch";
             case DynamicMethodDesc::StubDelegateShuffleThunk: return "IL_STUB_DelegateShuffleThunk";
             case DynamicMethodDesc::StubAsyncResume:        return "IL_STUB_AsyncResume";
+            case DynamicMethodDesc::StubClosedStaticRetBuf: return "IL_STUB_ClosedStaticRetBuf";
             default:
                 UNREACHABLE_MSG("Unknown stub type");
         }
@@ -282,6 +283,11 @@ MethodDesc* ILStubCache::CreateNewMethodDesc(LoaderHeap* pCreationHeap, MethodTa
     if (SF_IsDelegateShuffleThunk(dwStubFlags))
     {
         pMD->SetILStubType(DynamicMethodDesc::StubDelegateShuffleThunk);
+    }
+    else
+    if (SF_IsClosedStaticRetBufStub(dwStubFlags))
+    {
+        pMD->SetILStubType(DynamicMethodDesc::StubClosedStaticRetBuf);
     }
     else
     {

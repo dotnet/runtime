@@ -2496,19 +2496,6 @@ void LoaderAllocator::AddPendingPortableEntryPointThunk(MethodDesc* pMD)
     AddPendingPortableEntryPointThunkUnderLock(this, pMD);
 }
 
-void LoaderAllocator::AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    AddPendingClosedStaticRetBufThunkUnderLock(this, pEntryPoint);
-}
-
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #endif

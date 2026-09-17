@@ -3015,7 +3015,8 @@ public:
         StubAsyncResume = 18,
 
         // unused           = 19, // was StubCLRToCOMEvent
-        StubLast = 20
+        StubClosedStaticRetBuf = 20,
+        StubLast = 21
     };
 
     enum Flag : DWORD

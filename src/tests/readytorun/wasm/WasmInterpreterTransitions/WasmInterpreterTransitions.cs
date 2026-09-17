@@ -89,6 +89,14 @@ public class WasmInterpreterTransitions
     private delegate SingleInt ReturnsSingleIntDelegate();
     private delegate SmallEnum ReturnsSmallEnumDelegate();
     private delegate ObjectPair ReturnsObjectPairDelegate();
+    private delegate ObjectPair RuntimeTargetDelegate(
+        long unusedLong1,
+        float unusedFloat1,
+        double unusedDouble1,
+        int unusedInt,
+        long unusedLong2,
+        double unusedDouble2,
+        float unusedFloat2);
 
     private readonly int _state = C;
 
@@ -149,6 +157,7 @@ public class WasmInterpreterTransitions
             Assert.Equal(SmallEnum.Value, enumCallback());
 
             VerifyDynamicClosedStaticDelegate();
+            VerifyRuntimeGeneratedTarget(target);
         }
 
         // R2R -> interpreted, struct returns. The return buffer follows 'this' for an instance
@@ -328,6 +337,39 @@ public class WasmInterpreterTransitions
         Assert.Equal(A, (int)resultType.GetField("First").GetValue(boxedResult));
         Assert.Equal(B, (int)resultType.GetField("Second").GetValue(boxedResult));
     }
+
+    private static void VerifyRuntimeGeneratedTarget(ObjectPairTarget target)
+    {
+        DynamicMethod targetMethod = new(
+            "RuntimeGeneratedTarget",
+            typeof(ObjectPair),
+            new[]
+            {
+                typeof(ObjectPairTarget),
+                typeof(long),
+                typeof(float),
+                typeof(double),
+                typeof(int),
+                typeof(long),
+                typeof(double),
+                typeof(float),
+            });
+        ILGenerator il = targetMethod.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldfld, typeof(ObjectPairTarget).GetField(nameof(ObjectPairTarget.Pair)));
+        il.Emit(OpCodes.Ret);
+
+        RuntimeTargetDelegate callback = (RuntimeTargetDelegate)targetMethod.CreateDelegate(
+            typeof(RuntimeTargetDelegate),
+            target);
+        ObjectPair result = InvokeRuntimeGeneratedTarget(callback);
+        Assert.Same(target.Pair.First, result.First);
+        Assert.Same(target.Pair.Second, result.Second);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ObjectPair InvokeRuntimeGeneratedTarget(RuntimeTargetDelegate callback) =>
+        callback(1, 2.0f, 3.0, 4, 5, 6.0, 7.0f);
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
