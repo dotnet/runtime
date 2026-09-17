@@ -140,6 +140,11 @@ namespace System
             /// Indicates that there is an authority, but the scheme does not use "//" to delimit it (e.g. "http:\\host").
             /// </summary>
             SchemeNotCanonical_NoTrailingSlashes = 1UL << 58,
+
+            /// <summary>
+            /// Disables recognizing absolute file paths as file URIs during initial scheme parsing.
+            /// </summary>
+            DisableImplicitFilePaths = 1UL << 59,
         }
 
         [Conditional("DEBUG")]
@@ -425,7 +430,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
-            CreateThis(uriString, false, UriKind.Absolute);
+            CreateThis(uriString, Flags.Zero, UriKind.Absolute);
         }
 
         //
@@ -438,7 +443,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
-            CreateThis(uriString, dontEscape, UriKind.Absolute);
+            CreateThis(uriString, dontEscape ? Flags.UserEscaped : Flags.Zero, UriKind.Absolute);
         }
 
         //
@@ -465,7 +470,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
-            CreateThis(uriString, false, uriKind);
+            CreateThis(uriString, Flags.Zero, uriKind);
         }
 
         /// <summary>
@@ -477,7 +482,7 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(uriString);
 
-            CreateThis(uriString, false, UriKind.Absolute, in creationOptions);
+            CreateThis(uriString, creationOptions._flags, UriKind.Absolute);
         }
 
         //
@@ -510,7 +515,7 @@ namespace System
 
             if (uriString!.Length != 0)
             {
-                CreateThis(uriString, false, UriKind.Absolute);
+                CreateThis(uriString, Flags.Zero, UriKind.Absolute);
                 return;
             }
 
@@ -518,7 +523,7 @@ namespace System
             if (uriString is null)
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "RelativeUri"), nameof(serializationInfo));
 
-            CreateThis(uriString, false, UriKind.Relative);
+            CreateThis(uriString, Flags.Zero, UriKind.Relative);
         }
 
         //
@@ -552,7 +557,7 @@ namespace System
             DebugAssertInCtor();
 
             // Parse relativeUri and populate Uri internal data.
-            CreateThis(relativeUri, dontEscape, UriKind.RelativeOrAbsolute);
+            CreateThis(relativeUri, dontEscape ? Flags.UserEscaped : Flags.Zero, UriKind.RelativeOrAbsolute);
 
             if (baseUri.Syntax!.IsSimple)
             {
@@ -581,7 +586,7 @@ namespace System
             _syntax = null!;
             _originalUnicodeString = null!;
             // If not resolved, we reparse modified Uri string and populate Uri internal data.
-            CreateThis(relativeUri, dontEscape, UriKind.Absolute);
+            CreateThis(relativeUri, dontEscape ? Flags.UserEscaped : Flags.Zero, UriKind.Absolute);
         }
 
         //
@@ -626,7 +631,7 @@ namespace System
             _info = null!;
             _syntax = null!;
             _originalUnicodeString = null!;
-            CreateThis(newUriString, dontEscape, UriKind.Absolute);
+            CreateThis(newUriString, dontEscape ? Flags.UserEscaped : Flags.Zero, UriKind.Absolute);
         }
 
         //
@@ -3529,6 +3534,7 @@ namespace System
             // Unix: Unix path?
             // A path starting with 2 / or \ (including mixed) is treated as UNC and will be matched below
             if (!OperatingSystem.IsWindows() &&
+                StaticNotAny(flags, Flags.DisableImplicitFilePaths) &&
                 (uint)i < (uint)uriString.Length && uriString[i] == '/' &&
                 ((uint)(i + 1) >= (uint)uriString.Length || uriString[i + 1] is not ('/' or '\\')))
             {
@@ -3553,7 +3559,7 @@ namespace System
             if (uriString[i + 1] is ':' or '|')
             {
                 // DOS-like path?
-                if (char.IsAsciiLetter(uriString[i]))
+                if (char.IsAsciiLetter(uriString[i]) && StaticNotAny(flags, Flags.DisableImplicitFilePaths))
                 {
                     if (uriString[i + 2] is '\\' or '/')
                     {
@@ -3572,7 +3578,7 @@ namespace System
             else if (uriString[i] is '/' or '\\')
             {
                 // UNC share?
-                if (uriString[i + 1] is '\\' or '/')
+                if ((uriString[i + 1] is '\\' or '/') && StaticNotAny(flags, Flags.DisableImplicitFilePaths))
                 {
                     flags |= (Flags.UncPath | Flags.ImplicitFile | Flags.AuthorityFound);
                     syntax = UriParser.FileUri;
