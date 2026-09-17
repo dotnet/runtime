@@ -140,6 +140,18 @@ namespace System.Threading
             // returns - see s_ringHandle's doc comment for why.
             private static int s_wakeEventFd = -1;
 
+            // Coalescing flag for TrySubmit's wake-up signal: 0 means no thread has signaled the issuer
+            // since its last reset, 1 means one already has (so no further EventFdWrite syscall is
+            // needed until the issuer resets it again). Profiling a real workload (TechEmpower JSON
+            // benchmark under wrk load) showed thousands of individual EventFdWrite syscalls - one per
+            // TrySubmit call - even though the issuer thread only ends up needing a small fraction of
+            // that many actual wake-ups, since many concurrent TrySubmit calls from different Thread Pool
+            // worker threads land in the same "the issuer thread is already awake and about to drain the
+            // queue anyway" window. This flag turns any number of concurrent TrySubmit calls between two
+            // issuer wake cycles into at most one EventFdWrite syscall, without risking a missed wake-up:
+            // see TrySubmit and IssuerLoop for the reset-then-recheck protocol that makes this safe.
+            private static int s_wakeSignaled;
+
 #pragma warning disable CA1810 // remove the explicit static constructor
             static IoUringThreadPool()
             {
@@ -271,7 +283,17 @@ namespace System.Threading
 
                 Interlocked.Increment(ref s_inFlightCount);
                 s_pendingSubmissions.Enqueue(localRequest);
-                Interop.Sys.EventFdWrite(s_wakeEventFd);
+
+                // Only the thread that wins the 0->1 transition actually writes to the eventfd; every
+                // other concurrent caller can rely on that single write to wake the issuer, since the
+                // issuer only resets this flag back to 0 immediately before it is about to re-check the
+                // queue/wait (see IssuerLoop) - so any enqueue that raced with a reset either gets
+                // "counted" by winning this Exchange itself, or is safely picked up by the issuer's own
+                // post-reset recheck of the queue.
+                if (Interlocked.Exchange(ref s_wakeSignaled, 1) == 0)
+                {
+                    Interop.Sys.EventFdWrite(s_wakeEventFd);
+                }
 
                 return true;
             }
@@ -306,6 +328,19 @@ namespace System.Threading
                     {
                         // Something was enqueued while we were draining; go around again immediately
                         // instead of waiting.
+                        continue;
+                    }
+
+                    // Reset the wake-coalescing flag (see TrySubmit and s_wakeSignaled) before waiting,
+                    // so that any TrySubmit call from here on is guaranteed to win the 0->1 transition and
+                    // signal us. Then re-check the queue: a TrySubmit call could have raced with this very
+                    // reset (observed the flag as still 1 from a *previous* cycle, so skipped its own
+                    // EventFdWrite, right before we set it back to 0) - the recheck below is what catches
+                    // that case and avoids a missed wake-up, instead of relying on the write that thread
+                    // decided not to do.
+                    Volatile.Write(ref s_wakeSignaled, 0);
+                    if (!s_pendingSubmissions.IsEmpty)
+                    {
                         continue;
                     }
 
