@@ -30,5 +30,6 @@
            Condition="'$(OutputType)' != 'Exe'" />
   </Target>
 
-  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" Condition="'$(UseXUnitV3)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.v3.targets" Condition="'$(UseXUnitV3)' == 'true'" />
 </Project>
