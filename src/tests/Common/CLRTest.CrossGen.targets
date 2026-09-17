@@ -142,7 +142,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
             echo --synthesize-random-mibc >> "$__ResponseFile"
-            if [ "$(CrossGen2OutputFormat)" != "wasm" ]; then
+            if [ "$(TargetArchitecture)" != "wasm" ]; then
                 echo --embed-pgo-data >> "$__ResponseFile"
             fi
         fi
@@ -376,7 +376,7 @@ if defined RunCrossGen2 (
     )
     if defined CrossGen2SynthesizePgo (
         echo --synthesize-random-mibc>>!__ResponseFile!
-        if not "$(CrossGen2OutputFormat)"=="wasm" (
+        if not "$(TargetArchitecture)"=="wasm" (
             echo --embed-pgo-data>>!__ResponseFile!
         )
     )
