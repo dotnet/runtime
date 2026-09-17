@@ -57,6 +57,41 @@ namespace System.Reflection.Tests
             public MutableConstructorTarget(int value) => Value = value;
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Invoke_SpecialAllocatingConstructorsWithExistingInstance(bool useString)
+        {
+            ConstructorInfo constructor;
+            object target;
+            object?[] arguments;
+
+            if (useString)
+            {
+                constructor = typeof(string).GetConstructor(new[] { typeof(char[]) })!;
+                target = "existing";
+                arguments = new object?[] { new[] { 'n', 'e', 'w' } };
+            }
+            else
+            {
+                constructor = typeof(object[]).GetConstructor(new[] { typeof(int) })!;
+                target = new object[1];
+                arguments = new object?[] { 3 };
+            }
+
+            object? result = constructor.Invoke(target, arguments);
+            Assert.NotNull(result);
+            Assert.NotSame(target, result);
+            if (useString)
+            {
+                Assert.Equal("new", result);
+            }
+            else
+            {
+                Assert.Equal(3, Assert.IsType<object[]>(result).Length);
+            }
+        }
+
         public static IEnumerable<object[]> Invoke_ReferenceConstructors_SharedThunk_TestData()
         {
             yield return new object[] { Type.EmptyTypes, Array.Empty<object?>() };
