@@ -42,7 +42,7 @@ endm
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  STUBS & DATA SECTIONS  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-THUNK_CODESIZE                      equ 10h     ;; 7-byte lea, 6-byte jmp, 3 bytes of nops
+THUNK_CODESIZE                      equ 10h     ;; 7-byte mov, 6-byte jmp, 3 bytes of nops
 THUNK_DATASIZE                      equ 010h    ;; 2 qwords
 
 THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 0FAh    ;; 250 thunks per page
@@ -51,58 +51,50 @@ PAGE_SIZE                           equ 01000h  ;; 4K
 POINTER_SIZE                        equ 08h
 
 
-LOAD_DATA_ADDRESS macro groupIndex, index, thunkPool
+LOAD_CONTEXT macro groupIndex, index, thunkPool
         ALIGN   10h                             ;; make sure we align to 16-byte boundary for CFG table
 
-        ;; set r10 to beginning of data page : r10 <- [thunkPool] + PAGE_SIZE
-        ;; fix offset of the data           : r10 <- r10 + (THUNK_DATASIZE * current thunk's index)
-        lea     r10, [thunkPool + PAGE_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
+        mov     r10, qword ptr[thunkPool + PAGE_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
 endm
 
-JUMP_TO_COMMON macro groupIndex, index, thunkPool
-        ;; jump to the location pointed at by the last qword in the data page
-        jmp     qword ptr[thunkPool + PAGE_SIZE + PAGE_SIZE - POINTER_SIZE]
+JUMP_TO_TARGET macro groupIndex, index, thunkPool
+        jmp     qword ptr[thunkPool + PAGE_SIZE + POINTER_SIZE + (groupIndex * THUNK_DATASIZE * 10 + THUNK_DATASIZE * index)]
 endm
 
 TenThunks macro groupIndex, thunkPool
-        ;; Each thunk will load the address of its corresponding data (from the page that immediately follows)
-        ;; and call a common stub. The address of the common stub is setup by the caller (first qword
-        ;; in the thunks data section, hence the +8's below) depending on the 'kind' of thunks needed (interop,
-        ;; fat function pointers, etc...)
-
         ;; Each data block used by a thunk consists of two qword values:
         ;;      - Context: some value given to the thunk as context (passed in r10). Example for fat-fptrs: context = generic dictionary
         ;;      - Target : target code that the thunk eventually jumps to.
 
-        LOAD_DATA_ADDRESS groupIndex,0,thunkPool
-        JUMP_TO_COMMON    groupIndex,0,thunkPool
+        LOAD_CONTEXT   groupIndex,0,thunkPool
+        JUMP_TO_TARGET groupIndex,0,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,1,thunkPool
-        JUMP_TO_COMMON    groupIndex,1,thunkPool
+        LOAD_CONTEXT   groupIndex,1,thunkPool
+        JUMP_TO_TARGET groupIndex,1,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,2,thunkPool
-        JUMP_TO_COMMON    groupIndex,2,thunkPool
+        LOAD_CONTEXT   groupIndex,2,thunkPool
+        JUMP_TO_TARGET groupIndex,2,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,3,thunkPool
-        JUMP_TO_COMMON    groupIndex,3,thunkPool
+        LOAD_CONTEXT   groupIndex,3,thunkPool
+        JUMP_TO_TARGET groupIndex,3,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,4,thunkPool
-        JUMP_TO_COMMON    groupIndex,4,thunkPool
+        LOAD_CONTEXT   groupIndex,4,thunkPool
+        JUMP_TO_TARGET groupIndex,4,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,5,thunkPool
-        JUMP_TO_COMMON    groupIndex,5,thunkPool
+        LOAD_CONTEXT   groupIndex,5,thunkPool
+        JUMP_TO_TARGET groupIndex,5,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,6,thunkPool
-        JUMP_TO_COMMON    groupIndex,6,thunkPool
+        LOAD_CONTEXT   groupIndex,6,thunkPool
+        JUMP_TO_TARGET groupIndex,6,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,7,thunkPool
-        JUMP_TO_COMMON    groupIndex,7,thunkPool
+        LOAD_CONTEXT   groupIndex,7,thunkPool
+        JUMP_TO_TARGET groupIndex,7,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,8,thunkPool
-        JUMP_TO_COMMON    groupIndex,8,thunkPool
+        LOAD_CONTEXT   groupIndex,8,thunkPool
+        JUMP_TO_TARGET groupIndex,8,thunkPool
 
-        LOAD_DATA_ADDRESS groupIndex,9,thunkPool
-        JUMP_TO_COMMON    groupIndex,9,thunkPool
+        LOAD_CONTEXT   groupIndex,9,thunkPool
+        JUMP_TO_TARGET groupIndex,9,thunkPool
 endm
 
 THUNKS_PAGE_BLOCK macro thunkPool
