@@ -164,6 +164,7 @@ private:
 
     static void ReadPgoData();
     static void WritePgoData();
+    static void EmitInstrumentationDataToEventPipe();
 
 private:
 
