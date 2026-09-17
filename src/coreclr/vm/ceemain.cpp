@@ -1839,6 +1839,11 @@ static bool HasThreadStateBeenDestroyed()
 {
     return t_threadStateDestroyed;
 }
+
+static void SetThreadStateDestroyed()
+{
+    t_threadStateDestroyed = true;
+}
 #endif
 
 struct TlsDestructionMonitor
@@ -1857,11 +1862,7 @@ struct TlsDestructionMonitor
             RuntimeThreadShutdown(GetThreadNULLOk());
         }
 
-#ifdef TARGET_APPLE
         SetThreadStateDestroyed();
-#else
-        t_threadStateDestroyed = true;
-#endif
     }
 };
 
