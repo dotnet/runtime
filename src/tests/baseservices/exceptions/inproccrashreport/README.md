@@ -12,6 +12,7 @@ The same managed validation and native driver run as regular CoreCLR tests on de
 | `Abort` | One completed JSON file and a compact report: two thread records, `SIGABRT`, a native-only crash stack, and no managed exception fields. |
 | `StackOverflow` | One completed JSON file and a compact report: a managed stack-overflow exception, 42 total frames represented by three trace entries, and a recursive entry repeated 40 times. Tests emission, not stack exhaustion or trace compression. |
 | `ConsoleOnly` | The rich compact report, without even creating the lifecycle report directory despite being given a valid root. |
+| `OnDemand` | Two JSON and two compact reports with changing signals, using the same rich assertions. Null and nested callbacks are rejected; failed sinks stop receiving writes and later requests succeed. The first report needs no services; later requests leave an enabled lifecycle directory empty. |
 
 Every test must exit normally with code 100; none intentionally crashes. Desktop projects use isolated generated test runners because the native reporter retains process-wide state. The additional threads are fixed callback records, not real concurrent threads.
 

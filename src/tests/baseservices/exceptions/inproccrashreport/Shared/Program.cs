@@ -20,7 +20,7 @@ public static class Program
     private const int ScenarioId = 2;
 #elif INPROC_SCENARIO_CONSOLEONLY
     private const int ScenarioId = 3;
-#elif INPROC_SCENARIO_RICHSIGSEGV
+#elif INPROC_SCENARIO_RICHSIGSEGV || INPROC_SCENARIO_ONDEMAND
     private const int ScenarioId = 0;
 #else
 #error Define an INPROC_SCENARIO_* symbol for this test.
@@ -39,6 +39,13 @@ public static class Program
     private static extern int InProcCrashReportTest_DriveScenario(
         int scenario, string reportRootPath, string consoleCapturePath);
 
+#if INPROC_SCENARIO_ONDEMAND
+    [DllImport(NativeLib)]
+    private static extern int InProcCrashReportTest_DriveOnDemand(
+        string reportRootPath, string firstJsonPath, string secondJsonPath,
+        string firstLogPath, string secondLogPath);
+#endif
+
 #if INPROC_ANDROID
     public static int Main()
 #else
@@ -46,7 +53,11 @@ public static class Program
     public static int TestEntryPoint()
 #endif
     {
+#if INPROC_SCENARIO_ONDEMAND
+        return RunTest(RunOnDemand);
+#else
         return RunTest(RunScenario);
+#endif
     }
 
     private static int RunTest(Action<string> scenario)
@@ -138,7 +149,32 @@ public static class Program
         ValidateConsole(consolePath, ScenarioId);
     }
 
-    private static void ValidateJson(string path, int scenario)
+#if INPROC_SCENARIO_ONDEMAND
+    private static void RunOnDemand(string outputDirectory)
+    {
+        string firstJson = Path.Combine(outputDirectory, "first.json");
+        string secondJson = Path.Combine(outputDirectory, "second.json");
+        string firstLog = Path.Combine(outputDirectory, "first.log");
+        string secondLog = Path.Combine(outputDirectory, "second.log");
+        Stopwatch timer = Stopwatch.StartNew();
+        int result = InProcCrashReportTest_DriveOnDemand(outputDirectory, firstJson, secondJson, firstLog, secondLog);
+        Console.WriteLine($"Native on-demand driver returned {result} in {timer.ElapsedMilliseconds} ms");
+        Check(result == 0, "native on-demand driver failed; see its diagnostics");
+
+        // Both requests use the rich fixture; the changed signal detects stale output.
+        ValidateJson(firstJson, 0);
+        ValidateConsole(firstLog, 0);
+        ValidateJson(secondJson, 0, signal: "6");
+        ValidateConsole(secondLog, 0, signal: "6 (SIGABRT)");
+
+        string reportDirectory = Path.Combine(outputDirectory, ".dotnet", "crash-reports");
+        Check(Directory.Exists(reportDirectory), "native driver did not initialize lifecycle services");
+        Check(!Directory.EnumerateFileSystemEntries(reportDirectory).Any(),
+            "on-demand requests unexpectedly changed the lifecycle report directory");
+    }
+#endif
+
+    private static void ValidateJson(string path, int scenario, string? signal = null)
     {
         Console.WriteLine($"Validating JSON: {Path.GetFileName(path)}");
         using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
@@ -148,7 +184,7 @@ public static class Program
         CheckString(payload.GetProperty("configuration"), "architecture", GetArchitecture());
         CheckString(payload, "pid", Environment.ProcessId.ToString(CultureInfo.InvariantCulture));
         Check(!string.IsNullOrEmpty(payload.GetProperty("process_name").GetString()), "missing process name");
-        CheckString(root.GetProperty("parameters"), "signal", scenario == 1 ? "6" : "11");
+        CheckString(root.GetProperty("parameters"), "signal", signal ?? (scenario == 1 ? "6" : "11"));
 
         JsonElement threads = GetArray(payload, "threads", scenario switch { 1 => 2, 2 => 1, _ => 3 });
         ulong crashTid = ReadHex(threads[0], "native_thread_id");
@@ -229,7 +265,7 @@ public static class Program
         }
     }
 
-    private static void ValidateConsole(string path, int scenario)
+    private static void ValidateConsole(string path, int scenario, string? signal = null)
     {
         Console.WriteLine($"Validating compact report: {Path.GetFileName(path)}");
         string console = File.ReadAllText(path);
@@ -238,7 +274,7 @@ public static class Program
         Check(lines.Count(line => line == ".NET Crash Report v1.0.0") == 1, "expected one protocol header");
         Check(lines.Contains($"ABI: {GetArchitecture()}"), "incorrect ABI");
         Check(lines.Count(line => line.StartsWith("signal ", StringComparison.Ordinal)) == 1, "expected one signal line");
-        Check(lines.Contains($"signal {(scenario == 1 ? "6 (SIGABRT)" : "11 (SIGSEGV)")}"), "incorrect signal");
+        Check(lines.Contains($"signal {signal ?? (scenario == 1 ? "6 (SIGABRT)" : "11 (SIGSEGV)")}"), "incorrect signal");
         Check(!lines.Any(line => line == "(no managed frames)" || line.StartsWith("... +", StringComparison.Ordinal)),
             "compact report unexpectedly omitted frames");
 

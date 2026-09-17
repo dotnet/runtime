@@ -333,6 +333,73 @@ namespace
         return restored;
     }
 #endif
+
+    struct OnDemandOutputContext
+    {
+        FILE* file;
+        const char* path;
+        ucontext_t* signalContext;
+        bool attemptReentrantReport;
+        bool reentrantAttempted;
+        bool reentrantResult;
+    };
+
+    bool WriteOnDemandOutput(const char* buffer, size_t length, void* context)
+    {
+        OnDemandOutputContext* output = static_cast<OnDemandOutputContext*>(context);
+        if (output->attemptReentrantReport && !output->reentrantAttempted)
+        {
+            output->reentrantAttempted = true;
+            output->reentrantResult = InProcCrashReportCreateReport(
+                InProcCrashReportOutputFormat::Json,
+                SIGSEGV,
+                output->signalContext,
+                &WriteOnDemandOutput,
+                output);
+        }
+
+        return CheckIo(fwrite(buffer, 1, length, output->file) == length, "fwrite", output->path);
+    }
+
+    bool RejectOutput(const char* /*buffer*/, size_t /*length*/, void* context)
+    {
+        (*static_cast<int*>(context))++;
+        return false;
+    }
+
+    bool WriteOnDemandReport(
+        InProcCrashReportOutputFormat outputFormat,
+        int signal,
+        const char* outputPath,
+        ucontext_t* signalContext,
+        bool attemptReentrantReport = false)
+    {
+        printf("Generating on-demand format %u, signal %d: %s\n", static_cast<unsigned>(outputFormat), signal, outputPath);
+        fflush(stdout);
+        FILE* file = fopen(outputPath, "wb");
+        if (!CheckIo(file != nullptr, "fopen", outputPath))
+        {
+            return false;
+        }
+
+        OnDemandOutputContext output = {};
+        output.file = file;
+        output.path = outputPath;
+        output.signalContext = signalContext;
+        output.attemptReentrantReport = attemptReentrantReport;
+
+        bool generated = InProcCrashReportCreateReport(
+            outputFormat,
+            signal,
+            signalContext,
+            &WriteOnDemandOutput,
+            &output);
+
+        bool closed = CheckIo(fclose(file) == 0, "fclose", outputPath);
+        return Check(generated, "on-demand generation returned false") && closed &&
+            Check(!attemptReentrantReport || (output.reentrantAttempted && !output.reentrantResult),
+                "nested request was not attempted or was incorrectly accepted");
+    }
 }
 
 // One fatal-shaped scenario per process: the reporter retains its in-flight guard.
@@ -419,4 +486,67 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveScenario(
     bool captured = EndConsoleCapture(savedStderr);
 #endif
     return errnoPreserved && captured ? 0 : -1;
+}
+
+// First generate without services; subsequent requests must not use the enabled
+// lifecycle file sink, even after a caller-sink failure.
+extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveOnDemand(
+    const char* reportRootPath,
+    const char* firstJsonPath,
+    const char* secondJsonPath,
+    const char* firstLogPath,
+    const char* secondLogPath)
+{
+    if (!InitializePal())
+    {
+        return -1;
+    }
+
+    InProcCrashReporterSettings settings = {};
+    settings.isManagedThreadCallback = &IsManagedThreadCallback;
+    settings.walkStackCallback = nullptr;
+    settings.enumerateThreadsCallback = &EnumerateThreadsRichSigsegv;
+    settings.moduleInfoCallback = &ModuleInfoCallback;
+    settings.frameLimitPerThread = 0;
+    InProcCrashReportInitialize(settings);
+
+    SyntheticContext syntheticContext;
+    FillSyntheticContext(&syntheticContext);
+    ucontext_t* signalContext = &syntheticContext.context;
+
+    if (!Check(!InProcCrashReportCreateReport(
+            InProcCrashReportOutputFormat::Json,
+            SIGSEGV,
+            signalContext,
+            nullptr,
+            nullptr), "null output callback was accepted"))
+    {
+        return -1;
+    }
+
+    if (!WriteOnDemandReport(
+            InProcCrashReportOutputFormat::Json,
+            SIGSEGV,
+            firstJsonPath,
+            signalContext,
+            /*attemptReentrantReport*/ true))
+    {
+        return -1;
+    }
+
+    InitializeServices(reportRootPath, /*enableLifecycle*/ true);
+    const InProcCrashReportOutputFormat formats[] = { InProcCrashReportOutputFormat::Json, InProcCrashReportOutputFormat::Log };
+    for (InProcCrashReportOutputFormat format : formats)
+    {
+        int calls = 0;
+        bool generated = InProcCrashReportCreateReport(format, SIGSEGV, signalContext, &RejectOutput, &calls);
+        if (!Check(!generated && calls == 1, "failing output callback was ignored or invoked again after failure"))
+        {
+            return -1;
+        }
+    }
+
+    return WriteOnDemandReport(InProcCrashReportOutputFormat::Json, SIGABRT, secondJsonPath, signalContext) &&
+        WriteOnDemandReport(InProcCrashReportOutputFormat::Log, SIGSEGV, firstLogPath, signalContext) &&
+        WriteOnDemandReport(InProcCrashReportOutputFormat::Log, SIGABRT, secondLogPath, signalContext) ? 0 : -1;
 }
