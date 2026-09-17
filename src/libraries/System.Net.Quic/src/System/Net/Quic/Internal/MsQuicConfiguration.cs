@@ -4,9 +4,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.Quic;
+using Microsoft.Win32.SafeHandles;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic;
@@ -205,6 +207,16 @@ internal static class MsQuicConfiguration
                ((flags & QUIC_CREDENTIAL_FLAGS.CLIENT) == 0 ? MsQuicApi.Tls13ServerMayBeDisabled : MsQuicApi.Tls13ClientMayBeDisabled))
             {
                 ThrowHelper.ThrowIfMsQuicError(status, SR.net_quic_tls_version_notsupported);
+            }
+
+            if ((status == QUIC_STATUS_CERT_NO_CERT || (Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.UnknownCredentials) &&
+                certificate is not null && certificate.HasPrivateKey())
+            {
+                using SafeCertContextHandle safeCertContextHandle = Interop.Crypt32.CertDuplicateCertificateContext(certificate.Handle);
+                if (safeCertContextHandle.HasEphemeralPrivateKey)
+                {
+                    throw new AuthenticationException(SR.net_auth_ephemeral);
+                }
             }
 #endif
 
