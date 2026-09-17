@@ -61,6 +61,9 @@ namespace System.DirectoryServices.Protocols
 
 internal delegate int LDAP_SASL_INTERACT_PROC(IntPtr ld, uint flags, IntPtr defaults, IntPtr interact);
 
+[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+internal delegate int LDAP_TLS_CONNECT_CB(IntPtr ld, IntPtr ssl, IntPtr ctx, IntPtr arg);
+
 internal static partial class Interop
 {
     public const string LDAP_SASL_SIMPLE = null;
@@ -156,14 +159,17 @@ internal static partial class Interop
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_clientcert(ConnectionHandle ldapHandle, LdapOption option, QUERYCLIENTCERT outValue);
 
-        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
-        public static partial int ldap_set_option_servercert(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue);
-
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option", SetLastError = true)]
         public static partial int ldap_set_option_int(ConnectionHandle ld, LdapOption option, ref int inValue);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr inValue);
+
+        //[LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        //public static partial int ldap_set_option_ptr(IntPtr ldapHandle, LdapOption option, ref IntPtr inValue);
+
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        internal static partial int ldap_set_option_ptr_value(ConnectionHandle ldapHandle, LdapOption option, IntPtr inValue);
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_string(ConnectionHandle ldapHandle, LdapOption option, [MarshalAs(UnmanagedType.LPUTF8Str)] string inValue);
