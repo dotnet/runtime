@@ -1747,7 +1747,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
                         PrintOutput($"Profile is based on {numLbrRecords} LBR records");
                     }
 
-                    correlator.SmoothAllProfiles();
+                    correlator.SmoothAllProfiles(_command.Warnings ? PrintWarning : null);
                 }
 
                 if (_command.DisplayProcessedEvents)
