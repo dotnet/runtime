@@ -4,7 +4,7 @@
 
     <GCStressIncompatible Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'osx'">true</GCStressIncompatible>
 
-    <!-- Managed ilasm round-tripping this merged runner exceeds practical CI limits. -->
+    <!-- Managed ilasm consumes excessive amount of memory -->
     <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
 
     <!-- Various platforms will always throw, so we don't want to spend cycles running tests unnecessarily -->

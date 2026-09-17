@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>X86_Avx512F_r</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Test assets are architecture-neutral, so this x86 managed-ilasm OOM exclusion must be unconditional. -->
+    <!-- Managed ilasm consumes excessive amount of memory -->
     <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
   </PropertyGroup>
   <PropertyGroup>

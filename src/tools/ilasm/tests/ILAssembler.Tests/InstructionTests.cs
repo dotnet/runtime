@@ -47,7 +47,7 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesMethodBodyAttributes()
+        public void UndefinedBranchTarget_WithErrorTolerantOption_PreservesNativeFatHeaderBehavior()
         {
             string source = """
                 .assembly extern mscorlib { }
@@ -84,7 +84,7 @@ namespace ILAssembler.Tests
             MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
 
             Assert.Equal(3, body.MaxStack);
-            Assert.False(body.LocalVariablesInitialized);
+            Assert.True(body.LocalVariablesInitialized);
         }
 
         [Fact]
@@ -594,11 +594,9 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
-        [InlineData("ret", false)]
-        [InlineData("ldc.i4.1\nlocalloc\npop\nret", true)]
-        public void MaxStackDirective_PreservesObservableInitializationBehavior(
-            string instructions,
-            bool expectedLocalVariablesInitialized)
+        [InlineData("ret")]
+        [InlineData("ldc.i4.1\nlocalloc\npop\nret")]
+        public void MaxStackDirective_BelowEightMatchesNativeFatHeaderBehavior(string instructions)
         {
             string source = $$"""
                 .assembly Test { }
@@ -620,7 +618,7 @@ namespace ILAssembler.Tests
 
             MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
             Assert.Equal(3, body.MaxStack);
-            Assert.Equal(expectedLocalVariablesInitialized, body.LocalVariablesInitialized);
+            Assert.True(body.LocalVariablesInitialized);
         }
 
         [Fact]

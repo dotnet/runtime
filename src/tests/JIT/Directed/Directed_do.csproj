@@ -3,7 +3,7 @@
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
-    <!-- Test assets are architecture-neutral, so this x86 managed-ilasm OOM exclusion must be unconditional. -->
+    <!-- Managed ilasm consumes excessive amount of memory -->
     <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
     <_UseOutOfProcessPhysicalPromotionTests Condition="'$(TargetsMobile)' != 'true' or ('$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr')">true</_UseOutOfProcessPhysicalPromotionTests>
   </PropertyGroup>

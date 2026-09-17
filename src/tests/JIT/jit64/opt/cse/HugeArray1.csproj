@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>False</Optimize>
-    <!-- Test assets are architecture-neutral, so this x86 managed-ilasm OOM exclusion must be unconditional. -->
+    <!-- Managed ilasm consumes excessive amount of memory -->
     <ManagedIlasmRoundTripIncompatible>true</ManagedIlasmRoundTripIncompatible>
     <!-- Tracking issue: https://github.com/dotnet/runtime/issues/46622 -->
     <DisableProjectBuild Condition="'$(RuntimeVariant)' == 'monointerpreter' or '$(MonoForceInterpreter)' == 'true'">true</DisableProjectBuild>

@@ -375,15 +375,15 @@ namespace ILAssembler
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
                     MethodBodyAttributes bodyAttributes = methodDef.BodyAttributes;
-                    if (methodDef.HasDynamicStackAllocation
-                        && methodDef.MaxStack < 8
+                    if (methodDef.MaxStack < 8
                         && methodDef.MethodBody.CodeBuilder.Count < 64
                         && localsSigHandle.IsNil
                         && methodDef.ExceptionRegions.Count == 0)
                     {
-                        // COMPAT: ildasm omits InitLocals when there is no local signature. Native
-                        // ilasm reconstructs it for this shape while forcing a fat header. Preserve
-                        // the observable localloc zeroing behavior.
+                        // COMPAT: Native ilasm preserves maxstack values below 8 by forcing a fat
+                        // header via InitLocals for methods that would otherwise qualify for a tiny
+                        // header. InitLocals has no other effect because tiny-header methods have no
+                        // locals.
                         bodyAttributes |= MethodBodyAttributes.InitLocals;
                     }
 
@@ -391,12 +391,6 @@ namespace ILAssembler
                         (methodDef.MaxStack < 8 || bodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
                         && methodDef.MethodBody.CodeBuilder.Count < 64
                         && localsSigHandle.IsNil;
-                    if (requiresFatHeaderWhenExceptionRegionsAreOmitted && methodDef.ExceptionRegions.Count == 0)
-                    {
-                        // A non-nil empty locals signature forces a fat header without changing
-                        // InitLocals.
-                        localsSigHandle = GetOrCreateEmptyLocalsSignature();
-                    }
 
                     try
                     {
@@ -405,7 +399,7 @@ namespace ILAssembler
                             methodDef.MaxStack,
                             localsSigHandle,
                             bodyAttributes,
-                            methodDef.HasDynamicStackAllocation);
+                            hasDynamicStackAllocation: true);
                     }
                     catch (InvalidOperationException)
                     {
@@ -419,7 +413,7 @@ namespace ILAssembler
                             hasSmallExceptionRegions: true,
                             requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
                             bodyAttributes,
-                            methodDef.HasDynamicStackAllocation);
+                            hasDynamicStackAllocation: true);
                         bodyOffset = fallbackBody.Offset;
                         var writer1 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
@@ -436,7 +430,7 @@ namespace ILAssembler
                             hasSmallExceptionRegions: true,
                             requiresFatHeaderWhenExceptionRegionsAreOmitted ? GetOrCreateEmptyLocalsSignature() : localsSigHandle,
                             bodyAttributes,
-                            methodDef.HasDynamicStackAllocation);
+                            hasDynamicStackAllocation: true);
                         bodyOffset = fallbackBody.Offset;
                         var writer2 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
@@ -1986,8 +1980,6 @@ namespace ILAssembler
             public InstructionEncoder MethodBody { get; } = new(new BlobBuilder(4096), new ControlFlowBuilder());
 
             public MethodBodyAttributes BodyAttributes { get; set; }
-
-            public bool HasDynamicStackAllocation { get; set; }
 
             /// <summary>
             /// Deferred exception regions. Registered during parsing but added to

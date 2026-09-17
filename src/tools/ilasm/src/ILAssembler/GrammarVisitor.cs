@@ -4083,10 +4083,6 @@ namespace ILAssembler
 
             var instrContext = context.GetRuleContext<ParserRuleContext>(0);
             ILOpCode opcode = ((GrammarResult.Literal<ILOpCode>)instrContext.Accept(this)).Value;
-            if (opcode == ILOpCode.Localloc)
-            {
-                _currentMethod!.Definition.HasDynamicStackAllocation = true;
-            }
             switch (instrContext.RuleIndex)
             {
                 case CILParser.RULE_instr_brtarget:
