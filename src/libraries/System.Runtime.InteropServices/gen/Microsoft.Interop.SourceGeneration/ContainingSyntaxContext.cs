@@ -123,16 +123,37 @@ namespace Microsoft.Interop
             return wrappedMember;
         }
 
-        public MemberDeclarationSyntax WrapMembersInContainingSyntaxWithUnsafeModifier(params MemberDeclarationSyntax[] members)
+        /// <summary>
+        /// Wraps <paramref name="members"/> in their containing types and namespace, reproducing the containing
+        /// types with the modifiers the user wrote and nothing more.
+        /// </summary>
+        /// <remarks>
+        /// Suitable when every generated member that names a pointer type carries its own <c>unsafe</c> modifier
+        /// or sits inside an <c>unsafe</c> block, which makes the containing type's modifier unnecessary under
+        /// the legacy rules and meaningless under the updated ones.
+        /// </remarks>
+        public MemberDeclarationSyntax WrapMembersInContainingSyntax(params MemberDeclarationSyntax[] members)
+            => WrapMembersInContainingSyntaxWithUnsafeModifier(useUpdatedMemorySafetyRules: true, members);
+
+        /// <summary>
+        /// Wraps <paramref name="members"/> in their containing types and namespace, adding an <c>unsafe</c>
+        /// modifier to the containing types unless <paramref name="useUpdatedMemorySafetyRules"/>.
+        /// </summary>
+        /// <remarks>
+        /// Under the legacy rules the modifier is what makes a pointer type legal to name in a generated member
+        /// whose own modifiers are copied from a user declaration that carries <c>unsafe</c> elsewhere. Under the
+        /// updated rules a pointer type needs no unsafe context to be named and the modifier has no effect at
+        /// all, so emitting it would only produce <c>CS9377</c> in code the user cannot edit.
+        /// </remarks>
+        public MemberDeclarationSyntax WrapMembersInContainingSyntaxWithUnsafeModifier(bool useUpdatedMemorySafetyRules, params MemberDeclarationSyntax[] members)
         {
-            bool addedUnsafe = false;
             MemberDeclarationSyntax? wrappedMember = null;
             foreach (var containingType in ContainingSyntax)
             {
                 TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
                     .WithModifiers(containingType.Modifiers)
                     .AddMembers(wrappedMember is not null ? new[] { wrappedMember } : members);
-                if (!addedUnsafe)
+                if (!useUpdatedMemorySafetyRules)
                 {
                     type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
                 }
@@ -149,7 +170,8 @@ namespace Microsoft.Interop
             return wrappedMember;
         }
 
-        public void WriteToWithUnsafeModifier<TState>(IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
+        /// <inheritdoc cref="WrapMembersInContainingSyntaxWithUnsafeModifier" path="/remarks"/>
+        public void WriteToWithUnsafeModifier<TState>(bool useUpdatedMemorySafetyRules, IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
         {
             if (ContainingNamespace is not null)
             {
@@ -167,7 +189,10 @@ namespace Microsoft.Interop
             {
                 ContainingSyntax syntax = ContainingSyntax[i];
 
-                writer.WriteLine($"{string.Join(" ", syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword))} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
+                SyntaxTokenList modifiers = useUpdatedMemorySafetyRules
+                    ? syntax.Modifiers
+                    : syntax.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword);
+                writer.WriteLine($"{string.Join(" ", modifiers)} {syntax.TypeKind.GetDeclarationKeyword()} {syntax.Identifier}{syntax.TypeParameters}");
                 writer.WriteLine('{');
                 writer.Indent++;
             }

@@ -18224,6 +18224,7 @@ namespace System
     public partial struct UriCreationOptions
     {
         private int _dummyPrimitive;
+        public bool AllowImplicitFilePaths { readonly get { throw null; } set { } }
         public bool DangerousDisablePathAndQueryCanonicalization { readonly get { throw null; } set { } }
     }
     public enum UriFormat
