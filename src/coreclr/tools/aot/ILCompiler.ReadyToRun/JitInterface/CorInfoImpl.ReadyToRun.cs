@@ -1272,6 +1272,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
+                    id = ReadyToRunHelper.ResumeAfterCatch;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     id = ReadyToRunHelper.StackProbe;
                     break;
