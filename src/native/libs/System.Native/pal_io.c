@@ -2233,6 +2233,15 @@ typedef struct
     uint32_t SqEntries;
     struct io_uring_sqe* Sqes;
 
+    // SqTail value as of the last time this thread actually asked the kernel to consume SQEs (via
+    // an io_uring_enter call in SystemNative_IoRingKick, or the submit-only flush call in
+    // SystemNative_IoRingWaitForCompletions) - not merely published one via SystemNative_IoRingSubmit,
+    // which only ever touches userspace state. Only ever read/written by the single dedicated issuer
+    // thread (see the io_uring PAL design notes), same as SqTail itself, so no synchronization is
+    // needed. Lets SystemNative_IoRingWaitForCompletions skip its submit-only io_uring_enter call
+    // entirely when nothing new has been published since the last flush - see its doc comment.
+    uint32_t SqFlushedTail;
+
     uint32_t* CqHead;
     uint32_t* CqTail;
     uint32_t* CqRingMask;
@@ -2565,6 +2574,7 @@ int32_t SystemNative_IoRingKick(intptr_t ringHandle)
     // the driver's own waiting enter call) already consumed everything, this call legitimately
     // has nothing to do and that is not a failure.
     IoUringEnter(ring->Fd, ring->SqEntries, 0, 0);
+    ring->SqFlushedTail = *ring->SqTail;
     return 0;
 #else
     (void)ringHandle;
@@ -2709,10 +2719,24 @@ int32_t SystemNative_IoRingWaitForCompletions(intptr_t ringHandle, IoRingComplet
     // here (e.g. by only doing the GETEVENTS-only call below) would leave newly-submitted SQEs
     // sitting unflushed in the SQ ring forever whenever nothing else happens to call
     // SystemNative_IoRingKick first.
-    long submitResult = IoUringEnter(ring->Fd, ring->SqEntries, 0, 0);
-    if (submitResult < 0)
+    //
+    // However, this flush call is skipped entirely when SqTail hasn't moved since the last time
+    // it was flushed (by this same call or by SystemNative_IoRingKick) - i.e. nothing new was
+    // published since then, so there is nothing for the kernel to consume and the syscall would
+    // be pure overhead. This matters a lot for a single dedicated issuer thread under light load:
+    // most of its wake-ups are purely to reap one or two already-ready completions with nothing
+    // new to submit, and without this check every single one of those wake-ups would still pay
+    // for a wasted io_uring_enter round trip.
+    uint32_t sqTail = *ring->SqTail;
+    if (sqTail != ring->SqFlushedTail)
     {
-        return -1;
+        long submitResult = IoUringEnter(ring->Fd, ring->SqEntries, 0, 0);
+        if (submitResult < 0)
+        {
+            return -1;
+        }
+
+        ring->SqFlushedTail = sqTail;
     }
 
     // ...then, in a separate call, wait for completions (to_submit=0, GETEVENTS only). to_submit
