@@ -229,10 +229,12 @@ bool Compiler::fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTre
     }
     *v.m_useSlots.BottomRef(lastIdx) = fwdSubNode;
 
-    // The original tree is inserted at the last use site and has exactly one
-    // local base. Updating liveness from there accounts for all earlier clones.
     GenTreeLclVarCommon* const lastUseLcl = gtPeelFieldAddrs(fwdSubNode)->AsLclVarCommon();
     fgSequenceLocals(nextStmt);
+
+    // The inserted subtree has exactly one local node, which serves as both the
+    // start and end of the inserted locals segment. This call walks backward
+    // from this point, properly adjusting any earlier clone and promoted parent flags.
     fgForwardSubUpdateLiveness(lastUseLcl, lastUseLcl);
 
     gtUpdateStmtSideEffects(nextStmt);
@@ -1139,44 +1141,6 @@ bool Compiler::fgForwardSubHasStoreInterference(Statement* defStmt, Statement* n
 }
 
 //------------------------------------------------------------------------
-// fgForwardSubUpdateLastUse: Clear last-use flags invalidated by a new local use.
-//
-// Arguments:
-//    lcl - a local node with last-use flags.
-//    newUseLclNum - the local number of the newly added use.
-//
-void Compiler::fgForwardSubUpdateLastUse(GenTreeLclVarCommon* lcl, unsigned newUseLclNum)
-{
-    if ((lcl->gtFlags & GTF_VAR_DEATH_MASK) == 0)
-    {
-        return;
-    }
-
-    unsigned const   lclNum = lcl->GetLclNum();
-    LclVarDsc* const dsc    = lvaGetDesc(lclNum);
-
-    if (dsc->lvPromoted)
-    {
-        if (newUseLclNum == lclNum)
-        {
-            lcl->gtFlags &= ~GTF_VAR_DEATH_MASK;
-        }
-        else if ((newUseLclNum >= dsc->lvFieldLclStart) && (newUseLclNum < dsc->lvFieldLclStart + dsc->lvFieldCnt))
-        {
-            lcl->ClearLastUse(newUseLclNum - dsc->lvFieldLclStart);
-        }
-
-        return;
-    }
-
-    unsigned const parentLclNum = dsc->lvIsStructField ? dsc->lvParentLcl : BAD_VAR_NUM;
-    if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
-    {
-        lcl->gtFlags &= ~GTF_VAR_DEATH;
-    }
-}
-
-//------------------------------------------------------------------------
 // fgForwardSubUpdateLiveness: correct liveness after performing a forward
 // substitution that added a new sub list of locals in a statement.
 //
@@ -1205,12 +1169,47 @@ void Compiler::fgForwardSubUpdateLiveness(GenTree* newSubListFirst, GenTree* new
             continue;
         }
 
+        unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* dsc    = lvaGetDesc(lclNum);
+
+        unsigned parentLclNum = dsc->lvIsStructField ? dsc->lvParentLcl : BAD_VAR_NUM;
+
         GenTree* candidate = newSubListFirst;
         while (true)
         {
-            fgForwardSubUpdateLastUse(node->AsLclVarCommon(), candidate->AsLclVarCommon()->GetLclNum());
+            unsigned newUseLclNum = candidate->AsLclVarCommon()->GetLclNum();
+            if (dsc->lvPromoted)
+            {
+                // Is the parent struct being used?
+                if (newUseLclNum == lclNum)
+                {
+                    // Then all fields are not dying.
+                    node->gtFlags &= ~GTF_VAR_DEATH_MASK;
+                    break;
+                }
 
-            if (((node->gtFlags & GTF_VAR_DEATH_MASK) == 0) || (candidate == newSubListLast))
+                // Otherwise, is one single field being used?
+                if ((newUseLclNum >= dsc->lvFieldLclStart) && (newUseLclNum < dsc->lvFieldLclStart + dsc->lvFieldCnt))
+                {
+                    node->ClearLastUse(newUseLclNum - dsc->lvFieldLclStart);
+
+                    if ((node->gtFlags & GTF_VAR_DEATH_MASK) == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // See if a new instance of this local or its parent appeared.
+                if ((newUseLclNum == lclNum) || (newUseLclNum == parentLclNum))
+                {
+                    node->gtFlags &= ~GTF_VAR_DEATH;
+                    break;
+                }
+            }
+
+            if (candidate == newSubListLast)
             {
                 break;
             }
