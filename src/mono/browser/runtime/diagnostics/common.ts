@@ -51,7 +51,7 @@ export class DiagnosticConnectionBase {
         }
         const message = this.messagesReceived[0]!;
         const bytes_read = Math.min(message.length, bytes_to_read);
-        Module.HEAPU8.set(message.subarray(0, bytes_read), buffer as any);
+        Module.HEAPU8.set(message.subarray(0, bytes_read), buffer as any >>> 0);
         if (bytes_read === message.length) {
             this.messagesReceived.shift();
         } else {
