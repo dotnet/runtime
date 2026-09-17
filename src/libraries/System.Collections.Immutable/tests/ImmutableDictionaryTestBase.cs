@@ -141,6 +141,19 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void CopyToOverflowValidation()
+        {
+            var dictionary = Empty<string, int>().Add("a", 1);
+            var array = new KeyValuePair<string, int>[5];
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<KeyValuePair<string, int>>)dictionary).CopyTo(array, int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection<KeyValuePair<string, int>>)dictionary).CopyTo(array, -1));
+
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)dictionary).CopyTo(new object[5], int.MaxValue));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("arrayIndex", () => ((ICollection)dictionary).CopyTo(new object[5], -1));
+        }
+
+        [Fact]
         public void IDictionaryOfKVMembers()
         {
             var dictionary = (IDictionary<string, int>)Empty<string, int>().Add("c", 3);
