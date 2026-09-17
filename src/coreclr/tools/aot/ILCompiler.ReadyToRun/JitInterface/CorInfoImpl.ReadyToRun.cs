@@ -486,6 +486,7 @@ namespace Internal.JitInterface
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
+        private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -1269,6 +1270,10 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END:
                     id = ReadyToRunHelper.PInvokeEnd;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
+                    id = ReadyToRunHelper.ResumeAfterCatch;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
@@ -2138,6 +2143,13 @@ namespace Internal.JitInterface
                 // Static methods are always direct calls
                 directCall = true;
             }
+            else if (isCallVirt && targetMethod.IsArrayMethod())
+            {
+                // Multidimensional array methods are synthetic non-vtable methods whose slots follow
+                // the virtual slots in the MethodTable. They cannot become virtual across versions.
+                directCall = true;
+                resolvedCallVirt = true;
+            }
             else if (!isCallVirt || resolvedConstraint)
             {
                 directCall = true;
@@ -2338,7 +2350,9 @@ namespace Internal.JitInterface
             // All virtual calls which take method instantiations must
             // currently be implemented by an indirect call via a runtime-lookup
             // function pointer
-            else if (targetMethod.HasInstantiation || _compilation.NodeFactory.Target.IsWasm) // WASM doesn't currently support the stub dispatch path
+            else if (targetMethod.HasInstantiation ||
+                (_compilation.NodeFactory.Target.IsWasm &&
+                    targetMethod.OwningType.IsInterface))
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
@@ -2348,19 +2362,6 @@ namespace Internal.JitInterface
             {
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_STUB;
                 pResult->nullInstanceCheck = true;
-
-                // We'll special virtual calls to target methods in the corelib assembly when compiling in R2R mode, and generate fragile-NI-like callsites for improved performance. We
-                // can do that because today we'll always service the corelib assembly and the runtime in one bundle. Any caller in the corelib version bubble can benefit from this
-                // performance optimization.
-                /* TODO-PERF, GitHub issue# 7168: uncommenting the conditional statement below enables
-                ** VTABLE-based calls for Corelib (and maybe a larger framework version bubble in the
-                ** future). Making it work requires construction of the method table in managed code
-                ** matching the CoreCLR algorithm (MethodTableBuilder).
-                if (MethodInSystemVersionBubble(callerMethod) && MethodInSystemVersionBubble(targetMethod))
-                {
-                    pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE;
-                }
-                */
             }
             else
             {
@@ -2640,9 +2641,9 @@ namespace Internal.JitInterface
                                 ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
-                        // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
-                        // so the call sig may carry a type arg (e.g., MD-array intrinsics); instParamLookup
-                        // is set up by the post-switch block below.
+                        // Wasm routes virtual calls that cannot use a pregenerated dispatch thunk through
+                        // LDVIRTFTN, so the call sig may carry a type arg (e.g., MD-array intrinsics);
+                        // instParamLookup is set up by the post-switch block below.
                         Debug.Assert(!pResult->sig.hasTypeArg() || _compilation.NodeFactory.Target.IsWasm);
                     }
                     break;
@@ -3311,6 +3312,52 @@ namespace Internal.JitInterface
             handled = true;
         }
 
+        partial void TryGetWasmMethodVirtualIPRelocation(
+            void* target,
+            CorInfoReloc fRelocType,
+            BlockType locationBlock,
+            int relocOffset,
+            ref ISymbolNode relocTarget,
+            ref RelocType relocType,
+            ref bool handled)
+        {
+            if (!_compilation.NodeFactory.Target.IsWasm)
+                return;
+
+            if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
+                return;
+
+            Debug.Assert(locationBlock is BlockType.ROData or BlockType.RWData);
+            Debug.Assert(findKnownBlock(target, out int targetOffset) == BlockType.Code);
+            Debug.Assert(targetOffset == 0);
+
+            ISymbolNode dataBlobNode = locationBlock == BlockType.ROData ? _roDataBlob : _rwDataBlob;
+            Debug.Assert(dataBlobNode is not null);
+
+            relocTarget = _compilation.NodeFactory.WasmMethodRelativeVirtualIP(_methodCodeNode);
+            relocType = RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32;
+            _wasmMethodVirtualIPFixups ??= new();
+            _wasmMethodVirtualIPFixups.Add((dataBlobNode, relocOffset));
+
+            handled = true;
+        }
+
+        partial void PublishWasmMethodVirtualIPFixups()
+        {
+            if (_wasmMethodVirtualIPFixups is null)
+                return;
+
+            foreach ((ISymbolNode location, int offset) in _wasmMethodVirtualIPFixups)
+            {
+                _compilation.NodeFactory.WasmAsyncResumeInfoFixups.AddFixup(location, offset);
+            }
+        }
+
+        partial void ClearWasmMethodVirtualIPFixups()
+        {
+            _wasmMethodVirtualIPFixups = null;
+        }
+
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
         {
             CORJIT_FLAGS flags = default(CORJIT_FLAGS);
@@ -3731,14 +3778,6 @@ namespace Internal.JitInterface
             // If ftn isn't within the current version bubble we can't rely on methodInfo being
             // stable e.g. mark calls as no-return if their IL has no rets.
             return _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method);
-        }
-
-        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
-        {
-            CorInfoWasmType[] typeArray = new ReadOnlySpan<CorInfoWasmType>(types, (int)typesSize).ToArray();
-
-            WasmTypeNode typeNode = _compilation.NodeFactory.WasmTypeNode(typeArray);
-            return (CORINFO_WASM_TYPE_SYMBOL_STRUCT_*)ObjectToHandle(typeNode);
         }
 
 #pragma warning disable CA1822 // Mark members as static
