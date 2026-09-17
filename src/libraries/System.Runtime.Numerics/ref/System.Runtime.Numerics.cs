@@ -205,6 +205,12 @@ namespace System.Numerics
         static bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryReadLittleEndian(System.ReadOnlySpan<byte> source, bool isUnsigned, out System.Numerics.BigInteger value) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.WriteBigEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.WriteBigEndian(System.Span<byte> destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.WriteLittleEndian(byte[] destination) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.WriteLittleEndian(System.Span<byte> destination) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsCanonical(System.Numerics.BigInteger value) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsComplexNumber(System.Numerics.BigInteger value) { throw null; }
         static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsFinite(System.Numerics.BigInteger value) { throw null; }
