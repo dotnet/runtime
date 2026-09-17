@@ -14847,7 +14847,13 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
         return false;
     }
 
-    if ((additionalTree != nullptr) && GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(additionalTree->gtFlags))
+    // Stores to caller locals are observable by try and filter regions protecting the call site.
+    const bool localStoresAreVisible = impInlineInfo->iciBlock->HasPotentialEHSuccs(impInlineRoot());
+    auto       hasVisibleSideEffects = [localStoresAreVisible](GenTreeFlags flags) {
+        return GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) || (localStoresAreVisible && ((flags & GTF_ASG) != 0));
+    };
+
+    if ((additionalTree != nullptr) && hasVisibleSideEffects(additionalTree->gtFlags))
     {
         return false;
     }
@@ -14856,7 +14862,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     {
         for (CallArg& arg : additionalCallArgs->Args())
         {
-            if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(arg.GetEarlyNode()->gtFlags))
+            if (hasVisibleSideEffects(arg.GetEarlyNode()->gtFlags))
             {
                 return false;
             }
@@ -14866,7 +14872,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     for (Statement* stmt : StatementList(impStmtList))
     {
         GenTree* expr = stmt->GetRootNode();
-        if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(expr->gtFlags))
+        if (hasVisibleSideEffects(expr->gtFlags))
         {
             return false;
         }
@@ -14875,7 +14881,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     for (unsigned level = 0; level < stackState.esStackDepth; level++)
     {
         GenTreeFlags stackTreeFlags = stackState.esStack[level].val->gtFlags;
-        if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stackTreeFlags))
+        if (hasVisibleSideEffects(stackTreeFlags))
         {
             return false;
         }
