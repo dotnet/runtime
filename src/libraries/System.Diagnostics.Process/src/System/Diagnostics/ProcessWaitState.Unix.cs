@@ -673,7 +673,13 @@ namespace System.Diagnostics
                     }
                 } while (pid > 0);
 
-                if (checkAll)
+                // When reapAll is set and this checkAll fallback was triggered by an actual exit for an
+                // unrecognized pid (i.e. nonExitNotificationPending is false), the wildcard waitpid(-1)
+                // scan below already reaps every tracked and untracked child exhaustively, making this
+                // dictionary scan redundant (an extra waitpid() per tracked child for no benefit). Only
+                // run it when the wildcard scan won't run at all (!reapAll), or when it will run but is
+                // suppressed for this specific pid due to a genuine pending non-exit notification.
+                if (checkAll && (!reapAll || nonExitNotificationPending))
                 {
                     // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
                     ProcessWaitState? firstToRemove = null;
@@ -722,6 +728,17 @@ namespace System.Diagnostics
                     // does not apply when checkAll was instead set because of an actual exit for a pid we
                     // don't recognize -- reaping such an orphan is exactly what this wildcard scan is for,
                     // and there is no notification to protect once it has genuinely exited.
+                    //
+                    // Known limitation: this only protects the one specific pid the peek above happened to
+                    // observe. If that peek instead observed an actual exit for an unrecognized pid (an
+                    // orphan the wildcard scan is meant to reap) while a *different*, independently
+                    // ptrace-traced pid (tracked or not) simultaneously has its own pending stop/continue
+                    // notification, waitpid(-1, ...)'s internal retry-on-stop loop can still select and
+                    // consume that other pid's notification while searching for/past it. Fully closing this
+                    // would require peeking (non-consuming) every waitable candidate before reaping any of
+                    // them, which isn't feasible for a wildcard scan (untracked/orphaned candidates can't be
+                    // enumerated up front). This is accepted as a narrow, pre-existing class of risk inherent
+                    // to sharing SIGCHLD/ptrace state with external tracers.
                     do
                     {
                         int exitCode;

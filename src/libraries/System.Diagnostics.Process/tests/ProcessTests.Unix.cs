@@ -1284,9 +1284,12 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        // request is declared as int (not long) to match glibc's ptrace(2) signature, which takes
+        // enum __ptrace_request (a 32-bit type). Using a 64-bit C# long here would corrupt the ABI on
+        // 32-bit native targets, where the subsequent arguments are laid out assuming a 32-bit request.
         [DllImport("libc", SetLastError = true)]
-        private static extern int ptrace(long request, int pid, IntPtr addr, IntPtr data);
-        private const long PTRACE_ATTACH = 16;
-        private const long PTRACE_DETACH = 17;
+        private static extern int ptrace(int request, int pid, IntPtr addr, IntPtr data);
+        private const int PTRACE_ATTACH = 16;
+        private const int PTRACE_DETACH = 17;
     }
 }
