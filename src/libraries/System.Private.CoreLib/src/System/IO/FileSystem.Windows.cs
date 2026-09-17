@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -344,6 +345,8 @@ namespace System.IO
                             // Not a reparse point, or the reparse point isn't a name surrogate, recurse.
                             try
                             {
+                                // Since this is a recursive call, we have to ensure that we have sufficient stack space.
+                                RuntimeHelpers.EnsureSufficientExecutionStack();
                                 RemoveDirectoryRecursive(
                                     Path.Combine(fullPath, fileName),
                                     findData: ref findData,
