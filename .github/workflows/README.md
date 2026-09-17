@@ -22,3 +22,14 @@ jobs:
 Refer to GitHub's [Workflows in forked repositories](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#workflows-in-forked-repositories) and [pull_request_target](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request_target) documentation for more information.
 
 Agentic workflow safe outputs sanitize posted bodies and [remove agent-provided HTML/XML comments](https://github.github.com/gh-aw/reference/safe-outputs/#text-sanitization-allowed-domains-allowed-github-references). Do not use HTML comments as machine-readable markers or persisted state. Prefer schema-validated `safe-outputs.data` when the output supports it and another fenced JSON block is compatible with downstream consumers; otherwise use stable visible fields. See [the repository agentic-workflow guidance](../agents/agentic-workflows.agent.md#repository-specific-requirements-safe-output-data) for authoring and migration requirements.
+
+## Build-failure analysis regression checks
+
+With Python 3, PyYAML, Bash, and jq installed, run
+`python -m unittest discover -s .github/workflows/tests -p test_build_failure_analysis.py`.
+The tests execute the workflow's own Bash and jq logic with mocked API responses;
+they do not download artifacts or post to GitHub. On Windows they use Git Bash
+by default; `BFA_BASH` can select another Bash executable.
+Regenerate both locks with
+`gh aw compile build-failure-analysis build-failure-analysis-command --strict --validate --schedule-seed dotnet/runtime`
+before running the checks against a changed activation configuration.

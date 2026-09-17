@@ -47,36 +47,14 @@ permissions:
   pull-requests: read
 
 concurrency:
-  # Distinct from the automatic workflow's group (`build-failure-analysis-<pr>`).
-  # Concurrency groups are repository-global, so sharing the name made the two
-  # workflows cancel each other for the same PR: a newly failing build would
-  # kill an on-demand analysis a maintainer had just asked for.
-  #
-  # Only comments that actually look like the command get the PR-scoped group.
-  # This group is acquired at the WORKFLOW level, i.e. for every created or
-  # edited issue comment on the PR — the slash command itself is matched later,
-  # in `pre_activation`. With every comment sharing one group, an unrelated one
-  # displaced the command's run, which then failed activation and posted
-  # nothing, so the command silently produced no result; the analysis comment
-  # this workflow posts at the end of its own run was enough to do it. Routing
-  # non-command comments to a per-run group that collides with nothing is the
-  # same trick `build-failure-analysis.md` uses for non-`runtime` check runs.
-  #
-  # `cancel-in-progress` is false so a later invocation cannot abort an analysis
-  # already running. GitHub evicts a *pending* run from the group regardless of
-  # that setting, which is the behaviour we want once only command comments are
-  # in it: a third invocation supersedes the second while the first finishes.
-  # Repeat commands are otherwise handled by idempotency rather than by
-  # cancellation — `add-comment` is capped at 1 with `hide-older-comments`, so a
-  # rerun replaces the previous summary instead of stacking on it.
-  #
-  # `startsWith` is the same deliberate superset as the `fetch-binlog` job's
-  # `if:`: it cannot express the `(?=$|\s)` token boundary, so a comment opening
-  # with `/analyze-build-failure-now` still lands in the PR-scoped group. That
-  # costs at most the pending slot — it never cancels a running analysis, and
-  # such a run exits in seconds at activation.
+  # Keep command analyses separate from automatic analyses. This group is
+  # acquired before command/permission validation: queue every pending run so
+  # even an unauthorized or near-miss comment cannot evict a valid request.
+  # Completed requests are deduplicated by their command-comment URL below;
+  # post a new command comment to request another analysis.
   group: ${{ (github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/analyze-build-failure') && format('build-failure-analysis-cmd-run-{0}', github.run_id)) || format('build-failure-analysis-cmd-{0}', github.event.issue.number || github.event.pull_request.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number || github.run_id) }}
   cancel-in-progress: false
+  queue: max
 
 timeout-minutes: 30
 
@@ -151,7 +129,7 @@ jobs:
     # permission they actually hold here), so the step below resolves the
     # commenter's real repository permission before anything is downloaded.
     # `pre_activation` remains the authoritative role + command-position check,
-    # and `activation` additionally requires `binlog-found == 'true'`.
+    # and `activation` additionally requires `analysis-ready == 'true'`.
     #
     # KEEP IN SYNC with `roles:` in the frontmatter above. The author_association
     # list here and the permission step below are hand-written restatements of
@@ -186,7 +164,7 @@ jobs:
       pull-requests: read
     outputs:
       analysis-ready: ${{ steps.fetch.outputs.analysis-ready }}
-      binlog-found: ${{ steps.fetch.outputs.binlog-found }}
+      binlog-found: ${{ steps.upload.outcome == 'success' && steps.upload.outputs.artifact-id != '' }}
       pr-number: ${{ steps.fetch.outputs.pr-number }}
       pr-head-sha: ${{ steps.fetch.outputs.pr-head-sha }}
       pr-merge-sha: ${{ steps.fetch.outputs.pr-merge-sha }}
@@ -228,40 +206,15 @@ jobs:
         run: |
           set +e
           # --- 1. Command position (free; do this before the API call) ------
-          # The job-level `if:` can only use `startsWith()`, which cannot
-          # express the token boundary, so `/analyze-build-failure-now` still
-          # reaches this job and would pay for the download before
-          # `pre_activation` throws the result away. That check runs too late by
-          # construction, so reproduce it here.
-          #
-          # gh-aw requires the command at byte ZERO of the comment body:
-          # `check_command_position.cjs` hands the raw `comment.body` to
-          # `resolveMatchedCommand`, which applies
-          # `/^\/([a-zA-Z0-9][a-zA-Z0-9._-]*)(?=$|\s)/` and compares the
-          # captured name (`slash_command_matcher.cjs`). The `trimStart()` in
-          # that file only builds the log/denial message — it is not part of the
-          # match, so a leading space or blank line is a non-match. The body is
-          # therefore tested unmodified: skipping leading whitespace (or
-          # stripping CR) here would admit comments activation is guaranteed to
-          # reject, after paying for the artifact download.
-          #
-          # The command must be the whole body or be followed by whitespace,
-          # which is the `(?=$|\s)` lookahead. gh-aw's effective predicate is
-          # that regex intersected with the compile-time activation expression
-          # it generates — exact body, `+ ' '`, or `+ '\n'` — so `[[:space:]]`
-          # is a deliberate superset: it also admits a tab or CR separator,
-          # which costs at most one wasted download and is preferred to a
-          # hand-written exact copy that would start silently rejecting real
-          # commands if gh-aw ever widened its own set. `/analyze-build-failure-now`
-          # still does not match either way.
-          # KEEP IN SYNC with `on.slash_command.name` above.
+          # Match the pinned gh-aw activation predicate exactly: the raw body
+          # must start with the case-sensitive command followed by EOF, space,
+          # or LF. The JS matcher also accepts other whitespace, but the
+          # generated activation expression rejects it. Do not trim or strip CR.
+          # KEEP IN SYNC with `on.slash_command.name` and the generated lock.
           case "${COMMENT_BODY}" in
-            "/${COMMAND_NAME}" | "/${COMMAND_NAME}"[[:space:]]*) ;;
+            "/${COMMAND_NAME}" | "/${COMMAND_NAME} "* | "/${COMMAND_NAME}"$'\n'*) ;;
             *)
-              # Never echo the raw body: it is attacker-controlled and `::`-
-              # prefixed text is interpreted by the runner as a workflow command.
-              safe_prefix=$(printf '%s' "${COMMENT_BODY}" | tr -cd 'A-Za-z0-9/._-' | cut -c1-40)
-              echo "Comment does not start with '/${COMMAND_NAME}' (body begins: '${safe_prefix}'); skipping the binlog download."
+              echo "Comment does not match the slash-command activation predicate; skipping the binlog download."
               echo "authorized=false" >> "$GITHUB_OUTPUT"
               exit 0
               ;;
@@ -272,7 +225,7 @@ jobs:
           # GitHub logins are alphanumerics and hyphens; anything else (a bot
           # login such as `github-actions[bot]`, or an empty value) is rejected
           # here instead of being sent to the API.
-          if ! printf '%s' "${COMMENTER}" | grep -qE '^[A-Za-z0-9-]+$'; then
+          if [[ ! "${COMMENTER}" =~ ^[A-Za-z0-9-]+$ ]]; then
             echo "::warning::Commenter login is missing or malformed; skipping the binlog download."
             echo "authorized=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -307,6 +260,7 @@ jobs:
           # runtime pipeline definition id in dnceng-public/public.
           ADO_BUILD_DEFINITION_ID: "129"
           PR_NUMBER: ${{ github.event.issue.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number }}
+          COMMAND_URL: ${{ github.event.comment.html_url }}
         run: |
           # Advisory + fail-closed. On any validation gap keep the agent inert.
           set +e
@@ -372,8 +326,35 @@ jobs:
           # PR_NUMBER feeds GitHub API paths and the `refs/pull/<n>/merge`
           # branch query; require it numeric so a malformed event/aw_context
           # payload can't reach those URLs with unexpected content.
-          if ! printf '%s' "${PR_NUMBER}" | grep -qE '^[0-9]+$'; then
+          if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
             echo "::warning::Resolved PR number is not numeric; refusing."; emit_none
+          fi
+
+          # A delivered/edited command that already received a summary must not
+          # produce another batch of inline reviews. Require both structured
+          # analysis data and the request footer: activation/error status comments
+          # also carry the footer, but must not suppress a retry after a failure.
+          # Old summaries without a request URL remain eligible for reruns.
+          if [ -n "${COMMAND_URL}" ]; then
+            if ! comments=$(gh api "repos/${GH_AW_REPO}/issues/${PR_NUMBER}/comments?per_page=100" --paginate --slurp); then
+              echo "::warning::Could not check whether this command was already answered; skipping."
+              emit_none
+            fi
+            if ! answered=$(printf '%s' "${comments}" | jq -r --arg marker "[Request](${COMMAND_URL})" '
+                def analysis_summary:
+                  [scan("Structured data:\\s*```json\\s*([^`]+)```") | .[0] | fromjson? |
+                    select(.workflow_artifact == "build-failure-analysis" and .artifact_kind == "analysis")] |
+                  length > 0;
+                any(.[][]; .user.login == "github-actions[bot]" and
+                  ((.body // "") | contains($marker) and analysis_summary))
+              '); then
+              echo "::warning::Could not parse previous command responses; skipping."
+              emit_none
+            fi
+            if [ "${answered}" = "true" ]; then
+              echo "::notice::This command already has a build-analysis response; post a new command to rerun."
+              emit_none
+            fi
           fi
 
           # --- Scope check: only analyse PRs targeting main / release/* ---
@@ -408,7 +389,7 @@ jobs:
           [ -z "${BUILD_ID}" ] && { echo "::warning::No runtime build found for PR #${PR_NUMBER}."; emit_none; }
           # Require a numeric build id before it feeds subsequent ADO API URLs,
           # so a malformed query response can't inject unexpected path/query.
-          if ! printf '%s' "${BUILD_ID}" | grep -qE '^[0-9]+$'; then
+          if [[ ! "${BUILD_ID}" =~ ^[0-9]+$ ]]; then
             echo "::warning::ADO build id is not numeric; refusing."; emit_none
           fi
           echo "Newest runtime build for PR #${PR_NUMBER}: id='${BUILD_ID}' status='${BUILD_STATUS}' result='${BUILD_RESULT}'"
@@ -461,70 +442,46 @@ jobs:
           ado_get "build timeline" \
             "${ADO_API}/build/builds/${BUILD_ID}/timeline?api-version=7.1" || emit_none
           timeline_json="${ADO_DOC}"
-          mapfile -t failed_job_keys < <(
-            printf '%s' "${timeline_json}" |
-              jq -r '.records // [] | map(select(.type == "Job" and (.result == "failed" or .result == "canceled"))) | .[].name' |
-              while IFS= read -r job_name; do
-                printf '%s' "${job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
-                printf '\n'
-              done |
-              awk 'NF && !seen[$0]++'
-          )
-          [ "${#failed_job_keys[@]}" -eq 0 ] && { echo "::warning::No failed or canceled jobs found in the timeline for build ${BUILD_ID}."; emit_none; }
-          mapfile -t all_job_keys < <(
-            printf '%s' "${timeline_json}" |
-              jq -r '.records // [] | map(select(.type == "Job")) | .[].name' |
-              while IFS= read -r job_name; do
-                printf '%s' "${job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
-                printf '\n'
-              done |
-              awk 'NF && !seen[$0]++'
-          )
+          failed_job_count=$(printf '%s' "${timeline_json}" |
+            jq '[.records[]? | select(.type == "Job" and (.result == "failed" or .result == "canceled"))] | length')
+          [ "${failed_job_count}" -eq 0 ] && { echo "::warning::No failed or canceled jobs found in the timeline for build ${BUILD_ID}."; emit_none; }
 
           ado_get "artifact list" "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1" || emit_none
           artifacts_json="${ADO_DOC}"
           mapfile -t all_names < <(printf '%s' "${artifacts_json}" | jq -r '.value // [] | map(select(.name | test("^Logs_Build_"))) | .[].name')
-          mapfile -t names < <(
-            for name in "${all_names[@]}"; do
-              # Runtime artifact names usually equal the timeline job name,
-              # but some matrices append a display-only mode such as
-              # `monointerpreter`, `minijit`, or `llvmaot` to the job. Match
-              # exact spellings first. Only fall back to an artifact-key
-              # prefix when it identifies exactly one job in the entire
-              # timeline; this avoids selecting `..._NativeAOT` for the
-              # distinct `..._NativeAOT_Libraries` job.
-              artifact_job_name=$(printf '%s' "${name}" | sed -E 's/^Logs_Build_(Attempt[0-9]+_)?//')
-              artifact_key=$(printf '%s' "${artifact_job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
-              [ -z "${artifact_key}" ] && continue
-              mapped_job_key=""
-              for job_key in "${all_job_keys[@]}"; do
-                if [ "${artifact_key}" = "${job_key}" ]; then
-                  mapped_job_key="${job_key}"
-                  break
-                fi
-              done
-              if [ -z "${mapped_job_key}" ]; then
-                prefix_matches=0
-                for job_key in "${all_job_keys[@]}"; do
-                  if [[ "${job_key}" == "${artifact_key}"* ]]; then
-                    mapped_job_key="${job_key}"
-                    prefix_matches=$((prefix_matches + 1))
-                  fi
-                done
-                [ "${prefix_matches}" -eq 1 ] || mapped_job_key=""
-              fi
-              for failed_job_key in "${failed_job_keys[@]}"; do
-                if [ -n "${mapped_job_key}" ] && [ "${mapped_job_key}" = "${failed_job_key}" ]; then
-                  printf '%s\n' "${name}"
-                  break
-                fi
-              done
-            done
-          )
+          # Preserve original job identities: normalization can collapse distinct
+          # names such as Foo-Bar and Foo_Bar. Prefer literal names, then accept
+          # a normalized exact/prefix match only when it identifies one job.
+          # Prefixes cover Runtime's display-only monointerpreter/minijit/llvmaot
+          # suffixes without confusing NativeAOT and NativeAOT_Libraries.
+          if ! selected_names=$(printf '%s\n' "${timeline_json}" "${artifacts_json}" | jq -sr '
+            def key: ascii_downcase | gsub("[^a-z0-9]"; "");
+            ([.[0].records[]? | select(.type == "Job") |
+              {name, result, key: (.name | key)}]) as $jobs |
+            .[1].value[]? | select(.name | startswith("Logs_Build_")) |
+            (.name | sub("^Logs_Build_(Attempt[0-9]+_)?"; "")) as $name |
+            ($jobs | map(select(.name == $name))) as $literal |
+            (if ($literal | length) > 0 then $literal
+             else ($name | key) as $key |
+               if $key == "" then []
+               else ($jobs | map(select(.key == $key))) as $exact |
+                 if ($exact | length) > 0 then $exact
+                 else ($jobs | map(select(.key | startswith($key))))
+                 end
+               end
+             end) as $matches |
+            select(($matches | length) == 1) |
+            select($matches[0].result == "failed" or $matches[0].result == "canceled") |
+            .name
+          '); then
+            echo "::warning::Could not match the artifact list to timeline jobs; skipping."
+            emit_none
+          fi
+          mapfile -t names < <(printf '%s' "${selected_names}")
           if [ "${#names[@]}" -eq 0 ]; then
             echo "::warning::No Logs_Build_* artifacts mapped unambiguously to failed or canceled jobs in build ${BUILD_ID}; the agent will inspect failed compile-task logs through hlx."
           else
-            echo "Selected ${#names[@]} of ${#all_names[@]} Logs_Build_* artifacts for ${#failed_job_keys[@]} failed or canceled jobs."
+            echo "Selected ${#names[@]} of ${#all_names[@]} Logs_Build_* artifacts for ${failed_job_count} failed or canceled jobs."
           fi
 
           # Guards for untrusted PR-produced archives: cap the compressed
@@ -667,7 +624,7 @@ jobs:
             # Fail safe: a non-numeric size (corrupt zip, unexpected or
             # timed-out output) can't be verified, so skip rather than let it
             # bypass the guards below.
-            if ! printf '%s' "${UNCOMP}" | grep -qE '^[0-9]+$'; then
+            if [[ ! "${UNCOMP}" =~ ^[0-9]+$ ]]; then
               echo "::warning::Skipping ${safe_name}: could not determine uncompressed size (unparseable/timed-out unzip output)."; continue
             fi
             # ZIP64 sizes can reach ~20 digits, overflowing Bash's signed
@@ -800,29 +757,51 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload analysis artifact
+        id: upload
         if: steps.fetch.outputs.binlog-found == 'true'
+        continue-on-error: true
         uses: actions/upload-artifact@v7.0.1
         with:
           name: build-failure-analysis-data
           path: /tmp/binlogs
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 1
+
+      - name: Report unavailable binlog handoff
+        if: steps.fetch.outputs.binlog-found == 'true' && (steps.upload.outcome != 'success' || steps.upload.outputs.artifact-id == '')
+        shell: bash
+        run: echo "::warning::Binlog upload failed; continuing with Azure DevOps task logs through hlx."
 
 # Steps that run in the agent job after the failed build and target revision
 # are verified. Binlog download is conditional; when no matching binlog was
 # published, the agent analyzes failed compile-task logs through hlx.
 steps:
+  - name: Prepare binlog directory
+    shell: bash
+    run: |
+      mkdir -p /tmp/binlogs
+      find /tmp/binlogs -maxdepth 1 -type f -name '*.binlog' -delete
+
   - name: Download analysis artifact
+    id: download_analysis
     if: needs.fetch-binlog.outputs.binlog-found == 'true'
+    continue-on-error: true
     uses: actions/download-artifact@v8.0.1
     with:
       name: build-failure-analysis-data
       path: /tmp/binlogs
 
+  - name: Discard incomplete binlog download
+    if: steps.download_analysis.outcome == 'failure'
+    shell: bash
+    run: |
+      find /tmp/binlogs -maxdepth 1 -type f -name '*.binlog' -delete
+      echo "::warning::Binlog download failed; continuing with Azure DevOps task logs through hlx."
+
   - name: Export agent context
     shell: bash
     env:
-      GH_AW_BINLOG_FOUND_VALUE: ${{ needs.fetch-binlog.outputs.binlog-found }}
+      GH_AW_BINLOG_FOUND_VALUE: ${{ steps.download_analysis.outcome == 'success' }}
       GH_AW_PR_NUMBER_VALUE: ${{ needs.fetch-binlog.outputs.pr-number }}
       GH_AW_PR_HEAD_SHA_VALUE: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
       GH_AW_PR_MERGE_SHA_VALUE: ${{ needs.fetch-binlog.outputs.pr-merge-sha }}
@@ -862,6 +841,9 @@ steps:
 tools:
   github:
     toolsets: [pull_requests, repos]
+    # A maintainer's command may target an external contributor's fork PR.
+    allowed-repos: [dotnet/runtime]
+    min-integrity: none
   bash:
     - "cat"
     - "head"
@@ -888,8 +870,28 @@ safe-outputs:
         PR_NUMBER: ${{ needs.fetch-binlog.outputs.pr-number }}
         EXPECTED_HEAD: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
         EXPECTED_MERGE: ${{ needs.fetch-binlog.outputs.pr-merge-sha }}
+        BUILD_ID: ${{ needs.fetch-binlog.outputs.ado-build-id }}
+        ADO_API: "https://dev.azure.com/dnceng-public/public/_apis"
+        ADO_BUILD_DEFINITION_ID: "129"
       run: |
         set -euo pipefail
+        if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ || ! "${BUILD_ID}" =~ ^[0-9]+$ ]]; then
+          echo "::error::Missing or invalid verified PR/build identity before applying outputs."
+          exit 1
+        fi
+        # A rerun can succeed without changing either commit. Revalidate the
+        # latest build as well as the revisions before publishing old failures.
+        latest_build="${RUNNER_TEMP}/build-failure-analysis-latest-build.json"
+        trap 'rm -f "${latest_build}"' EXIT
+        if ! timeout 60 curl -sSL --fail --retry 3 --connect-timeout 10 --max-time 20 --retry-max-time 40 \
+             -o "${latest_build}" \
+             "${ADO_API}/build/builds?definitions=${ADO_BUILD_DEFINITION_ID}&branchName=refs/pull/${PR_NUMBER}/merge&queryOrder=queueTimeDescending&\$top=1&api-version=7.1" ||
+           ! jq -e --arg id "${BUILD_ID}" \
+             '.value[0] | (.id | tostring) == $id and .status == "completed" and .result == "failed"' \
+             "${latest_build}" >/dev/null; then
+          echo "::error::Analyzed build is no longer the latest completed failed runtime build, or could not be verified; refusing stale outputs."
+          exit 1
+        fi
         if [ -z "${EXPECTED_HEAD}" ] || [ -z "${EXPECTED_MERGE}" ] ||
            ! gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" |
              jq -e --arg head "${EXPECTED_HEAD}" --arg merge "${EXPECTED_MERGE}" \
@@ -898,7 +900,7 @@ safe-outputs:
           exit 1
         fi
   messages:
-    footer: "> 🤖 **Automated content by GitHub Copilot.** Generated by the [{workflow_name}]({agentic_workflow_url}) workflow.{ai_credits_suffix} · [◷]({history_link})"
+    footer: "> 🤖 **Automated content by GitHub Copilot.** Generated by the [{workflow_name}]({agentic_workflow_url}) workflow.{ai_credits_suffix} · [◷]({history_link}) · [Request](${{ github.event.comment.html_url }})"
   data:
     type: object
     properties:

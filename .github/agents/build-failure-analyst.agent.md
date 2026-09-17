@@ -38,7 +38,7 @@ variables below. You must read all of them before doing anything else.
 | `GH_AW_BUILD_OUTCOME`     | Always `failure` when this agent runs — the workflow only activates after the Azure DevOps `runtime` build failed. |
 | `GH_AW_PR_NUMBER`         | Pull request number being analyzed. Safe outputs are deterministically bound to this PR by the workflow; use the number for source reads and revision checks, but do not try to choose or override a safe-output target. |
 | `GH_AW_PR_HEAD_SHA`       | Commit SHA the analysis targets. The fetch job verifies this equals **both** the analyzed build's revision (`triggerInfo["pr.sourceSha"]`) **and** the PR's current head, skipping stale builds where they differ — but that is a point-in-time check. A force-push can still land while artifacts download or while you analyze, so **re-read the PR's current head before your first safe-output call and `noop` if it no longer equals this** (see Step 5). Use it for permalinks and as the ref when reading source, so links/suggestions line up with both the binlog and the current PR diff. |
-| `GH_AW_PR_MERGE_SHA`      | The non-empty merge commit the analyzed build actually built (`build_json.sourceVersion`, which equals the PR's `merge_commit_sha` at build time — Azure builds GitHub's `refs/pull/<n>/merge`). It changes when the PR head **or** the base branch advances, so it detects staleness the head SHA alone misses. The fetch job requires and verifies it; re-verify it alongside the head before your first safe-output call (see Step 5). |
+| `GH_AW_PR_MERGE_SHA`      | The non-empty merge commit the analyzed build actually built (`build_json.sourceVersion`, which equals the PR's `merge_commit_sha` at build time — Azure builds GitHub's `refs/pull/<n>/merge`). It detects staleness when the head **or** base advances. The fetch job and final safe-output job verify it through REST; the pinned GitHub MCP PR response does not expose this field. |
 | `GH_AW_WORKSPACE`         | `$GITHUB_WORKSPACE`. Depending on the trigger the generated jobs may check out only the repo's agent config (at the event ref) **or** the PR branch, so the workspace **may or may not** be at `GH_AW_PR_HEAD_SHA` — do not depend on it. Read PR source via the GitHub API at `GH_AW_PR_HEAD_SHA`, which is always the source of truth (see Step 4). |
 
 If a `binlog-mcp` call fails, use the matching failed compile-task log through
@@ -178,13 +178,13 @@ fix recommendation, or inline suggestion.
 
 Before posting, re-verify the target revision: read PR `GH_AW_PR_NUMBER` with
 the GitHub `pull_requests` read tool exposed by the github MCP server (the
-pull-request "get"/read operation) and take `head.sha` and
-`merge_commit_sha`. If either value cannot be read or differs from
-`GH_AW_PR_HEAD_SHA` / `GH_AW_PR_MERGE_SHA`, the PR moved while you were
-downloading or analyzing, so `noop` with a short reason and stop. Inline
-suggestions are pinned to `GH_AW_PR_HEAD_SHA`, and the separate safe-output
-job repeats this exact head-and-merge check immediately before applying any
-queued write. Otherwise post **exactly one** summary comment via `add_comment`
+pull-request "get"/read operation) and take `head.sha`. If it cannot be read
+or differs from `GH_AW_PR_HEAD_SHA`, `noop` with a short reason and stop.
+Do not require `merge_commit_sha` from this tool: the pinned MCP response
+omits it. The separate safe-output job uses REST to verify both head and
+merge revisions, plus the latest failed build, immediately before applying
+queued writes. Inline suggestions remain pinned to `GH_AW_PR_HEAD_SHA`.
+Otherwise post **exactly one** summary comment via `add_comment`
 with structured data
 `{"workflow_artifact":"build-failure-analysis","artifact_kind":"analysis"}`.
 The workflow binds this output to `GH_AW_PR_NUMBER`, and the gh-aw

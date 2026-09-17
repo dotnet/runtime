@@ -164,7 +164,7 @@ jobs:
       pull-requests: read
     outputs:
       analysis-ready: ${{ steps.fetch.outputs.analysis-ready }}
-      binlog-found: ${{ steps.fetch.outputs.binlog-found }}
+      binlog-found: ${{ steps.upload.outcome == 'success' && steps.upload.outputs.artifact-id != '' }}
       pr-number: ${{ steps.fetch.outputs.pr-number }}
       pr-head-sha: ${{ steps.fetch.outputs.pr-head-sha }}
       pr-merge-sha: ${{ steps.fetch.outputs.pr-merge-sha }}
@@ -260,7 +260,7 @@ jobs:
           # The build id feeds directly into ADO API URLs below; require it to
           # be purely numeric (esp. on workflow_dispatch, where it is free-form
           # input) so a malformed value can't alter the request path/query.
-          if ! printf '%s' "${BUILD_ID}" | grep -qE '^[0-9]+$'; then
+          if [[ ! "${BUILD_ID}" =~ ^[0-9]+$ ]]; then
             echo "::warning::Resolved ADO build id is not numeric; refusing."; emit_none
           fi
           echo "Azure DevOps build id: '${BUILD_ID}'"
@@ -273,43 +273,27 @@ jobs:
           RESULT=$(printf '%s' "${build_json}" | jq -r '.result // empty')
           DEF_ID=$(printf '%s' "${build_json}" | jq -r '.definition.id // empty')
           SRC_BRANCH=$(printf '%s' "${build_json}" | jq -r '.sourceBranch // empty')
+          BUILD_PR_SHA=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.sourceSha"] // empty')
+          if [ "${EVENT_NAME}" = "check_run" ] &&
+             { [ -z "${CHECK_HEAD_SHA}" ] || [ "${BUILD_PR_SHA}" != "${CHECK_HEAD_SHA}" ]; }; then
+            echo "::warning::ADO build revision does not match the check run's head; refusing."
+            emit_none
+          fi
 
           # --- 2. Resolve the PR number + head SHA ---
           if [ "${EVENT_NAME}" = "workflow_dispatch" ]; then
             PR_NUMBER="${DISPATCH_PR_NUMBER}"
             HEAD_SHA=""
           else
-            # Prefer the event-owned PR number; safe outputs read whichever
-            # value this job resolves, so they stay bound to it.
+            # The build is bound to the event's head above. Prefer its PR number
+            # when present; fork-head checks can have an empty pull_requests list.
             PR_NUMBER="${CHECK_PR_NUMBER}"
             HEAD_SHA="${CHECK_HEAD_SHA}"
             if [ -z "${PR_NUMBER}" ]; then
-              # `check_run.pull_requests` is empty when the check's head commit
-              # lives in a fork, which is most external-contributor PRs —
-              # precisely the ones `roles: all` exists to keep in scope. Taking
-              # the PR number from the event alone would leave them with an
-              # empty target and silently disable analysis, so fall back to the
-              # build's own PR metadata.
-              #
-              # That metadata is not event-owned, so bind it to the one value
-              # the event does own. `pr.sourceSha` is the PR head commit Azure
-              # Pipelines validated, and the Azure Pipelines app reports its
-              # check run against that same commit; requiring the two to be
-              # equal means a build can only ever resolve to the PR whose head
-              # this event is already about. Step 4 still requires sourceBranch
-              # to be `refs/pull/<PR>/merge`, and the head/merge staleness
-              # checks still run on top of that.
               PR_NUMBER=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.number"] // empty')
               # Reruns and older builds can omit `pr.number`; the merge ref
               # carries the same value.
               [ -z "${PR_NUMBER}" ] && PR_NUMBER=$(printf '%s' "${SRC_BRANCH}" | sed -nE 's#^refs/pull/([0-9]+)/merge$#\1#p')
-              BUILD_SOURCE_SHA=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.sourceSha"] // empty')
-              if [ -z "${CHECK_HEAD_SHA}" ] || [ -z "${BUILD_SOURCE_SHA}" ] || [ "${BUILD_SOURCE_SHA}" != "${CHECK_HEAD_SHA}" ]; then
-                echo "::warning::ADO build ${BUILD_ID} reports PR head '${BUILD_SOURCE_SHA}', which does not match the check run's head '${CHECK_HEAD_SHA}'; refusing to trust its PR number."
-                emit_none
-              fi
-              # Do NOT log the derived number yet — it is unvalidated ADO data
-              # until the numeric check below. Step 3 logs it once it is.
               echo "check_run carried no PR number (fork head); derived it from ADO build ${BUILD_ID}, bound to the check run's head revision."
             fi
           fi
@@ -317,7 +301,7 @@ jobs:
           # PR_NUMBER feeds `gh api .../pulls/<n>` and the `refs/pull/<n>/merge`
           # comparison; require it numeric so a malformed value can't reach the
           # GitHub API path (traversal-like input) or skew the branch match.
-          if ! printf '%s' "${PR_NUMBER}" | grep -qE '^[0-9]+$'; then
+          if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
             echo "::warning::Resolved PR number is not numeric; refusing."; emit_none
           fi
 
@@ -360,7 +344,6 @@ jobs:
           # stale analysis would still describe the wrong revision. If the PR
           # has advanced since this build ran, skip: a newer build/check for
           # the current head will cover it.
-          BUILD_PR_SHA=$(printf '%s' "${build_json}" | jq -r '.triggerInfo["pr.sourceSha"] // empty')
           CURRENT_HEAD=$(printf '%s' "${PR_JSON}" | jq -r '.head.sha // empty')
           # ADO builds GitHub's `refs/pull/<n>/merge` ref, so build_json.sourceVersion
           # is the merge commit GitHub produced at build time and equals the PR's
@@ -397,70 +380,46 @@ jobs:
           ado_get "build timeline" \
             "${ADO_API}/build/builds/${BUILD_ID}/timeline?api-version=7.1" || emit_none
           timeline_json="${ADO_DOC}"
-          mapfile -t failed_job_keys < <(
-            printf '%s' "${timeline_json}" |
-              jq -r '.records // [] | map(select(.type == "Job" and (.result == "failed" or .result == "canceled"))) | .[].name' |
-              while IFS= read -r job_name; do
-                printf '%s' "${job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
-                printf '\n'
-              done |
-              awk 'NF && !seen[$0]++'
-          )
-          [ "${#failed_job_keys[@]}" -eq 0 ] && { echo "::warning::No failed or canceled jobs found in the timeline for build ${BUILD_ID}."; emit_none; }
-          mapfile -t all_job_keys < <(
-            printf '%s' "${timeline_json}" |
-              jq -r '.records // [] | map(select(.type == "Job")) | .[].name' |
-              while IFS= read -r job_name; do
-                printf '%s' "${job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]'
-                printf '\n'
-              done |
-              awk 'NF && !seen[$0]++'
-          )
+          failed_job_count=$(printf '%s' "${timeline_json}" |
+            jq '[.records[]? | select(.type == "Job" and (.result == "failed" or .result == "canceled"))] | length')
+          [ "${failed_job_count}" -eq 0 ] && { echo "::warning::No failed or canceled jobs found in the timeline for build ${BUILD_ID}."; emit_none; }
 
           ado_get "artifact list" "${ADO_API}/build/builds/${BUILD_ID}/artifacts?api-version=7.1" || emit_none
           artifacts_json="${ADO_DOC}"
           mapfile -t all_names < <(printf '%s' "${artifacts_json}" | jq -r '.value // [] | map(select(.name | test("^Logs_Build_"))) | .[].name')
-          mapfile -t names < <(
-            for name in "${all_names[@]}"; do
-              # Runtime artifact names usually equal the timeline job name,
-              # but some matrices append a display-only mode such as
-              # `monointerpreter`, `minijit`, or `llvmaot` to the job. Match
-              # exact spellings first. Only fall back to an artifact-key
-              # prefix when it identifies exactly one job in the entire
-              # timeline; this avoids selecting `..._NativeAOT` for the
-              # distinct `..._NativeAOT_Libraries` job.
-              artifact_job_name=$(printf '%s' "${name}" | sed -E 's/^Logs_Build_(Attempt[0-9]+_)?//')
-              artifact_key=$(printf '%s' "${artifact_job_name}" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:]')
-              [ -z "${artifact_key}" ] && continue
-              mapped_job_key=""
-              for job_key in "${all_job_keys[@]}"; do
-                if [ "${artifact_key}" = "${job_key}" ]; then
-                  mapped_job_key="${job_key}"
-                  break
-                fi
-              done
-              if [ -z "${mapped_job_key}" ]; then
-                prefix_matches=0
-                for job_key in "${all_job_keys[@]}"; do
-                  if [[ "${job_key}" == "${artifact_key}"* ]]; then
-                    mapped_job_key="${job_key}"
-                    prefix_matches=$((prefix_matches + 1))
-                  fi
-                done
-                [ "${prefix_matches}" -eq 1 ] || mapped_job_key=""
-              fi
-              for failed_job_key in "${failed_job_keys[@]}"; do
-                if [ -n "${mapped_job_key}" ] && [ "${mapped_job_key}" = "${failed_job_key}" ]; then
-                  printf '%s\n' "${name}"
-                  break
-                fi
-              done
-            done
-          )
+          # Preserve original job identities: normalization can collapse distinct
+          # names such as Foo-Bar and Foo_Bar. Prefer literal names, then accept
+          # a normalized exact/prefix match only when it identifies one job.
+          # Prefixes cover Runtime's display-only monointerpreter/minijit/llvmaot
+          # suffixes without confusing NativeAOT and NativeAOT_Libraries.
+          if ! selected_names=$(printf '%s\n' "${timeline_json}" "${artifacts_json}" | jq -sr '
+            def key: ascii_downcase | gsub("[^a-z0-9]"; "");
+            ([.[0].records[]? | select(.type == "Job") |
+              {name, result, key: (.name | key)}]) as $jobs |
+            .[1].value[]? | select(.name | startswith("Logs_Build_")) |
+            (.name | sub("^Logs_Build_(Attempt[0-9]+_)?"; "")) as $name |
+            ($jobs | map(select(.name == $name))) as $literal |
+            (if ($literal | length) > 0 then $literal
+             else ($name | key) as $key |
+               if $key == "" then []
+               else ($jobs | map(select(.key == $key))) as $exact |
+                 if ($exact | length) > 0 then $exact
+                 else ($jobs | map(select(.key | startswith($key))))
+                 end
+               end
+             end) as $matches |
+            select(($matches | length) == 1) |
+            select($matches[0].result == "failed" or $matches[0].result == "canceled") |
+            .name
+          '); then
+            echo "::warning::Could not match the artifact list to timeline jobs; skipping."
+            emit_none
+          fi
+          mapfile -t names < <(printf '%s' "${selected_names}")
           if [ "${#names[@]}" -eq 0 ]; then
             echo "::warning::No Logs_Build_* artifacts mapped unambiguously to failed or canceled jobs in build ${BUILD_ID}; the agent will inspect failed compile-task logs through hlx."
           else
-            echo "Selected ${#names[@]} of ${#all_names[@]} Logs_Build_* artifacts for ${#failed_job_keys[@]} failed or canceled jobs."
+            echo "Selected ${#names[@]} of ${#all_names[@]} Logs_Build_* artifacts for ${failed_job_count} failed or canceled jobs."
           fi
 
           # Guards for untrusted PR-produced archives: cap the compressed
@@ -603,7 +562,7 @@ jobs:
             # Fail safe: a non-numeric size (corrupt zip, unexpected or
             # timed-out output) can't be verified, so skip rather than let it
             # bypass the guards below.
-            if ! printf '%s' "${UNCOMP}" | grep -qE '^[0-9]+$'; then
+            if [[ ! "${UNCOMP}" =~ ^[0-9]+$ ]]; then
               echo "::warning::Skipping ${safe_name}: could not determine uncompressed size (unparseable/timed-out unzip output)."; continue
             fi
             # ZIP64 sizes can reach ~20 digits, overflowing Bash's signed
@@ -736,29 +695,51 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Upload analysis artifact
+        id: upload
         if: steps.fetch.outputs.binlog-found == 'true'
+        continue-on-error: true
         uses: actions/upload-artifact@v7.0.1
         with:
           name: build-failure-analysis-data
           path: /tmp/binlogs
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 1
+
+      - name: Report unavailable binlog handoff
+        if: steps.fetch.outputs.binlog-found == 'true' && (steps.upload.outcome != 'success' || steps.upload.outputs.artifact-id == '')
+        shell: bash
+        run: echo "::warning::Binlog upload failed; continuing with Azure DevOps task logs through hlx."
 
 # Steps that run in the agent job after the failed build and target revision
 # are verified. Binlog download is conditional; when no matching binlog was
 # published, the agent analyzes failed compile-task logs through hlx.
 steps:
+  - name: Prepare binlog directory
+    shell: bash
+    run: |
+      mkdir -p /tmp/binlogs
+      find /tmp/binlogs -maxdepth 1 -type f -name '*.binlog' -delete
+
   - name: Download analysis artifact
+    id: download_analysis
     if: needs.fetch-binlog.outputs.binlog-found == 'true'
+    continue-on-error: true
     uses: actions/download-artifact@v8.0.1
     with:
       name: build-failure-analysis-data
       path: /tmp/binlogs
 
+  - name: Discard incomplete binlog download
+    if: steps.download_analysis.outcome == 'failure'
+    shell: bash
+    run: |
+      find /tmp/binlogs -maxdepth 1 -type f -name '*.binlog' -delete
+      echo "::warning::Binlog download failed; continuing with Azure DevOps task logs through hlx."
+
   - name: Export agent context
     shell: bash
     env:
-      GH_AW_BINLOG_FOUND_VALUE: ${{ needs.fetch-binlog.outputs.binlog-found }}
+      GH_AW_BINLOG_FOUND_VALUE: ${{ steps.download_analysis.outcome == 'success' }}
       GH_AW_PR_NUMBER_VALUE: ${{ needs.fetch-binlog.outputs.pr-number }}
       GH_AW_PR_HEAD_SHA_VALUE: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
       GH_AW_PR_MERGE_SHA_VALUE: ${{ needs.fetch-binlog.outputs.pr-merge-sha }}
@@ -798,6 +779,9 @@ steps:
 tools:
   github:
     toolsets: [pull_requests, repos]
+    # Advisory analysis must read first-time contributors' PRs as untrusted data.
+    allowed-repos: [dotnet/runtime]
+    min-integrity: none
   bash:
     - "cat"
     - "head"
@@ -824,8 +808,28 @@ safe-outputs:
         PR_NUMBER: ${{ needs.fetch-binlog.outputs.pr-number }}
         EXPECTED_HEAD: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
         EXPECTED_MERGE: ${{ needs.fetch-binlog.outputs.pr-merge-sha }}
+        BUILD_ID: ${{ needs.fetch-binlog.outputs.ado-build-id }}
+        ADO_API: "https://dev.azure.com/dnceng-public/public/_apis"
+        ADO_BUILD_DEFINITION_ID: "129"
       run: |
         set -euo pipefail
+        if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ || ! "${BUILD_ID}" =~ ^[0-9]+$ ]]; then
+          echo "::error::Missing or invalid verified PR/build identity before applying outputs."
+          exit 1
+        fi
+        # A rerun can succeed without changing either commit. Revalidate the
+        # latest build as well as the revisions before publishing old failures.
+        latest_build="${RUNNER_TEMP}/build-failure-analysis-latest-build.json"
+        trap 'rm -f "${latest_build}"' EXIT
+        if ! timeout 60 curl -sSL --fail --retry 3 --connect-timeout 10 --max-time 20 --retry-max-time 40 \
+             -o "${latest_build}" \
+             "${ADO_API}/build/builds?definitions=${ADO_BUILD_DEFINITION_ID}&branchName=refs/pull/${PR_NUMBER}/merge&queryOrder=queueTimeDescending&\$top=1&api-version=7.1" ||
+           ! jq -e --arg id "${BUILD_ID}" \
+             '.value[0] | (.id | tostring) == $id and .status == "completed" and .result == "failed"' \
+             "${latest_build}" >/dev/null; then
+          echo "::error::Analyzed build is no longer the latest completed failed runtime build, or could not be verified; refusing stale outputs."
+          exit 1
+        fi
         if [ -z "${EXPECTED_HEAD}" ] || [ -z "${EXPECTED_MERGE}" ] ||
            ! gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" |
              jq -e --arg head "${EXPECTED_HEAD}" --arg merge "${EXPECTED_MERGE}" \
