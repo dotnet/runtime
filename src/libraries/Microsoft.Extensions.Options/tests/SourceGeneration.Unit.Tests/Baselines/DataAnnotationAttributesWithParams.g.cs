@@ -137,5 +137,9 @@ namespace __OptionValidationGeneratedAttributes
             return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, MinimumLength, MaximumLength);
+        }
     }
 }

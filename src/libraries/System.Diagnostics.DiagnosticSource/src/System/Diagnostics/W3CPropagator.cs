@@ -49,7 +49,7 @@ namespace System.Diagnostics
                 InjectTraceState(traceState, carrier, setter);
             }
 
-            InjectW3CBaggage(carrier, activity.Baggage, setter);
+            InjectW3CBaggage(carrier, activity, setter);
         }
 
         public override void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState)
@@ -234,48 +234,46 @@ namespace System.Diagnostics
             }
         }
 
-        internal static void InjectW3CBaggage(object? carrier, IEnumerable<KeyValuePair<string, string?>> baggage, PropagatorSetterCallback setter)
+        internal static void InjectW3CBaggage(object? carrier, Activity activity, PropagatorSetterCallback setter)
         {
-            using (IEnumerator<KeyValuePair<string, string?>> e = baggage.GetEnumerator())
+            Activity.BaggageEnumerator e = activity.EnumerateBaggage();
+            if (e.MoveNext())
             {
-                if (e.MoveNext())
+                ValueStringBuilder encodedBaggage = new ValueStringBuilder(stackalloc char[256]);
+
+                int entriesCount = 0;
+                int lastGoodLength = 0;
+
+                do
                 {
-                    ValueStringBuilder encodedBaggage = new ValueStringBuilder(stackalloc char[256]);
+                    KeyValuePair<string, string?> item = e.Current;
 
-                    int entriesCount = 0;
-                    int lastGoodLength = 0;
-
-                    do
+                    if (EncodeBaggageKey(item.Key, ref encodedBaggage))
                     {
-                        KeyValuePair<string, string?> item = e.Current;
-
-                        if (EncodeBaggageKey(item.Key, ref encodedBaggage))
+                        encodedBaggage.Append(Space);
+                        encodedBaggage.Append(Equal);
+                        encodedBaggage.Append(Space);
+                        if (!string.IsNullOrEmpty(item.Value))
                         {
-                            encodedBaggage.Append(Space);
-                            encodedBaggage.Append(Equal);
-                            encodedBaggage.Append(Space);
-                            if (!string.IsNullOrEmpty(item.Value))
-                            {
-                                EncodeBaggageValue(item.Value, ref encodedBaggage);
-                            }
-                            encodedBaggage.Append(CommaWithSpace);
-
-                            entriesCount++;
-
-                            if (encodedBaggage.Length < MaxBaggageEncodedLength)
-                            {
-                                lastGoodLength = encodedBaggage.Length;
-                            }
+                            EncodeBaggageValue(item.Value, ref encodedBaggage);
                         }
-                    } while (e.MoveNext() && entriesCount < MaxBaggageEntriesToEmit && encodedBaggage.Length < MaxBaggageEncodedLength);
+                        encodedBaggage.Append(CommaWithSpace);
 
-                    if (lastGoodLength - 2 > 0)
-                    {
-                        setter(carrier, Baggage, encodedBaggage.AsSpan(0, lastGoodLength - 2).ToString());
+                        entriesCount++;
+
+                        if (encodedBaggage.Length < MaxBaggageEncodedLength)
+                        {
+                            lastGoodLength = encodedBaggage.Length;
+                        }
                     }
+                } while (e.MoveNext() && entriesCount < MaxBaggageEntriesToEmit && encodedBaggage.Length < MaxBaggageEncodedLength);
 
-                    encodedBaggage.Dispose();
+                if (lastGoodLength - 2 > 0)
+                {
+                    setter(carrier, Baggage, encodedBaggage.AsSpan(0, lastGoodLength - 2).ToString());
                 }
+
+                encodedBaggage.Dispose();
             }
         }
 
