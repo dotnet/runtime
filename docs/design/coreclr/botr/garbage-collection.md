@@ -324,55 +324,6 @@ Given WKS GC with concurrent GC on (default case), the code flow for a backgroun
          background_sweep();
      }
 
-Pause duration reporting
-========================
-
-CoreCLR records pause contributions for `GC.GetTotalPauseDuration()` and
-`GCMemoryInfo.PauseDurations`. These measurements describe GC-accounted paused
-time, not the elapsed lifetime of a background collection. They include
-suspension acquisition where applicable and omit some work immediately before
-the execution engine is restarted. Collections that share a suspension have
-their contributions accounted separately.
-
-The `System.Runtime` meter exposes these contributions through
-`dotnet.gc.pause.duration`, a `Histogram<double>` in seconds. Each measurement
-has `gc.heap.generation` (`gen0`, `gen1`, or `gen2`) and `gc.pause.type`
-(`blocking` or `background`) attributes. Foreground collections during a
-background collection are blocking measurements. LOH and POH work is included
-in the Gen 2 contribution, not duplicated as separate measurements.
-
-Reporting reuses the durations calculated in `gc_heap::do_post_gc`,
-`gc_heap::add_bgc_pause_duration_0`, and `gc_heap::background_sweep`. The producer
-captures the collection identity and attributes with the duration, while
-`gc_lock` serializes pause accounting. It does not call managed listeners or
-allocate memory. This also preserves contributions that would be overwritten
-in a subsequent `GCMemoryInfo` snapshot.
-
-A fixed-size native queue transfers records to an internal CoreLib consumer.
-The producer publishes the record before signaling a coalesced notification.
-The consumer copies a bounded batch before invoking managed code, and never
-holds the queue/control lock while invoking listeners. Batch spacing limits
-feedback from callbacks that themselves allocate or collect. Delivery is
-asynchronous and its delay is not part of the recorded pause duration.
-
-Only a subscription to the pause histogram enables capture. The final
-unsubscription disables capture and wakes the consumer so it can exit. There
-is no periodic polling while the process is idle. The cumulative observable
-counter `dotnet.gc.pause.dropped`, in `{measurement}` units, reports records
-discarded because the bounded queue was full; observing this counter alone
-does not enable capture. Overflow drops the incoming record rather than
-blocking collection. Loss can bias the distribution, so consumers should
-monitor the dropped counter as well.
-
-Listener callbacks run on a runtime-owned background thread and must not
-throw. Exceptions are not swallowed and follow normal unhandled-exception
-behavior. Slow callbacks delay other listeners and may cause queue overflow.
-
-The managed bridge is internal and its entrypoints are preserved during the
-CoreLib library build. Its use is capability-gated: an older standalone
-collector or a non-CoreCLR runtime does not publish these two instruments.
-The existing `dotnet.gc.pause.time` counter is unchanged.
-
 Resources
 =========
 
