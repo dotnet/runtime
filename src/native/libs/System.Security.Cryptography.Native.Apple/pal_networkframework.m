@@ -51,6 +51,34 @@ static nw_endpoint_t _endpoint;
 #define LOG_ERROR(context, ...) LOG_IMPL_(context, 1, __VA_ARGS__)
 
 #define MANAGED_CONTEXT_KEY "GCHANDLE"
+#define SESSION_QUEUE_KEY "SESSIONQUEUE"
+
+static void* FramerCopyPointerValue(nw_framer_t framer, const char* key)
+{
+    void* ptr = NULL;
+
+    nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
+    assert(framer_options != NULL);
+
+    NSNumber* num = nw_framer_options_copy_object_value(framer_options, key);
+    if (num != NULL)
+    {
+        [num getValue:&ptr];
+        [num release];
+    }
+
+    nw_release(framer_options);
+
+    return ptr;
+}
+
+// The connection delivers its state changed handler on the session queue, while
+// nw_framer_async runs on the framer's own queue. Work that has to observe a state
+// change caused by delivered input must therefore be posted to this queue.
+static dispatch_queue_t FramerGetSessionQueue(nw_framer_t framer)
+{
+    return (dispatch_queue_t)FramerCopyPointerValue(framer, SESSION_QUEUE_KEY);
+}
 
 static void* FramerGetManagedContext(nw_framer_t framer)
 {
@@ -73,6 +101,15 @@ static void FramerOptionsSetManagedContext(nw_protocol_options_t framer_options,
 {
     NSNumber *ref = [NSNumber numberWithLong:(long)context];
     nw_framer_options_set_object_value(framer_options, MANAGED_CONTEXT_KEY, ref);
+    [ref release];
+}
+
+static void FramerOptionsSetSessionQueue(nw_protocol_options_t framer_options, dispatch_queue_t sessionQueue)
+{
+    // Retained for the lifetime of the connection that owns this framer.
+    dispatch_retain(sessionQueue);
+    NSNumber *ref = [NSNumber numberWithLong:(long)sessionQueue];
+    nw_framer_options_set_object_value(framer_options, SESSION_QUEUE_KEY, ref);
     [ref release];
 }
 
@@ -310,6 +347,7 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
 
     nw_protocol_options_t framer_options = nw_framer_create_options(_framerDefinition);
     FramerOptionsSetManagedContext(framer_options, context);
+    FramerOptionsSetSessionQueue(framer_options, sessionQueue);
 
     nw_protocol_stack_t protocol_stack = nw_parameters_copy_default_protocol_stack(parameters);
     nw_protocol_stack_prepend_application_protocol(protocol_stack, framer_options);
@@ -570,7 +608,12 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer)
 
 static nw_framer_cleanup_handler_t framer_cleanup_handler = ^(nw_framer_t framer)
 {
-    (void)framer;
+    // Balances the retain taken in FramerOptionsSetSessionQueue.
+    dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
+    if (sessionQueue != NULL)
+    {
+        dispatch_release(sessionQueue);
+    }
 };
 
 // This is called when connection start to set up framer
@@ -614,8 +657,28 @@ PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, voi
     nw_framer_async(framer, ^(void)
     {
         nw_framer_deliver_input(framer, buffer, (size_t)bufferLength, message, bufferLength > 0 ? FALSE : TRUE);
-        completionCallback(context, NULL);
-        nw_release(message);
+
+        // Delivering the input can drive the connection to nw_connection_state_ready, which
+        // queues the state changed handler that reports HandshakeFinished. That handler runs on
+        // the connection's session queue, not on the framer queue, so completing inline (or via
+        // another nw_framer_async hop) races it. Managed code uses this completion to decide
+        // whether to keep reading from the transport and must not read past the final handshake
+        // record, so hand the completion to the session queue where it is ordered behind any
+        // state change the delivered bytes produced.
+        dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
+        if (sessionQueue != NULL)
+        {
+            dispatch_async(sessionQueue, ^(void)
+            {
+                completionCallback(context, NULL);
+                nw_release(message);
+            });
+        }
+        else
+        {
+            completionCallback(context, NULL);
+            nw_release(message);
+        }
     });
 
     return 0;
