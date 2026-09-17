@@ -501,7 +501,7 @@ namespace System.Net.Security
                     fixed (byte* alpnPtr = alpn)
                     fixed (uint* ciphersPtr = ciphers)
                     {
-                        return Interop.NetworkFramework.Tls.NwConnectionCreate(options.IsServer, GCHandle.ToIntPtr(thisHandle), idnHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length, serverIdentity);
+                        return Interop.NetworkFramework.Tls.NwConnectionCreate(options.IsServer, GCHandle.ToIntPtr(thisHandle), idnHost, alpnPtr, alpnLength, minProtocol, maxProtocol, ciphersPtr, ciphers.Length, serverIdentity, options.IsServer && options.RemoteCertRequired);
                     }
                 }
             }

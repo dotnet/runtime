@@ -57,8 +57,13 @@ static void* FramerCopyPointerValue(nw_framer_t framer, const char* key)
 {
     void* ptr = NULL;
 
+    // Options are unavailable once the framer is being torn down, which is exactly when the
+    // cleanup handler runs, so a missing value here is expected rather than a programming error.
     nw_protocol_options_t framer_options = nw_framer_copy_options(framer);
-    assert(framer_options != NULL);
+    if (framer_options == NULL)
+    {
+        return NULL;
+    }
 
     NSNumber* num = nw_framer_options_copy_object_value(framer_options, key);
     if (num != NULL)
@@ -200,7 +205,7 @@ static CFStringRef ExtractNetworkFrameworkError(nw_error_t error, PAL_NetworkFra
 // (connectionless semantics mean the inbound has no upstream peer to depend on).
 static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const char* targetName, void* serverIdentity,
     const uint8_t* alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol,
-    uint32_t* cipherSuites, int cipherSuitesLength, dispatch_queue_t sessionQueue)
+    uint32_t* cipherSuites, int cipherSuitesLength, dispatch_queue_t sessionQueue, int32_t requireClientCert)
 {
     nw_parameters_t parameters = nw_parameters_create_secure_udp(
         NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -211,6 +216,13 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
     if (!isServer && targetName != NULL)
     {
         sec_protocol_options_set_tls_server_name(sec_options, targetName);
+    }
+
+    if (isServer && requireClientCert)
+    {
+        // Without this the server never sends a CertificateRequest, so SslServerAuthenticationOptions
+        // .ClientCertificateRequired would be silently ignored and the peer would stay unauthenticated.
+        sec_protocol_options_set_peer_authentication_required(sec_options, true);
     }
 
     if (isServer && serverIdentity != NULL)
@@ -361,14 +373,14 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
 }
 
 // Forward declaration for server bootstrap.
-static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength,
+static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength, int32_t requireClientCert,
     PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength);
 
-PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity)
+PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer, void* context, char* targetName, const uint8_t * alpnBuffer, int alpnLength, PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength, void* serverIdentity, int32_t requireClientCert)
 {
     if (isServer != 0)
     {
-        return CreateServerConnection(context, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
+        return CreateServerConnection(context, serverIdentity, alpnBuffer, alpnLength, requireClientCert, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength);
     }
 
     // Per-session serial queue targeting the concurrent root. NW serializes all
@@ -377,7 +389,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
     dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
         "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
 
-    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
+    nw_parameters_t parameters = BuildTlsParameters(0, context, targetName, NULL, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue, 0);
     if (parameters == NULL)
     {
         LOG_ERROR(context, "Failed to build TLS parameters");
@@ -416,7 +428,7 @@ PALEXPORT nw_connection_t AppleCryptoNative_NwConnectionCreate(int32_t isServer,
 // be torn down immediately after the inbound is delivered — the inbound
 // connection survives independently. Net cost: 1 fd per session (the inbound),
 // vs the 3 fds (listener+TCP-trigger+inbound) we held alive previously.
-static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength,
+static nw_connection_t CreateServerConnection(void* context, void* serverIdentity, const uint8_t* alpnBuffer, int alpnLength, int32_t requireClientCert,
     PAL_SslProtocol minTlsProtocol, PAL_SslProtocol maxTlsProtocol, uint32_t* cipherSuites, int cipherSuitesLength)
 {
     if (serverIdentity == NULL)
@@ -431,7 +443,7 @@ static nw_connection_t CreateServerConnection(void* context, void* serverIdentit
     dispatch_queue_t sessionQueue = dispatch_queue_create_with_target(
         "com.dotnet.networkframework.session", DISPATCH_QUEUE_SERIAL, _tlsQueue);
 
-    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue);
+    nw_parameters_t listenerParams = BuildTlsParameters(1, context, NULL, serverIdentity, alpnBuffer, alpnLength, minTlsProtocol, maxTlsProtocol, cipherSuites, cipherSuitesLength, sessionQueue, requireClientCert);
     if (listenerParams == NULL)
     {
         LOG_ERROR(context, "Failed to build server TLS parameters");
