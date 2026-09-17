@@ -172,24 +172,33 @@ namespace System.Reflection
 
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 #if !MONO
-            if (emitNew && CanCallConstructorOnExistingInstance(method.DeclaringType!))
+            if (emitNew)
             {
-                Debug.Assert(method.DeclaringType != typeof(string));
-                Debug.Assert(!method.DeclaringType!.IsArray);
-
                 Label allocateAndInvoke = il.DefineLabel();
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Brfalse, allocateAndInvoke);
 
-                il.Emit(OpCodes.Ldarg_1);
-                if (method.DeclaringType!.IsValueType)
+                if (!CanCallConstructorOnExistingInstance(method.DeclaringType!))
                 {
-                    il.Emit(OpCodes.Unbox, method.DeclaringType);
+                    il.Emit(OpCodes.Ldnull);
+                    il.Emit(OpCodes.Ret);
+                    il.MarkLabel(allocateAndInvoke);
                 }
+                else
+                {
+                    Debug.Assert(method.DeclaringType != typeof(string));
+                    Debug.Assert(!method.DeclaringType!.IsArray);
 
-                EmitLoadRefArguments(il, parameters);
-                EmitCallAndReturnHandling(il, method, emitNew: false, backwardsCompat);
-                il.MarkLabel(allocateAndInvoke);
+                    il.Emit(OpCodes.Ldarg_1);
+                    if (method.DeclaringType!.IsValueType)
+                    {
+                        il.Emit(OpCodes.Unbox, method.DeclaringType);
+                    }
+
+                    EmitLoadRefArguments(il, parameters);
+                    EmitCallAndReturnHandling(il, method, emitNew: false, backwardsCompat);
+                    il.MarkLabel(allocateAndInvoke);
+                }
             }
 #endif
             EmitLoadRefArguments(il, parameters);

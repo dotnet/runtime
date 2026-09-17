@@ -79,17 +79,7 @@ namespace System.Reflection.Tests
                 arguments = new object?[] { 3 };
             }
 
-            object? result = constructor.Invoke(target, arguments);
-            Assert.NotNull(result);
-            Assert.NotSame(target, result);
-            if (useString)
-            {
-                Assert.Equal("new", result);
-            }
-            else
-            {
-                Assert.Equal(3, Assert.IsType<object[]>(result).Length);
-            }
+            Assert.Null(constructor.Invoke(target, arguments));
         }
 
         public static IEnumerable<object[]> Invoke_ReferenceConstructors_SharedThunk_TestData()
