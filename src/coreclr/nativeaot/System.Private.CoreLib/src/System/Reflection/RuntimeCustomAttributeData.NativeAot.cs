@@ -184,7 +184,7 @@ namespace System.Reflection
     internal sealed partial class CustomAttributeEncodedArgument
     {
         private static CustomAttributeEncodedArgument ParseCustomAttributeValue(
-            ref CustomAttributeDataParser parser, CustomAttributeType type, MetadataReader module)
+            ref CustomAttributeDataParser parser, CustomAttributeType type, MetadataReader _)
         {
             return parser.ParseArgument(type);
         }
