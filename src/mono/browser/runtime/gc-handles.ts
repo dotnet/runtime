@@ -31,24 +31,24 @@ let _next_gcv_handle = -2;
 // GCVHandle is like GCHandle, but it's not tracked and allocated by the mono GC, but just by JS.
 // It's used when we need to create GCHandle-like identity ahead of time, before calling Mono.
 // they have negative values, so that they don't collide with GCHandles.
-export function alloc_gcv_handle (): GCHandle {
+export function alloc_gcv_handle(): GCHandle {
     const gcv_handle = _gcv_handle_free_list.length ? _gcv_handle_free_list.pop() : _next_gcv_handle--;
     return gcv_handle as any;
 }
 
-export function free_gcv_handle (gcv_handle: GCHandle): void {
+export function free_gcv_handle(gcv_handle: GCHandle): void {
     _gcv_handle_free_list.push(gcv_handle);
 }
 
-export function is_jsv_handle (js_handle: JSHandle): boolean {
+export function is_jsv_handle(js_handle: JSHandle): boolean {
     return (js_handle as any) < -1;
 }
 
-export function is_js_handle (js_handle: JSHandle): boolean {
+export function is_js_handle(js_handle: JSHandle): boolean {
     return (js_handle as any) > 0;
 }
 
-export function is_gcv_handle (gc_handle: GCHandle): boolean {
+export function is_gcv_handle(gc_handle: GCHandle): boolean {
     return (gc_handle as any) < -1;
 }
 
@@ -64,7 +64,7 @@ export const do_not_force_dispose = Symbol.for("wasm do_not_force_dispose");
 export const eager_task_handle_symbol = Symbol.for("wasm eager_task_handle");
 
 
-export function mono_wasm_get_jsobj_from_js_handle (js_handle: JSHandle): any {
+export function mono_wasm_get_jsobj_from_js_handle(js_handle: JSHandle): any {
     if (is_js_handle(js_handle))
         return _cs_owned_objects_by_js_handle[<any>js_handle];
     if (is_jsv_handle(js_handle))
@@ -72,7 +72,7 @@ export function mono_wasm_get_jsobj_from_js_handle (js_handle: JSHandle): any {
     return null;
 }
 
-export function mono_wasm_get_js_handle (js_obj: any): JSHandle {
+export function mono_wasm_get_js_handle(js_obj: any): JSHandle {
     assert_js_interop();
     if (js_obj[cs_owned_js_handle_symbol]) {
         return js_obj[cs_owned_js_handle_symbol];
@@ -96,7 +96,7 @@ export function mono_wasm_get_js_handle (js_obj: any): JSHandle {
     return js_handle as JSHandle;
 }
 
-export function register_with_jsv_handle (js_obj: any, jsv_handle: JSHandle) {
+export function register_with_jsv_handle(js_obj: any, jsv_handle: JSHandle) {
     assert_js_interop();
     // note _cs_owned_objects_by_js_handle is list, not Map. That's why we maintain _js_handle_free_list.
     _cs_owned_objects_by_jsv_handle[0 - <any>jsv_handle] = js_obj;
@@ -107,7 +107,7 @@ export function register_with_jsv_handle (js_obj: any, jsv_handle: JSHandle) {
 }
 
 // note: in MT, this is called from locked JSProxyContext. Don't call anything that would need locking.
-export function SystemInteropJS_ReleaseCSOwnedObject (js_handle: JSHandle): void {
+export function SystemInteropJS_ReleaseCSOwnedObject(js_handle: JSHandle): void {
     let obj: any;
     if (is_js_handle(js_handle)) {
         obj = _cs_owned_objects_by_js_handle[<any>js_handle];
@@ -124,7 +124,7 @@ export function SystemInteropJS_ReleaseCSOwnedObject (js_handle: JSHandle): void
     }
 }
 
-export function setup_managed_proxy (owner: any, gc_handle: GCHandle): void {
+export function setup_managed_proxy(owner: any, gc_handle: GCHandle): void {
     assert_js_interop();
     // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip
     owner[js_owned_gc_handle_symbol] = gc_handle;
@@ -141,7 +141,7 @@ export function setup_managed_proxy (owner: any, gc_handle: GCHandle): void {
     _js_owned_object_table.set(gc_handle, wr);
 }
 
-export function upgrade_managed_proxy_to_strong_ref (owner: any, gc_handle: GCHandle): void {
+export function upgrade_managed_proxy_to_strong_ref(owner: any, gc_handle: GCHandle): void {
     const sr = create_strong_ref(owner);
     if (_use_finalization_registry) {
         _js_owned_object_registry.unregister(owner);
@@ -149,7 +149,7 @@ export function upgrade_managed_proxy_to_strong_ref (owner: any, gc_handle: GCHa
     _js_owned_object_table.set(gc_handle, sr);
 }
 
-export function teardown_managed_proxy (owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
+export function teardown_managed_proxy(owner: any, gc_handle: GCHandle, skipManaged?: boolean): void {
     assert_js_interop();
     // The JS object associated with this gc_handle has been collected by the JS GC.
     // As such, it's not possible for this gc_handle to be invoked by JS anymore, so
@@ -173,13 +173,13 @@ export function teardown_managed_proxy (owner: any, gc_handle: GCHandle, skipMan
     }
 }
 
-export function assert_not_disposed (result: any): GCHandle {
+export function assert_not_disposed(result: any): GCHandle {
     const gc_handle = result[js_owned_gc_handle_symbol];
     mono_check(gc_handle != GCHandleNull, "ObjectDisposedException");
     return gc_handle;
 }
 
-function _js_owned_object_finalized (gc_handle: GCHandle): void {
+function _js_owned_object_finalized(gc_handle: GCHandle): void {
     if (!loaderHelpers.is_runtime_running()) {
         // We're shutting down, so don't bother doing anything else.
         return;
@@ -187,7 +187,33 @@ function _js_owned_object_finalized (gc_handle: GCHandle): void {
     teardown_managed_proxy(null, gc_handle);
 }
 
-export function _lookup_js_owned_object (gc_handle: GCHandle): any {
+// Counts of live proxies, for leak diagnostics and tests. Exposed as INTERNAL.getProxyCensus.
+// Order: [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
+export function get_proxy_census(): number[] {
+    // index 0 of each list is always a dummy
+    const count_live = (list: any[]): number => {
+        let live = 0;
+        for (let i = 1; i < list.length; i++) {
+            if (list[i] !== undefined && list[i] !== null) live++;
+        }
+        return live;
+    };
+
+    let js_owned_alive = 0;
+    for (const wr of _js_owned_object_table.values()) {
+        if (wr.deref() !== undefined) js_owned_alive++;
+    }
+
+    return [
+        count_live(_cs_owned_objects_by_js_handle),
+        count_live(_cs_owned_objects_by_jsv_handle),
+        _js_owned_object_table.size,
+        js_owned_alive,
+        count_live(js_import_wrapper_by_fn_handle),
+    ];
+}
+
+export function _lookup_js_owned_object(gc_handle: GCHandle): any {
     if (!gc_handle)
         return null;
     const wr = _js_owned_object_table.get(gc_handle);
@@ -199,7 +225,7 @@ export function _lookup_js_owned_object (gc_handle: GCHandle): any {
     return null;
 }
 
-export function assertNoProxies (): void {
+export function assertNoProxies(): void {
     if (!WasmEnableThreads) return;
     mono_assert(_js_owned_object_table.size === 0, "There should be no proxies on this thread.");
     mono_assert(_cs_owned_objects_by_js_handle.length === 1, "There should be no proxies on this thread.");
@@ -212,7 +238,7 @@ let force_dispose_proxies_in_progress = false;
 
 // when we arrive here from UninstallWebWorkerInterop, the C# will unregister the handles too.
 // when called from elsewhere, C# side could be unbalanced!!
-export function forceDisposeProxies (disposeMethods: boolean, verbose: boolean): void {
+export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): void {
     let keepSomeCsAlive = false;
     let keepSomeJsAlive = false;
     force_dispose_proxies_in_progress = true;

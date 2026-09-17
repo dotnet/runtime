@@ -18,20 +18,21 @@ import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
 import { loadLazyAssembly } from "./lazyLoading";
 import { loadSatelliteAssemblies } from "./satelliteAssemblies";
-import { forceDisposeProxies } from "./gc-handles";
+import { forceDisposeProxies, get_proxy_census } from "./gc-handles";
 import { mono_wasm_get_func_id_to_name_mappings } from "./logging";
 import { monoStringToStringUnsafe } from "./strings";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
 
 import { mono_wasm_dump_threads } from "./pthreads";
 
-export function export_internal (): any {
+export function export_internal(): any {
     return {
         // tests
         mono_wasm_exit: (exit_code: number) => {
             Module.err("early exit " + exit_code);
         },
         forceDisposeProxies,
+        getProxyCensus: get_proxy_census,
         mono_wasm_dump_threads: WasmEnableThreads ? mono_wasm_dump_threads : undefined,
 
         // with mono_wasm_debugger_log and mono_wasm_trace_logger
@@ -114,7 +115,7 @@ export function export_internal (): any {
     };
 }
 
-export function cwraps_internal (internal: any): void {
+export function cwraps_internal(internal: any): void {
     Object.assign(internal, {
         mono_wasm_exit: cwraps.mono_wasm_exit,
         mono_wasm_profiler_init_aot: profiler_c_functions.mono_wasm_profiler_init_aot,
@@ -125,7 +126,7 @@ export function cwraps_internal (internal: any): void {
 }
 
 /* @deprecated not GC safe, legacy support for Blazor */
-export function monoObjectAsBoolOrNullUnsafe (obj: MonoObject): boolean | null {
+export function monoObjectAsBoolOrNullUnsafe(obj: MonoObject): boolean | null {
     // TODO https://github.com/dotnet/runtime/issues/100411
     // after Blazor stops using monoObjectAsBoolOrNullUnsafe
 
