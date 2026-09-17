@@ -622,6 +622,13 @@ namespace System.Diagnostics
                 // whoever else needs to observe it. Skip re-checking that specific pid in the scan.
                 int pidToSkip = 0;
 
+                // Set alongside pidToSkip, but only when the pending notification for that pid is a
+                // genuine non-exit (stopped/continued) one. This is narrower than checkAll: checkAll is
+                // also set when we observe an actual exit for a pid we don't recognize (e.g. an orphan
+                // reapAll is specifically responsible for reaping), which carries no risk of interfering
+                // with an external tracer and must not suppress the wildcard reap-all scan below.
+                bool nonExitNotificationPending = false;
+
                 // Check terminated processes.
                 int pid;
                 do
@@ -650,6 +657,7 @@ namespace System.Diagnostics
                             // which makes progress without spinning on or touching this notification.
                             checkAll = true;
                             pidToSkip = pid;
+                            nonExitNotificationPending = !isExited;
                             break;
                         }
                     }
@@ -705,14 +713,15 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (reapAll && !checkAll)
+                if (reapAll && !nonExitNotificationPending)
                 {
-                    // Only run the wildcard reap-all scan when checkAll is false: if checkAll is set, we
-                    // know pidToSkip has a pending non-exit notification, and waitpid(-1, ...) cannot be
-                    // targeted to avoid selecting that specific pid -- so calling it here could still
-                    // consume/steal that notification from whoever else needs to observe it (e.g. an
-                    // external tracer). The checkAll scan above already reaps every other known child;
-                    // any remaining untracked/orphaned child will be picked up on a subsequent SIGCHLD.
+                    // Only suppress the wildcard reap-all scan when the pid we skipped above has a
+                    // genuine pending non-exit notification: waitpid(-1, ...) cannot be targeted to avoid
+                    // selecting that specific pid, so calling it here could still consume/steal that
+                    // notification from whoever else needs to observe it (e.g. an external tracer). This
+                    // does not apply when checkAll was instead set because of an actual exit for a pid we
+                    // don't recognize -- reaping such an orphan is exactly what this wildcard scan is for,
+                    // and there is no notification to protect once it has genuinely exited.
                     do
                     {
                         int exitCode;
