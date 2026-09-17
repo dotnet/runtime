@@ -611,7 +611,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 EmitByte((byte)(fixupKind | ReadyToRunFixupKind.ModuleOverride));
-                if (!(targetModule is Internal.TypeSystem.Ecma.MutableModule) && !factory.CompilationModuleGroup.VersionsWithModule((ModuleDesc)targetModule))
+                if (!(targetModule is Internal.TypeSystem.Ecma.MutableModule) &&
+                    !factory.CompilationModuleGroup.VersionsWithModule((ModuleDesc)targetModule) &&
+                    !factory.CompilationModuleGroup.HardBindTypeReference((ModuleDesc)targetModule))
                 {
                     throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
                 }

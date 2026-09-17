@@ -93,6 +93,53 @@
     </ItemGroup>
   </Target>
 
+  <!-- CoreCLR-only, test-infra-only. The shipped _WasmCoreClrStageLazyR2R stages the lazy R2R complement
+       supplements (obj/R2R/*.r2r.wasm) only into the nested PUBLISH pass, as AssetKind=Publish /
+       CopyToOutputDirectory=Never static web assets. Real apps serve the publish output so that is correct,
+       but library tests serve the OUTER BUILD output (bin/.../wwwroot/_framework) and generate the served boot
+       config from the build pass (_WriteBuildWasmBootJsonFile over @(WasmStaticWebAsset)). The complement is a
+       distinct item group the sticky ReferenceCopyLocalPaths/WasmAssembliesFinal restore above never touches,
+       so it is absent from the served folder and the build boot config lists an empty lazyR2R. Re-stage it here
+       in the outer build as WasmStaticWebAsset lazy-r2r assets that copy to the output dir and feed the build
+       boot json - mirroring how the eager crossgen'd set flows back. -->
+  <Target Name="_WasmCoreClrStageLazyR2RForTests"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(_WasmFrameworkCopyToOutputDirectory)' == 'PreserveNewest'"
+          DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
+          BeforeTargets="_ResolveBuildWasmBootJsonEndpoints">
+    <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
+      <_WasmLazyR2RTestStagedFile Include="$(_WasmPublishR2RDir)*.r2r.wasm" />
+      <_WasmLazyR2RTestCandidate Include="@(_WasmLazyR2RTestStagedFile)">
+        <SourceId>$(PackageId)</SourceId>
+        <SourceType>Computed</SourceType>
+        <ContentRoot>$(_WasmPublishR2RDir)</ContentRoot>
+        <BasePath>$(StaticWebAssetBasePath)</BasePath>
+        <RelativePath>_framework/%(FileName)%(Extension)</RelativePath>
+        <AssetKind>All</AssetKind>
+        <AssetMode>All</AssetMode>
+        <AssetRole>Primary</AssetRole>
+        <AssetTraitName>WasmResource</AssetTraitName>
+        <AssetTraitValue>lazy-r2r</AssetTraitValue>
+        <CopyToOutputDirectory>$(_WasmFrameworkCopyToOutputDirectory)</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+        <OriginalItemSpec>%(Identity)</OriginalItemSpec>
+      </_WasmLazyR2RTestCandidate>
+      <!-- Same non-fingerprint (?) vs fingerprint (!) rule the shipped staging uses; owner derivation
+           de-fingerprints the route so "Foo.r2r.<hash>.wasm" still yields owner "Foo.wasm". -->
+      <_WasmLazyR2RTestFingerprintPatterns Include="WasmLazyR2R" Pattern="*.wasm" Expression="#[.{fingerprint}]!" Condition="'$(_WasmFingerprintAssets)' == 'true'" />
+      <_WasmLazyR2RTestFingerprintPatterns Include="WasmLazyR2R" Pattern="*.wasm" Expression="#[.{fingerprint}]?" Condition="'$(_WasmFingerprintAssets)' != 'true'" />
+    </ItemGroup>
+
+    <DefineStaticWebAssets Condition="'@(_WasmLazyR2RTestCandidate)' != ''"
+                           CandidateAssets="@(_WasmLazyR2RTestCandidate)"
+                           FingerprintCandidates="$(_WasmFingerprintAssets)"
+                           FingerprintPatterns="@(_WasmLazyR2RTestFingerprintPatterns)">
+      <Output TaskParameter="Assets" ItemName="WasmStaticWebAsset" />
+      <Output TaskParameter="Assets" ItemName="_WasmLazyR2RTestStaticWebAsset" />
+    </DefineStaticWebAssets>
+    <!-- Endpoints are defined by _ResolveBuildWasmBootJsonEndpoints over @(WasmStaticWebAsset); we hook before
+         it, so adding to that item group is enough - defining endpoints here would duplicate them. -->
+  </Target>
+
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
     <WasmTestSupport>true</WasmTestSupport>
     <WasmTestExitOnUnhandledError>true</WasmTestExitOnUnhandledError>

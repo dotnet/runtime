@@ -19,6 +19,15 @@ using Internal.JitInterface;
 
 namespace ILCompiler
 {
+    // Selects which methods a profile-restricted (partial) R2R compilation includes. The complement
+    // mode is used to produce the lazy half of a split image: the native code the profile did NOT select.
+    public enum ProfileRestrictionMode
+    {
+        None,               // No restriction: compile everything (the profile only guides optimization).
+        ProfileOnly,        // Compile only methods present in the input profile (the classic --partial image).
+        ProfileComplement,  // Compile only methods NOT present in the input profile.
+    }
+
     public class ReadyToRunCompilationModuleGroupConfig
     {
         public CompilerTypeSystemContext Context;
@@ -32,6 +41,8 @@ namespace ILCompiler
         public bool CompileGenericDependenciesFromVersionBubbleModuleSet;
         public bool CompileAllPossibleCrossModuleCode;
         public InstructionSetSupport InstructionSetSupport;
+        public bool KeepIntrinsicMethodsInPartial;
+        public bool HardBindCrossModuleTypeReferences;
     }
 
     public abstract class ReadyToRunCompilationModuleGroupBase : CompilationModuleGroup
@@ -67,6 +78,18 @@ namespace ILCompiler
         private readonly Func<EcmaMethod, bool> _tokenTranslationFreeNonVersionableUncached;
         private bool CompileAllPossibleCrossModuleCode = false;
         private InstructionSetSupport _instructionSetSupport;
+        private readonly bool _keepIntrinsicMethodsInPartial;
+        private readonly bool _hardBindCrossModuleTypeReferences;
+
+        // On an interpreter-only target, a --partial image must still carry hardware-intrinsic methods so the
+        // interpreter can call their R2R fallback instead of emitting INTOP_THROW_PNSE. See --partial-keep-intrinsic-methods.
+        protected bool KeepIntrinsicMethodsInPartial => _keepIntrinsicMethodsInPartial;
+
+        // When the referenced assemblies are a closed, MVID-locked deployment (wasm per-assembly split R2R),
+        // cross-module type references are encoded as defining-module typeDefs (a direct metadata lookup the
+        // runtime resolves against the attached image) instead of version-resilient manifest name-refs. This
+        // binds only type IDENTITY by token; layout/inlining stay version-resilient (VersionsWithModule is unchanged).
+        public override bool HardBindTypeReference(ModuleDesc module) => _hardBindCrossModuleTypeReferences && module is EcmaModule;
 
         public ReadyToRunCompilationModuleGroupBase(ReadyToRunCompilationModuleGroupConfig config)
         {
@@ -77,6 +100,8 @@ namespace ILCompiler
             _crossModuleInlining = config.CrossModuleInlining;
             _crossModuleGenericCompilation = config.CrossModuleGenericCompilation;
             CompileAllPossibleCrossModuleCode = config.CompileAllPossibleCrossModuleCode;
+            _keepIntrinsicMethodsInPartial = config.KeepIntrinsicMethodsInPartial;
+            _hardBindCrossModuleTypeReferences = config.HardBindCrossModuleTypeReferences;
 
             Debug.Assert(_isCompositeBuildMode || _compilationModuleSet.Count == 1);
 
@@ -947,7 +972,7 @@ namespace ILCompiler
             }
         }
 
-        public virtual void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, bool makePartial)
+        public virtual void ApplyProfileGuidedOptimizationData(ProfileDataManager profileGuidedCompileRestriction, ProfileRestrictionMode mode)
         {
             _profileData = profileGuidedCompileRestriction;
         }

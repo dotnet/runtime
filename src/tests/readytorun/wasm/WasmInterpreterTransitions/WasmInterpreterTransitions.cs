@@ -208,9 +208,58 @@ public class WasmInterpreterTransitions
         Assert.Equal(153, self.InterpretedIntFrom17Int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));           // IiTiiiiiiiiiiiiiiiip
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
+
+        // Generic-method transitions. A generic method shared across reference-type instantiations
+        // (the __Canon form) receives a hidden generic-context argument; an exact value-type
+        // instantiation does not. The R2R call site and the interpreter entry must agree on whether
+        // that hidden argument is present, or the dispatch traps with a wasm signature mismatch. This
+        // is the shape AsyncMethodBuilderCore.Start<TStateMachine>(ref TStateMachine) exercises.
+        Assert.Equal(A + B, InterpretedGenericIdentity(new Box { Value = A + B }).Value);  // R2R -> interp, shared (__Canon)
+        Assert.Equal(A, InterpretedGenericIdentity(A));                                    // R2R -> interp, exact value type
+        Assert.Equal(A + C, self.InterpretedCallsR2RGenericRef());                         // interp -> R2R, shared (__Canon)
+        Assert.Equal(A, self.InterpretedCallsR2RGenericStruct());                          // interp -> R2R, exact value type
+
+        // The async kickoff shape: a generic method taking a (struct) state machine by reference.
+        SmallState st = new SmallState { Value = C };
+        InterpretedGenericStart(ref st);                                                  // R2R -> interp, ref-struct generic
+        Assert.Equal(C + A, st.Value);
+        self.InterpretedCallsR2RGenericStart(ref st);                                     // interp -> R2R, ref-struct generic
+        Assert.Equal(C + A + B, st.Value);
     }
 
     private static int s_sideEffect;
+
+    private sealed class Box { public int Value; }
+
+    private interface IStateLike { void Bump(int by); }
+
+    private struct SmallState : IStateLike { public int Value; public void Bump(int by) => Value += by; }
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T InterpretedGenericIdentity<T>(T value) => value;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static T R2RGenericIdentity<T>(T value) => value;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InterpretedCallsR2RGenericRef() => R2RGenericIdentity(new Box { Value = A + C }).Value;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InterpretedCallsR2RGenericStruct() => R2RGenericIdentity(new S16 { A = Wide, B = C }).B == C ? R2RGenericIdentity(A) : 0;
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InterpretedGenericStart<T>(ref T value) where T : struct, IStateLike => value.Bump(A);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void R2RGenericStart<T>(ref T value) where T : struct, IStateLike => value.Bump(B);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void InterpretedCallsR2RGenericStart(ref SmallState value) => R2RGenericStart(ref value);
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;

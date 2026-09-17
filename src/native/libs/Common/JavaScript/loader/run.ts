@@ -8,7 +8,7 @@ import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
+import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued, startLazyR2RDownloads } from "./assets";
 import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
@@ -186,6 +186,9 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         }
 
         await Promise.all([...modulesAfterConfigLoadedPromises, ...modulesAfterRuntimeReadyPromises].map(callLibraryInitializerOnRuntimeReady));
+
+        // Background: download and attach lazy R2R native-code supplements while the app already runs.
+        startLazyR2RDownloads().catch(() => { /* best-effort; failures are logged in the fetch */ });
 
     } catch (err) {
         downloadDeferred?.reject(err);

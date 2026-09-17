@@ -63,6 +63,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
                 }
 
+                // Closed-deployment (wasm split) builds bind cross-module type identity to the defining
+                // module's typeDef so the runtime resolves it by a direct metadata lookup against the
+                // attached image, rather than a version-resilient manifest name-ref.
+                if (_compilationModuleGroup.HardBindTypeReference(ecmaType.Module))
+                {
+                    return new ModuleToken(ecmaType.Module, (mdToken)MetadataTokens.GetToken(ecmaType.Handle));
+                }
+
                 if (_typeToRefTokens.TryGetValue(ecmaType, out token))
                 {
                     return token;
@@ -108,6 +116,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
                 }
 
+                // Closed-deployment (wasm split) builds bind the method to its defining module's methodDef
+                // so the runtime (and the owner type derived from it) resolves by a direct metadata lookup.
+                if (_compilationModuleGroup.HardBindTypeReference(ecmaMethod.Module))
+                {
+                    return new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
+                }
+
                 // If that didn't work, it may be in the manifest module used for version resilient cross module inlining
                 if (allowDynamicallyCreatedReference)
                 {
@@ -135,6 +150,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (field.GetTypicalFieldDefinition() is EcmaField ecmaField)
             {
                 if (_compilationModuleGroup.VersionsWithType(ecmaField.OwningType))
+                {
+                    return new ModuleToken(ecmaField.Module, ecmaField.Handle);
+                }
+
+                // Closed-deployment (wasm split) builds bind the field to its defining module's fieldDef.
+                if (_compilationModuleGroup.HardBindTypeReference(ecmaField.Module))
                 {
                     return new ModuleToken(ecmaField.Module, ecmaField.Handle);
                 }
@@ -347,7 +368,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             int moduleIndex = _moduleIndexLookup(module);
             if (moduleIndex != 0 && !(module is Internal.TypeSystem.Ecma.MutableModule))
             {
-                if (!_compilationModuleGroup.VersionsWithModule((ModuleDesc)module))
+                if (!_compilationModuleGroup.VersionsWithModule((ModuleDesc)module) &&
+                    !_compilationModuleGroup.HardBindTypeReference((ModuleDesc)module))
                 {
                     throw new InternalCompilerErrorException("Attempt to use token from a module not within the version bubble");
                 }
