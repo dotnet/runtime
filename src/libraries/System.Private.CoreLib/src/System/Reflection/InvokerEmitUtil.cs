@@ -172,8 +172,11 @@ namespace System.Reflection
 
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
 #if !MONO
-            if (emitNew)
+            if (emitNew && CanCallConstructorOnExistingInstance(method.DeclaringType!))
             {
+                Debug.Assert(method.DeclaringType != typeof(string));
+                Debug.Assert(!method.DeclaringType!.IsArray);
+
                 Label allocateAndInvoke = il.DefineLabel();
                 il.Emit(OpCodes.Ldarg_1);
                 il.Emit(OpCodes.Brfalse, allocateAndInvoke);
@@ -195,6 +198,9 @@ namespace System.Reflection
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
+
+        private static bool CanCallConstructorOnExistingInstance(Type declaringType) =>
+            declaringType != typeof(string) && !declaringType.IsArray;
 
         private static void EmitLoadRefArguments(ILGenerator il, ReadOnlySpan<ParameterInfo> parameters)
         {
