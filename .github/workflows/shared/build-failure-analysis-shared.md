@@ -9,6 +9,84 @@
 # re-declare its top-level permissions.
 
 description: "Shared body for build-failure-analysis workflows"
+
+# Callers must not override steps: gh-aw replaces that array rather than merging
+# it. Keep metadata materialization and the final write guard together here.
+safe-outputs:
+  steps:
+    - name: Ensure build-analysis output metadata
+      if: steps.download-agent-output.outcome == 'success'
+      uses: actions/github-script@v9.0.0
+      env:
+        GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
+      with:
+        script: |
+          const fs = require("node:fs");
+          const outputPath = process.env.GH_AW_AGENT_OUTPUT;
+          const output = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+          if (!Array.isArray(output.items)) {
+            throw new Error("Build-analysis output must contain an items array.");
+          }
+          for (const item of output.items) {
+            if (item.type !== "add_comment" && item.type !== "create_pull_request_review_comment") {
+              continue;
+            }
+            if (typeof item.body !== "string") {
+              throw new Error("Build-analysis comments must have a string body.");
+            }
+            if (item.data === undefined) {
+              item.data = { workflow_artifact: "build-failure-analysis", artifact_kind: "analysis" };
+            } else if (item.data === null || Array.isArray(item.data) ||
+                       Object.keys(item.data).length !== 2 ||
+                       item.data.workflow_artifact !== "build-failure-analysis" ||
+                       item.data.artifact_kind !== "analysis") {
+              throw new Error("Build-analysis comment metadata does not match the workflow schema.");
+            }
+            // MCP normalizes supplied data into the body, but data is optional
+            // at that boundary. Materialize the same block when it was omitted.
+            const block = "Structured data:\n```json\n" + JSON.stringify(item.data, null, 2) + "\n```";
+            if (!item.body.includes(block)) {
+              item.body += "\n\n" + block;
+            }
+          }
+          fs.writeFileSync(outputPath, JSON.stringify(output));
+    - name: Revalidate PR revision before applying queued outputs
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_AW_REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ needs.fetch-binlog.outputs.pr-number }}
+        EXPECTED_HEAD: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
+        EXPECTED_MERGE: ${{ needs.fetch-binlog.outputs.pr-merge-sha }}
+        BUILD_ID: ${{ needs.fetch-binlog.outputs.ado-build-id }}
+        ADO_API: "https://dev.azure.com/dnceng-public/public/_apis"
+        ADO_BUILD_DEFINITION_ID: "129"
+      run: |
+        set -euo pipefail
+        if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ || ! "${BUILD_ID}" =~ ^[0-9]+$ ]]; then
+          echo "::error::Missing or invalid verified PR/build identity before applying outputs."
+          exit 1
+        fi
+        # A rerun can succeed without changing either commit. Revalidate the
+        # latest build as well as the revisions before publishing old failures.
+        latest_build="${RUNNER_TEMP}/build-failure-analysis-latest-build.json"
+        trap 'rm -f "${latest_build}"' EXIT
+        if ! timeout 60 curl -sSL --fail --retry 3 --connect-timeout 10 --max-time 20 --retry-max-time 40 \
+             -o "${latest_build}" \
+             "${ADO_API}/build/builds?definitions=${ADO_BUILD_DEFINITION_ID}&branchName=refs/pull/${PR_NUMBER}/merge&queryOrder=queueTimeDescending&\$top=1&api-version=7.1" ||
+           ! jq -e --arg id "${BUILD_ID}" \
+             '.value[0] | (.id | tostring) == $id and .status == "completed" and .result == "failed"' \
+             "${latest_build}" >/dev/null; then
+          echo "::error::Analyzed build is no longer the latest completed failed runtime build, or could not be verified; refusing stale outputs."
+          exit 1
+        fi
+        if [ -z "${EXPECTED_HEAD}" ] || [ -z "${EXPECTED_MERGE}" ] ||
+           ! gh api "repos/${GH_AW_REPO}/pulls/${PR_NUMBER}" |
+             jq -e --arg head "${EXPECTED_HEAD}" --arg merge "${EXPECTED_MERGE}" \
+               '.head.sha == $head and .merge_commit_sha == $merge' >/dev/null; then
+          echo "::error::PR #${PR_NUMBER} moved or could not be verified before applying queued build-analysis outputs."
+          exit 1
+        fi
 ---
 
 # Build Failure Analyst

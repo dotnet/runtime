@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from pathlib import Path
@@ -23,6 +24,12 @@ def load_workflow(name):
 
 def step(steps, step_id):
     return next(item for item in steps if item.get("id") == step_id)
+
+
+def safe_output_steps(workflow):
+    if "steps" in workflow["safe-outputs"]:
+        return workflow["safe-outputs"]["steps"]
+    return load_workflow("shared/build-failure-analysis-shared")["safe-outputs"]["steps"]
 
 
 class BuildFailureAnalysisTests(unittest.TestCase):
@@ -69,7 +76,7 @@ class BuildFailureAnalysisTests(unittest.TestCase):
 
     def test_custom_bash_syntax(self):
         for name, workflow in self.workflows.items():
-            steps = workflow["jobs"]["fetch-binlog"]["steps"] + workflow["steps"] + workflow["safe-outputs"]["steps"]
+            steps = workflow["jobs"]["fetch-binlog"]["steps"] + workflow["steps"] + safe_output_steps(workflow)
             for item in steps:
                 if "run" not in item:
                     continue
@@ -223,7 +230,7 @@ class BuildFailureAnalysisTests(unittest.TestCase):
 
     def test_latest_build_and_revision_revalidation(self):
         for name, workflow in self.workflows.items():
-            script = workflow["safe-outputs"]["steps"][0]["run"]
+            script = next(item for item in safe_output_steps(workflow) if item["name"] == "Revalidate PR revision before applying queued outputs")["run"]
             for build_id, status, result, head, merge, curl_status, valid in (
                 (9, "completed", "failed", HEAD, MERGE, "0", True),
                 (10, "completed", "succeeded", HEAD, MERGE, "0", False),
@@ -289,6 +296,83 @@ class BuildFailureAnalysisTests(unittest.TestCase):
                     workflow["safe-outputs"]["create-pull-request-review-comment"]["commit-id"],
                     "${{ needs.fetch-binlog.outputs.pr-head-sha }}",
                 )
+
+    def test_binlog_allowlist_uses_exact_tool_names(self):
+        for name, workflow in self.workflows.items():
+            with self.subTest(workflow=name):
+                allowed = workflow["mcp-servers"]["binlog-mcp"]["allowed"]
+                self.assertEqual(len(allowed), 35)
+                self.assertEqual(len(allowed), len(set(allowed)))
+                self.assertTrue(all(tool.startswith("binlog_") and "*" not in tool for tool in allowed))
+                self.assertTrue({"binlog_errors", "binlog_overview", "binlog_warnings"}.issubset(allowed))
+                self.assertFalse({"stop", "stop_instance", "list_mcp_instances"}.intersection(allowed))
+
+    def test_metadata_is_materialized_before_publication(self):
+        metadata_step = load_workflow("shared/build-failure-analysis-shared")["safe-outputs"]["steps"][0]
+        script = metadata_step["with"]["script"]
+        metadata = {"workflow_artifact": "build-failure-analysis", "artifact_kind": "analysis"}
+        block = "Structured data:\n```json\n" + json.dumps(metadata, indent=2) + "\n```"
+        for supplied in (False, True):
+            with self.subTest(supplied=supplied), tempfile.TemporaryDirectory(prefix="bfa-metadata-") as directory:
+                path = Path(directory) / "agent_output.json"
+                items = [
+                    {"type": "add_comment", "body": "Root cause", "item_number": 42},
+                    {"type": "create_pull_request_review_comment", "body": "Suggested fix", "path": "file.cs", "line": 10},
+                    {"type": "noop", "message": "No analysis"},
+                    {"type": "missing_tool", "tool": "diagnostics"},
+                ]
+                if supplied:
+                    for item in items[:2]:
+                        item["data"] = metadata
+                        item["body"] += "\n\n" + block
+                untouched = copy.deepcopy(items[2:])
+                path.write_text(json.dumps({"items": items}), encoding="utf-8")
+                for _ in range(2):
+                    result = subprocess.run(
+                        ["node", "-e", script], capture_output=True, text=True,
+                        env={**os.environ, "GH_AW_AGENT_OUTPUT": str(path)}, timeout=15,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                actual = json.loads(path.read_text(encoding="utf-8"))["items"]
+                for item in actual[:2]:
+                    self.assertEqual(item["data"], metadata)
+                    self.assertEqual(item["body"].count(block), 1)
+                self.assertEqual(actual[0]["item_number"], 42)
+                self.assertEqual(actual[1]["path"], "file.cs")
+                self.assertEqual(actual[2:], untouched)
+
+        for name in NAMES:
+            lock = yaml.safe_load((WORKFLOWS / (name + ".lock.yml")).read_text(encoding="utf-8"))
+            names = [item.get("name") for item in lock["jobs"]["safe_outputs"]["steps"]]
+            self.assertLess(names.index("Setup agent output environment variable"), names.index(metadata_step["name"]))
+            guard_name = "Revalidate PR revision before applying queued outputs"
+            self.assertLess(names.index(metadata_step["name"]), names.index(guard_name))
+            self.assertLess(names.index(guard_name), names.index("Process Safe Outputs"))
+            source_guard = next(item for item in safe_output_steps(self.workflows[name]) if item["name"] == guard_name)
+            compiled_guard = next(item for item in lock["jobs"]["safe_outputs"]["steps"] if item.get("name") == guard_name)
+            self.assertEqual(source_guard["run"].rstrip("\n"), compiled_guard["run"].rstrip("\n"))
+
+    def test_invalid_output_metadata_fails_closed(self):
+        script = load_workflow("shared/build-failure-analysis-shared")["safe-outputs"]["steps"][0]["with"]["script"]
+        for payload in (
+            {"items": None},
+            {"items": [{"type": "add_comment", "body": 42}]},
+            {"items": [{"type": "add_comment", "body": "Analysis", "data": None}]},
+            {"items": [{"type": "add_comment", "body": "Analysis", "data": {"artifact_kind": "other"}}]},
+            {"items": [{"type": "add_comment", "body": "Analysis", "data": {
+                "workflow_artifact": "build-failure-analysis", "artifact_kind": "analysis", "extra": True,
+            }}]},
+        ):
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory(prefix="bfa-metadata-") as directory:
+                path = Path(directory) / "agent_output.json"
+                original = json.dumps(payload)
+                path.write_text(original, encoding="utf-8")
+                result = subprocess.run(
+                    ["node", "-e", script], capture_output=True, text=True,
+                    env={**os.environ, "GH_AW_AGENT_OUTPUT": str(path)}, timeout=15,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(path.read_text(encoding="utf-8"), original)
 
 
 if __name__ == "__main__":

@@ -25,7 +25,7 @@ Agentic workflow safe outputs sanitize posted bodies and [remove agent-provided 
 
 ## Build-failure analysis regression checks
 
-With Python 3, PyYAML, Bash, and jq installed, run
+With Python 3, PyYAML, Bash, jq, and Node.js installed, run
 `python -m unittest discover -s .github/workflows/tests -p test_build_failure_analysis.py`.
 The tests execute the workflow's own Bash and jq logic with mocked API responses;
 they do not download artifacts or post to GitHub. On Windows they use Git Bash
