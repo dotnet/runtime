@@ -6,6 +6,11 @@
     <PackageReference Include="xunit.core" Version="$(XUnitVersion)" ExcludeAssets="build" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <!-- Use the arcade fork of xunit.assert for AOT-compat -->
+    <PackageReference Include="Microsoft.DotNet.XUnitAssert" Version="$(MicrosoftDotNetXUnitAssertVersion)" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
   </ItemGroup>
