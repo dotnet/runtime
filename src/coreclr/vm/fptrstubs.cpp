@@ -41,13 +41,13 @@ PCODE FuncPtrStubs::LookupClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDe
     CrstHolder ch(&m_hashTableCrst);
     const ClosedStaticRetBufStubEntry* entry =
         m_closedStaticRetBufStubs.LookupPtr({ pTargetMD, pDelegateInvoke });
-    return entry == NULL ? (PCODE)NULL : (PCODE)entry->Stub->GetEntryPoint();
+    return entry == NULL ? (PCODE)NULL : entry->Stub;
 }
 
-ClosedStaticRetBufPortableEntryPoint* FuncPtrStubs::AddClosedStaticRetBufStub(
+PCODE FuncPtrStubs::AddClosedStaticRetBufStub(
     MethodDesc* pTargetMD,
     MethodDesc* pDelegateInvoke,
-    ClosedStaticRetBufPortableEntryPoint* pStub)
+    PCODE pStub)
 {
     CONTRACTL
     {

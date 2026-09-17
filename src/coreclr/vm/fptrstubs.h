@@ -34,10 +34,7 @@ public :
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     PCODE               LookupClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke);
-    ClosedStaticRetBufPortableEntryPoint* AddClosedStaticRetBufStub(
-        MethodDesc* pTargetMD,
-        MethodDesc* pDelegateInvoke,
-        ClosedStaticRetBufPortableEntryPoint* pStub);
+    PCODE               AddClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke, PCODE pStub);
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     static PrecodeType GetDefaultType(MethodDesc* pMD);
@@ -91,7 +88,7 @@ private:
     {
         MethodDesc* Target;
         MethodDesc* DelegateInvoke;
-        ClosedStaticRetBufPortableEntryPoint* Stub;
+        PCODE Stub;
     };
 
     class ClosedStaticRetBufStubTraits : public NoRemoveSHashTraits<DefaultSHashTraits<ClosedStaticRetBufStubEntry>>

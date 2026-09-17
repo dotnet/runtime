@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
+using System.Reflection.Emit;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -152,6 +154,8 @@ public class WasmInterpreterTransitions
 
             Func<double, ObjectPair> genericCreationOnlyCallback = target.GetPairWithUnusedDouble;
             Assert.Same(target, genericCreationOnlyCallback.Target);
+
+            VerifyDynamicClosedStaticDelegate();
         }
 
         // R2R -> interpreted, struct returns. The return buffer follows 'this' for an instance
@@ -248,6 +252,83 @@ public class WasmInterpreterTransitions
     }
 
     private static int s_sideEffect;
+
+    private static void VerifyDynamicClosedStaticDelegate()
+    {
+        AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(
+            new AssemblyName("DynamicClosedStaticDelegateAssembly"),
+            AssemblyBuilderAccess.Run);
+        ModuleBuilder module = assembly.DefineDynamicModule("DynamicClosedStaticDelegateModule");
+
+        TypeBuilder resultBuilder = module.DefineType(
+            "DynamicResult",
+            TypeAttributes.Public | TypeAttributes.SequentialLayout | TypeAttributes.Sealed,
+            typeof(ValueType));
+        FieldBuilder firstField = resultBuilder.DefineField("First", typeof(int), FieldAttributes.Public);
+        FieldBuilder secondField = resultBuilder.DefineField("Second", typeof(int), FieldAttributes.Public);
+        Type resultType = resultBuilder.CreateType();
+
+        Type[] invokeParameters =
+        {
+            typeof(long),
+            typeof(float),
+            typeof(double),
+            typeof(int),
+            typeof(long),
+            typeof(double),
+            typeof(float),
+        };
+
+        TypeBuilder targetBuilder = module.DefineType(
+            "DynamicTarget",
+            TypeAttributes.Public | TypeAttributes.Abstract | TypeAttributes.Sealed);
+        Type[] targetParameters = new Type[invokeParameters.Length + 1];
+        targetParameters[0] = typeof(object);
+        Array.Copy(invokeParameters, 0, targetParameters, 1, invokeParameters.Length);
+        MethodBuilder targetMethodBuilder = targetBuilder.DefineMethod(
+            "Target",
+            MethodAttributes.Public | MethodAttributes.Static,
+            resultType,
+            targetParameters);
+        ILGenerator il = targetMethodBuilder.GetILGenerator();
+        LocalBuilder result = il.DeclareLocal(resultType);
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Initobj, resultType);
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldc_I4, A);
+        il.Emit(OpCodes.Stfld, firstField);
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldc_I4, B);
+        il.Emit(OpCodes.Stfld, secondField);
+        il.Emit(OpCodes.Ldloc, result);
+        il.Emit(OpCodes.Ret);
+        MethodInfo targetMethod = targetBuilder.CreateType().GetMethod("Target");
+
+        TypeBuilder delegateBuilder = module.DefineType(
+            "DynamicDelegate",
+            TypeAttributes.Public | TypeAttributes.Sealed,
+            typeof(MulticastDelegate));
+        ConstructorBuilder constructor = delegateBuilder.DefineConstructor(
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.RTSpecialName,
+            CallingConventions.Standard,
+            new[] { typeof(object), typeof(IntPtr) });
+        constructor.SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+        MethodBuilder invoke = delegateBuilder.DefineMethod(
+            "Invoke",
+            MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+            resultType,
+            invokeParameters);
+        invoke.SetImplementationFlags(MethodImplAttributes.Runtime | MethodImplAttributes.Managed);
+        Type delegateType = delegateBuilder.CreateType();
+
+        object target = new();
+        Delegate callback = Delegate.CreateDelegate(delegateType, target, targetMethod);
+        Assert.Same(target, callback.Target);
+
+        object boxedResult = callback.DynamicInvoke(1L, 2.0f, 3.0, 4, 5L, 6.0, 7.0f);
+        Assert.Equal(A, (int)resultType.GetField("First").GetValue(boxedResult));
+        Assert.Equal(B, (int)resultType.GetField("Second").GetValue(boxedResult));
+    }
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
