@@ -18,6 +18,8 @@ public static class Program
     private const int ScenarioId = 1;
 #elif INPROC_SCENARIO_STACKOVERFLOW
     private const int ScenarioId = 2;
+#elif INPROC_SCENARIO_CONSOLEONLY
+    private const int ScenarioId = 3;
 #elif INPROC_SCENARIO_RICHSIGSEGV
     private const int ScenarioId = 0;
 #else
@@ -125,10 +127,14 @@ public static class Program
         Check(result == 0, "native driver failed; see its diagnostics");
 
         string reportDirectory = Path.Combine(outputDirectory, ".dotnet", "crash-reports");
+#if INPROC_SCENARIO_CONSOLEONLY
+        Check(!Directory.Exists(reportDirectory), "disabled lifecycle unexpectedly created a report directory");
+#else
         string[] reports = Directory.GetFiles(reportDirectory);
         Check(reports.Length == 1 && reports[0].EndsWith(".crashreport.json", StringComparison.Ordinal),
             $"expected one completed report and no temporary files, found: {string.Join(", ", reports)}");
         ValidateJson(reports[0], ScenarioId);
+#endif
         ValidateConsole(consolePath, ScenarioId);
     }
 

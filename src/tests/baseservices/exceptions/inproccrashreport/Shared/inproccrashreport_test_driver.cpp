@@ -37,6 +37,7 @@ namespace
     const int kScenarioRichSigsegv = 0;
     const int kScenarioAbort = 1;
     const int kScenarioStackOverflow = 2;
+    const int kScenarioConsoleOnly = 3;
 
     // Synthetic module handles, resolved by ModuleInfoCallback below.
     const void* const kManagedModule = reinterpret_cast<const void*>(0x1000);
@@ -359,6 +360,7 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveScenario(
     switch (scenario)
     {
         case kScenarioRichSigsegv:
+        case kScenarioConsoleOnly:
             signalNumber = SIGSEGV;
             settings.enumerateThreadsCallback = &EnumerateThreadsRichSigsegv;
             break;
@@ -377,7 +379,7 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveScenario(
 
     InProcCrashReportInitialize(settings);
 
-    InitializeServices(reporterRootPath, /*enableLifecycle*/ true);
+    InitializeServices(reporterRootPath, scenario != kScenarioConsoleOnly);
 
     if (scenario == kScenarioStackOverflow)
     {
