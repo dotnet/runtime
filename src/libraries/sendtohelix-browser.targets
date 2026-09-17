@@ -173,16 +173,22 @@
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
-    <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'Mono'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsList.txt</BuildWasmAppsJobsList>
-    <BuildWasmAppsJobsList Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(RepositoryEngineeringDir)testing\scenarios\BuildWasmAppsJobsListCoreCLR.txt</BuildWasmAppsJobsList>
+    <!-- Generated while building Wasm.Build.Tests, see its GenerateHelixJobsList target. -->
+    <BuildWasmAppsJobsList>$(WasmBuildTestsJobsListFile)</BuildWasmAppsJobsList>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
     <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
-    <!-- Mono-specific tests never apply to CoreCLR. Tests that are both native and Mono-only carry
-         the `mono` category too, so excluding `mono` alone covers them; `native` on its own marks
-         relink/AOT coverage that CoreCLR does run. The workload/no-workload selection above still applies. -->
+    <!-- Flavor-specific tests never apply to the other flavor. Tests that are both native and
+         Mono-only carry the `mono` category too, so excluding `mono` alone covers them; `native` on
+         its own marks relink/AOT coverage that CoreCLR does run. These two conditions must stay in
+         sync with $(_HelixJobsListExcludedCategory) in Wasm.Build.Tests.csproj, which is what keeps
+         the same classes out of the generated list; the negated form matches it so that an unset
+         $(RuntimeFlavor) filters and generates consistently. The single work item lanes do not
+         consult the generated list at all, so this is their only flavor filter.
+         The workload/no-workload selection above still applies. -->
     <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
+    <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -282,6 +288,20 @@
       <HelixCorrelationPayload Include="$(WasmBuildTargetsDir)"                  Destination="build/wasm-shared" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
+    </ItemGroup>
+
+    <!-- CoreCLR ReadyToRun: ship the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so the
+         Wasm.Build.Tests opt-in finds it under BASE_DIR. The crossgen2 tool itself is resolved on the worker
+         from the SDK crossgen2 pack (which the SDK restores when PublishReadyToRun is set), so it is only shipped
+         as a correlation payload when the in-build crossgen2 is present in this leg (dev/in-tree). The shim ships
+         whenever it is built - it is gated on its own path, not on the crossgen2 bin dir, which the WBT test leg
+         does not carry. -->
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\')">
+      <HelixCorrelationPayload Include="$(ArtifactsBinDir)Crossgen2Tasks\$(TasksConfiguration)\"
+                               Destination="Crossgen2Tasks/$(Configuration)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and Exists('$(Crossgen2InBuildDir)')">
+      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="coreclr/browser.wasm.$(Configuration)/$(BuildArchitecture)/crossgen2" />
     </ItemGroup>
 
     <!-- copy node separately only if EMSDK is not being included -->

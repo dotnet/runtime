@@ -10,6 +10,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "threadsuspend.h"
 
@@ -1582,7 +1583,7 @@ LPrepareRetry:
         }
         else
         {
-            ClrSleepEx(ABORT_POLL_TIMEOUT, FALSE);
+            minipal_sleep(ABORT_POLL_TIMEOUT);
         }
 
 
@@ -1618,7 +1619,7 @@ LPrepareRetry:
             }
             else
             {
-                ClrSleepEx(100, FALSE);
+                minipal_sleep(100);
             }
         }
 
@@ -2326,9 +2327,6 @@ void Thread::PerformPreemptiveGC()
         GCX_COOP();
         m_bGCStressing = TRUE;
 
-        // BUG(github #10318) - when not using allocation contexts, the alloc lock
-        // must be acquired here. Until fixed, this assert prevents random heap corruption.
-        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
         GCHeapUtilities::GetGCHeap()->StressHeap(&t_runtime_thread_locals.alloc_context.m_GCAllocContext);
         m_bGCStressing = FALSE;
     }
@@ -4399,7 +4397,7 @@ BOOL Thread::WaitForDebugSuspendHelper(void)
                 ThreadState newState = (ThreadState)(oldState | TS_DebugSyncSuspended);
                 if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
                 {
-                    result = m_DebugSuspendEvent.Wait(INFINITE,FALSE);
+                    result = m_DebugSuspendEvent.Wait(INFINITE, FALSE, false);
 #if _DEBUG
                     newState = m_State;
                     _ASSERTE(!(newState & TS_DebugSyncSuspended));

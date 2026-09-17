@@ -61,9 +61,29 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("str", () => ti.ToTitleCase(null));
         }
 
+        [Theory]
+        // ASCII apostrophe (U+0027) keeps a contraction/possessive as a single word.
+        [InlineData("Grandma's pictures", "Grandma's Pictures")]
+        [InlineData("can't stop", "Can't Stop")]
+        // U+2019 RIGHT SINGLE QUOTATION MARK (typographic curly apostrophe).
+        [InlineData("Grandma\u2019s pictures", "Grandma\u2019s Pictures")]
+        [InlineData("can\u2019t stop", "Can\u2019t Stop")]
+        // U+2018 LEFT SINGLE QUOTATION MARK and U+FF07 FULLWIDTH APOSTROPHE.
+        [InlineData("Grandma\u2018s pictures", "Grandma\u2018s Pictures")]
+        [InlineData("Grandma\uFF07s pictures", "Grandma\uFF07s Pictures")]
+        // A genuine separator still ends the word and titlecases what follows.
+        [InlineData("Grandma-s pictures", "Grandma-S Pictures")]
+        public void ToTitleCase_Apostrophe(string input, string expected)
+        {
+            TextInfo ti = CultureInfo.GetCultureInfo("en-US").TextInfo;
+            Assert.Equal(expected, ti.ToTitleCase(input));
+        }
+
         public static IEnumerable<object[]> DutchTitleCaseInfo_TestData()
         {
             yield return new object[] { "nl-NL", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "nl", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "nl", "De IJsvogel", "de ijsvogel" };
             yield return new object[] { "nl-be", "IJzeren Eigenschappen", "ijzeren eigenschappen" };
             yield return new object[] { "NL-NL", "Lake IJssel", "lake iJssel" };
             yield return new object[] { "NL-BE", "Boba N' IJango Fett PEW PEW", "Boba n' Ijango fett PEW PEW" };

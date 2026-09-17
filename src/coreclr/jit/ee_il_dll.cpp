@@ -505,34 +505,6 @@ unsigned Compiler::eeGetArgSizeAlignment(var_types type, bool isFloatHfa)
 }
 
 //------------------------------------------------------------------------
-// eeConvertToLookup: Convert a tuple of "{ value, pValue }" to "CORINFO_CONST_LOOKUP".
-//
-// Arguments:
-//    value  - The direct value (IAT_VALUE)
-//    pValue - The indirect value (IAT_PVALUE)
-//
-// Return Value:
-//    The lookup.
-//
-CORINFO_CONST_LOOKUP Compiler::eeConvertToLookup(void* value, void* pValue)
-{
-    CORINFO_CONST_LOOKUP lookup;
-    if (value != nullptr)
-    {
-        assert(pValue == nullptr);
-        lookup.accessType = IAT_VALUE;
-        lookup.addr       = value;
-    }
-    else
-    {
-        assert(pValue != nullptr);
-        lookup.accessType = IAT_PVALUE;
-        lookup.addr       = pValue;
-    }
-    return lookup;
-}
-
-//------------------------------------------------------------------------
 // eeGetArrayDataOffset: Gets the offset of a SDArray's first element
 //
 // Return Value:

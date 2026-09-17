@@ -7647,7 +7647,8 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     }
 
     bool ownEESuspension = false;
-    bool suspendedByThisThread = (ThreadSuspend::GetSuspensionThread() == GetThreadNULLOk());
+    Thread* pCurrentThread = GetThreadNULLOk();
+    bool suspendedByThisThread = pCurrentThread != nullptr && ThreadSuspend::GetSuspensionThread() == pCurrentThread;
     if (suspendedByThisThread && !g_profControlBlock.fProfilerRequestedRuntimeSuspend)
     {
         // This thread is responsible for suspending the runtime so we can't block

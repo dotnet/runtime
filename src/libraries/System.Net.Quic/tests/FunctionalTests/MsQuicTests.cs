@@ -1365,27 +1365,61 @@ namespace System.Net.Quic.Tests
                     serverOptions.MaxInboundBidirectionalStreams = 1;
                     serverOptions.MaxInboundUnidirectionalStreams = 1;
                     serverOptions.IdleTimeout = TimeSpan.FromSeconds(1);
+                    serverOptions.KeepAliveInterval = TimeSpan.FromMilliseconds(100);
                     return ValueTask.FromResult(serverOptions);
                 }
             };
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
-            await using (clientConnection)
-            await using (serverConnection)
+            Task<QuicStream>? acceptTask = null;
+            Task<int>? readTask = null;
+            Task? assertionTask = null;
+            try
             {
-                using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
-                await clientStream.WriteAsync(new byte[1]);
-                using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-                await serverStream.ReadAsync(new byte[1]);
+                await using (clientConnection)
+                await using (serverConnection)
+                {
+                    using CancellationTokenSource setupCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                    // Exercise setup inactivity longer than the configured idle timeout.
+                    await Task.Delay(TimeSpan.FromSeconds(3), setupCts.Token);
+                    using QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, setupCts.Token);
+                    await clientStream.WriteAsync(new byte[1], setupCts.Token);
+                    using QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync(setupCts.Token);
+                    Assert.Equal(1, await serverStream.ReadAsync(new byte[1], setupCts.Token));
 
-                ValueTask<QuicStream> acceptTask = serverConnection.AcceptInboundStreamAsync();
+                    acceptTask = serverConnection.AcceptInboundStreamAsync().AsTask();
+                    readTask = serverStream.ReadAsync(new byte[10]).AsTask();
+                    Assert.False(acceptTask.IsCompleted);
+                    Assert.False(readTask.IsCompleted);
 
-                // read attempts should block until idle timeout
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.ReadAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
+                    // Protect setup from inactivity, then let the native idle timer terminate the pending operations.
+                    Microsoft.Quic.QUIC_SETTINGS settings = QuicTestCollection.DisableConnectionKeepAlive(serverConnection);
+                    Assert.Equal(0u, settings.KeepAliveIntervalMs);
+                    Assert.Equal(1000ul, settings.IdleTimeoutMs);
 
-                // write and accept should throw as well
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10])).WaitAsync(TimeSpan.FromSeconds(10));
-                await AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask).WaitAsync(TimeSpan.FromSeconds(10));
+                    assertionTask = AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await readTask);
+                    await assertionTask.WaitAsync(TimeSpan.FromSeconds(10));
+                    assertionTask = AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await serverStream.WriteAsync(new byte[10]));
+                    await assertionTask.WaitAsync(TimeSpan.FromSeconds(10));
+                    assertionTask = AssertThrowsQuicExceptionAsync(QuicError.ConnectionIdle, async () => await acceptTask);
+                    await assertionTask.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+            }
+            finally
+            {
+                // Observe even delayed faults after disposal without replacing the original failure.
+                if (readTask is not null)
+                {
+                    await ((Task)readTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                }
+                if (acceptTask is not null)
+                {
+                    await ((Task)acceptTask).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                }
+                if (assertionTask is not null)
+                {
+                    await assertionTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                }
             }
         }
 

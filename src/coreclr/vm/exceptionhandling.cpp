@@ -974,9 +974,14 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
     {
         RtlCaptureContext(ex.GetContextRecord());
     }
-    GCX_COOP();
+    GCX_COOP_REGION_BEGIN();
+
     OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE);
     DispatchManagedException(throwable, ex.GetContextRecord());
+
+    GCX_COOP_REGION_END();
+
+    UNREACHABLE();
 }
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
@@ -3133,13 +3138,13 @@ static TADDR GetSpForDiagnosticReporting(REGDISPLAY *pRD)
 #endif
 }
 
-extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo)
+extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack exceptionObj, SIZE_T ip, SIZE_T sp, int flags, ExInfo *pExInfo, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
 
     {
         GCX_COOP_THREAD_EXISTS(pThread);
@@ -3266,7 +3271,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     }
     CONTRACTL_END;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
     exInfo->m_ScannedStackRange.ExtendUpperBound(exInfo->m_frameIter.m_crawl.GetRegisterSet()->SP);
@@ -3287,10 +3292,20 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 #endif
 
     ICodeManager* pCodeManager = NULL;
+#ifdef _DEBUG
+    bool forbidGCModeSwitch = false;
+#endif // _DEBUG
 
     if (pHandlerIP != NULL)
     {
         pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
+
+#ifdef _DEBUG
+        // The context handed to the resume path below no longer identifies the frame being resumed
+        // into (on wasm the SetIP further down stores a resume case index rather than a code
+        // address), so ask the question here, while the handler frame's control PC is available.
+        forbidGCModeSwitch = ResumeTargetVerifiesGCModeTransitions(exInfo->m_frameIter.m_crawl.GetRegisterSet()->ControlPC);
+#endif // _DEBUG
 #ifdef _DEBUG
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
         _ASSERTE(exInfo->m_sfCallerOfActualHandlerFrame == GetSP(pvRegDisplay->pCallerContext));
@@ -3380,6 +3395,18 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     ExInfo::UpdateNonvolatileRegisters(pvRegDisplay->pCurrentContext, pvRegDisplay, FALSE);
     if (pHandlerIP != NULL)
     {
+#ifdef _DEBUG
+        // Nothing between here and the resumption point may change the thread's GC mode. On wasm
+        // the resume is performed by throwing a native exception tag, so native cleanup runs in
+        // between, and a transition there would leave managed code resuming in the wrong mode.
+        // Only do this when the resumed code will call CORINFO_HELP_JIT_RESUME_AFTER_CATCH to lift
+        // the restriction; otherwise it would stay in force for the rest of the thread's life.
+        // The frame popping above is the last thing that legitimately transitions.
+        if (forbidGCModeSwitch)
+        {
+            t_gcModeSwitchPermitted = false;
+        }
+#endif // _DEBUG
         pCodeManager->ResumeAfterCatch(pvRegDisplay->pCurrentContext, targetSSP, fIntercepted);
     }
     else
@@ -3456,7 +3483,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
 
 void ResumeAtInterceptionLocation(REGDISPLAY* pvRegDisplay)
 {
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
@@ -3509,7 +3536,7 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     pThread->DecPreventAbort();
 
     exInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(exInfo->m_frameIter.m_crawl.GetRegisterSet());
@@ -3530,16 +3557,17 @@ void CallFinallyFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exIn
     exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_CurrentClause, (DWORD_PTR)pHandlerIP, spForDebugger);
 }
 
-extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay)
+extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack exceptionObj, BYTE* pFilterIP, REGDISPLAY* pvRegDisplay, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     DWORD_PTR dwResult = 0;
 
     BEGIN_QCALL;
+
     GCX_COOP();
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -3621,7 +3649,7 @@ CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, 
         EE_ILEXCEPTION_CLAUSE EHClause;
         memset(&EHClause, 0, sizeof(EE_ILEXCEPTION_CLAUSE));
         PTR_EXCEPTION_CLAUSE_TOKEN pEHClauseToken = pJitMan->GetNextEHClause(pEHEnum, &EHClause);
-        Thread* pThread = GET_THREAD();
+        Thread* pThread = GetThread();
         ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
         pExInfo->m_CurrentClause = EHClause;
 
@@ -3698,7 +3726,7 @@ CLR_BOOL EHEnumNextWorker(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, 
     return result;
 }
 
-extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause)
+extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClause* pEHClause, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -3706,7 +3734,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -3914,7 +3942,7 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
     CONTRACTL_END;
 
     CLR_BOOL result = FALSE;
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
     Frame* pFrame = pThread->GetFrame();
 
@@ -4049,14 +4077,15 @@ CLR_BOOL SfiInitWorker(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BO
     return result;
 }
 
-extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStackwalkCtx, CLR_BOOL instructionFault, CLR_BOOL* pfIsExceptionIntercepted, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
     CLR_BOOL result = FALSE;
+
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 
@@ -4096,7 +4125,7 @@ CLR_BOOL SfiNextWorker(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR
 
     StackWalkAction retVal = SWA_FAILED;
     CLR_BOOL success = FALSE;
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     ExInfo* pTopExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
 
     Frame* pFrame = pThread->GetFrame();
@@ -4369,7 +4398,7 @@ Exit:;
     return success;
 }
 
-extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted)
+extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollideClauseIdx, CLR_BOOL* fUnwoundReversePInvoke, CLR_BOOL* pfIsExceptionIntercepted, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4377,7 +4406,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
     BEGIN_QCALL;
 
-    Thread* pThread = GET_THREAD();
+    Thread* pThread = GetThread();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
 

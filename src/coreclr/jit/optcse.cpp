@@ -1086,8 +1086,6 @@ void Compiler::optValnumCSE_InitDataFlow()
         }
     }
 
-    fgDebugCheckLinks();
-
 #endif // DEBUG
 }
 
