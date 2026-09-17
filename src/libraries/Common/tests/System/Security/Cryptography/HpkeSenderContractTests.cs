@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(suite.GetCiphertextLength(length), ciphertext.Length);
                     AssertExtensions.FilledWith<byte>(0xE7, ciphertext);
                     Assert.Equal(Data(length), plaintext);
-                    Assert.Equal(new byte[] { 0x71, 0x72, 0x73 }, associatedData);
+                    AssertExtensions.SequenceEqual<byte>([0x71, 0x72, 0x73], associatedData);
                     Assert.Equal(1, sender.SealCoreCount);
                     Assert.Equal(0, sender.ExportCoreCount);
                 }
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Tests
                     sender.Seal(plaintext.Span, output.AsSpan(1, output.Length - 2), associatedData.Span);
                     AssertGuardedOutput(output);
                     Assert.Equal(Data(length + 2), input);
-                    Assert.Equal(new byte[] { 0xA5, 0x71, 0x72, 0x73, 0xA5 }, aadBuffer);
+                    AssertExtensions.SequenceEqual<byte>([0xA5, 0x71, 0x72, 0x73, 0xA5], aadBuffer);
                     Assert.Equal(1, sender.SealCoreCount);
                     Assert.Equal(0, sender.ExportCoreCount);
                 }

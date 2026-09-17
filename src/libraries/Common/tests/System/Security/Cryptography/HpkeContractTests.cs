@@ -257,8 +257,8 @@ namespace System.Security.Cryptography.Tests
                     AssertExtensions.FilledWith<byte>(0x42, encapsulatedSecret);
                     AssertExtensions.FilledWith<byte>(0xE7, ciphertext);
                     AssertExtensions.FilledWith<byte>(0x31, plaintext);
-                    Assert.Equal(new byte[] { 0x51, 0x52, 0x53 }, associatedData);
-                    Assert.Equal(new byte[] { 0x71, 0x72 }, info);
+                    AssertExtensions.SequenceEqual<byte>([0x51, 0x52, 0x53], associatedData);
+                    AssertExtensions.SequenceEqual<byte>([0x71, 0x72], info);
                     Assert.Equal(1, hpke.SealCoreCount);
                 }
             }
@@ -371,8 +371,8 @@ namespace System.Security.Cryptography.Tests
                     AssertExtensions.FilledWith<byte>(0xE7, plaintext);
                     AssertExtensions.FilledWith<byte>(0x31, encapsulatedSecret);
                     AssertExtensions.FilledWith<byte>(0x41, ciphertext);
-                    Assert.Equal(new byte[] { 0x51, 0x52, 0x53 }, associatedData);
-                    Assert.Equal(new byte[] { 0x71, 0x72 }, info);
+                    AssertExtensions.SequenceEqual<byte>([0x51, 0x52, 0x53], associatedData);
+                    AssertExtensions.SequenceEqual<byte>([0x71, 0x72], info);
                     Assert.Equal(1, hpke.OpenCoreCount);
                 }
             }
