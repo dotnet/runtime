@@ -640,15 +640,20 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   call          - the call in question
 //   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
+//   callee        - the actual inline candidate, if different from the call target
 
-InlineResult::InlineResult(
-    Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
+InlineResult::InlineResult(Compiler*             compiler,
+                           GenTreeCall*          call,
+                           Statement*            stmt,
+                           const char*           description,
+                           bool                  doNotReport,
+                           CORINFO_METHOD_HANDLE callee)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
     , m_InlineContext(nullptr)
     , m_Caller(nullptr)
-    , m_Callee(nullptr)
+    , m_Callee(callee)
     , m_ImportedILSize(0)
     , m_Description(description)
     , m_successResult(INLINE_PASS)
@@ -689,7 +694,7 @@ InlineResult::InlineResult(
     m_Caller = compiler->info.compMethodHnd;
 
     // Get method handle for callee, if known
-    if (m_Call->AsCall()->gtCallType == CT_USER_FUNC)
+    if ((m_Callee == nullptr) && (m_Call->AsCall()->gtCallType == CT_USER_FUNC))
     {
         m_Callee = m_Call->AsCall()->gtCallMethHnd;
     }

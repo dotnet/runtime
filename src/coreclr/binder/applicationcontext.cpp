@@ -92,7 +92,6 @@ namespace BINDER_SPACE
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
         sTrustedPlatformAssemblies.Normalize();
-
         for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
         {
             SString fileName;
@@ -105,6 +104,10 @@ namespace BINDER_SPACE
             }
 
             const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
+            if (pExistingEntry != nullptr)
+            {
+                continue;
+            }
 
             LPWSTR wszSimpleName = nullptr;
             if (pExistingEntry == nullptr)

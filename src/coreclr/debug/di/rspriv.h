@@ -15,6 +15,8 @@
 
 #include <utilcode.h>
 #include <minipal/mutex.h>
+#include "CLREventBase.h"
+#include "debugwait.h"
 
 #include <functional>
 
@@ -3278,7 +3280,7 @@ public:
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
 #if defined(FEATURE_INTEROP_DEBUGGING)
-    void DuplicateHandleToLocalProcess(HANDLE * pLocalHandle, RemoteHANDLE * pRemoteHandle);
+    void DuplicateHandleToLocalProcess(CLREventBase * pLocalEvent, RemoteHANDLE * pRemoteHandle);
 #endif // FEATURE_INTEROP_DEBUGGING
 
     bool IsThreadSuspendedOrHijacked(ICorDebugThread * pICorDebugThread);
@@ -3692,20 +3694,25 @@ public:
     RSSmartPtr<Cordb>     m_cordb;
 
 private:
-    // OS process handle to live process.
-    // @dbgtodo - , Move this into the Shim. This should only be needed in the live-process
-    // case. Get rid of this since it breaks the data-target abstraction.
-    // For Mac debugging, this handle is of course not the real process handle.  This is just a handle to
-    // wait on for process termination.
-    HANDLE                m_handle;
+    // Process-exit waitable. On Windows this wraps an OS process handle. On Unix it is a debug-pal latch
+    // that is valid only with the debug-pal wait APIs and must not be exposed to clients.
+    WaitHandle *m_handle;
 
     // Process descriptor - holds PID and App group ID for Mac debugging
     ProcessDescriptor m_processDescriptor;
 
 public:
-    // Wrapper to get the OS process handle. This is unsafe because it breaks the data-target abstraction.
-    // The only things that need this should be calls to DuplicateHandle, and some shimming work.
-    HANDLE  UnsafeGetProcessHandle()
+    // Windows-only callers may also use the returned value as the native process handle.
+    HANDLE UnsafeGetProcessHandle()
+    {
+#ifdef HOST_WINDOWS
+        return m_handle == nullptr ? NULL : m_handle->GetRawHandle();
+#else
+        return NULL;
+#endif
+    }
+
+    WaitHandle *UnsafeGetProcessWaitHandle()
     {
         return m_handle;
     }
@@ -3868,10 +3875,10 @@ public:
 
 
     DebuggerIPCRuntimeOffsets m_runtimeOffsets;
-    HANDLE                    m_leftSideEventAvailable;
-    HANDLE                    m_leftSideEventRead;
+    WaitEvent                *m_leftSideEventAvailable;
+    CLREventBase              m_leftSideEventRead;
 #if defined(FEATURE_INTEROP_DEBUGGING)
-    HANDLE                    m_leftSideUnmanagedWaitEvent;
+    CLREventBase              m_leftSideUnmanagedWaitEvent;
 #endif // FEATURE_INTEROP_DEBUGGING
 
 
@@ -3894,7 +3901,7 @@ public:
 #endif
 
     bool                  m_stopRequested;
-    HANDLE                m_stopWaitEvent;
+    CLREventBase          m_stopWaitEvent;
     RSLock                m_processMutex;
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -4113,7 +4120,7 @@ public:
     void TryDetach(); // Sets detach state to TryDetach, starting the detach evacuation counter.
     bool IsOutOfProcessStepping() { return m_dwOutOfProcessStepping != 0; }
 private:
-    HANDLE m_detachSetThreadContextNeededEvent;
+    CLREventBase m_detachSetThreadContextNeededEvent;
 #endif // OUT_OF_PROCESS_SETTHREADCONTEXT
 
 };
@@ -10121,8 +10128,9 @@ private:
 
     HANDLE               m_thread;
     DWORD                m_threadId;
-    HANDLE               m_threadControlEvent;
-    HANDLE               m_actionTakenEvent;
+    WaitEvent           *m_threadControlEvent;
+    WaitLatch           *m_threadExitedEvent;
+    CLREventBase         m_actionTakenEvent;
     BOOL                 m_run;
 
     // The process that we're 1:1 with.
@@ -10295,7 +10303,8 @@ private:
     HANDLE               m_thread;
     DWORD                m_threadId;
     BOOL                 m_run;
-    HANDLE               m_threadControlEvent;
+    WaitEvent           *m_threadControlEvent;
+    WaitLatch           *m_threadExitedEvent;
     BOOL                 m_processStateChanged;
 };
 

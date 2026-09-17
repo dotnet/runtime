@@ -196,6 +196,7 @@ CONFIG_INTEGER(JitProfileChecks, "JitProfileChecks", -1)
 CONFIG_INTEGER(JitRequired, "JITRequired", -1)
 CONFIG_INTEGER(JitStackAllocToLocalSize, "JitStackAllocToLocalSize", DEFAULT_MAX_LOCALLOC_TO_LOCAL_SIZE)
 CONFIG_INTEGER(JitSkipArrayBoundCheck, "JitSkipArrayBoundCheck", 0)
+CONFIG_INTEGER(JitEnablePhaseChecks, "JitEnablePhaseChecks", 1) // Run the phase IR checks
 
 // On ARM, use this as the maximum function/funclet size for creating function fragments (and creating
 // multiple RUNTIME_FUNCTION entries)
@@ -659,10 +660,10 @@ RELEASE_CONFIG_STRING(TailCallOpt, "TailCallOpt")
 // If set, allow fast tail calls; otherwise allow only helper-based calls for explicit tail calls.
 RELEASE_CONFIG_INTEGER(FastTailCalls, "FastTailCalls", 1)
 
-// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined.
+// Set to 1 to measure noway_assert usage. Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_INTEGER(JitMeasureNowayAssert, "JitMeasureNowayAssert", 0)
 
-// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined.
+// Set to file to write noway_assert usage to a file (if not set: stdout). Only valid if MEASURE_NOWAY is defined to 1.
 RELEASE_CONFIG_STRING(JitMeasureNowayAssertFile, "JitMeasureNowayAssertFile")
 
 CONFIG_INTEGER(EnableExtraSuperPmiQueries, "EnableExtraSuperPmiQueries", 0) // Make extra queries to somewhat
@@ -741,6 +742,11 @@ RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirt
 // Number of types to probe for polymorphic virtual call-sites to devirtualize them,
 // Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, "JitGuardedDevirtualizationMaxTypeChecks", -1)
+
+// Whether a guarded devirtualization candidate has to be inlineable.
+// 0 - keep it even if we won't inline it, a direct call is still cheaper.
+// 1 - drop it if the target can't be inlined (legacy behavior).
+RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationRequireInlining, "JitGuardedDevirtualizationRequireInlining", 0)
 
 // Various policies for GuardedDevirtualization (0x4B == 75)
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, "JitGuardedDevirtualizationChainLikelihood", 0x4B)

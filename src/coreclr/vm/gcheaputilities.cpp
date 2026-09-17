@@ -41,6 +41,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
+// Unused - kept for GC data contract c1 compatibility, see datadescriptor/datadescriptor.inc.
 GVAL_IMPL_INIT(ee_alloc_context, g_global_alloc_context, {});
 
 thread_local ee_alloc_context::PerThreadRandom ee_alloc_context::t_random = PerThreadRandom();
@@ -65,8 +66,6 @@ VersionInfo g_gc_version_info;
 
 // The module that contains the GC.
 PTR_VOID g_gc_module_base;
-
-bool GCHeapUtilities::s_useThreadAllocationContexts;
 
 // GC entrypoints for the linked-in GC. These symbols are invoked
 // directly if we are not using a standalone GC.
@@ -370,19 +369,6 @@ HRESULT InitializeDefaultGC()
 HRESULT GCHeapUtilities::LoadAndInitialize()
 {
     LIMITED_METHOD_CONTRACT;
-
-    // When running on a single-proc Intel system, it's more efficient to use a single global
-    // allocation context for SOH allocations than to use one for every thread.
-#if (defined(TARGET_X86) || defined(TARGET_AMD64)) && !defined(TARGET_UNIX)
-#if DEBUG
-    bool useGlobalAllocationContext = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GCUseGlobalAllocationContext) != 0);
-#else
-    bool useGlobalAllocationContext = false;
-#endif
-    s_useThreadAllocationContexts = !useGlobalAllocationContext && (IsServerHeap() || ::g_SystemInfo.dwNumberOfProcessors != 1 || CPUGroupInfo::CanEnableGCCPUGroups());
-#else
-    s_useThreadAllocationContexts = true;
-#endif
 
     // we should only call this once on startup. Attempting to load a GC
     // twice is an error.

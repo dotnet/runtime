@@ -6,7 +6,7 @@ using Xunit;
 
 public class Runtime_125615
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         long result = MutateImplicitByRef(default).GetAwaiter().GetResult();

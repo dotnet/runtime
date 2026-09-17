@@ -116,6 +116,7 @@
 //     boxing this describes this feature.
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "vars.hpp"
 #include "log.h"
@@ -470,6 +471,7 @@ void InitGSCookie()
 
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     // The GS cookie is stored in a read only data segment
     DWORD oldProtection;
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE, &oldProtection))
@@ -481,6 +483,7 @@ void InitGSCookie()
     // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
     oldProtection = PAGE_READONLY;
 #endif // TARGET_UNIX
+#endif // FEATURE_READONLY_GS_COOKIE
 
 #ifndef TARGET_UNIX
     // The GSCookie cannot be in a writeable page
@@ -507,10 +510,12 @@ void InitGSCookie()
         val ++;
     *pGSCookiePtr = val;
 
+#ifdef FEATURE_READONLY_GS_COOKIE
     if(!ClrVirtualProtect((LPVOID)pGSCookiePtr, sizeof(GSCookie), oldProtection, &oldProtection))
     {
         ThrowLastError();
     }
+#endif // FEATURE_READONLY_GS_COOKIE
 }
 
 Volatile<BOOL> g_bIsGarbageCollectorFullyInitialized = FALSE;
@@ -762,9 +767,7 @@ void EEStartupHelper()
         InitializeLogging();
 #endif
 
-#ifdef FEATURE_PERFMAP
-        InitThreadManagerPerfMapData();
-#endif
+        InitThreadManagerTracingData();
 
 #ifdef FEATURE_PGO
         PgoManager::Initialize();
@@ -792,7 +795,7 @@ void EEStartupHelper()
         _ASSERTE(NULL != g_pConfig);
         if (g_pConfig->StartupDelayMS())
         {
-            ClrSleepEx(g_pConfig->StartupDelayMS(), FALSE);
+            minipal_sleep(g_pConfig->StartupDelayMS());
         }
 #endif
 
@@ -1181,7 +1184,7 @@ void WaitForEndOfShutdown()
         pThread->SetThreadStateNC(Thread::TSNC_BlockedForShutdown);
     }
 
-    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE);
+    for (;;) g_pEEShutDownEvent->Wait(INFINITE, TRUE, false);
 }
 
 // ---------------------------------------------------------------------------
@@ -1676,6 +1679,9 @@ static void RuntimeThreadShutdown(void* thread)
             GCX_COOP_NO_DTOR_END();
         }
 
+#ifdef TARGET_UNIX
+        pThread->SetThreadExited();
+#endif // TARGET_UNIX
         pThread->DetachThread(TRUE);
     }
     else
@@ -2054,4 +2060,3 @@ void ContractRegressionCheck()
 }
 
 #endif // ENABLE_CONTRACTS_IMPL
-

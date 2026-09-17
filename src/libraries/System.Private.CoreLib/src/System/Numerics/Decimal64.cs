@@ -1743,9 +1743,9 @@ namespace System.Numerics
             return Number.UInt64ToDecStr(significand);
         }
 
-        static unsafe ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            return Number.DigitsToUInt64(number.DigitsPtr, digits);
+            return Number.DigitsToUInt64(number.Digits.Slice(0, digits));
         }
 
         static Decimal64 IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Construct(ulong value) => new Decimal64(value);

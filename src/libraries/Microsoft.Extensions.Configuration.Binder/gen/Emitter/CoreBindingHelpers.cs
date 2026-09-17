@@ -228,11 +228,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 foreach (ComplexTypeSpec type in targetTypes)
                 {
                     ComplexTypeSpec effectiveType = (ComplexTypeSpec)_typeIndex.GetEffectiveTypeSpec(type);
-                    Debug.Assert(_typeIndex.HasBindableMembers(effectiveType));
                     string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.TypeRef.FullyQualifiedName}))");
                     _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.TypeRef.FullyQualifiedName}){Identifier.instance};");
+
+                    // A type with nothing to bind (e.g. one without members, or a collection whose elements
+                    // cannot be constructed) has no BindCore method; binding it is a no-op beyond validating
+                    // that the instance is of the expected type.
                     EmitBindingLogic(type, Identifier.temp, Identifier.configuration, InitializationKind.None, ValueDefaulting.None);
                     _writer.WriteLine($"return;");
                     EmitEndBlock();
@@ -966,16 +969,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case ConfigurationSectionSpec:
                         return property.CanSet;
                     case ComplexTypeSpec complexType:
-                        // EmitBindImplForMember skips a complex member only when it is a
-                        // parameterized-constructor object with no bindable members. Every other complex member is bound.
-                        return _typeIndex.HasBindableMembers(complexType) ||
-                            complexType.IsValueType ||
-                            complexType is CollectionSpec ||
-                            complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor };
+                        return IsBindableAsMember(complexType, property.CanSet);
                     default:
                         return false;
                 }
             }
+
+            private bool IsBindableAsMember(ComplexTypeSpec complexType, bool canSet) =>
+                _typeIndex.HasBindableMembers(complexType) ||
+                complexType.IsValueType ||
+                complexType is not ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor } ||
+                (canSet && _typeIndex.CanInstantiate(complexType));
 
             private bool EmitBindImplForMember(
                 MemberSpec member,
@@ -1082,10 +1086,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case ComplexTypeSpec complexType:
                         {
                             // Early detection of types we cannot bind to and skip it.
-                            if (!_typeIndex.HasBindableMembers(complexType) &&
-                                !complexType.IsValueType &&
-                                complexType is not CollectionSpec &&
-                                ((ObjectSpec)complexType).InstantiationStrategy == ObjectInstantiationStrategy.ParameterizedConstructor)
+                            if (!IsBindableAsMember(complexType, canSet))
                             {
                                 return false;
                             }
@@ -1142,7 +1143,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         return;
                     }
 
-                    Debug.Assert(canSet);
+                    if (!_typeIndex.HasBindableMembers(effectiveMemberType) &&
+                        effectiveMemberType is ObjectSpec { InstantiationStrategy: ObjectInstantiationStrategy.ParameterizedConstructor } &&
+                        _typeIndex.CanInstantiate(effectiveMemberType))
+                    {
+                        EmitObjectInit(effectiveMemberType, memberAccessExpr, InitializationKind.SimpleAssignment, configArgExpr);
+                        return;
+                    }
+
                     string effectiveMemberTypeFQN = effectiveMemberType.TypeRef.FullyQualifiedName;
                     initKind = InitializationKind.None;
 
@@ -1235,7 +1243,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Action<string, string?>? writeOnSuccess = null,
                 string? constructedExpr = null)
             {
-                if (!_typeIndex.HasBindableMembers(type))
+                bool hasBindableMembers = _typeIndex.HasBindableMembers(type);
+                bool writesBackToMember = writeOnSuccess is not null
+                    && !type.IsValueType
+                    && type is CollectionSpec and not DictionarySpec
+                    && _typeIndex.CanInstantiate(type);
+
+                if (!hasBindableMembers && !writesBackToMember)
                 {
                     if (initKind is not InitializationKind.None)
                     {
@@ -1336,8 +1350,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     void EmitBindCoreCall()
                     {
-                        string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions}{boundThroughConstructorArg});";
-                        _writer.WriteLine(bindCoreCall);
+                        if (hasBindableMembers)
+                        {
+                            string bindCoreCall = $@"{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configArgExpr}, ref {instanceToBindExpr}, defaultValueIfNotFound: {FormatDefaultValueIfNotFound()}, {Identifier.binderOptions}{boundThroughConstructorArg});";
+                            _writer.WriteLine(bindCoreCall);
+                        }
+
                         writeOnSuccess?.Invoke(instanceToBindExpr, tempIdentifierStoringExpr);
                     }
 
