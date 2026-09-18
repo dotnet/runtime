@@ -2322,6 +2322,16 @@ static void IoRingFillSqe(struct io_uring_sqe* sqe, IoRingRequest* request)
             sqe->addr = (uint64_t)(uintptr_t)request->SockAddr;
             sqe->off = (uint64_t)(uintptr_t)request->SockAddrLen;
             sqe->accept_flags = (uint32_t)request->Flags;
+#if defined(IORING_ACCEPT_MULTISHOT)
+            // IORING_ACCEPT_MULTISHOT (sqe->ioprio) keeps this single submission alive across many
+            // accepted connections instead of completing (and needing to be resubmitted) after
+            // just one - see IoRingRequest.Multishot's doc comment in pal_io.h for why SockAddr is
+            // required to be NULL here (the managed caller enforces this).
+            if (request->Multishot != 0)
+            {
+                sqe->ioprio |= IORING_ACCEPT_MULTISHOT;
+            }
+#endif
             break;
         case IoRingOp_Connect:
             // addr = input sockaddr*, off (aliased with addr2) = input addrlen (by value, not a

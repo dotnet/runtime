@@ -208,8 +208,12 @@ namespace Microsoft.Win32.SafeHandles
             /// not run continuations inline or queue them itself - the driver batches the returned work
             /// item together with others drained in the same pass.
             /// </summary>
-            IThreadPoolWorkItem? PortableThreadPool.IIoUringOperation.CompleteFromIoUring(int result)
+            IThreadPoolWorkItem? PortableThreadPool.IIoUringOperation.CompleteFromIoUring(int result, uint cqeFlags, out bool operationCompleted)
             {
+                // Every request submitted via this type is one-shot (RandomAccess never uses
+                // multishot) - this UserData/GCHandle is always done immediately.
+                operationCompleted = true;
+
                 if (result >= 0 && (_operation == Operation.Write || _operation == Operation.WriteGather)
                     && TryContinuePartialWrite(result, out IThreadPoolWorkItem? fallbackWorkItem))
                 {

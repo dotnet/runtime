@@ -304,7 +304,7 @@ namespace System.Threading
             /// architectures in this codebase, this never actually fails once <see cref="IsEnabled"/> is
             /// true: the request is simply enqueued for the dedicated issuer thread to submit, and this
             /// method returns immediately. The operation is now considered in flight; its completion will
-            /// eventually be delivered via <see cref="IIoUringOperation.CompleteFromIoUring(int)"/>,
+            /// eventually be delivered via <see cref="IIoUringOperation.CompleteFromIoUring"/>,
             /// invoked on a Thread Pool work item. The queue backing this hand-off is unbounded - under
             /// sustained overload (submissions arriving faster than the kernel/NIC can drain them),
             /// memory usage here could grow without bound; this is a known, accepted limitation of this
@@ -504,16 +504,25 @@ namespace System.Threading
                 int batchCount = 0;
                 foreach (ref readonly Interop.Sys.IoRingCompletion completion in completions)
                 {
-                    Interlocked.Decrement(ref s_inFlightCount);
-
                     GCHandle handle = GCHandle.FromIntPtr((IntPtr)completion.UserData);
                     var operation = (IIoUringOperation)handle.Target!;
-                    handle.Free();
 
                     // The issuer thread must not run the continuation inline; CompleteFromIoUring only
                     // does minimal bookkeeping and returns the work item (if any) to be queued, so it can
                     // be batched together with the other completions drained in this pass.
-                    IThreadPoolWorkItem? workItem = operation.CompleteFromIoUring(completion.Result);
+                    IThreadPoolWorkItem? workItem = operation.CompleteFromIoUring(completion.Result, completion.Flags, out bool operationCompleted);
+
+                    // A multishot operation (currently, only accept) can produce many completions for
+                    // the exact same UserData/GCHandle over time - see IORING_CQE_F_MORE in pal_io.h.
+                    // Only free the handle and account for it as no-longer-in-flight once the
+                    // operation itself says this UserData is truly done and will never be referenced
+                    // by a future completion.
+                    if (operationCompleted)
+                    {
+                        Interlocked.Decrement(ref s_inFlightCount);
+                        handle.Free();
+                    }
+
                     if (workItem is not null)
                     {
                         workItemBatch[batchCount++] = workItem;
@@ -537,19 +546,26 @@ namespace System.Threading
         {
             /// <summary>
             /// Called directly by the issuer thread (synchronously, as part of draining the completion
-            /// queue) with the raw io_uring completion result: the number of bytes transferred on
-            /// success, or <c>-errno</c> on failure. Implementations must only do the minimal bookkeeping
-            /// required (e.g., unpinning buffers, storing the result) and must NOT run the continuation
-            /// body inline on the issuer thread, nor queue it to the Thread Pool themselves. Instead,
-            /// return the <see cref="IThreadPoolWorkItem"/> representing the continuation to run, so the
-            /// issuer thread can batch it together with the other completions drained in the same pass and
-            /// queue them all via a single <see cref="ThreadPool.UnsafeQueueUserWorkItems"/> call, instead
-            /// of calling <see cref="ThreadPool.UnsafeQueueUserWorkItem(IThreadPoolWorkItem, bool)"/> once
-            /// per completion. Return <see langword="null"/> if this completion does not (yet) require a
-            /// continuation to be queued - e.g. a partial write was resubmitted via a new io_uring request
-            /// and remains in flight.
+            /// queue) with the raw io_uring completion result (the number of bytes transferred on
+            /// success, or <c>-errno</c> on failure), the raw CQE flags (see
+            /// <see cref="Interop.Sys.IoRingCqeFlagMore"/>), and <paramref name="operationCompleted"/>,
+            /// which the implementation must set to <see langword="true"/> if - and only if - this
+            /// UserData/GCHandle will never be referenced by another completion (the issuer thread
+            /// frees it immediately afterward), or <see langword="false"/> if more completions for the
+            /// same UserData are still expected later (only possible for a multishot operation, e.g.
+            /// accept - see <see cref="Interop.Sys.IoRingCqeFlagMore"/>). Implementations must only do
+            /// the minimal bookkeeping required (e.g., unpinning buffers, storing the result) and must
+            /// NOT run the continuation body inline on the issuer thread, nor queue it to the Thread
+            /// Pool themselves. Instead, return the <see cref="IThreadPoolWorkItem"/> representing the
+            /// continuation to run, so the issuer thread can batch it together with the other
+            /// completions drained in the same pass and queue them all via a single
+            /// <see cref="ThreadPool.UnsafeQueueUserWorkItems"/> call, instead of calling
+            /// <see cref="ThreadPool.UnsafeQueueUserWorkItem(IThreadPoolWorkItem, bool)"/> once per
+            /// completion. Return <see langword="null"/> if this completion does not (yet) require a
+            /// continuation to be queued - e.g. a partial write was resubmitted via a new io_uring
+            /// request and remains in flight.
             /// </summary>
-            IThreadPoolWorkItem? CompleteFromIoUring(int result);
+            IThreadPoolWorkItem? CompleteFromIoUring(int result, uint cqeFlags, out bool operationCompleted);
         }
     }
 }

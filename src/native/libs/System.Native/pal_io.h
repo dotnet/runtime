@@ -941,6 +941,14 @@ typedef struct
     uint8_t* SockAddr;   // used by IoRingOp_Accept (output, peer address) / IoRingOp_Connect (input, destination address)
     int32_t* SockAddrLen; // in/out length of SockAddr: Accept writes the actual peer address length back into it;
                           // Connect reads it once, by value, as the input address length
+    int32_t Multishot;   // IoRingOp_Accept only: non-zero requests IORING_ACCEPT_MULTISHOT - a single
+                          // submission that keeps producing one completion per accepted connection
+                          // until it is terminated (see IoRingCompletion.Flags/IORING_CQE_F_MORE
+                          // below), instead of the usual one-submission-per-completion contract.
+                          // SockAddr/SockAddrLen must be NULL when this is non-zero: the kernel would
+                          // otherwise reuse/overwrite the same peer-address buffer across every
+                          // connection this single submission produces, racing with however many of
+                          // them a caller has drained and read from so far.
     uint64_t UserData;   // opaque correlation token, echoed back in the matching IoRingCompletion
 } IoRingRequest;
 
@@ -951,7 +959,11 @@ typedef struct
 {
     uint64_t UserData; // matches the UserData of the IoRingRequest that produced this completion
     int32_t Result;    // number of bytes transferred on success, or -errno on failure
-    uint32_t Flags;    // raw CQE flags (e.g. IORING_CQE_F_MORE)
+    uint32_t Flags;    // raw CQE flags. In particular, IORING_CQE_F_MORE (bit 0x2) being set means
+                       // this same UserData will produce at least one more completion later (the
+                       // multishot-accept case); when it is clear, this UserData is fully done and
+                       // will never produce another completion - freeing whatever the caller
+                       // associated with it (e.g. a GCHandle) is then safe.
 } IoRingCompletion;
 
 /**
