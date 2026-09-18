@@ -2335,12 +2335,27 @@ static void IoRingFillSqe(struct io_uring_sqe* sqe, IoRingRequest* request)
             sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
             sqe->len = (uint32_t)request->BufferLength;
             sqe->msg_flags = (uint32_t)request->Flags;
+            // The managed caller only submits here after an optimistic userspace recv(2) already
+            // returned EWOULDBLOCK, so the data is known not to be immediately available yet -
+            // having io_uring redundantly retry a non-blocking recv(2) first (its default
+            // behavior) is pure wasted work. IORING_RECVSEND_POLL_FIRST (sqe->ioprio, not to be
+            // confused with sqe->msg_flags above) tells the kernel to instead arm poll and wait
+            // for readability before ever attempting the recv(2), matching what actually happens
+            // here.
+#if defined(IORING_RECVSEND_POLL_FIRST)
+            sqe->ioprio |= IORING_RECVSEND_POLL_FIRST;
+#endif
             break;
         case IoRingOp_Send:
             sqe->opcode = IORING_OP_SEND;
             sqe->addr = (uint64_t)(uintptr_t)request->Buffer;
             sqe->len = (uint32_t)request->BufferLength;
             sqe->msg_flags = (uint32_t)request->Flags;
+            // See IoRingOp_Recv above: the managed caller only submits here after an optimistic
+            // userspace send(2) already returned EWOULDBLOCK.
+#if defined(IORING_RECVSEND_POLL_FIRST)
+            sqe->ioprio |= IORING_RECVSEND_POLL_FIRST;
+#endif
             break;
     }
 }
