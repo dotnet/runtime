@@ -1221,6 +1221,22 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
     return result;
 }
 
+int32_t SystemNative_WaitIdDrainNonExited(int32_t pid)
+{
+    // Consume a pending stop/continue notification for this specific pid, if any, without ever
+    // reporting/consuming an exit: this is a targeted, narrowly-scoped counterpart to the WNOWAIT
+    // peek in SystemNative_WaitIdAnyExitedNoHangNoWait above, used to drain the stale notification
+    // that peek can observe for a plain job-control stop/continue (notably on macOS, which reports
+    // these even under WEXITED). WEXITED is deliberately not requested here, so a genuine exit for
+    // this pid (if one is also pending) is left completely untouched for the caller to observe and
+    // reap through the normal exit path.
+    siginfo_t siginfo;
+    memset(&siginfo, 0, sizeof(siginfo));
+    int32_t result;
+    while (CheckInterrupted(result = waitid(P_PID, (id_t)pid, &siginfo, WSTOPPED | WCONTINUED | WNOHANG)));
+    return result;
+}
+
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     assert(exitCode != NULL);

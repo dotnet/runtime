@@ -80,6 +80,11 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
     return -1;
 }
 
+int32_t SystemNative_WaitIdDrainNonExited(int32_t pid)
+{
+    return -1;
+}
+
 int32_t SystemNative_WaitPidExitedNoHang(int32_t pid, int32_t* exitCode, int32_t* terminatingSignal)
 {
     return -1;

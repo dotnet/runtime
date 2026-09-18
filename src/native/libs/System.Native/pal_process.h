@@ -190,6 +190,22 @@ PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message,
 PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited);
 
 /**
+ * Consumes a pending stop/continue notification for a specific pid, if any, without ever consuming
+ * an exit notification for it. This is a targeted counterpart to
+ * SystemNative_WaitIdAnyExitedNoHangNoWait's WNOWAIT peek, intended to drain the stale notification
+ * it can observe for a plain job-control stop/continue (notably on macOS, which reports these even
+ * though only WEXITED was requested to SystemNative_WaitIdAnyExitedNoHangNoWait).
+ *
+ * 1) on success, 0 is returned -- regardless of whether anything was actually pending to drain.
+ * 2) on error, -1 is returned.
+ *
+ * If the pid has also, separately, actually exited, that exit notification is left completely
+ * untouched (WEXITED is not requested here) for the caller to observe and reap through the normal
+ * exit path.
+ */
+PALEXPORT int32_t SystemNative_WaitIdDrainNonExited(int32_t pid);
+
+/**
  * Reaps a terminated child.
  *
  * 1) when a child is reaped, its process id is returned

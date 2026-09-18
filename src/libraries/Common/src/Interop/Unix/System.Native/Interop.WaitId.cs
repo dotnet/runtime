@@ -25,5 +25,18 @@ internal static partial class Interop
         /// </remarks>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdAnyExitedNoHangNoWait", SetLastError = true)]
         internal static partial int WaitIdAnyExitedNoHangNoWait([MarshalAs(UnmanagedType.Bool)] out bool isExited);
+
+        /// <summary>
+        /// Consumes a pending stop/continue notification for a specific pid, if any, without ever
+        /// consuming an exit notification for it.
+        /// </summary>
+        /// <returns>0 on success (whether or not anything was pending to drain), or -1 on error.</returns>
+        /// <remarks>
+        /// This is a targeted counterpart to <see cref="WaitIdAnyExitedNoHangNoWait"/>'s WNOWAIT peek,
+        /// intended to drain the stale notification it can observe for a plain job-control stop/continue
+        /// (notably on macOS, which reports these even though only WEXITED was requested there).
+        /// </remarks>
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdDrainNonExited", SetLastError = true)]
+        internal static partial int WaitIdDrainNonExited(int pid);
     }
 }

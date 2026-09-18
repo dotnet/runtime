@@ -653,21 +653,25 @@ namespace System.Diagnostics
                                 return;
                             }
                         }
-                        else if (OperatingSystem.IsMacOS() && s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? stoppedPws))
+                        else if (OperatingSystem.IsMacOS() && s_childProcessWaitStates.ContainsKey(pid))
                         {
                             // On macOS, a non-exit notification for a pid we track is always a plain job-control
                             // stop/continue (see SystemNative_WaitIdAnyExitedNoHangNoWait) -- nothing to do with
                             // ptrace. Only the real parent can ever observe that via wait()/waitid(), so there is
                             // no other legitimate consumer whose notification we could be stealing here. We must
-                            // actively drain it: TryReapChild's underlying waitpid retries past stop/continue
-                            // transitions without misreporting them as an exit, but if we instead left this
-                            // notification untouched (like the CheckAll fallback below does), macOS can mask this
-                            // same pid's own later real exit behind the stale stop notification indefinitely,
+                            // actively drain it via a targeted, consuming waitid(WSTOPPED|WCONTINUED) call: unlike
+                            // TryReapChild, whose underlying waitpid lacks WUNTRACED and therefore cannot observe
+                            // a plain job-control stop at all, this call is able to consume it. If we instead left
+                            // this notification untouched (like the CheckAll fallback below does), macOS can mask
+                            // this same pid's own later real exit behind the stale stop notification indefinitely,
                             // causing WaitForExit to hang forever. Linux does not have this masking quirk (see
                             // the branch below), so this proactive drain is restricted to macOS.
-                            if (stoppedPws.TryReapChild(configureConsole))
+                            if (Interop.Sys.WaitIdDrainNonExited(pid) != 0)
                             {
-                                stoppedPws.ReleaseRef();
+                                // Draining failed unexpectedly. Fall back to the generic handling below so we
+                                // don't risk spinning on the same undrained notification forever.
+                                CheckAll(pidToSkip: pid, configureConsole);
+                                return;
                             }
                         }
                         else
