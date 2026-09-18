@@ -3362,11 +3362,13 @@ public:
  * type arguments <string,List<int>> you get string followed by List followed by int.
  * ------------------------------------------------------------------------ */
 
-class DebuggerExternalMemoryHandle
+// Owns an interop-safe buffer and the ExternalMemoryHandle registration that keeps references in
+// the buffer visible to the GC.
+class DebuggerExternalMemoryOwner
 {
 public:
-    DebuggerExternalMemoryHandle(MethodTable *pMT, BYTE *pMemory);
-    ~DebuggerExternalMemoryHandle();
+    DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory);
+    ~DebuggerExternalMemoryOwner();
 
     BYTE *GetMemory() const
     {
@@ -3411,7 +3413,7 @@ public:
     PCODE                              m_targetCodeAddr;
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
-    DebuggerExternalMemoryHandle      *m_externalMemoryHandle;
+    DebuggerExternalMemoryOwner       *m_externalMemoryOwner;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
@@ -3423,7 +3425,7 @@ public:
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
 
-    BYTE *CreateExternalMemoryHandle(MethodTable *pMT, SIZE_T size);
+    BYTE *CreateExternalMemory(MethodTable *pMT, SIZE_T size);
 
     bool Init()
     {
@@ -3460,9 +3462,9 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
-        if (m_externalMemoryHandle != NULL)
+        if (m_externalMemoryOwner != NULL)
         {
-            DeleteInteropSafe(m_externalMemoryHandle);
+            DeleteInteropSafe(m_externalMemoryOwner);
         }
 
         // Clean up any temporary buffers used to send the argument type information.  These were allocated

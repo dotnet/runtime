@@ -1290,7 +1290,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     memset(m_result, 0, sizeof(m_result));
     m_md = NULL;
     m_resultType = TypeHandle();
-    m_externalMemoryHandle = NULL;
+    m_externalMemoryOwner = NULL;
     m_aborting = FE_ABORT_NONE;
     m_aborted = false;
     m_completed = false;
@@ -1312,7 +1312,7 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     }
 }
 
-DebuggerExternalMemoryHandle::DebuggerExternalMemoryHandle(MethodTable *pMT, BYTE *pMemory)
+DebuggerExternalMemoryOwner::DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory)
     : m_pHandle(NULL),
       m_pMemory(pMemory)
 {
@@ -1327,7 +1327,7 @@ DebuggerExternalMemoryHandle::DebuggerExternalMemoryHandle(MethodTable *pMT, BYT
     m_pHandle = ExternalMemoryHandle::Add(pMT, m_pMemory, 0);
 }
 
-DebuggerExternalMemoryHandle::~DebuggerExternalMemoryHandle()
+DebuggerExternalMemoryOwner::~DebuggerExternalMemoryOwner()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1335,7 +1335,7 @@ DebuggerExternalMemoryHandle::~DebuggerExternalMemoryHandle()
     DeleteInteropSafe(m_pMemory);
 }
 
-BYTE *DebuggerEval::CreateExternalMemoryHandle(MethodTable *pMT, SIZE_T size)
+BYTE *DebuggerEval::CreateExternalMemory(MethodTable *pMT, SIZE_T size)
 {
     CONTRACTL
     {
@@ -1345,12 +1345,12 @@ BYTE *DebuggerEval::CreateExternalMemoryHandle(MethodTable *pMT, SIZE_T size)
     }
     CONTRACTL_END;
 
-    _ASSERTE(m_externalMemoryHandle == NULL);
+    _ASSERTE(m_externalMemoryOwner == NULL);
 
     BYTE *pMemory = new (interopsafe) BYTE[size];
     EX_TRY
     {
-        m_externalMemoryHandle = new (interopsafe) DebuggerExternalMemoryHandle(pMT, pMemory);
+        m_externalMemoryOwner = new (interopsafe) DebuggerExternalMemoryOwner(pMT, pMemory);
     }
     EX_CATCH
     {
@@ -9873,13 +9873,13 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     ipce->FuncEvalComplete.funcEvalKey = pDE->m_funcEvalKey;
     ipce->FuncEvalComplete.successful = pDE->m_successful;
     ipce->FuncEvalComplete.aborted = pDE->m_aborted;
-    void *pResult = pDE->m_externalMemoryHandle != NULL
-        ? static_cast<void *>(pDE->m_externalMemoryHandle->GetMemory())
+    void *pResult = pDE->m_externalMemoryOwner != NULL
+        ? static_cast<void *>(pDE->m_externalMemoryOwner->GetMemory())
         : static_cast<void *>(pDE->m_result);
     ipce->FuncEvalComplete.resultAddr = (CORDB_ADDRESS)pResult;
     ipce->FuncEvalComplete.vmAppDomain.SetRawPtr(pDomain);
     ipce->FuncEvalComplete.vmObjectHandle = pDE->m_vmObjectHandle;
-    ipce->FuncEvalComplete.vmExternalMemoryHandle.SetRawPtr(pDE->m_externalMemoryHandle);
+    ipce->FuncEvalComplete.vmExternalMemoryOwner.SetRawPtr(pDE->m_externalMemoryOwner);
 
     LOG((LF_CORDB, LL_INFO1000, "D::FEC: TypeHandle is %p\n", pDE->m_resultType.AsPtr()));
 
@@ -9900,7 +9900,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
         (CORDB_ADDRESS_TO_PTR(ipce->FuncEvalComplete.resultAddr))));
 
     IfFailThrow(m_pRCThread->SendIPCEvent());
-    pDE->m_externalMemoryHandle = NULL;
+    pDE->m_externalMemoryOwner = NULL;
 
 #endif
 }
@@ -10937,10 +10937,10 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             break;
         }
 
-    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_HANDLE:
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
         {
-            DebuggerExternalMemoryHandle *pHandle = pEvent->DisposeExternalMemoryHandle.vmExternalMemoryHandle.GetRawPtr();
-            DeleteInteropSafe(pHandle);
+            DebuggerExternalMemoryOwner *pOwner = pEvent->DisposeExternalMemoryOwner.vmExternalMemoryOwner.GetRawPtr();
+            DeleteInteropSafe(pOwner);
             break;
         }
 

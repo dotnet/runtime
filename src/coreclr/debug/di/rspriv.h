@@ -8688,7 +8688,7 @@ public:
                                TargetBuffer                   remoteValue,
                                MemoryRange                    localValue,
                                EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                               VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle,
+                               VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
                                ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given element type.
@@ -8698,7 +8698,7 @@ public:
                                   TargetBuffer                   remoteValue,
                                   MemoryRange                    localValue,
                                   EnregisteredValueHomeHolder *  ppRemoteRegAddr,
-                                  VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle,
+                                  VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner,
                                   ICorDebugValue**               ppValue);
 
     // Create the proper ICDValue instance based on the given remote heap object
@@ -9418,7 +9418,7 @@ public:
 
     // Initializes the Right-Side's representation of a Value Class object.
     HRESULT Init(MemoryRange localValue);
-    void SetExternalMemoryHandle(VMPTR_DebuggerExternalMemoryHandle vmExternalMemoryHandle);
+    void SetExternalMemoryOwner(VMPTR_DebuggerExternalMemoryOwner vmExternalMemoryOwner);
     //HRESULT ResolveValueClass();
     CordbClass *GetClass();
 
@@ -9438,7 +9438,7 @@ private:
     // location information
     ValueHome * m_pValueHome;
 
-    VMPTR_DebuggerExternalMemoryHandle m_vmExternalMemoryHandle;
+    VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
 };
 
 
@@ -10016,7 +10016,7 @@ public:
     RSExtSmartPtr<CordbVCObjectValue> m_pValueClassResult;
 
     DebuggerIPCE_ExpandedTypeData m_resultType;
-    VMPTR_DebuggerExternalMemoryHandle m_vmExternalMemoryHandle;
+    VMPTR_DebuggerExternalMemoryOwner m_vmExternalMemoryOwner;
     VMPTR_AppDomain            m_resultAppDomainToken;
 
     // Left-side memory that needs to be freed.

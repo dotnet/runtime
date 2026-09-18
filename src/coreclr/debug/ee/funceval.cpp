@@ -2816,7 +2816,7 @@ void PackArgumentArray(DebuggerEval *pDE,
         LPVOID pData;
         if (RetValueType.IsByRefLike())
         {
-            pData = pDE->CreateExternalMemoryHandle(RetValueType.GetMethodTable(), size);
+            pData = pDE->CreateExternalMemory(RetValueType.GetMethodTable(), size);
             memset(pData, 0, size);
         }
         else
@@ -2952,10 +2952,10 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
             ? Debugger::NoValueTypeBoxing
             : Debugger::OnlyPrimitivesUnboxed;
 
-        if (pDE->m_resultType.IsByRefLike() && pDE->m_externalMemoryHandle == NULL)
+        if (pDE->m_resultType.IsByRefLike() && pDE->m_externalMemoryOwner == NULL)
         {
             SIZE_T size = pDE->m_resultType.GetMethodTable()->GetNumInstanceFieldBytes();
-            BYTE *pResult = pDE->CreateExternalMemoryHandle(pDE->m_resultType.GetMethodTable(), size);
+            BYTE *pResult = pDE->CreateExternalMemory(pDE->m_resultType.GetMethodTable(), size);
             memcpy(pResult, pDE->m_result, size);
         }
     }
