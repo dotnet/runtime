@@ -4874,6 +4874,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             noway_assert(varTypeIsIntegralOrI(op1->TypeGet()));
             op1->AsLclVarCommon()->SetLclNum(op2->AsLclVarCommon()->GetLclNum());
             op1->AsLclVarCommon()->SetSsaNum(op2->AsLclVarCommon()->GetSsaNum());
+            // Match the access type as well, since a small-typed load may normalize differently.
+            op1->ChangeType(op2->TypeGet());
         }
     }
     else
