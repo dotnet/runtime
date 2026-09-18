@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
         [MemberData(nameof(ConstructorArguments_TestData))]
         public void ConstructorsPreserveArgumentsAcrossTiers(Type target, object?[] expected)
         {
-            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
                 ConstructorArgumentsAttribute attribute = target.GetCustomAttribute<ConstructorArgumentsAttribute>();
                 Assert.Equal(expected, attribute.Arguments);
@@ -67,7 +67,7 @@ namespace System.Reflection.Tests
         [Fact]
         public void ConstructorExceptionsArePropagated()
         {
-            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.SpecializationThreshold; i++)
+            for (int i = 0; i <= IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold; i++)
             {
                 // NativeAOT materializes attributes through ConstructorInfo.Invoke.
                 Exception exception = Assert.Throws(
