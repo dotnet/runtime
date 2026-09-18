@@ -8,7 +8,7 @@ using Xunit;
 
 public class Runtime_125805
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         ExceptionReuse().GetAwaiter().GetResult();

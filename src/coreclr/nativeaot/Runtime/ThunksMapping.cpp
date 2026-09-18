@@ -215,7 +215,7 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
 #elif TARGET_ARM64
 
             //adr      xip0, <delta PC to thunk data address>
-            //ldr      xip1, [xip0, <delta to get to last qword in data page>]
+            //ldr      xip1, <delta PC to last qword in data page>
             //br       xip1
             //brk      0xf000 //Stubs need to be 16 byte aligned therefore we fill with a break here
 
@@ -223,7 +223,9 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             *((uint32_t*)pCurrentThunkAddress) = 0x10000010 | (((delta & 0x03) << 29) | (((delta & 0x1FFFFC) >> 2) << 5));
             pCurrentThunkAddress += 4;
 
-            *((uint32_t*)pCurrentThunkAddress) = 0xF9400211 | (((uint32_t)((OS_PAGE_SIZE - POINTER_SIZE - (i * POINTER_SIZE * 2)) / 8) << 10));
+            delta = (int)(pDataBlockAddress + OS_PAGE_SIZE - POINTER_SIZE - pCurrentThunkAddress);
+            ASSERT((-0x100000 <= delta) && (delta < 0x100000) && ((delta & 3) == 0));
+            *((uint32_t*)pCurrentThunkAddress) = 0x58000011 | (((delta & 0x1FFFFC) >> 2) << 5);
             pCurrentThunkAddress += 4;
 
             *((uint32_t*)pCurrentThunkAddress) = 0xD61F0220;

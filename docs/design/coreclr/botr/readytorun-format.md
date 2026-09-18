@@ -1128,9 +1128,9 @@ enum ReadyToRunHelper
 
 # Wasm Signature String Encoding
 
-Every managed method signature is encoded as a compact string that uniquely identifies its
-lowered Wasm calling convention. This encoding is used in R2R thunk lookup tables and is
-shared across three codebases:
+Every managed method signature is encoded as a compact string that records the semantic
+details needed by interpreter transition and delay-load thunks. This encoding is shared
+across three codebases:
 
 - **crossgen2** (`WasmLowering.GetSignature`): reference implementation, produces the string
   during R2R compilation.
@@ -1144,6 +1144,24 @@ The string format is:
 ```
 <return> [<this>] [<hidden-params>...] <explicit-params>... [p]
 ```
+
+Some string-discoverable Wasm stubs use a structural encoding that contains only the lowered
+Wasm result and parameter types.
+
+Virtual dispatch (`V`) thunk lookup uses a separate canonical form based only on the
+lowered Wasm function type:
+
+```
+V<wasm-return><wasm-params...>
+```
+
+The return is `v` for no Wasm result; otherwise each result and parameter is encoded as
+`i` (`i32`), `l` (`i64`), `f` (`f32`), `d` (`f64`), or `V` (`v128`). The parameter list
+includes the stack pointer, hidden parameters, indirect return or argument pointers, and
+the portable entrypoint parameter exactly as they appear in the Wasm function type. This
+allows one virtual dispatch thunk to serve managed signatures whose semantic encodings
+differ but whose Wasm calling conventions are identical, such as an indirect structure
+argument and an `i32` argument on Wasm32.
 
 **Return type** (first character):
 
@@ -1232,13 +1250,71 @@ of 16 or higher all require the same 16-byte transition-block placement.
 
 **Prefix** (applied by the caller, not part of the core encoding):
 
-When storing signature strings in thunk lookup tables, callers prepend a single-character
-prefix to distinguish thunk categories:
+When storing signature strings in thunk lookup tables, callers prepend a prefix to distinguish
+thunk categories:
 
 | Prefix | Meaning |
 |---|---|
 | `M` | Calli thunk or interpreter-to-native thunk |
 | `I` | Portable entrypoint-to-interpreter thunk |
+| `U` | Unboxing stub whose target does not require a generic context argument |
+| `UG` | Unboxing stub that passes the boxed object's MethodTable as the generic context argument |
+| `UM` | Unboxing stub that passes a target MethodDesc as the generic context argument |
+| `V` | Virtual dispatch thunk |
+
+A `V` thunk receives a dynamically allocated virtual-dispatch portable entrypoint as its final
+argument. The first call uses the signature-specific external-method thunk. When the runtime
+resolves a class virtual call, it dynamically looks up the corresponding `V` thunk and publishes
+a new portable entrypoint containing that thunk, the two packed vtable offsets, and the original
+portable entrypoint. Subsequent calls load the target method's portable entrypoint from the
+receiver's method table and forward the call using the same lowered Wasm signature. If that
+portable entrypoint does not yet have an actual code target, the `V` thunk redispatches through
+the original portable entrypoint so the runtime can resolve the receiver and prepare its target
+portable entrypoint for calls from R2R code.
+
+The 12-byte virtual-dispatch portable entrypoint has this layout:
+
+| Offset | Size | Field |
+|---:|---:|---|
+| 0 | 4 | `V` thunk table index |
+| 4 | 2 | Offset from the method table to the vtable indirection |
+| 6 | 2 | Offset from that indirection to the target slot |
+| 8 | 4 | Pointer to the original import portable entrypoint |
+
+Unboxing stub keys use only structural Wasm result and parameter types:
+
+```
+U[G|M]<result>[r]<parameters>
+```
+
+The `G` or `M` suffix is omitted for a normal `U` stub. For `UG` and `UM`, a lowercase `r`
+immediately after the result type indicates that the first parameter after `this` is a hidden
+return buffer. The `r` marker is not used for `U` stubs because those stubs do not insert a
+generic context argument. This distinction is required because a void-returning method with an
+explicit `i32` parameter can otherwise have the same structural Wasm type as a method returning
+a struct through a hidden buffer, but the generic context must be inserted at a different
+position.
+
+### Wasm unboxing stub portable entrypoints
+
+On browser Wasm, a MethodDesc for an R2R unboxing stub uses an
+`UnboxingStubPortableEntryPoint`. The address exposed as the method's portable entrypoint points
+to the embedded `PortableEntryPoint`; two pointer-sized fields are stored immediately before it:
+
+| Offset from portable entrypoint | Contents |
+|---:|---|
+| `-2 * sizeof(void*)` | Target MethodDesc |
+| `-sizeof(void*)` | Target method's portable entrypoint |
+| `0` | Embedded `PortableEntryPoint`, beginning with its actual-code field |
+
+For a `UM` stub, the target MethodDesc is the exact non-unboxing MethodDesc and is passed as the
+generic method context. The target portable entrypoint belongs to the method containing the actual
+shared code and is used for the indirect tail call. `U` and `UG` stubs do not consume the target
+MethodDesc field.
+
+The runtime initializes both fields before publishing the generated unboxing stub through the
+embedded portable entrypoint's actual-code field. A thread that observes the generated stub code
+therefore also observes the initialized target MethodDesc and target portable entrypoint.
 
 **Examples**:
 

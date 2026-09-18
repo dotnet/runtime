@@ -232,11 +232,46 @@ extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint3
         "return\n" ::);
 }
 
+#ifdef _DEBUG
+// Answers whether the code at handlerFrameControlPC lives in a ReadyToRun image compiled with
+// --verify-gc-mode-transitions, and so ends its catch resumption points with a call to
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH. Only such an image can lift a GC mode switch restriction
+// once managed code resumes; forbidding switches for any other resume target would leave them
+// forbidden for the rest of the thread's life.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool verifies = false;
+
+#ifdef FEATURE_READYTORUN
+    if (ExecutionManager::IsVirtualIP(handlerFrameControlPC))
+    {
+        VirtualIPRangeSection *pSection = ExecutionManager::FindVirtualIPRangeSection(handlerFrameControlPC);
+        if (pSection != NULL)
+        {
+            PTR_Module pModule = pSection->rangeSection._pR2RModule;
+            if (pModule != NULL)
+            {
+                ReadyToRunInfo *pInfo = pModule->GetReadyToRunInfo();
+                verifies = (pInfo != NULL) && pInfo->VerifiesGCModeTransitions();
+            }
+        }
+    }
+#endif // FEATURE_READYTORUN
+
+    return verifies;
+}
+#endif // _DEBUG
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
     UNREFERENCED_PARAMETER(ContextRecord);
     UNREFERENCED_PARAMETER(ExceptionRecord);
 
+    // Resuming managed code at a catch continuation is done by throwing a native exception tag.
+    // Any GC mode restriction for the duration of that unwind is installed by
+    // ClrRestoreNonvolatileContext, which is the only caller that resumes into managed code.
     ThrowRtlRestoreContextTag();
 
     __builtin_unreachable();
@@ -385,6 +420,7 @@ EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, Inl
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -415,6 +451,7 @@ extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -438,6 +475,7 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
 
     Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -975,13 +1013,42 @@ namespace
         return 1;
     }
 
+    uint32_t AppendWasmTypeCode(ConvertType type, char* keyBuffer, uint32_t pos, uint32_t maxSize)
+    {
+        char c;
+        switch (type)
+        {
+            case ConvertType::ToI32:  c = 'i'; break;
+            case ConvertType::ToI64:  c = 'l'; break;
+            case ConvertType::ToF32:  c = 'f'; break;
+            case ConvertType::ToF64:  c = 'd'; break;
+            case ConvertType::ToV128: c = 'V'; break;
+            default:
+                _ASSERTE(!"Unknown Wasm value type");
+                c = '?';
+                break;
+        }
+
+        if (pos < maxSize)
+            keyBuffer[pos] = c;
+
+        return 1;
+    }
+
     // Computes the signature key string for a MetaSig.
     // The format is documented in docs/design/coreclr/botr/readytorun-format.md
     // (section "Wasm Signature String Encoding").
     // Returns the total number of characters needed (excluding null terminator).
     // Only writes characters while pos < maxSize, so the buffer is never overflowed.
     // Callers should check if the return value >= maxSize and retry with a larger buffer.
-    static uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
+    static uint32_t GetSignatureKey(
+        MetaSig& sig,
+        const char* prefix,
+        char* keyBuffer,
+        uint32_t maxSize,
+        bool wasmCallingConventionOnly = false,
+        bool suppressGenericContext = false,
+        bool encodeReturnBuffer = false)
     {
         CONTRACTL
         {
@@ -993,10 +1060,14 @@ namespace
 
         uint32_t pos = 0;
 
-        if (pos < maxSize)
-            keyBuffer[pos] = prefix;
-        pos++;
+        for (const char* prefixChar = prefix; *prefixChar != '\0'; prefixChar++)
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = *prefixChar;
+            pos++;
+        }
 
+        bool hasReturnBuffer = false;
         if (sig.IsReturnTypeVoid())
         {
             if (pos < maxSize)
@@ -1009,36 +1080,85 @@ namespace
             if (cr.type == ConvertType::NotConvertible)
                 return UINT32_MAX;
 
-            // The multi-slot convention applies to parameters only; these types are returned
-            // through a hidden buffer like any other aggregate.
-            if ((cr.type == ConvertType::ToSlotsI64) || (cr.type == ConvertType::ToSlotsV128))
+            if (wasmCallingConventionOnly)
             {
-                cr.type = ConvertType::ToStruct;
+                if ((cr.type == ConvertType::ToStruct) ||
+                    (cr.type == ConvertType::ToSlotsI64) ||
+                    (cr.type == ConvertType::ToSlotsV128))
+                {
+                    hasReturnBuffer = true;
+                    if (pos < maxSize)
+                        keyBuffer[pos] = 'v';
+                    pos++;
+                    if (encodeReturnBuffer)
+                    {
+                        if (pos < maxSize)
+                            keyBuffer[pos] = 'r';
+                        pos++;
+                    }
+                }
+                else if (cr.type == ConvertType::ToEmpty)
+                {
+                    if (pos < maxSize)
+                        keyBuffer[pos] = 'v';
+                    pos++;
+                }
+                else
+                {
+                    pos += AppendWasmTypeCode(cr.type, keyBuffer, pos, maxSize);
+                }
             }
-            cr.requiresAlignedStructSlot = false;
+            else
+            {
+                // The multi-slot convention applies to parameters only; these types are returned
+                // through a hidden buffer like any other aggregate.
+                if ((cr.type == ConvertType::ToSlotsI64) || (cr.type == ConvertType::ToSlotsV128))
+                {
+                    cr.type = ConvertType::ToStruct;
+                }
+                cr.requiresAlignedStructSlot = false;
 
-            pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
+                pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
+            }
         }
+
+        if (wasmCallingConventionOnly)
+            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
 
         if (sig.HasThis())
         {
-            if (pos < maxSize)
-                keyBuffer[pos] = 'T';
-            pos++;
+            if (wasmCallingConventionOnly)
+            {
+                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            }
+            else
+            {
+                if (pos < maxSize)
+                    keyBuffer[pos] = 'T';
+                pos++;
+            }
         }
 
-        if (sig.HasGenericContextArg())
+        if (hasReturnBuffer)
+            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+
+        if (sig.HasGenericContextArg() && !suppressGenericContext)
         {
-            if (pos < maxSize)
-                keyBuffer[pos] = 'i';
-            pos++;
+            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
         }
 
         if (sig.HasAsyncContinuation())
         {
-            if (pos < maxSize)
-                keyBuffer[pos] = 'a';
-            pos++;
+            if (wasmCallingConventionOnly)
+            {
+                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            }
+            else
+            {
+                if (pos < maxSize)
+                    keyBuffer[pos] = 'a';
+                pos++;
+            }
         }
 
         for (CorElementType argType = sig.NextArg();
@@ -1048,21 +1168,63 @@ namespace
             ConvertResult cr = ConvertibleTo(argType, sig, false /* isReturn */);
             if (cr.type == ConvertType::NotConvertible)
                 return UINT32_MAX;
-            pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
+            if (wasmCallingConventionOnly)
+            {
+                switch (cr.type)
+                {
+                    case ConvertType::ToEmpty:
+                        break;
+                    case ConvertType::ToStruct:
+                        pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+                        break;
+                    case ConvertType::ToSlotsI64:
+                    case ConvertType::ToSlotsV128:
+                    {
+                        bool isInt128 = cr.type == ConvertType::ToSlotsI64;
+                        uint32_t slotSize = isInt128 ? 8 : 16;
+                        _ASSERTE((cr.structSize % slotSize) == 0);
+                        uint32_t slotCount = cr.structSize / slotSize;
+                        ConvertType slotType = isInt128 ? ConvertType::ToI64 : ConvertType::ToV128;
+                        for (uint32_t slot = 0; slot < slotCount; slot++)
+                            pos += AppendWasmTypeCode(slotType, keyBuffer, pos, maxSize);
+                        break;
+                    }
+                    default:
+                        pos += AppendWasmTypeCode(cr.type, keyBuffer, pos, maxSize);
+                        break;
+                }
+            }
+            else
+            {
+                pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
+            }
         }
 
         // Add the portable entrypoint parameter
         if (sig.GetCallingConvention() == IMAGE_CEE_CS_CALLCONV_DEFAULT)
         {
-            if (pos < maxSize)
-                keyBuffer[pos] = 'p';
-            pos++;
+            if (wasmCallingConventionOnly)
+            {
+                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            }
+            else
+            {
+                if (pos < maxSize)
+                    keyBuffer[pos] = 'p';
+                pos++;
+            }
         }
 
         if (pos < maxSize)
             keyBuffer[pos] = 0;
 
         return pos;
+    }
+
+    static uint32_t GetSignatureKey(MetaSig& sig, char prefix, char* keyBuffer, uint32_t maxSize)
+    {
+        char prefixString[] = { prefix, '\0' };
+        return GetSignatureKey(sig, prefixString, keyBuffer, maxSize);
     }
 
     typedef StringToThunkHash StringToPortableSigThunkHash;
@@ -1150,7 +1312,7 @@ namespace
         return thunk;
     }
 
-    static void* ComputePortableEntryPointToInterpreterThunk(MetaSig& sig)
+    static void* ComputePortableEntryPointThunk(MetaSig& sig, const char* prefix, bool wasmCallingConventionOnly = false)
     {
         CONTRACTL
         {
@@ -1175,7 +1337,7 @@ namespace
         char fixedBuffer[64];
         char* keyBuffer = fixedBuffer;
         uint32_t keyBufferLen = sizeof(fixedBuffer);
-        uint32_t needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+        uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
         if (needed == UINT32_MAX)
             return NULL;
         if (needed >= keyBufferLen)
@@ -1183,7 +1345,7 @@ namespace
             keyBufferLen = needed + 1;
             keyBuffer = (char*)alloca(keyBufferLen);
             sig.Reset();
-            needed = GetSignatureKey(sig, 'I', keyBuffer, keyBufferLen);
+            needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, wasmCallingConventionOnly);
             if (needed == UINT32_MAX || needed >= keyBufferLen)
                 return NULL;
         }
@@ -1460,10 +1622,86 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD)
     }
     else
     {
-        thunk = ComputePortableEntryPointToInterpreterThunk(sig);
+        thunk = ComputePortableEntryPointThunk(sig, "I");
     }
 
     return thunk;
+}
+
+void* GetVirtualDispatchThunk(MethodDesc *pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(!pMD->ContainsGenericVariables());
+
+    MetaSig sig(pMD);
+    return ComputePortableEntryPointThunk(sig, "V", true /* wasmCallingConventionOnly */);
+}
+
+void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(pMD->IsUnboxingStub());
+    _ASSERTE(ppTargetMethodDesc != nullptr);
+    _ASSERTE(pTargetEntryPoint != nullptr);
+
+    MethodDesc* pTargetMD = pMD->GetWrappedMethodDesc();
+    _ASSERTE(pTargetMD != nullptr);
+    MethodDesc* pTargetMethodDesc = pTargetMD;
+
+    const char* prefix;
+    if (pTargetMD->IsInstantiatingStub() && pTargetMD->HasMethodInstantiation())
+    {
+        pTargetMD = pTargetMD->GetWrappedMethodDesc();
+        _ASSERTE(pTargetMD->RequiresInstMethodDescArg());
+        prefix = "UM";
+    }
+    else
+    {
+        prefix = pTargetMD->RequiresInstMethodTableArg() ? "UG" : "U";
+    }
+
+    MetaSig sig(pTargetMD);
+    char keyBufferStack[64];
+    char* keyBuffer = keyBufferStack;
+    uint32_t keyBufferLen = ARRAY_SIZE(keyBufferStack);
+    bool encodeReturnBuffer = prefix[1] != '\0';
+    uint32_t needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, true, true, encodeReturnBuffer);
+    if (needed == UINT32_MAX)
+        return nullptr;
+    if (needed >= keyBufferLen)
+    {
+        keyBufferLen = needed + 1;
+        keyBuffer = (char*)alloca(keyBufferLen);
+        sig.Reset();
+        needed = GetSignatureKey(sig, prefix, keyBuffer, keyBufferLen, true, true, encodeReturnBuffer);
+        if (needed == UINT32_MAX || needed >= keyBufferLen)
+            return nullptr;
+    }
+
+    void* unboxingStub = LookupPortableEntryPointThunk(keyBuffer);
+    if (unboxingStub == nullptr)
+    {
+        return nullptr;
+    }
+
+    // Structural sharing can find a stub even when this particular managed signature
+    // was never compiled. Do not publish native code that the interpreter cannot call.
+    MetaSig unboxingSig(pMD);
+    if (ComputeCalliSigThunk(unboxingSig) == nullptr)
+    {
+        return nullptr;
+    }
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY);
+    if (!PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
+    {
+        return nullptr;
+    }
+
+    *ppTargetMethodDesc = pTargetMethodDesc;
+    *pTargetEntryPoint = targetEntryPoint;
+    return unboxingStub;
 }
 
 void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
@@ -1614,7 +1852,9 @@ TADDR GetWasmFramePointerFromStackPointer(TADDR sp, PCODE controlPC)
     // frame pointer is found by unwinding to either its containing function, or to a CallFunclet location.
 
     TADDR internalFunctionFramePointer = GetWasmFramePointerFromStackPointer_Internal(sp);
-    _ASSERTE(internalFunctionFramePointer != 0);
+    if (internalFunctionFramePointer == 0)
+        return 0;
+
     uint32_t r2rFunctionTableEntryNumber = *(uint32_t*)(internalFunctionFramePointer + WASM_STACKFRAME_FUNCTION_INDEX_OFFSET);
     _ASSERTE(GetWasmVirtualIPFromStackPointer(sp) == controlPC);
 
