@@ -12932,7 +12932,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
                 fgValueNumberLocalStore(store, def, valueVNPair, normalize);
                 return GenTree::VisitResult::Continue;
             };
-            store->VisitLocalDefs(this, visitDef);
+            store->VisitLogicalLocalDefs(this, visitDef);
         }
         break;
 
@@ -15018,7 +15018,7 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(this, visitDef);
+    call->VisitLogicalLocalDefs(this, visitDef);
 }
 
 void Compiler::fgValueNumberCastHelper(GenTreeCall* call)

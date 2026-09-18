@@ -56,7 +56,7 @@ void Compiler::optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap*
                 return GenTree::VisitResult::Continue;
             };
 
-            tree->VisitLocalDefs(this, visitDef);
+            tree->VisitLogicalLocalDefs(this, visitDef);
         }
     }
 }
@@ -388,7 +388,7 @@ bool Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
                     return GenTree::VisitResult::Continue;
                 };
 
-                tree->VisitLocalDefs(this, visitDef);
+                tree->VisitLogicalLocalDefs(this, visitDef);
             }
             else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && tree->AsLclVarCommon()->HasSsaName())
             {

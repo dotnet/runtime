@@ -9189,7 +9189,7 @@ void Lowering::FindInducedParameterRegisterLocals()
             return GenTree::VisitResult::Continue;
         };
 
-        node->VisitLocalDefs(m_compiler, visitDefs);
+        node->VisitLogicalLocalDefs(m_compiler, visitDefs);
 
         if (node->OperIs(GT_LCL_ADDR))
         {

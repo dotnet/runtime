@@ -6877,7 +6877,7 @@ void Compiler::fgAssignSetVarDef(GenTree* tree)
         return GenTree::VisitResult::Continue;
     };
 
-    tree->VisitLocalDefNodes(this, visitDef);
+    tree->VisitPhysicalLocalDefNodes(this, visitDef);
 }
 
 //------------------------------------------------------------------------------
@@ -13207,7 +13207,7 @@ void Compiler::fgMorphTreeDone(GenTree* tree, bool optAssertionPropDone DEBUGARG
             return GenTree::VisitResult::Continue;
         };
 
-        tree->VisitLocalDefNodes(this, visitDef);
+        tree->VisitPhysicalLocalDefNodes(this, visitDef);
     }
 
     // Generate assertions

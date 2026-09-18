@@ -752,22 +752,6 @@ public:
     }
 };
 
-struct LocalDef
-{
-    GenTreeLclVarCommon* Def;
-    bool                 IsEntire;
-    ssize_t              Offset;
-    ValueSize            Size;
-
-    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
-        : Def(def)
-        , IsEntire(isEntire)
-        , Offset(offset)
-        , Size(size)
-    {
-    }
-};
-
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -2180,10 +2164,10 @@ public:
         Compiler* comp, GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size, TVisitor visitor);
 
     template <typename TVisitor>
-    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+    VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
 
     template <typename TVisitor>
-    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+    VisitResult VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 

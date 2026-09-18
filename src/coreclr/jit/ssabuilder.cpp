@@ -441,7 +441,7 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         return GenTree::VisitResult::Continue;
     };
 
-    defNode->VisitLocalDefs(m_compiler, visitDef);
+    defNode->VisitLogicalLocalDefs(m_compiler, visitDef);
 
     auto visitDefNode = [&](GenTreeLclVarCommon* lcl) {
         if (m_compiler->lvaGetDesc(lcl)->IsAddressExposed())
@@ -451,7 +451,7 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
 
         return GenTree::VisitResult::Continue;
     };
-    defNode->VisitLocalDefNodes(m_compiler, visitDefNode);
+    defNode->VisitPhysicalLocalDefNodes(m_compiler, visitDefNode);
 
     if (!anyDefs)
     {

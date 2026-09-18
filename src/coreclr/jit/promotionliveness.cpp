@@ -273,7 +273,7 @@ unsigned PromotionLiveness::GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarC
             return GenTree::VisitResult::Continue;
         };
 
-        GenTree::VisitResult result = data.parent->VisitLocalDefs(m_compiler, findDef);
+        GenTree::VisitResult result = data.parent->VisitLogicalLocalDefs(m_compiler, findDef);
         assert(result == GenTree::VisitResult::Abort);
         return defSize;
     }

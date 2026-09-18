@@ -4903,7 +4903,7 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 }
 
 //------------------------------------------------------------------------
-// VisitLocalDefs: Visit logical locals being defined by this node.
+// VisitLogicalLocalDefs: Visit logical locals being defined by this node.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4918,7 +4918,7 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 //   detect which trees can define tracked locals.
 //
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
@@ -4965,7 +4965,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 }
 
 //------------------------------------------------------------------------
-// VisitLocalDefNodes: Visit physical GenTreeLclVarCommon nodes representing definitions in the specified node.
+// VisitPhysicalLocalDefNodes: Visit physical GenTreeLclVarCommon nodes representing definitions in the specified node.
 //
 // Arguments:
 //   comp    - the compiler instance
@@ -4975,7 +4975,7 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
 //   VisitResult::Abort if the functor aborted; otherwise VisitResult::Continue.
 //
 template <typename TVisitor>
-GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visitor)
+GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor)
 {
     if (OperIs(GT_STORE_LCL_VAR))
     {
@@ -5017,7 +5017,7 @@ GenTree::VisitResult GenTree::VisitLocalDefNodes(Compiler* comp, TVisitor visito
 //
 inline bool GenTree::HasAnyLocalDefs(Compiler* comp)
 {
-    return VisitLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
+    return VisitPhysicalLocalDefNodes(comp, [](GenTreeLclVarCommon* lcl) {
         return GenTree::VisitResult::Abort;
     }) == GenTree::VisitResult::Abort;
 }

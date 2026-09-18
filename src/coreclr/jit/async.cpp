@@ -1616,7 +1616,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(m_compiler, visitDef);
+    call->VisitLogicalLocalDefs(m_compiler, visitDef);
 
 #ifdef TARGET_WASM
     // The Wasm shadow stack pointer is a Wasm local set by the caller, not

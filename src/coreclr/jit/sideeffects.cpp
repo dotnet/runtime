@@ -331,7 +331,7 @@ void AliasSet::AddNode(Compiler* compiler, GenTree* node)
 
             return GenTree::VisitResult::Continue;
         };
-        node->VisitLocalDefs(compiler, visitDef);
+        node->VisitLogicalLocalDefs(compiler, visitDef);
 
         if (!addedLocalDef)
         {

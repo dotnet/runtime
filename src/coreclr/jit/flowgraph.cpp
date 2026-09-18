@@ -5513,7 +5513,7 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
                 return m_func(def) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
             };
 
-            if (tree->VisitLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            if (tree->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return Compiler::WALK_ABORT;
             }
