@@ -10,6 +10,7 @@ using Xunit;
 // the frame suspended first. A suspension makes the resumption skip the entry code that
 // captured the frame's contexts, so the context restores that run while the exception
 // unwinds must see that the frame resumed.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameExceptions
 {
     private static async Task SuspendOnlyAsync() => await Task.Yield();

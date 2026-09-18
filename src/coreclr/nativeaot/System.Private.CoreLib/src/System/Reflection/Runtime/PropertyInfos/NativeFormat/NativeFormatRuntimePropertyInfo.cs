@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Runtime.CustomAttributes;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.General.NativeFormat;
 using System.Reflection.Runtime.MethodInfos;
@@ -67,13 +66,9 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return RuntimeCustomAttributeData.GetCustomAttributes(_reader, _property.CustomAttributes);
-            }
-        }
+        internal sealed override MetadataReader GetMetadataReader() => _reader;
+
+        internal sealed override CustomAttributeHandleCollection GetCustomAttributeHandles() => _property.CustomAttributes;
 
         public override Type GetModifiedPropertyType()
         {
@@ -134,8 +129,7 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue)
-                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

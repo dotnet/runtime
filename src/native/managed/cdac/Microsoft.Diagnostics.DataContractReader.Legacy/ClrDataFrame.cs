@@ -376,7 +376,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetCodeName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataFrame.GetMethodInstance(DacComNullableByRef<IXCLRDataMethodInstance> method)
@@ -425,7 +425,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     {
         using Lock.Scope scope = _apiLock.EnterScope();
 
-        return LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataFrame.GetNumTypeArguments(uint* numTypeArgs)

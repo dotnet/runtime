@@ -14981,6 +14981,7 @@ DONE:
                 else
                 {
                     assert((id->idGCref() == GCT_GCREF) && (ins == INS_cmpxchg || ins == INS_xchg));
+                    emitGCregLiveUpd(id->idGCref(), (ins == INS_cmpxchg) ? REG_EAX : id->idReg1(), dst);
                 }
                 break;
 

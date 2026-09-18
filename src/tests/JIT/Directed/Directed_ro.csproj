@@ -113,6 +113,7 @@
     <MergedWrapperProjectReference Include="throwbox\finally.ilproj" />
     <MergedWrapperProjectReference Include="throwbox\rethrow.ilproj" />
     <MergedWrapperProjectReference Include="tls\mutualrecurthd-tls.ilproj" />
+    <MergedWrapperProjectReference Include="tls\StaticTlsResolver.csproj" />
     <MergedWrapperProjectReference Include="tls\test-tls.ilproj" />
     <MergedWrapperProjectReference Include="tls\TestTLSWithLoadedDlls.csproj" />
     <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_ro.csproj" />

@@ -9,13 +9,13 @@ using Xunit;
 
 public class Async2ExecutionContext
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestDefaultFlow()
     {
         Test().GetAwaiter().GetResult();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestSuppressedFlow()
     {
         TestNoFlowOuter().GetAwaiter().GetResult();
@@ -120,7 +120,7 @@ public class Async2ExecutionContext
         s_local.Value = 123;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static int TestRestoreTier0ContextInOsr()
     {
         return TestRestoreTier0ContextInOsrAsync().GetAwaiter().GetResult();

@@ -40,7 +40,7 @@ namespace Microsoft.Interop
             {
                 ManagedHResultExceptionMarshallingInfo marshallingInfo = (ManagedHResultExceptionMarshallingInfo)info.MarshallingAttributeInfo;
 
-                if (context.CurrentStage != StubIdentifierContext.Stage.NotifyForSuccessfulInvoke)
+                if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {
                     yield break;
                 }
@@ -74,7 +74,7 @@ namespace Microsoft.Interop
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ManagedHResultExceptionMarshallingInfo);
 
-                if (context.CurrentStage != StubIdentifierContext.Stage.NotifyForSuccessfulInvoke)
+                if (context.CurrentStage != StubIdentifierContext.Stage.Unmarshal)
                 {
                     yield break;
                 }

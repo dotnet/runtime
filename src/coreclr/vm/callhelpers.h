@@ -520,13 +520,19 @@ public:
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-        GCX_PREEMP();
+        // The callee may be Ex::RhThrowEx/RhThrowHwEx/RhRethrow, which raise the managed exception
+        // that resumes execution by throwing a native WASM exception tag through this frame. The
+        // region form is required so a plain holder destructor does not flip the GC mode as that
+        // tag unwinds past this point.
+        GCX_PREEMP_REGION_BEGIN();
 
         PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
         _ASSERTE(methodEntry != (PCODE)NULL);
 
         auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
         fptr(args...);
+
+        GCX_PREEMP_REGION_END();
     }
 
     template<typename Ret, typename... Args>
@@ -544,13 +550,20 @@ public:
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-        GCX_PREEMP();
+        Ret ret;
+
+        // See the comment in InvokeDirect above for why the region form is required here.
+        GCX_PREEMP_REGION_BEGIN();
 
         PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
         _ASSERTE(methodEntry != (PCODE)NULL);
 
         auto fptr = reinterpret_cast<Ret(*)(Args...)>(methodEntry);
-        return fptr(args...);
+        ret = fptr(args...);
+
+        GCX_PREEMP_REGION_END();
+
+        return ret;
     }
 };
 

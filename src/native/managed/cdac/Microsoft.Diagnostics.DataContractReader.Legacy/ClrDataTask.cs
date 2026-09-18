@@ -105,17 +105,21 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
         if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))
             return HResults.E_FAIL;
 
+        int hrLocal = HResults.S_OK;
         IXCLRDataStackWalk? legacyStackWalk = null;
         if (_legacyImpl is not null)
         {
             DacComNullableByRef<IXCLRDataStackWalk> legacyStackWalkOut = new(isNullRef: false);
-            int hr = _legacyImpl.CreateStackWalk(flags, legacyStackWalkOut);
-            if (hr < 0)
-                return hr;
-            legacyStackWalk = legacyStackWalkOut.Interface;
+            hrLocal = _legacyImpl.CreateStackWalk(flags, legacyStackWalkOut);
+            if (hrLocal >= 0)
+                legacyStackWalk = legacyStackWalkOut.Interface;
         }
 
         stackWalk.Interface = new ClrDataStackWalk(_address, flags, _target, legacyStackWalk, _apiLock);
+
+        if (_legacyImpl is not null)
+            Debug.ValidateHResult(HResults.S_OK, hrLocal);
+
         return HResults.S_OK;
     }
 

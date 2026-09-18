@@ -407,7 +407,24 @@ bool BasicBlock::IsFirstColdBlock(Compiler* compiler) const
 bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
 {
     assert(KindIs(BBJ_ALWAYS));
-    if (!JumpsToNext() || IsLastHotBlock(compiler))
+    return CanRemoveJumpToTarget(GetTarget(), compiler);
+}
+
+//------------------------------------------------------------------------
+// CanRemoveJumpToTarget: determine if jump to target can be omitted
+//
+// Arguments:
+//    target - target of the BBJ_ALWAYS or true/false target of the BBJ_COND block
+//    compiler - current compiler instance
+//
+// Returns:
+//    true if this block can fall into target
+//
+bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
+{
+    assert((KindIs(BBJ_ALWAYS) && (GetTarget() == target)) ||
+           (KindIs(BBJ_COND) && (TrueTargetIs(target) || FalseTargetIs(target))));
+    if (!NextIs(target) || IsLastHotBlock(compiler))
     {
         return false;
     }
@@ -417,7 +434,7 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
     //
     if (compiler->fgWasmIntervals != nullptr)
     {
-        unsigned const targetIndex = GetTarget()->bbPreorderNum;
+        unsigned const targetIndex = target->bbPreorderNum;
         for (WasmInterval* const interval : *compiler->fgWasmIntervals)
         {
             if ((interval->IsTry() || interval->IsExnRefWrapper()) && (interval->End() == targetIndex))
@@ -428,23 +445,6 @@ bool BasicBlock::CanRemoveJumpToNext(Compiler* compiler) const
     }
 #endif
     return true;
-}
-
-//------------------------------------------------------------------------
-// CanRemoveJumpToTarget: determine if jump to target can be omitted
-//
-// Arguments:
-//    target - true/false target of the BBJ_COND block
-//    compiler - current compiler instance
-//
-// Returns:
-//    true if block is a BBJ_COND that can fall into target
-//
-bool BasicBlock::CanRemoveJumpToTarget(BasicBlock* target, Compiler* compiler) const
-{
-    assert(KindIs(BBJ_COND));
-    assert(TrueTargetIs(target) || FalseTargetIs(target));
-    return NextIs(target) && !IsLastHotBlock(compiler);
 }
 
 #ifdef DEBUG

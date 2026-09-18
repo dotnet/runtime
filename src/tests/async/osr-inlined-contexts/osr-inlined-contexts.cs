@@ -113,7 +113,7 @@ public class Async2OsrInlinedContexts
         return total;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void ResumingInsideInlinedFrameOfOsrMethodKeepsContexts()
     {
         SynchronizationContext original = SynchronizationContext.Current;
@@ -125,5 +125,35 @@ public class Async2OsrInlinedContexts
         {
             SynchronizationContext.SetSynchronizationContext(original);
         }
+    }
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
+    public static void TailAwaitOnlyMethodCanResumeInOsrCode()
+    {
+        Run().GetAwaiter().GetResult();
+
+        static async Task Run()
+        {
+            Assert.Equal(42, await LoopBeforeTailAwait(new[] { 42 }));
+        }
+    }
+
+    // NoInlining would prevent the Tier0 tail await and hide the missing dispatcher.
+    private static Task<int> LoopBeforeTailAwait(int[] value)
+    {
+        Assert.Equal(42, value[0]);
+        for (int i = 0; i < Iterations; i++)
+        {
+            Volatile.Write(ref s_sideEffect, i);
+        }
+
+        return ReadAfterYield(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static async Task<int> ReadAfterYield(int[] value)
+    {
+        await Task.Yield();
+        return value[0];
     }
 }

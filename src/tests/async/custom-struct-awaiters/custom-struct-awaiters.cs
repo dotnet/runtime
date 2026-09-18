@@ -12,7 +12,7 @@ public class CustomStructAwaiters
     private static int s_safeAwaiterValue;
     private static int s_unsafeAwaiterValue;
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Run().Wait();

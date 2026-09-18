@@ -1849,7 +1849,7 @@ inline GenTree* Compiler::gtNewNothingNode()
 
 inline bool GenTree::IsNothingNode() const
 {
-    return OperIs(GT_NOP) && TypeIs(TYP_VOID);
+    return OperIs(GT_NOP);
 }
 
 /*****************************************************************************
@@ -3888,7 +3888,8 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 
 inline bool Compiler::IsGcSafePoint(GenTreeCall* call)
 {
-    if (!call->IsFastTailCall())
+    // Special intrinsics may be removed or expanded into code without calls after morph.
+    if (!call->IsFastTailCall() && !call->IsSpecialIntrinsic())
     {
         if (call->IsUnmanaged() && call->IsSuppressGCTransition())
         {

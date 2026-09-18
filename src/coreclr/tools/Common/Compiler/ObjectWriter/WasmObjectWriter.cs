@@ -17,7 +17,7 @@ using Internal.TypeSystem;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Base class for WebAssembly object file format writers.
+    /// Base class for WebAssembly object writers.
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
@@ -33,6 +33,7 @@ namespace ILCompiler.ObjectWriter
             { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
             { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
             { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount },
+            { WasmObjectNodeSection.DataSection, WasmSectionType.Data },
         };
 
         // Sections emitted before data segments.
@@ -43,14 +44,18 @@ namespace ILCompiler.ObjectWriter
             WasmObjectNodeSection.FunctionSection.Name,
             WasmObjectNodeSection.TableSection.Name,
             WasmObjectNodeSection.MemorySection.Name,
+            // Tag section (unused)
             WasmObjectNodeSection.GlobalSection.Name,
             WasmObjectNodeSection.ExportSection.Name,
             WasmObjectNodeSection.ElementSection.Name,
             WasmObjectNodeSection.DataCountSection.Name,
             ObjectNodeSection.WasmCodeSection.Name,
+            WasmObjectNodeSection.DataSection.Name,
         ];
 
         private protected readonly Dictionary<string, WasmGlobal> _definedGlobals = new();
+        /// <summary>Names of the writer-inserted stub functions, which are the only exported functions.</summary>
+        private protected readonly List<Utf8String> _wasmStubNames = new();
         private protected readonly WasmSections _sections = new();
         private protected readonly WasmSymbolManager _wasmSymbolManager = new();
         /// <summary>
@@ -138,21 +143,16 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
-            if (node.HasGenericContextArg)
+            WriteSignatureIndexForFunction(node);
+            Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
+            RegisterFunctionSymbol(methodName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
             {
-                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), methodName);
             }
-            if (node.IsAsyncCall)
-            {
-                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-            }
-            if (node.IsUnmanagedCallersOnly)
-            {
-                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-            }
-            WriteSignatureIndexForFunction(node.Signature, flags, node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -196,12 +196,9 @@ namespace ILCompiler.ObjectWriter
             section.WriteEntry(writer, signatureIndex);
         }
 
-        private void WriteSignatureIndexForFunction(
-            MethodSignature managedSignature,
-            WasmLowering.LoweringFlags flags,
-            ISymbolNode node)
+        private void WriteSignatureIndexForFunction(INodeWithTypeSignature node)
         {
-            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
+            WasmFuncType signature = WasmLowering.GetSignature(node).FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_wasmSymbolManager.TryGetSymbol(key, out WasmSymbol signatureSymbol))
             {
@@ -346,6 +343,7 @@ namespace ILCompiler.ObjectWriter
 
             RegisterFunctionSymbol(name);
             RegisterStubIndexAndSignature(body.Signature);
+            _wasmStubNames.Add(name);
         }
 
         private protected int RegisterSignature(WasmFuncType signature)
@@ -373,11 +371,11 @@ namespace ILCompiler.ObjectWriter
         {
             WriteImports();
             WriteGlobalSection();
-            WriteExports();
             WriteElements();
 
-            // Register defined symbols for future use during relocation resolution.
+            // Register defined symbols for use when resolving exports and relocations.
             _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
+            WriteExports();
         }
 
         private protected abstract void WriteImports();
@@ -392,9 +390,12 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
 
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.FunctionSection.Name)
+                || _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.ImportSection.Name)
+                || _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.GlobalSection.Name)
+                || _sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 

@@ -249,6 +249,23 @@ Exit /b !ERRORLEVEL!
       <CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe" $(CoreRunArgs) %__DotEnvArg%</CLRTestRunFile>
       <WatcherRunFile>"%CORE_ROOT%\watchdog.exe" %_WatcherTimeoutMins%</WatcherRunFile>
 
+      <!-- WebAssembly cannot load native libraries at run time, so a test that calls into its own
+           native code gets a dedicated corerun with that code statically linked in, built next to
+           the test assemblies. Prefer it over the shared one from CORE_ROOT when it is present.
+
+           Only a CoreCLR build produces one of these, and only a CoreCLR build deletes a stale one
+           (see CLRTest.WasmCorerun.targets, which is imported for CoreCLR alone). Because both
+           flavors share $(OutDir), emitting the check into Mono's run script as well would let a
+           Mono test pick up a CoreCLR host left behind by an earlier build, so it is emitted for
+           CoreCLR only. -->
+      <BatchSelectTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'"><![CDATA[
+    REM __TestNativeAssetsLinked tells PlatformDetection.PlatformDoesNotSupportNativeTestAssets that
+    REM this test's native assets are available, so the checks guarding them can run.
+    IF EXIST "!CD!\corerun.js" (
+        set "__CorerunJs=!CD!\corerun.js"
+        set "__TestNativeAssetsLinked=true"
+    )]]></BatchSelectTestCorerun>
+
       <!-- CoreCLR on browser defaults to running tests with Node.js -->
       <BatchDefaultRunWithNodeJS Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'"><![CDATA[
 IF NOT DEFINED RunWithNodeJS (
@@ -349,14 +366,22 @@ IF NOT DEFINED RunWithNodeJS (
     
     set "CORE_ROOT=!__CoreRootUnix!"
     set "TestExclusionListPath=!__CoreRootUnix!/TestExclusionList.txt"
-    
+
+    REM Defaults to the shared host from CORE_ROOT. A CoreCLR run script replaces this with the
+    REM test's own corerun when one was built next to the test assemblies.
+    set "__CorerunJs=!__CoreRootWin!\corerun.js"
+    REM Set explicitly so an ambient value can never be inherited.
+    set "__TestNativeAssetsLinked=false"
+$(BatchSelectTestCorerun)
+
     ECHO Running with node
     ECHO CORE_ROOT: !CORE_ROOT!
+    ECHO corerun: !__CorerunJs!
     ECHO ExePath: !__ExePathUnix!
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
     ECHO Timeout in ms: !__TestTimeout!
     
-    set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" $(CoreRunArgs) "!__ExePathUnix!" %CLRTestExecutionArguments%"
+    set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CorerunJs!" -c "!__CoreRootUnix!" $(CoreRunArgs) "!__ExePathUnix!" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
 
     IF EXIST "$(AssemblyName).HasOutOfProcessTests" (

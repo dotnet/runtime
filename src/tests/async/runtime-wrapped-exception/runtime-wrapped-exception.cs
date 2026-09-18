@@ -27,11 +27,11 @@ public class RuntimeAsyncNonExceptionThrows
     // WrapNonExceptionThrows = true (this assembly): the non-Exception is observed
     // as a RuntimeWrappedException by the awaiting caller for both async forms.
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void CatchAfterYield_Async2()
         => AssertNonExceptionWrapped(ThrowAfterYieldAsync2);
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void CatchAfterYield_Async1()
         => AssertNonExceptionWrapped(ThrowAfterYieldAsync1);
 
@@ -45,7 +45,7 @@ public class RuntimeAsyncNonExceptionThrows
 
     // WrapNonExceptionThrows = false (NoWrapThrowers assembly).
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void CatchAfterYield_NoWrap_Async2()
         => AssertNonExceptionWrapped(NoWrapThrowers.ThrowAfterYieldAsync2);
 

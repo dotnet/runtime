@@ -45,7 +45,7 @@ public class Async2FibonacceWithYields
         return result;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static int Test()
     {
         return AsyncEntry().Result;

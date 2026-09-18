@@ -9,7 +9,7 @@ using Xunit;
 
 public class ValueTaskSourceAndStubs
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void EntryPoint()
     {
         SynchronizationContext? original = SynchronizationContext.Current;

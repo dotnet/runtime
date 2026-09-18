@@ -1433,13 +1433,6 @@ void MyICJI::getAddressOfPInvokeTarget(CORINFO_METHOD_HANDLE method, CORINFO_CON
     jitInstance->mc->repGetAddressOfPInvokeTarget(method, pLookup);
 }
 
-// Generate a cookie based on the signature to pass to CORINFO_HELP_PINVOKE_CALLI
-LPVOID MyICJI::GetCookieForPInvokeCalliSig(CORINFO_SIG_INFO* szMetaSig, void** ppIndirection)
-{
-    jitInstance->mc->cr->AddCall("GetCookieForPInvokeCalliSig");
-    return jitInstance->mc->repGetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-}
-
 // Generate a cookie based on the signature to pass to INTOP_CALLI
 LPVOID MyICJI::GetCookieForInterpreterCalliSig(CORINFO_SIG_INFO* szMetaSig)
 {

@@ -11,7 +11,6 @@
 #include <minipal/entrypoints.h>
 
 extern "C" {
-    uint32_t CompressionNative_CompressBound (uint32_t);
     uint32_t CompressionNative_Crc32 (uint32_t, void *, int32_t);
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
@@ -94,6 +93,7 @@ extern "C" {
     int32_t SystemNative_GetBytesAvailable (void *, void *);
     int32_t SystemNative_GetControlMessageBufferSize (int32_t, int32_t);
     double SystemNative_GetCpuUtilization (void *);
+    int32_t SystemNative_GetCryptographicallySecureRandomBytes (void *, int32_t);
     void * SystemNative_GetCwd (void *, int32_t);
     void * SystemNative_GetDefaultSearchOrderPseudoHandle ();
     int32_t SystemNative_GetErrNo ();
@@ -290,7 +290,6 @@ static const Entry s_libSystem_Globalization_Native [] = {
 };
 
 static const Entry s_libSystem_IO_Compression_Native [] = {
-    DllImportEntry(CompressionNative_CompressBound) // System.IO.Compression
     DllImportEntry(CompressionNative_Crc32) // System.IO.Compression
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression
@@ -342,9 +341,10 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_GetBytesAvailable) // System.Net.Sockets
     DllImportEntry(SystemNative_GetControlMessageBufferSize) // System.Net.Sockets
     DllImportEntry(SystemNative_GetCpuUtilization) // System.Private.CoreLib
+    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes) // System.IO.Compression
     DllImportEntry(SystemNative_GetCwd) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetDefaultSearchOrderPseudoHandle) // System.Private.CoreLib
-    DllImportEntry(SystemNative_GetErrNo) // System.Net.NameResolution, System.Private.CoreLib
+    DllImportEntry(SystemNative_GetErrNo) // System.Private.CoreLib
     DllImportEntry(SystemNative_GetHostEntryForName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetHostName) // System.Net.NameResolution
     DllImportEntry(SystemNative_GetIPv4Address) // System.Net.Primitives, System.Net.Sockets
@@ -452,12 +452,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
-static const Entry s_libSystem_Native_Browser [] = {
-};
-
-static const Entry s_libSystem_Runtime_InteropServices_JavaScript_Native [] = {
-};
-
 static const Entry s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8 [] = {
     { "now", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now }, // System.Net.Http, System.Private.CoreLib
     { "resolution", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution }, // System.Net.Http, System.Private.CoreLib
@@ -526,10 +520,8 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 10},
-    {"libSystem.Native", s_libSystem_Native, 147},
-    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 0},
-    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 0},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
+    {"libSystem.Native", s_libSystem_Native, 148},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},

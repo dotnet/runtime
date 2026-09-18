@@ -865,7 +865,7 @@ namespace System.Net.Security
                 }
 
                 _buffer.Commit(bytesRead);
-                if (frameSize == int.MaxValue && _buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
+                if (frameSize == UnknownTlsFrameLength && _buffer.EncryptedLength >= TlsFrameHelper.HeaderSize)
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
                     frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);

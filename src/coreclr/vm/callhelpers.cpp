@@ -565,7 +565,6 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     GCPROTECT_BEGIN (ref);
 
-
     PCODE ctorCode;
     {
         GCX_PREEMP();

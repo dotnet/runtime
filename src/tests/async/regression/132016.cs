@@ -11,7 +11,7 @@ public class Runtime_132016
 {
     private static readonly List<string> s_log = new List<string>();
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         s_log.Clear();

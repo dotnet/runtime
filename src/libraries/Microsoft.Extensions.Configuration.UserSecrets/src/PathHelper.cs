@@ -59,8 +59,16 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
 
             // For backwards compat, this checks env vars first before using Env.GetFolderPath
             string? appData = Environment.GetEnvironmentVariable("APPDATA");
+            string? home = Environment.GetEnvironmentVariable("HOME");
+#if NET
+            if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst())
+            {
+                // The Apple mobile HOME directory is the app container root, which is not writable.
+                home = null;
+            }
+#endif
             string? root = appData                                                                   // On Windows it goes to %APPDATA%\Microsoft\UserSecrets\
-                       ?? Environment.GetEnvironmentVariable("HOME")                             // On Mac/Linux it goes to ~/.microsoft/usersecrets/
+                       ?? home                                                                       // On Mac/Linux it goes to ~/.microsoft/usersecrets/
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
                        ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
                        ?? Environment.GetEnvironmentVariable(userSecretsFallbackDir);            // this fallback is an escape hatch if everything else fails

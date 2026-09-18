@@ -9,6 +9,7 @@ using System.Runtime.Loader;
 using System.Threading.Tasks;
 using Xunit;
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/134001", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm))]
 public class Async2CollectibleAlc
 {
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsCollectibleAssembliesSupported))]

@@ -654,7 +654,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
         return false;
     }
 
-    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE);
+    uint32_t res = threadStubArgs.m_ThreadStartedEvent.Wait(INFINITE, FALSE, false);
     threadStubArgs.m_ThreadStartedEvent.CloseEvent();
     ASSERT(res == WAIT_OBJECT_0);
 

@@ -453,7 +453,7 @@ namespace System.Reflection
             if (MdToken.IsNullToken(m_tkParamDef))
                 return [];
 
-            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -464,9 +464,9 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             if (MdToken.IsNullToken(m_tkParamDef))
-                return CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
+                return RuntimeCustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
@@ -479,7 +479,7 @@ namespace System.Reflection
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(this, attributeRuntimeType);
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()

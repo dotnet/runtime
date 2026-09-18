@@ -7372,6 +7372,20 @@ MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
     }
 #endif
 
+#ifdef FEATURE_COMINTEROP
+    if (pMDMethod->GetMethodType() == mcComInterop)
+    {
+        // Any of these methods may end up being dispatched as a CLR->COM call, in which case they
+        // are backed by transient IL that gets jitted onto the method itself. Since these methods
+        // always require a precode (see MethodDesc::RequiresStableEntryPointCore), the native code
+        // slot is needed to hold the native code entry point.
+        //
+        // Note that when FEATURE_COMINTEROP is disabled these methods are classified as mcIL and so
+        // they already get a native code slot from the tiered compilation check above.
+        return TRUE;
+    }
+#endif // FEATURE_COMINTEROP
+
 #ifdef FEATURE_DEFAULT_INTERFACES
     if (IsInterface())
     {

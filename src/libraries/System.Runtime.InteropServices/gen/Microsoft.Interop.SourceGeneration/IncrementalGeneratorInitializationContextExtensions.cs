@@ -35,7 +35,18 @@ namespace Microsoft.Interop
                 .Collect()
                 .Select((topLevelAttrs, ct) => !topLevelAttrs.IsEmpty ? EnvironmentFlags.DisableRuntimeMarshalling : EnvironmentFlags.None);
 
-            return isModuleSkipLocalsInit.Combine(disabledRuntimeMarshalling).Select((data, ct) => data.Left | data.Right);
+            // Roslyn does not expose the memory safety rules version through a public API yet
+            // (https://github.com/dotnet/roslyn/issues/82546), so the same feature flag the compiler itself
+            // reads is used to determine whether the updated rules are in effect.
+            var updatedMemorySafetyRules = context.ParseOptionsProvider
+                .Select((options, ct) => options.Features.ContainsKey("updated-memory-safety-rules")
+                    ? EnvironmentFlags.UpdatedMemorySafetyRules
+                    : EnvironmentFlags.None);
+
+            return isModuleSkipLocalsInit
+                .Combine(disabledRuntimeMarshalling)
+                .Combine(updatedMemorySafetyRules)
+                .Select((data, ct) => data.Left.Left | data.Left.Right | data.Right);
         }
 
         public static IncrementalValueProvider<StubEnvironment> CreateStubEnvironmentProvider(this IncrementalGeneratorInitializationContext context)

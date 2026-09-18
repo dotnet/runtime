@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -133,12 +133,13 @@ namespace Microsoft.Interop
             SignatureContext stub,
             BlockSyntax stubCode)
         {
-            // Create stub function
+            // Create stub function. The body calls through an unmanaged function pointer, so it opens an
+            // explicit unsafe block rather than relying on an unsafe modifier on the containing type.
             return MethodDeclaration(stub.StubReturnType, stubMethodSyntax.Identifier)
                 .AddAttributeLists(stub.AdditionalAttributes.ToArray())
                 .WithModifiers(stubMethodSyntax.Modifiers.StripTriviaFromTokens())
                 .WithParameterList(ParameterList(SeparatedList(stub.StubParameters)))
-                .WithBody(stubCode);
+                .WithBody(stubCode.WrapInUnsafeBlock());
         }
 
         private static BasePropertyDeclarationSyntax PrintPropertyOrIndexerAccessorStub(
@@ -177,7 +178,7 @@ namespace Microsoft.Interop
 
             AccessorDeclarationSyntax accessor = AccessorDeclaration(accessorKind)
                 .AddAttributeLists(methodStub.SignatureContext.AdditionalAttributes.ToArray())
-                .WithBody(stubCode);
+                .WithBody(stubCode.WrapInUnsafeBlock());
 
             if (isIndexer)
             {
@@ -257,10 +258,12 @@ namespace Microsoft.Interop
 
             MethodDeclarationSyntax unmanagedToManagedStub =
                 MethodDeclaration(returnType, $"ABI_{methodStub.StubMethodSyntaxTemplate.Identifier.Text}")
-                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword)))
+                // The signature names unmanaged pointer types and the body unmarshals through them, so the
+                // stub is both declared unsafe and opens an unsafe block for its body.
+                .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.StaticKeyword), Token(SyntaxKind.UnsafeKeyword)))
                 .WithParameterList(unmanagedParameterList)
                 .AddAttributeLists(AttributeList(SingletonSeparatedList(unmanagedCallersOnlyAttribute)))
-                .WithBody(code);
+                .WithBody(code.WrapInUnsafeBlock());
 
             return (
                 unmanagedToManagedStub,
@@ -302,9 +305,18 @@ namespace Microsoft.Interop
             });
             foreach (TypePositionInfo element in originalElements)
             {
-                elements.Add(element with
+                TypePositionInfo unmanagedToManagedElement = element;
+                if (unmanagedToManagedElement.IsErrorHandlingPosition)
                 {
-                    NativeIndex = TypePositionInfo.IncrementIndex(element.NativeIndex)
+                    unmanagedToManagedElement = unmanagedToManagedElement with
+                    {
+                        IsErrorHandlingPosition = false,
+                    };
+                }
+
+                elements.Add(unmanagedToManagedElement with
+                {
+                    NativeIndex = TypePositionInfo.IncrementIndex(unmanagedToManagedElement.NativeIndex)
                 });
             }
 
@@ -317,7 +329,8 @@ namespace Microsoft.Interop
                     {
                         InstanceIdentifier = "__exception",
                         ManagedIndex = TypePositionInfo.ExceptionIndex,
-                        NativeIndex = TypePositionInfo.ReturnIndex
+                        NativeIndex = TypePositionInfo.ReturnIndex,
+                        IsErrorHandlingPosition = true,
                     });
             }
 

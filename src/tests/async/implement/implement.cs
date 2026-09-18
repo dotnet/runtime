@@ -56,7 +56,7 @@ public class Async2Implement
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         IBase1 b1 = new Derived1();

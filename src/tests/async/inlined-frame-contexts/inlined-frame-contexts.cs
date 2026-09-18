@@ -17,6 +17,7 @@ using Xunit;
 //
 // The inner frames are marked AggressiveInlining so that the inlining actually happens
 // rather than being left to the profitability heuristic, which rejects these callees.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameContexts
 {
     private sealed class NamedContext : SynchronizationContext

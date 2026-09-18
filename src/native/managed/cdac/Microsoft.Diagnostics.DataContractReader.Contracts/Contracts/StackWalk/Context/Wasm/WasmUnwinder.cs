@@ -30,8 +30,9 @@ internal interface IWasmR2RInfo
 
 /// <summary>
 /// Walks CoreCLR WASM ReadyToRun frames over the managed linear stack (<c>$sp</c>), mirroring
-/// the native implementation in <c>src/coreclr/vm/wasm/helpers.cpp</c> and the ABI documented in
-/// <c>docs/design/coreclr/botr/clr-abi.md</c>.
+/// the native implementation in <c>src/coreclr/vm/wasm/helpers.cpp</c>. The frame offsets and
+/// sentinels below are defined in <c>src/coreclr/vm/wasm/callhelpers.hpp</c>, and the calling
+/// convention is documented in <c>docs/design/coreclr/botr/clr-abi.md</c>.
 /// </summary>
 /// <remarks>
 /// Each R2R frame base stores its R2R function table entry index at offset 0 and its

@@ -323,6 +323,7 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
     cache?: RequestCache;
 };
 type VfsAsset = Asset & {

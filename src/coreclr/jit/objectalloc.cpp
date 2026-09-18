@@ -2933,6 +2933,7 @@ void ObjectAllocator::RewriteUses()
                         //
                         indir->Addr() = actualAddr;
                         indir->gtFlags &= ~GTF_SIDE_EFFECT;
+                        indir->gtFlags |= GTF_IND_NONFAULTING;
                         GenTree* const newComma =
                             m_compiler->gtNewOperNode(GT_COMMA, indir->TypeGet(), sideEffects, indir);
                         *use = newComma;
