@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -100,6 +101,7 @@ namespace System.Runtime.Loader.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [DynamicDependency(nameof(MissingDependency.Root.RootClass.GetMiddleTypeName), typeof(MissingDependency.Root.RootClass))]
         public static void AssemblyLoadEvent_ReentrantMethodCompilation()
         {
             var loadContext = new ResourceAssemblyLoadContext { LoadBy = LoadBy.Stream };
