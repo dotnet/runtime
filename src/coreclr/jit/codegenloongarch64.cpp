@@ -4494,7 +4494,7 @@ void CodeGen::genIntrinsic(GenTreeIntrinsic* treeNode)
             genConsumeOperands(treeNode->AsOp());
             regNumber dst    = treeNode->GetRegNum();
             regNumber src    = op1->GetRegNum();
-            regNumber tmpReg = REG_R21;
+            regNumber tmpReg = internalRegisters.GetSingle(treeNode);
             emitter*  emit   = GetEmitter();
 
             // Copy src to dst, normalizing to a sign-extended 32-bit value so the
