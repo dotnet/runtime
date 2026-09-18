@@ -127,7 +127,9 @@ public:
 #if defined(TARGET_ARM)
         return b >= 0xFD;
 #elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        return (b == UWC_END); // TODO-ARM64-Bug?: what about the "end_c" code?
+        // An end_c terminates only the current chained scope. The complete sequence
+        // still needs a real end after the parent scope's unwind codes.
+        return (b == UWC_END);
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
     }
 

@@ -455,12 +455,12 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         (HostCodeHeap*)this, m_TotalBytesAvailable, pTracker, (pTracker ? pTracker->size : 0)));
 
     // It is important to exclude the CLRPersonalityRoutine from the tracked range
-    pHp->startAddress = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);
-    pHp->mapBase = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
-    pHp->pHdrMap = NULL;
-    pHp->endAddress = pHp->startAddress;
-
-    pHp->maxCodeHeapSize = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
+    pHp->startAddress        = dac_cast<TADDR>(m_pBaseAddr) + (pTracker ? pTracker->size : 0);
+    pHp->mapBase             = ROUND_DOWN_TO_PAGE(pHp->startAddress);  // round down to next lower page align
+    pHp->pHdrMap             = NULL;
+    pHp->bottomEndAddress    = pHp->startAddress;
+    pHp->maxCodeHeapSize     = m_TotalBytesAvailable - (pTracker ? pTracker->size : 0);
+    pHp->topStartAddress     = pHp->startAddress + pHp->maxCodeHeapSize;
     pHp->reserveForJumpStubs = 0;
 
 #if defined(TARGET_64BIT)
@@ -662,7 +662,7 @@ void HostCodeHeap::AddToFreeList(TrackAllocation *pBlockToInsert, TrackAllocatio
                                                         m_pFreeList, m_pFreeList->size));
 }
 
-void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs)
+void* HostCodeHeap::AllocMemForCode_NoThrow(size_t header, size_t size, DWORD alignment, size_t reserveForJumpStubs, bool useLowerRegion /* = true */)
 {
     CONTRACTL
     {

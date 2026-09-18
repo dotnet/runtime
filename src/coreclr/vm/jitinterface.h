@@ -537,6 +537,7 @@ public:
     void reportMetadata(const char* key, const void* value, size_t length) override final;
 
     virtual void WriteCode(EECodeGenManager * jitMgr) = 0;
+    virtual void FlushInstructionCaches(PBYTE nativeEntry, size_t sizeOfCode);
 
     void getHelperFtn(CorInfoHelpFunc         tnNum,                     /* IN  */
                       CORINFO_CONST_LOOKUP *  pNativeEntrypoint,         /* OUT */
@@ -574,8 +575,8 @@ protected:
                         );
 
     EECodeGenManager*       m_jitManager;   // responsible for allocating memory
-    void*                   m_CodeHeader;   // descriptor for JITTED code - read/execute address
-    void*                   m_CodeHeaderRW; // descriptor for JITTED code - code write scratch buffer address
+    void*                   m_CodeHeader;   // descriptor for hot JITTED code - read/execute address
+    void*                   m_CodeHeaderRW; // descriptor for hot JITTED code - code write scratch buffer address
     size_t                  m_codeWriteBufferSize;
     BYTE*                   m_pRealCodeHeader;
     HeapList*               m_pCodeHeap;
@@ -639,6 +640,7 @@ public:
 
     void WriteCodeBytes();
     void WriteCode(EECodeGenManager * jitMgr) override;
+    void FlushInstructionCaches(PBYTE nativeEntry, size_t sizeOfCode) override;
 
     void reserveUnwindInfo(bool isFunclet, bool isColdCode, uint32_t unwindSize) override;
 
@@ -694,6 +696,13 @@ public:
 
         CEECodeGenInfo::ResetForJitRetry();
 
+        if (m_ColdCodeHeaderRW != m_ColdCodeHeader)
+            freeArrayInternal(m_ColdCodeHeaderRW);
+
+        m_ColdCodeHeader = NULL;
+        m_ColdCodeHeaderRW = NULL;
+        m_coldCodeWriteBufferSize = 0;
+
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         if (m_pPatchpointInfoFromJit != NULL)
             freeArrayInternal(m_pPatchpointInfoFromJit);
@@ -707,6 +716,9 @@ public:
         m_theUnwindBlock = NULL;
         m_totalUnwindInfos = 0;
         m_usedUnwindInfos = 0;
+#ifdef _DEBUG
+        m_allocatedUnwindFunclet = false;
+#endif
     }
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
@@ -787,12 +799,18 @@ public:
     CEEJitInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header,
                EECodeGenManager* jm)
         : CEECodeGenInfo(config, fd, header, jm)
+        , m_ColdCodeHeader(NULL),
+          m_ColdCodeHeaderRW(NULL),
+          m_coldCodeWriteBufferSize(0)
         , m_moduleBase(0),
           m_totalUnwindSize(0),
           m_usedUnwindSize(0),
           m_theUnwindBlock(NULL),
           m_totalUnwindInfos(0),
           m_usedUnwindInfos(0)
+#ifdef _DEBUG
+        , m_allocatedUnwindFunclet(false)
+#endif
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
         , m_fAllowRel32(FALSE)
 #endif
@@ -823,6 +841,9 @@ public:
             GC_NOTRIGGER;
             MODE_ANY;
         } CONTRACTL_END;
+
+        if (m_ColdCodeHeaderRW != m_ColdCodeHeader)
+            freeArrayInternal(m_ColdCodeHeaderRW);
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
         if (m_pPatchpointInfoFromJit != NULL)
@@ -878,12 +899,20 @@ protected :
     ComputedPgoData*        m_foundPgoData = nullptr;
 #endif
 
+    // Members needed for hot/cold splitting
+    void*                   m_ColdCodeHeader;   // descriptor for cold JITTED code - read/execute address
+    void*                   m_ColdCodeHeaderRW; // descriptor for cold JITTED code - code write scratch buffer address
+    size_t                  m_coldCodeWriteBufferSize;
+
     TADDR                   m_moduleBase;       // Base for unwind Infos
     ULONG                   m_totalUnwindSize;  // Total reserved unwind space
     uint32_t                m_usedUnwindSize;   // used space in m_theUnwindBlock
     BYTE *                  m_theUnwindBlock;   // start of the unwind memory block
     ULONG                   m_totalUnwindInfos; // Number of RUNTIME_FUNCTION needed
     ULONG                   m_usedUnwindInfos;
+#ifdef _DEBUG
+    bool                    m_allocatedUnwindFunclet;
+#endif
 
 #if defined(TARGET_AMD64) || defined(TARGET_RISCV64)
     BOOL                    m_fAllowRel32;      // Use 32-bit PC relative address modes
