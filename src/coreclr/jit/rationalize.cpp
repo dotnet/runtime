@@ -2637,6 +2637,8 @@ void Rationalizer::RewriteParameterUses()
             continue;
         }
 
+        // If this parameter has any kills then compute the set of basic blocks
+        // where the local was killed on entry.
         if (uses->HasKills)
         {
             if (!haveKilledSet)
@@ -2687,11 +2689,14 @@ void Rationalizer::RewriteParameterUses()
             if (use.Block != currentBlock)
             {
                 currentBlock = use.Block;
+                // When starting a new block use the "killed" state we computed
+                // by visiting blocks above
                 killed       = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
             }
 
             if (!use.Node->OperIs(GT_LCL_FLD))
             {
+                // Once we see a kill consider all subsequent uses killed
                 killed = true;
             }
             else if (!killed)
@@ -2749,14 +2754,6 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
         return;
     }
 
-    LclVarDsc* param       = m_compiler->lvaGetDesc(fld);
-    var_types  segmentType = regSegment->GetRegisterType(param->TypeIs(TYP_STRUCT) ? param->GetLayout() : nullptr);
-    if ((varTypeIsGC(segmentType) || varTypeIsGC(fld)) && (segmentType != fld->TypeGet()))
-    {
-        // The register local must retain the incoming register's GC reporting type.
-        return;
-    }
-
     JITDUMP("LCL_FLD use [%06u] in " FMT_BB " of parameter V%02u is contained in ", Compiler::dspTreeID(fld),
             block->bbNum, fld->GetLclNum());
     DBEXEC(VERBOSE, regSegment->Dump());
@@ -2782,6 +2779,7 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
     unsigned remappedLclNum = BAD_VAR_NUM;
     if (existingMapping == nullptr)
     {
+        LclVarDsc* param = m_compiler->lvaGetDesc(fld);
         if (!param->lvDoNotEnregister)
         {
             m_compiler->lvaSetVarDoNotEnregister(fld->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
