@@ -5,18 +5,18 @@ using System.Text;
 
 namespace System.Diagnostics
 {
-#pragma warning disable CA1822 // Mark members as static
     public partial class StackTrace
     {
+#pragma warning disable CA1822 // Mark members as static
         private void InitializeForCurrentThread(int skipFrames, bool needFileInfo)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported);
         }
 
         internal void ToString(TraceFormat traceFormat, StringBuilder builder)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported);
         }
-    }
 #pragma warning restore CA1822
+    }
 }

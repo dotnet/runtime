@@ -66,7 +66,8 @@
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">FEATURE_OBJCMARSHAL;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
-    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true' or '$(TargetsWasm)' != 'true'">true</FeaturePerfTracing>
+    <!-- The compile-only browser-WASM CoreLib has no native EventPipe runtime implementation. -->
+    <FeaturePerfTracing Condition="'$(MSBuildProjectName)' != 'System.Private.CoreLib' or '$(TargetsBrowser)' != 'true' or '$(TargetsWasm)' != 'true'">true</FeaturePerfTracing>
   </PropertyGroup>
   <PropertyGroup>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">FEATURE_PERFTRACING;$(DefineConstants)</DefineConstants>
@@ -79,6 +80,7 @@
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'wasm'">
     <DefineConstants>TARGET_32BIT;$(DefineConstants)</DefineConstants>
+    <!-- WASI support is outside the scope of the NativeAOT managed platform stubs. -->
     <DefineConstants Condition="'$(TargetsBrowser)' == 'true'">TARGET_WASM;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'x64'">

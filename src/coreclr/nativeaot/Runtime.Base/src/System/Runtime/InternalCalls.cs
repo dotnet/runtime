@@ -121,6 +121,7 @@ namespace System.Runtime
         internal static extern unsafe void RhpInitializeGcStress();
 #endif // FEATURE_GC_STRESS
 
+        // Browser-WASM omits the native EH enumerator and StackFrameIterator implementation.
 #if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpEHEnumInitFromStackFrameIterator")]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -143,6 +144,7 @@ namespace System.Runtime
         // StackFrameIterator
         //
 
+        // Browser-WASM does not have the native register context required by this iterator.
 #if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]

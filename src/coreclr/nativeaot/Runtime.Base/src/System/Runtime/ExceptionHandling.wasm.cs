@@ -8,19 +8,11 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    // The browser NativeAOT runtime is not implemented yet. Keep the managed exports and
-    // shared Runtime.Base type surface available so System.Private.CoreLib can be built.
+    // These exports preserve the browser-WASM compiler/runtime ABI while exception dispatch
+    // remains unimplemented.
     internal static unsafe partial class EH
     {
-        internal struct MethodRegionInfo
-        {
-        }
-
         internal struct ExInfo
-        {
-        }
-
-        internal struct PAL_LIMITED_CONTEXT
         {
         }
 
