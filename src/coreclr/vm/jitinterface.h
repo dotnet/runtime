@@ -320,11 +320,12 @@ public:
                                       TypeHandle typeHnd = TypeHandle() /* optional in */,
                                       CORINFO_CLASS_HANDLE *clsRet = NULL /* optional out */ );
 
-    CEEInfo(MethodDesc * fd = NULL)
+    CEEInfo(MethodDesc * fd, PrepareCodeConfig *config)
         : m_pJitHandles(nullptr)
         , m_pMethodBeingCompiled(fd)
         , m_transientDetails(NULL)
         , m_pThread(GetThreadNULLOk())
+        , m_pPrepareCodeConfig(config)
         , m_hMethodForSecurity_Key(NULL)
         , m_pMethodForSecurity_Value(NULL)
 #if defined(FEATURE_GDBJIT)
@@ -398,6 +399,7 @@ protected:
     MethodDesc*             m_pMethodBeingCompiled; // Top-level method being compiled
     SArray<TransientMethodDetails, FALSE>* m_transientDetails;   // Transient details for dynamic codegen scenarios.
     Thread *                m_pThread;              // Cached current thread for faster JIT-EE transitions
+    PrepareCodeConfig*      m_pPrepareCodeConfig;
     CORJIT_FLAGS            m_jitFlags;
 
     CORINFO_METHOD_HANDLE getMethodBeingCompiled()

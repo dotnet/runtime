@@ -957,8 +957,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
     EX_TRY
     {
-        Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
-
         pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
@@ -1161,11 +1159,10 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_shouldCountCalls(false),
 #endif
-    m_jitSwitchedToMinOpt(false),
+    m_jitSwitchedToMinOpt(false)
 #ifdef FEATURE_TIERED_COMPILATION
-    m_jitSwitchedToOptimized(false),
+    , m_jitSwitchedToOptimized(false)
 #endif
-    m_nextInSameThread(nullptr)
 {}
 
 PCODE PrepareCodeConfig::IsJitCancellationRequested()
@@ -2118,7 +2115,7 @@ NOINLINE static void* ExecuteInterpretedMethodFromUnmanaged(
 
     void* retVal;
     {
-        GCX_COOP();
+        GCX_COOP_REGION_BEGIN();
 
 #ifdef DEBUGGING_SUPPORTED
         if (g_TrapReturningThreads && CORDebuggerTraceCall())
@@ -2133,6 +2130,7 @@ NOINLINE static void* ExecuteInterpretedMethodFromUnmanaged(
 #endif // DEBUGGING_SUPPORTED
 
         retVal = ExecuteInterpretedMethodBody(pTransitionBlock, (TADDR)pInterpreterCode, retBuff, threadContext, sp);
+        GCX_COOP_REGION_END();
     }
 
 #ifdef PROFILING_SUPPORTED
@@ -2222,9 +2220,10 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
             {
-                GCX_PREEMP();
+                GCX_PREEMP_REGION_BEGIN();
                 (void)pMethod->DoPrestub(NULL /* MethodTable */, CallerGCMode::Coop);
                 targetIp = pMethod->GetInterpreterCode();
+                GCX_PREEMP_REGION_END();
             }
 
             finishedPrestubPortion = true;
