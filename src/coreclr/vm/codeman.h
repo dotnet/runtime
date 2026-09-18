@@ -2735,6 +2735,9 @@ struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
     static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
+#ifdef FEATURE_INTERPRETER
+    static constexpr PTR_InterpreterJitManager* InterpreterJitManagerAddress = &ExecutionManager::m_pInterpreterJitManager;
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
     static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
 #endif // TARGET_WASM
