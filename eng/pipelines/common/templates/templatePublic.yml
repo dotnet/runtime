@@ -18,4 +18,17 @@ resources:
               ${{ pair.key }}: ${{ pair.value }}
 
 
-stages: ${{ parameters.stages }}
+# Test-only: do not allocate agents for unrelated public pipelines.
+stages:
+- ${{ if eq(variables['Build.DefinitionName'], 'runtime') }}:
+  - ${{ parameters.stages }}
+- ${{ else }}:
+  - stage: Skipped
+    condition: false
+    jobs:
+    - job: Skipped
+      pool: server
+      steps:
+      - task: Delay@1
+        inputs:
+          delayForMinutes: '0'
