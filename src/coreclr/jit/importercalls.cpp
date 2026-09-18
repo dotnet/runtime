@@ -4063,7 +4063,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         isReadOnly ? "ReadOnly" : "", eeGetClassName(spanElemHnd), elemSize);
 
                 GenTree* index          = impPopStack().val;
-                GenTree* ptrToSpan      = impPopStack().val;
+                GenTree* ptrToSpan      = impStackTop().val;
                 GenTree* indexClone     = nullptr;
                 GenTree* ptrToSpanClone = nullptr;
                 assert(genActualType(index) == TYP_INT);
@@ -4080,8 +4080,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #endif // defined(DEBUG)
 
                 // We need to use both index and ptr-to-span twice, so clone or spill.
+                // Keep ptr-to-span on the stack so it is evaluated before any index spill.
                 index = impCloneExpr(index, &indexClone, CHECK_SPILL_ALL, nullptr DEBUGARG("Span.get_Item index"));
 
+                ptrToSpan = impPopStack().val;
                 if (impIsAddressInLocal(ptrToSpan))
                 {
                     ptrToSpanClone = gtCloneExpr(ptrToSpan);
@@ -4383,10 +4385,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                         case NI_System_Type_get_IsPrimitive:
                             // getTypeForPrimitiveValueClass returns underlying type for enums, so we check it first
                             // because enums are not primitive types.
-                            if ((info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot) &&
-                                info.compCompHnd->getTypeForPrimitiveValueClass(hClass) != CORINFO_TYPE_UNDEF)
+                            if (info.compCompHnd->isEnum(hClass, nullptr) == TypeCompareState::MustNot)
                             {
-                                retNode = gtNewTrue();
+                                CorInfoType type = info.compCompHnd->getTypeForPrimitiveValueClass(hClass);
+                                retNode =
+                                    gtNewIconNode((type != CORINFO_TYPE_UNDEF) && (type != CORINFO_TYPE_VOID) ? 1 : 0);
                             }
                             else
                             {
@@ -9218,7 +9221,14 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
 
         for (uint8_t candidateId = 0; candidateId < call->GetInlineCandidatesCount(); candidateId++)
         {
-            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
+            InlineCandidateInfo*  gdvCandidate = call->GetGDVCandidateInfo(candidateId);
+            CORINFO_METHOD_HANDLE callee       = gdvCandidate->guardedMethodUnboxedResolvedToken.hMethod;
+            if (callee == nullptr)
+            {
+                callee = gdvCandidate->guardedMethodHandle;
+            }
+
+            InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV", false, callee);
 
             // Do the actual evaluation
             impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, callInfo, inlinersContext, &inlineResult);
@@ -13559,10 +13569,12 @@ GenTree* Compiler::impArrayAccessIntrinsic(
             info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
         }
 
-        // if it's not final, we can't do the optimization
-        if (!(info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL))
+        // If it's not exact, we can't do the optimization: for instance, array and variant
+        // types are sealed yet still covariant, so the runtime element type of the array may
+        // be a proper subtype of the call site's element type.
+        if (!info.compCompHnd->isExactType(actualElemClsHnd))
         {
-            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not final\n",
+            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not exact\n",
                     dspPtr(actualElemClsHnd));
             return nullptr;
         }
