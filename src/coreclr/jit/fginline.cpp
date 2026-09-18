@@ -60,7 +60,7 @@ void Compiler::fgAsyncStressPrepare(unsigned depth)
         return;
     }
 
-    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(compAsyncInliningStressSeed());
 
     // Fisher-Yates.
     for (int i = candidates.Height() - 1; i > 0; i--)
@@ -371,6 +371,10 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
     {
         LateDevirtualization(use, user);
+        if ((*use != nullptr) && (user != nullptr))
+        {
+            user->gtFlags |= (*use)->gtFlags & GTF_ALL_EFFECT;
+        }
         return fgWalkResult::WALK_CONTINUE;
     }
 

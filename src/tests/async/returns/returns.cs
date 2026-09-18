@@ -8,7 +8,7 @@ using Xunit;
 
 public class Async2Returns
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Returns(new C()).Wait();
