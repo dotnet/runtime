@@ -666,6 +666,14 @@ namespace System.Diagnostics
                                 continue;
                             }
 
+                            // Known limitation: TryReapChild's waitpid call here is a real, consuming
+                            // wait (unlike the WNOWAIT peek above), so if this other tracked pid also
+                            // currently has its own pending non-exit (stopped/continued) notification --
+                            // e.g. because an external debugger like ClrMD is separately ptrace-tracing
+                            // it -- this call will silently consume that notification too, even though
+                            // TryReapChild only reports back an actual exit. We only skip the one pid we
+                            // observed above; we have no way to peek every other tracked pid first
+                            // without risking the same problem this fallback exists to avoid.
                             ProcessWaitState pws = kv.Value;
                             if (pws.TryReapChild(configureConsole))
                             {
