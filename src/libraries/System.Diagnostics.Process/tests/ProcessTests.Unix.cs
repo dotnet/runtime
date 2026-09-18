@@ -1267,6 +1267,12 @@ namespace System.Diagnostics.Tests
         // stop. SIGCHLD is registered with SA_NOCLDSTOP, so the stop itself does not trigger a check; the
         // misclassification is only observed when unrelated child activity causes CheckChildren to run, so
         // this test spawns short-lived "trigger" children concurrently to force that.
+        // Two tracees are ptrace-attached (not just one) so that CheckChildren's fallback CheckAll scan --
+        // triggered when one tracee's stop notification is peeked -- reaches into TryReapChild for the
+        // *other*, still-stopped tracee. That's the only way to drive SystemNative_WaitPidExitedNoHang's
+        // WIFSTOPPED/WIFCONTINUED retry path with a specific, currently-stopped pid: CheckAll always skips
+        // the pid whose notification triggered it, so a single tracee's own stop is never passed to
+        // WaitPidExitedNoHang in this test.
         [Fact]
         [OuterLoop("Spawns a large number of processes.")]
         [PlatformSpecific(TestPlatforms.Linux)]
@@ -1274,22 +1280,27 @@ namespace System.Diagnostics.Tests
         {
             using Process child = CreateProcessLong();
             child.Start();
+            using Process child2 = CreateProcessLong();
+            child2.Start();
             try
             {
                 Assert.False(child.HasExited);
+                Assert.False(child2.HasExited);
 
                 int attachResult = ptrace(PTRACE_ATTACH, child.Id, IntPtr.Zero, IntPtr.Zero);
                 Assert.True(attachResult == 0, $"PTRACE_ATTACH failed, errno={Marshal.GetLastWin32Error()}");
+                int attachResult2 = ptrace(PTRACE_ATTACH, child2.Id, IntPtr.Zero, IntPtr.Zero);
+                Assert.True(attachResult2 == 0, $"PTRACE_ATTACH failed, errno={Marshal.GetLastWin32Error()}");
                 try
                 {
-                    // Give the kernel time to deliver and report the tracee's stop.
+                    // Give the kernel time to deliver and report both tracees' stops.
                     Thread.Sleep(200);
 
-                    // SIGCHLD is installed with SA_NOCLDSTOP, so the ptrace stop above does not by itself
-                    // wake up CheckChildren. Spawn unrelated short-lived children concurrently: each real
-                    // exit delivers a SIGCHLD that runs CheckChildren, which (via waitid(P_ALL, ...)) will
-                    // also observe -- and, without the fix, misclassify -- the stopped tracee.
-                    for (int i = 0; i < 50 && !child.HasExited; i++)
+                    // SIGCHLD is installed with SA_NOCLDSTOP, so the stops above do not by themselves wake
+                    // up CheckChildren. Spawn unrelated short-lived children concurrently: each real exit
+                    // delivers a SIGCHLD that runs CheckChildren, which (via waitid(P_ALL, ...)) will also
+                    // observe -- and, without the fix, misclassify -- one of the stopped tracees.
+                    for (int i = 0; i < 50 && !child.HasExited && !child2.HasExited; i++)
                     {
                         using Process trigger = CreateProcess(static () => RemoteExecutor.SuccessExitCode);
                         trigger.Start();
@@ -1298,14 +1309,18 @@ namespace System.Diagnostics.Tests
                     }
 
                     Assert.False(child.HasExited);
+                    Assert.False(child2.HasExited);
                     Assert.False(child.WaitForExit(0));
+                    Assert.False(child2.WaitForExit(0));
                 }
                 finally
                 {
                     ptrace(PTRACE_DETACH, child.Id, IntPtr.Zero, IntPtr.Zero);
+                    ptrace(PTRACE_DETACH, child2.Id, IntPtr.Zero, IntPtr.Zero);
                 }
 
                 Assert.False(child.HasExited);
+                Assert.False(child2.HasExited);
             }
             finally
             {
@@ -1313,7 +1328,9 @@ namespace System.Diagnostics.Tests
                 // true, which would make Process.Kill() a no-op and leak the still-running child. Signal
                 // directly via the handle instead, which doesn't consult that cached state.
                 child.SafeHandle.Signal(PosixSignal.SIGKILL);
+                child2.SafeHandle.Signal(PosixSignal.SIGKILL);
                 Assert.True(child.WaitForExit(WaitInMS));
+                Assert.True(child2.WaitForExit(WaitInMS));
             }
         }
 
