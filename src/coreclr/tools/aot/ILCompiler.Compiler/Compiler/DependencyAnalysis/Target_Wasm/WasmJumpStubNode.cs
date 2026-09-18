@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            WasmFuncType signature = ((INodeWithWasmSignature)this).WasmSignature.FuncType;
+            WasmFuncType signature = WasmSignature.FuncType;
             int parameterCount = signature.Params.Types.Length;
 
             WasmExpr[] expressions = new WasmExpr[parameterCount + 1];
