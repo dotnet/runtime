@@ -150,6 +150,17 @@ public class WasmInterpreterTransitions
             Assert.Same(first, pair.First);
             Assert.Same(second, pair.Second);
 
+            MethodInfo genericTargetMethod =
+                typeof(GenericObjectPairTarget<string>).GetMethod(nameof(GenericObjectPairTarget<string>.GetPair));
+            ReturnsObjectPairDelegate genericTargetCallback =
+                (ReturnsObjectPairDelegate)Delegate.CreateDelegate(
+                    typeof(ReturnsObjectPairDelegate),
+                    target,
+                    genericTargetMethod);
+            pair = InvokeObjectPairDelegate(genericTargetCallback);
+            Assert.Same(first, pair.First);
+            Assert.Same(second, pair.Second);
+
             ReturnsSingleIntDelegate singleIntCallback = target.GetSingleInt;
             Assert.Equal(A, singleIntCallback().Value);
 
@@ -370,6 +381,9 @@ public class WasmInterpreterTransitions
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ObjectPair InvokeRuntimeGeneratedTarget(RuntimeTargetDelegate callback) =>
         callback(1, 2.0f, 3.0, 4, 5, 6.0, 7.0f);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ObjectPair InvokeObjectPairDelegate(ReturnsObjectPairDelegate callback) => callback();
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
@@ -647,4 +661,9 @@ public static class ObjectPairTargetExtensions
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ObjectPair GetPairInterpreted(this ObjectPairTarget target) => target.Pair;
+}
+
+public static class GenericObjectPairTarget<T>
+{
+    public static ObjectPair GetPair(ObjectPairTarget target) => target.Pair;
 }

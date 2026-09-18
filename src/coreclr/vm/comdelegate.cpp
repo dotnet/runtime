@@ -909,6 +909,10 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
         return pStub;
 
     PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode();
+    // Shared generic targets are represented by an instantiating wrapper for ldftn, so any
+    // required generic context is handled by the wrapper rather than appearing in this signature.
+    _ASSERTE(!pTargetMD->RequiresInstArg());
+
     void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
     if (thunk == nullptr ||
         !PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
