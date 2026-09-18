@@ -4203,8 +4203,6 @@ AppDomain::EnumMemoryRegions(CLRDataEnumMemoryFlags flags, bool enumThis)
     {
         pAssembly->EnumMemoryRegions(flags);
     }
-
-    ExternalMemoryHandle::EnumMemoryRegionsForAllHandles(flags);
 }
 
 void

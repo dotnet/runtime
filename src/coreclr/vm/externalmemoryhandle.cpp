@@ -116,29 +116,3 @@ void ExternalMemoryHandle::GCScanRoot(promote_func *fn, ScanContext *sc)
             DBG_ADDR(fromAddress), DBG_ADDR(toAddress)));
     }
 }
-
-#ifdef DACCESS_COMPILE
-
-void ExternalMemoryHandle::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    m_pMT.EnumMem();
-    m_pMT->EnumMemoryRegions(flags);
-
-    TSIZE_T size = m_pMT->IsValueType() ? m_pMT->GetNumInstanceFieldBytes() : TARGET_POINTER_SIZE;
-    DacEnumMemoryRegion(m_pMemory.GetAddr(), size);
-}
-
-void ExternalMemoryHandle::EnumMemoryRegionsForAllHandles(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-
-    for (ExternalMemoryHandle* handle = s_handles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
-    {
-        DacEnumMemoryRegion(dac_cast<TADDR>(handle), sizeof(ExternalMemoryHandle));
-        handle->EnumMemoryRegions(flags);
-    }
-}
-
-#endif // DACCESS_COMPILE

@@ -26,11 +26,6 @@ public:
 
     void GCScanRoot(promote_func *fn, ScanContext *sc);
 
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    static void EnumMemoryRegionsForAllHandles(CLRDataEnumMemoryFlags flags);
-#endif
-
     // Next pointer for SList linkage.
     PTR_ExternalMemoryHandle m_pNext;
 
