@@ -629,10 +629,7 @@ namespace System.Diagnostics
                                 {
                                     pws.ReleaseRef();
                                 }
-
                                 // If TryReapChild fails, it calls Environment.FailFast.
-
-                                continue; // move on to next pid
                             }
                             else if (reapAll)
                             {
@@ -643,46 +640,29 @@ namespace System.Diagnostics
                                 //   Because containers usually don't have an init daemon .NET may be pid 1.
 
                                 // Reap any child process regardless of whether we have a tracked wait state for it.
-                                // It's a best effort attempt, so if for some reason it fails, we just continue.
+                                // It's a best effort attempt, so if for some reason it fails, we just stop the loop.
+                                pid = Interop.Sys.WaitPidExitedNoHang(pid, out _, out _);
+                            }
+                            else
+                            {
+                                // This pid is not one we're responsible for reaping.
+                                CheckAll(pidToSkip: pid, configureConsole);
 
-                                _ = Interop.Sys.WaitPidExitedNoHang(pid, out _, out _);
-
-                                continue; // move on to next pid
+                                // We still need the loop to terminate for this notification
+                                // (it's unconsumed and will be identical next peek)
+                                return;
                             }
                         }
-
-                        // Either this pid is not one we're responsible for reaping, or (on some
-                        // platforms, e.g. macOS, or for a ptrace-traced child on Linux) the
-                        // notification isn't actually an exit even though only exit notifications
-                        // (WEXITED) were requested. In both cases we must not consume/act on this
-                        // specific notification: it may belong to something else in this process
-                        // (e.g. an external debugger tracing the same pid), and it may not even be
-                        // an exit. Fall back to directly checking our own known children instead,
-                        // which makes progress without spinning on or touching this notification.
-                        foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
+                        else
                         {
-                            if (kv.Key == pid)
-                            {
-                                continue;
-                            }
+                            // The notification isn't actually an exit even though only exit notifications
+                            // (WEXITED) were requested.
+                            CheckAll(pidToSkip: pid, configureConsole);
 
-                            // Known limitation: TryReapChild's waitpid call here is a real, consuming
-                            // wait (unlike the WNOWAIT peek above), so if this other tracked pid also
-                            // currently has its own pending non-exit (stopped/continued) notification --
-                            // e.g. because an external debugger like ClrMD is separately ptrace-tracing
-                            // it -- this call will silently consume that notification too, even though
-                            // TryReapChild only reports back an actual exit. We only skip the one pid we
-                            // observed above; we have no way to peek every other tracked pid first
-                            // without risking the same problem this fallback exists to avoid.
-                            ProcessWaitState pws = kv.Value;
-                            if (pws.TryReapChild(configureConsole))
-                            {
-                                // ReleaseRef mutates the dictionary using Remove method, but it's safe since NET Core 3.0.
-                                pws.ReleaseRef();
-                            }
+                            // We still need the loop to terminate for this notification
+                            // (it's unconsumed and will be identical next peek)
+                            return;
                         }
-
-                        return;
                     }
                     else if (pid == 0)
                     {
@@ -695,6 +675,41 @@ namespace System.Diagnostics
                         Environment.FailFast("Error while checking for terminated children. errno = " + errorCode);
                     }
                 } while (pid > 0);
+            }
+
+            static void CheckAll(int pidToSkip, bool configureConsole)
+            {
+
+                // Either this pidToSkip is not one we're responsible for reaping, or (on some
+                // platforms, e.g. macOS, or for a ptrace-traced child on Linux) the
+                // notification isn't actually an exit even though only exit notifications
+                // (WEXITED) were requested. In both cases we must not consume/act on this
+                // specific notification: it may belong to something else in this process
+                // (e.g. an external debugger tracing the same pid), and it may not even be
+                // an exit. Fall back to directly checking our own known children instead,
+                // which makes progress without spinning on or touching this notification.
+                foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
+                {
+                    if (kv.Key == pidToSkip)
+                    {
+                        continue;
+                    }
+
+                    // Known limitation: TryReapChild's waitpid call here is a real, consuming
+                    // wait (unlike the WNOWAIT peek above), so if this other tracked pid also
+                    // currently has its own pending non-exit (stopped/continued) notification --
+                    // e.g. because an external debugger like ClrMD is separately ptrace-tracing
+                    // it -- this call will silently consume that notification too, even though
+                    // TryReapChild only reports back an actual exit. We only skip the one pid we
+                    // observed above; we have no way to peek every other tracked pid first
+                    // without risking the same problem this fallback exists to avoid.
+                    ProcessWaitState pws = kv.Value;
+                    if (pws.TryReapChild(configureConsole))
+                    {
+                        // ReleaseRef mutates the dictionary using Remove method, but it's safe since NET Core 3.0.
+                        pws.ReleaseRef();
+                    }
+                }
             }
         }
     }
