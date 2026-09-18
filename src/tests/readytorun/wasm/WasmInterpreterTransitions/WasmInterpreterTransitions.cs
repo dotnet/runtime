@@ -89,6 +89,7 @@ public class WasmInterpreterTransitions
     private delegate SingleInt ReturnsSingleIntDelegate();
     private delegate SmallEnum ReturnsSmallEnumDelegate();
     private delegate ObjectPair ReturnsObjectPairDelegate();
+    private delegate S16 AggregateTargetDelegate<T>(T value, int marker);
     private delegate ObjectPair RuntimeTargetDelegate(
         long unusedLong1,
         float unusedFloat1,
@@ -169,6 +170,7 @@ public class WasmInterpreterTransitions
 
             VerifyDynamicClosedStaticDelegate();
             VerifyRuntimeGeneratedTarget(target);
+            VerifySharedAdapterSignatures();
             VerifyRecycledRuntimeGeneratedTargets(first, second);
         }
 
@@ -291,6 +293,7 @@ public class WasmInterpreterTransitions
             typeof(long),
             typeof(double),
             typeof(float),
+            typeof(double),
         };
 
         TypeBuilder targetBuilder = module.DefineType(
@@ -345,7 +348,7 @@ public class WasmInterpreterTransitions
         Delegate callback = Delegate.CreateDelegate(delegateType, target, targetMethod);
         Assert.Same(target, callback.Target);
 
-        object boxedResult = callback.DynamicInvoke(1L, 2.0f, 3.0, 4, 5L, 6.0, 7.0f);
+        object boxedResult = callback.DynamicInvoke(1L, 2.0f, 3.0, 4, 5L, 6.0, 7.0f, 8.0);
         Assert.Equal(A, (int)resultType.GetField("First").GetValue(boxedResult));
         Assert.Equal(B, (int)resultType.GetField("Second").GetValue(boxedResult));
     }
@@ -385,6 +388,52 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ObjectPair InvokeObjectPairDelegate(ReturnsObjectPairDelegate callback) => callback();
+
+    private static void VerifySharedAdapterSignatures()
+    {
+        AggregateTargetDelegate<S8> small = CreateAggregateTarget<S8>();
+        AggregateTargetDelegate<S12> large = CreateAggregateTarget<S12>();
+
+        // Both calls share their physical D adapter, but their target I thunks copy different layouts.
+        S16 smallResult = small(new S8 { A = A, B = B }, C);
+        Assert.Equal(A, smallResult.A);
+        Assert.Equal(A + B + C, smallResult.B);
+        S16 largeResult = large(new S12 { A = A, B = B, C = C }, 7);
+        Assert.Equal(A, largeResult.A);
+        Assert.Equal(A + B + C + 7, largeResult.B);
+    }
+
+    private static AggregateTargetDelegate<T> CreateAggregateTarget<T>()
+    {
+        DynamicMethod targetMethod = new(
+            "AggregateTarget",
+            typeof(S16),
+            new[] { typeof(object), typeof(T), typeof(int) });
+        ILGenerator il = targetMethod.GetILGenerator();
+        LocalBuilder result = il.DeclareLocal(typeof(S16));
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Castclass, typeof(int[]));
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ldelem_I4);
+        il.Emit(OpCodes.Conv_I8);
+        il.Emit(OpCodes.Stfld, typeof(S16).GetField(nameof(S16.A)));
+        il.Emit(OpCodes.Ldloca_S, result);
+        il.Emit(OpCodes.Ldarg_2);
+        foreach (FieldInfo field in typeof(T).GetFields())
+        {
+            il.Emit(OpCodes.Ldarga_S, (byte)1);
+            il.Emit(OpCodes.Ldfld, field);
+            il.Emit(OpCodes.Add);
+        }
+        il.Emit(OpCodes.Conv_I8);
+        il.Emit(OpCodes.Stfld, typeof(S16).GetField(nameof(S16.B)));
+        il.Emit(OpCodes.Ldloc, result);
+        il.Emit(OpCodes.Ret);
+
+        return (AggregateTargetDelegate<T>)targetMethod.CreateDelegate(
+            typeof(AggregateTargetDelegate<T>), new[] { A });
+    }
 
     private static void VerifyRecycledRuntimeGeneratedTargets(object first, object second)
     {

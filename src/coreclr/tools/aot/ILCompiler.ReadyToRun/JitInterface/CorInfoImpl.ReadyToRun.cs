@@ -3808,9 +3808,7 @@ namespace Internal.JitInterface
                         wasmSig.SignatureString[0] == 'S' &&
                         !wasmSig.SignatureString.Contains('a'))
                     {
-                        AddAdditionalDependency(
-                            _compilation.NodeFactory.WasmClosedStaticRetBufThunk(wasmSig),
-                            "Closed static return-buffer thunk for call site");
+                        AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
                 }
             }
@@ -3853,12 +3851,37 @@ namespace Internal.JitInterface
                         parameters[1] == WasmValueType.I32 &&
                         parameters[2] == WasmValueType.I32)
                     {
-                        AddAdditionalDependency(
-                            _compilation.NodeFactory.WasmClosedStaticRetBufThunk(wasmSig),
-                            "Closed static return-buffer thunk for compatible call signature");
+                        AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
                     }
                 }
             }
+        }
+
+        private void AddWasmClosedStaticRetBufThunkDependencies(WasmSignature signature)
+        {
+            AddAdditionalDependency(
+                _compilation.NodeFactory.WasmClosedStaticRetBufThunk(signature),
+                "Closed static return-buffer thunk for call site");
+
+            // D code is shared by physical signature, but each target I thunk must preserve
+            // the full interpreter layout, including aggregate sizes and alignment.
+            MethodSignature delegateSignature = WasmLowering.RaiseSignature(signature, _compilation.TypeSystemContext);
+            TypeDesc[] targetParameters = new TypeDesc[delegateSignature.Length + 1];
+            targetParameters[0] = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object);
+            for (int i = 0; i < delegateSignature.Length; i++)
+            {
+                targetParameters[i + 1] = delegateSignature[i];
+            }
+            MethodSignature targetSignature = new MethodSignature(
+                MethodSignatureFlags.Static,
+                0,
+                delegateSignature.ReturnType,
+                targetParameters);
+            WasmSignature targetWasmSignature = WasmLowering.GetSignature(targetSignature, WasmLowering.LoweringFlags.None);
+            Debug.Assert(targetWasmSignature.FuncType.Equals(signature.FuncType));
+            AddAdditionalDependency(
+                _compilation.NodeFactory.WasmR2RToInterpreterThunk(targetWasmSignature),
+                "Interpreter fallback for closed static delegate target");
         }
     }
 }

@@ -874,29 +874,30 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
 
     FuncPtrStubs* pFuncPtrStubs = pStubLoaderAllocator->GetFuncPtrStubs();
     PCODE pStub = pFuncPtrStubs->LookupClosedStaticRetBufStub(pTargetMD, pDelegateInvoke);
-    if (pStub != (PCODE)NULL)
-        return pStub;
-
-    void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
-    AllocMemTracker amt;
-    ClosedStaticRetBufPortableEntryPoint* pNewStub =
-        reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
-            amt.Track(pStubLoaderAllocator->GetHighFrequencyHeap()->AllocMem(
-                S_SIZE_T(sizeof(ClosedStaticRetBufPortableEntryPoint)))));
-    pNewStub->Init(pTargetMD, pDelegateInvoke, targetEntryPoint, thunk);
-
-    PCODE pNewEntryPoint = (PCODE)pNewStub->GetEntryPoint();
-    PCODE pResult = pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, pNewEntryPoint);
-    if (pResult == pNewEntryPoint)
-        amt.SuppressRelease();
-
-    if (!PortableEntryPoint::ToPortableEntryPoint(pResult)->HasNativeCode())
+    if (pStub == (PCODE)NULL)
     {
-        pStubLoaderAllocator->AddPendingClosedStaticRetBufThunk(
-            ClosedStaticRetBufPortableEntryPoint::FromEntryPoint(pResult));
+        void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
+        AllocMemTracker amt;
+        ClosedStaticRetBufPortableEntryPoint* pNewStub =
+            reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
+                amt.Track(pStubLoaderAllocator->GetHighFrequencyHeap()->AllocMem(
+                    S_SIZE_T(sizeof(ClosedStaticRetBufPortableEntryPoint)))));
+        pNewStub->Init(pTargetMD, pDelegateInvoke, targetEntryPoint, thunk);
+
+        PCODE pNewEntryPoint = (PCODE)pNewStub->GetEntryPoint();
+        pStub = pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, pNewEntryPoint);
+        if (pStub == pNewEntryPoint)
+            amt.SuppressRelease();
     }
 
-    return pResult;
+    // Cache publication precedes the fallible pending registration, so retry it on cache hits too.
+    if (!PortableEntryPoint::ToPortableEntryPoint(pStub)->HasNativeCode())
+    {
+        pStubLoaderAllocator->AddPendingClosedStaticRetBufThunk(
+            ClosedStaticRetBufPortableEntryPoint::FromEntryPoint(pStub));
+    }
+
+    return pStub;
 }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
