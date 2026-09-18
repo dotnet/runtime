@@ -134,7 +134,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     PrepareCodeConfig;
 class     NativeCodeVersion;
 struct    InterpThreadContext;
 
@@ -3699,32 +3698,6 @@ public:
 
 public:
     static uint64_t dead_threads_non_alloc_bytes;
-
-#ifndef DACCESS_COMPILE
-public:
-    class CurrentPrepareCodeConfigHolder
-    {
-    private:
-        Thread *const m_thread;
-#ifdef _DEBUG
-        PrepareCodeConfig *const m_config;
-#endif
-
-    public:
-        CurrentPrepareCodeConfigHolder(Thread *thread, PrepareCodeConfig *config);
-        ~CurrentPrepareCodeConfigHolder();
-    };
-
-public:
-    PrepareCodeConfig *GetCurrentPrepareCodeConfig() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_currentPrepareCodeConfig;
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    PrepareCodeConfig *m_currentPrepareCodeConfig;
 
 #ifndef DACCESS_COMPILE
 public:

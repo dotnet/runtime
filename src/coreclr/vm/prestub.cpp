@@ -957,8 +957,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
     EX_TRY
     {
-        Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
-
         pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
@@ -1161,11 +1159,10 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_shouldCountCalls(false),
 #endif
-    m_jitSwitchedToMinOpt(false),
+    m_jitSwitchedToMinOpt(false)
 #ifdef FEATURE_TIERED_COMPILATION
-    m_jitSwitchedToOptimized(false),
+    , m_jitSwitchedToOptimized(false)
 #endif
-    m_nextInSameThread(nullptr)
 {}
 
 PCODE PrepareCodeConfig::IsJitCancellationRequested()
