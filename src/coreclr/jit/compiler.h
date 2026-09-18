@@ -8758,12 +8758,12 @@ public:
             return false;
         }
 
-        bool IsBoundsCheckNoThrow() const
+        bool IsBoundsCheckNoThrow(ValueNum checkedBoundVN) const
         {
-            // O1K_VN (idx) u< O2K_VN_ADD_CNS (len) where len is never negative.
-            // Effectively, it's "idx >= 0 && idx < len"
+            // O1K_VN (idx) u< O2K_VN_ADD_CNS (len) where len is known non-negative,
+            // either from the assertion or because it is the bound being checked.
             return GetOp1().KindIs(O1K_VN) && KindIs(OAK_LT_UN) && GetOp2().KindIs(O2K_VN_ADD_CNS) &&
-                   (GetOp2().GetCns() == 0) && GetOp2().IsVNNeverNegative();
+                   (GetOp2().GetCns() == 0) && (GetOp2().IsVNNeverNegative() || (GetOp2().GetVN() == checkedBoundVN));
         }
 
         // Convert VNFunc to optAssertionKind

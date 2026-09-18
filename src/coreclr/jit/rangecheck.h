@@ -76,8 +76,8 @@ struct Limit
 {
     enum LimitType
     {
-        keUndef, // The limit is yet to be computed.
-        keBinOpArray,
+        keUndef,      // The limit is yet to be computed.
+        keBinOpArray, // A non-negative bound VN plus a constant.
         keConstant,
         keDependent, // The limit is dependent on some other value.
         keUnknown,   // The limit could not be determined.

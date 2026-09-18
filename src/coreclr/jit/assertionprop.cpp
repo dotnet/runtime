@@ -1903,8 +1903,10 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         }
     }
 
+    // Also track start u<= length (and its complement) to prove span slice lengths non-negative.
     if (!isUnsignedCompareCheckedBound && isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) &&
-        !vnStore->IsVNConstant(op2VN) && vnStore->IsVNCheckedBoundIndex(op1VN) && optAssertionHasAssertionsForVN(op2VN))
+        !vnStore->IsVNConstant(op2VN) && optAssertionHasAssertionsForVN(op2VN) &&
+        (vnStore->IsVNCheckedBoundIndex(op1VN) || relopFuncApp.FuncIs(VNF_GT_UN, VNF_LE_UN)))
     {
         AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
         AssertionIndex idx = optAddAssertion(dsc);
@@ -1943,14 +1945,18 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return idx;
     }
 
-    // Loop condition like "(uint)i < (uint)bnd" or equivalent
-    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
+    // Loop condition like "(uint)i < (uint)bnd" or equivalent.
+    // This only implies a no-throw bounds check if bnd is known to be non-negative at this comparison.
     if (isUnsignedCompareCheckedBound)
     {
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
 
-        AssertionDsc   dsc   = AssertionDsc::CreateNoThrowArrBnd(this, idxVN, lenVN);
+        bool isLenNeverNegative =
+            ((optConservativeNormalVN(relop->gtGetOp1()) == lenVN) && relop->gtGetOp1()->IsNeverNegative(this)) ||
+            ((optConservativeNormalVN(relop->gtGetOp2()) == lenVN) && relop->gtGetOp2()->IsNeverNegative(this));
+        AssertionDsc dsc =
+            AssertionDsc::CreateCompareCheckedBound(this, VNF_LT_UN, idxVN, lenVN, 0, isLenNeverNegative);
         AssertionIndex index = optAddAssertion(dsc);
         if (unsignedCompareBnd.cmpOper == VNF_GE_UN)
         {
@@ -5706,13 +5712,13 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions,
     {
         // If it is not a nothrow assertion, skip.
         const AssertionDsc& curAssertion = optGetAssertion(GetAssertionIndex(index));
-        if (!curAssertion.IsBoundsCheckNoThrow())
+        if (!curAssertion.IsBoundsCheckNoThrow(vnCurLen))
         {
             continue;
         }
 
         assert(curAssertion.GetOp2().GetCns() == 0);
-        assert(curAssertion.GetOp2().IsVNNeverNegative());
+        assert(curAssertion.GetOp2().IsVNNeverNegative() || (curAssertion.GetOp2().GetVN() == vnCurLen));
 
         // Do we have a previous range check involving the same 'vnLen' upper bound?
         if (curAssertion.GetOp2().GetVN() == vnCurLen)

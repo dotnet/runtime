@@ -7918,7 +7918,7 @@ bool ValueNumStore::IsVNCheckedBound(ValueNum vn)
     if (m_checkedBoundVNs.TryGetValue(vn, &dummy))
     {
         // This VN appeared as the conservative VN of the length argument of some
-        // GT_BOUNDS_CHECK node.
+        // GT_BOUNDS_CHECK node. This does not imply the VN is non-negative on other paths.
         return true;
     }
     if (IsVNArrLen(vn))
