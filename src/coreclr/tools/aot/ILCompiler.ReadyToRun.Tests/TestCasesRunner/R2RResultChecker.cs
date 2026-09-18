@@ -879,8 +879,9 @@ internal static class R2RAssert
     public static bool WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(ReadyToRunReader reader, out string diagnostic)
     {
         var failures = new List<string>();
+        var resumptionStubTargets = new HashSet<uint>();
+        var storeMultiTargets = new List<(string Owner, uint Target)>();
         int checkedMethodCount = 0;
-        int checkedStoreMultiCount = 0;
 
         foreach (ReadyToRunMethod method in GetAllMethods(reader))
         {
@@ -896,10 +897,17 @@ internal static class R2RAssert
                 if (kind is not (ReadyToRunFixupKind.ResumptionStubEntryPoint or ReadyToRunFixupKind.StoreMultiCallableAddrOfCode))
                     continue;
 
-                foundResumptionStub |= kind == ReadyToRunFixupKind.ResumptionStubEntryPoint;
-                checkedStoreMultiCount += kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode ? 1 : 0;
                 int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
                 uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
+
+                if (kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode)
+                {
+                    storeMultiTargets.Add((method.SignatureString, targetIndex));
+                    continue;
+                }
+
+                foundResumptionStub = true;
+                resumptionStubTargets.Add(targetIndex);
                 uint expectedIndex = checked((uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
                 if (targetIndex != expectedIndex)
                 {
@@ -913,13 +921,23 @@ internal static class R2RAssert
                 checkedMethodCount++;
         }
 
+        foreach ((string owner, uint target) in storeMultiTargets)
+        {
+            if (!resumptionStubTargets.Contains(target))
+            {
+                failures.Add(
+                    $"'{owner}' has StoreMultiCallableAddrOfCode target {target}, " +
+                    "which is not registered by a ResumptionStubEntryPoint fixup.");
+            }
+        }
+
         if (checkedMethodCount == 0)
         {
             diagnostic = "No methods with ResumptionStubEntryPoint fixups were found.";
             return false;
         }
 
-        if (checkedStoreMultiCount == 0)
+        if (storeMultiTargets.Count == 0)
         {
             diagnostic = "No StoreMultiCallableAddrOfCode fixups were found.";
             return false;
@@ -932,7 +950,7 @@ internal static class R2RAssert
         }
 
         diagnostic = failures.Count == 0
-            ? $"Found {checkedMethodCount} async method(s) and {checkedStoreMultiCount} StoreMultiCallableAddrOfCode fixup(s) whose resume targets match RuntimeFunctions ordering in an image containing a virtual-dispatch thunk."
+            ? $"Found {checkedMethodCount} async method(s) and {storeMultiTargets.Count} StoreMultiCallableAddrOfCode fixup(s) whose resume targets match RuntimeFunctions ordering in an image containing a virtual-dispatch thunk."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
     }
