@@ -31,6 +31,7 @@ internal class Program
         TestCctorCycle.Run();
         TestReferenceTypeAllocation.Run();
         TestReferenceTypeWithGCPointerAllocation.Run();
+        TestBoxedValueTypes.Run();
         TestRelationalOperators.Run();
         TestTryFinally.Run();
         TestTryCatch.Run();
@@ -462,6 +463,67 @@ class TestReferenceTypeWithGCPointerAllocation
     {
         Assert.IsLazyInitialized(typeof(TestReferenceTypeWithGCPointerAllocation));
         Assert.AreSame("hi", s_referenceType.StringValue);
+    }
+}
+
+class TestBoxedValueTypes
+{
+    struct WithReference
+    {
+        public object Value;
+    }
+
+    struct WithNestedReference
+    {
+        public WithReference Value;
+    }
+
+    struct WithoutReferences
+    {
+        public int Value;
+    }
+
+    class DirectReference
+    {
+        public static readonly object Value = default(WithReference);
+    }
+
+    class NestedReference
+    {
+        public static readonly object Value = default(WithNestedReference);
+    }
+
+    class NoReferences
+    {
+        public static readonly object Value = new WithoutReferences { Value = 42 };
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static WeakReference SetReference(ref object reference)
+    {
+        reference = new object();
+        return new WeakReference(reference);
+    }
+
+    public static void Run()
+    {
+        Assert.IsLazyInitialized(typeof(DirectReference));
+        Assert.IsLazyInitialized(typeof(NestedReference));
+        Assert.IsPreinitialized(typeof(NoReferences));
+
+        WeakReference direct = SetReference(ref Unsafe.Unbox<WithReference>(DirectReference.Value).Value);
+        WeakReference nested = SetReference(ref Unsafe.Unbox<WithNestedReference>(NestedReference.Value).Value.Value);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.True(direct.IsAlive);
+        Assert.True(nested.IsAlive);
+        Assert.AreSame(direct.Target, Unsafe.Unbox<WithReference>(DirectReference.Value).Value);
+        Assert.AreSame(nested.Target, Unsafe.Unbox<WithNestedReference>(NestedReference.Value).Value.Value);
+        Assert.AreEqual(42, Unsafe.Unbox<WithoutReferences>(NoReferences.Value).Value);
+        Unsafe.Unbox<WithoutReferences>(NoReferences.Value).Value = 100;
+        Assert.AreEqual(100, Unsafe.Unbox<WithoutReferences>(NoReferences.Value).Value);
     }
 }
 

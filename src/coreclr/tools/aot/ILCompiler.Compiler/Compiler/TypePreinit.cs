@@ -1697,6 +1697,9 @@ namespace ILCompiler
                             if (type.IsNullable)
                                 return Status.Fail(methodIL.OwningMethod, opcode);
 
+                            if (((DefType)type).ContainsGCPointers)
+                                return Status.Fail(methodIL.OwningMethod, opcode, "GC pointers");
+
                             if (type.RequiresAlign8())
                                 return Status.Fail(methodIL.OwningMethod, opcode, "Align8");
 
