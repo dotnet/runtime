@@ -2459,6 +2459,27 @@ int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completi
     (void)deferTaskRun;
 #endif
 
+    // IORING_SETUP_COOP_TASKRUN: without it, the kernel may send an inter-processor interrupt to
+    // force our issuer thread to stop whatever it's doing in userspace and immediately run
+    // deferred task-work (e.g. posting a completion) as soon as it becomes available. Since this
+    // thread already deterministically transitions into the kernel on its own on every wakeup
+    // (SystemNative_IoRingWaitForCompletions is its entire loop body), that forced preemption
+    // buys nothing here - the work would get picked up on the next transition anyway - and the
+    // IPI itself is pure overhead. Requesting COOP_TASKRUN tells the kernel it can skip sending
+    // it and instead let task-work simply accumulate until this thread's next kernel transition.
+    // Combined with IORING_SETUP_TASKRUN_FLAG (only meaningful together with COOP_TASKRUN), the
+    // kernel additionally sets IORING_SQ_TASKRUN in the SQ ring's flags whenever such deferred
+    // task-work is actually pending - not used by this PAL today (SystemNative_IoRingWaitForCompletions
+    // unconditionally transitions into the kernel every time it's called rather than polling that
+    // flag first), but requesting it is harmless and keeps the door open for that optimization
+    // later.
+#if defined(IORING_SETUP_COOP_TASKRUN)
+    params.flags |= IORING_SETUP_COOP_TASKRUN;
+#if defined(IORING_SETUP_TASKRUN_FLAG)
+    params.flags |= IORING_SETUP_TASKRUN_FLAG;
+#endif
+#endif
+
     long fd = IoUringSetup((uint32_t)submissionQueueDepth, &params);
 
 
