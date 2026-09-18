@@ -6,10 +6,6 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <_TestWasmReadyToRunImplicit>true</_TestWasmReadyToRunImplicit>
   </PropertyGroup>
-  <ItemGroup Condition="'$(_TestWasmReadyToRunImplicit)' == 'true'">
-    <ProjectReference Update="@(ProjectReference)"
-                      GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);PublishReadyToRun" />
-  </ItemGroup>
 
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
@@ -282,5 +278,12 @@
   <PropertyGroup>
     <PackageId Condition="'$(IsSourceProject)' == 'true' and '$(IsPackable)' != 'true'">$(MSBuildProjectName)-project</PackageId>
   </PropertyGroup>
+
+  <!-- Apply this after all imported targets have added their project references so explicit
+       GlobalPropertiesToRemove metadata is augmented instead of replacing this default. -->
+  <ItemGroup Condition="'$(_TestWasmReadyToRunImplicit)' == 'true'">
+    <ProjectReference Update="@(ProjectReference)"
+                      GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);PublishReadyToRun" />
+  </ItemGroup>
 
 </Project>
