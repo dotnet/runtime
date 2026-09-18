@@ -633,9 +633,15 @@ bool FoldNeverNegativeRangeTest(
         return false;
     }
 
-    if ((upperBound->gtFlags & GTF_SIDE_EFFECT) != 0)
+    if ((upperBound->gtFlags & (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF)) != 0)
     {
-        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects.
+        // We can't fold "X >= 0 && X < NN" to "X u< NN" if NN has side effects: the fold makes NN
+        // execute unconditionally, while it used to be guarded by "X >= 0".
+        //
+        // GTF_ORDER_SIDEEFF has to be rejected as well - it marks nodes that are pinned below a
+        // dominating check, e.g. an "a[X]" load whose bounds check was removed using the very
+        // "X >= 0" test we're about to delete (such a load is no longer GTF_EXCEPT). It also covers
+        // volatile loads.
         return false;
     }
 
