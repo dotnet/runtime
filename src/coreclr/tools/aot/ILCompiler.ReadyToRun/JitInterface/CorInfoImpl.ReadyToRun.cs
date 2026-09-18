@@ -1272,6 +1272,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
+                    id = ReadyToRunHelper.ResumeAfterCatch;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     id = ReadyToRunHelper.StackProbe;
                     break;
@@ -3440,6 +3444,12 @@ namespace Internal.JitInterface
                 if (method.IsRawPInvoke())
                 {
                     return false;
+                }
+
+                if (_compilation.NodeFactory.Target.IsWasm
+                    && !_compilation.CompilationModuleGroup.IsDirectPInvoke(method))
+                {
+                    return true;
                 }
 
                 // If this method is in another versioning unit, then the compilation cannot inline the pinvoke (as we aren't currently

@@ -485,6 +485,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
+                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -702,6 +703,7 @@ namespace ILCompiler
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
+                        .UseVerifyGCModeTransitions(Get(_command.VerifyGCModeTransitions))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
                         .UseContainerFormat(format)
