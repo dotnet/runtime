@@ -148,7 +148,11 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 *Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
-*Interop IL stubs* - The VM passes context to shared vararg PInvoke stubs and native-to-managed IL stubs in (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). For a vararg PInvoke stub, the context is the MethodDesc for the exact PInvoke. For a native-to-managed stub, the context is the `UMEntryThunkData` used to recover the managed target or delegate. The IL stub represents this value as an explicit `native int` parameter with a required `System.Runtime.CompilerServices.SecretStubArgument` modifier, which tells the JIT to bind the parameter to the secret stub register.
+*Secret stub argument* - An explicit `native int` parameter with a required `System.Runtime.CompilerServices.SecretStubArgument` modifier tells the JIT to bind the parameter to (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` / (LoongArch64, RISC-V) `T2` (in the JIT: `REG_SECRET_STUB_PARAM`). Interop IL stubs use this parameter for the following values:
+
+* Unmanaged CALLI stubs pass the unmanaged target address.
+* Shared vararg PInvoke stubs pass the MethodDesc for the exact PInvoke.
+* Native-to-managed stubs pass the `UMEntryThunkData` used to recover the managed target or delegate.
 
 ## Small primitive returns
 
