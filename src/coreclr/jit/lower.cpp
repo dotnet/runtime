@@ -11438,6 +11438,7 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         uint64_t lowerCns = 0;
         uint64_t upperCns = 0;
 #if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        // Only on x64 since ARM64 has no options above SIMD16.
         if (varTypeIsSIMD(oldType))
         {
             if (!prevData.value->OperIs(GT_CNS_VEC) || !currData.value->OperIs(GT_CNS_VEC))
