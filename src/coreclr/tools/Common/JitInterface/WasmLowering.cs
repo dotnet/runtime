@@ -618,6 +618,24 @@ namespace Internal.JitInterface
             return flags;
         }
 
+        public static LoweringFlags GetLoweringFlags(bool hasGenericContextArg, bool isAsyncCall, bool isUnmanagedCallersOnly)
+        {
+            LoweringFlags flags = 0;
+            if (hasGenericContextArg)
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (isAsyncCall)
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (isUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
         [Flags]
         public enum LoweringFlags
         {

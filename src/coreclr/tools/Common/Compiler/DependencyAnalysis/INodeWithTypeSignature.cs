@@ -23,19 +23,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             get
             {
-                WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
-                if (HasGenericContextArg)
-                {
-                    flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-                }
-                if (IsAsyncCall)
-                {
-                    flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-                }
-                if (IsUnmanagedCallersOnly)
-                {
-                    flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-                }
+                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(
+                    hasGenericContextArg: HasGenericContextArg,
+                    isAsyncCall: IsAsyncCall,
+                    isUnmanagedCallersOnly: IsUnmanagedCallersOnly);
                 return WasmLowering.GetSignature(Signature, flags);
             }
         }
