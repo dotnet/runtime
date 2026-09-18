@@ -1525,7 +1525,6 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
