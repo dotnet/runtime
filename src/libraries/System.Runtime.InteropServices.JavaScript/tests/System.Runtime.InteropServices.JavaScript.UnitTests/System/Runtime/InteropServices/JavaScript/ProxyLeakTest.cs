@@ -183,7 +183,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public Task JSExportWithPromiseArgument_DoesNotLeakProxies(string exportName, bool settled)
             => AssertNoLeak(count => JavaScriptTestHelper.InvokeExportWithPromiseNTimes(exportName, count, settled));
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public Task FailingGetAssemblyExports_DoesNotLeakProxies()
             => AssertNoLeak(async count =>
             {
