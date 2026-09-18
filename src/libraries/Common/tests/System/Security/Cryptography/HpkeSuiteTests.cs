@@ -127,21 +127,19 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(expectedName, suite.Name);
         }
 
-        [Theory]
-        [InlineData(0, 16)]
-        [InlineData(1, 17)]
-        [InlineData(15, 31)]
-        [InlineData(16, 32)]
-        [InlineData(17, 33)]
-        [InlineData(1024, 1040)]
-        [InlineData(int.MaxValue - 16, int.MaxValue)]
-        public static void GetCiphertextLength(int plaintextLength, int expectedLength)
+        [Fact]
+        public static void GetCiphertextLength()
         {
             foreach (HpkeAead aead in Enum.GetValues(typeof(HpkeAead)))
             {
                 HpkeSuite suite = new(HpkeKem.MLKEM_768, HpkeKdf.HKDF_SHA256, aead);
 
-                Assert.Equal(expectedLength, suite.GetCiphertextLength(plaintextLength));
+                foreach (int length in new int[] { 0, 1, 15, 16, 17, 1024 })
+                {
+                    Assert.Equal(length + suite.AeadTagSizeInBytes, suite.GetCiphertextLength(length));
+                }
+
+                Assert.Equal(int.MaxValue, suite.GetCiphertextLength(int.MaxValue - suite.AeadTagSizeInBytes));
             }
         }
 

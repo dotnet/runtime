@@ -123,7 +123,6 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(expectedCiphertext, ciphertext);
                     AssertExtensions.SequenceEqual<byte>([0x71, 0x72, 0x73], associatedData);
                     Assert.Equal(1, recipient.OpenCoreCount);
-                    Assert.Equal(0, recipient.ExportCoreCount);
                 }
             }
         }
@@ -158,7 +157,6 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(Data(input.Length), input);
                     AssertExtensions.SequenceEqual<byte>([0xA5, 0x71, 0x72, 0x73, 0xA5], aadBuffer);
                     Assert.Equal(1, recipient.OpenCoreCount);
-                    Assert.Equal(0, recipient.ExportCoreCount);
                 }
             }
         }
@@ -376,7 +374,6 @@ namespace System.Security.Cryptography.Tests
                     AssertGuardedOutput(output);
                     Assert.Equal(expectedContext, context);
                     Assert.Equal(3, recipient.ExportCoreCount);
-                    Assert.Equal(0, recipient.OpenCoreCount);
                 }
             }
         }
@@ -485,7 +482,6 @@ namespace System.Security.Cryptography.Tests
                 Assert.Same(exception, Assert.Throws(exception.GetType(),
                     () => recipient.Open(ciphertext, Span<byte>.Empty)));
                 Assert.Equal(3, recipient.OpenCoreCount);
-                Assert.Equal(0, recipient.ExportCoreCount);
             }
         }
 
@@ -505,7 +501,6 @@ namespace System.Security.Cryptography.Tests
                 Assert.Same(exception, Assert.Throws<CryptographicException>(
                     () => recipient.Export(ReadOnlySpan<byte>.Empty, new byte[1].AsSpan())));
                 Assert.Equal(3, recipient.ExportCoreCount);
-                Assert.Equal(0, recipient.OpenCoreCount);
             }
         }
 

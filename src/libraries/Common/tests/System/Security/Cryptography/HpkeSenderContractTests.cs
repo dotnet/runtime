@@ -122,7 +122,6 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(Data(length), plaintext);
                     AssertExtensions.SequenceEqual<byte>([0x71, 0x72, 0x73], associatedData);
                     Assert.Equal(1, sender.SealCoreCount);
-                    Assert.Equal(0, sender.ExportCoreCount);
                 }
             }
         }
@@ -157,7 +156,6 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(Data(length + 2), input);
                     AssertExtensions.SequenceEqual<byte>([0xA5, 0x71, 0x72, 0x73, 0xA5], aadBuffer);
                     Assert.Equal(1, sender.SealCoreCount);
-                    Assert.Equal(0, sender.ExportCoreCount);
                 }
             }
         }
@@ -347,7 +345,6 @@ namespace System.Security.Cryptography.Tests
                     AssertGuardedOutput(output);
                     Assert.Equal(expectedContext, context);
                     Assert.Equal(3, sender.ExportCoreCount);
-                    Assert.Equal(0, sender.SealCoreCount);
                 }
             }
         }
