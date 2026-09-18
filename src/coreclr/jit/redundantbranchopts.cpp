@@ -1585,7 +1585,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
     assert(jti.m_numAmbiguousPreds != 0);
 
     bool              foundReplacement = false;
-    int               numCoveredPreds  = 0;
+    BitVec            coveredPreds     = BitVecOps::MakeEmpty(&jti.traits);
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1599,7 +1599,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
             continue;
         }
 
-        numCoveredPreds++;
+        BitVecOps::AddElemD(&jti.traits, coveredPreds, predBlock->bbPostorderNum);
 
         if (!foundReplacement)
         {
@@ -1612,7 +1612,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
         }
     }
 
-    if (!foundReplacement || (numCoveredPreds != jti.m_numAmbiguousPreds))
+    if (!foundReplacement || !BitVecOps::Equal(&jti.traits, coveredPreds, jti.m_ambiguousPreds))
     {
         return false;
     }
@@ -1646,21 +1646,34 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     *hasThreadedPreds  = false;
     *replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
 
-    int numThreadedPreds = 0;
-    if (jti.m_trueTarget == successor)
+    BitVec expectedPreds = BitVecOps::MakeCopy(&jti.traits, jti.m_ambiguousPreds);
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocks())
     {
-        numThreadedPreds += jti.m_numTruePreds;
-    }
-    if (jti.m_falseTarget == successor)
-    {
-        numThreadedPreds += jti.m_numFalsePreds;
-    }
+        if (BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
+        {
+            continue;
+        }
 
-    *hasThreadedPreds          = numThreadedPreds != 0;
-    int const numExpectedPreds = jti.m_numAmbiguousPreds + numThreadedPreds;
+        BasicBlock* predTarget = nullptr;
+        if (BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum))
+        {
+            predTarget = jti.m_trueTarget;
+        }
+        else
+        {
+            assert(jti.m_numFalsePreds != 0);
+            predTarget = jti.m_falseTarget;
+        }
+
+        if (predTarget == successor)
+        {
+            BitVecOps::AddElemD(&jti.traits, expectedPreds, predBlock->bbPostorderNum);
+            *hasThreadedPreds = true;
+        }
+    }
 
     bool              foundReplacement = false;
-    int               numCoveredPreds  = 0;
+    BitVec            coveredPreds     = BitVecOps::MakeEmpty(&jti.traits);
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1668,19 +1681,12 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     {
         GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
         BasicBlock* const    predBlock  = phiArgNode->gtPredBB;
-        bool const           isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
-        bool const isAmbiguousPred = BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
-
-        if (!isAmbiguousPred)
+        if (!BitVecOps::IsMember(&jti.traits, expectedPreds, predBlock->bbPostorderNum))
         {
-            BasicBlock* const predTarget = isTruePred ? jti.m_trueTarget : jti.m_falseTarget;
-            if (predTarget != successor)
-            {
-                continue;
-            }
+            continue;
         }
 
-        numCoveredPreds++;
+        BitVecOps::AddElemD(&jti.traits, coveredPreds, predBlock->bbPostorderNum);
 
         if (!foundReplacement)
         {
@@ -1694,7 +1700,7 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     }
 
     *replacementSsaNum = replacementSsa;
-    return foundReplacement && (numCoveredPreds == numExpectedPreds);
+    return foundReplacement && BitVecOps::Equal(&jti.traits, coveredPreds, expectedPreds);
 }
 
 //------------------------------------------------------------------------
