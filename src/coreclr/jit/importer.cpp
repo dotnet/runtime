@@ -366,7 +366,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
         // needs to be spilled to preserve correct ordering.
         //
         GenTree*     expr  = stmt->GetRootNode();
-        GenTreeFlags flags = expr->gtFlags & GTF_GLOB_EFFECT;
+        GenTreeFlags flags = expr->gtFlags & GTF_ALL_EFFECT;
 
         // Stores to unaliased locals require special handling. Here, we look for trees that
         // can modify them and spill the references. In doing so, we make two assumptions:
@@ -416,7 +416,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
             {
                 // For stores, limit the checking to what the value could modify/interfere with.
                 GenTree* value = expr->AsLclVarCommon()->Data();
-                flags          = value->gtFlags & GTF_GLOB_EFFECT;
+                flags          = value->gtFlags & GTF_ALL_EFFECT;
 
                 // We don't mark indirections off of "aliased" locals with GLOB_REF, but they must still be
                 // considered as such in the interference checking.
@@ -429,7 +429,9 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
         if (flags != 0)
         {
-            impSpillSideEffects((flags & (GTF_ASG | GTF_CALL)) != 0, chkLevel DEBUGARG("impAppendStmt"));
+            // Ordering side effects must not move ahead of global reads.
+            impSpillSideEffects((flags & (GTF_ASG | GTF_CALL | GTF_ORDER_SIDEEFF)) != 0,
+                                chkLevel DEBUGARG("impAppendStmt"));
         }
         else
         {
@@ -1839,7 +1841,7 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
 {
     assert(i <= stackState.esStackDepth);
 
-    GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
+    GenTreeFlags spillFlags = spillGlobEffects ? GTF_ALL_EFFECT : (GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF);
     GenTree*     tree       = stackState.esStack[i].val;
 
     if ((tree->gtFlags & spillFlags) != 0 ||
@@ -4623,11 +4625,14 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //------------------------------------------------------------------------
 // impFixupStructReturnType: Adjust a struct value being returned.
 //
-// In the multi-reg case, we we force IR to be one of the following:
+// In the multi-reg case, we force IR to be one of the following:
 // GT_RETURN(LCL_VAR) or GT_RETURN(CALL). If op is anything other than
 // a lclvar or call, it is assigned to a temp, which is then returned.
-// In the non-multireg case, the two special helpers with "fake" return
-// buffers are handled ("GETFIELDSTRUCT" and "UNBOX_NULLABLE").
+// In the non-multireg case, calls that return via a return buffer are
+// materialized into an address-taken temp. Such a call can reach here when
+// an intrinsic such as "Unsafe.BitCast" forwards it as the return value of
+// a method whose own return type does not use a return buffer; it may be a
+// GT_CALL or the GT_RET_EXPR placeholder of an inline candidate.
 //
 // Arguments:
 //    op - the return value
@@ -4643,19 +4648,30 @@ GenTree* Compiler::impFixupStructReturnType(GenTree* op)
     JITDUMP("\nimpFixupStructReturnType: retyping\n");
     DISPTREE(op);
 
-    if (op->IsCall() && op->AsCall()->ShouldHaveRetBufArg())
+    GenTreeCall* retBufCall = nullptr;
+
+    if (op->IsCall())
     {
-        // This must be one of those 'special' helpers that don't really have a return buffer, but instead
-        // use it as a way to keep the trees cleaner with fewer address-taken temps. Well now we have to
-        // materialize the return buffer as an address-taken temp. Then we can return the temp.
-        //
+        retBufCall = op->AsCall();
+    }
+    else if (op->OperIs(GT_RET_EXPR))
+    {
+        // The placeholder was created during this importation, so it cannot have been
+        // substituted yet; only "gtSubstExpr" can form chains of GT_RET_EXPRs, and those
+        // are walked later by "UpdateInlineReturnExpressionPlaceHolder".
+        assert(op->AsRetExpr()->gtSubstExpr == nullptr);
+        retBufCall = op->AsRetExpr()->gtInlineCandidate;
+    }
+
+    if ((retBufCall != nullptr) && retBufCall->ShouldHaveRetBufArg())
+    {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("pseudo return buffer"));
 
         // No need to spill anything as we're about to return.
         impStoreToTemp(tmpNum, op, CHECK_SPILL_NONE);
 
         op = gtNewLclvNode(tmpNum, info.compRetType);
-        JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer for a special helper\n");
+        JITDUMP("\nimpFixupStructReturnType: created a pseudo-return buffer\n");
         DISPTREE(op);
 
         return op;
@@ -10260,17 +10276,49 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     //
                     if (JitConfig.EnableExtraSuperPmiQueries() && !eeIsSharedInst(resolvedToken.hClass))
                     {
-                        void* pEmbedClsHnd;
-                        info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
-                        CORINFO_CLASS_HANDLE elemClsHnd = NO_CLASS_HANDLE;
-                        CorInfoType elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
-                        var_types   elemType    = JITtype2varType(elemCorType);
-                        if (elemType == TYP_STRUCT)
+                        // Each query gets its own trap so that a failure of the first, which is
+                        // the one an AOT compiler rejects for an out-of-bubble type, does not
+                        // suppress the rest.
+                        //
+                        eeRunExtraSuperPmiQueries([&]() {
+                            void* pEmbedClsHnd;
+                            info.compCompHnd->embedClassHandle(resolvedToken.hClass, &pEmbedClsHnd);
+                        });
+
+                        CORINFO_CLASS_HANDLE elemClsHnd  = NO_CLASS_HANDLE;
+                        CorInfoType          elemCorType = CORINFO_TYPE_UNDEF;
+                        eeRunExtraSuperPmiQueries([&]() {
+                            elemCorType = info.compCompHnd->getChildType(resolvedToken.hClass, &elemClsHnd);
+                        });
+
+                        // CORINFO_TYPE_VALUECLASS is the only type JITtype2varType maps to
+                        // TYP_STRUCT. Test it directly, since JITtype2varType asserts if the
+                        // query above was trapped and left elemCorType as CORINFO_TYPE_UNDEF.
+                        //
+                        if ((elemCorType == CORINFO_TYPE_VALUECLASS) && (elemClsHnd != NO_CLASS_HANDLE))
                         {
+                            // JIT work, so deliberately not trapped. It can set compFloatingPointUsed
+                            // via ClassLayout::Create -> impNormStructType, which would let the queries
+                            // change codegen, so restore that. Note this cannot fully undo the layout
+                            // being memoized, only the flag.
+                            //
+                            const bool savedFloatingPointUsed = compFloatingPointUsed;
                             typGetObjLayout(elemClsHnd);
-                            info.compCompHnd->isValueClass(elemClsHnd);
+                            compFloatingPointUsed = savedFloatingPointUsed;
+
+                            eeRunExtraSuperPmiQueries([&]() {
+                                info.compCompHnd->isValueClass(elemClsHnd);
+                            });
                         }
-                        compGetHelperFtn(CORINFO_HELP_MEMZERO);
+
+                        eeRunExtraSuperPmiQueries([&]() {
+                            // Deliberately not compGetHelperFtn, whose assert would be absorbed here.
+                            if (info.compMatchedVM)
+                            {
+                                CORINFO_CONST_LOOKUP lookup;
+                                info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMZERO, &lookup);
+                            }
+                        });
                     }
 #endif
                 }
@@ -10523,17 +10571,44 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                                     gtNewIconNode(OFFSETOF__CORINFO_TypedReference__type, TYP_I_IMPL));
                 op1 = gtNewIndir(TYP_BYREF, op1, indirFlags);
 
+                unsigned handleTemp = lvaGrabTemp(true DEBUGARG("spill result of REFANYTYPE for null check"));
+                impStoreToTemp(handleTemp, op1, CHECK_SPILL_ALL);
+
                 // Convert native TypeHandle to RuntimeTypeHandle.
-                op1 = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, TYP_STRUCT, op1);
 
                 CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
 
+                GenTree* helperCall = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, TYP_STRUCT,
+                                                          gtNewLclVarNode(handleTemp, TYP_BYREF));
                 // The handle struct is returned in register
-                op1->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
-                op1->AsCall()->gtRetClsHnd  = classHandle;
+                helperCall->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
+                helperCall->AsCall()->gtRetClsHnd  = classHandle;
 #if FEATURE_MULTIREG_RET
-                op1->AsCall()->InitializeStructReturnType(this, classHandle, op1->AsCall()->GetUnmanagedCallConv());
+                helperCall->AsCall()->InitializeStructReturnType(this, classHandle,
+                                                                 helperCall->AsCall()->GetUnmanagedCallConv());
 #endif
+
+                unsigned resultTmp = lvaGrabTemp(true DEBUGARG("result of REFANYTYPE"));
+                lvaSetStruct(resultTmp, classHandle, false);
+
+                GenTree* storeResult  = gtNewStoreLclVarNode(resultTmp, helperCall);
+                GenTree* storeDefault = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(0));
+
+                // wrap helper call in inline null check, essentially
+                //          (handle == 0) ? default(RuntimeTypeHandle) :
+                //          CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE(handle)
+                GenTree* cond =
+                    gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(handleTemp, TYP_BYREF), gtNewZeroConNode(TYP_BYREF));
+                GenTreeQmark* qmark =
+                    gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
+
+                // Struct QMARKs should be expanded early since physical promotion does not support decomposing struct
+                // stores inside QMARK arms. REFANYTYPE is uncommon, so early expansion is acceptable.
+                optMethodFlags |= OMF_HAS_EARLY_QMARKS;
+                qmark->SetEarlyExpandableQmark();
+
+                impAppendTree(qmark, CHECK_SPILL_ALL, impCurStmtDI);
+                op1 = gtNewLclVarNode(resultTmp, TYP_STRUCT);
 
                 tiRetVal = typeInfo(TYP_STRUCT);
                 impPushOnStack(op1, tiRetVal);
@@ -11926,6 +12001,9 @@ bool Compiler::impWrapTopOfStackInAwait()
             info.compIsStatic ? fgGetCritSectOfStaticMethod() : gtNewLclvNode(info.compThisArg, TYP_REF);
         GenTree* exitMon = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, lockObject, varAddrNode);
         impAppendTree(exitMon, CHECK_SPILL_ALL, impCurStmtDI);
+
+        // The fault handler must not release the monitor again if the await throws.
+        impStoreToTemp(lvaMonAcquired, gtNewZeroConNode(TYP_I_IMPL), CHECK_SPILL_ALL);
     }
 
     if (impFoldAwaitedTopOfStack())
@@ -14098,6 +14176,10 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
 
     /* init the argument struct */
     memset(inlArgInfo, 0, (MAX_INL_ARGS + 1) * sizeof(inlArgInfo[0]));
+    for (unsigned i = 0; i <= MAX_INL_ARGS; i++)
+    {
+        inlArgInfo[i].argTmpNum = BAD_VAR_NUM;
+    }
 
     pInlineInfo->argCnt = pInlineInfo->inlineCandidateInfo->methInfo.args.totalILArgs();
     unsigned ilArgCnt   = 0;
@@ -14767,7 +14849,13 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
         return false;
     }
 
-    if ((additionalTree != nullptr) && GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(additionalTree->gtFlags))
+    // Stores to caller locals are observable by try and filter regions protecting the call site.
+    const bool localStoresAreVisible = impInlineInfo->iciBlock->HasPotentialEHSuccs(impInlineRoot());
+    auto       hasVisibleSideEffects = [localStoresAreVisible](GenTreeFlags flags) {
+        return GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(flags) || (localStoresAreVisible && ((flags & GTF_ASG) != 0));
+    };
+
+    if ((additionalTree != nullptr) && hasVisibleSideEffects(additionalTree->gtFlags))
     {
         return false;
     }
@@ -14776,7 +14864,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     {
         for (CallArg& arg : additionalCallArgs->Args())
         {
-            if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(arg.GetEarlyNode()->gtFlags))
+            if (hasVisibleSideEffects(arg.GetEarlyNode()->gtFlags))
             {
                 return false;
             }
@@ -14786,7 +14874,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     for (Statement* stmt : StatementList(impStmtList))
     {
         GenTree* expr = stmt->GetRootNode();
-        if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(expr->gtFlags))
+        if (hasVisibleSideEffects(expr->gtFlags))
         {
             return false;
         }
@@ -14795,7 +14883,7 @@ bool Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTree*    ad
     for (unsigned level = 0; level < stackState.esStackDepth; level++)
     {
         GenTreeFlags stackTreeFlags = stackState.esStack[level].val->gtFlags;
-        if (GTF_GLOBALLY_VISIBLE_SIDE_EFFECTS(stackTreeFlags))
+        if (hasVisibleSideEffects(stackTreeFlags))
         {
             return false;
         }

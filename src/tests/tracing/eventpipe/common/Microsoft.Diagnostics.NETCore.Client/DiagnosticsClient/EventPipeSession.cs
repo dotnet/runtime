@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -12,13 +13,24 @@ namespace Microsoft.Diagnostics.NETCore.Client
 {
     public class EventPipeSession : IDisposable
     {
-        private long _sessionId;
+        //! This is CoreCLR specific keywords for native ETW events (ending up in event pipe).
+        //! The keywords below seems to correspond to:
+        //!  GCKeyword                          (0x00000001)
+        //!  LoaderKeyword                      (0x00000008)
+        //!  JitKeyword                         (0x00000010)
+        //!  NgenKeyword                        (0x00000020)
+        //!  unused_keyword                     (0x00000100)
+        //!  JittedMethodILToNativeMapKeyword   (0x00020000)
+        //!  ThreadTransferKeyword              (0x80000000)
+        internal const long DefaultRundownKeyword = 0x80020139;
+
+        private ulong _sessionId;
         private IpcEndpoint _endpoint;
-        private bool _disposedValue = false; // To detect redundant calls
-        private bool _stopped = false; // To detect redundant calls
+        private bool _disposedValue; // To detect redundant calls
+        private bool _stopped; // To detect redundant calls
         private readonly IpcResponse _response;
 
-        private EventPipeSession(IpcEndpoint endpoint, IpcResponse response, long sessionId)
+        private EventPipeSession(IpcEndpoint endpoint, IpcResponse response, ulong sessionId)
         {
             _endpoint = endpoint;
             _response = response;
@@ -27,16 +39,16 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         public Stream EventStream => _response.Continuation;
 
-        internal static EventPipeSession Start(IpcEndpoint endpoint, IEnumerable<EventPipeProvider> providers, bool requestRundown, int circularBufferMB)
+        internal static EventPipeSession Start(IpcEndpoint endpoint, EventPipeSessionConfiguration config)
         {
-            IpcMessage requestMessage = CreateStartMessage(providers, requestRundown, circularBufferMB);
+            IpcMessage requestMessage = CreateStartMessage(config);
             IpcResponse? response = IpcClient.SendMessageGetContinuation(endpoint, requestMessage);
             return CreateSessionFromResponse(endpoint, ref response, nameof(Start));
         }
 
-        internal static async Task<EventPipeSession> StartAsync(IpcEndpoint endpoint, IEnumerable<EventPipeProvider> providers, bool requestRundown, int circularBufferMB, CancellationToken cancellationToken)
+        internal static async Task<EventPipeSession> StartAsync(IpcEndpoint endpoint, EventPipeSessionConfiguration config, CancellationToken cancellationToken)
         {
-            IpcMessage requestMessage = CreateStartMessage(providers, requestRundown, circularBufferMB);
+            IpcMessage requestMessage = CreateStartMessage(config);
             IpcResponse? response = await IpcClient.SendMessageGetContinuationAsync(endpoint, requestMessage, cancellationToken).ConfigureAwait(false);
             return CreateSessionFromResponse(endpoint, ref response, nameof(StartAsync));
         }
@@ -80,10 +92,57 @@ namespace Microsoft.Diagnostics.NETCore.Client
             }
         }
 
-        private static IpcMessage CreateStartMessage(IEnumerable<EventPipeProvider> providers, bool requestRundown, int circularBufferMB)
+        // Internal for unit testing of the version/command selection logic.
+        internal static IpcMessage CreateStartMessage(EventPipeSessionConfiguration config)
         {
-            var config = new EventPipeSessionConfiguration(circularBufferMB, EventPipeSerializationFormat.NetTrace, providers, requestRundown);
-            return new IpcMessage(DiagnosticsServerCommandSet.EventPipe, (byte)EventPipeCommandId.CollectTracing2, config.SerializeV2());
+            // To keep backward compatibility with older runtimes we only use newer serialization format when needed
+            EventPipeCommandId command;
+            byte[] payload;
+            if (config.BufferingMode != EventPipeBufferingMode.Drop)
+            {
+                // V6 adds an opt-in session buffering mode
+                command = EventPipeCommandId.CollectTracing6;
+                payload = config.SerializeV6();
+            }
+            else if (HasEventFilter(config))
+            {
+                // V5 adds a per-provider event-id filter (and a session-type prefix)
+                command = EventPipeCommandId.CollectTracing5;
+                payload = config.SerializeV5();
+            }
+            else if (config.RundownKeyword != DefaultRundownKeyword && config.RundownKeyword != 0)
+            {
+                // V4 has added support to specify rundown keyword
+                command = EventPipeCommandId.CollectTracing4;
+                payload = config.SerializeV4();
+            }
+            else if (!config.RequestStackwalk)
+            {
+                // V3 has added support to disable the stacktraces
+                command = EventPipeCommandId.CollectTracing3;
+                payload = config.SerializeV3();
+            }
+            else
+            {
+                command = EventPipeCommandId.CollectTracing2;
+                payload = config.SerializeV2();
+            }
+
+            return new IpcMessage(DiagnosticsServerCommandSet.EventPipe, (byte)command, payload);
+        }
+
+        // A per-provider Event ID filter is available on CollectTracing5 and later.
+        private static bool HasEventFilter(EventPipeSessionConfiguration config)
+        {
+            foreach (EventPipeProvider provider in config.Providers)
+            {
+                if (provider.EventFilter != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static EventPipeSession CreateSessionFromResponse(IpcEndpoint endpoint, ref IpcResponse? response, string operationName)
@@ -92,9 +151,9 @@ namespace Microsoft.Diagnostics.NETCore.Client
             {
                 DiagnosticsClient.ValidateResponseMessage(response.Value.Message, operationName);
 
-                long sessionId = BitConverter.ToInt64(response.Value.Message.Payload, 0);
+                ulong sessionId = BinaryPrimitives.ReadUInt64LittleEndian(new ReadOnlySpan<byte>(response.Value.Message.Payload, 0, 8));
 
-                var session = new EventPipeSession(endpoint, response.Value, sessionId);
+                EventPipeSession session = new(endpoint, response.Value, sessionId);
                 response = null;
                 return session;
             }
@@ -120,6 +179,10 @@ namespace Microsoft.Diagnostics.NETCore.Client
             }
 
             byte[] payload = BitConverter.GetBytes(_sessionId);
+            if (!BitConverter.IsLittleEndian)
+            {
+                Array.Reverse(payload);
+            }
 
             stopMessage = new IpcMessage(DiagnosticsServerCommandSet.EventPipe, (byte)EventPipeCommandId.StopTracing, payload);
 
@@ -128,15 +191,8 @@ namespace Microsoft.Diagnostics.NETCore.Client
 
         protected virtual void Dispose(bool disposing)
         {
-            // If session being disposed hasn't been stopped, attempt to stop it first
-            if (!_stopped)
-            {
-                try
-                {
-                    Stop();
-                }
-                catch {} // swallow any exceptions that may be thrown from Stop.
-            }
+            // Do not call Stop() here. Trying to do so now might block indefinitely if the runtime is unresponsive and we don't want blocking behavior in Dispose().
+            // If the caller wants to ensure that all rundown events are captured they should call Stop() first, then process the EventStream until it is complete, then call Dispose().
 
             if (!_disposedValue)
             {

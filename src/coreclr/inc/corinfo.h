@@ -497,11 +497,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_RUNTIMEHANDLE_CLASS,           // determine a type/field/method handle at run-time
 
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
     CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
     CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
     CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
-    CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
 
     CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
 
@@ -555,6 +553,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
+    CORINFO_HELP_JIT_RESUME_AFTER_CATCH, // Re-permit GC mode transitions before resuming managed code after a catch
 
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
@@ -918,6 +917,7 @@ enum class CorInfoReloc
     WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                            // e.g. in R2R scenarios as an offset from __image_base
     WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
+    WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
 };
 
 enum CorInfoGCType

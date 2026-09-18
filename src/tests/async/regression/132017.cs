@@ -15,7 +15,7 @@ public class Runtime_132017
     // that the test can wait for it deterministically.
     private static Task s_pending;
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         s_log.Clear();
