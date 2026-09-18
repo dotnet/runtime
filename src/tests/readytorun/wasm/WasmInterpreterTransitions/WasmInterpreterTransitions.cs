@@ -4,6 +4,7 @@
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
@@ -90,6 +91,31 @@ public class WasmInterpreterTransitions
     public static void TestEntryPoint()
     {
         WasmInterpreterTransitions self = new();
+
+        // Reverse-pinvoke (UnmanagedCallersOnly) entry that re-enters managed code. crossgen2 must
+        // thread the UCO method's $sp (loaded from the __stack_pointer global in its prolog) into the
+        // R2R->interpreter thunk; passing 0 makes the thunk store below a null base and trap ("memory
+        // access out of bounds"). The SkiaSharp SKManagedStream shape — GCHandle -> generic GetUserData
+        // -> virtual interpreted override — is what reproduces it; a straight-line call does not.
+        {
+            ConcreteManagedStream streamTarget = new();
+            GCHandle gch = GCHandle.Alloc(streamTarget);
+            try
+            {
+                IntPtr ctx = GCHandle.ToIntPtr(gch);
+                unsafe
+                {
+                    delegate* unmanaged<IntPtr, IntPtr, int> fp = &StreamLengthProxy;
+                    Assert.Equal(C, fp(IntPtr.Zero, ctx));
+                }
+            }
+            finally
+            {
+                gch.Free();
+            }
+        }
+
+        unsafe { Assert.Equal(A + C, s_ucoToInterpreted(A)); }
 
         // R2R -> interpreted, struct returns. The return buffer follows 'this' for an instance
         // method and the stack pointer for a static one, which is where the two forms differ.
@@ -185,6 +211,43 @@ public class WasmInterpreterTransitions
     }
 
     private static int s_sideEffect;
+
+    // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
+    private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
+
+    [UnmanagedCallersOnly]
+    private static int UnmanagedCallerCallsInterpreted(int a) => InterpretedFromUnmanagedCaller(a);
+
+    [BypassReadyToRun]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int InterpretedFromUnmanagedCaller(int a) => a + C;
+
+    // SkiaSharp SKManagedStream callback shape: GCHandle resolve (generic + castclass) then a virtual
+    // call whose override is interpreted.
+    private abstract class ManagedStreamLike
+    {
+        public abstract int OnGetLengthCore();
+    }
+
+    private sealed class ConcreteManagedStream : ManagedStreamLike
+    {
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public override int OnGetLengthCore() => C;
+    }
+
+    private static T GetUserData<T>(IntPtr ptr, out GCHandle handle) where T : class
+    {
+        handle = GCHandle.FromIntPtr(ptr);
+        return (T)handle.Target!;
+    }
+
+    [UnmanagedCallersOnly]
+    private static int StreamLengthProxy(IntPtr s, IntPtr context)
+    {
+        ManagedStreamLike stream = GetUserData<ManagedStreamLike>(context, out _);
+        return stream.OnGetLengthCore();
+    }
 
     [BypassReadyToRun]
     [MethodImpl(MethodImplOptions.NoInlining)]

@@ -408,10 +408,9 @@ static const RelopImplicationRule s_implicationRules[] =
 // First looks for exact or similar relations.
 //
 // If that fails, then looks for cases where the user or optOptimizeBools
-// has combined two distinct predicates with a boolean AND, OR, or has wrapped
-// a predicate in NOT.
+// has combined two distinct predicates with a boolean AND or OR.
 //
-// This will be expressed as  {NE/EQ}({AND/OR/NOT}(...), 0).
+// This will be expressed as  {NE/EQ}({AND/OR}(...), 0).
 // If the operator is EQ then a true {AND/OR} result implies
 // a false taken branch, so we need to invert the sense of our
 // inferences.
@@ -515,7 +514,7 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
     // See if dominating compare is a compound comparison that might
     // tell us the value of the tree compare.
     //
-    // Look for {EQ,NE}({AND,OR,NOT}, 0)
+    // Look for {EQ,NE}({AND,OR}, 0)
     //
     genTreeOps const oper = genTreeOps(domFunc);
     if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
@@ -537,14 +536,14 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 
     genTreeOps const predOper = genTreeOps(predFuncApp.GetFunc());
 
-    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR, GT_NOT))
+    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR))
     {
         return;
     }
 
-    // Dominating compare is {EQ,NE}({AND,OR,NOT}, 0).
+    // Dominating compare is {EQ,NE}({AND,OR}, 0).
     //
-    // See if one of {AND,OR,NOT} operands is related.
+    // See if one of {AND,OR} operands is related.
     //
     for (unsigned int i = 0; (i < predFuncApp.GetArity()) && !rii->canInfer; i++)
     {
@@ -580,22 +579,14 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
                     rii->canInferFromTrue = (oper == GT_NE);
                     rii->reverseSense ^= (oper == GT_EQ);
                 }
-                else if (predOper == GT_OR)
+                else
                 {
+                    assert(predOper == GT_OR);
                     // NE(OR, 0) false ==> OR false ==> OR operands false
                     rii->canInferFromFalse = (oper == GT_NE);
                     // EQ(OR, 0) true ==> OR false ==> OR operands false
                     rii->canInferFromTrue = (oper == GT_EQ);
                     rii->reverseSense ^= (oper == GT_EQ);
-                }
-                else
-                {
-                    assert(predOper == GT_NOT);
-                    // NE(NOT(x), 0) ==> NOT(X)
-                    // EQ(NOT(x), 0) ==> X
-                    rii->canInferFromTrue  = true;
-                    rii->canInferFromFalse = true;
-                    rii->reverseSense ^= (oper == GT_NE);
                 }
 
                 JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
@@ -1054,6 +1045,19 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
 
             if (newRelopFunc != VNF_NONE)
             {
+                // Rewriting just the relop is only valid if the VN relop is over the
+                // actual tree operands. Liberal VN may look through a materialized
+                // predicate and expose a relop over different operands.
+                //
+                const ValueNum treeOp1VN = vnStore->VNNormalValue(tree->AsOp()->gtOp1->GetVN(VNK_Liberal));
+                const ValueNum treeOp2VN = vnStore->VNNormalValue(tree->AsOp()->gtOp2->GetVN(VNK_Liberal));
+
+                if ((pathApp.GetArg(0) != treeOp1VN) || (pathApp.GetArg(1) != treeOp2VN))
+                {
+                    JITDUMP("; relop operands do not match tree operands, cannot simplify\n");
+                    break;
+                }
+
                 newRelop = vnStore->VNRelopToGenTreeOp(newRelopFunc, &isUnsigned);
 
                 if (newRelop != GT_NONE)

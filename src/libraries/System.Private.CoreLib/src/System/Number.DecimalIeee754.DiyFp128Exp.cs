@@ -122,17 +122,6 @@ internal static partial class Number
     // 1.0 as an unpacked value (Intel's UX_ONE).
     private static DiyFp128 DiyFp128One => new DiyFp128(0, 1, 0x8000000000000000, 0);
 
-    // ln2 as a full unpacked value, built from the exp table's high and low pieces.
-    private static DiyFp128 DiyFp128Ln2
-    {
-        get
-        {
-            DiyFp128 single = default;
-            DiyFp128AddSub(new DiyFp128(0, 0, ExpLn2High, 0), ExpLn2Low, UxSub, new Span<DiyFp128>(ref single));
-            return single;
-        }
-    }
-
     /// <summary>
     /// Reduces <paramref name="orig"/> as <c>lnb*x = scale*ln2 + reduced</c> with <c>|reduced| &lt;=
     /// ln2/2</c> (Intel's <c>UX_EXP_REDUCE</c>), returning <c>scale</c>. For <c>|x| &gt; 2^17</c> it
@@ -618,7 +607,7 @@ internal static partial class Number
     private static DiyFp128 DiyFp128Exp2(scoped in DiyFp128 argument)
     {
         DiyFp128 argumentLocal = argument;
-        DiyFp128 ln2 = DiyFp128Ln2;
+        DiyFp128 ln2 = LogLn2;
         DiyFp128Multiply(ref argumentLocal, ref ln2, out DiyFp128 scaled);
         return DiyFp128Exp(scaled);
     }
@@ -627,7 +616,7 @@ internal static partial class Number
     private static DiyFp128 DiyFp128Exp2M1(scoped in DiyFp128 argument)
     {
         DiyFp128 argumentLocal = argument;
-        DiyFp128 ln2 = DiyFp128Ln2;
+        DiyFp128 ln2 = LogLn2;
         DiyFp128Multiply(ref argumentLocal, ref ln2, out DiyFp128 scaled);
         return DiyFp128ExpM1(scaled);
     }
