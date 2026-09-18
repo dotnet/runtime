@@ -5523,6 +5523,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Buffer_Memmove:
             {
+                // Convert Buffer.Memmove<T>(ref T dst, ref T src, count) to
+                // SpanHelpers.Memmove(ref byte dst, ref byte src, count * sizeof(T)).
                 if (sig->sigInst.methInstCount != 1)
                 {
                     break;
@@ -5541,6 +5543,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     break;
                 }
 
+                // TODO: Rename CORINFO_HELP_MEMCPY to CORINFO_HELP_MEMMOVE to reflect its overlap-safe semantics.
                 CORINFO_METHOD_HANDLE memmoveHnd = NO_METHOD_HANDLE;
                 info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMCPY, nullptr, &memmoveHnd);
                 if (memmoveHnd == NO_METHOD_HANDLE)

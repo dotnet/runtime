@@ -10820,7 +10820,11 @@ public:
         // and it works better for small sizes.
         if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
         {
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * (type == UnrollKind::ProfiledMemmove ? 4 : 2);
+#else
             threshold = maxRegSize * 2;
+#endif
         }
 
         return threshold;
