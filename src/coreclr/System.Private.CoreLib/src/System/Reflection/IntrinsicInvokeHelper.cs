@@ -127,14 +127,8 @@ namespace System.Reflection
 
                 if (method is System.Reflection.Emit.DynamicMethod ||
                     method.ContainsGenericParameters ||
-                    (method.CallingConvention & CallingConventions.VarArgs) != 0 ||
-                    (method.Attributes & MethodAttributes.PinvokeImpl) != 0 ||
-                    method.IsDefined(typeof(UnmanagedCallersOnlyAttribute), inherit: false))
+                    (method.CallingConvention & CallingConventions.VarArgs) != 0)
                 {
-                    // P/Invoke and UnmanagedCallersOnly methods can resolve to an unmanaged entrypoint
-                    // (see GetFunctionPointer's use of CORINFO_ACCESS_UNMANAGED_CALLER_MAYBE), which is
-                    // not compatible with the shared managed-calli shapes below. Fall back to the
-                    // emitted/validation path, which correctly rejects unsupported combinations.
                     return false;
                 }
 
@@ -157,7 +151,6 @@ namespace System.Reflection
                         !IsReferenceType(declaringType) ||
                         declaringType.IsAbstract ||
                         declaringType.IsArray ||
-                        declaringType.ContainsGenericParameters ||
                         declaringType == typeof(string))
                     {
                         return false;
