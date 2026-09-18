@@ -11,12 +11,11 @@ namespace System.Threading
     {
         /// <summary>
         /// Implements a single-issuer io_uring/ThreadPool integration: a single ring is created with
-        /// <c>IORING_SETUP_SINGLE_ISSUER</c> together with <c>IORING_SETUP_DEFER_TASKRUN</c>, so the
-        /// kernel can skip its internal ring-wide lock - at the cost of requiring every
-        /// <c>io_uring_enter</c> call (submission *and* completion-wait calls alike) to come from the
-        /// same fixed OS thread for the ring's whole lifetime. This was originally attempted with
-        /// completion-reaping still rotating across arbitrary Thread Pool worker threads (as in the
-        /// shared-ring design) and without <c>DEFER_TASKRUN</c>, but that does not work: the kernel's
+        /// <c>IORING_SETUP_SINGLE_ISSUER</c>, so the kernel can skip its internal ring-wide lock - at
+        /// the cost of requiring every <c>io_uring_enter</c> call (submission *and* completion-wait
+        /// calls alike) to come from the same fixed OS thread for the ring's whole lifetime. This was
+        /// originally attempted with completion-reaping still rotating across arbitrary Thread Pool
+        /// worker threads (as in the shared-ring design), but that does not work: the kernel's
         /// single-issuer check applies to *any* <c>io_uring_enter</c> call, including a plain
         /// <c>IORING_ENTER_GETEVENTS</c> wait with nothing to submit - so whichever thread happened to
         /// call in first (a submission, or an unrelated worker thread reaping completions) would
@@ -28,12 +27,18 @@ namespace System.Threading
         /// Consequently, a single dedicated background thread (not a Thread Pool worker, and not counted
         /// in Thread Pool accounting/hill-climbing) owns *both* submission and completion-reaping for the
         /// ring's entire lifetime - this is the only way to actually use <c>IORING_SETUP_SINGLE_ISSUER</c>
-        /// correctly, and since that constraint already forces both roles onto one thread, requesting
-        /// <c>DEFER_TASKRUN</c> as well is free extra performance with no further downside: it just means
-        /// this same thread must periodically call <c>io_uring_enter(..., IORING_ENTER_GETEVENTS)</c> -
-        /// which it already needs to do to reap completions - to pump the kernel's deferred task-work (see
-        /// <c>SystemNative_IoRingWaitForCompletions</c>'s native-side doc comment for why this call cannot
-        /// be skipped even when nothing is known to be ready). Any other thread that wants to submit a
+        /// correctly. An earlier version of this code additionally requested
+        /// <c>IORING_SETUP_DEFER_TASKRUN</c>, reasoning that since both roles were already forced onto
+        /// one thread, deferring task-work to that same thread's <c>io_uring_enter</c> calls was free
+        /// extra performance. Profiling later showed the opposite: a large share of the issuer thread's
+        /// own <c>io_uring_enter(..., IORING_ENTER_GETEVENTS)</c> time was spent inside the kernel's
+        /// <c>io_run_local_work()</c>, i.e. synchronously pumping DEFER_TASKRUN's deferred task-work queue
+        /// on that call - work that, without DEFER_TASKRUN, the kernel can instead perform/post as soon as
+        /// it is ready (e.g. from softirq/completion context), rather than only when this one thread next
+        /// happens to call in. Whether <c>DEFER_TASKRUN</c> is requested alongside
+        /// <c>IORING_SETUP_SINGLE_ISSUER</c> is therefore a caller-configurable trade-off rather than a
+        /// hardcoded choice - see <see cref="GetDeferTaskRunConfig"/> and its
+        /// <c>DOTNET_IORING_SETUP_DEFER_TASKRUN</c> environment variable. Any other thread that wants to submit a
         /// request enqueues it into a lock-free MPSC queue and wakes this thread by writing to a shared
         /// eventfd registered on the ring (<c>IORING_REGISTER_EVENTFD</c>, see
         /// <see cref="s_wakeEventFd"/>'s doc comment); the issuer thread drains the queue in batches,
@@ -78,13 +83,12 @@ namespace System.Threading
             // Defensive safety-net timeout (milliseconds) for the issuer thread's wait when operations
             // are in flight but nothing is immediately ready. In the common/expected case this timeout
             // never actually elapses: the registered eventfd (see s_wakeEventFd) is expected to wake the
-            // issuer thread directly whenever deferred completion task-work becomes ready to run - this
-            // is the documented intent of pairing IORING_SETUP_DEFER_TASKRUN with a registered eventfd
-            // (see SystemNative_IoRingRegisterEventFd's doc comment). This bound exists only to
-            // self-heal (within at most this many milliseconds) if that assumption ever turns out to be
-            // wrong for some request type/kernel version - trading a small amount of worst-case
-            // completion-latency for defense in depth, without reintroducing the tight busy-poll loop
-            // this design replaced.
+            // issuer thread directly whenever a completion becomes ready - this is the documented intent
+            // of registering an eventfd on the ring (see SystemNative_IoRingRegisterEventFd's doc
+            // comment). This bound exists only to self-heal (within at most this many milliseconds) if
+            // that assumption ever turns out to be wrong for some request type/kernel version - trading a
+            // small amount of worst-case completion-latency for defense in depth, without reintroducing
+            // the tight busy-poll loop this design replaced.
             private const int InFlightWaitTimeoutMs = 1000;
 
             // Opt-out switch: io_uring integration is used by default on Linux when the kernel supports
@@ -125,9 +129,7 @@ namespace System.Threading
 
             // An eventfd registered with the ring via IORING_REGISTER_EVENTFD (see
             // Interop.Sys.IoRingRegisterEventFd), or -1 if unavailable. The kernel bumps its counter
-            // (making it readable) whenever a CQE is posted - including, per the documented intent of
-            // pairing IORING_SETUP_DEFER_TASKRUN with a registered eventfd, when *deferred* completion
-            // task-work becomes ready to run, even though it has not been posted to the CQ yet. TrySubmit
+            // (making it readable) whenever a CQE is posted. TrySubmit
             // also writes to this same fd directly (see Interop.Sys.EventFdWrite) to wake the issuer
             // thread when it enqueues a new request. This replaces a previous
             // ManualResetEventSlim-based design: profiling showed that design's CLR-level
@@ -161,6 +163,14 @@ namespace System.Threading
                     s_isEnabled = false;
                     return;
                 }
+
+                // Computed here, on this thread (the one actually running the static constructor), and
+                // captured below - not called from the issuer thread. GetDeferTaskRunConfig is itself a
+                // static method of this same type, so calling it from any thread other than the one
+                // currently running this static constructor would block until the constructor returns
+                // (standard CLR type-initialization semantics) - which would deadlock against this
+                // thread's own readyToRun.Wait() below, since only the issuer thread can Set() it.
+                bool deferTaskRun = GetDeferTaskRunConfig();
 
                 // The ring itself cannot be created here (on this, the static constructor's own thread):
                 // IORING_SETUP_SINGLE_ISSUER binds a ring's single fixed owning thread to whichever
@@ -197,7 +207,14 @@ namespace System.Threading
                     // thread (which just called io_uring_setup(2) here, and will be the only thread that
                     // ever calls into this ring from now on) ever touches it, so the kernel can skip its
                     // internal ring-wide lock.
-                    int result = Interop.Sys.IoRingCreate(QueueDepth, QueueDepth, singleIssuer: 1, out IntPtr ringHandle);
+                    //
+                    // deferTaskRun is a separate, independently-configurable knob (see
+                    // GetDeferTaskRunConfig) - unlike singleIssuer, there is no single setting that wins
+                    // on every machine: profiling showed it helping on low core-count machines but
+                    // hurting as core count/offered load grows (see GetDeferTaskRunConfig's doc comment).
+                    // Computed on the static constructor's own thread above (deferTaskRun local) and
+                    // captured here rather than called from this thread - see that call site's comment.
+                    int result = Interop.Sys.IoRingCreate(QueueDepth, QueueDepth, singleIssuer: 1, deferTaskRun ? 1 : 0, out IntPtr ringHandle);
                     created = result == 0;
                     createdRingHandle = ringHandle;
 
@@ -260,6 +277,26 @@ namespace System.Threading
                 }
 
                 return Interop.Sys.IoRingIsAvailable() != 0;
+            }
+
+            /// <summary>
+            /// Whether to additionally request IORING_SETUP_DEFER_TASKRUN when creating the ring (see
+            /// <see cref="Interop.Sys.IoRingCreate"/>'s deferTaskRun parameter). Unlike
+            /// IORING_SETUP_SINGLE_ISSUER, this is not a clear-cut win: profiling showed the issuer
+            /// thread's own completion-wait call spending significant time inside the kernel's
+            /// io_run_local_work() under DEFER_TASKRUN - overhead that grows with core count/offered
+            /// load - whereas at low core counts DEFER_TASKRUN's lower per-wakeup cost can still be a net
+            /// win. Defaults to enabled when <see cref="Environment.ProcessorCount"/> is 6 or fewer, and
+            /// disabled otherwise; set <c>DOTNET_IORING_SETUP_DEFER_TASKRUN</c> to <c>0</c>/<c>1</c> to
+            /// override this default explicitly in either direction, without needing to rebuild.
+            /// </summary>
+            private static bool GetDeferTaskRunConfig()
+            {
+                bool defaultValue = Environment.ProcessorCount <= 6;
+                return AppContextConfigHelper.GetBooleanConfig(
+                    "System.Threading.ThreadPool.IoUringSetupDeferTaskRun",
+                    "DOTNET_IORING_SETUP_DEFER_TASKRUN",
+                    defaultValue: defaultValue);
             }
 
             /// <summary>
@@ -384,9 +421,9 @@ namespace System.Threading
 
                     if (!s_pendingSubmissions.IsEmpty)
                     {
-                        // More still queued - this ring was created with IORING_SETUP_SINGLE_ISSUER
-                        // (and IORING_SETUP_DEFER_TASKRUN), so this call - like every other call
-                        // touching this ring - is only ever made from this one dedicated thread.
+                        // More still queued - this ring was created with IORING_SETUP_SINGLE_ISSUER,
+                        // so this call - like every other call touching this ring - is only ever made
+                        // from this one dedicated thread.
                         Interop.Sys.IoRingKick(s_ringHandle);
                     }
                 }

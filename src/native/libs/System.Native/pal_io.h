@@ -965,26 +965,30 @@ PALEXPORT int32_t SystemNative_IoRingIsAvailable(void);
 /**
  * Creates a new io_uring instance with the requested submission/completion queue depths.
  *
- * If singleIssuer is non-zero, requests IORING_SETUP_SINGLE_ISSUER together with
- * IORING_SETUP_DEFER_TASKRUN: from that point on, the kernel requires every
- * SystemNative_IoRingSubmit/SystemNative_IoRingKick/SystemNative_IoRingWaitForCompletions call for
- * this ring to come from a single, fixed OS thread for the ring's entire lifetime - specifically,
- * whichever thread called this function to create it (not merely whichever thread happens to make
- * the first io_uring_enter(2) call afterwards - confirmed empirically, not documented in the man
- * page). Any other thread's call fails with -EEXIST. This includes plain completion-wait calls
- * with nothing to submit, so submission and completion-reaping cannot be split across two
- * different threads when singleIssuer is requested - both roles must be owned by the one thread
- * that created the ring. DEFER_TASKRUN additionally means SystemNative_IoRingWaitForCompletions
- * must be called periodically by that same thread even when nothing is known to be ready, or
- * completions will never be posted to the CQ ring at all (see that function's doc comment).
- * If singleIssuer is zero, no such flags are requested: the created ring can be shared by many
+ * If singleIssuer is non-zero, requests IORING_SETUP_SINGLE_ISSUER: from that point on, the
+ * kernel requires every SystemNative_IoRingSubmit/SystemNative_IoRingKick/
+ * SystemNative_IoRingWaitForCompletions call for this ring to come from a single, fixed OS thread
+ * for the ring's entire lifetime - specifically, whichever thread called this function to create
+ * it (not merely whichever thread happens to make the first io_uring_enter(2) call afterwards -
+ * confirmed empirically, not documented in the man page). Any other thread's call fails with
+ * -EEXIST. This includes plain completion-wait calls with nothing to submit, so submission and
+ * completion-reaping cannot be split across two different threads when singleIssuer is requested -
+ * both roles must be owned by the one thread that created the ring.
+ * If singleIssuer is zero, no such flag is requested: the created ring can be shared by many
  * different threads, both for submission and (over time, as some rotating "driver" role) for
  * reaping completions.
+ *
+ * If deferTaskRun is also non-zero (and singleIssuer is non-zero - DEFER_TASKRUN is only
+ * meaningful/allowed together with SINGLE_ISSUER; it is silently ignored otherwise), additionally
+ * requests IORING_SETUP_DEFER_TASKRUN. This changes SystemNative_IoRingWaitForCompletions' own
+ * syscall behavior (see that function's doc comment for why) but is otherwise purely a
+ * performance trade-off with no other observable difference to the caller: whether it helps or
+ * hurts depends on core count/offered load, so it is caller-configurable rather than hardcoded.
  *
  * Returns 0 on success (with *ringHandle set to an opaque, non-zero handle);
  * otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completionQueueDepth, int32_t singleIssuer, intptr_t* ringHandle);
+PALEXPORT int32_t SystemNative_IoRingCreate(int32_t submissionQueueDepth, int32_t completionQueueDepth, int32_t singleIssuer, int32_t deferTaskRun, intptr_t* ringHandle);
 
 /**
  * Fills one SQE per request and publishes them to the ring's kernel-visible submission queue
@@ -1054,14 +1058,16 @@ PALEXPORT int32_t SystemNative_EventFdWait(int32_t eventFd, int32_t timeoutMilli
  * Reaps completions from the given ring's completion queue, waiting in-kernel for at least
  * minComplete of them to be available (pass 0 to only drain what is already available - this
  * still issues a plain, non-blocking IORING_ENTER_GETEVENTS call, rather than skipping the
- * io_uring_enter(2) call entirely: for a ring created with IORING_SETUP_DEFER_TASKRUN, this call
- * is what actually pumps the kernel's deferred completion task-work onto the CQ ring - without it,
- * completions never get posted at all, no matter how long the caller waits afterwards). As a side
- * effect, this same io_uring_enter(2) call also flushes any SQEs already published to the SQ tail
- * (e.g. via SystemNative_IoRingSubmit) but not yet asked the kernel to process - the caller does
- * not need to separately call SystemNative_IoRingKick before this to have such entries picked up;
- * calling this instead of Kick+WaitForCompletions separately saves a syscall. Not thread-safe with
- * itself: the caller must ensure only one thread ever calls this for a given ring at a time.
+ * io_uring_enter(2) call entirely, since that call is also what processes/posts completions for
+ * requests already submitted). As a side effect, this call also flushes any SQEs already
+ * published to the SQ tail (e.g. via SystemNative_IoRingSubmit) but not yet asked the kernel to
+ * process - the caller does not need to separately call SystemNative_IoRingKick before this to
+ * have such entries picked up. If the ring was created without IORING_SETUP_DEFER_TASKRUN (see
+ * SystemNative_IoRingCreate's deferTaskRun parameter), this flush-and-wait is done as a single
+ * combined io_uring_enter(2) call, saving a syscall; if DEFER_TASKRUN was requested, it is instead
+ * done as two separate calls (a submit-only flush, then a GETEVENTS-only wait), since combining
+ * them reliably breaks completion delivery under DEFER_TASKRUN. Not thread-safe with itself: the
+ * caller must ensure only one thread ever calls this for a given ring at a time.
  *
  * Returns 0 on success (with *completedCount set to the number of completions written into
  * the completions buffer, up to maxCompletions); otherwise, returns -1 and sets errno.

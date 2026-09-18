@@ -52,14 +52,19 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingIsAvailable")]
         internal static partial int IoRingIsAvailable();
 
-        // Pass singleIssuer: 1 to request IORING_SETUP_SINGLE_ISSUER + IORING_SETUP_DEFER_TASKRUN: every
-        // subsequent IoRingSubmit/IoRingKick/IoRingWaitForCompletions call for the returned ring must then
-        // come from the exact same OS thread that called this method (not merely the first thread to call
-        // one of those - confirmed empirically) for the ring's whole lifetime, including
+        // Pass singleIssuer: 1 to request IORING_SETUP_SINGLE_ISSUER: every subsequent
+        // IoRingSubmit/IoRingKick/IoRingWaitForCompletions call for the returned ring must then come from
+        // the exact same OS thread that called this method (not merely the first thread to call one of
+        // those - confirmed empirically) for the ring's whole lifetime, including
         // IoRingWaitForCompletions calls with nothing to submit; any other thread's call fails with
         // -EEXIST. Pass 0 for a plain ring that can be freely shared/rotated across threads instead.
+        //
+        // Pass deferTaskRun: 1 (only meaningful/allowed together with singleIssuer: 1 - silently ignored
+        // otherwise) to additionally request IORING_SETUP_DEFER_TASKRUN. This is a caller-configurable
+        // performance trade-off (see PortableThreadPool.IoUring.Unix.cs's DOTNET_IORING_SETUP_DEFER_TASKRUN
+        // handling), not something with a single universally-best setting.
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingCreate", SetLastError = true)]
-        internal static partial int IoRingCreate(int submissionQueueDepth, int completionQueueDepth, int singleIssuer, out IntPtr ringHandle);
+        internal static partial int IoRingCreate(int submissionQueueDepth, int completionQueueDepth, int singleIssuer, int deferTaskRun, out IntPtr ringHandle);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingSubmit", SetLastError = true)]
         internal static unsafe partial int IoRingSubmit(IntPtr ringHandle, IoRingRequest* requests, int requestCount, out int submittedCount);
