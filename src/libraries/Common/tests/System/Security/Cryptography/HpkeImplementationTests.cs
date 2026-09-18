@@ -111,8 +111,6 @@ namespace System.Security.Cryptography.Tests
 
             using (Hpke key = Hpke.ImportDecapsulationKey(Suite(vector), vector.DecapsulationKey.HexToByteArray()))
             {
-                Assert.Equal(plaintext, key.Open(enc, ciphertext, associatedData: aad, info: info));
-                Assert.Equal(plaintext, key.Open(enc.AsSpan(), ciphertext, associatedData: aad, info: info));
                 byte[] destination = GuardedBuffer(plaintext.Length);
                 key.Open(enc, ciphertext, destination.AsSpan(1, plaintext.Length), aad, info);
                 AssertGuardedOutput(plaintext, destination);
@@ -127,11 +125,9 @@ namespace System.Security.Cryptography.Tests
             byte[] enc = vector.EncapsulatedSecret.HexToByteArray();
 
             using (Hpke key = Hpke.ImportDecapsulationKey(Suite(vector), vector.DecapsulationKey.HexToByteArray()))
-            using (HpkeRecipient fromArray = CreateRecipient(key, vector, enc, useSpan: false))
-            using (HpkeRecipient fromSpan = CreateRecipient(key, vector, enc, useSpan: true))
-            using (HpkeRecipient toDestination = CreateRecipient(key, vector, enc, useSpan: true))
+            using (HpkeRecipient recipient = CreateRecipient(key, vector, enc))
             {
-                AssertKnownExports(fromArray, vector.Exports);
+                AssertKnownExports(recipient, vector.Exports);
 
                 foreach (HpkeMessageVector message in vector.Messages)
                 {
@@ -139,220 +135,51 @@ namespace System.Security.Cryptography.Tests
                     byte[] ciphertext = message.Ciphertext.HexToByteArray();
                     byte[] aad = message.AssociatedData.HexToByteArray();
 
-                    Assert.Equal(plaintext, fromArray.Open(ciphertext, aad));
-                    Assert.Equal(plaintext, fromSpan.Open(ciphertext.AsSpan(), associatedData: aad));
                     byte[] destination = GuardedBuffer(plaintext.Length);
-                    toDestination.Open(ciphertext, destination.AsSpan(1, plaintext.Length), aad);
+                    recipient.Open(ciphertext, destination.AsSpan(1, plaintext.Length), aad);
                     AssertGuardedOutput(plaintext, destination);
                 }
 
-                AssertKnownExports(fromArray, vector.Exports);
-                AssertKnownExports(fromSpan, vector.Exports);
-                AssertKnownExports(toDestination, vector.Exports);
+                AssertKnownExports(recipient, vector.Exports);
             }
         }
 
         [Theory]
         [MemberData(nameof(SupportedSuites))]
-        public static void SingleShot_Roundtrip_Array(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        public static void SingleShot_Roundtrip(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {
             HpkeSuite suite = new(kem, kdf, aead);
+            byte[] info = new byte[1024];
+            info.AsSpan().Fill(0x3C);
 
             using (Hpke privateKey = Hpke.GenerateKey(suite))
             using (Hpke publicKey = Hpke.ImportEncapsulationKey(suite, privateKey.ExportEncapsulationKey()))
             {
                 foreach (int length in new[] { 0, 1, 257 })
                 {
-                    byte[] plaintext = new byte[length];
-                    plaintext.AsSpan().Fill(0xA7);
-                    byte[] aad = length == 0 ? [] : "associated data"u8.ToArray();
-                    byte[] info = new byte[length == 0 ? 0 : 1024];
-                    info.AsSpan().Fill(0x3C);
-
-                    publicKey.Seal(plaintext, out byte[] enc, out byte[] ciphertext,
-                        length == 0 ? null : aad, length == 0 ? null : info);
-                    Assert.Equal(plaintext, privateKey.Open(enc, ciphertext,
-                        associatedData: length == 0 ? null : aad, info: length == 0 ? null : info));
-                    Assert.Equal(plaintext, privateKey.Open(enc.AsSpan(), ciphertext,
-                        associatedData: aad, info: info));
-                    byte[] destination = GuardedBuffer(length);
-                    privateKey.Open(enc, ciphertext, destination.AsSpan(1, length), aad, info);
-                    AssertGuardedOutput(plaintext, destination);
-
-                    using (HpkeRecipient recipient = privateKey.CreateRecipient(enc, info))
-                    {
-                        Assert.Equal(plaintext, recipient.Open(ciphertext, aad));
-                    }
+                    AssertSingleShotRoundtrip(
+                        privateKey, publicKey, length, "associated data"u8, info);
                 }
             }
         }
 
         [Theory]
         [MemberData(nameof(SupportedSuites))]
-        public static void SingleShot_Roundtrip_Span(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
+        public static void SingleShot_Roundtrip_EmptyAadAndInfo(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
         {
             HpkeSuite suite = new(kem, kdf, aead);
 
             using (Hpke privateKey = Hpke.GenerateKey(suite))
             using (Hpke publicKey = Hpke.ImportEncapsulationKey(suite, privateKey.ExportEncapsulationKey()))
             {
-                foreach (int length in new[] { 0, 1, 257 })
-                {
-                    byte[] plaintext = new byte[length];
-                    plaintext.AsSpan().Fill(0xA7);
-                    byte[] aad = length == 0 ? [] : "associated data"u8.ToArray();
-                    byte[] info = new byte[length == 0 ? 0 : 1024];
-                    info.AsSpan().Fill(0x3C);
-
-                    publicKey.Seal(plaintext.AsSpan(), out byte[] enc, out byte[] ciphertext, aad, info);
-                    Assert.Equal(plaintext, privateKey.Open(enc, ciphertext,
-                        associatedData: length == 0 ? null : aad, info: length == 0 ? null : info));
-                    Assert.Equal(plaintext, privateKey.Open(enc.AsSpan(), ciphertext,
-                        associatedData: aad, info: info));
-                    byte[] destination = GuardedBuffer(length);
-                    privateKey.Open(enc, ciphertext, destination.AsSpan(1, length), aad, info);
-                    AssertGuardedOutput(plaintext, destination);
-
-                    using (HpkeRecipient recipient = privateKey.CreateRecipient(enc, info))
-                    {
-                        Assert.Equal(plaintext, recipient.Open(ciphertext, aad));
-                    }
-                }
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(SupportedSuites))]
-        public static void SingleShot_Roundtrip_Destination(HpkeKem kem, HpkeKdf kdf, HpkeAead aead)
-        {
-            HpkeSuite suite = new(kem, kdf, aead);
-
-            using (Hpke privateKey = Hpke.GenerateKey(suite))
-            using (Hpke publicKey = Hpke.ImportEncapsulationKey(suite, privateKey.ExportEncapsulationKey()))
-            {
-                foreach (int length in new[] { 0, 1, 257 })
-                {
-                    byte[] plaintext = new byte[length];
-                    plaintext.AsSpan().Fill(0xA7);
-                    byte[] aad = length == 0 ? [] : "associated data"u8.ToArray();
-                    byte[] info = new byte[length == 0 ? 0 : 1024];
-                    info.AsSpan().Fill(0x3C);
-                    byte[] encBuffer = GuardedBuffer(suite.EncapsulatedSecretSizeInBytes);
-                    byte[] ciphertextBuffer = GuardedBuffer(suite.GetCiphertextLength(length));
-
-                    publicKey.Seal(plaintext, encBuffer.AsSpan(1, encBuffer.Length - 2),
-                        ciphertextBuffer.AsSpan(1, ciphertextBuffer.Length - 2), aad, info);
-                    AssertGuards(encBuffer);
-                    AssertGuards(ciphertextBuffer);
-                    byte[] enc = encBuffer.AsSpan(1, encBuffer.Length - 2).ToArray();
-                    byte[] ciphertext = ciphertextBuffer.AsSpan(1, ciphertextBuffer.Length - 2).ToArray();
-                    Assert.Equal(plaintext, privateKey.Open(enc, ciphertext,
-                        associatedData: length == 0 ? null : aad, info: length == 0 ? null : info));
-                    Assert.Equal(plaintext, privateKey.Open(enc.AsSpan(), ciphertext,
-                        associatedData: aad, info: info));
-                    byte[] destination = GuardedBuffer(length);
-                    privateKey.Open(enc, ciphertext, destination.AsSpan(1, length), aad, info);
-                    AssertGuardedOutput(plaintext, destination);
-
-                    using (HpkeRecipient recipient = privateKey.CreateRecipient(enc, info))
-                    {
-                        Assert.Equal(plaintext, recipient.Open(ciphertext, aad));
-                    }
-                }
+                AssertSingleShotRoundtrip(
+                    privateKey, publicKey, plaintextLength: 32, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty);
             }
         }
 
         [Theory]
         [MemberData(nameof(SupportedVectorNames))]
-        public static void Contexts_Roundtrip_Array(string name)
-        {
-            HpkeTestVector vector = HpkeTestData.GetVector(name);
-            HpkeSuite suite = Suite(vector);
-            byte[] info = vector.Info.HexToByteArray();
-            byte[] psk = vector.Psk.HexToByteArray();
-            byte[] pskId = vector.PskId.HexToByteArray();
-            byte[] enc;
-
-            using (Hpke privateKey = Hpke.ImportDecapsulationKey(suite, vector.DecapsulationKey.HexToByteArray()))
-            using (Hpke publicKey = Hpke.ImportEncapsulationKey(suite, vector.EncapsulationKey.HexToByteArray()))
-            using (HpkeSender sender = vector.UsePsk
-                ? publicKey.CreatePskSender(psk, pskId, out enc, info)
-                : publicKey.CreateSender(out enc, info))
-            using (HpkeRecipient recipient = vector.UsePsk
-                ? privateKey.CreatePskRecipient(enc, psk, pskId, info)
-                : privateKey.CreateRecipient(enc, info))
-            {
-                for (int sequence = 0; sequence < vector.Messages.Count; sequence++)
-                {
-                    HpkeMessageVector message = vector.Messages[sequence];
-                    byte[] plaintext = message.Plaintext.HexToByteArray();
-                    byte[] aad = message.AssociatedData.HexToByteArray();
-                    byte[] ciphertext = sender.Seal(plaintext, aad);
-                    Assert.Equal(plaintext, recipient.Open(ciphertext, aad));
-
-                    if (!vector.UsePsk && sequence == 0)
-                    {
-                        Assert.Equal(plaintext, privateKey.Open(enc, ciphertext,
-                            associatedData: aad, info: info));
-                    }
-                    else if (!vector.UsePsk && sequence == 1)
-                    {
-                        Assert.Throws<AuthenticationTagMismatchException>(() =>
-                            privateKey.Open(enc, ciphertext, associatedData: aad, info: info));
-                    }
-                }
-
-                Assert.Equal(sender.Export(Array.Empty<byte>(), 32), recipient.Export(Array.Empty<byte>(), 32));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(SupportedVectorNames))]
-        public static void Contexts_Roundtrip_Span(string name)
-        {
-            HpkeTestVector vector = HpkeTestData.GetVector(name);
-            HpkeSuite suite = Suite(vector);
-            byte[] info = vector.Info.HexToByteArray();
-            byte[] psk = vector.Psk.HexToByteArray();
-            byte[] pskId = vector.PskId.HexToByteArray();
-            byte[] enc;
-
-            using (Hpke privateKey = Hpke.ImportDecapsulationKey(suite, vector.DecapsulationKey.HexToByteArray()))
-            using (Hpke publicKey = Hpke.ImportEncapsulationKey(suite, vector.EncapsulationKey.HexToByteArray()))
-            using (HpkeSender sender = vector.UsePsk
-                ? publicKey.CreatePskSender(psk.AsSpan(), pskId, out enc, info)
-                : publicKey.CreateSender(out enc, info))
-            using (HpkeRecipient recipient = vector.UsePsk
-                ? privateKey.CreatePskRecipient(enc.AsSpan(), psk, pskId, info)
-                : privateKey.CreateRecipient(enc.AsSpan(), info))
-            {
-                for (int sequence = 0; sequence < vector.Messages.Count; sequence++)
-                {
-                    HpkeMessageVector message = vector.Messages[sequence];
-                    byte[] plaintext = message.Plaintext.HexToByteArray();
-                    byte[] aad = message.AssociatedData.HexToByteArray();
-                    byte[] ciphertext = sender.Seal(plaintext.AsSpan(), associatedData: aad);
-                    Assert.Equal(plaintext, recipient.Open(ciphertext.AsSpan(), associatedData: aad));
-
-                    if (!vector.UsePsk && sequence == 0)
-                    {
-                        Assert.Equal(plaintext, privateKey.Open(enc, ciphertext,
-                            associatedData: aad, info: info));
-                    }
-                    else if (!vector.UsePsk && sequence == 1)
-                    {
-                        Assert.Throws<AuthenticationTagMismatchException>(() =>
-                            privateKey.Open(enc, ciphertext, associatedData: aad, info: info));
-                    }
-                }
-
-                Assert.Equal(sender.Export(Array.Empty<byte>(), 32), recipient.Export(Array.Empty<byte>(), 32));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(SupportedVectorNames))]
-        public static void Contexts_Roundtrip_Destination(string name)
+        public static void Contexts_Roundtrip(string name)
         {
             HpkeTestVector vector = HpkeTestData.GetVector(name);
             HpkeSuite suite = Suite(vector);
@@ -363,17 +190,14 @@ namespace System.Security.Cryptography.Tests
 
             using (Hpke privateKey = Hpke.ImportDecapsulationKey(suite, vector.DecapsulationKey.HexToByteArray()))
             using (Hpke publicKey = Hpke.ImportEncapsulationKey(suite, vector.EncapsulationKey.HexToByteArray()))
-            using (HpkeSender sender = vector.UsePsk
-                ? publicKey.CreatePskSender(psk, pskId,
-                    encBuffer.AsSpan(1, suite.EncapsulatedSecretSizeInBytes), info)
-                : publicKey.CreateSender(encBuffer.AsSpan(1, suite.EncapsulatedSecretSizeInBytes), info))
+            using (HpkeSender sender = CreateSender(publicKey, vector.UsePsk, psk, pskId,
+                encBuffer.AsSpan(1, suite.EncapsulatedSecretSizeInBytes), info))
             {
                 AssertGuards(encBuffer);
                 byte[] enc = encBuffer.AsSpan(1, suite.EncapsulatedSecretSizeInBytes).ToArray();
 
-                using (HpkeRecipient recipient = vector.UsePsk
-                    ? privateKey.CreatePskRecipient(enc.AsSpan(), psk, pskId, info)
-                    : privateKey.CreateRecipient(enc.AsSpan(), info))
+                using (HpkeRecipient recipient = CreateRecipient(
+                    privateKey, vector.UsePsk, enc.AsSpan(), psk, pskId, info))
                 {
                     for (int sequence = 0; sequence < vector.Messages.Count; sequence++)
                     {
@@ -407,65 +231,47 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(BaseVectorNames))]
-        public static void Open_AuthenticationFailure(string name)
+        public static void Open_AuthenticationFailure_FirstCiphertextByteModified(string name)
         {
-            HpkeTestVector vector = HpkeTestData.GetVector(name);
-            HpkeSuite suite = Suite(vector);
-            byte[] plaintext = "plaintext"u8.ToArray();
-            byte[] aad = "associated data"u8.ToArray();
-            byte[] info = vector.Info.HexToByteArray();
+            AssertOpenAuthenticationFailure(name, static inputs => inputs.Ciphertext[0] ^= 1);
+        }
 
-            using (Hpke key = Hpke.ImportDecapsulationKey(suite, vector.DecapsulationKey.HexToByteArray()))
-            using (Hpke wrongKey = Hpke.GenerateKey(suite))
-            using (HpkeSender unrelated = key.CreateSender(out byte[] differentEnc, info))
-            {
-                key.Seal(plaintext, out byte[] enc, out byte[] ciphertext, aad, info);
+        [Theory]
+        [MemberData(nameof(BaseVectorNames))]
+        public static void Open_AuthenticationFailure_LastCiphertextByteModified(string name)
+        {
+            AssertOpenAuthenticationFailure(
+                name, static inputs => inputs.Ciphertext[inputs.Ciphertext.Length - 1] ^= 1);
+        }
 
-                for (int tamper = 0; tamper < 6; tamper++)
-                {
-                    Hpke recipient = key;
-                    byte[] modifiedEnc = enc;
-                    byte[] modifiedCiphertext = (byte[])ciphertext.Clone();
-                    byte[] modifiedAad = aad;
-                    byte[] modifiedInfo = info;
+        [Theory]
+        [MemberData(nameof(BaseVectorNames))]
+        public static void Open_AuthenticationFailure_DifferentAssociatedData(string name)
+        {
+            AssertOpenAuthenticationFailure(
+                name, static inputs => inputs.AssociatedData = Different(inputs.AssociatedData));
+        }
 
-                    switch (tamper)
-                    {
-                        case 0:
-                            modifiedCiphertext[0] ^= 1;
-                            break;
-                        case 1:
-                            modifiedCiphertext[modifiedCiphertext.Length - 1] ^= 1;
-                            break;
-                        case 2:
-                            modifiedAad = Different(aad);
-                            break;
-                        case 3:
-                            modifiedInfo = Different(info);
-                            break;
-                        case 4:
-                            modifiedEnc = differentEnc;
-                            break;
-                        case 5:
-                            recipient = wrongKey;
-                            break;
-                    }
+        [Theory]
+        [MemberData(nameof(BaseVectorNames))]
+        public static void Open_AuthenticationFailure_DifferentInfo(string name)
+        {
+            AssertOpenAuthenticationFailure(name, static inputs => inputs.Info = Different(inputs.Info));
+        }
 
-                    Assert.Throws<AuthenticationTagMismatchException>(() =>
-                        recipient.Open(modifiedEnc, modifiedCiphertext,
-                            associatedData: modifiedAad, info: modifiedInfo));
-                    Assert.Throws<AuthenticationTagMismatchException>(() =>
-                        recipient.Open(modifiedEnc.AsSpan(), modifiedCiphertext,
-                            associatedData: modifiedAad, info: modifiedInfo));
-                    byte[] destination = GuardedBuffer(plaintext.Length);
-                    Assert.Throws<AuthenticationTagMismatchException>(() =>
-                        recipient.Open(modifiedEnc, modifiedCiphertext, destination.AsSpan(1, plaintext.Length),
-                            modifiedAad, modifiedInfo));
-                    AssertGuardedOutput(new byte[plaintext.Length], destination);
-                }
+        [Theory]
+        [MemberData(nameof(BaseVectorNames))]
+        public static void Open_AuthenticationFailure_DifferentEncapsulatedSecret(string name)
+        {
+            AssertOpenAuthenticationFailure(
+                name, static inputs => inputs.EncapsulatedSecret = inputs.DifferentEncapsulatedSecret);
+        }
 
-                Assert.Equal(plaintext, key.Open(enc, ciphertext, associatedData: aad, info: info));
-            }
+        [Theory]
+        [MemberData(nameof(BaseVectorNames))]
+        public static void Open_AuthenticationFailure_DifferentKey(string name)
+        {
+            AssertOpenAuthenticationFailure(name, static inputs => inputs.Recipient = inputs.WrongKey);
         }
 
         [Theory]
@@ -474,32 +280,22 @@ namespace System.Security.Cryptography.Tests
             HpkeKem kem, HpkeKdf kdf, HpkeAead aead, bool usePsk)
         {
             HpkeSuite suite = new(kem, kdf, aead);
-            byte[] info = "application context"u8.ToArray();
+            ReadOnlySpan<byte> info = "application context"u8;
             byte[] aad = "associated data"u8.ToArray();
             byte[] psk = new byte[32];
-            byte[] pskId = "identifier"u8.ToArray();
-            byte[] first = "first"u8.ToArray();
-            byte[] second = "second"u8.ToArray();
-            byte[] third = "third"u8.ToArray();
+            ReadOnlySpan<byte> pskId = "identifier"u8;
+            ReadOnlySpan<byte> first = "first"u8;
+            ReadOnlySpan<byte> second = "second"u8;
+            ReadOnlySpan<byte> third = "third"u8;
             byte[] enc;
 
             using (Hpke key = Hpke.GenerateKey(suite))
             using (Hpke wrongKey = Hpke.GenerateKey(suite))
-            using (HpkeSender sender = usePsk
-                ? key.CreatePskSender(psk, pskId, out enc, info)
-                : key.CreateSender(out enc, info))
-            using (HpkeRecipient recipient = usePsk
-                ? key.CreatePskRecipient(enc, psk, pskId, info)
-                : key.CreateRecipient(enc, info))
-            using (HpkeRecipient badKey = usePsk
-                ? wrongKey.CreatePskRecipient(enc, psk, pskId, info)
-                : wrongKey.CreateRecipient(enc, info))
-            using (HpkeRecipient badInfo = usePsk
-                ? key.CreatePskRecipient(enc, psk, pskId, Different(info))
-                : key.CreateRecipient(enc, Different(info)))
-            using (HpkeRecipient wrongMode = usePsk
-                ? key.CreateRecipient(enc, info)
-                : key.CreatePskRecipient(enc, psk, pskId, info))
+            using (HpkeSender sender = CreateSender(key, usePsk, psk, pskId, out enc, info))
+            using (HpkeRecipient recipient = CreateRecipient(key, usePsk, enc, psk, pskId, info))
+            using (HpkeRecipient badKey = CreateRecipient(wrongKey, usePsk, enc, psk, pskId, info))
+            using (HpkeRecipient badInfo = CreateRecipient(key, usePsk, enc, psk, pskId, Different(info)))
+            using (HpkeRecipient wrongMode = CreateRecipient(key, !usePsk, enc, psk, pskId, info))
             {
                 byte[] firstCiphertext = sender.Seal(first, aad);
                 byte[] secondCiphertext = sender.Seal(second, aad);
@@ -527,10 +323,10 @@ namespace System.Security.Cryptography.Tests
                 AssertAuthenticationFailure(recipient, badTag, aad);
                 AssertAuthenticationFailure(recipient, firstCiphertext, Different(aad));
                 Assert.Equal(export, recipient.Export(Array.Empty<byte>(), 32));
-                Assert.Equal(first, recipient.Open(firstCiphertext, aad));
+                AssertExtensions.SequenceEqual(first, recipient.Open(firstCiphertext, aad));
                 AssertAuthenticationFailure(recipient, firstCiphertext, aad);
                 AssertAuthenticationFailure(recipient, thirdCiphertext, aad);
-                Assert.Equal(second, recipient.Open(secondCiphertext.AsSpan(), associatedData: aad));
+                AssertExtensions.SequenceEqual(second, recipient.Open(secondCiphertext.AsSpan(), associatedData: aad));
                 byte[] destination = GuardedBuffer(third.Length);
                 recipient.Open(thirdCiphertext, destination.AsSpan(1, third.Length), aad);
                 AssertGuardedOutput(third, destination);
@@ -546,23 +342,15 @@ namespace System.Security.Cryptography.Tests
             byte[] psk = new byte[32];
             psk.AsSpan().Fill(0x3C);
             byte[] pskId = "identifier"u8.ToArray();
-            byte[] message = "message"u8.ToArray();
+            ReadOnlySpan<byte> message = "message"u8;
             byte[] firstEnc;
             byte[] secondEnc;
             Hpke key = Hpke.GenerateKey(suite);
-            HpkeSender first = usePsk
-                ? key.CreatePskSender(psk, pskId, out firstEnc, info)
-                : key.CreateSender(out firstEnc, info);
-            HpkeRecipient firstRecipient = usePsk
-                ? key.CreatePskRecipient(firstEnc, psk, pskId, info)
-                : key.CreateRecipient(firstEnc, info);
-            HpkeSender second = usePsk
-                ? key.CreatePskSender(psk, pskId, out secondEnc, info)
-                : key.CreateSender(out secondEnc, info);
+            HpkeSender first = CreateSender(key, usePsk, psk, pskId, out firstEnc, info);
+            HpkeRecipient firstRecipient = CreateRecipient(key, usePsk, firstEnc, psk, pskId, info);
+            HpkeSender second = CreateSender(key, usePsk, psk, pskId, out secondEnc, info);
 
-            using (HpkeRecipient secondRecipient = usePsk
-                ? key.CreatePskRecipient(secondEnc, psk, pskId, info)
-                : key.CreateRecipient(secondEnc, info))
+            using (HpkeRecipient secondRecipient = CreateRecipient(key, usePsk, secondEnc, psk, pskId, info))
             {
                 byte[] firstExport = first.Export(Array.Empty<byte>(), 32);
                 byte[] secondExport = second.Export(Array.Empty<byte>(), 32);
@@ -573,14 +361,14 @@ namespace System.Security.Cryptography.Tests
                 firstEnc.AsSpan().Clear();
                 secondEnc.AsSpan().Clear();
 
-                Assert.Equal(message, firstRecipient.Open(first.Seal(message)));
-                Assert.Equal(message, firstRecipient.Open(first.Seal(message)));
+                AssertExtensions.SequenceEqual(message, firstRecipient.Open(first.Seal(message)));
+                AssertExtensions.SequenceEqual(message, firstRecipient.Open(first.Seal(message)));
                 Assert.Equal(firstExport, first.Export(Array.Empty<byte>(), 32));
                 Assert.Equal(firstExport, firstRecipient.Export(Array.Empty<byte>(), 32));
                 first.Dispose();
                 firstRecipient.Dispose();
 
-                Assert.Equal(message, secondRecipient.Open(second.Seal(message)));
+                AssertExtensions.SequenceEqual(message, secondRecipient.Open(second.Seal(message)));
                 Assert.Equal(secondExport, second.Export(Array.Empty<byte>(), 32));
                 second.Dispose();
                 Assert.Equal(secondExport, secondRecipient.Export(Array.Empty<byte>(), 32));
@@ -593,19 +381,15 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeSuite suite = new(kem, kdf, aead);
             int maximumLength = (int)HpkeTestData.ExportLimits.Single(row => row[0].Equals(kdf))[1];
-            byte[] info = "application context"u8.ToArray();
+            ReadOnlySpan<byte> info = "application context"u8;
             byte[] psk = new byte[32];
-            byte[] pskId = "identifier"u8.ToArray();
-            byte[] context = "exporter context"u8.ToArray();
+            ReadOnlySpan<byte> pskId = "identifier"u8;
+            ReadOnlySpan<byte> context = "exporter context"u8;
             byte[] enc;
 
             using (Hpke key = Hpke.GenerateKey(suite))
-            using (HpkeSender sender = usePsk
-                ? key.CreatePskSender(psk, pskId, out enc, info)
-                : key.CreateSender(out enc, info))
-            using (HpkeRecipient recipient = usePsk
-                ? key.CreatePskRecipient(enc, psk, pskId, info)
-                : key.CreateRecipient(enc, info))
+            using (HpkeSender sender = CreateSender(key, usePsk, psk, pskId, out enc, info))
+            using (HpkeRecipient recipient = CreateRecipient(key, usePsk, enc, psk, pskId, info))
             {
                 byte[] reference = sender.Export(context, 32);
 
@@ -613,15 +397,7 @@ namespace System.Security.Cryptography.Tests
                 {
                     byte[] expected = sender.Export(context, length);
                     Assert.Equal(length, expected.Length);
-                    Assert.Equal(expected, sender.Export(context.AsSpan(), length));
                     Assert.Equal(expected, recipient.Export(context, length));
-                    Assert.Equal(expected, recipient.Export(context.AsSpan(), length));
-                    byte[] senderBuffer = GuardedBuffer(length);
-                    byte[] recipientBuffer = GuardedBuffer(length);
-                    sender.Export(context, senderBuffer.AsSpan(1, length));
-                    recipient.Export(context, recipientBuffer.AsSpan(1, length));
-                    AssertGuardedOutput(expected, senderBuffer);
-                    AssertGuardedOutput(expected, recipientBuffer);
                 }
 
                 Assert.NotEqual(reference, sender.Export(Array.Empty<byte>(), 32));
@@ -635,14 +411,14 @@ namespace System.Security.Cryptography.Tests
                     Assert.Equal(sender.Export(longContext, 32), recipient.Export(longContext, 32));
                 }
 
-                byte[] message = "message"u8.ToArray();
+                ReadOnlySpan<byte> message = "message"u8;
 
                 for (int i = 0; i < 3; i++)
                 {
                     byte[] ciphertext = sender.Seal(message);
                     Assert.Equal(reference, sender.Export(context, 32));
                     Assert.Equal(reference, recipient.Export(context, 32));
-                    Assert.Equal(message, recipient.Open(ciphertext));
+                    AssertExtensions.SequenceEqual(message, recipient.Open(ciphertext));
                     Assert.Equal(reference, recipient.Export(context, 32));
                 }
             }
@@ -673,7 +449,131 @@ namespace System.Security.Cryptography.Tests
 
         private static HpkeSuite Suite(HpkeTestVector vector) => new(vector.Kem, vector.Kdf, vector.Aead);
 
-        private static HpkeRecipient CreateRecipient(Hpke key, HpkeTestVector vector, byte[] enc, bool useSpan)
+        private static void AssertOpenAuthenticationFailure(string name, Action<OpenFailureInputs> tamper)
+        {
+            HpkeTestVector vector = HpkeTestData.GetVector(name);
+            HpkeSuite suite = Suite(vector);
+            ReadOnlySpan<byte> plaintext = "plaintext"u8;
+            byte[] associatedData = "associated data"u8.ToArray();
+            byte[] info = vector.Info.HexToByteArray();
+            int plaintextLength = plaintext.Length;
+
+            using (Hpke key = Hpke.ImportDecapsulationKey(suite, vector.DecapsulationKey.HexToByteArray()))
+            using (Hpke wrongKey = Hpke.GenerateKey(suite))
+            using (HpkeSender unrelated = key.CreateSender(out byte[] differentEncapsulatedSecret, info))
+            {
+                key.Seal(plaintext, out byte[] encapsulatedSecret, out byte[] ciphertext, associatedData, info);
+                OpenFailureInputs inputs = new(
+                    key,
+                    wrongKey,
+                    encapsulatedSecret,
+                    differentEncapsulatedSecret,
+                    ciphertext,
+                    associatedData,
+                    info);
+                tamper(inputs);
+
+                Assert.Throws<AuthenticationTagMismatchException>(() =>
+                    inputs.Recipient.Open(
+                        inputs.EncapsulatedSecret,
+                        inputs.Ciphertext,
+                        associatedData: inputs.AssociatedData,
+                        info: inputs.Info));
+                Assert.Throws<AuthenticationTagMismatchException>(() =>
+                    inputs.Recipient.Open(
+                        inputs.EncapsulatedSecret.AsSpan(),
+                        inputs.Ciphertext,
+                        associatedData: inputs.AssociatedData,
+                        info: inputs.Info));
+                byte[] destination = GuardedBuffer(plaintextLength);
+                Assert.Throws<AuthenticationTagMismatchException>(() =>
+                    inputs.Recipient.Open(
+                        inputs.EncapsulatedSecret,
+                        inputs.Ciphertext,
+                        destination.AsSpan(1, plaintextLength),
+                        inputs.AssociatedData,
+                        inputs.Info));
+                AssertGuardedOutput(new byte[plaintextLength], destination);
+                AssertExtensions.SequenceEqual(
+                    plaintext,
+                    key.Open(
+                        encapsulatedSecret,
+                        ciphertext,
+                        associatedData: associatedData,
+                        info: info));
+            }
+        }
+
+        private static void AssertSingleShotRoundtrip(
+            Hpke privateKey,
+            Hpke publicKey,
+            int plaintextLength,
+            ReadOnlySpan<byte> aad,
+            ReadOnlySpan<byte> info)
+        {
+            byte[] plaintext = new byte[plaintextLength];
+            plaintext.AsSpan().Fill(0xA7);
+            byte[] encBuffer = GuardedBuffer(publicKey.Suite.EncapsulatedSecretSizeInBytes);
+            byte[] ciphertextBuffer = GuardedBuffer(publicKey.Suite.GetCiphertextLength(plaintextLength));
+
+            publicKey.Seal(plaintext, encBuffer.AsSpan(1, encBuffer.Length - 2),
+                ciphertextBuffer.AsSpan(1, ciphertextBuffer.Length - 2), aad, info);
+            AssertGuards(encBuffer);
+            AssertGuards(ciphertextBuffer);
+            byte[] enc = encBuffer.AsSpan(1, encBuffer.Length - 2).ToArray();
+            byte[] ciphertext = ciphertextBuffer.AsSpan(1, ciphertextBuffer.Length - 2).ToArray();
+            byte[] destination = GuardedBuffer(plaintextLength);
+            privateKey.Open(enc, ciphertext, destination.AsSpan(1, plaintextLength), aad, info);
+            AssertGuardedOutput(plaintext, destination);
+
+            using (HpkeRecipient recipient = privateKey.CreateRecipient(enc.AsSpan(), info))
+            {
+                destination.AsSpan().Fill(0xA5);
+                recipient.Open(ciphertext, destination.AsSpan(1, plaintextLength), aad);
+                AssertGuardedOutput(plaintext, destination);
+            }
+        }
+
+        private static HpkeSender CreateSender(
+            Hpke key,
+            bool usePsk,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            out byte[] enc,
+            ReadOnlySpan<byte> info)
+        {
+            return usePsk
+                ? key.CreatePskSender(psk, pskId, out enc, info)
+                : key.CreateSender(out enc, info);
+        }
+
+        private static HpkeSender CreateSender(
+            Hpke key,
+            bool usePsk,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            Span<byte> enc,
+            ReadOnlySpan<byte> info)
+        {
+            return usePsk
+                ? key.CreatePskSender(psk, pskId, enc, info)
+                : key.CreateSender(enc, info);
+        }
+
+        private static HpkeRecipient CreateRecipient(
+            Hpke key,
+            bool usePsk,
+            ReadOnlySpan<byte> enc,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            ReadOnlySpan<byte> info)
+        {
+            return usePsk
+                ? key.CreatePskRecipient(enc, psk, pskId, info)
+                : key.CreateRecipient(enc, info);
+        }
+
+        private static HpkeRecipient CreateRecipient(Hpke key, HpkeTestVector vector, ReadOnlySpan<byte> enc)
         {
             byte[] info = vector.Info.HexToByteArray();
 
@@ -681,12 +581,10 @@ namespace System.Security.Cryptography.Tests
             {
                 byte[] psk = vector.Psk.HexToByteArray();
                 byte[] pskId = vector.PskId.HexToByteArray();
-                return useSpan
-                    ? key.CreatePskRecipient(enc.AsSpan(), psk, pskId, info)
-                    : key.CreatePskRecipient(enc, psk, pskId, info);
+                return key.CreatePskRecipient(enc, psk, pskId, info);
             }
 
-            return useSpan ? key.CreateRecipient(enc.AsSpan(), info) : key.CreateRecipient(enc, info);
+            return key.CreateRecipient(enc, info);
         }
 
         private static void AssertKnownExports(HpkeRecipient recipient, IReadOnlyList<HpkeExportVector> exports)
@@ -695,8 +593,6 @@ namespace System.Security.Cryptography.Tests
             {
                 byte[] context = export.Context.HexToByteArray();
                 byte[] expected = export.ExportedValue.HexToByteArray();
-                Assert.Equal(expected, recipient.Export(context, export.Length));
-                Assert.Equal(expected, recipient.Export(context.AsSpan(), export.Length));
                 byte[] destination = GuardedBuffer(export.Length);
                 recipient.Export(context, destination.AsSpan(1, export.Length));
                 AssertGuardedOutput(expected, destination);
@@ -715,11 +611,40 @@ namespace System.Security.Cryptography.Tests
             AssertGuardedOutput(new byte[length], destination);
         }
 
-        private static byte[] Different(byte[] input)
+        private static byte[] Different(ReadOnlySpan<byte> input)
         {
-            byte[] result = input.Length == 0 ? [1] : (byte[])input.Clone();
+            byte[] result = input.IsEmpty ? [1] : input.ToArray();
             result[0] ^= 0x80;
             return result;
+        }
+
+        private sealed class OpenFailureInputs
+        {
+            internal Hpke Recipient { get; set; }
+            internal Hpke WrongKey { get; }
+            internal byte[] EncapsulatedSecret { get; set; }
+            internal byte[] DifferentEncapsulatedSecret { get; }
+            internal byte[] Ciphertext { get; }
+            internal byte[] AssociatedData { get; set; }
+            internal byte[] Info { get; set; }
+
+            internal OpenFailureInputs(
+                Hpke recipient,
+                Hpke wrongKey,
+                byte[] encapsulatedSecret,
+                byte[] differentEncapsulatedSecret,
+                byte[] ciphertext,
+                byte[] associatedData,
+                byte[] info)
+            {
+                Recipient = recipient;
+                WrongKey = wrongKey;
+                EncapsulatedSecret = encapsulatedSecret;
+                DifferentEncapsulatedSecret = differentEncapsulatedSecret;
+                Ciphertext = (byte[])ciphertext.Clone();
+                AssociatedData = associatedData;
+                Info = info;
+            }
         }
 
         private static byte[] GuardedBuffer(int length)

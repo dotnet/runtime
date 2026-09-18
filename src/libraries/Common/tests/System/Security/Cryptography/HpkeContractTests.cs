@@ -138,6 +138,22 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
+        public static void ExportKeys_IndependentBuffers(HpkeKem kem)
+        {
+            HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
+
+            using (HpkeContract hpke = new(suite))
+            {
+                hpke.OnExportDecapsulationKeyCore = static destination => { };
+                hpke.OnExportEncapsulationKeyCore = static destination => { };
+
+                Assert.NotSame(hpke.ExportDecapsulationKey(), hpke.ExportDecapsulationKey());
+                Assert.NotSame(hpke.ExportEncapsulationKey(), hpke.ExportEncapsulationKey());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(HpkeTestData.KemAlgorithms), MemberType = typeof(HpkeTestData))]
         public static void ExportDecapsulationKey_Exact(HpkeKem kem)
         {
             HpkeSuite suite = new(kem, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);

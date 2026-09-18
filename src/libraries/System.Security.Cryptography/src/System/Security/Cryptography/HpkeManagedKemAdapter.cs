@@ -49,6 +49,9 @@ namespace System.Security.Cryptography
 
             try
             {
+                // https://datatracker.ietf.org/doc/draft-ietf-hpke-hpke/ 7.1.3
+                // For all of the above instances of DHKEM, the GenerateKeyPair can be
+                // implemented as DeriveKeyPair(random(Nsk)).
                 Span<byte> ikm = ikmStack.Slice(0, Suite.KemMetadata.Nsk);
                 RandomNumberGenerator.Fill(ikm);
                 DeriveKeyPair(ikm);

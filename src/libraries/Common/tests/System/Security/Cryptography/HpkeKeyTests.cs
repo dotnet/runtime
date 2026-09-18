@@ -199,20 +199,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SupportedKeyVectorNames))]
-        public static void ExportKeys_IndependentBuffers(string name)
-        {
-            HpkeTestVector vector = HpkeTestData.GetVector(name);
-            byte[] privateKey = vector.DecapsulationKey.HexToByteArray();
-
-            using (Hpke key = Hpke.ImportDecapsulationKey(KeySuite(vector.Kem), privateKey))
-            {
-                Assert.NotSame(key.ExportDecapsulationKey(), key.ExportDecapsulationKey());
-                Assert.NotSame(key.ExportEncapsulationKey(), key.ExportEncapsulationKey());
-            }
-        }
-
-        [Theory]
         [MemberData(nameof(SupportedKems))]
         public static void PublicOnlyKey_CapabilitiesAndContextLifetimes(HpkeKem kem)
         {
