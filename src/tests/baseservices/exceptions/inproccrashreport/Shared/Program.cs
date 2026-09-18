@@ -114,6 +114,11 @@ public static class Program
             WriteArtifactArchive(archivePath);
 #endif
             scenario(outputDirectory);
+#if INPROC_SCENARIO_RICHSIGSEGV
+            // Temporary probe for Helix uploads of completed and incomplete reports.
+            File.WriteAllText(Path.Combine(outputDirectory, ".dotnet", "crash-reports", "incomplete.tmp"), "artifact probe\n");
+            Check(false, "EXPECTED_ARTIFACT_RETENTION_PROBE: assertions passed; revert this probe after verifying Helix artifacts.");
+#endif
             Directory.Delete(outputDirectory, recursive: true);
             Console.WriteLine($"PASS: crash report assertions completed in {timer.ElapsedMilliseconds} ms");
             return 100;
