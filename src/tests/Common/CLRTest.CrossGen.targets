@@ -143,7 +143,9 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
             echo --synthesize-random-mibc >> "$__ResponseFile"
-            echo --embed-pgo-data >> "$__ResponseFile"
+            if [ "$(TargetArchitecture)" != "wasm" ]; then
+                echo --embed-pgo-data >> "$__ResponseFile"
+            fi
         fi
         if [ ! -z ${HotColdSplitting+x} ]%3B then
             echo --hot-cold-splitting >> "$__ResponseFile"
@@ -376,7 +378,9 @@ if defined RunCrossGen2 (
     )
     if defined CrossGen2SynthesizePgo (
         echo --synthesize-random-mibc>>!__ResponseFile!
-        echo --embed-pgo-data>>!__ResponseFile!
+        if not "$(TargetArchitecture)"=="wasm" (
+            echo --embed-pgo-data>>!__ResponseFile!
+        )
     )
     if defined HotColdSplitting (
         echo --hot-cold-splitting>>!__ResponseFile!
