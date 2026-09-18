@@ -3,6 +3,7 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -87,6 +88,15 @@ namespace System.Threading
             // this design replaced.
             private const int InFlightWaitTimeoutMs = 1000;
 
+            // How completions are handed off from the issuer thread to Thread Pool worker threads. See
+            // ScheduleCompletionProcessing/CompletionProcessor's doc comments for the parallelized-enqueue
+            // design (ported from dotnet/runtime#35330's epoll fix), and DispatchBatch's doc comment for
+            // the older single-batched-call design it replaces as the default. Kept selectable (rather
+            // than deleting the older path outright) so the two can be A/B compared later; set
+            // DOTNET_IORING_PARALLELIZED_ENQUEUE=0 to opt back into the older behavior.
+            private static readonly bool s_useParallelizedEnqueue =
+                AppContextConfigHelper.GetBooleanConfig("System.Threading.ThreadPool.IoUringParallelizedEnqueue", "DOTNET_IORING_PARALLELIZED_ENQUEUE", defaultValue: true);
+
             // Opt-out switch: io_uring integration is used by default on Linux when the kernel supports
             // it. Set DOTNET_USE_IO_URING=0 to fall back to the pre-existing (blocking-call-on-a-
             // ThreadPool-work-item) implementation unconditionally.
@@ -151,6 +161,25 @@ namespace System.Threading
             // issuer wake cycles into at most one EventFdWrite syscall, without risking a missed wake-up:
             // see TrySubmit and IssuerLoop for the reset-then-recheck protocol that makes this safe.
             private static int s_wakeSignaled;
+
+            // MPSC hand-off in the opposite direction of s_pendingSubmissions: raw completions the issuer
+            // thread has drained from the ring but not yet processed. Only populated/consumed when
+            // s_useParallelizedEnqueue is true - see ScheduleCompletionProcessing/CompletionProcessor.
+            private static readonly ConcurrentQueue<Interop.Sys.IoRingCompletion> s_completionQueue = new();
+
+            // Set to 1 to indicate that a Thread Pool work item is already scheduled to drain
+            // s_completionQueue; set back to 0 when that work item starts running, so that either the
+            // issuer thread or another worker draining the queue can schedule a further one. Mirrors
+            // SocketAsyncEngine's _eventQueueProcessingRequested field from the epoll implementation (see
+            // dotnet/runtime#35330) - the whole point of this flag is to guarantee at most one such work
+            // item is ever scheduled at a time, so that additional parallelism only grows on demand (each
+            // running work item reschedules one more before it starts processing - see
+            // CompletionProcessor.Execute) rather than up front.
+            private static int s_completionProcessingRequested;
+
+            // Singleton work item queued via ScheduleCompletionProcessing; stateless, so one instance can
+            // be (re)queued indefinitely instead of allocating a new one per schedule.
+            private static readonly IThreadPoolWorkItem s_completionProcessor = new CompletionProcessor();
 
 #pragma warning disable CA1810 // remove the explicit static constructor
             static IoUringThreadPool()
@@ -453,13 +482,81 @@ namespace System.Threading
                         }
                     }
 
-                    DispatchBatch(completionsBatch.AsSpan(0, completedCount), workItemBatch);
+                    ReadOnlySpan<Interop.Sys.IoRingCompletion> completions = completionsBatch.AsSpan(0, completedCount);
+                    if (s_useParallelizedEnqueue)
+                    {
+                        EnqueueCompletions(completions);
+                    }
+                    else
+                    {
+                        DispatchBatch(completions, workItemBatch);
+                    }
                 }
             }
 
             /// <summary>
-            /// Completes the operation associated with each of the given completions, collecting the
-            /// (non-null) returned work items and queuing them all via a single batched
+            /// Default completion hand-off path: ported from the parallelized-enqueue fix dotnet/runtime
+            /// applied to the epoll implementation in #35330 (see that PR, and this file's design doc, for
+            /// the full history/rationale). The issuer thread does the least possible amount of work here
+            /// - just copying the raw completions into <see cref="s_completionQueue"/> - and hands off
+            /// both resolving each completion's operation (<see cref="CompleteOperation"/>) and running its
+            /// continuation to Thread Pool worker threads, via <see cref="CompletionProcessor"/>. This
+            /// lets the issuer thread go back to submitting/reaping sooner under load, and - unlike
+            /// <see cref="DispatchBatch"/>'s single call moving a whole batch to the Thread Pool queue at
+            /// once - grows the number of worker threads actually pulling from the queue organically, one
+            /// at a time, as each already-running one reschedules a further one before it starts
+            /// processing (see CompletionProcessor.Execute), rather than committing up front to exactly as
+            /// many work items as there were completions in this one batch.
+            /// </summary>
+            private static void EnqueueCompletions(ReadOnlySpan<Interop.Sys.IoRingCompletion> completions)
+            {
+                foreach (ref readonly Interop.Sys.IoRingCompletion completion in completions)
+                {
+                    s_completionQueue.Enqueue(completion);
+                }
+
+                ScheduleCompletionProcessing();
+            }
+
+            /// <summary>
+            /// Schedules <see cref="s_completionProcessor"/> to drain <see cref="s_completionQueue"/>,
+            /// unless one is already scheduled (see <see cref="s_completionProcessingRequested"/>'s doc
+            /// comment). Called both by the issuer thread (after enqueueing a freshly-drained batch) and
+            /// by <see cref="CompletionProcessor"/> itself (to keep parallelizing/continuing the drain -
+            /// see its doc comment), exactly like SocketAsyncEngine.ScheduleToProcessEvents in the epoll
+            /// implementation this is ported from.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static void ScheduleCompletionProcessing()
+            {
+                if (Interlocked.CompareExchange(ref s_completionProcessingRequested, 1, 0) == 0)
+                {
+                    ThreadPool.UnsafeQueueUserWorkItem(s_completionProcessor, preferLocal: false);
+                }
+            }
+
+            /// <summary>
+            /// Resolves the operation referenced by a single completion's <c>UserData</c> GCHandle,
+            /// completes it, and frees the handle - the shared per-completion bookkeeping used by both
+            /// <see cref="DispatchBatch"/> and <see cref="CompletionProcessor"/>.
+            /// </summary>
+            private static IThreadPoolWorkItem? CompleteOperation(in Interop.Sys.IoRingCompletion completion)
+            {
+                Interlocked.Decrement(ref s_inFlightCount);
+
+                GCHandle handle = GCHandle.FromIntPtr((IntPtr)completion.UserData);
+                var operation = (IIoUringOperation)handle.Target!;
+                handle.Free();
+
+                return operation.CompleteFromIoUring(completion.Result);
+            }
+
+            /// <summary>
+            /// Older completion hand-off path, kept only so it can still be selected (see
+            /// <see cref="s_useParallelizedEnqueue"/>) for comparison against the default
+            /// <see cref="EnqueueCompletions"/>/<see cref="CompletionProcessor"/> path. Completes the
+            /// operation associated with each of the given completions, collecting the (non-null) returned
+            /// work items and queuing them all via a single batched
             /// <see cref="ThreadPool.UnsafeQueueUserWorkItems"/> call instead of once per completion.
             /// </summary>
             private static void DispatchBatch(ReadOnlySpan<Interop.Sys.IoRingCompletion> completions, IThreadPoolWorkItem[] workItemBatch)
@@ -467,16 +564,10 @@ namespace System.Threading
                 int batchCount = 0;
                 foreach (ref readonly Interop.Sys.IoRingCompletion completion in completions)
                 {
-                    Interlocked.Decrement(ref s_inFlightCount);
-
-                    GCHandle handle = GCHandle.FromIntPtr((IntPtr)completion.UserData);
-                    var operation = (IIoUringOperation)handle.Target!;
-                    handle.Free();
-
-                    // The issuer thread must not run the continuation inline; CompleteFromIoUring only
-                    // does minimal bookkeeping and returns the work item (if any) to be queued, so it can
-                    // be batched together with the other completions drained in this pass.
-                    IThreadPoolWorkItem? workItem = operation.CompleteFromIoUring(completion.Result);
+                    // The issuer thread must not run the continuation inline; CompleteOperation only does
+                    // minimal bookkeeping and returns the work item (if any) to be queued, so it can be
+                    // batched together with the other completions drained in this pass.
+                    IThreadPoolWorkItem? workItem = CompleteOperation(in completion);
                     if (workItem is not null)
                     {
                         workItemBatch[batchCount++] = workItem;
@@ -488,6 +579,68 @@ namespace System.Threading
                     // Also wakes the normal idle-worker primitive for any parked sibling to pick these up.
                     ThreadPool.UnsafeQueueUserWorkItems(workItemBatch.AsSpan(0, batchCount), preferLocal: false);
                     Array.Clear(workItemBatch, 0, batchCount);
+                }
+            }
+
+            /// <summary>
+            /// The Thread Pool work item scheduled by <see cref="ScheduleCompletionProcessing"/> to drain
+            /// <see cref="s_completionQueue"/> - the parallelized-enqueue path ported from
+            /// SocketAsyncEngine's <c>IThreadPoolWorkItem</c> implementation in dotnet/runtime#35330.
+            /// Stateless (all state lives in the static queue/flag), so <see cref="s_completionProcessor"/>
+            /// is a single, reused instance rather than one per schedule.
+            /// </summary>
+            private sealed class CompletionProcessor : IThreadPoolWorkItem
+            {
+                // Matches SocketAsyncEngine's own threshold and reasoning (see #35330): bounds how long a
+                // single work item keeps draining the queue before yielding the thread back to the Thread
+                // Pool, so a sustained stream of completions cannot starve other kinds of work items.
+                private const int TimeSliceMs = 15;
+
+                void IThreadPoolWorkItem.Execute()
+                {
+                    // Indicate that a work item is no longer scheduled to process completions, before
+                    // attempting to dequeue one - this ordering matters (see ScheduleCompletionProcessing):
+                    // if the issuer thread (or another CompletionProcessor instance) enqueues a completion
+                    // and observes this flag still set to 1, it will skip scheduling, relying entirely on
+                    // this instance to still pick that completion up - which it can only guarantee by
+                    // resetting the flag *before* checking the queue, not after.
+                    Interlocked.Exchange(ref s_completionProcessingRequested, 0);
+
+                    if (!s_completionQueue.TryDequeue(out Interop.Sys.IoRingCompletion completion))
+                    {
+                        return;
+                    }
+
+                    int startTimeMs = Environment.TickCount;
+
+                    // A completion was successfully dequeued, and there may be more queued. Schedule
+                    // another work item to parallelize draining before processing this one - from this
+                    // point on, growing further parallelism (if there is more work and idle workers to run
+                    // it) is this chain of work items' own responsibility, not the issuer thread's.
+                    ScheduleCompletionProcessing();
+
+                    while (true)
+                    {
+                        // Unlike DispatchBatch, this runs the continuation directly on this Thread Pool
+                        // worker rather than queuing it as a separate work item - there is no batching to
+                        // wait for here, so there is nothing to gain (and an extra dispatch to lose) by
+                        // deferring it.
+                        CompleteOperation(in completion)?.Execute();
+
+                        if (Environment.TickCount - startTimeMs >= TimeSliceMs)
+                        {
+                            break;
+                        }
+
+                        if (!s_completionQueue.TryDequeue(out completion))
+                        {
+                            return;
+                        }
+                    }
+
+                    // The queue was not observed to be empty when this loop gave up its time slice;
+                    // schedule another work item before yielding this thread back to the Thread Pool.
+                    ScheduleCompletionProcessing();
                 }
             }
         }
