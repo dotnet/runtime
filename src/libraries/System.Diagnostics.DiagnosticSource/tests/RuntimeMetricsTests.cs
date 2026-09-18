@@ -61,7 +61,7 @@ namespace System.Diagnostics.Metrics.Tests
         public static bool IsCoreClrOrNativeAot => PlatformDetection.IsCoreCLR || PlatformDetection.IsNativeAot;
 
         [ConditionalFact(nameof(IsCoreClrOrNativeAot))]
-        public void GcPauseDurationInProcess()
+        public async Task GcPauseDurationInProcess()
         {
             using InstrumentRecorder<double> recorder = new("dotnet.gc.pause.duration");
             Assert.Equal("s", Assert.IsType<Histogram<double>>(recorder.Instrument).Unit);
@@ -72,7 +72,7 @@ namespace System.Diagnostics.Metrics.Tests
             {
                 Assert.True(Environment.TickCount64 < deadline, "No blocking GC pause was delivered after repeated collections.");
                 GC.Collect(0, GCCollectionMode.Forced, blocking: true);
-                Thread.Sleep(10);
+                await Task.Delay(10);
             }
             foreach (Measurement<double> measurement in recorder.Measurements)
             {
@@ -364,44 +364,33 @@ namespace System.Diagnostics.Metrics.Tests
             }
             RemoteExecutor.Invoke(static () =>
             {
-                GCPauseNode? root = null;
-                for (int i = 0; i < 1_000_000; i++)
-                {
-                    root = new GCPauseNode(root);
-                }
+                // A single retained LOH object exceeds the per-heap BGC threshold on both x86 and x64.
+                byte[] root = new byte[8 * 1024 * 1024];
                 GC.Collect(2, GCCollectionMode.Forced, blocking: true);
-                long previousIndex = GC.GetGCMemoryInfo(GCKind.Background).Index;
-                using PauseRecorder recorder = new();
+                long previousIndex = GC.GetGCMemoryInfo(GCKind.FullBlocking).Index;
+                using PauseRecorder recorder = new(keywords: GCPauseKeyword | (EventKeywords)0x1);
                 using InstrumentRecorder<double> histogram = new("dotnet.gc.pause.duration");
 
                 long deadline = Environment.TickCount64 + 30_000;
-                while (true)
-                {
-                    long blockingIndex = GC.GetGCMemoryInfo(GCKind.FullBlocking).Index;
-                    GC.Collect(2, GCCollectionMode.Forced, blocking: false);
-                    if (GC.GetGCMemoryInfo(GCKind.FullBlocking).Index == blockingIndex)
-                    {
-                        break;
-                    }
-                    Assert.True(Environment.TickCount64 < deadline, "The nonblocking request repeatedly selected a blocking collection.");
-                }
-                deadline = Environment.TickCount64 + 30_000;
-                GCMemoryInfo info;
+                long backgroundIndex;
                 do
                 {
-                    for (int i = 0; i < 1024; i++)
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: false);
+
+                    // Wait for any BGC to finish, then drain its events through the following blocking GC's end.
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+                    recorder.WaitForCollectionEnd(GC.GetGCMemoryInfo(GCKind.FullBlocking).Index);
+                    backgroundIndex = recorder.GetLastBackgroundCollectionIndex();
+                    if (backgroundIndex <= previousIndex)
                     {
-                        GC.KeepAlive(new byte[1024]);
-                    }
-                    info = GC.GetGCMemoryInfo(GCKind.Background);
-                    if (info.Index <= previousIndex)
-                    {
-                        Assert.True(Environment.TickCount64 < deadline, "The background collection did not complete.");
+                        Assert.True(Environment.TickCount64 < deadline, "No background GC pause events were delivered after nonblocking collection requests.");
                         Thread.Sleep(1);
                     }
                 }
-                while (info.Index <= previousIndex);
+                while (backgroundIndex <= previousIndex);
 
+                GCMemoryInfo info = GC.GetGCMemoryInfo(GCKind.Background);
+                Assert.Equal(backgroundIndex, info.Index);
                 Assert.True(info.Concurrent);
                 Assert.Equal(2, info.Generation);
                 PauseSample[] background = recorder.WaitForCollection(info.Index, minimumCount: 2);
@@ -418,11 +407,6 @@ namespace System.Diagnostics.Metrics.Tests
                     PauseTag(measurement, "gc.pause.type") == "background"));
                 GC.KeepAlive(root);
             }, options).Dispose();
-        }
-
-        private sealed class GCPauseNode(GCPauseNode? next)
-        {
-            internal readonly GCPauseNode? Next = next;
         }
 
         private static void WaitFor(Func<bool> condition, [CallerArgumentExpression(nameof(condition))] string? expression = null) =>
@@ -526,6 +510,10 @@ namespace System.Diagnostics.Metrics.Tests
 
             internal void WaitForCollectionEnd(long index) =>
                 WaitFor(() => _completedCollections.Contains((uint)index));
+
+            internal long GetLastBackgroundCollectionIndex() =>
+                checked((long)_events.Select(ReadSample).Where(sample => sample.Kind == 1)
+                    .Select(sample => sample.Index).DefaultIfEmpty().Max());
 
             private static PauseSample ReadSample(EventWrittenEventArgs eventData)
             {
