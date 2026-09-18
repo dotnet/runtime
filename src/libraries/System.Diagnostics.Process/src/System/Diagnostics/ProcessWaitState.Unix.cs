@@ -612,23 +612,6 @@ namespace System.Diagnostics
             // A lock in Process ensures no new processes are spawned while we are checking.
             lock (s_childProcessWaitStates)
             {
-                bool checkAll = false;
-
-                // If checkAll ends up set because we observed a non-exit notification for a pid we know is
-                // not currently exited, we already know for certain that this specific pid should not be
-                // reaped by the fallback full scan below: attempting to do so would call the reaping
-                // waitpid() on it, which -- since it can be a pid this process is also ptrace-tracing (e.g.
-                // via an external tool like ClrMD) -- could consume/steal that non-exit notification from
-                // whoever else needs to observe it. Skip re-checking that specific pid in the scan.
-                int pidToSkip = 0;
-
-                // Set alongside pidToSkip, but only when the pending notification for that pid is a
-                // genuine non-exit (stopped/continued) one. This is narrower than checkAll: checkAll is
-                // also set when we observe an actual exit for a pid we don't recognize (e.g. an orphan
-                // reapAll is specifically responsible for reaping), which carries no risk of interfering
-                // with an external tracer and must not suppress the wildcard reap-all scan below.
-                bool nonExitNotificationPending = false;
-
                 // Check terminated processes.
                 int pid;
                 do
@@ -637,29 +620,61 @@ namespace System.Diagnostics
                     pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait(out bool isExited);
                     if (pid > 0)
                     {
-                        if (isExited && s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                        if (isExited)
                         {
-                            // Known Process that has actually exited.
+                            if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
+                            {
+                                // Known Process that has actually exited.
+                                if (pws.TryReapChild(configureConsole))
+                                {
+                                    pws.ReleaseRef();
+                                }
+
+                                // If TryReapChild fails, it calls Environment.FailFast.
+
+                                continue; // move on to next pid
+                            }
+                            else if (reapAll)
+                            {
+                                // In two cases we reap all processes (and may inadvertently reap non-managed processes):
+                                // - When the original disposition is SIG_IGN, children that terminated did not become zombies.
+                                //   Because overwrote the disposition, we have become responsible for reaping those processes.
+                                // - pid 1 (the init daemon) is responsible for reaping orphaned children.
+                                //   Because containers usually don't have an init daemon .NET may be pid 1.
+
+                                // Reap any child process regardless of whether we have a tracked wait state for it.
+                                // It's a best effort attempt, so if for some reason it fails, we just continue.
+
+                                _ = Interop.Sys.WaitPidExitedNoHang(pid, out _, out _);
+
+                                continue; // move on to next pid
+                            }
+                        }
+
+                        // Either this pid is not one we're responsible for reaping, or (on some
+                        // platforms, e.g. macOS, or for a ptrace-traced child on Linux) the
+                        // notification isn't actually an exit even though only exit notifications
+                        // (WEXITED) were requested. In both cases we must not consume/act on this
+                        // specific notification: it may belong to something else in this process
+                        // (e.g. an external debugger tracing the same pid), and it may not even be
+                        // an exit. Fall back to directly checking our own known children instead,
+                        // which makes progress without spinning on or touching this notification.
+                        foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
+                        {
+                            if (kv.Key == pid)
+                            {
+                                continue;
+                            }
+
+                            ProcessWaitState pws = kv.Value;
                             if (pws.TryReapChild(configureConsole))
                             {
+                                // ReleaseRef mutates the dictionary using Remove method, but it's safe since NET Core 3.0.
                                 pws.ReleaseRef();
                             }
                         }
-                        else
-                        {
-                            // Either this pid is not one we're responsible for reaping, or (on some
-                            // platforms, e.g. macOS, or for a ptrace-traced child on Linux) the
-                            // notification isn't actually an exit even though only exit notifications
-                            // (WEXITED) were requested. In both cases we must not consume/act on this
-                            // specific notification: it may belong to something else in this process
-                            // (e.g. an external debugger tracing the same pid), and it may not even be
-                            // an exit. Fall back to directly checking our own known children instead,
-                            // which makes progress without spinning on or touching this notification.
-                            checkAll = true;
-                            pidToSkip = pid;
-                            nonExitNotificationPending = !isExited;
-                            break;
-                        }
+
+                        return;
                     }
                     else if (pid == 0)
                     {
@@ -672,91 +687,6 @@ namespace System.Diagnostics
                         Environment.FailFast("Error while checking for terminated children. errno = " + errorCode);
                     }
                 } while (pid > 0);
-
-                // When reapAll is set and this checkAll fallback was triggered by an actual exit for an
-                // unrecognized pid (i.e. nonExitNotificationPending is false), the wildcard waitpid(-1)
-                // scan below already reaps every tracked and untracked child exhaustively, making this
-                // dictionary scan redundant (an extra waitpid() per tracked child for no benefit). Only
-                // run it when the wildcard scan won't run at all (!reapAll), or when it will run but is
-                // suppressed for this specific pid due to a genuine pending non-exit notification.
-                if (checkAll && (!reapAll || nonExitNotificationPending))
-                {
-                    // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
-                    ProcessWaitState? firstToRemove = null;
-                    List<ProcessWaitState>? additionalToRemove = null;
-                    foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)
-                    {
-                        if (kv.Key == pidToSkip)
-                        {
-                            continue;
-                        }
-
-                        ProcessWaitState pws = kv.Value;
-                        if (pws.TryReapChild(configureConsole))
-                        {
-                            if (firstToRemove == null)
-                            {
-                                firstToRemove = pws;
-                            }
-                            else
-                            {
-                                additionalToRemove ??= new List<ProcessWaitState>();
-                                additionalToRemove.Add(pws);
-                            }
-                        }
-                    }
-
-                    if (firstToRemove != null)
-                    {
-                        firstToRemove.ReleaseRef();
-                        if (additionalToRemove != null)
-                        {
-                            foreach (ProcessWaitState pws in additionalToRemove)
-                            {
-                                pws.ReleaseRef();
-                            }
-                        }
-                    }
-                }
-
-                if (reapAll && !nonExitNotificationPending)
-                {
-                    // Only suppress the wildcard reap-all scan when the pid we skipped above has a
-                    // genuine pending non-exit notification: waitpid(-1, ...) cannot be targeted to avoid
-                    // selecting that specific pid, so calling it here could still consume/steal that
-                    // notification from whoever else needs to observe it (e.g. an external tracer). This
-                    // does not apply when checkAll was instead set because of an actual exit for a pid we
-                    // don't recognize -- reaping such an orphan is exactly what this wildcard scan is for,
-                    // and there is no notification to protect once it has genuinely exited.
-                    //
-                    // Known limitation: this only protects the one specific pid the peek above happened to
-                    // observe. If that peek instead observed an actual exit for an unrecognized pid (an
-                    // orphan the wildcard scan is meant to reap) while a *different*, independently
-                    // ptrace-traced pid (tracked or not) simultaneously has its own pending stop/continue
-                    // notification, waitpid(-1, ...)'s internal retry-on-stop loop can still select and
-                    // consume that other pid's notification while searching for/past it. Fully closing this
-                    // would require peeking (non-consuming) every waitable candidate before reaping any of
-                    // them, which isn't feasible for a wildcard scan (untracked/orphaned candidates can't be
-                    // enumerated up front). This is accepted as a narrow, pre-existing class of risk inherent
-                    // to sharing SIGCHLD/ptrace state with external tracers.
-                    do
-                    {
-                        int exitCode;
-                        int terminatingSignal;
-                        pid = Interop.Sys.WaitPidExitedNoHang(-1, out exitCode, out terminatingSignal);
-                        if (pid <= 0)
-                        {
-                            break;
-                        }
-
-                        // Check if the process is a child that has just terminated.
-                        if (s_childProcessWaitStates.TryGetValue(pid, out ProcessWaitState? pws))
-                        {
-                            pws.ChildReaped(exitCode, terminatingSignal, configureConsole);
-                            pws.ReleaseRef();
-                        }
-                    } while (true);
-                }
             }
         }
     }
