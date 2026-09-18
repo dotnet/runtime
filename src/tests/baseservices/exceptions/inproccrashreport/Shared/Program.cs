@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+#if INPROC_SCENARIO_ONDEMAND
+using System.Collections.Generic;
+#endif
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -11,6 +14,10 @@ using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+#if INPROC_SCENARIO_ONDEMAND
+using System.Threading;
+using System.Threading.Tasks;
+#endif
 
 public static class Program
 {
@@ -40,10 +47,26 @@ public static class Program
         int scenario, string reportRootPath, string consoleCapturePath);
 
 #if INPROC_SCENARIO_ONDEMAND
+    private static readonly TimeSpan s_concurrencyTimeout = TimeSpan.FromSeconds(60);
+
+    // Matches InProcCrashReportOutputFormat in the native reporter.
+    private enum ReportFormat : uint
+    {
+        Json = 0,
+        Log = 1,
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int BeforeWriteCallback();
+
     [DllImport(NativeLib)]
     private static extern int InProcCrashReportTest_DriveOnDemand(
         string reportRootPath, string firstJsonPath, string secondJsonPath,
         string firstLogPath, string secondLogPath);
+
+    [DllImport(NativeLib, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int InProcCrashReportTest_CreateOnDemandReport(
+        ReportFormat format, int signal, string outputPath, BeforeWriteCallback beforeWrite);
 #endif
 
 #if INPROC_ANDROID
@@ -167,10 +190,120 @@ public static class Program
         ValidateJson(secondJson, 0, signal: "6");
         ValidateConsole(secondLog, 0, signal: "6 (SIGABRT)");
 
+        foreach (ReportFormat format in new[] { ReportFormat.Json, ReportFormat.Log })
+        {
+            RunConcurrentOnDemand(outputDirectory, format, failOwner: false);
+            RunConcurrentOnDemand(outputDirectory, format, failOwner: true);
+        }
+
         string reportDirectory = Path.Combine(outputDirectory, ".dotnet", "crash-reports");
         Check(Directory.Exists(reportDirectory), "native driver did not initialize lifecycle services");
         Check(!Directory.EnumerateFileSystemEntries(reportDirectory).Any(),
             "on-demand requests unexpectedly changed the lifecycle report directory");
+    }
+
+    private static void RunConcurrentOnDemand(string outputDirectory, ReportFormat ownerFormat, bool failOwner)
+    {
+        const int OwnerSignal = 11;
+        const int OtherSignal = 6;
+        string caseName = $"concurrent-{ownerFormat}-{(failOwner ? "failure" : "success")}";
+        string caseDirectory = Directory.CreateDirectory(Path.Combine(outputDirectory, caseName)).FullName;
+        string ownerPath = Path.Combine(caseDirectory, $"owner.{ownerFormat}");
+        Console.WriteLine($"Starting {caseName}: hold one owner while JSON and log contenders request reports");
+
+        TaskCompletionSource ownerEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource releaseOwner = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        int ownerWrites = 0;
+        int ownerTimedOut = 0;
+        Task<int> owner = StartOnDemandRequest(ownerFormat, OwnerSignal, ownerPath, () =>
+        {
+            if (Interlocked.Increment(ref ownerWrites) == 1)
+            {
+                // Keep the reporter's guard occupied until both contenders have returned.
+                ownerEntered.SetResult();
+                if (!releaseOwner.Task.Wait(s_concurrencyTimeout))
+                {
+                    Interlocked.Exchange(ref ownerTimedOut, 1);
+                    return 0;
+                }
+            }
+
+            return failOwner ? 0 : 1;
+        });
+
+        ReportFormat[] formats = [ReportFormat.Json, ReportFormat.Log];
+        int[] contenderWrites = new int[formats.Length];
+        List<Task<int>> contenders = new(formats.Length);
+        try
+        {
+            Check(ownerEntered.Task.Wait(s_concurrencyTimeout), $"{caseName}: owner never entered its output callback");
+            for (int i = 0; i < formats.Length; i++)
+            {
+                int index = i;
+                contenders.Add(StartOnDemandRequest(formats[index], OtherSignal,
+                    Path.Combine(caseDirectory, $"contender.{formats[index]}"), () =>
+                    {
+                        Interlocked.Increment(ref contenderWrites[index]);
+                        return 0;
+                    }));
+            }
+
+            Check(Task.WhenAll(contenders).Wait(s_concurrencyTimeout),
+                $"{caseName}: contenders waited for the owner instead of rejecting overlap");
+            for (int i = 0; i < contenders.Count; i++)
+            {
+                Check(contenders[i].Result == 0, $"{caseName}: {formats[i]} contender returned {contenders[i].Result}, expected rejection");
+                Check(contenderWrites[i] == 0, $"{caseName}: rejected {formats[i]} contender invoked its output callback");
+                Check(new FileInfo(Path.Combine(caseDirectory, $"contender.{formats[i]}")).Length == 0,
+                    $"{caseName}: rejected {formats[i]} contender wrote output");
+            }
+
+            Check(!owner.IsCompleted, $"{caseName}: owner completed before being released");
+        }
+        finally
+        {
+            releaseOwner.TrySetResult();
+            Check(Task.WhenAll(contenders.Append(owner)).Wait(s_concurrencyTimeout),
+                $"{caseName}: reporting tasks did not finish after releasing the owner");
+        }
+
+        Check(ownerTimedOut == 0, $"{caseName}: owner timed out waiting for release");
+        Check(owner.Result == (failOwner ? 0 : 1), $"{caseName}: owner returned {owner.Result}");
+        if (failOwner)
+        {
+            Check(ownerWrites == 1, $"{caseName}: failed owner sink was invoked {ownerWrites} times");
+            Check(new FileInfo(ownerPath).Length == 0, $"{caseName}: failed owner wrote output");
+        }
+        else
+        {
+            ValidateOnDemandOutput(ownerPath, ownerFormat, OwnerSignal);
+        }
+
+        foreach (ReportFormat format in formats)
+        {
+            string recoveryPath = Path.Combine(caseDirectory, $"recovery.{format}");
+            int result = InProcCrashReportTest_CreateOnDemandReport(format, OtherSignal, recoveryPath, static () => 1);
+            Check(result == 1, $"{caseName}: subsequent {format} request returned {result}");
+            ValidateOnDemandOutput(recoveryPath, format, OtherSignal);
+        }
+
+        Console.WriteLine($"PASS: {caseName}; both contenders rejected without writes, owner and recovery verified");
+    }
+
+    private static Task<int> StartOnDemandRequest(ReportFormat format, int signal, string path, BeforeWriteCallback beforeWrite) =>
+        Task.Factory.StartNew(() => InProcCrashReportTest_CreateOnDemandReport(format, signal, path, beforeWrite),
+            CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+
+    private static void ValidateOnDemandOutput(string path, ReportFormat format, int signal)
+    {
+        if (format == ReportFormat.Json)
+        {
+            ValidateJson(path, 0, signal.ToString(CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            ValidateConsole(path, 0, signal == 6 ? "6 (SIGABRT)" : "11 (SIGSEGV)");
+        }
     }
 #endif
 

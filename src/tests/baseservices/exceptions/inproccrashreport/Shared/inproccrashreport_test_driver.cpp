@@ -339,6 +339,7 @@ namespace
         FILE* file;
         const char* path;
         ucontext_t* signalContext;
+        int (*beforeWriteCallback)();
         bool attemptReentrantReport;
         bool reentrantAttempted;
         bool reentrantResult;
@@ -347,6 +348,11 @@ namespace
     bool WriteOnDemandOutput(const char* buffer, size_t length, void* context)
     {
         OnDemandOutputContext* output = static_cast<OnDemandOutputContext*>(context);
+        if (output->beforeWriteCallback != nullptr && output->beforeWriteCallback() == 0)
+        {
+            return false;
+        }
+
         if (output->attemptReentrantReport && !output->reentrantAttempted)
         {
             output->reentrantAttempted = true;
@@ -367,25 +373,27 @@ namespace
         return false;
     }
 
-    bool WriteOnDemandReport(
+    int CreateOnDemandReport(
         InProcCrashReportOutputFormat outputFormat,
         int signal,
         const char* outputPath,
         ucontext_t* signalContext,
-        bool attemptReentrantReport = false)
+        bool attemptReentrantReport,
+        int (*beforeWriteCallback)())
     {
         printf("Generating on-demand format %u, signal %d: %s\n", static_cast<unsigned>(outputFormat), signal, outputPath);
         fflush(stdout);
         FILE* file = fopen(outputPath, "wb");
         if (!CheckIo(file != nullptr, "fopen", outputPath))
         {
-            return false;
+            return -1;
         }
 
         OnDemandOutputContext output = {};
         output.file = file;
         output.path = outputPath;
         output.signalContext = signalContext;
+        output.beforeWriteCallback = beforeWriteCallback;
         output.attemptReentrantReport = attemptReentrantReport;
 
         bool generated = InProcCrashReportCreateReport(
@@ -396,9 +404,25 @@ namespace
             &output);
 
         bool closed = CheckIo(fclose(file) == 0, "fclose", outputPath);
-        return Check(generated, "on-demand generation returned false") && closed &&
-            Check(!attemptReentrantReport || (output.reentrantAttempted && !output.reentrantResult),
-                "nested request was not attempted or was incorrectly accepted");
+        if (!closed ||
+            !Check(!attemptReentrantReport || (output.reentrantAttempted && !output.reentrantResult),
+                "nested request was not attempted or was incorrectly accepted"))
+        {
+            return -1;
+        }
+
+        return generated ? 1 : 0;
+    }
+
+    bool WriteOnDemandReport(
+        InProcCrashReportOutputFormat outputFormat,
+        int signal,
+        const char* outputPath,
+        ucontext_t* signalContext,
+        bool attemptReentrantReport = false)
+    {
+        return Check(CreateOnDemandReport(outputFormat, signal, outputPath, signalContext, attemptReentrantReport, nullptr) == 1,
+            "on-demand generation failed");
     }
 }
 
@@ -549,4 +573,17 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveOnDemand(
     return WriteOnDemandReport(InProcCrashReportOutputFormat::Json, SIGABRT, secondJsonPath, signalContext) &&
         WriteOnDemandReport(InProcCrashReportOutputFormat::Log, SIGSEGV, firstLogPath, signalContext) &&
         WriteOnDemandReport(InProcCrashReportOutputFormat::Log, SIGABRT, secondLogPath, signalContext) ? 0 : -1;
+}
+
+// DriveOnDemand initializes the reporter before concurrent requests use this entry point.
+extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_CreateOnDemandReport(
+    InProcCrashReportOutputFormat outputFormat,
+    int signal,
+    const char* outputPath,
+    int (*beforeWriteCallback)())
+{
+    SyntheticContext syntheticContext;
+    FillSyntheticContext(&syntheticContext);
+    return CreateOnDemandReport(outputFormat, signal, outputPath, &syntheticContext.context,
+        /*attemptReentrantReport*/ false, beforeWriteCallback);
 }
