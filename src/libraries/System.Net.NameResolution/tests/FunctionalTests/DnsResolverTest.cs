@@ -24,6 +24,10 @@ namespace System.Net.NameResolution.Tests
         public static bool IsSupportedPlatform =>
             PlatformDetection.IsNotMobile && PlatformDetection.IsNotBrowser && PlatformDetection.IsNotWasi;
 
+        // DnsResolver has no implementation on Browser or WASI; every query throws
+        // PlatformNotSupportedException there.
+        public static bool IsDnsResolverUnsupported => PlatformDetection.IsBrowser || PlatformDetection.IsWasi;
+
         private static DnsResolver CreateResolver() =>
             new DnsResolver(new DnsResolverOptions { Servers = { new IPEndPoint(IPAddress.Loopback, 53) } });
 
@@ -46,6 +50,14 @@ namespace System.Net.NameResolution.Tests
         public void DnsResolver_Construct_DefaultOptions_ThrowsPlatformNotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => new DnsResolver());
+        }
+
+        [ConditionalFact(nameof(IsDnsResolverUnsupported))]
+        public async Task DnsResolver_UnsupportedPlatform_ThrowsPlatformNotSupported()
+        {
+            using DnsResolver r = CreateResolver();
+            Assert.Throws<PlatformNotSupportedException>(() => r.ResolveAddresses(TestHost));
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => r.ResolveAddressesAsync(TestHost));
         }
 
         [Fact]
@@ -167,7 +179,7 @@ namespace System.Net.NameResolution.Tests
             };
         }
 
-        // ---- Windows network tests (require outbound DNS) ----
+        // ---- Cross-platform network tests (require outbound DNS) ----
 
         [ConditionalFact(typeof(DnsResolverTest), nameof(IsSupportedPlatform))]
         public async Task DnsResolver_PreCanceledToken_ReturnsCanceled()

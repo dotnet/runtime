@@ -116,7 +116,7 @@ namespace System.Net
             }
         }
 
-        public void Dispose() => Dispose(_socket);
+        public void Dispose() => ((IDisposable)_socket).Dispose();
 
         [UnsafeAccessor(UnsafeAccessorKind.Constructor)]
         [return: UnsafeAccessorType(SocketTypeName)]
@@ -154,9 +154,6 @@ namespace System.Net
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "EndConnect")]
         private static extern void EndConnect([UnsafeAccessorType(SocketTypeName)] object socket, IAsyncResult asyncResult);
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "Dispose")]
-        private static extern void Dispose([UnsafeAccessorType(SocketTypeName)] object socket);
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_SendTimeout")]
         private static extern void SetSendTimeout([UnsafeAccessorType(SocketTypeName)] object socket, int value);

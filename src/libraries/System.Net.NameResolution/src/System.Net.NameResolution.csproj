@@ -142,8 +142,6 @@
              Link="Common\Interop\CoreLib\Unix\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\Interop.Poll.Structs.cs"
-             Link="Common\Interop\Unix\Interop.Poll.Structs.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.ErrNo.cs"
              Link="Common\Interop\Unix\System.Native\Interop.ErrNo.cs"/>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Close.cs"
@@ -156,8 +154,6 @@
              Link="Common\Interop\Unix\System.Native\Interop.HostEntries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IPAddress.cs"
              Link="Common\Interop\Unix\System.Native\Interop.IPAddress.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Poll.cs"
-             Link="Common\Interop\Unix\System.Native\Interop.Poll.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Socket.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Socket.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.SocketAddress.cs"
