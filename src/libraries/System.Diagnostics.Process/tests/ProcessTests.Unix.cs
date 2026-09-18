@@ -1174,6 +1174,7 @@ namespace System.Diagnostics.Tests
         // s_childProcessWaitStates. Any concurrent Process construction (e.g. the tree enumeration in
         // another Kill) then blocks on that lock, so the stopped child is never SIGKILL'd -> deadlock.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [OuterLoop("Spawns a large number of processes.")]
         [PlatformSpecific(TestPlatforms.OSX)]
         public void Kill_EntireProcessTree_Concurrent_DoesNotHang()
         {
@@ -1239,6 +1240,7 @@ namespace System.Diagnostics.Tests
         // misclassification is only observed when unrelated child activity causes CheckChildren to run, so
         // this test spawns short-lived "trigger" children concurrently to force that.
         [Fact]
+        [OuterLoop("Spawns a large number of processes.")]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void ChildProcess_PtraceStopped_IsNotReportedAsExited()
         {
