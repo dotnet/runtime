@@ -32,10 +32,6 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public MethodDesc Method => _methodNode.Method;
-        public override MethodSignature Signature => Method.Signature;
-        public override bool IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
-        public override bool IsAsyncCall => Method.IsAsyncCall();
-        public override bool HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg() || Method.IsArrayAddressMethod();
 
         protected override string GetName(NodeFactory factory)
         {

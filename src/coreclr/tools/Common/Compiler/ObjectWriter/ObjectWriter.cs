@@ -416,13 +416,10 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
-                if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
+                if (node is INodeWithWasmSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
-                    Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
-
-                    // Record only information we can get from the MethodDesc here. The actual
-                    // body will be emitted by the call to EmitData() at the end
-                    // of this loop iteration.
+                    // Record the declaration before the body is emitted by the call to EmitData()
+                    // at the end of this loop iteration.
                     RecordMethodDeclaration(codeNode);
                 }
 
@@ -617,7 +614,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected virtual void RecordMethodDeclaration(INodeWithTypeSignature node)
+        private protected virtual void RecordMethodDeclaration(INodeWithWasmSignature node)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }

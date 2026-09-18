@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using ILCompiler;
-using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.Wasm;
 
 using Internal.TypeSystem;
@@ -576,11 +575,6 @@ namespace Internal.JitInterface
             return GetSignature(method.Signature, GetLoweringFlags(method));
         }
 
-        public static WasmSignature GetSignature(INodeWithTypeSignature node)
-        {
-            return GetSignature(node.Signature, GetLoweringFlags(node));
-        }
-
         public static unsafe WasmSignature GetSignature(MethodSignature signature, CORINFO_SIG_INFO* callSig)
         {
             return GetSignature(signature, GetLoweringFlags(callSig));
@@ -598,24 +592,6 @@ namespace Internal.JitInterface
                 flags |= LoweringFlags.IsAsyncCall;
             }
             if (method.IsUnmanagedCallersOnly)
-            {
-                flags |= LoweringFlags.IsUnmanagedCallersOnly;
-            }
-            return flags;
-        }
-
-        public static LoweringFlags GetLoweringFlags(INodeWithTypeSignature node)
-        {
-            LoweringFlags flags = 0;
-            if (node.HasGenericContextArg)
-            {
-                flags |= LoweringFlags.HasGenericContextArg;
-            }
-            if (node.IsAsyncCall)
-            {
-                flags |= LoweringFlags.IsAsyncCall;
-            }
-            if (node.IsUnmanagedCallersOnly)
             {
                 flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }

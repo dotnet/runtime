@@ -141,7 +141,7 @@ namespace ILCompiler.ObjectWriter
             _wasmSymbolManager.AddDefinition(mangledName, WasmIndexSpace.Type);
         }
 
-        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
+        private protected override void RecordMethodDeclaration(INodeWithWasmSignature node)
         {
             WriteSignatureIndexForFunction(node);
             Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
@@ -196,9 +196,9 @@ namespace ILCompiler.ObjectWriter
             section.WriteEntry(writer, signatureIndex);
         }
 
-        private void WriteSignatureIndexForFunction(INodeWithTypeSignature node)
+        private void WriteSignatureIndexForFunction(INodeWithWasmSignature node)
         {
-            WasmFuncType signature = WasmLowering.GetSignature(node).FuncType;
+            WasmFuncType signature = node.WasmSignature.FuncType;
             Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
             if (!_wasmSymbolManager.TryGetSymbol(key, out WasmSymbol signatureSymbol))
             {
