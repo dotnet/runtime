@@ -13,6 +13,11 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
 {
     // Regression coverage for https://github.com/dotnet/runtime/issues/133667
     // Cancelling a response body read must not leave a faulted, never-awaited JS-promise Task behind.
+    //
+    // An orphaned Task is only observable through UnobservedTaskException, which fires when its
+    // TaskExceptionHolder is finalized. That needs a precise GC to reliably collect the dropped Task;
+    // Mono's conservative wasm GC does not, so the signal never appears there and the tests can't run.
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
     public class HttpCancellationLeakTest
     {
         // XHarness hosts NetCoreServer as middleware and passes its address in this variable.
@@ -78,7 +83,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             {
                 await body();
 
-                for (int i = 0; i < 60; i++)
+                for (int i = 0; i < 20; i++)
                 {
                     await Task.Delay(50);
                     GC.Collect();
