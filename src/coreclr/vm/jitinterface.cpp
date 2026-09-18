@@ -13241,7 +13241,7 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
 
     bool isTier1Code = false;
 #ifdef FEATURE_TIERED_COMPILATION
-    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    PrepareCodeConfig* config = m_pPrepareCodeConfig;
     _ASSERTE(config != nullptr);
 
     // The JIT may change the requested optimization level before allocMem, but
