@@ -4401,6 +4401,13 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
     //      Once a block is removed the predecessors are not accurate (assuming they were at the beginning)
     //      For now we will only use the information in bbRefs because it is easier to be updated
 
+    // Tail duplication rewrites the flow out of the duplicating block, and so can end up rotating an
+    // unconditional branch around a cycle of conditional blocks, never reaching a fixed point. Remember
+    // which (source, target) pairs have already been duplicated, so that each pair is only duplicated
+    // once per invocation. Since duplication never creates new blocks, this bounds the work we do here.
+    //
+    JitHashTable<uint64_t, JitLargePrimitiveKeyFuncs<uint64_t>, bool> tailDupPairs(getAllocator(CMK_FlowEdge));
+
     bool modified = false;
     bool change;
     do
@@ -4458,9 +4465,12 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
             if (block->KindIs(BBJ_ALWAYS))
             {
-                bDest = block->GetTarget();
-                if (doTailDuplication && fgOptimizeUncondBranchToSimpleCond(block, bDest))
+                bDest                     = block->GetTarget();
+                const uint64_t tailDupKey = ((uint64_t)block->bbID << 32) | bDest->bbID;
+                if (doTailDuplication && !tailDupPairs.Lookup(tailDupKey) &&
+                    fgOptimizeUncondBranchToSimpleCond(block, bDest))
                 {
+                    tailDupPairs.Set(tailDupKey, true);
                     assert(block->KindIs(BBJ_COND));
                     assert(bNext == block->Next());
                     change   = true;
