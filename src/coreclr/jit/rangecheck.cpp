@@ -749,26 +749,8 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
                         binOpResult = RangeOps::Multiply(r1, r2);
                         break;
                     case VNF_SUB:
-                    {
                         binOpResult = RangeOps::Subtract(r1, r2);
-                        // Preserve the non-negativity of span slice lengths: length - start,
-                        // where length >= 0 and an incoming unsigned comparison proves start <= length.
-                        if ((vnType == TYP_INT) && r1.IsConstantRange() && (r1.LowerLimit().GetConstant() >= 0) &&
-                            (!binOpResult.LowerLimit().IsConstant() || (binOpResult.LowerLimit().GetConstant() < 0)))
-                        {
-                            Range startRange = Limit(Limit::keUnknown);
-                            MergeEdgeAssertionsWorker(comp, funcApp.GetArg(1), funcApp.GetArg(0), assertions,
-                                                      &startRange, true, budget - 1, visited);
-                            if (startRange.LowerLimit().IsConstant() && (startRange.LowerLimit().GetConstant() >= 0) &&
-                                startRange.UpperLimit().IsBinOpArray() &&
-                                (startRange.UpperLimit().vn == funcApp.GetArg(0)) &&
-                                (startRange.UpperLimit().GetConstant() <= 0))
-                            {
-                                binOpResult = Range(Limit(Limit::keConstant, 0), r1.UpperLimit());
-                            }
-                        }
                         break;
-                    }
                     case VNF_AND:
                         binOpResult = RangeOps::And(r1, r2);
                         break;
@@ -1130,7 +1112,7 @@ Limit RangeCheck::TightenLimit(Limit l1, Limit l2, ValueNum preferredBound, bool
 // Arguments:
 //    comp                - the compiler instance
 //    normalLclVN         - the value number to look for assertions for
-//    preferredBoundVN    - a bound known non-negative at the query site, preferred over constant limits
+//    preferredBoundVN    - when this VN is set, it will be given preference over constant limits
 //    assertions          - the assertions to use
 //    pRange              - the range to tighten with assertions
 //    canUseCheckedBounds - true if we can use checked bounds assertions (cache)
@@ -1156,7 +1138,7 @@ void RangeCheck::MergeEdgeAssertions(Compiler*        comp,
 // Arguments:
 //    comp                - the compiler instance
 //    normalLclVN         - the value number to look for assertions for
-//    preferredBoundVN    - a bound known non-negative at the query site, preferred over constant limits
+//    preferredBoundVN    - when this VN is set, it will be given preference over constant limits
 //    assertions          - the assertions to use
 //    pRange              - the range to tighten with assertions
 //    canUseCheckedBounds - true if we can use checked bounds assertions (cache)
@@ -1281,16 +1263,18 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         // Current assertion is "normalLclVN u<= preferredBoundVN".
         else if (canUseCheckedBounds && curAssertion.KindIs(Compiler::OAK_LE_UN) &&
                  (curAssertion.GetOp1().GetVN() == normalLclVN) &&
-                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
+                 curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) && curAssertion.GetOp2().IsVNNeverNegative() &&
                  (curAssertion.GetOp2().GetVN() == preferredBoundVN) && (curAssertion.GetOp2().GetCns() == 0))
         {
             cmpOper    = GT_LE;
             limit      = Limit(Limit::keBinOpArray, preferredBoundVN, 0);
             isUnsigned = true;
         }
-        // Current assertion is of the form "i <relop> (vn + cns)" where vn is a checked bound.
-        // The arbitrary-VN sub-form of O2K_VN_ADD_CNS (created by CreateRelopVN, where op2.vn
-        // is not a checked bound) is intentionally excluded here.
+        // Current assertion is of the form "i <relop> (vn + cns)" where vn is a real
+        // (length-like) checked bound. The arbitrary-VN sub-form of O2K_VN_ADD_CNS (created by
+        // CreateRelopVN, where op2.vn is not a checked bound) is intentionally excluded here so
+        // that it never flows into a keBinOpArray Limit, whose Range::IsValid / Range::Widen
+        // rules implicitly assume the VN refers to a length-like (checked-bound-shaped) quantity.
         // Such cases fall through to the general "X <relop> Y" branch below.
         else if (curAssertion.KindIs(Compiler::OAK_GE, Compiler::OAK_GT, Compiler::OAK_LE, Compiler::OAK_LT) &&
                  curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
@@ -1453,25 +1437,15 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
                 }
             }
         }
-        // Current assertion is "index u< length". It implies a no-throw bounds check
-        // only when length is non-negative at this site.
-        else if (curAssertion.IsBoundsCheckNoThrow(preferredBoundVN) ||
-                 (curAssertion.KindIs(Compiler::OAK_LT_UN) && curAssertion.GetOp2().KindIs(Compiler::O2K_VN_ADD_CNS) &&
-                  (curAssertion.GetOp2().GetCns() == 0) && (curAssertion.GetOp2().GetVN() == normalLclVN)))
+        // Current assertion asserts a bounds check does not throw
+        else if (curAssertion.IsBoundsCheckNoThrow())
         {
+            // IsBoundsCheckNoThrow is "op1VN (Idx) LT_UN op2VN (Len)"
             ValueNum indexVN = curAssertion.GetOp1().GetVN();
             ValueNum lenVN   = curAssertion.GetOp2().GetVN();
 
-            if (!curAssertion.GetOp2().IsVNNeverNegative() && (lenVN != preferredBoundVN) &&
-                !((normalLclVN == lenVN) && pRange->LowerLimit().IsConstant() &&
-                  (pRange->LowerLimit().GetConstant() >= 0)))
-            {
-                Range boundRange = GetRangeFromAssertionsWorker(comp, lenVN, assertions, budget - 1, visited);
-                if (!boundRange.LowerLimit().IsConstant() || (boundRange.LowerLimit().GetConstant() < 0))
-                {
-                    continue;
-                }
-            }
+            assert(curAssertion.GetOp2().GetCns() == 0);
+            assert(curAssertion.GetOp2().IsVNNeverNegative());
 
             if (normalLclVN == indexVN)
             {
@@ -1644,18 +1618,13 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
-        // Symbolic limits require a non-negative base, not merely a VN used in some bounds check.
-        // The preferred bound is already known non-negative at the query site. Other bounds
-        // need independent proof: new int[n] on another path does not imply n >= 0 here.
+        // A checked-bound VN can be negative on paths that skip its allocation.
+        // Symbolic limits require a non-negative base; the preferred bound is the length being checked.
         if (limit.IsBinOpArray() && (limit.vn != preferredBoundVN) &&
             !((limit.vn == curAssertion.GetOp2().GetVN()) && curAssertion.GetOp2().IsVNNeverNegative()) &&
             !comp->vnStore->IsVNNeverNegative(limit.vn))
         {
-            Range boundRange = GetRangeFromAssertionsWorker(comp, limit.vn, assertions, budget, visited);
-            if (!boundRange.LowerLimit().IsConstant() || (boundRange.LowerLimit().GetConstant() < 0))
-            {
-                continue;
-            }
+            continue;
         }
 
 #ifdef DEBUG
@@ -2457,7 +2426,7 @@ void Indent(int indent)
 //    block            - the block that contains `expr`;
 //    expr             - expression to compute the range for;
 //    pRange           - [Out] range of the expression;
-//    preferredBoundVN - a bound known non-negative at the query site, preferred over constant limits.
+//    preferredBoundVN - a value number of the preferred bound.
 //
 // Return Value:
 //    false if the range is unknown or determined to overflow.
