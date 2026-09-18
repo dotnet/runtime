@@ -5483,7 +5483,10 @@ namespace System.Net.Http.Functional.Tests
 
         private static void ConfigureSniCallback(HttpClientHandler handler, List<string> sniValues)
         {
-            GetUnderlyingSocketsHttpHandler(handler).SslOptions.RemoteCertificateValidationCallback = (sender, _, _, _) =>
+            SslClientAuthenticationOptions sslOptions = GetUnderlyingSocketsHttpHandler(handler).SslOptions;
+            // Disable TLS session resumption so that cert validation callback fires for every handshake.
+            sslOptions.AllowTlsResume = false;
+            sslOptions.RemoteCertificateValidationCallback = (sender, _, _, _) =>
             {
                 string sni = sender switch
                 {
