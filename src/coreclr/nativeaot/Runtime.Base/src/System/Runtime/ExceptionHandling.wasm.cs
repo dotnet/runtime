@@ -23,11 +23,18 @@ namespace System.Runtime
             FallbackFailFast(RhFailFastReason.InternalError, exception);
         }
 
-        [RuntimeExport("RhpRethrow")]
+        [RuntimeExport("RhpThrowExact")]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void RhpRethrow(object exception)
+        private static void RhpThrowExact(object exception)
         {
             FallbackFailFast(RhFailFastReason.InternalError, exception);
+        }
+
+        [RuntimeExport("RhpRethrow")]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void RhpRethrow()
+        {
+            FallbackFailFast(RhFailFastReason.InternalError, null);
         }
 
         [RuntimeExport("RhpHandleExceptionWasmCatch")]
