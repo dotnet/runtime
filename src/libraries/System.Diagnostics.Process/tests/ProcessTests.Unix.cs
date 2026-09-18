@@ -1185,39 +1185,39 @@ namespace System.Diagnostics.Tests
             {
                 var roots = new Process[TreeCount];
                 var grandChildren = new Process[TreeCount];
-                for (int i = 0; i < TreeCount; i++)
-                {
-                    // Each direct child spawns a grandchild and then blocks forever, producing a
-                    // small process tree rooted at a direct child of this test host.
-                    Process root = CreateProcess(() =>
-                    {
-                        using Process grandChild = Process.Start("/bin/sleep", "1000");
-                        Console.WriteLine(grandChild.Id);
-                        Thread.Sleep(Timeout.Infinite);
-                        return RemoteExecutor.SuccessExitCode;
-                    });
-                    root.StartInfo.RedirectStandardOutput = true;
-                    root.Start();
-                    roots[i] = root;
-                }
-
-                for (int i = 0; i < TreeCount; i++)
-                {
-                    // Obtain a Process instance for the grandchild before killing the tree, to avoid
-                    // PID reuse issues.
-                    int grandChildPid = int.Parse(roots[i].StandardOutput.ReadLine());
-                    grandChildren[i] = Process.GetProcessById(grandChildPid);
-                }
-
-                var tasks = new Task[TreeCount];
-                for (int i = 0; i < TreeCount; i++)
-                {
-                    Process root = roots[i];
-                    tasks[i] = Task.Run(() => root.Kill(entireProcessTree: true));
-                }
-
                 try
                 {
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        // Each direct child spawns a grandchild and then blocks forever, producing a
+                        // small process tree rooted at a direct child of this test host.
+                        Process root = CreateProcess(() =>
+                        {
+                            using Process grandChild = Process.Start("/bin/sleep", "1000");
+                            Console.WriteLine(grandChild.Id);
+                            Thread.Sleep(Timeout.Infinite);
+                            return RemoteExecutor.SuccessExitCode;
+                        });
+                        root.StartInfo.RedirectStandardOutput = true;
+                        root.Start();
+                        roots[i] = root;
+                    }
+
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        // Obtain a Process instance for the grandchild before killing the tree, to avoid
+                        // PID reuse issues.
+                        int grandChildPid = int.Parse(roots[i].StandardOutput.ReadLine());
+                        grandChildren[i] = Process.GetProcessById(grandChildPid);
+                    }
+
+                    var tasks = new Task[TreeCount];
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        Process root = roots[i];
+                        tasks[i] = Task.Run(() => root.Kill(entireProcessTree: true));
+                    }
+
                     bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
                     Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
 
@@ -1229,11 +1229,18 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    // Ensure grandchildren don't leak as long-running /bin/sleep processes if an assertion
-                    // above fails, e.g. because Kill(entireProcessTree: true) hung or didn't reach a grandchild.
-                    // Unlike roots, grandchildren aren't tracked by ProcessTestBase's automatic cleanup.
-                    foreach (Process grandChild in grandChildren)
+                    // Ensure grandchildren don't leak as long-running /bin/sleep processes if setup or an
+                    // assertion above fails, e.g. because Kill(entireProcessTree: true) hung or didn't reach
+                    // a grandchild, or a grandchild's pid wasn't read/looked up yet. Unlike roots, grandchildren
+                    // aren't tracked by ProcessTestBase's automatic cleanup, and this loop must be null-safe
+                    // since not every slot may have been populated.
+                    foreach (Process? grandChild in grandChildren)
                     {
+                        if (grandChild is null)
+                        {
+                            continue;
+                        }
+
                         try
                         {
                             grandChild.Kill();
@@ -1302,7 +1309,10 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                child.Kill();
+                // If the bug being tested for reproduces, HasExited may already be (incorrectly) cached as
+                // true, which would make Process.Kill() a no-op and leak the still-running child. Signal
+                // directly via the handle instead, which doesn't consult that cached state.
+                child.SafeHandle.Signal(PosixSignal.SIGKILL);
                 Assert.True(child.WaitForExit(WaitInMS));
             }
         }
