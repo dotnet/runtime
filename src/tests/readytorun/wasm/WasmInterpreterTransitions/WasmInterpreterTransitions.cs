@@ -401,6 +401,7 @@ public class WasmInterpreterTransitions
                 GC.WaitForPendingFinalizers();
                 GC.Collect();
             }
+            Assert.False(weakTarget.IsAlive);
         }
     }
 

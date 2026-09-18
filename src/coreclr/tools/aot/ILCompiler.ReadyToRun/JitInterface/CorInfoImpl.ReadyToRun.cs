@@ -3846,7 +3846,8 @@ namespace Internal.JitInterface
                     // The adapter accepts the managed instance shape
                     // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
                     // no async-continuation argument, and pointer-typed this/retbuf positions.
-                    if (wasmSig.SignatureString[0] == 'S' &&
+                    if (!sig.IsStatic &&
+                        wasmSig.SignatureString[0] == 'S' &&
                         !wasmSig.SignatureString.Contains('a') &&
                         parameters.Length >= 4 &&
                         parameters[1] == WasmValueType.I32 &&
