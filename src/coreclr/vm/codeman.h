@@ -786,6 +786,7 @@ struct RangeSection
         _flags(flags),
         _pjit(pJit),
         _pR2RModule(pR2RModule),
+        _pR2RInfo(pR2RModule->GetReadyToRunInfo()),
         _pHeapList(dac_cast<PTR_HeapList>((TADDR)0)),
         _pRangeList(dac_cast<PTR_CodeRangeMapRangeList>((TADDR)0))
 #if defined(TARGET_AMD64)
@@ -829,6 +830,12 @@ struct RangeSection
     const RangeSectionFlags _flags;
     const PTR_IJitManager _pjit;
     const PTR_Module _pR2RModule;
+#ifdef FEATURE_READYTORUN
+    // The specific R2R image owning this range. Equals _pR2RModule->GetReadyToRunInfo(), except for a
+    // wasm virtual-IP range of a supplemental (lazily attached) image, where it names that image
+    // rather than the module's primary info.
+    PTR_ReadyToRunInfo _pR2RInfo = dac_cast<PTR_ReadyToRunInfo>((TADDR)0);
+#endif
     const PTR_HeapList _pHeapList;
     const PTR_CodeRangeMapRangeList _pRangeList;
 
@@ -2417,8 +2424,11 @@ struct cdac_data<LoaderCodeHeap>
 #ifdef TARGET_WASM
 struct VirtualIPRangeSection
 {
-    VirtualIPRangeSection(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule) : rangeSection(range, pJit, flags, pR2RModule), pNext(nullptr)
+    VirtualIPRangeSection(Range range, IJitManager* pJit, RangeSection::RangeSectionFlags flags, PTR_Module pR2RModule, PTR_ReadyToRunInfo pR2RInfo) : rangeSection(range, pJit, flags, pR2RModule), pNext(nullptr)
     {
+        // The embedded RangeSection defaulted _pR2RInfo to the module's primary info; override it with
+        // the specific image that registered this range (which may be a supplemental lazy image).
+        rangeSection._pR2RInfo = pR2RInfo;
     }
 
     RangeSection        rangeSection;       // Synthetic RangeSection for compatibility with existing APIs
@@ -2434,14 +2444,14 @@ struct VirtualIPRangeSection
 
 struct FunctionTableIndexRangeSection
 {
-    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_Module pModule)
-        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RModule(pModule), pNext(nullptr)
+    FunctionTableIndexRangeSection(DWORD minIndex, DWORD count, PTR_ReadyToRunInfo pR2RInfo)
+        : minFunctionTableIndex(minIndex), numRuntimeFunctions(count), pR2RInfo(pR2RInfo), pNext(nullptr)
     {
     }
 
     DWORD               minFunctionTableIndex;  // Start of the function table index range
     DWORD               numRuntimeFunctions;    // Number of RUNTIME_FUNCTION entries
-    PTR_Module          pR2RModule;             // Module owning this range
+    PTR_ReadyToRunInfo  pR2RInfo;               // R2R image owning this range
     FunctionTableIndexRangeSection* pNext;      // Next entry in the linked list
 };
 #endif // TARGET_WASM
@@ -2589,9 +2599,7 @@ public:
     // Returns the start virtual IP assigned to this module.
     static TADDR         AddVirtualIPRange(UINT32 numVirtualIPs,
                                             IJitManager* pJit,
-                                            PTR_Module pModule);
-
-    // Find the VirtualIPRangeSection for a given virtual IP.
+                                           PTR_ReadyToRunInfo pR2RInfo);
     static VirtualIPRangeSection* FindVirtualIPRangeSection(TADDR virtualIP);
 
     // Returns true if the given PCODE is a virtual IP encoding (both low and high bits set).
@@ -2607,7 +2615,7 @@ public:
     // Register a function table index range for a WASM R2R module.
     static void           AddFunctionTableIndexRange(DWORD minFunctionTableIndex,
                                                      DWORD numRuntimeFunctions,
-                                                     PTR_Module pModule);
+                                                     PTR_ReadyToRunInfo pR2RInfo);
 
     // Find the FunctionTableIndexRangeSection for a given function table index.
     static FunctionTableIndexRangeSection* FindFunctionTableIndexRangeSection(DWORD functionIndex);
@@ -2813,7 +2821,7 @@ struct cdac_data<FunctionTableIndexRangeSection>
 {
     static constexpr size_t MinFunctionTableIndex = offsetof(FunctionTableIndexRangeSection, minFunctionTableIndex);
     static constexpr size_t NumRuntimeFunctions = offsetof(FunctionTableIndexRangeSection, numRuntimeFunctions);
-    static constexpr size_t R2RModule = offsetof(FunctionTableIndexRangeSection, pR2RModule);
+    static constexpr size_t R2RInfo = offsetof(FunctionTableIndexRangeSection, pR2RInfo);
     static constexpr size_t Next = offsetof(FunctionTableIndexRangeSection, pNext);
 };
 #endif // TARGET_WASM

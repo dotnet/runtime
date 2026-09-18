@@ -113,6 +113,18 @@ public:
         LoaderAllocator *pLoaderAllocator,
         bool isPlatformNative);
 
+#ifdef TARGET_WASM
+    // Build a NativeImage from an already-resident webcil composite payload (base/size), rather than
+    // resolving it by path. Used to attach a lazily-downloaded R2R code supplement in the browser.
+    static NativeImage *OpenFromMemory(
+        TADDR imageBase,
+        uint32_t imageSize,
+        LPCUTF8 nativeImageFileName,
+        AssemblyBinder *pAssemblyBinder,
+        LoaderAllocator *pLoaderAllocator,
+        AllocMemTracker *pamTracker);
+#endif // TARGET_WASM
+
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
     bool EagerFixupsHaveRun() const { return m_eagerFixupsHaveRun; }
     void SetEagerFixupsHaveRun() { m_eagerFixupsHaveRun = true; }

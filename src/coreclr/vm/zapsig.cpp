@@ -328,7 +328,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
         {
             DWORD ix = CorSigUncompressData(pSig);
             CONTRACT_VIOLATION(ThrowsViolation|GCViolation);
-            pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndexIfLoaded(ix);
+            pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndexIfLoaded(ix, pZapSigContext->pR2RInfo);
             if (pModule == NULL)
                 return FALSE;
             else
@@ -559,7 +559,8 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
 
 #ifndef DACCESS_COMPILE
 ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
-                                      DWORD index)
+                                      DWORD index,
+                                      ReadyToRunInfo *pInfo)
 {
     CONTRACTL
     {
@@ -570,7 +571,8 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     CONTRACTL_END;
 
     Assembly *pAssembly = NULL;
-    NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
+    ReadyToRunInfo *pR2RInfo = (pInfo != NULL) ? pInfo : fromModule->GetReadyToRunInfo();
+    NativeImage *nativeImage = (pInfo != NULL) ? pInfo->GetNativeImage() : fromModule->GetCompositeNativeImage();
     uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
 
     if (index <= assemblyRefMax)
@@ -588,16 +590,16 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (pR2RInfo->IsImageVersionAtLeast(6,3))
         {
             if (index == 1)
             {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
+                return pR2RInfo->GetNativeManifestModule();
             }
             index--;
         }
 
-        pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
+        pAssembly = (pInfo != NULL) ? NULL : fromModule->GetNativeMetadataAssemblyRefFromCache(index);
 
         if(pAssembly == NULL)
         {
@@ -614,7 +616,10 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
                                 pParentAssembly);
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
             }
-            fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
+            if (pInfo == NULL)
+            {
+                fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);
+            }
         }
     }
 
@@ -622,7 +627,8 @@ ModuleBase *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 }
 
 ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
-                                              DWORD index)
+                                              DWORD index,
+                                              ReadyToRunInfo *pInfo)
 {
     CONTRACTL
     {
@@ -634,7 +640,8 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     Assembly *pAssembly = NULL;
     mdAssemblyRef tkAssemblyRef;
 
-    NativeImage *nativeImage = fromModule->GetCompositeNativeImage();
+    ReadyToRunInfo *pR2RInfo = (pInfo != NULL) ? pInfo : fromModule->GetReadyToRunInfo();
+    NativeImage *nativeImage = (pInfo != NULL) ? pInfo->GetNativeImage() : fromModule->GetCompositeNativeImage();
     uint32_t assemblyRefMax = (nativeImage != NULL ? 0 : fromModule->GetAssemblyRefMax());
 
     if (index <= assemblyRefMax)
@@ -652,16 +659,16 @@ ModuleBase *ZapSig::DecodeModuleFromIndexIfLoaded(Module *fromModule,
     {
         index -= assemblyRefMax;
 
-        if (fromModule->GetReadyToRunInfo()->IsImageVersionAtLeast(6,3))
+        if (pR2RInfo->IsImageVersionAtLeast(6,3))
         {
             if (index == 1)
             {
-                return fromModule->GetReadyToRunInfo()->GetNativeManifestModule();
+                return pR2RInfo->GetNativeManifestModule();
             }
             index--;
         }
 
-        pAssembly = fromModule->GetNativeMetadataAssemblyRefFromCache(index);
+        pAssembly = (pInfo != NULL) ? NULL : fromModule->GetNativeMetadataAssemblyRefFromCache(index);
         if (pAssembly == NULL)
         {
             tkAssemblyRef = RidToToken(index, mdtAssemblyRef);
@@ -705,7 +712,8 @@ TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
                               ModuleBase *pInfoModule,
                               PCCOR_SIGNATURE pBuffer,
                               ClassLoadLevel level,
-                              PCCOR_SIGNATURE *ppAfterSig /*=NULL*/)
+                              PCCOR_SIGNATURE *ppAfterSig /*=NULL*/,
+                              ReadyToRunInfo *pInfo /*=NULL*/)
 {
     CONTRACTL
     {
@@ -717,7 +725,7 @@ TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
 
     SigPointer p(pBuffer);
 
-    ZapSig::Context    zapSigContext(pInfoModule, pEncodeModuleContext);
+    ZapSig::Context    zapSigContext(pInfoModule, pEncodeModuleContext, pInfo);
     ZapSig::Context *  pZapSigContext = &zapSigContext;
 
     SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
@@ -742,12 +750,13 @@ TypeHandle ZapSig::DecodeType(Module *pEncodeModuleContext,
 MethodDesc *ZapSig::DecodeMethod(Module *pReferencingModule,
                                  ModuleBase *pInfoModule,
                                  PCCOR_SIGNATURE pBuffer,
-                                 TypeHandle * ppTH /*=NULL*/)
+                                 TypeHandle * ppTH /*=NULL*/,
+                                 ReadyToRunInfo *pInfo /*=NULL*/)
 {
     STANDARD_VM_CONTRACT;
 
     SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
-    ZapSig::Context zapSigContext(pInfoModule, (void *)pReferencingModule, ZapSig::NormalTokens);
+    ZapSig::Context zapSigContext(pInfoModule, (void *)pReferencingModule, ZapSig::NormalTokens, pInfo);
     return DecodeMethod(pInfoModule, pBuffer, &typeContext, &zapSigContext, ppTH, NULL, NULL);
 }
 
@@ -786,7 +795,7 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
         else
 #endif
         {
-            pInfoModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex);
+            pInfoModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(updatedModuleIndex, pZapSigContext->pR2RInfo);
         }
     }
 
@@ -979,7 +988,8 @@ MethodDesc *ZapSig::DecodeMethod(ModuleBase *pInfoModule,
 FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
                                 ModuleBase *pInfoModule,
                                 PCCOR_SIGNATURE pBuffer,
-                                TypeHandle *ppTH /*=NULL*/)
+                                TypeHandle *ppTH /*=NULL*/,
+                                ReadyToRunInfo *pInfo /*=NULL*/)
 {
     CONTRACTL
     {
@@ -991,14 +1001,15 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
 
     SigTypeContext typeContext;    // empty context is OK: encoding should not contain type variables.
 
-    return DecodeField(pReferencingModule, pInfoModule, pBuffer, &typeContext, ppTH);
+    return DecodeField(pReferencingModule, pInfoModule, pBuffer, &typeContext, ppTH, pInfo);
 }
 
 FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
                                 ModuleBase *pInfoModule,
                                 PCCOR_SIGNATURE pBuffer,
                                 SigTypeContext *pContext,
-                                TypeHandle *ppTH /*=NULL*/)
+                                TypeHandle *ppTH /*=NULL*/,
+                                ReadyToRunInfo *pInfo /*=NULL*/)
 {
     CONTRACTL
     {
@@ -1019,7 +1030,7 @@ FieldDesc * ZapSig::DecodeField(Module *pReferencingModule,
 
     if (fieldFlags & ENCODE_FIELD_SIG_OwnerType)
     {
-        ZapSig::Context    zapSigContext(pInfoModule, pReferencingModule);
+        ZapSig::Context    zapSigContext(pInfoModule, pReferencingModule, pInfo);
         ZapSig::Context *  pZapSigContext = &zapSigContext;
 
         pOwnerMT = sig.GetTypeHandleThrowing(pInfoModule,

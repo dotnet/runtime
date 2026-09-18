@@ -84,10 +84,16 @@ void getMethodInfoILMethodHeaderHelper(
     );
 
 
+class ReadyToRunInfo;
+
+// When pSignatureSource is non-NULL, the fixup signature blob is read from that R2R image (a
+// lazily-attached supplemental image) instead of currentModule's primary R2R image, while
+// currentModule still provides the type-system context. Used by Module::RunSupplementalEagerFixups.
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry,
-                          BOOL mayUsePrecompiledPInvokeMethods = TRUE);
+                          BOOL mayUsePrecompiledPInvokeMethods = TRUE,
+                          ReadyToRunInfo *pSignatureSource = NULL);
 
 // These must be implemented in assembly and generate a TransitionBlock then calling JIT_PatchpointWorkerWithPolicy in order to actually be used.
 EXTERN_C FCDECL2(PCODE, JIT_Patchpoint, int* counter, int ilOffset);

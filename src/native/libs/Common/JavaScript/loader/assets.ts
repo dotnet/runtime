@@ -261,6 +261,43 @@ export async function fetchSatelliteAssemblies(culturesToLoad: string[]): Promis
     await Promise.all(promises);
 }
 
+function lazyR2ROwnerAssemblyName(assetInternal: AssetEntryInternal): string {
+    // virtualPath names the owning assembly file (e.g. "System.Console.wasm"); strip the extension and
+    // any directory to get the simple name the runtime resolves the target module by.
+    const vp = assetInternal.virtualPath ?? assetInternal.name ?? "";
+    const withoutExt = vp.replace(/\.(wasm|dll)$/i, "");
+    return withoutExt.substring(withoutExt.lastIndexOf("/") + 1);
+}
+
+async function fetchLazyR2R(asset: AssemblyAsset): Promise<void> {
+    const assetInternal = asset as AssetEntryInternal;
+    try {
+        totalAssetsToDownload++;
+        if (assetInternal.name && !asset.resolvedUrl) {
+            asset.resolvedUrl = locateFile(assetInternal.name);
+        }
+        assetInternal.behavior = "webcil";
+        const assemblyName = lazyR2ROwnerAssemblyName(assetInternal);
+        const webcilPromise = loadResource(assetInternal);
+        const memory = await wasmMemoryPromiseController.promise;
+        await dotnetBrowserHostExports.instantiateWebcilModule(webcilPromise, memory, assetInternal.virtualPath ?? assetInternal.name!, assetInternal.tableSize, assetInternal.payloadSize, assemblyName);
+    } catch (err) {
+        dotnetLogger.warn(`Lazy R2R supplement '${assetInternal.name}' failed to load: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+        onDownloadedAsset(assetInternal);
+    }
+}
+
+// Download and attach all lazy R2R native-code supplements in the background, after the app has
+// started. Best-effort: an individual failure leaves the app running on its eager (partial) image.
+export async function startLazyR2RDownloads(): Promise<void> {
+    const lazy = loaderConfig.resources?.lazyR2R;
+    if (!lazy || lazy.length === 0) {
+        return;
+    }
+    await Promise.all(lazy.map(fetchLazyR2R));
+}
+
 function lazyAssetFileName(virtualPath: string): string {
     return virtualPath.substring(virtualPath.lastIndexOf("/") + 1);
 }
