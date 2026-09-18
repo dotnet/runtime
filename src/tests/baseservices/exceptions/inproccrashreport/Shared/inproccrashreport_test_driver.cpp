@@ -101,6 +101,15 @@ namespace
 #endif
     };
 
+    struct SignalReportContext
+    {
+        int (*beforeEnumerateCallback)();
+        bool callbackSucceeded;
+    };
+
+    // Coordination belongs to this test call, not to other callers of the reporter.
+    thread_local SignalReportContext* t_signalReportContext = nullptr;
+
     bool IsManagedThreadCallback()
     {
         return true;
@@ -180,6 +189,11 @@ namespace
         InProcCrashReportFrameCallback frameCallback,
         void* ctx)
     {
+        if (t_signalReportContext != nullptr && t_signalReportContext->beforeEnumerateCallback != nullptr)
+        {
+            t_signalReportContext->callbackSucceeded = t_signalReportContext->beforeEnumerateCallback() != 0;
+        }
+
         threadCallback(crashingTid, /*isCrashThread*/ true, "System.NullReferenceException", 0x80004003, ctx);
         EmitManagedFrame(frameCallback, 0x000000000040aaaa,
             "DoWork", "Synthetic.App.Worker`1[System.Int32]", 0x06000001, ctx);
@@ -334,6 +348,40 @@ namespace
     }
 #endif
 
+    bool WriteSignalReport(int signalNumber, const char* consoleCapturePath, int (*beforeEnumerateCallback)())
+    {
+        SyntheticContext syntheticContext;
+        FillSyntheticContext(&syntheticContext);
+
+        siginfo_t si = {};
+        si.si_signo = signalNumber;
+
+#if defined(TARGET_ANDROID)
+        InProcCrashReportTest_ResetConsoleCapture();
+#else
+        int savedStderr;
+        if (!BeginConsoleCapture(consoleCapturePath, &savedStderr))
+        {
+            return false;
+        }
+#endif
+
+        SignalReportContext signalReportContext = { beforeEnumerateCallback, true };
+        t_signalReportContext = &signalReportContext;
+        errno = EDOM;
+        InProcCrashReportSignalDispatcher(signalNumber, &si, &syntheticContext.context);
+        bool errnoPreserved = Check(errno == EDOM, "signal dispatcher changed errno");
+        t_signalReportContext = nullptr;
+
+#if defined(TARGET_ANDROID)
+        bool captured = WriteConsoleCapture(consoleCapturePath);
+#else
+        bool captured = EndConsoleCapture(savedStderr);
+#endif
+        return errnoPreserved && captured &&
+            Check(signalReportContext.callbackSucceeded, "signal enumeration callback failed");
+    }
+
     struct OnDemandOutputContext
     {
         FILE* file;
@@ -437,10 +485,6 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveScenario(
         return -1;
     }
 
-#if defined(TARGET_ANDROID)
-    InProcCrashReportTest_ResetConsoleCapture();
-#endif
-
     InProcCrashReporterSettings settings = {};
     settings.isManagedThreadCallback = &IsManagedThreadCallback;
     settings.walkStackCallback = nullptr;
@@ -485,31 +529,7 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_DriveScenario(
         InProcCrashReportEndStackOverflowTrace();
     }
 
-    SyntheticContext syntheticContext;
-    FillSyntheticContext(&syntheticContext);
-
-    siginfo_t si;
-    memset(&si, 0, sizeof(si));
-    si.si_signo = signalNumber;
-
-#if !defined(TARGET_ANDROID)
-    int savedStderr;
-    if (!BeginConsoleCapture(consoleCapturePath, &savedStderr))
-    {
-        return -1;
-    }
-#endif
-
-    errno = EDOM;
-    InProcCrashReportSignalDispatcher(signalNumber, &si, &syntheticContext.context);
-    bool errnoPreserved = Check(errno == EDOM, "signal dispatcher changed errno");
-
-#if defined(TARGET_ANDROID)
-    bool captured = WriteConsoleCapture(consoleCapturePath);
-#else
-    bool captured = EndConsoleCapture(savedStderr);
-#endif
-    return errnoPreserved && captured ? 0 : -1;
+    return WriteSignalReport(signalNumber, consoleCapturePath, nullptr) ? 0 : -1;
 }
 
 // First generate without services; subsequent requests must not use the enabled
@@ -586,4 +606,13 @@ extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_CreateOnDemandReport(
     FillSyntheticContext(&syntheticContext);
     return CreateOnDemandReport(outputFormat, signal, outputPath, &syntheticContext.context,
         /*attemptReentrantReport*/ false, beforeWriteCallback);
+}
+
+// Uses the same initialized reporter as on-demand calls; bypasses PAL signal handling.
+// A successful return confirms capture, not admission: the dispatcher has no return value.
+extern "C" INPROC_TEST_EXPORT int InProcCrashReportTest_CreateSignalReport(
+    const char* consoleCapturePath,
+    int (*beforeEnumerateCallback)())
+{
+    return WriteSignalReport(SIGSEGV, consoleCapturePath, beforeEnumerateCallback) ? 1 : -1;
 }
