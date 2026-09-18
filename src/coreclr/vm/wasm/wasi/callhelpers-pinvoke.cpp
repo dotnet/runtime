@@ -452,12 +452,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
-static const Entry s_libSystem_Native_Browser [] = {
-};
-
-static const Entry s_libSystem_Runtime_InteropServices_JavaScript_Native [] = {
-};
-
 static const Entry s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8 [] = {
     { "now", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_now }, // System.Net.Http, System.Private.CoreLib
     { "resolution", (void*)&WasiHttpWorld_wit_Imports_wasi_clocks_v0_2_8_23_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8_23_resolution }, // System.Net.Http, System.Private.CoreLib
@@ -528,8 +522,6 @@ static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
     {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
     {"libSystem.Native", s_libSystem_Native, 148},
-    {"libSystem.Native.Browser", s_libSystem_Native_Browser, 0},
-    {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 0},
     {"wasi:clocks/monotonic-clock@0.2.8", s_wasi_3A_clocks_2F_monotonic_clock_40_0_2_8, 4},
     {"wasi:http/outgoing-handler@0.2.8", s_wasi_3A_http_2F_outgoing_handler_40_0_2_8, 1},
     {"wasi:http/types@0.2.8", s_wasi_3A_http_2F_types_40_0_2_8, 26},

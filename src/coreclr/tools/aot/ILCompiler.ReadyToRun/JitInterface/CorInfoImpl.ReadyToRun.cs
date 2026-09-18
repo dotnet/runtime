@@ -3446,6 +3446,12 @@ namespace Internal.JitInterface
                     return false;
                 }
 
+                if (_compilation.NodeFactory.Target.IsWasm
+                    && !_compilation.CompilationModuleGroup.IsDirectPInvoke(method))
+                {
+                    return true;
+                }
+
                 // If this method is in another versioning unit, then the compilation cannot inline the pinvoke (as we aren't currently
                 // able to construct a token correctly to refer to the pinvoke method.
                 if (!_compilation.CompilationModuleGroup.VersionsWithMethodBody(method))
