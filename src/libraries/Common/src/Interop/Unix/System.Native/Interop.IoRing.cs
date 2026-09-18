@@ -37,9 +37,6 @@ internal static partial class Interop
             public int Flags; // MSG_* flags for Recv/Send; accept flags for Accept
             public byte* SockAddr; // used by Accept (output, peer address) / Connect (input, destination address)
             public int* SockAddrLen; // in/out length of SockAddr
-            public int Multishot; // Accept only: non-zero requests IORING_ACCEPT_MULTISHOT; SockAddr/
-                                   // SockAddrLen must be null in that case - see IoRingRequest.Multishot
-                                   // in pal_io.h for why.
             public ulong UserData;
         }
 
@@ -51,11 +48,6 @@ internal static partial class Interop
             public int Result;
             public uint Flags;
         }
-
-        // IORING_CQE_F_MORE: when set on a completion's Flags, the same UserData will produce at
-        // least one more completion later (the multishot-accept case) and must not be freed yet;
-        // when clear, this UserData is fully done.
-        internal const uint IoRingCqeFlagMore = 1U << 1;
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IoRingIsAvailable")]
         internal static partial int IoRingIsAvailable();
