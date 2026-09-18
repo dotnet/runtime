@@ -102,8 +102,6 @@
 
   <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true'">
     <WasmEnvironmentVariable Include="TEST_READY_TO_RUN_MODE" Value="1" />
-    <!-- Keep the harness's platform probes interpreted: https://github.com/dotnet/runtime/issues/133614 -->
-    <PublishReadyToRunExclude Include="TestUtilities.dll" />
   </ItemGroup>
 
   <!-- TODO-WASM https://github.com/dotnet/runtime/issues/120226 (CoreCLR on wasm defaults) -->

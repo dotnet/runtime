@@ -177,8 +177,6 @@ R2R browser test apps also set `TEST_READY_TO_RUN_MODE=1`, so existing
 `PlatformDetection.IsReadyToRunCompiled` conditions apply. Quarantines for shared WebAssembly
 R2R issues use `PlatformDetection.IsWasmReadyToRun`, covering browser and WASI R2R while
 leaving interpreter coverage enabled on both hosts.
-`TestUtilities.dll` stays interpreted while its guarded platform probes are affected by
-[the R2R platform-probe issue](https://github.com/dotnet/runtime/issues/133614).
 `System.Dynamic.Runtime.Tests.dll` also stays interpreted because multiple generated dynamic
 operator tests currently trap when compiled with ReadyToRun; this is tracked by
 [the browser trimming bring-up issue](https://github.com/dotnet/runtime/issues/133193).
