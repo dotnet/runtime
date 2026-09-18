@@ -36,7 +36,8 @@ namespace System
                 throw new ArgumentException(SR.Format(SR.net_uri_InvalidUriKind, uriKind));
             }
 
-            Debug.Assert((flags & Flags.DisableImplicitFilePaths) == 0 || uriKind == UriKind.Absolute);
+            Debug.Assert((flags & Flags.DisableImplicitFilePaths) == 0 || uriKind != UriKind.Relative);
+            Debug.Assert((flags & Flags.DisablePathAndQueryCanonicalization) == 0 || uriKind == UriKind.Absolute);
 
             _string = uri ?? string.Empty;
 
@@ -210,6 +211,23 @@ namespace System
             }
 
             return false;
+        }
+
+        /// <inheritdoc/>
+        static Uri IParsable<Uri>.Parse(string s, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+
+            Uri result = new();
+            result.CreateThis(s, Flags.DisableImplicitFilePaths, UriKind.RelativeOrAbsolute);
+            return result;
+        }
+
+        /// <inheritdoc/>
+        static bool IParsable<Uri>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out Uri? result)
+        {
+            result = CreateHelper(s, Flags.DisableImplicitFilePaths, UriKind.RelativeOrAbsolute);
+            return result is not null;
         }
 
         //
@@ -627,8 +645,8 @@ namespace System
         public static bool TryEscapeDataString(ReadOnlySpan<char> charsToEscape, Span<char> destination, out int charsWritten) =>
             UriHelper.TryEscapeDataString(charsToEscape, destination, out charsWritten);
 
-#pragma warning disable CS8618 // _string will be initialized by TryCreateThis later.
-        /// <summary>Must never be used except by <see cref="CreateHelper(string?, Flags, UriKind)"/>.</summary>
+#pragma warning disable CS8618 // _string will be initialized by CreateThis or TryCreateThis later.
+        /// <summary>Creates an uninitialized instance for the parsing helpers.</summary>
         private Uri() { }
 #pragma warning restore CS8618
 

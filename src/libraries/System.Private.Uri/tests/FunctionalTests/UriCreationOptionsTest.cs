@@ -216,6 +216,10 @@ namespace System.PrivateUri.Tests
                 DangerousDisablePathAndQueryCanonicalization = true
             });
 
+            var expectedRelative = new Uri(implicitFilePath, UriKind.Relative);
+            UriCreateStringTests.TestIParsable(implicitFilePath, uri =>
+                UriCreateStringTests.VerifyRelativeUri(uri, implicitFilePath, expectedRelative.ToString()));
+
             void AssertRejected(UriCreationOptions options)
             {
                 Assert.Throws<UriFormatException>(() => new Uri(implicitFilePath, options));
@@ -256,6 +260,13 @@ namespace System.PrivateUri.Tests
 
             Assert.True(Uri.TryCreate(uriString, options, out Uri? result));
             Assert.Equal(expected, result);
+
+            UriCreateStringTests.TestIParsable(uriString, parsed =>
+            {
+                Assert.True(parsed.IsAbsoluteUri);
+                Assert.Equal(expectedIsFile, parsed.IsFile);
+                Assert.Equal(expected.AbsoluteUri, parsed.AbsoluteUri);
+            });
         }
 
         [Theory]
