@@ -617,7 +617,7 @@ namespace System.Diagnostics
                 do
                 {
                     // Find a process that has a pending wait notification, without consuming it.
-                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait(out bool isExited);
+                    pid = Interop.Sys.WaitIdAnyExitedNoHangNoWait(out bool isExited, out bool isPtraceStop);
                     if (pid > 0)
                     {
                         if (isExited)
@@ -635,7 +635,7 @@ namespace System.Diagnostics
                             {
                                 // In two cases we reap all processes (and may inadvertently reap non-managed processes):
                                 // - When the original disposition is SIG_IGN, children that terminated did not become zombies.
-                                //   Because overwrote the disposition, we have become responsible for reaping those processes.
+                                //   Because we overwrote the disposition, we have become responsible for reaping those processes.
                                 // - pid 1 (the init daemon) is responsible for reaping orphaned children.
                                 //   Because containers usually don't have an init daemon .NET may be pid 1.
 
@@ -653,19 +653,22 @@ namespace System.Diagnostics
                                 return;
                             }
                         }
-                        else if (OperatingSystem.IsMacOS() && s_childProcessWaitStates.ContainsKey(pid))
+                        else if (OperatingSystem.IsMacOS() && !isPtraceStop && s_childProcessWaitStates.ContainsKey(pid))
                         {
-                            // On macOS, a non-exit notification for a pid we track is always a plain job-control
-                            // stop/continue (see SystemNative_WaitIdAnyExitedNoHangNoWait) -- nothing to do with
-                            // ptrace. Only the real parent can ever observe that via wait()/waitid(), so there is
-                            // no other legitimate consumer whose notification we could be stealing here. We must
-                            // actively drain it via a targeted, consuming waitid(WSTOPPED|WCONTINUED) call: unlike
-                            // TryReapChild, whose underlying waitpid lacks WUNTRACED and therefore cannot observe
-                            // a plain job-control stop at all, this call is able to consume it. If we instead left
-                            // this notification untouched (like the CheckAll fallback below does), macOS can mask
-                            // this same pid's own later real exit behind the stale stop notification indefinitely,
-                            // causing WaitForExit to hang forever. Linux does not have this masking quirk (see
-                            // the branch below), so this proactive drain is restricted to macOS.
+                            // On macOS, a non-exit, non-ptrace notification for a pid we track is a plain
+                            // job-control stop/continue -- nothing to do with ptrace. Only the real parent can
+                            // ever observe that via wait()/waitid(), so there is no other legitimate consumer
+                            // whose notification we could be stealing here. We must actively drain it via a
+                            // targeted, consuming waitid(WSTOPPED|WCONTINUED) call: unlike TryReapChild, whose
+                            // underlying waitpid lacks WUNTRACED and therefore cannot observe a plain job-control
+                            // stop at all, this call is able to consume it. If we instead left this notification
+                            // untouched (like the CheckAll fallback below does), macOS can mask this same pid's
+                            // own later real exit behind the stale stop notification indefinitely, causing
+                            // WaitForExit to hang forever. Linux does not have this masking quirk (see the branch
+                            // below), so this proactive drain is restricted to macOS. isPtraceStop is checked so
+                            // that we never steal a ptrace-stop notification that may belong to some other
+                            // in-process ptrace tracer of this same pid -- that case falls through to the
+                            // untouched-notification branch below, just like it already does on Linux.
                             if (Interop.Sys.WaitIdDrainNonExited(pid) != 0)
                             {
                                 // Draining failed unexpectedly. Fall back to the generic handling below so we
@@ -677,11 +680,13 @@ namespace System.Diagnostics
                         else
                         {
                             // The notification isn't actually an exit even though only exit notifications
-                            // (WEXITED) were requested. On Linux this only happens when we are ourselves
-                            // ptrace-tracing this pid (e.g. via an in-process diagnostics component); unlike
-                            // macOS, Linux does not mask a later real exit behind an undrained stop notification,
-                            // so it's safe to leave it untouched here and let a subsequent SIGCHLD (once the
-                            // tracee actually exits) reach the isExited branch above normally.
+                            // (WEXITED) were requested. This happens either for a ptrace stop (isPtraceStop) --
+                            // which on Linux is how we are ourselves ptrace-tracing this pid (e.g. via an
+                            // in-process diagnostics component) -- or, on non-macOS platforms, for any other
+                            // non-exit notification. Unlike macOS's plain job-control stop/continue, none of
+                            // these mask a later real exit behind an undrained notification, so it's safe to
+                            // leave it untouched here and let a subsequent SIGCHLD (once the tracee actually
+                            // exits) reach the isExited branch above normally.
                             CheckAll(pidToSkip: pid, configureConsole);
 
                             // We still need the loop to terminate for this notification

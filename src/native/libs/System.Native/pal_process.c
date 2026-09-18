@@ -1177,11 +1177,13 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
     syslog((int)(LOG_USER | priority), message, arg1);
 }
 
-int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
+int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited, int32_t* isPtraceStop)
 {
     assert(isExited != NULL);
+    assert(isPtraceStop != NULL);
 
     *isExited = 0;
+    *isPtraceStop = 0;
 
     siginfo_t siginfo;
     memset(&siginfo, 0, sizeof(siginfo));
@@ -1209,6 +1211,13 @@ int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited)
         *isExited = siginfo.si_code == CLD_EXITED ||
                     siginfo.si_code == CLD_KILLED ||
                     siginfo.si_code == CLD_DUMPED;
+
+        // CLD_TRAPPED specifically means this pid stopped due to a ptrace event (as opposed to
+        // CLD_STOPPED/CLD_CONTINUED, which mean a plain job-control stop/continue with no ptrace
+        // involvement). This lets callers avoid actively draining/consuming a non-exit notification
+        // that may belong to some other in-process ptrace tracer of this same pid.
+        *isPtraceStop = siginfo.si_code == CLD_TRAPPED;
+
         return siginfo.si_pid;
     }
     else if (errno == ECHILD)

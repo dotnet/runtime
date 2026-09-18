@@ -178,8 +178,11 @@ PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message,
  * 1) returns the process id of a waitable child process; isExited is set to non-zero if the
  *    notification represents an actual exit (CLD_EXITED / CLD_KILLED / CLD_DUMPED), or zero if it
  *    represents a non-exit (stopped/continued) notification that some platforms report even though
- *    only exit notifications were requested.
- * 2) if no children are waitable, 0 is returned and isExited is set to 0.
+ *    only exit notifications were requested. When isExited is zero, isPtraceStop is set to non-zero
+ *    if the notification is specifically a ptrace stop (CLD_TRAPPED) rather than a plain job-control
+ *    stop/continue (CLD_STOPPED / CLD_CONTINUED); this lets callers avoid draining a notification
+ *    that may belong to some other in-process ptrace tracer of this same pid.
+ * 2) if no children are waitable, 0 is returned and isExited/isPtraceStop are set to 0.
  * 3) on error, -1 is returned.
  *
  * This function never consumes the notification it observes (it always uses WNOWAIT), so it is
@@ -187,7 +190,7 @@ PALEXPORT void SystemNative_SysLog(SysLogPriority priority, const char* message,
  * notification (or a pid they don't recognize) can fall back to checking their own known children
  * directly (e.g. via SystemNative_WaitPidExitedNoHang) without touching this notification at all.
  */
-PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited);
+PALEXPORT int32_t SystemNative_WaitIdAnyExitedNoHangNoWait(int32_t* isExited, int32_t* isPtraceStop);
 
 /**
  * Consumes a pending stop/continue notification for a specific pid, if any, without ever consuming
