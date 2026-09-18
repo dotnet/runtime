@@ -2691,7 +2691,7 @@ void Rationalizer::RewriteParameterUses()
                 currentBlock = use.Block;
                 // When starting a new block use the "killed" state we computed
                 // by visiting blocks above
-                killed       = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
+                killed = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
             }
 
             if (!use.Node->OperIs(GT_LCL_FLD))
