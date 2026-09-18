@@ -1585,6 +1585,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
     assert(jti.m_numAmbiguousPreds != 0);
 
     bool              foundReplacement = false;
+    int               numCoveredPreds  = 0;
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1598,6 +1599,8 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
             continue;
         }
 
+        numCoveredPreds++;
+
         if (!foundReplacement)
         {
             replacementSsa   = phiArgNode->GetSsaNum();
@@ -1609,7 +1612,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
         }
     }
 
-    if (!foundReplacement)
+    if (!foundReplacement || (numCoveredPreds != jti.m_numAmbiguousPreds))
     {
         return false;
     }
@@ -1643,7 +1646,21 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     *hasThreadedPreds  = false;
     *replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
 
+    int numThreadedPreds = 0;
+    if (jti.m_trueTarget == successor)
+    {
+        numThreadedPreds += jti.m_numTruePreds;
+    }
+    if (jti.m_falseTarget == successor)
+    {
+        numThreadedPreds += jti.m_numFalsePreds;
+    }
+
+    *hasThreadedPreds          = numThreadedPreds != 0;
+    int const numExpectedPreds = jti.m_numAmbiguousPreds + numThreadedPreds;
+
     bool              foundReplacement = false;
+    int               numCoveredPreds  = 0;
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1661,9 +1678,9 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
             {
                 continue;
             }
-
-            *hasThreadedPreds = true;
         }
+
+        numCoveredPreds++;
 
         if (!foundReplacement)
         {
@@ -1677,7 +1694,7 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     }
 
     *replacementSsaNum = replacementSsa;
-    return foundReplacement;
+    return foundReplacement && (numCoveredPreds == numExpectedPreds);
 }
 
 //------------------------------------------------------------------------
