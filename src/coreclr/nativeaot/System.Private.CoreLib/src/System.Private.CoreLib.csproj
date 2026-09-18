@@ -30,13 +30,25 @@
     <_TargetsBrowserWasm Condition="'$(TargetsBrowser)' == 'true' and '$(TargetsWasm)' == 'true'">true</_TargetsBrowserWasm>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(_TargetsBrowserWasm)' != 'true'">
+  <PropertyGroup>
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
+  </PropertyGroup>
+  <PropertyGroup>
     <FeaturePortableTimer>true</FeaturePortableTimer>
   </PropertyGroup>
   <PropertyGroup>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
+      <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
+      <FeaturePortableHelpers>true</FeaturePortableHelpers>
+
+      <!-- single thread -->
+      <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
+      <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
+      <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
   </PropertyGroup>
 
   <PropertyGroup>
