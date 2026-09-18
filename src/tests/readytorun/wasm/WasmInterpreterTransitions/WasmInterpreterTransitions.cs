@@ -169,6 +169,7 @@ public class WasmInterpreterTransitions
 
             VerifyDynamicClosedStaticDelegate();
             VerifyRuntimeGeneratedTarget(target);
+            VerifyRecycledRuntimeGeneratedTargets(first, second);
         }
 
         // R2R -> interpreted, struct returns. The return buffer follows 'this' for an instance
@@ -384,6 +385,46 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static ObjectPair InvokeObjectPairDelegate(ReturnsObjectPairDelegate callback) => callback();
+
+    private static void VerifyRecycledRuntimeGeneratedTargets(object first, object second)
+    {
+        // LCG MethodDescs are recycled after their DynamicMethod is collected. Exercise enough
+        // generations to reuse a descriptor and verify an adapter cache hit prepares its new PEP.
+        for (int i = 0; i < 32; i++)
+        {
+            ObjectPairTarget target = new(i % 2 == 0 ? first : second, i);
+            WeakReference weakTarget = CreateAndInvokeRuntimeGeneratedTarget(target);
+
+            for (int collection = 0; weakTarget.IsAlive && collection < 3; collection++)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference CreateAndInvokeRuntimeGeneratedTarget(ObjectPairTarget target)
+    {
+        DynamicMethod targetMethod = new(
+            "RecycledRuntimeGeneratedTarget",
+            typeof(ObjectPair),
+            new[] { typeof(ObjectPairTarget) });
+        ILGenerator il = targetMethod.GetILGenerator();
+        il.Emit(OpCodes.Ldarg_0);
+        il.Emit(OpCodes.Ldfld, typeof(ObjectPairTarget).GetField(nameof(ObjectPairTarget.Pair)));
+        il.Emit(OpCodes.Ret);
+
+        ReturnsObjectPairDelegate callback = (ReturnsObjectPairDelegate)targetMethod.CreateDelegate(
+            typeof(ReturnsObjectPairDelegate),
+            target);
+        ObjectPair result = InvokeObjectPairDelegate(callback);
+        Assert.Same(target.Pair.First, result.First);
+        Assert.Same(target.Pair.Second, result.Second);
+
+        return new WeakReference(targetMethod);
+    }
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;

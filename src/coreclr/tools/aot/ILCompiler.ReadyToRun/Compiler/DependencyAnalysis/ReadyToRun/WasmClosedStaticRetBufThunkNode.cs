@@ -19,6 +19,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _signature;
+        private readonly WasmSignature _targetSignature;
         private readonly WasmTypeNode _typeNode;
         private readonly string _lookupString;
 
@@ -26,6 +27,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _context = factory.TypeSystemContext;
             _signature = signature;
+            MethodSignature delegateSignature = WasmLowering.RaiseSignature(signature, _context);
+            TypeDesc[] targetParameters = new TypeDesc[delegateSignature.Length + 1];
+            targetParameters[0] = _context.GetWellKnownType(WellKnownType.Object);
+            for (int i = 0; i < delegateSignature.Length; i++)
+            {
+                targetParameters[i + 1] = delegateSignature[i];
+            }
+            MethodSignature targetSignature = new MethodSignature(
+                MethodSignatureFlags.Static,
+                0,
+                delegateSignature.ReturnType,
+                targetParameters);
+            _targetSignature = WasmLowering.GetSignature(targetSignature, WasmLowering.LoweringFlags.None);
+            Debug.Assert(_targetSignature.FuncType.Equals(signature.FuncType));
             _typeNode = factory.WasmTypeNode(signature);
             _lookupString = GetLookupString("D", signature.FuncType);
         }
@@ -60,6 +75,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
             dependencies.Add(_typeNode, "Wasm closed static return-buffer thunk requires type node");
+            dependencies.Add(
+                factory.WasmR2RToInterpreterThunk(_targetSignature),
+                "Wasm closed static return-buffer thunk requires interpreter fallback for its target shape");
             return dependencies;
         }
 

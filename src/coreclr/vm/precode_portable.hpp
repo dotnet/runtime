@@ -192,6 +192,14 @@ class ClosedStaticRetBufPortableEntryPoint final
 public:
     PCODE _targetEntryPoint;
     PortableEntryPoint _entryPoint;
+    MethodDesc* _delegateInvoke;
+
+    static ClosedStaticRetBufPortableEntryPoint* FromEntryPoint(PCODE addr)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
+            reinterpret_cast<BYTE*>(PCODEToPINSTR(addr)) - offsetof(ClosedStaticRetBufPortableEntryPoint, _entryPoint));
+    }
 
     PortableEntryPoint* GetEntryPoint()
     {
@@ -199,11 +207,20 @@ public:
         return &_entryPoint;
     }
 
-    void Init(MethodDesc* targetMethod, PCODE targetEntryPoint, void* thunk)
+    void Init(MethodDesc* targetMethod, MethodDesc* delegateInvoke, PCODE targetEntryPoint, void* thunk)
     {
         LIMITED_METHOD_CONTRACT;
+        _delegateInvoke = delegateInvoke;
         _targetEntryPoint = targetEntryPoint;
-        _entryPoint.Init_WithNativeCode(thunk, targetMethod);
+        if (thunk != nullptr &&
+            PortableEntryPoint::ToPortableEntryPoint(targetEntryPoint)->HasNativeCode())
+        {
+            _entryPoint.Init_WithNativeCode(thunk, targetMethod);
+        }
+        else
+        {
+            _entryPoint.Init(targetMethod);
+        }
     }
 };
 

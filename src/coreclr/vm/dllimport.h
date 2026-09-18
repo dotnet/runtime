@@ -232,7 +232,6 @@ enum ILStubTypes
     ILSTUB_DELEGATE_INVOKE_METHOD        = 0x8000000A,
     ILSTUB_DELEGATE_SHUFFLE_THUNK        = 0x8000000B,
     ILSTUB_ASYNC_RESUME                  = 0x8000000C,
-    ILSTUB_CLOSED_STATIC_RETBUF          = 0x8000000D,
 };
 
 inline bool SF_IsVarArgStub            (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_CONVSIGASVARARG)); }
@@ -263,7 +262,6 @@ inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CON
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
 inline bool SF_IsDelegateShuffleThunk (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_DELEGATE_SHUFFLE_THUNK); }
 inline bool SF_IsAsyncResumeStub        (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_ASYNC_RESUME); }
-inline bool SF_IsClosedStaticRetBufStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_CLOSED_STATIC_RETBUF); }
 
 #ifdef FEATURE_COMINTEROP
 inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags < PINVOKESTUB_FL_INVALID && 0 != (dwStubFlags & PINVOKESTUB_FL_COM)); }
