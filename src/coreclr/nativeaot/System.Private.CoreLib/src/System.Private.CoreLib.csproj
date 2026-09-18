@@ -29,10 +29,9 @@
     <RuntimeFlavor>CoreCLR</RuntimeFlavor>
     <RuntimeBasePath>..\..\Runtime.Base\src\</RuntimeBasePath>
     <_TargetsBrowserWasm Condition="'$(TargetsBrowser)' == 'true' and '$(TargetsWasm)' == 'true'">true</_TargetsBrowserWasm>
-    <_TargetsSingleThreadedBrowserWasm Condition="'$(_TargetsBrowserWasm)' == 'true' and '$(WasmEnableThreads)' != 'true'">true</_TargetsSingleThreadedBrowserWasm>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(_TargetsSingleThreadedBrowserWasm)' != 'true'">
+  <PropertyGroup Condition="'$(_TargetsBrowserWasm)' != 'true'">
     <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
     <FeaturePortableTimer>true</FeaturePortableTimer>
   </PropertyGroup>
@@ -509,7 +508,7 @@
     <Compile Include="$(RuntimeBasePath)System\Runtime\GCStress.cs">
       <Link>Runtime.Base\src\System\Runtime\GCStress.cs</Link>
     </Compile>
-    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(_TargetsSingleThreadedBrowserWasm)' != 'true'">
+    <Compile Include="$(RuntimeBasePath)System\Runtime\__Finalizer.cs" Condition="'$(_TargetsBrowserWasm)' != 'true'">
       <Link>Runtime.Base\src\System\Runtime\__Finalizer.cs</Link>
     </Compile>
     <Compile Include="$(RuntimeBasePath)System\Runtime\MethodTable.Runtime.cs">
