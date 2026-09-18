@@ -69,7 +69,7 @@
 
   <!-- StartupHookForFunctionalTest is covered through WebAssembly.Browser.StartupHook.Test,
        but cannot be published directly with ReadyToRun because it is not a wasm project. -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false'">
     <ProjectExclusions Include="$(RepoRoot)src/tests/FunctionalTests/TestAssets/StartupHookForFunctionalTest/StartupHookForFunctionalTest.csproj" />
   </ItemGroup>
 

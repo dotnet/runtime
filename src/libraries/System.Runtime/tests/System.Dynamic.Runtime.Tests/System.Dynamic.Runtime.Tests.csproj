@@ -12,7 +12,7 @@
     <AssembliesBeingTested Include="System.Linq.Expressions" />
   </ItemGroup>
   <!-- ActiveIssue https://github.com/dotnet/runtime/issues/133193 -->
-  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true'">
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false'">
     <PublishReadyToRunExclude Include="System.Dynamic.Runtime.Tests.dll" />
   </ItemGroup>
   <ItemGroup>
