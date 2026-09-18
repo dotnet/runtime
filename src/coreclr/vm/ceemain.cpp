@@ -1198,7 +1198,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     } CONTRACTL_END;
 
     // Used later for a callback.
-    CEEInfo ceeInf;
+    CEEInfo ceeInf(NULL, nullptr);
 
 #ifdef FEATURE_PGO
     EX_TRY
