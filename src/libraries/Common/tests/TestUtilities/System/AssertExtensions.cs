@@ -548,7 +548,6 @@ namespace System
         /// </summary>
         /// <param name="expected">The array that <paramref name="actual"/> should be equal to.</param>
         /// <param name="actual"></param>
-        [OverloadResolutionPriority(1)]
         public static void SequenceEqual<T>(ReadOnlySpan<T> expected, ReadOnlySpan<T> actual) where T : IEquatable<T>
         {
             // Use the SequenceEqual to compare the arrays for better performance. The default Assert.Equal method compares
