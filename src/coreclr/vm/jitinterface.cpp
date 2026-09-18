@@ -13996,24 +13996,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             sizeOfILCode = interpreterJitInfo.getMethodInfoInternal()->ILCodeSize;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            // Loading dependencies can compile this code version recursively. Preserve the
-            // winning publication rather than replacing its portable entrypoint's data.
-            PCODE publishedCode = config->IsJitCancellationRequested();
-            if (publishedCode != (PCODE)NULL)
-            {
-                LOG((LF_JIT, LL_INFO10000, "Reusing code 0x%zx published while compiling %p (IL version %zu, native version %u)\n",
-                    static_cast<size_t>(publishedCode), ftn, static_cast<size_t>(nativeCodeVersion.GetILCodeVersionId()), nativeCodeVersion.GetVersionId()));
-                ret = publishedCode;
-                *isInterpreterCode = PortableEntryPoint::HasInterpreterData(ret);
-            }
-            else
-            {
-                PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
-                _ASSERTE(portableEntryPoint != NULL);
-                PortableEntryPoint::SetInterpreterDataInterlocked(portableEntryPoint, reinterpret_cast<void*>(PCODEToPINSTR(ret)));
-                ret = portableEntryPoint;
-                *isInterpreterCode = true;
-            }
+            PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
+            _ASSERTE(portableEntryPoint != NULL);
+            // The deadlock-aware lock may allow multiple compilations of this method.
+            // The first compilation to publish interpreter data must win.
+            PortableEntryPoint::SetInterpreterDataInterlocked(portableEntryPoint, reinterpret_cast<void*>(PCODEToPINSTR(ret)));
+            ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
             InterpreterPrecode* pPrecode = NULL;
@@ -14040,10 +14028,10 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
             }
             amt.SuppressRelease();
             ret = PINSTRToPCODE(pPrecode->GetEntryPoint());
-            *isInterpreterCode = true;
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
+            *isInterpreterCode = true;
             *isTier0 = interpreterJitInfo.getJitFlagsInternal()->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0);
         }
     }
