@@ -1216,14 +1216,35 @@ namespace System.Diagnostics.Tests
                     tasks[i] = Task.Run(() => root.Kill(entireProcessTree: true));
                 }
 
-                bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
-                Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
-
-                for (int i = 0; i < TreeCount; i++)
+                try
                 {
-                    Assert.True(roots[i].WaitForExit(WaitInMS));
-                    Assert.True(grandChildren[i].WaitForExit(WaitInMS), $"Grandchild {grandChildren[i].Id} was not killed on iteration {iteration}.");
-                    grandChildren[i].Dispose();
+                    bool completed = Task.WaitAll(tasks, TimeSpan.FromSeconds(60));
+                    Assert.True(completed, $"Kill(entireProcessTree: true) hung on iteration {iteration}.");
+
+                    for (int i = 0; i < TreeCount; i++)
+                    {
+                        Assert.True(roots[i].WaitForExit(WaitInMS));
+                        Assert.True(grandChildren[i].WaitForExit(WaitInMS), $"Grandchild {grandChildren[i].Id} was not killed on iteration {iteration}.");
+                    }
+                }
+                finally
+                {
+                    // Ensure grandchildren don't leak as long-running /bin/sleep processes if an assertion
+                    // above fails, e.g. because Kill(entireProcessTree: true) hung or didn't reach a grandchild.
+                    // Unlike roots, grandchildren aren't tracked by ProcessTestBase's automatic cleanup.
+                    foreach (Process grandChild in grandChildren)
+                    {
+                        try
+                        {
+                            grandChild.Kill();
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            // Already exited.
+                        }
+
+                        grandChild.Dispose();
+                    }
                 }
             }
         }
