@@ -1910,11 +1910,21 @@ namespace System.Reflection.Tests
                 GetOptionalDelegate(invoker, "_invokeFunc_ObjSpanArgs") is not null);
         }
 
-        internal static void AssertPromoted(MethodBase method) =>
-            AssertPromoted(GetCachedInvoker(method));
+        internal static void AssertPromoted(MethodBase method)
+        {
+            if (ShouldAssertSharedSelection)
+            {
+                AssertPromoted(GetCachedInvoker(method));
+            }
+        }
 
-        internal static void AssertNotPromoted(MethodBase method, int invocationCount) =>
-            AssertNotPromoted(GetCachedInvoker(method), invocationCount);
+        internal static void AssertNotPromoted(MethodBase method, int invocationCount)
+        {
+            if (ShouldAssertSharedSelection)
+            {
+                AssertNotPromoted(GetCachedInvoker(method), invocationCount);
+            }
+        }
 
         internal static void AssertNotPromoted(object invoker, int invocationCount)
         {
