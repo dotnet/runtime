@@ -20,7 +20,7 @@ public static class DumpTestHelpers
     public static unsafe string? GetMethodName(ContractDescriptorTarget target, MethodDescHandle mdHandle)
     {
         ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
-        ClrDataAddress methodDesc = new((ulong)mdHandle.Address);
+        ClrDataAddress methodDesc = mdHandle.Address.ToClrDataAddress(target);
         uint requiredLength;
         int hr = sosDac.GetMethodDescName(methodDesc, 0, null, &requiredLength);
         if (hr < 0 || requiredLength <= 1)
