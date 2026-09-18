@@ -14,22 +14,12 @@ namespace ILCompiler.DependencyAnalysis
 
     public interface INodeWithTypeSignature : INodeWithWasmSignature
     {
-        protected MethodSignature Signature { get; }
-        protected bool IsUnmanagedCallersOnly { get; }
-        protected bool IsAsyncCall { get; }
-        protected bool HasGenericContextArg { get; }
+        MethodSignature Signature { get; }
+        bool IsUnmanagedCallersOnly { get; }
+        bool IsAsyncCall { get; }
+        bool HasGenericContextArg { get; }
 
-        WasmSignature INodeWithWasmSignature.WasmSignature
-        {
-            get
-            {
-                WasmLowering.LoweringFlags flags = WasmLowering.GetLoweringFlags(
-                    hasGenericContextArg: HasGenericContextArg,
-                    isAsyncCall: IsAsyncCall,
-                    isUnmanagedCallersOnly: IsUnmanagedCallersOnly);
-                return WasmLowering.GetSignature(Signature, flags);
-            }
-        }
+        WasmSignature INodeWithWasmSignature.WasmSignature => WasmLowering.GetSignature(this);
     }
 
     public interface IMethodCodeNodeWithTypeSignature : IMethodNode, INodeWithTypeSignature
