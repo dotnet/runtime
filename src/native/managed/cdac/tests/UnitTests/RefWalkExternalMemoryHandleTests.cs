@@ -318,4 +318,23 @@ public class RefWalkExternalMemoryHandleTests
                 Assert.Equal(interiorObject.Value | 1, reference.pObject);
             });
     }
+
+    [Fact]
+    public void WalkExternalMemoryHandles_MissingContract_YieldsNoRoots()
+    {
+        var loader = new Mock<ILoader>();
+        loader.Setup(l => l.GetAppDomain()).Returns(new TargetPointer(0x1000));
+
+        var gc = new Mock<IGC>();
+        gc.Setup(g => g.GetSupportedHandleTypes()).Returns([]);
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(Arch)
+            .AddMockContract(loader)
+            .AddMockContract(gc)
+            .Build();
+
+        RefWalk walk = new(target, walkStacks: false, CorGCReferenceType.CorHandleStrong);
+
+        Assert.False(walk.Enumerator.MoveNext());
+    }
 }

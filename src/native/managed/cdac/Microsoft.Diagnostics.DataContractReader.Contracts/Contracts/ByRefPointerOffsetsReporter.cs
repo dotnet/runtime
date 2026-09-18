@@ -10,17 +10,12 @@ internal sealed class ByRefPointerOffsetsReporter
     private const int MaxByRefLikeRecursionDepth = 16;
 
     private readonly IRuntimeTypeSystem _rts;
-    private readonly ulong _source;
     private readonly uint _pointerSize;
 
-    public ByRefPointerOffsetsReporter(
-        IRuntimeTypeSystem rts,
-        TargetPointer source,
-        uint pointerSize)
+    public ByRefPointerOffsetsReporter(Target target)
     {
-        _rts = rts;
-        _source = source.Value;
-        _pointerSize = pointerSize;
+        _rts = target.Contracts.RuntimeTypeSystem;
+        _pointerSize = (uint)target.PointerSize;
     }
 
     private IEnumerable<ulong> Find(
@@ -45,12 +40,12 @@ internal sealed class ByRefPointerOffsetsReporter
         }
         else if (fieldType == CorElementType.Byref)
         {
-            yield return _source + baseOffset + fieldOffset;
+            yield return baseOffset + fieldOffset;
         }
     }
 
-    public IEnumerable<ulong> Find(ITypeHandle typeHandle, ulong baseOffset)
-        => Find(typeHandle, baseOffset, depth: 0);
+    public IEnumerable<ulong> Find(ITypeHandle typeHandle)
+        => Find(typeHandle, baseOffset: 0, depth: 0);
 
     private IEnumerable<ulong> Find(ITypeHandle typeHandle, ulong baseOffset, int depth)
     {

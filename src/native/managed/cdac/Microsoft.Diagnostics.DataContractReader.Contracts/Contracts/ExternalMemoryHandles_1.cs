@@ -19,7 +19,7 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
         _target = target;
         _gc = target.Contracts.GC;
         _rts = target.Contracts.RuntimeTypeSystem;
-        _interiorPointerResolver = new GCInteriorPointerResolver(target, _gc, _rts);
+        _interiorPointerResolver = new GCInteriorPointerResolver(target);
     }
 
     IReadOnlyList<ExternalMemoryHandleRootData> IExternalMemoryHandles.GetRoots(bool resolveInteriorPointers)
@@ -66,9 +66,9 @@ internal sealed class ExternalMemoryHandles_1 : IExternalMemoryHandles
 
         if (_rts.IsByRefLike(typeHandle))
         {
-            ByRefPointerOffsetsReporter reporter = new(_rts, memory, (uint)_target.PointerSize);
-            foreach (ulong slotAddress in reporter.Find(typeHandle, 0))
-                AddInteriorRoot(roots, new TargetPointer(slotAddress), resolveInteriorPointers);
+            ByRefPointerOffsetsReporter reporter = new(_target);
+            foreach (ulong offset in reporter.Find(typeHandle))
+                AddInteriorRoot(roots, memory + offset, resolveInteriorPointers);
         }
 
         if (_rts.ContainsGCPointers(typeHandle))

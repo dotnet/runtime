@@ -459,10 +459,9 @@ internal sealed class CallingConvention_1 : ICallingConvention
                                     arg.TypeInfo.ExactTypeHandle ?? arg.TypeInfo.GenericTypeDefinition;
                                 if (layoutType is not null)
                                 {
-                                    ByRefPointerOffsetsReporter reporter =
-                                        new(rts, TargetPointer.Null, (uint)pointerSize);
-                                    foreach (ulong offset in reporter.Find(layoutType, (ulong)arg.Offset))
-                                        tokens[checked((int)offset)] = GCRefMapToken.Interior;
+                                    ByRefPointerOffsetsReporter reporter = new(_target);
+                                    foreach (ulong offset in reporter.Find(layoutType))
+                                        tokens[checked(arg.Offset + (int)offset)] = GCRefMapToken.Interior;
                                 }
                                 emitted = true;
                             }
