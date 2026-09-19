@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security.Authentication;
@@ -9,9 +10,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
-using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Net.Security.Tests
 {
@@ -38,7 +40,7 @@ namespace System.Net.Security.Tests
             _clientCertificate.Dispose();
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(true, true)]
         [InlineData(false, true)]
         [InlineData(true, false)]
@@ -48,6 +50,15 @@ namespace System.Net.Security.Tests
             if (delayCertificate && OperatingSystem.IsAndroid())
             {
                 throw new SkipTestException("Android does not support delayed certificate selection.");
+            }
+
+            if (PlatformDetection.IsNetworkFrameworkEnabled() && !sendClientCertificate)
+            {
+                // Network.framework enforces ClientCertificateRequired itself and fails the handshake
+                // when the client presents no certificate, so RemoteCertificateValidationCallback never
+                // gets the chance to accept the absence that this case relies on. The resulting
+                // behavior is asserted by NetworkFramework_MissingClientCertificate_FailsHandshake.
+                throw new SkipTestException("Network.framework cannot request an optional client certificate.");
             }
 
             X509Certificate? remoteCertificate = null;
@@ -96,9 +107,11 @@ namespace System.Net.Security.Tests
                 };
 
 
+                Task clientTask = client.AuthenticateAsClientAsync(clientOptions);
+
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                                client.AuthenticateAsClientAsync(clientOptions),
-                                server.AuthenticateAsServerAsync(serverOptions));
+                    clientTask,
+                    server.AuthenticateAsServerAsync(serverOptions));
 
                 // verify that the session is usable with or without client's certificate
                 await TestHelper.PingPong(client, server);
@@ -110,6 +123,60 @@ namespace System.Net.Security.Tests
                     Assert.NotNull(remoteCertificate);
                 }
             }
+        }
+
+        // Network.framework requires a client certificate once ClientCertificateRequired is set: it
+        // fails the handshake itself rather than surfacing SslPolicyErrors.RemoteCertificateNotAvailable
+        // to RemoteCertificateValidationCallback, because the API that would request a certificate
+        // optionally (sec_protocol_options_set_peer_authentication_optional) is unavailable on macOS.
+        // This documents that divergence: the handshake fails even when the callback accepts.
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task NetworkFramework_MissingClientCertificate_FailsHandshake(bool acceptMissingCertificate)
+        {
+            var psi = new ProcessStartInfo
+            {
+                Environment = { { "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1" } }
+            };
+
+            await RemoteExecutor.Invoke(static async (string acceptMissingCertificateString) =>
+            {
+                bool acceptMissingCertificate = bool.Parse(acceptMissingCertificateString);
+                bool validationCallbackInvoked = false;
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
+                {
+                    var clientOptions = new SslClientAuthenticationOptions
+                    {
+                        TargetHost = "localhost",
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    };
+                    var serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = serverCertificate,
+                        ClientCertificateRequired = true,
+                        RemoteCertificateValidationCallback = (_, _, _, _) =>
+                        {
+                            validationCallbackInvoked = true;
+                            return acceptMissingCertificate;
+                        },
+                    };
+
+                    Task clientTask = client.AuthenticateAsClientAsync(clientOptions);
+
+                    // The verdict of the callback is irrelevant here - Network.framework has already
+                    // aborted the handshake by the time managed validation would run.
+                    await Assert.ThrowsAsync<AuthenticationException>(
+                        () => server.AuthenticateAsServerAsync(serverOptions));
+                    Assert.False(validationCallbackInvoked);
+
+                    await clientTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                }
+            }, acceptMissingCertificate.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
 
         public enum ClientCertSource

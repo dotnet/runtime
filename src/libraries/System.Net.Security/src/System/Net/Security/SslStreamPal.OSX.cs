@@ -319,7 +319,11 @@ namespace System.Net.Security
             SafeDeleteContext securityContext,
             ref SslConnectionInfo connectionInfo)
         {
-            connectionInfo.UpdateSslConnectionInfo(securityContext);
+            string? serverName = connectionInfo.UpdateSslConnectionInfo(securityContext);
+            if (serverName is not null && securityContext is SafeDeleteNwContext { IsServer: true } nwContext)
+            {
+                nwContext.SetServerTargetHost(serverName);
+            }
         }
 
         public static bool TryUpdateClintCertificate(
@@ -358,6 +362,16 @@ namespace System.Net.Security
         {
             ProtocolToken token = default;
             consumed = 0;
+
+            if (context is SafeDeleteNwContext)
+            {
+                // The only path that reaches here with a Network Framework context is the shutdown
+                // token, and ApplyShutdownToken has already cancelled the connection, which makes
+                // Network Framework emit close_notify itself. There is no token for SslStream to
+                // send, so report success rather than falling into the SecureTransport path.
+                token.Status = new SecurityStatusPal(SecurityStatusPalErrorCode.OK);
+                return token;
+            }
 
             try
             {
@@ -494,14 +508,20 @@ namespace System.Net.Security
                 sslAuthenticationOptions.EncryptionPolicy == EncryptionPolicy.AllowNoEncryption;
 #pragma warning restore SYSLIB0040
 
-            return
+            bool useNetworkFramework =
                 SafeDeleteNwContext.IsNetworkFrameworkAvailable &&
                 !sslAuthenticationOptions.ForceSyncPal &&
                 encryptionPolicyOk &&
+                // Network Framework has no API for advertising a custom CA list in the
+                // CertificateRequest, so a server configured with SslCertificateTrust has to keep
+                // using SecureTransport rather than silently dropping the caller's trust list.
+                sslAuthenticationOptions.CertificateContext?.Trust == null &&
                 (sslAuthenticationOptions.IsClient || sslAuthenticationOptions.CertificateContext != null) &&
                 (sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.None ||
                    sslAuthenticationOptions.EnabledSslProtocols == SslProtocols.Tls13 ||
-                    (sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13)));
+                   sslAuthenticationOptions.EnabledSslProtocols == (SslProtocols.Tls12 | SslProtocols.Tls13));
+
+            return useNetworkFramework;
         }
 
         private static SafeDeleteNwContext CreateAsyncSecurityContext(SslStream stream)

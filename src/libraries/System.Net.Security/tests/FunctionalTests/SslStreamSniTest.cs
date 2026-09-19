@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -10,6 +11,7 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -19,6 +21,47 @@ namespace System.Net.Security.Tests
 
     public class SslStreamSniTest
     {
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        [InlineData("server.example")]
+        [InlineData("")]
+        [InlineData("räksmörgås.josefsson.org")]
+        public async Task NetworkFramework_ServerReceivesSni(string targetHost)
+        {
+            var psi = new ProcessStartInfo
+            {
+                Environment = { { "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1" } }
+            };
+
+            await RemoteExecutor.Invoke(static async targetHost =>
+            {
+                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
+                using (clientStream)
+                using (serverStream)
+                using (var client = new SslStream(clientStream))
+                using (var server = new SslStream(serverStream))
+                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+                {
+                    var clientOptions = new SslClientAuthenticationOptions
+                    {
+                        TargetHost = targetHost,
+                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                    };
+                    var serverOptions = new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate,
+                    };
+
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    Assert.Equal(targetHost, server.TargetHostName);
+                    Assert.Equal(targetHost, client.TargetHostName);
+                }
+            }, targetHost, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
         [Theory]
         [MemberData(nameof(HostNameData))]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
