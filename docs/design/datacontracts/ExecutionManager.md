@@ -157,6 +157,28 @@ The [range section map](#rangesectionmap) is used to partition the address space
 
 Within a range section fragment, a [nibble map](#nibblemap) structure is used to map arbitrary IP addresses back to the start of the method (and to the code header which immediately preceeeds the entrypoint to the code).
 
+WebAssembly ReadyToRun code uses encoded virtual IPs rather than linear-memory code addresses.
+These ranges are registered in `VirtualIPRangeList`, not the range section map. A virtual-IP
+lookup walks the intrusive list with cycle detection and a per-lookup budget of 65,536 nodes.
+The budget bounds traversal work and visited-set growth for corrupt chains of distinct nodes;
+it is a reader resource policy, not a native registration limit or proof of corruption.
+It provides 64 times the headroom of the original 1,024-node budget while remaining finite.
+Exactly 65,536 nodes may be traversed successfully. If the last permitted node has a non-null
+`Next`, lookup fails closed before dereferencing that next node, even if a matching range has
+already been found. This intentionally rejects longer lists, including otherwise valid ones.
+Traversal continues after a match to detect ambiguity within the budget. Invalid
+range structures, cycles, or multiple ranges containing the requested IP fail closed, and an
+encoded virtual IP that is absent from the list does not fall through to the real-address map.
+Module and ReadyToRun metadata are validated only for a range containing the requested IP.
+In particular, registration publishes a range before assigning its module's `MinVirtualIP`;
+an unrelated range in that state must not prevent lookup of already initialized modules.
+
+ReadyToRun hot/cold mapping is optional: targets built without `FEATURE_COLD_R2R_CODE`,
+including WebAssembly, omit `NumHotColdMap` and `HotColdMap`. An absent count is treated as
+zero for method-index adjustment, relative-offset calculation, and method-region queries,
+without reading the absent map. WebAssembly also omits `DelayLoadMethodCallThunks`;
+virtual-IP ranges bypass native thunk classification.
+
 <!-- BEGIN GENERATED: usage contract=ExecutionManager version=c1 -->
 ### Data descriptors used
 
@@ -214,6 +236,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `RangeSection` | `NextForDelete` | `pointer` | Pointer to next range section for deletion |
 | `RangeSection` | `R2RModule` | `pointer` | ReadyToRun module |
 | `RangeSection` | `RangeBegin` | `pointer` | Begin address of the range section |
+| `RangeSection` | `RangeEndOpen` | `pointer` | Exclusive end address of the range section |
 | `RangeSection` | `RangeList` | `pointer` | Pointer to the `CodeRangeMapRangeList` associated with this range section |
 | `RangeSectionFragment` | `Next` | `pointer` | Tagged pointer to the next fragment (bit 0 is the collectible flag; must be stripped to obtain the address) |
 | `RangeSectionFragment` | `RangeBegin` | `pointer` | Begin address of the fragment |
@@ -227,11 +250,12 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `ReadyToRunInfo` | `Composite` | `pointer` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
 | `ReadyToRunInfo` | `CompositeInfo` | `pointer` | Pointer to composite R2R info - or itself for non-composite |
 | `ReadyToRunInfo` | `DebugInfoSection` | `pointer` | Pointer to an `ImageDataDirectory` for the debug info |
-| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
+| `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks; absent on WebAssembly |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
-| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
+| `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers; present only with `FEATURE_COLD_R2R_CODE` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
-| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
+| `ReadyToRunInfo` | `MinVirtualIP` | `pointer` | Base virtual IP assigned to the ReadyToRun module on WebAssembly |
+| `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap`; absent without `FEATURE_COLD_R2R_CODE`, meaning no hot/cold mapping |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
 | `ReadyToRunInfo` | `ReadyToRunHeader` | `pointer` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
@@ -245,10 +269,12 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `RealCodeHeader` | `NumUnwindInfos` | `uint32` | Number of Unwind Infos |
 | `RealCodeHeader` | `UnwindInfos` | `pointer` | Start address of Unwind Infos |
 | `RuntimeFunction` | *(type size)* | `uint32` | Size of a runtime function entry in bytes |
-| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 (the Thumb bit) is set. |
+| `RuntimeFunction` | `BeginAddress` | `uint32` | Begin address of the function. On ARM32, bit 0 is the Thumb bit; on WebAssembly, bit 31 marks a funclet and is excluded from address arithmetic. |
 | `RuntimeFunction` | `EndAddress` | `uint32` | End address of the function. Only exists on some platforms |
 | `RuntimeFunction` | `UnwindData` | `uint32` | Pointer to the unwind info for the function |
 | `UnwindInfo` | `FunctionLength` | `uint32` | Length of the associated function in bytes. Only exists on some platforms |
+| `VirtualIPRangeSection` | `Next` | `pointer` | Pointer to the next registered WebAssembly ReadyToRun virtual-IP range |
+| `VirtualIPRangeSection` | `RangeSection` | `pointer` | Address of the embedded synthetic `RangeSection` describing the virtual-IP range |
 
 ### Global variables used
 
@@ -262,6 +288,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `ObjectMethodTable` | `pointer` | Address of the global variable holding the System.Object MethodTable pointer |
 | `StubCodeBlockLast` | `uint8` | Maximum sentinel code header value indentifying a stub code block |
 | `ThePreStub` | `pointer` | Address of the global containing the prestub entrypoint |
+| `VirtualIPRangeList` | `pointer` | Address of the global pointer to the WebAssembly ReadyToRun virtual-IP range list |
 
 ### Contracts used
 
@@ -351,8 +378,9 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
 
     // Find the relative address that we are looking for
     TargetCodePointer addr = /* code pointer from jittedCodeAddress using PlatformMetadata.GetCodePointerFlags */
-    TargetPointer imageBase = Target.ReadPointer(/* range section address + RangeSection::RangeBegin offset */);
-    TargetPointer relativeAddr = addr - imageBase;
+    TargetPointer codeBase = /* RangeSection.RangeBegin, or ReadyToRunInfo.MinVirtualIP on WebAssembly */;
+    TargetPointer loadedImageBase = /* ReadyToRunInfo.LoadedImageBase on WebAssembly, otherwise codeBase */;
+    TargetPointer relativeAddr = addr - codeBase;
 
     TargetPointer runtimeFunctions = Target.ReadPointer(r2rInfo + /* ReadyToRunInfo::RuntimeFunctions offset */);
     int index = // Iterate through runtimeFunctions and find index of function with relativeAddress
@@ -367,7 +395,8 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
 
     TargetPointer function = runtimeFunctions + (ulong)(index * /* size of RuntimeFunction */);
 
-    TargetPointer startAddress = imageBase + Target.Read<uint>(function + /* RuntimeFunction::BeginAddress offset */);
+    uint beginAddress = /* RuntimeFunction.BeginAddress with platform flags removed */;
+    TargetPointer startAddress = codeBase + beginAddress;
     TargetPointer entryPoint = /* code pointer from startAddress using PlatformMetadata.GetCodePointerFlags */
 
     TargetPointer mapAddress = r2rInfo + /* ReadyToRunInfo::EntryPointToMethodDescMap offset */;
@@ -383,7 +412,7 @@ bool GetMethodInfo(TargetPointer rangeSection, TargetCodePointer jittedCodeAddre
     {
         uint coldIndex = // look up cold part in hot/cold map
         TargetPointer coldFunction = runtimeFunctions + (ulong)(coldIndex * /* size of RuntimeFunction */);
-        TargetPointer coldStart = imageBase + Target.Read<uint>(function + /* RuntimeFunction::BeginAddress offset */);
+        TargetPointer coldStart = codeBase + /* masked cold RuntimeFunction.BeginAddress */;
         relativeOffset = /* function length of hot part */ + addr - coldStart;
     }
 
@@ -425,7 +454,7 @@ public override void GetMethodRegionInfo(RangeSection rangeSection, TargetCodePo
     if (/* found in hot/cold map */)
     {
         // Compute cold region bounds from cold runtime function start/end indices
-        coldStart = imageBase + coldStartFunc.BeginAddress;
+        coldStart = codeBase + /* masked cold RuntimeFunction.BeginAddress */;
         coldSize = coldEndOffset - coldBeginOffset;
         hotSize -= coldSize;
     }
@@ -508,7 +537,7 @@ The `GetMethodDesc`, `GetStartAddress`, and `GetRelativeOffset` APIs extract fie
 
 * For interpreted code (`InterpreterJitManager`), there is no native unwind info. `GetUnwindInfo` returns null.
 
-Unwind info (`RUNTIME_FUNCTION`) use relative addressing. For managed code, these values are relative to the start of the code's containing range in the RangeSectionMap (described below). This could be the beginning of a `CodeHeap` for jitted code or the base address of the loaded image for ReadyToRun code.
+Unwind info (`RUNTIME_FUNCTION`) uses relative addressing. For managed code, these values are relative to the beginning of a `CodeHeap` for jitted code or the loaded-image base for ReadyToRun code. On WebAssembly, ReadyToRun entrypoint identity remains relative to `MinVirtualIP`, while unwind, debug, GC, and exception data RVAs are resolved from `LoadedImageBase`.
 `GetUnwindInfoBaseAddress` finds this base address for a given `CodeBlockHandle`.
 
 `IExecutionManager.GetDebugInfo` gets a pointer to the relevant DebugInfo for a `CodeBlockHandle`. The ExecutionManager delegates to the JitManager implementations as the DebugInfo is stored in different ways on jitted and R2R code.
@@ -545,7 +574,7 @@ There are two distinct clause data types. JIT-compiled code uses `EEExceptionCla
 
 After obtaining the clause array bounds, the common iteration logic classifies each clause by its flags. The native `COR_ILEXCEPTION_CLAUSE` flags are bit flags: `Filter` (0x1), `Finally` (0x2), `Fault` (0x4). If none are set, the clause is `Typed`. For typed clauses, if the `CachedClass` flag (0x10000000) is set (JIT-only, used for dynamic methods), the union field contains a resolved `TypeHandle` pointer; the clause is a catch-all if this pointer equals the `ObjectMethodTable` global. Otherwise, the union field is a metadata `ClassToken`. To determine whether a typed clause is a catch-all handler, the `ClassToken` (which may be a `TypeDef` or `TypeRef`) is resolved to a `MethodTable` via the `Loader` contract's module lookup maps (`TypeDefToMethodTable` or `TypeRefToMethodTable`) and compared against the `ObjectMethodTable` global. For typed clauses without a cached type handle, the module address is resolved by walking `CodeBlockHandle` -> `MethodDesc` -> `MethodTable` -> `TypeHandle` -> `Module` via the `RuntimeTypeSystem` contract.
 
-`IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method and checks whether any filter clause's handler offset matches the funclet's relative offset. If a match is found, the funclet is a filter funclet.
+`IsFilterFunclet` first checks `IsFunclet`. If the code block is a funclet, it retrieves the EH clauses for the method. On WebAssembly, `FilterOffset` identifies the executable filter entry, which can follow a synthetic funclet prolog. The reader resolves the code address at `methodStart + FilterOffset` and checks whether its containing runtime function has the same funclet start as the queried code block. On other targets, the filter offset is compared directly with the funclet's relative offset.
 
 `IExecutionManager.GetStackParameterSize` returns the size (in bytes) of stack-passed parameters at the call to the method described by the code block handle. It mirrors the native `EECodeManager::GetStackParameterSize`: it returns 0 for funclets and for non-x86 targets. On x86, it returns 0 for methods using the varargs calling convention (which are caller-popped), otherwise it returns the argument size encoded in the GC info header.
 
@@ -554,15 +583,14 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 `GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, interpreter code, and the global prestub entrypoint. If no range section owns the address, it compares the address against the exposed prestub entrypoint. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
-`FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
+`FindReadyToRunModule` locates the ReadyToRun module that owns an address. Real addresses use the range section map, whose ReadyToRun ranges cover the full PE image including import tables. Encoded WebAssembly virtual IPs use `VirtualIPRangeList` and never fall through to the real-address map.
 
 ```csharp
 TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
 {
-    // Use the RangeSectionMap to find the RangeSection containing the address.
-    // ReadyToRun range sections cover the entire PE image (code + data),
-    // so this works for import section addresses used by GCRefMap lookup.
-    RangeSection range = RangeSection.Find(target, topRangeSectionMap, address);
+    // Encoded WebAssembly virtual IPs use VirtualIPRangeList first.
+    // All other addresses use the RangeSectionMap.
+    RangeSection range = RangeSection.Find(target, topRangeSectionMap, virtualIPRangeList, address);
     if (range.Data is null)
         return TargetPointer.Null;
 
