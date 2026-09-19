@@ -231,7 +231,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Preserve the trusted eval specs
+      - name: Preserve the trusted eval inputs
         if: steps.guard.outputs.run == 'true'
         env:
           SPECS: ${{ steps.sel.outputs.specs }}
@@ -240,6 +240,18 @@ jobs:
           for spec in $SPECS; do
             cp "$spec" "$RUNNER_TEMP/trusted-evals/$(basename "$spec")"
           done
+          if test -f .github/workflows/evals/search-kbe-issues.cjs; then
+            cp .github/workflows/evals/search-kbe-issues.cjs \
+              "$RUNNER_TEMP/trusted-evals/search-kbe-issues.cjs"
+          fi
+          if test -f .github/workflows/evals/kbe-candidate-reads-grader.mjs; then
+            cp .github/workflows/evals/kbe-candidate-reads-grader.mjs \
+              "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"
+          fi
+          if test -f .github/workflows/evals/kbe-search.test.mjs; then
+            cp .github/workflows/evals/kbe-search.test.mjs \
+              "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"
+          fi
           if [ -f .github/workflows/shared/filter-scanner-kbes.sh ]; then
             cp .github/workflows/shared/filter-scanner-kbes.sh \
               "$RUNNER_TEMP/trusted-evals/filter-scanner-kbes.sh"
@@ -265,7 +277,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh pr checkout ${{ github.event.issue.number }}
 
-      - name: Restore the trusted eval specs
+      - name: Restore the trusted eval inputs
         if: steps.guard.outputs.run == 'true'
         env:
           SPECS: ${{ steps.sel.outputs.specs }}
@@ -279,6 +291,20 @@ jobs:
             cp -- "$RUNNER_TEMP/trusted-evals/filter-scanner-kbes.sh" \
               .github/workflows/shared/filter-scanner-kbes.sh
           fi
+          rm -f -- .github/workflows/evals/search-kbe-issues.cjs
+          rm -f -- .github/workflows/evals/kbe-candidate-reads-grader.mjs
+          rm -f -- .github/workflows/evals/kbe-search.test.mjs
+
+      - name: Test the KBE search support
+        if: steps.guard.outputs.run == 'true'
+        env:
+          SPECS: ${{ steps.sel.outputs.specs }}
+        run: |
+          scan_spec=.github/workflows/evals/ci-failure-scan.eval.yaml
+          if [[ " $SPECS " == *" $scan_spec "* ]] &&
+             test -f "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"; then
+            node --test "$RUNNER_TEMP/trusted-evals/kbe-search.test.mjs"
+          fi
 
       - name: Lint the selected spec(s)
         if: steps.guard.outputs.run == 'true'
@@ -286,7 +312,13 @@ jobs:
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
           for spec in $SPECS; do
-            vally lint --eval-spec "$spec" --strict
+            grader_args=()
+            if [[ "$(basename "$spec")" == "ci-failure-scan.eval.yaml" ]] &&
+               grep -qF 'search-kbe-issues' "$spec" &&
+               test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
+              grader_args+=(--grader-plugin "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs")
+            fi
+            vally lint --eval-spec "$spec" --strict "${grader_args[@]}"
           done
 
       - name: Run the eval(s)
@@ -310,6 +342,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # The GitHub MCP server reads this name from its Docker container.
           GITHUB_PERSONAL_ACCESS_TOKEN: ${{ github.token }}
+          KBE_SEARCH_HELPER: ${{ runner.temp }}/trusted-evals/search-kbe-issues.cjs
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
           workdir="$RUNNER_TEMP/vally"
@@ -320,8 +353,15 @@ jobs:
           for spec in $SPECS; do
             name="$(basename "$spec" .eval.yaml)"
             echo "## $name" >> "$report"
+            grader_args=()
+            if [[ "$name" == "ci-failure-scan" ]] &&
+               grep -qF 'search-kbe-issues' "$spec" &&
+               test -f "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs"; then
+              grader_args+=(--grader-plugin "$RUNNER_TEMP/trusted-evals/kbe-candidate-reads-grader.mjs")
+            fi
             if vally eval --eval-spec "$spec" --skill-dir .github/workflows \
-                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" > "$workdir/log-$name.txt" 2>&1; then
+                 --workspace "$workdir/ws-$name" --output-dir "$workdir/out-$name" \
+                 "${grader_args[@]}" > "$workdir/log-$name.txt" 2>&1; then
               echo "✅ passed" >> "$report"
             else
               rc=1

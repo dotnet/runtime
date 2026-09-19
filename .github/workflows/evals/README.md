@@ -26,6 +26,10 @@ for conformance, behavior, and constructiveness. Every grader must pass.
 The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
+The trusted KBE search helper, candidate grader, and focused tests are likewise
+kept in the runner's trusted temporary directory. When a scan eval uses the
+helper, `KBE_SEARCH_HELPER` identifies that copy; none of these files are
+restored into the agent-writable workspace.
 Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
 `repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
 supplies to that server has only the job's read permissions, allowing the
