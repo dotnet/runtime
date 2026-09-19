@@ -2,6 +2,10 @@
 
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets" Condition="'$(TargetsBrowser)' == 'true' or '$(TargetsWasi)' == 'true'" />
 
+  <ItemGroup Condition="'$(CMakeArgs)' != ''">
+    <_UserCMakeArgs Include="$([MSBuild]::Unescape($(CMakeArgs.Trim().Replace(' ', ';'))))" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- Hardcode version paths in a global location. -->
     <NativeVersionFile Condition="'$(TargetOS)' == 'windows'">$(ArtifactsObjDir)_version.h</NativeVersionFile>
@@ -14,7 +18,7 @@
     <_BuildNativeArgs Condition="'$(EnableNativeSanitizers)' != ''">$(_BuildNativeArgs) -fsanitize=$(EnableNativeSanitizers)</_BuildNativeArgs>
     <_BuildNativeArgs Condition="'$(OfficialBuildId)' != ''">$(_BuildNativeArgs) /p:OfficialBuildId="$(OfficialBuildId)"</_BuildNativeArgs>
 
-    <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> -cmakeargs "$(CMakeArgs)"</_CMakeArgs>
+    <_CMakeArgs Condition="'$(CMakeArgs)' != ''"> @(_UserCMakeArgs->'-cmakeargs &quot;%(Identity)&quot;', ' ')</_CMakeArgs>
     <_CMakeArgs Condition="'$(WasmEnableThreads)' == 'true'">$(_CMakeArgs) -cmakeargs "-DCLR_CMAKE_WASM_ENABLE_THREADS=1"</_CMakeArgs>
 
     <_BuildNativeArgs>$(_BuildNativeArgs)$(_CMakeArgs) @(NativeCMakeArg, ' ')</_BuildNativeArgs>

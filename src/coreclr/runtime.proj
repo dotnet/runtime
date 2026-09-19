@@ -22,7 +22,7 @@
           DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
     <ItemGroup>
-      <_CMakeArgs Include="$(CMakeArgs)" />
+      <_CMakeArgs Include="$([MSBuild]::Unescape($(CMakeArgs.Trim().Replace(' ', ';'))))" />
       <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
