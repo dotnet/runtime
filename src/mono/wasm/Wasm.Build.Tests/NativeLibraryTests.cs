@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -42,13 +43,6 @@ namespace Wasm.Build.Tests
             string extraProperties = "<WasmBuildNative>true</WasmBuildNative>";
             if (readyToRun)
                 extraProperties += "<PublishReadyToRun>true</PublishReadyToRun>";
-            string insertAtEnd = readyToRun
-                ? """
-                    <Target Name="PrintReadyToRunPInvokeModules" AfterTargets="_WasmConfigureReadyToRunPInvokes">
-                      <Message Text="** ReadyToRunPInvokeModules: @(_WasmReadyToRunPInvokeModule)" Importance="High" />
-                    </Target>
-                    """
-                : string.Empty;
 
             ProjectInfo info = CopyTestAsset(
                 config,
@@ -56,8 +50,7 @@ namespace Wasm.Build.Tests
                 TestAsset.WasmBasicTestApp,
                 "AppUsingNativeLib-a",
                 extraItems: extraItems,
-                extraProperties: extraProperties,
-                insertAtEnd: insertAtEnd);
+                extraProperties: extraProperties);
             File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "native-libs", objectFilename), Path.Combine(_projectDir, objectFilename));
             Utils.DirectoryCopy(Path.Combine(BuildEnvironment.TestAssetsPath, "AppUsingNativeLib"), _projectDir, overwrite: true);
             DeleteFile(Path.Combine(_projectDir, "Common", "Program.cs"));
@@ -75,7 +68,12 @@ namespace Wasm.Build.Tests
             if (readyToRun)
             {
                 Assert.Contains("Linking CoreCLR WASM", buildOutput);
-                Assert.Contains("** ReadyToRunPInvokeModules: native-lib;", buildOutput);
+
+                string generatorResponseFile = Directory.EnumerateFiles(
+                    Path.Combine(_projectDir, "obj"),
+                    "callhelpers-generator.rsp",
+                    SearchOption.AllDirectories).Single();
+                Assert.Contains("--directpinvoke:native-lib", File.ReadAllLines(generatorResponseFile));
             }
 
             RunResult output = await RunForPublishWithWebServer(new BrowserRunOptions(config, TestScenario: "DotnetRun"));

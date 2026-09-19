@@ -256,7 +256,9 @@
     </ItemGroup>
   </Target>
 
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot" AssemblyFile="$(WasmBuildTasksAssemblyPath)" Condition="'$(TestTrimming)' != 'true'" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.LinkContentToWwwroot"
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)"
+             Condition="'$(TestTrimming)' != 'true' or '$(RuntimeFlavor)' == 'CoreCLR'" />
 
   <Target Name="LinkContentToWwwroot" BeforeTargets="ResolveProjectStaticWebAssets" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
     <!-- StaticWebAssetsSDK expects all "files accessible from web" to be in wwwroot folder -->
@@ -271,7 +273,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="LinkPublishContentToWwwroot" BeforeTargets="ComputeWasmVfs" DependsOnTargets="GetCopyToOutputDirectoryItems" Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and '$(TestTrimming)' != 'true'">
+  <Target Name="LinkPublishContentToWwwroot"
+          BeforeTargets="ComputeWasmVfs"
+          DependsOnTargets="GetCopyToOutputDirectoryItems"
+          Condition="'$(TargetOS)' == 'browser' and '$(WasmBuildingForNestedPublish)' != 'true' and ('$(TestTrimming)' != 'true' or ('$(RuntimeFlavor)' == 'CoreCLR' and '@(WasmFilesToIncludeFromPublishDir)' != ''))">
     <!-- StaticWebAssetsSDK doesn't have support for adding generated files during publish as "files accessible from web" -->
     <!-- Here we are adding Link/TargetPath for various files generated during publish, adding them to WasmFilesToIncludeInFileSystem and defining them as StaticWebAsset with StaticWebAssetEndpoint -->
     <ItemGroup>
@@ -284,13 +289,13 @@
         CopyToOutputDirectory="PreserveNewest"
         Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != '' and '%(WasmFilesToIncludeFromPublishDir.TargetDir)' == ''" />
 
-      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dmeta'))" />
-      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
-      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="$([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
-      <_WasmFilesForVfs Include="@(_WasmBuildAssetCandidates)" Condition="'%(_WasmBuildAssetCandidates.BuildReference)' == 'true' and $([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.resources.dll'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="'$(TestTrimming)' != 'true' and $([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dmeta'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="'$(TestTrimming)' != 'true' and $([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dil'))" />
+      <_WasmFilesForVfs Include="@(AllItemsFullPathWithTargetPath)" Condition="'$(TestTrimming)' != 'true' and $([System.String]::new('%(AllItemsFullPathWithTargetPath.Identity)').EndsWith('.dpdb'))" />
+      <_WasmFilesForVfs Include="@(_WasmBuildAssetCandidates)" Condition="'$(TestTrimming)' != 'true' and '%(_WasmBuildAssetCandidates.BuildReference)' == 'true' and $([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.dll')) and !$([System.String]::new('%(_WasmBuildAssetCandidates.Identity)').EndsWith('.resources.dll'))" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
+    <ItemGroup Condition="'$(TestTrimming)' != 'true' and '$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">
       <_SatelliteAssemblies Include="$(PublishDir)*\*.resources.dll" />
       <_SatelliteAssemblies CultureName="$([System.IO.Directory]::GetParent('%(Identity)').Name)" />
       <_SatelliteAssemblies TargetPath="%(CultureName)\%(FileName)%(Extension)" />

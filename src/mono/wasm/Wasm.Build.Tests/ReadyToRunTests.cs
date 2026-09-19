@@ -53,37 +53,57 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
         public Task PublishRunAllPages(Configuration config, bool trimmed)
-            => PublishRunAllPagesCore(config, trimmed, nativeRelink: false);
+            => PublishRunAllPagesCore(config, trimmed);
 
-        // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true; the relink is driven by the
-        // IsBrowserWasmProject triggers in BrowserWasmApp.CoreCLR.targets. AssertBundle(isNativeBuild: true)
-        // proves the served dotnet.native.wasm was relinked rather than the runtime-pack prebuilt.
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
-        [InlineData(Configuration.Release, /*trimmed*/ true)]
-        [InlineData(Configuration.Release, /*trimmed*/ false)]
+        [InlineData(Configuration.Release)]
         [TestCategory("no-workload")]
-        public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
-            => PublishRunAllPagesCore(config, trimmed, nativeRelink: true);
-
-        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink)
+        public async Task GuardedFrameworkPInvokeRelinksNative(Configuration config)
         {
-            // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib
-            // is a per-app image, not the runtime pack's. nativeRelink also relinks dotnet.native.wasm.
-            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "guarded_framework_pinvoke_r2r",
+                extraProperties: """
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <PublishTrimmed>true</PublishTrimmed>
+                    <WasmBuildNativeImplicitInReleaseConfiguration>false</WasmBuildNativeImplicitInReleaseConfiguration>
+                    """);
+            ReplaceFile(
+                Path.Combine("Common", "Program.cs"),
+                Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "PInvoke", "GuardedFrameworkEntryPoint.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(
+                info,
+                config,
+                new PublishOptions(
+                    AOT: false,
+                    ExtraMSBuildArgs: $"{GetR2RBuildArgs(config)} -p:RequiresCrossgen2Pack=false -p:UsingBrowserRuntimeWorkload=false",
+                    AssertAppBundle: false),
+                isNativeBuild: true);
+
+            RunResult output = await RunForPublishWithWebServer(
+                new BrowserRunOptions(config, TestScenario: "DotnetRun", ExpectedExitCode: 42));
+
+            Assert.Contains(output.ConsoleOutput, line => line.Contains("guarded P/Invoke was not called"));
+        }
+
+        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed)
+        {
+            // Publish runs per-app crossgen2 and relinks dotnet.native.wasm from the same managed closure,
+            // trimmed or not: even the untrimmed CoreLib is a per-app image, not the runtime pack's.
+            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}";
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
                 extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>");
-            string extraArgs = GetR2RBuildArgs(config);
-            if (nativeRelink)
-            {
-                // CoreCLR relinks dotnet.native.wasm via the in-tree targets + EMSDK_PATH, not the browser
-                // workload; WasmBuildNative=true otherwise forces UsingBrowserRuntimeWorkload=true, which
-                // demands the (uninstalled) wasm-tools workload and disables the CoreCLR relink targets.
-                extraArgs += " -p:WasmBuildNative=true -p:UsingBrowserRuntimeWorkload=false";
-            }
-            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs),
-                // Assert the native runtime was actually relinked (from obj), not the runtime-pack prebuilt,
-                // so the relink is proven rather than silently skipped. See dotnet/runtime#133185.
-                isNativeBuild: nativeRelink ? true : (bool?)null);
+            string extraArgs = $"{GetR2RBuildArgs(config)} -p:UsingBrowserRuntimeWorkload=false";
+            BlazorPublish(
+                info,
+                config,
+                new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs),
+                // Assert the served native runtime was relinked from obj, not copied from the runtime pack.
+                isNativeBuild: true);
 
             string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
             AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);

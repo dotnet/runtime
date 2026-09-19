@@ -102,6 +102,28 @@ namespace Wasm.Build.Tests
             Assert.Contains("** WasmBuildNative: 'false'", line);
         }
 
+        [Fact]
+        public void ExplicitWasmBuildNativeFalseWithReadyToRunErrors()
+        {
+            ProjectInfo info = CopyTestAsset(
+                Configuration.Debug,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "coreclr_native_defaults_r2r_error",
+                extraProperties: """
+                    <PublishReadyToRun>true</PublishReadyToRun>
+                    <WasmBuildNative>false</WasmBuildNative>
+                    """);
+
+            (string _, string output) = PublishProject(
+                info,
+                Configuration.Debug,
+                new PublishOptions(ExpectSuccess: false));
+
+            Assert.Contains("WasmBuildNative is required when PublishReadyToRun is true", output);
+            Assert.Contains("but WasmBuildNative is already set to 'false'", output);
+        }
+
         // Mirrors the Mono path's WithNativeReference test: a project that references a native
         // object file always needs a relink to embed it, regardless of whether any tracked
         // property differs from the runtime pack.

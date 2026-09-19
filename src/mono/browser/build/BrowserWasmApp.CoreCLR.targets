@@ -221,9 +221,10 @@
 
   <!-- Auto-enable native relink based on project configuration. Mirrors the semantics of
        the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets): a property whose
-       value differs from what was baked into the runtime pack forces a relink, and an
-       explicit WasmBuildNative=false in that situation is an error rather than a silent
-       mismatch between the app's configuration and the prebuilt dotnet.native.wasm. -->
+       value differs from what was baked into the runtime pack forces a relink. ReadyToRun
+       publishing also requires a relink so Crossgen2 and the call-helper generator process
+       the same managed closure. An explicit WasmBuildNative=false in either situation is an
+       error rather than a silent mismatch with the prebuilt dotnet.native.wasm. -->
   <Target Name="_CoreCLRSetWasmBuildNativeDefaults"
           Condition="'$(IsBrowserWasmProject)' == 'true' and '$(IsCrossTargetingBuild)' != 'true'">
     <!-- A property counts as changed only when the project set it to something other than the
@@ -238,7 +239,11 @@
 
     <PropertyGroup>
       <_CoreCLRWasmBuildNativeRequired Condition="@(_CoreCLRChangedPropertyThatTriggersRelinking->Count()) &gt; 0">true</_CoreCLRWasmBuildNativeRequired>
+      <_CoreCLRWasmBuildNativeRequired Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '$(PublishReadyToRun)' == 'true'">true</_CoreCLRWasmBuildNativeRequired>
     </PropertyGroup>
+
+    <Error Condition="'$(WasmBuildNative)' == 'false' and '$(WasmBuildingForNestedPublish)' == 'true' and '$(PublishReadyToRun)' == 'true'"
+           Text="WasmBuildNative is required when PublishReadyToRun is true, but WasmBuildNative is already set to 'false'." />
 
     <Error Condition="'$(WasmBuildNative)' == 'false' and '$(_CoreCLRWasmBuildNativeRequired)' == 'true'"
            Text="WasmBuildNative is required because %(_CoreCLRChangedPropertyThatTriggersRelinking.Identity)=$(%(_CoreCLRChangedPropertyThatTriggersRelinking.Identity)) differs from the runtime pack value, but WasmBuildNative is already set to 'false'." />
