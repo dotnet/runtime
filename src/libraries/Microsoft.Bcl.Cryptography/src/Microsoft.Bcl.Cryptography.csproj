@@ -19,7 +19,9 @@
     <BuildPqc Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</BuildPqc>
     <!-- X25519DiffieHellman is new in .NET 11. For this package, build it only for .NET Framework. -->
     <BuildX25519 Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildX25519>
-    <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true' and '$(BuildX25519)' != 'true'">true</OmitResources>
+    <!-- Composite ML-KEM is new in .NET 11. For this package, build it only for .NET Framework. -->
+    <BuildCompositeMLKem Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">true</BuildCompositeMLKem>
+    <OmitResources Condition="'$(BuildX509Loader)' != 'true' and '$(BuildPqc)' != 'true' and '$(BuildX25519)' != 'true' and '$(BuildCompositeMLKem)' != 'true'">true</OmitResources>
   </PropertyGroup>
 
   <Import Project="$(CommonPath)System\Security\Cryptography\Asn1\AsnXml.targets" Condition="'$(BuildX509Loader)' == 'true' or '$(BuildX25519)' == 'true'" />
@@ -417,6 +419,17 @@
     <Compile Include="$(CommonPath)System\Security\Cryptography\PemLabels.cs"
              Link="Common\System\Security\Cryptography\PemLabels.cs" />
     <Compile Include="System\Security\Cryptography\PinAndClear.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(BuildCompositeMLKem)' == 'true'">
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKem.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKem.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemAlgorithm.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX25519)' == 'true'">
