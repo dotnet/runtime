@@ -1005,9 +1005,7 @@ bool IUnkEntry::IsComponentFreeThreaded(IUnknown *pUnk)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pUnk));
     }
     CONTRACTL_END;

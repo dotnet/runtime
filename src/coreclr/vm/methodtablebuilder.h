@@ -1422,7 +1422,14 @@ private:
             : m_curSlotIdx(0),
               m_maxSlotIdx(maxSlotIdx),
               m_rgSlots(new (pStackingAllocator) bmtMethodSlot[maxSlotIdx])
-            { CONTRACTL { THROWS; } CONTRACTL_END; }
+        {
+            CONTRACTL
+            {
+                THROWS;
+                MODE_ANY;
+            }
+            CONTRACTL_END;
+        }
 
         //-----------------------------------------------------------------------------------------
         // Subscript operator

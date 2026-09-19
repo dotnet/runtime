@@ -1679,9 +1679,7 @@ void TypeHandle::NotifyDebuggerUnload() const
 MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 {
     CONTRACTL {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(IsValueType());
         PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(!pMD->IsUnboxingStub());
@@ -1701,9 +1699,7 @@ MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
 {
     CONTRACTL {
-        MODE_PREEMPTIVE;
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         PRECONDITION(IsValueType());
         // reflection needs to call this for methods in non instantiated classes,
         // so move the assert to the caller when needed

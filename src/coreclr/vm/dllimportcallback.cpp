@@ -118,9 +118,7 @@ UMEntryThunkData *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMD));
     }
     CONTRACTL_END;
