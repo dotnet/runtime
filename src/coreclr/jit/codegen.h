@@ -935,6 +935,9 @@ public:
 protected:
     void genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& desc, regNumber reg);
     void genIntToIntCast(GenTreeCast* cast);
+#ifdef TARGET_XARCH
+    bool genIsSignedWideningUse(GenTree* node);
+#endif
     void genFloatToFloatCast(GenTree* treeNode);
     void genFloatToIntCast(GenTree* treeNode);
     void genIntToFloatCast(GenTree* treeNode);
