@@ -297,10 +297,12 @@ namespace System.Runtime.InteropServices.JavaScript
             var targetContext = JSProxyContext.MainThreadContext;
 #endif
 
+            JSHostImplementation.PromiseHolder? preCreatedHolder = null;
             if (signature.IsAsync)
             {
                 // pre-allocate the result handle and Task
                 var holder = targetContext.CreatePromiseHolder();
+                preCreatedHolder = holder;
                 res.slot.Type = MarshalerType.TaskPreCreated;
                 res.slot.GCHandle = holder.GCHandle;
 #if FEATURE_WASM_MANAGED_THREADS
@@ -347,15 +349,26 @@ namespace System.Runtime.InteropServices.JavaScript
                 DispatchJSImportSyncSend(signature, targetContext, arguments);
             }
 #else
-            InvokeJSImportCurrent(signature, arguments);
+            try
+            {
+                InvokeJSImportCurrent(signature, arguments);
+            }
+            catch
+            {
+                // JS threw before it could take ownership of the pre-created holder
+                if (preCreatedHolder != null)
+                {
+                    targetContext.ReleasePromiseHolder(preCreatedHolder.GCHandle);
+                }
+                throw;
+            }
 
             if (signature.IsAsync)
             {
                 // if js synchronously returned null
                 if (arguments[1].slot.Type == MarshalerType.None)
                 {
-                    var holderHandle = (GCHandle)arguments[1].slot.GCHandle;
-                    holderHandle.Free();
+                    targetContext.ReleasePromiseHolder(preCreatedHolder!.GCHandle);
                 }
             }
 #endif

@@ -340,7 +340,9 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (this)
 #endif
             {
-                return new PromiseHolder(this);
+                var holder = new PromiseHolder(this);
+                ThreadJsOwnedHolders.Add(holder.GCHandle, holder);
+                return holder;
             }
         }
 
@@ -394,6 +396,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder" + holderGCHandle);
                     }
+                    ThreadJsOwnedHolders.Remove(holderGCHandle);
                     holder.IsDisposed = true;
                     handle.Free();
                 }
@@ -429,6 +432,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (target is PromiseHolder holder2)
                     {
                         holder = holder2;
+                        ThreadJsOwnedHolders.Remove(gcHandle);
                     }
                     else
                     {
@@ -565,7 +569,8 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         unsafe
                         {
-                            holder.Callback!.Invoke(null);
+                            // a pre-created holder has no callback until JS adopts it
+                            holder.Callback?.Invoke(null);
                         }
                         ((GCHandle)holder.GCHandle).Free();
                     }
