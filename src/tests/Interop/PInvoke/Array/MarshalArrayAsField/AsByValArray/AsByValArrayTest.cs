@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 namespace MarshalArrayAsField.ByValArray;
@@ -1200,5 +1202,159 @@ public class Test
             Console.WriteLine($"\nTEST FAIL: {e.Message}");
             return 101;
         }
+    }
+}
+
+public unsafe class PointerArrayFieldTests
+{
+    private const int ArrayLength = 4;
+
+    [StructLayout(LayoutKind.Sequential, Size = 16)]
+    private struct Pointee
+    {
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PointerFields
+    {
+        public nuint Before;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public byte*[] Bytes;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public long*[] Longs;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public bool*[] Booleans;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public char*[] Characters;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public void*[] Voids;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public Pointee*[] Structures;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public byte**[] Pointers;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public nint[] Integers;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public nuint[] UnsignedIntegers;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public delegate* unmanaged[Cdecl]<void>[] UnmanagedFunctions;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public delegate*<void>[] ManagedFunctions;
+        public nuint After;
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void CopyFixedArrays(bool nullFields)
+    {
+        nuint sentinel = IntPtr.Size == 8 ? unchecked((nuint)0x123456789ABCDEF0UL) : 0x9ABCDEF0u;
+        PointerFields value = new PointerFields
+        {
+            Before = sentinel,
+            Bytes = new byte*[ArrayLength],
+            Longs = new long*[ArrayLength],
+            Booleans = new bool*[ArrayLength],
+            Characters = new char*[ArrayLength],
+            Voids = new void*[ArrayLength],
+            Structures = new Pointee*[ArrayLength],
+            Pointers = new byte**[ArrayLength],
+            Integers = new nint[ArrayLength],
+            UnsignedIntegers = new nuint[ArrayLength],
+            UnmanagedFunctions = new delegate* unmanaged[Cdecl]<void>[ArrayLength],
+            ManagedFunctions = new delegate*<void>[ArrayLength],
+            After = ~sentinel
+        };
+
+        Array[] expected = GetArrays(value);
+        for (int i = 0; i < expected.Length; i++)
+        {
+            Span<nuint> contents = Contents(expected[i]);
+            for (int j = 0; j < contents.Length; j++)
+            {
+                contents[j] = j == 1 ? 0 : expected[i] switch
+                {
+                    delegate* unmanaged[Cdecl]<void>[] => (nuint)(delegate* unmanaged[Cdecl]<void>)&UnmanagedTarget,
+                    delegate*<void>[] => (nuint)(delegate*<void>)&ManagedTarget,
+                    _ => sentinel + (nuint)(i * ArrayLength + j)
+                };
+            }
+        }
+
+        if (nullFields)
+        {
+            value = new PointerFields { Before = sentinel, After = ~sentinel };
+        }
+
+        int slotCount = 2 + expected.Length * ArrayLength;
+        Assert.Equal(slotCount * IntPtr.Size, Marshal.SizeOf<PointerFields>());
+        nuint* allocation = (nuint*)NativeMemory.Alloc((nuint)(slotCount + 2), (nuint)IntPtr.Size);
+        try
+        {
+            new Span<nuint>(allocation, slotCount + 2).Fill(sentinel);
+            nint address = (nint)(allocation + 1);
+            Marshal.StructureToPtr(value, address, fDeleteOld: false);
+            Span<nuint> native = new Span<nuint>((void*)address, slotCount);
+            Assert.Equal(sentinel, allocation[0]);
+            Assert.Equal(sentinel, allocation[slotCount + 1]);
+            Assert.Equal(value.Before, native[0]);
+            Assert.Equal(value.After, native[slotCount - 1]);
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                Span<nuint> expectedContents = Contents(expected[i]);
+                for (int j = 0; j < ArrayLength; j++)
+                {
+                    int slot = 1 + i * ArrayLength + j;
+                    Assert.Equal(nullFields ? 0 : expectedContents[j], native[slot]);
+                    native[slot] = nullFields ? 0 : expectedContents[ArrayLength - j - 1];
+                }
+            }
+
+            PointerFields result = Marshal.PtrToStructure<PointerFields>(address);
+            Assert.Equal(value.Before, result.Before);
+            Assert.Equal(value.After, result.After);
+            Array[] actual = GetArrays(result);
+            for (int i = 0; i < actual.Length; i++)
+            {
+                Assert.NotNull(actual[i]);
+                Assert.Equal(expected[i].GetType(), actual[i].GetType());
+                Assert.Equal(ArrayLength, actual[i].Length);
+                Span<nuint> actualContents = Contents(actual[i]);
+                Span<nuint> expectedContents = Contents(expected[i]);
+                for (int j = 0; j < ArrayLength; j++)
+                {
+                    Assert.Equal(nullFields ? 0 : expectedContents[ArrayLength - j - 1], actualContents[j]);
+                }
+            }
+
+            Marshal.DestroyStructure<PointerFields>(address);
+            Assert.Equal(sentinel, allocation[0]);
+            Assert.Equal(sentinel, allocation[slotCount + 1]);
+        }
+        finally
+        {
+            NativeMemory.Free(allocation);
+        }
+    }
+
+    private static Array[] GetArrays(PointerFields value)
+        => new Array[]
+        {
+            value.Bytes, value.Longs, value.Booleans, value.Characters, value.Voids,
+            value.Structures, value.Pointers, value.Integers, value.UnsignedIntegers,
+            value.UnmanagedFunctions, value.ManagedFunctions
+        };
+
+    private static Span<nuint> Contents(Array values)
+        => MemoryMarshal.CreateSpan(ref Unsafe.As<byte, nuint>(ref MemoryMarshal.GetArrayDataReference(values)), values.Length);
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static void UnmanagedTarget()
+    {
+    }
+
+    private static void ManagedTarget()
+    {
     }
 }
