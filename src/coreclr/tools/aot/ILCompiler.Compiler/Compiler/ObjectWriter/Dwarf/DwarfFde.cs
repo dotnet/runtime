@@ -80,7 +80,9 @@ namespace ILCompiler.ObjectWriter
                 {
                     case CFI_OPCODE.CFI_DEF_CFA_REGISTER:
                         cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa_register;
-                        cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
+                        // The register operand is ULEB128, not a raw byte. Identical output for
+                        // registers <= 127, but the APX eGPRs are 130-145.
+                        cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)dwarfReg);
                         break;
 
                     case CFI_OPCODE.CFI_REL_OFFSET:
@@ -112,7 +114,8 @@ namespace ILCompiler.ObjectWriter
 
                     case CFI_OPCODE.CFI_DEF_CFA:
                         cfiCode[cfiCodeOffset++] = DW_CFA_def_cfa;
-                        cfiCode[cfiCodeOffset++] = (byte)dwarfReg;
+                        // ULEB128, for the same reason as CFI_DEF_CFA_REGISTER above.
+                        cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)dwarfReg);
                         cfaOffset = cfiOffset;
                         cfiCodeOffset += DwarfHelper.WriteULEB128(cfiCode.AsSpan(cfiCodeOffset), (uint)cfaOffset);
                         break;
