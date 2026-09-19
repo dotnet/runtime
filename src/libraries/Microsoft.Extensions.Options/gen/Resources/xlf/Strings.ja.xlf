@@ -4,12 +4,12 @@
     <body>
       <trans-unit id="AlreadyImplementsValidateAsyncMethodMessage">
         <source>Type {0} already implements the ValidateAsync method.</source>
-        <target state="new">Type {0} already implements the ValidateAsync method.</target>
+        <target state="translated">型 {0} には ValidateAsync メソッドが既に実装されています。</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateAsyncMethodTitle">
         <source>A type already includes an implementation of the 'ValidateAsync' method.</source>
-        <target state="new">A type already includes an implementation of the 'ValidateAsync' method.</target>
+        <target state="translated">型には 'ValidateAsync' メソッドの実装が既に含まれています。</target>
         <note />
       </trans-unit>
       <trans-unit id="AlreadyImplementsValidateMethodMessage">
