@@ -244,6 +244,24 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
+#if READYTORUN
+            int expectedFunctionIndex = -1;
+            foreach (ILCompiler.DependencyAnalysis.ReadyToRun.MethodWithGCInfo method in _nodeFactory.EnumerateCompiledMethods())
+            {
+                Utf8String methodName = new(method.GetMangledName(_nodeFactory.NameMangler));
+                int functionIndex = _wasmSymbolManager.GetSymbol(methodName).Index;
+
+                if (expectedFunctionIndex == -1)
+                {
+                    expectedFunctionIndex = functionIndex;
+                }
+
+                Debug.Assert(functionIndex == expectedFunctionIndex,
+                    $"R2R method {method.Method} has wasm function index {functionIndex}, expected {expectedFunctionIndex}");
+                expectedFunctionIndex += method.FrameInfos.Length;
+            }
+#endif
+
             int totalMethodCount = MethodCount + 3;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
             InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
