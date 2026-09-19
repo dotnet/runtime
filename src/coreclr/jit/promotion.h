@@ -20,12 +20,13 @@ struct Replacement
     unsigned  Offset;
     var_types AccessType;
     unsigned  LclNum = BAD_VAR_NUM;
+    // Dense index into the inter-block pending-readback sets.
+    unsigned ReadBackIndex = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
-    // Note that the invariant is that this is always false at the entrance to
-    // a basic block, i.e. all predecessors would have read the replacement
-    // back before transferring control if necessary.
+    // This may remain true across blocks when all incoming paths agree that
+    // the struct local contains the current value.
     bool NeedsReadBack = false;
 #ifdef DEBUG
     const char* Description = "";
@@ -249,6 +250,17 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Statement*         m_currentStmt         = nullptr;
     BasicBlock*        m_currentBlock        = nullptr;
 
+    struct BlockState
+    {
+        BitVec PendingReadBacks;
+        bool   Processed;
+        bool   RequiresAlreadyReadBackOnEntry;
+    };
+
+    FlowGraphDfsTree* m_dfsTree;
+    BitVecTraits*     m_readBackTraits;
+    BlockState*       m_blockStates;
+
 public:
     enum
     {
@@ -257,13 +269,10 @@ public:
         ComputeStack      = true,
     };
 
-    ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler)
-        , m_promotion(prom)
-        , m_aggregates(aggregates)
-        , m_liveness(liveness)
-    {
-    }
+    ReplaceVisitor(Promotion*         prom,
+                   AggregateInfoMap&  aggregates,
+                   PromotionLiveness* liveness,
+                   FlowGraphDfsTree*  dfsTree);
 
     bool MadeChanges()
     {
@@ -282,6 +291,8 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, const Replacement& rep);
+
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
     void SetNeedsReadBack(Replacement& rep);

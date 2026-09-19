@@ -2241,6 +2241,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 // and should not violate tree order.
                 assert(isClosed);
 
+                ForgetParameterUses(lhsRange);
                 BlockRange().Delete(m_compiler, m_block, std::move(lhsRange));
             }
             else if (op1->IsValue())
@@ -2270,6 +2271,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                     // LIR and should not violate tree order.
                     assert(isClosed);
 
+                    ForgetParameterUses(rhsRange);
                     BlockRange().Delete(m_compiler, m_block, std::move(rhsRange));
                 }
                 else
@@ -2343,6 +2345,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     {
         if (use.IsDummyUse())
         {
+            ForgetParameterUses(LIR::ReadOnlyRange(node, node));
             BlockRange().Remove(node);
         }
         else
@@ -2405,6 +2408,10 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 // Rewrite HIR nodes into LIR nodes.
 Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
+    if ((user != nullptr) || !(*use)->OperIsLocalRead())
+    {
+        m_rationalizer.RecordParameterUse(*use);
+    }
     return m_rationalizer.RewriteNode(use, this->m_ancestors);
 }
 
@@ -2417,6 +2424,17 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PostOrderVisit(GenTree*
 PhaseStatus Rationalizer::DoPhase()
 {
     DBEXEC(TRUE, SanityCheck());
+
+    bool mapParameters =
+        m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR() && (m_compiler->info.compArgsCount > 0);
+#ifdef TARGET_ARM
+    // The profiler hook on arm32 does not preserve incoming argument registers.
+    mapParameters &= !m_compiler->compIsProfilerHookNeeded();
+#endif
+    if (mapParameters)
+    {
+        m_parameterUses = new (m_compiler, CMK_ABI) ParameterUses* [m_compiler->info.compArgsCount] {};
+    }
 
     m_compiler->compCurBB = nullptr;
     m_compiler->fgOrder   = Compiler::FGOrderLinear;
@@ -2475,5 +2493,382 @@ PhaseStatus Rationalizer::DoPhase()
 
     m_compiler->compRationalIRForm = true;
 
+    if (mapParameters)
+    {
+        RewriteParameterUses();
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// RecordParameterUse:
+//   Save a read or kill of a register-passed parameter in execution order.
+//
+// Arguments:
+//   node - The node visited by rationalization.
+//
+void Rationalizer::RecordParameterUse(GenTree* node)
+{
+    if ((m_parameterUses == nullptr) || !node->OperIs(GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
+    unsigned             lclNum = lcl->GetLclNum();
+    if (lclNum >= m_compiler->info.compArgsCount)
+    {
+        return;
+    }
+
+    LclVarDsc* param = m_compiler->lvaGetDesc(lclNum);
+    if (param->lvPromoted || (!param->TypeIs(TYP_STRUCT) && !param->lvDoNotEnregister) ||
+        !m_compiler->lvaGetParameterABIInfo(lclNum).HasAnyRegisterSegment())
+    {
+        return;
+    }
+
+    if (node->OperIs(GT_LCL_FLD) && node->TypeIs(TYP_STRUCT))
+    {
+        return;
+    }
+
+    ParameterUses*& uses = m_parameterUses[lclNum];
+    if (uses == nullptr)
+    {
+        uses = new (m_compiler, CMK_ABI) ParameterUses(m_compiler->getAllocator(CMK_ABI));
+    }
+
+    uses->Uses.Push(ParameterUse{lcl, m_block});
+    uses->HasKills |= !node->OperIs(GT_LCL_FLD);
+    uses->HasReads |= node->OperIs(GT_LCL_FLD);
+}
+
+//------------------------------------------------------------------------
+// ForgetParameterUses:
+//   Invalidate recorded local uses before removing a discarded subtree.
+//
+// Arguments:
+//   range - The discarded subtree.
+//
+void Rationalizer::ForgetParameterUses(const LIR::ReadOnlyRange& range)
+{
+    if (m_parameterUses == nullptr)
+    {
+        return;
+    }
+
+    for (GenTree* node : range)
+    {
+        if (!node->OperIs(GT_LCL_FLD, GT_LCL_ADDR) ||
+            (node->AsLclVarCommon()->GetLclNum() >= m_compiler->info.compArgsCount))
+        {
+            continue;
+        }
+
+        ParameterUses* uses = m_parameterUses[node->AsLclVarCommon()->GetLclNum()];
+        if (uses != nullptr)
+        {
+            for (ParameterUse& use : uses->Uses.TopDownOrder())
+            {
+                if (use.Node == node)
+                {
+                    use.Node = nullptr;
+                    break;
+                }
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// RewriteParameterUses:
+//   Replace field reads that must still observe the incoming parameter value.
+//
+void Rationalizer::RewriteParameterUses()
+{
+    BitVecTraits            traits(m_compiler->fgBBNumMax + 1, m_compiler);
+    BitVec                  killedOnEntry = BitVecOps::UninitVal();
+    bool                    haveKilledSet = false;
+    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_ABI));
+
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    {
+        ParameterUses* uses = m_parameterUses[lclNum];
+        if ((uses == nullptr) || !uses->HasReads)
+        {
+            continue;
+        }
+
+        if (uses->HasKills)
+        {
+            if (!haveKilledSet)
+            {
+                killedOnEntry = BitVecOps::MakeEmpty(&traits);
+                haveKilledSet = true;
+            }
+            else
+            {
+                BitVecOps::ClearD(&traits, killedOnEntry);
+            }
+
+            auto queueSuccessor = [&](BasicBlock* successor) {
+                if (BitVecOps::TryAddElemD(&traits, killedOnEntry, successor->bbNum))
+                {
+                    worklist.Push(successor);
+                }
+                return BasicBlockVisit::Continue;
+            };
+
+            // A kill on any reaching path prevents using the incoming value. Include
+            // exceptional flow and backedges, even backedges into a block containing a kill.
+            BasicBlock* lastKillBlock = nullptr;
+            for (const ParameterUse& use : uses->Uses.BottomUpOrder())
+            {
+                if ((use.Node != nullptr) && !use.Node->OperIs(GT_LCL_FLD) && (use.Block != lastKillBlock))
+                {
+                    use.Block->VisitAllSuccs(m_compiler, queueSuccessor);
+                    lastKillBlock = use.Block;
+                }
+            }
+
+            while (!worklist.Empty())
+            {
+                worklist.Pop()->VisitAllSuccs(m_compiler, queueSuccessor);
+            }
+        }
+
+        BasicBlock* currentBlock = nullptr;
+        bool        killed       = false;
+        for (const ParameterUse& use : uses->Uses.BottomUpOrder())
+        {
+            if (use.Node == nullptr)
+            {
+                continue;
+            }
+
+            if (use.Block != currentBlock)
+            {
+                currentBlock = use.Block;
+                killed       = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
+            }
+
+            if (!use.Node->OperIs(GT_LCL_FLD))
+            {
+                killed = true;
+            }
+            else if (!killed)
+            {
+                RewriteParameterField(currentBlock, use.Node->AsLclFld());
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// RewriteParameterField:
+//   Extract a field from a local initialized with its incoming parameter register.
+//
+// Arguments:
+//   block - Block containing the field read.
+//   fld   - Field read proven to observe the incoming parameter value.
+//
+void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
+{
+    m_compiler->compCurBB                    = block;
+    const ABIPassingInformation& dataAbiInfo = m_compiler->lvaGetParameterABIInfo(fld->GetLclNum());
+    const ABIPassingSegment*     regSegment  = nullptr;
+    for (const ABIPassingSegment& segment : dataAbiInfo.Segments())
+    {
+        if (!segment.IsPassedInRegister())
+        {
+            continue;
+        }
+
+        assert(fld->GetLclOffs() <= m_compiler->lvaLclExactSize(fld->GetLclNum()));
+        unsigned structAccessedSize =
+            min(genTypeSize(fld), m_compiler->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
+        if ((fld->GetLclOffs() < segment.Offset) ||
+            (fld->GetLclOffs() + structAccessedSize > segment.Offset + segment.Size))
+        {
+            continue;
+        }
+
+        // TODO-CQ: Float -> !float extractions are not supported
+        // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+        if (genIsValidFloatReg(segment.GetRegister()) &&
+            (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
+        {
+            continue;
+        }
+
+        // Found a register segment this field is contained in
+        regSegment = &segment;
+        break;
+    }
+
+    if (regSegment == nullptr)
+    {
+        return;
+    }
+
+    LclVarDsc* param       = m_compiler->lvaGetDesc(fld);
+    var_types  segmentType = regSegment->GetRegisterType(param->TypeIs(TYP_STRUCT) ? param->GetLayout() : nullptr);
+    if ((varTypeIsGC(segmentType) || varTypeIsGC(fld)) && (segmentType != fld->TypeGet()))
+    {
+        // The register local must retain the incoming register's GC reporting type.
+        return;
+    }
+
+    JITDUMP("LCL_FLD use [%06u] in " FMT_BB " of parameter V%02u is contained in ", Compiler::dspTreeID(fld),
+            block->bbNum, fld->GetLclNum());
+    DBEXEC(VERBOSE, regSegment->Dump());
+    JITDUMP("\n");
+
+    // Find the final LIR use after all statements have been rationalized.
+    LIR::Use use;
+    if (!LIR::AsRange(block).TryGetUse(fld, &use))
+    {
+        JITDUMP("  ..but no use was found\n");
+        return;
+    }
+
+    if (m_compiler->m_paramRegLocalMappings == nullptr)
+    {
+        m_compiler->m_paramRegLocalMappings =
+            new (m_compiler, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(m_compiler->getAllocator(CMK_ABI));
+    }
+
+    const ParameterRegisterLocalMapping* existingMapping =
+        m_compiler->FindParameterRegisterLocalMappingByRegister(regSegment->GetRegister());
+
+    unsigned remappedLclNum = BAD_VAR_NUM;
+    if (existingMapping == nullptr)
+    {
+        if (!param->lvDoNotEnregister)
+        {
+            m_compiler->lvaSetVarDoNotEnregister(fld->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+
+        remappedLclNum = m_compiler->lvaGrabTemp(false DEBUGARG(
+            m_compiler->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
+
+        // We always use the full width for integer registers even if the
+        // width is shorter, because various places in the JIT will type
+        // accesses larger to generate smaller code.
+
+#ifdef TARGET_WASM
+        var_types fullWidthType = genActualType(regSegment->GetRegisterType());
+#else
+        var_types fullWidthType = TYP_I_IMPL;
+#endif
+        var_types registerType =
+            genIsValidIntReg(regSegment->GetRegister()) ? fullWidthType : regSegment->GetRegisterType();
+        if ((registerType == TYP_I_IMPL) && varTypeIsGC(fld))
+        {
+            registerType = fld->TypeGet();
+        }
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(remappedLclNum);
+        varDsc->lvType    = genActualType(registerType);
+        JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
+
+        m_compiler->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
+        varDsc->lvIsParamRegTarget = true;
+
+        JITDUMP("New mapping: ");
+        DBEXEC(VERBOSE, regSegment->Dump());
+        JITDUMP(" -> V%02u\n", remappedLclNum);
+    }
+    else
+    {
+        remappedLclNum = existingMapping->LclNum;
+    }
+
+    GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
+
+#ifdef TARGET_WASM
+    if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+    {
+        // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+        const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+        const unsigned scalarSize = genTypeSize(fld);
+        assert((laneOffset % scalarSize) == 0);
+
+        const unsigned laneIndex = laneOffset / scalarSize;
+        value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                       m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                       fld->TypeGet(), genTypeSize(value));
+    }
+    else if (varTypeUsesFloatReg(value))
+#else
+    if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
+    {
+        assert(fld->GetLclOffs() == regSegment->Offset);
+
+        value->gtType = fld->TypeGet();
+
+#ifdef FEATURE_SIMD
+        // SIMD12s should be widened. We cannot do that with
+        // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+        // accesses of SIMD16 locals here.
+        if (value->TypeIs(TYP_SIMD12))
+        {
+            value->gtType = TYP_SIMD16;
+        }
+#endif
+    }
+    else
+    {
+        var_types registerType = value->TypeGet();
+
+        if (fld->GetLclOffs() > regSegment->Offset)
+        {
+            assert(value->TypeIs(TYP_INT, TYP_LONG));
+            GenTree* shiftAmount = m_compiler->gtNewIconNode((fld->GetLclOffs() - regSegment->Offset) * 8, TYP_INT);
+            value = m_compiler->gtNewOperNode(varTypeIsSmall(fld) && varTypeIsSigned(fld) ? GT_RSH : GT_RSZ,
+                                              value->TypeGet(), value, shiftAmount);
+        }
+
+        // Insert explicit normalization for small types (the LCL_FLD we
+        // are replacing comes with this normalization). This is only required
+        // if we didn't get the normalization via a right shift.
+        if (varTypeIsSmall(fld) && (regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
+        {
+            value = m_compiler->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
+        }
+
+        // If the node is still too large then get it to the right size
+        if (genTypeSize(value) != genTypeSize(genActualType((fld))))
+        {
+            assert(genTypeSize(value) == 8);
+            assert(genTypeSize(genActualType(fld)) == 4);
+
+            if (value->OperIsScalarLocal())
+            {
+                // We can use lower bits directly
+                value->gtType = TYP_INT;
+            }
+            else
+            {
+                value = m_compiler->gtNewCastNode(TYP_INT, value, false, TYP_INT);
+            }
+        }
+
+        // Finally insert a bitcast if necessary
+        if (value->TypeGet() != genActualType(fld))
+        {
+            value = m_compiler->gtNewBitCastNode(genActualType(fld), value);
+        }
+    }
+
+    // Now replace the LCL_FLD.
+    LIR::AsRange(block).InsertAfter(fld, LIR::SeqTree(m_compiler, value));
+    use.ReplaceWith(value);
+    JITDUMP("New user tree range:\n");
+    DISPTREERANGE(LIR::AsRange(block), use.User());
+
+    LIR::AsRange(block).Remove(fld);
 }
