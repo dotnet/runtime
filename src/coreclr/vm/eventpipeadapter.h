@@ -320,7 +320,7 @@ public:
 		ep_add_provider_to_session (provider, session);
 	}
 
-	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr)
+	static inline EventPipeProvider * CreateProvider(const WCHAR* providerName, EventPipeCallback callback, void* callbackContext = nullptr, bool callbackDataIncludesGeneration = false)
 	{
 		CONTRACTL
 		{
@@ -331,7 +331,7 @@ public:
 		CONTRACTL_END;
 
 		ep_char8_t *providerNameUTF8 = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(providerName));
-		EventPipeProvider * provider = ep_create_provider (providerNameUTF8, callback, callbackContext);
+		EventPipeProvider * provider = ep_create_provider_2 (providerNameUTF8, callback, callbackContext, callbackDataIncludesGeneration);
 		ep_rt_utf8_string_free (providerNameUTF8);
 		return provider;
 	}

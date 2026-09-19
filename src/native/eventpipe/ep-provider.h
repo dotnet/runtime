@@ -25,6 +25,8 @@ struct _EventPipeProvider_Internal {
 	int64_t keywords;
 	// Bit mask of sessions for which this provider is enabled.
 	uint64_t sessions;
+	// Monotonically increasing configuration callback generation.
+	uint64_t configuration_generation;
 	// The name of the provider.
 	ep_char8_t *provider_name;
 	ep_char16_t *provider_name_utf16;
@@ -42,6 +44,8 @@ struct _EventPipeProvider_Internal {
 	// True if the provider has been deleted, but that deletion
 	// has been deferred until tracing is stopped.
 	bool delete_deferred;
+	// True for the internal managed EventSource callback, which accepts an extended source ID payload.
+	bool callback_data_includes_generation;
 	// The number of pending EventPipeProvider callbacks that have
 	// not completed.
 	int64_t callbacks_pending;
@@ -100,7 +104,8 @@ ep_provider_alloc (
 	EventPipeConfiguration *config,
 	const ep_char8_t *provider_name,
 	EventPipeCallback callback_func,
-	void *callback_data);
+	void *callback_data,
+	bool callback_data_includes_generation);
 
 void
 ep_provider_free (EventPipeProvider * provider);
