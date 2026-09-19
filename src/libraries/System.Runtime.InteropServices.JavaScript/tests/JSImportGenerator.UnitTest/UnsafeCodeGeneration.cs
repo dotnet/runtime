@@ -21,6 +21,7 @@ namespace JSImportGenerator.Unit.Tests
             yield return new object[] { nameof(CodeSnippets.AllDefault), CodeSnippets.AllDefault };
             yield return new object[] { nameof(CodeSnippets.AllAnnotated), CodeSnippets.AllAnnotated };
             yield return new object[] { nameof(CodeSnippets.AllAnnotatedExport), CodeSnippets.AllAnnotatedExport };
+            yield return new object[] { nameof(CodeSnippets.TaskAndDelegateSignatures), CodeSnippets.TaskAndDelegateSignatures };
         }
 
         [Theory]
