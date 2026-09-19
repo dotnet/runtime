@@ -138,45 +138,48 @@ int32_t AndroidCryptoNative_CipherSetTagLength(CipherCtx* ctx, int32_t tagLength
 ARGS_NON_NULL_ALL static int32_t ReinitializeCipher(CipherCtx* ctx)
 {
     JNIEnv* env = GetJNIEnv();
+    int32_t ret = FAIL;
+
+    INIT_LOCALS(loc, algName, keyBytes, sksObj, ivBytes, ivPsObj);
 
     // SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
     // IvParameterSpec ivSpec = new IvParameterSpec(IV); or GCMParameterSpec for GCM/CCM
     // cipher.init(encMode, keySpec, ivSpec);
 
-    jobject algName = GetAlgorithmName(env, ctx->type);
-    if (!algName)
-        return FAIL;
+    loc[algName] = GetAlgorithmName(env, ctx->type);
+    if (!loc[algName])
+        goto cleanup;
 
     int32_t keyLength = ctx->keySizeInBits / 8;
-    jbyteArray keyBytes = make_java_byte_array(env, keyLength);
-    (*env)->SetByteArrayRegion(env, keyBytes, 0, keyLength, (jbyte*)ctx->key);
-    jobject sksObj = (*env)->NewObject(env, g_sksClass, g_sksCtor, keyBytes, algName);
+    loc[keyBytes] = make_java_byte_array(env, keyLength);
+    (*env)->SetByteArrayRegion(env, loc[keyBytes], 0, keyLength, (jbyte*)ctx->key);
+    loc[sksObj] = (*env)->NewObject(env, g_sksClass, g_sksCtor, loc[keyBytes], loc[algName]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    jobject ivPsObj = NULL;
     if (RequiresIV(ctx->type))
     {
-        jbyteArray ivBytes = make_java_byte_array(env, ctx->ivLength);
-        (*env)->SetByteArrayRegion(env, ivBytes, 0, ctx->ivLength, (jbyte*)ctx->iv);
+        loc[ivBytes] = make_java_byte_array(env, ctx->ivLength);
+        (*env)->SetByteArrayRegion(env, loc[ivBytes], 0, ctx->ivLength, (jbyte*)ctx->iv);
 
         if (HasVariableTag(ctx->type))
         {
-            ivPsObj = (*env)->NewObject(env, g_GCMParameterSpecClass, g_GCMParameterSpecCtor, ctx->tagLength * 8, ivBytes);
+            loc[ivPsObj] = (*env)->NewObject(env, g_GCMParameterSpecClass, g_GCMParameterSpecCtor, ctx->tagLength * 8, loc[ivBytes]);
         }
         else
         {
-            ivPsObj = (*env)->NewObject(env, g_ivPsClass, g_ivPsCtor, ivBytes);
+            loc[ivPsObj] = (*env)->NewObject(env, g_ivPsClass, g_ivPsCtor, loc[ivBytes]);
         }
-
-        (*env)->DeleteLocalRef(env, ivBytes);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
     }
 
-    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherInitMethod, ctx->encMode, sksObj, ivPsObj);
-    (*env)->DeleteLocalRef(env, algName);
-    (*env)->DeleteLocalRef(env, sksObj);
-    (*env)->DeleteLocalRef(env, ivPsObj);
-    (*env)->DeleteLocalRef(env, keyBytes);
+    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherInitMethod, ctx->encMode, loc[sksObj], loc[ivPsObj]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
 
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint8_t* iv, int32_t enc)
@@ -205,6 +208,8 @@ int32_t AndroidCryptoNative_CipherSetKeyAndIV(CipherCtx* ctx, uint8_t* key, uint
             // ivLength = cipher.getBlockSize();
             JNIEnv *env = GetJNIEnv();
             ctx->ivLength = (*env)->CallIntMethod(env, ctx->cipher, g_getBlockSizeMethod);
+            if (CheckJNIExceptions(env))
+                return FAIL;
         }
 
         SaveTo(iv, &ctx->iv, (size_t)ctx->ivLength, /* overwrite */ true);
@@ -238,11 +243,18 @@ int32_t AndroidCryptoNative_CipherUpdateAAD(CipherCtx* ctx, uint8_t* in, int32_t
     abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
-    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, inDataBytes);
-    (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, inDataBytes);
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    (*env)->CallVoidMethod(env, ctx->cipher, g_cipherUpdateAADMethod, loc[inDataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+    ret = SUCCESS;
+
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t* outl, uint8_t* in, int32_t inl)
@@ -258,22 +270,30 @@ int32_t AndroidCryptoNative_CipherUpdate(CipherCtx* ctx, uint8_t* outm, int32_t*
     abort_if_invalid_pointer_argument(in);
 
     JNIEnv* env = GetJNIEnv();
-    jbyteArray inDataBytes = make_java_byte_array(env, inl);
-    (*env)->SetByteArrayRegion(env, inDataBytes, 0, inl, (jbyte*)in);
+    int32_t ret = FAIL;
+    INIT_LOCALS(loc, inDataBytes, outDataBytes);
 
     *outl = 0;
-    jbyteArray outDataBytes = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, inDataBytes);
 
-    if (outDataBytes && outm)
+    loc[inDataBytes] = make_java_byte_array(env, inl);
+    (*env)->SetByteArrayRegion(env, loc[inDataBytes], 0, inl, (jbyte*)in);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    loc[outDataBytes] = (jbyteArray)(*env)->CallObjectMethod(env, ctx->cipher, g_cipherUpdateMethod, loc[inDataBytes]);
+    ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
+
+    if (loc[outDataBytes] && outm)
     {
-        jsize outDataBytesLen = (*env)->GetArrayLength(env, outDataBytes);
+        jsize outDataBytesLen = (*env)->GetArrayLength(env, loc[outDataBytes]);
+        (*env)->GetByteArrayRegion(env, loc[outDataBytes], 0, outDataBytesLen, (jbyte*) outm);
+        ON_EXCEPTION_PRINT_AND_GOTO(cleanup);
         *outl = outDataBytesLen;
-        (*env)->GetByteArrayRegion(env, outDataBytes, 0, outDataBytesLen, (jbyte*) outm);
-        (*env)->DeleteLocalRef(env, outDataBytes);
     }
+    ret = SUCCESS;
 
-    (*env)->DeleteLocalRef(env, inDataBytes);
-    return CheckJNIExceptions(env) ? FAIL : SUCCESS;
+cleanup:
+    RELEASE_LOCALS(loc, env);
+    return ret;
 }
 
 int32_t AndroidCryptoNative_CipherFinalEx(CipherCtx* ctx, uint8_t* outm, int32_t* outl)

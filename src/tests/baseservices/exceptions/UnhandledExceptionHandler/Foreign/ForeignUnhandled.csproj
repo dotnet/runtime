@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CMakeProjectReference -->
+    <!-- Needed for CLRTestTargetUnsupported, CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <!-- Test requires EH-clean Main -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>    
     <CLRTestPriority>0</CLRTestPriority>

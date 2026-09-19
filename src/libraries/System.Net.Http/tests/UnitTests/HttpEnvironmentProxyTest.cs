@@ -264,6 +264,37 @@ namespace System.Net.Http.Tests
             }).DisposeAsync();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task HttpProxy_CidrExceptions_Match()
+        {
+            await RemoteExecutor.Invoke(() =>
+            {
+                IWebProxy p;
+
+                Environment.SetEnvironmentVariable("no_proxy", "127.0.0.0/8,2001:db8::/32,192.168.1.0/24,.test.com,foo.com,invalid/cidr");
+                Environment.SetEnvironmentVariable("all_proxy", "http://foo:PLACEHOLDER@1.1.1.1:3000");
+                Assert.True(HttpEnvironmentProxy.TryCreate(out p));
+                Assert.NotNull(p);
+
+                Assert.True(p.IsBypassed(fooHttp));
+                Assert.True(p.IsBypassed(fooHttps));
+                Assert.True(p.IsBypassed(new Uri("http://test.com")));
+                Assert.False(p.IsBypassed(new Uri("http://1test.com")));
+
+                Assert.True(p.IsBypassed(new Uri("http://127.0.0.1")));
+                Assert.True(p.IsBypassed(new Uri("http://127.1.1.1")));
+                Assert.True(p.IsBypassed(new Uri("http://127.1.1.1:8080")));
+                Assert.True(p.IsBypassed(new Uri("http://[::ffff:127.0.0.1]")));
+                Assert.False(p.IsBypassed(new Uri("http://128.0.0.1")));
+
+                Assert.True(p.IsBypassed(new Uri("http://192.168.1.1")));
+                Assert.False(p.IsBypassed(new Uri("http://192.168.2.1")));
+
+                Assert.True(p.IsBypassed(new Uri("http://[2001:db8:ffff:ffff:ffff:ffff:ffff:ffff]")));
+                Assert.False(p.IsBypassed(new Uri("http://[2001:db9:0000:0000:0000:0000:0000:0000]")));
+            }).DisposeAsync();
+        }
+
         public static IEnumerable<object[]> HttpProxyNoProxyEnvVarMemberData()
         {
             yield return new object[] { "http_proxy", "no_proxy" };

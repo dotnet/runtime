@@ -6,6 +6,8 @@
 
 PALEXPORT void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget);
 
+PALEXPORT void GlobalizationNative_InitOrdinalLowerCasingPage(int32_t pageNumber, UChar* pTarget);
+
 PALEXPORT void GlobalizationNative_ChangeCase(const UChar* lpSrc,
                                               int32_t cwSrcLength,
                                               UChar* lpDst,

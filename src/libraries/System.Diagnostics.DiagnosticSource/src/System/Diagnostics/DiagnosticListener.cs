@@ -107,9 +107,13 @@ namespace System.Diagnostics
         /// </param>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Func<string, object?, object?, bool>? isEnabled)
         {
-            return isEnabled == null ?
-             SubscribeInternal(observer, null, null, null, null) :
-             SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled, null, null);
+            if (isEnabled == null)
+            {
+                return SubscribeInternal(observer, null, null, null, null);
+            }
+
+            Func<string, object?, object?, bool> localIsEnabled = isEnabled;
+            return SubscribeInternal(observer, name => localIsEnabled(name, null, null), isEnabled, null, null);
         }
 
         /// <summary>
@@ -325,7 +329,7 @@ namespace System.Diagnostics
                 for (int i = 0; i < 100; i++)
                     GC.KeepAlive("");
 #endif
-                return new DiagnosticSubscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled1Arg = subscriptions.IsEnabled1Arg, IsEnabled3Arg = subscriptions.IsEnabled3Arg, Next = Remove(subscriptions.Next, subscription) };
+                return new DiagnosticSubscription() { Observer = subscriptions.Observer, Owner = subscriptions.Owner, IsEnabled1Arg = subscriptions.IsEnabled1Arg, IsEnabled3Arg = subscriptions.IsEnabled3Arg, OnActivityImport = subscriptions.OnActivityImport, OnActivityExport = subscriptions.OnActivityExport, Next = Remove(subscriptions.Next, subscription) };
             }
         }
 

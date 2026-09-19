@@ -79,6 +79,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.FreeBSD)]
+        public void ProcessStart_UseShellExecute_OnUnix_ThrowsWhenNoOpenerOnPath()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = string.Empty;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Win32Exception exception = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = Environment.CurrentDirectory }));
+                Assert.Equal(Interop.Errors.ERROR_NO_ASSOCIATION, exception.NativeErrorCode);
+            }, options).Dispose();
+        }
+
         [Fact]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
@@ -197,6 +211,36 @@ namespace System.Diagnostics.Tests
                     process.WaitForExit();
                 }
             }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void ProcessStart_SkipsNonExecutableFilesInCurrentDirectory()
+        {
+            const string ScriptName = "script";
+
+            // Create an executable script on PATH
+            string pathDir = Path.Combine(TestDirectory, "Path1");
+            Directory.CreateDirectory(pathDir);
+            WriteScriptFile(pathDir, ScriptName, returnValue: 42);
+
+            // Create a non-executable file named ScriptName in the working directory
+            string workDir = Path.Combine(TestDirectory, "WorkDir");
+            Directory.CreateDirectory(workDir);
+            File.WriteAllText(Path.Combine(workDir, ScriptName), "Not executable");
+
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = pathDir;
+            options.StartInfo.WorkingDirectory = workDir;
+            RemoteExecutor.Invoke(() =>
+            {
+                using (var px = Process.Start(new ProcessStartInfo { FileName = ScriptName }))
+                {
+                    Assert.NotNull(px);
+                    px.WaitForExit();
+                    Assert.True(px.HasExited);
+                    Assert.Equal(42, px.ExitCode);
+                }
+            }, options).Dispose();
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
@@ -1030,7 +1074,6 @@ namespace System.Diagnostics.Tests
 
         private const int O_RDONLY = 0;
         private const int O_WRONLY = 1;
-
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
         private string WriteScriptFile(string directory, string name, int returnValue)

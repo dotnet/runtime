@@ -13,13 +13,10 @@ enum GenericVarianceType : uint8_t;
 #include "forward_declarations.h"
 #include "ICodeManager.h"
 
-extern "C" void PopulateDebugHeaders();
-
 class RuntimeInstance
 {
     friend class AsmOffsets;
     friend class Thread;
-    friend void PopulateDebugHeaders();
     friend struct ::cdac_data<RuntimeInstance>;
 
     HANDLE                      m_hPalInstance; // this is the HANDLE passed into DllMain

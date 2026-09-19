@@ -71,6 +71,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask"/> with a <see cref="Task"/> that represents the operation.</summary>
         /// <param name="task">The task.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(Task task)
         {
             if (task == null)
@@ -174,6 +175,7 @@ namespace System.Threading.Tasks
         /// It will either return the wrapped task object if one exists, or it'll
         /// manufacture a new task object to represent the result.
         /// </remarks>
+        [Intrinsic]
         public Task AsTask()
         {
             object? obj = _obj;
@@ -497,6 +499,7 @@ namespace System.Threading.Tasks
         /// <summary>Initialize the <see cref="ValueTask{TResult}"/> with a <see cref="Task{TResult}"/> that represents the operation.</summary>
         /// <param name="task">The task.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [Intrinsic]
         public ValueTask(Task<TResult> task)
         {
             if (task == null)
@@ -576,6 +579,7 @@ namespace System.Threading.Tasks
         /// It will either return the wrapped task object if one exists, or it'll
         /// manufacture a new task object to represent the result.
         /// </remarks>
+        [Intrinsic]
         public Task<TResult> AsTask()
         {
             object? obj = _obj;

@@ -8,6 +8,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Enable C99 inttypes.h format macros (PRI*, SCN*) for C++ translation units.
+# Some C++ standard library implementations gate these macros behind
+# __STDC_FORMAT_MACROS in C++ mode (e.g. glibc prior to C++11 conformance).
+add_compile_definitions($<$<COMPILE_LANGUAGE:CXX>:__STDC_FORMAT_MACROS>)
+
 # We need to set this to Release as there's no way to intercept configuration-specific linker flags
 # for try_compile-style tests (like check_c_source_compiles) and some of the default Debug flags
 # (ie. /INCREMENTAL) conflict with our own flags.
@@ -16,6 +21,16 @@ set(CMAKE_TRY_COMPILE_CONFIGURATION Release)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 include(CheckLinkerFlag)
+
+# Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
+# so the mere presence of a symbol in the SDK does not tell us whether the deployment target supports it.
+# The compiler warns when using an API unavailable at the deployment target. Turn that into an error
+# for feature probes via CMAKE_REQUIRED_FLAGS, so check_symbol_exists() and other compile checks
+# correctly identify whether the API is supported on the target.
+check_c_compiler_flag("-Werror=unguarded-availability" COMPILER_SUPPORTS_W_ERROR_UNGUARDED_AVAILABILITY)
+if(COMPILER_SUPPORTS_W_ERROR_UNGUARDED_AVAILABILITY)
+    set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror=unguarded-availability")
+endif()
 
 # "configureoptimization.cmake" must be included after CLR_CMAKE_HOST_UNIX has been set.
 include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
@@ -40,12 +55,10 @@ endif()
 #-----------------------------------------------------
 
 if (CLR_CMAKE_HOST_UNIX)
+    add_compile_options(-g)
     add_compile_options(-Wall)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         add_compile_options(-Wno-null-conversion)
-        add_compile_options(-glldb)
-    else()
-        add_compile_options(-g)
     endif()
 endif()
 
@@ -96,9 +109,9 @@ if (MSVC)
   add_compile_options($<$<COMPILE_LANGUAGE:CXX>:$<TARGET_PROPERTY:CLR_EH_OPTION>>)
   add_link_options($<$<BOOL:$<TARGET_PROPERTY:CLR_CONTROL_FLOW_GUARD>>:/guard:cf>)
 
-  if (NOT CLR_CMAKE_PGO_INSTRUMENT)
+  if (NOT CLR_CMAKE_PGO_INSTRUMENT AND NOT CLR_CMAKE_ENABLE_SANITIZERS)
     # Load all imported DLLs from the System32 directory.
-    # Don't do this when instrumenting for PGO as a local DLL dependency is introduced by the instrumentation
+    # Don't do this when instrumenting for PGO or when a sanitizer is enabled as a local DLL dependency is introduced by the instrumentation
     add_linker_flag(/DEPENDENTLOADFLAG:0x800)
   endif()
 
@@ -507,6 +520,8 @@ if (CLR_CMAKE_HOST_UNIX)
       message("Detected FreeBSD aarch64")
     elseif(CLR_CMAKE_HOST_UNIX_AMD64)
       message("Detected FreeBSD amd64")
+    elseif(CLR_CMAKE_HOST_UNIX_POWERPC64)
+      message("Detected FreeBSD ppc64le")
     else()
       message(FATAL_ERROR "Unsupported FreeBSD architecture")
     endif()
@@ -759,6 +774,9 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     add_linker_flag(-Wl,-dead_strip CHECKED RELEASE RELWITHDEBINFO)
   elseif(NOT LD_SOLARIS)
     add_linker_flag(-Wl,--gc-sections CHECKED RELEASE RELWITHDEBINFO)
+    if (NOT LD_GNU AND NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      add_linker_flag(-Wl,--icf=all RELEASE RELWITHDEBINFO)
+    endif()
   endif()
 
   # Specify the minimum supported version of macOS
@@ -855,6 +873,9 @@ if(CLR_CMAKE_TARGET_UNIX)
   if(CLR_CMAKE_TARGET_BROWSER)
     add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_BROWSER>)
   endif()
+  if(CLR_CMAKE_TARGET_WASI)
+    add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
+  endif()
 elseif(CLR_CMAKE_TARGET_WASI)
   add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_OS>>>:TARGET_WASI>)
 else(CLR_CMAKE_TARGET_UNIX)
@@ -876,31 +897,31 @@ if(CLR_CMAKE_TARGET_OPENBSD)
 endif()
 
 if(CLR_CMAKE_HOST_UNIX_ARM)
-   if (NOT DEFINED CLR_ARM_FPU_TYPE)
-     set(CLR_ARM_FPU_TYPE vfpv3)
-   endif(NOT DEFINED CLR_ARM_FPU_TYPE)
+  if (NOT DEFINED CLR_ARM_FPU_TYPE)
+    set(CLR_ARM_FPU_TYPE vfpv3)
+  endif(NOT DEFINED CLR_ARM_FPU_TYPE)
 
-   # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
-   # we have to set the triple by adding a compiler argument
-   add_compile_options(-mthumb)
-   add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
-   if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-     set(CLR_ARM_FPU_CAPABILITY 0x7)
-   endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
-   add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
-   add_compile_options(-march=armv7-a)
-   if(ARM_SOFTFP)
-     add_definitions(-DARM_SOFTFP)
-     add_compile_options(-mfloat-abi=softfp)
-   endif(ARM_SOFTFP)
+  # Because we don't use CMAKE_C_COMPILER/CMAKE_CXX_COMPILER to use clang
+  # we have to set the triple by adding a compiler argument
+  add_compile_options(-mthumb)
+  add_compile_options(-mfpu=${CLR_ARM_FPU_TYPE})
+  if (NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+    set(CLR_ARM_FPU_CAPABILITY 0x7)
+  endif(NOT DEFINED CLR_ARM_FPU_CAPABILITY)
+  add_definitions(-DCLR_ARM_FPU_CAPABILITY=${CLR_ARM_FPU_CAPABILITY})
+  add_compile_options(-march=armv7-a)
+  if(ARM_SOFTFP)
+    add_definitions(-DARM_SOFTFP)
+    add_compile_options(-mfloat-abi=softfp)
+  endif(ARM_SOFTFP)
 endif(CLR_CMAKE_HOST_UNIX_ARM)
 
 if(CLR_CMAKE_HOST_UNIX_ARMV6)
-   add_compile_options(-mfpu=vfp)
-   add_definitions(-DCLR_ARM_FPU_CAPABILITY=0x0)
-   add_compile_options(-march=armv6zk)
-   add_compile_options(-mcpu=arm1176jzf-s)
-   add_compile_options(-mfloat-abi=hard)
+  add_compile_options(-mfpu=vfp)
+  add_definitions(-DCLR_ARM_FPU_CAPABILITY=0x0)
+  add_compile_options(-march=armv6zk)
+  add_compile_options(-mcpu=arm1176jzf-s)
+  add_compile_options(-mfloat-abi=hard)
 endif(CLR_CMAKE_HOST_UNIX_ARMV6)
 
 if(CLR_CMAKE_HOST_UNIX_RISCV64)
@@ -910,6 +931,14 @@ endif(CLR_CMAKE_HOST_UNIX_RISCV64)
 
 if(CLR_CMAKE_HOST_UNIX_X86)
   add_compile_options(-msse2)
+endif()
+
+if(CLR_CMAKE_HOST_ARCH_AMD64)
+  if(CLR_CMAKE_HOST_WIN32)
+    add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/arch:SSE4.2>)
+  else()
+    add_compile_options(-march=x86-64-v2)
+  endif()
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)

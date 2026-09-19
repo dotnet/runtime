@@ -21,7 +21,7 @@ public unsafe class ObjectTests
         MockTarget.Architecture arch,
         Action<MockDescriptors.MockObjectBuilder> configure,
         Action<TestPlaceholderTarget.Builder>? configureMocks = null)
-        => new SOSDacImpl(CreateObjectTarget(arch, configure, configureMocks), legacyObj: null);
+        => new SOSDacImpl(CreateObjectTarget(arch, configure, configureMocks), legacyObj: null, new());
 
     private static TestPlaceholderTarget CreateObjectTarget(
         MockTarget.Architecture arch,
@@ -202,25 +202,31 @@ public unsafe class ObjectTests
             });
 
         {
-            TargetPointer data = contract.GetArrayData(SingleDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+            TargetPointer data = contract.GetArrayData(SingleDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
             Assert.Equal(SingleDimensionArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
             Assert.Equal((uint)singleDimension.Length, count);
             Assert.Equal(SingleDimensionArrayAddress + (ulong)numComponentsOffset, boundsStart.Value);
             Assert.Equal(MockDescriptors.MockObjectBuilder.TestArrayBoundsZeroGlobalAddress, lowerBounds.Value);
+            Assert.Equal([10u], dimensionLengths);
+            Assert.Equal([0], lowerBoundsValues);
         }
         {
-            TargetPointer data = contract.GetArrayData(MultiDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+            TargetPointer data = contract.GetArrayData(MultiDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
             Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize + (ulong)(multiDimension.Rank * sizeof(int) * 2), data.Value);
             Assert.Equal((uint)multiDimension.Length, count);
             Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
             Assert.Equal(boundsStart.Value + (ulong)(multiDimension.Rank * sizeof(int)), lowerBounds.Value);
+            Assert.Equal([1u, 2u, 3u, 4u], dimensionLengths);
+            Assert.Equal([0, 0, 0, 0], lowerBoundsValues);
         }
         {
-            TargetPointer data = contract.GetArrayData(NonZeroLowerBoundArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+            TargetPointer data = contract.GetArrayData(NonZeroLowerBoundArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
             Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize + (ulong)(nonZeroLowerBound.Rank * sizeof(int) * 2), data.Value);
             Assert.Equal((uint)nonZeroLowerBound.Length, count);
             Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
             Assert.Equal(boundsStart.Value + (ulong)(nonZeroLowerBound.Rank * sizeof(int)), lowerBounds.Value);
+            Assert.Equal([10u], dimensionLengths);
+            Assert.Equal([5], lowerBoundsValues);
         }
     }
 
@@ -295,7 +301,7 @@ public unsafe class ObjectTests
             },
             builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
-                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                ITypeHandle handle = new TargetTypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
                 mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
 
@@ -343,7 +349,7 @@ public unsafe class ObjectTests
             },
             builder => {
                 var mockRts = new Mock<IRuntimeTypeSystem>();
-                TypeHandle handle = new TypeHandle(TestMethodTableAddress);
+                ITypeHandle handle = new TargetTypeHandle(TestMethodTableAddress);
                 mockRts.Setup(r => r.GetTypeHandle(TestMethodTableAddress)).Returns(handle);
                 mockRts.Setup(r => r.GetModule(handle)).Returns(TargetPointer.Null);
 
@@ -383,7 +389,7 @@ public unsafe class ObjectTests
                     target: TestTarget,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: 0,
-                    invocationCount: 0);
+                    extraData: 0);
             });
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
@@ -411,7 +417,7 @@ public unsafe class ObjectTests
                     target: 0,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: TestMethodPtrAux,
-                    invocationCount: 0);
+                    extraData: 0);
             });
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);
@@ -423,11 +429,11 @@ public unsafe class ObjectTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void GetDelegateInfo_Multicast(MockTarget.Architecture arch)
+    public void GetDelegateInfo_Unmanaged(MockTarget.Architecture arch)
     {
         const ulong TestMethodTable = 0x00000000_10000200;
         const ulong TestMethodPtr = 0x00000000_aaaa0000;
-        const long TestInvocationCount = 3;
+        const long TestExtraData = -1;
         TargetPointer delegateAddress = default;
 
         IObject contract = CreateObjectContract(
@@ -439,7 +445,7 @@ public unsafe class ObjectTests
                     target: 0,
                     methodPtr: TestMethodPtr,
                     methodPtrAux: 0,
-                    invocationCount: TestInvocationCount);
+                    extraData: TestExtraData);
             });
 
         DelegateInfo info = contract.GetDelegateInfo(delegateAddress);

@@ -688,54 +688,6 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTyp
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
 }
 
-static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32 = nullptr;
-static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2)
-{
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssembly", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
-    }
-
-    int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
-    return result;
-}
-
-static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 = nullptr;
-static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2, void * arg3, void * arg4, void * arg5)
-{
-    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssemblyAndGetFunctionPointer", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
-    }
-
-    int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
-    return result;
-}
-
-static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32 = nullptr;
-static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2, void * arg3, void * arg4, void * arg5)
-{
-    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-
-    // Lazy lookup of MethodDesc for the function export scenario.
-    if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32)
-    {
-        LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "LoadAssemblyBytes", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
-    }
-
-    int32_t result;
-    ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
-    return result;
-}
-
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32 = nullptr;
 static void * Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, int32_t arg2, uint32_t arg3, void * arg4)
 {
@@ -1233,9 +1185,6 @@ const ReverseThunkMapEntry g_ReverseThunks[] =
     { 3290644746, "IsInterfaceImplemented#5:System.Private.CoreLib:System.Runtime.InteropServices:DynamicInterfaceCastableHelpers", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid } },
     { 1577711579, "LayoutTypeConvertToManaged#3:System.Private.CoreLib:System.StubHelpers:StubHelpers", { &MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid } },
     { 2780693056, "LayoutTypeConvertToUnmanaged#3:System.Private.CoreLib:System.StubHelpers:StubHelpers", { &MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid } },
-    { 3422156547, "LoadAssembly#3:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator", { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32 } },
-    { 542185314, "LoadAssemblyAndGetFunctionPointer#6:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator", { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 } },
-    { 3765950975, "LoadAssemblyBytes#6:System.Private.CoreLib:Internal.Runtime.InteropServices:ComponentActivator", { &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32 } },
     { 1086681967, "LoadLibraryCallbackStub#5:System.Private.CoreLib:System.Runtime.InteropServices:NativeLibrary", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32 } },
     { 705270488, "ManagedStartup#2:System.Private.CoreLib:System:StartupHookProvider", { &MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, (void*)&Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid } },
     { 343912841, "NewExternalTypeEntry#2:System.Private.CoreLib:System.Runtime.InteropServices:TypeMapLazyDictionary", { &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (void*)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 } },

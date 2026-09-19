@@ -304,8 +304,7 @@ internal sealed class Xcode
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
-            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
-            !(!hybridGlobalization && Path.GetFileName(f) == "icudt.dat"))))
+            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -622,7 +621,7 @@ internal sealed class Xcode
                 File.WriteAllText(Path.Combine(binDir, "host_runtime_contract.h"),
                     Utils.GetEmbeddedResource("host_runtime_contract.h"));
 
-                var (appContextKeys, appContextValues, propertyCount, propertyCountInvariant) = RenderCoreClrRuntimeConfigProperties(workspace);
+                var (appContextKeys, appContextValues, propertyCount) = RenderCoreClrRuntimeConfigProperties(workspace);
 
                 // NOTE: Library mode is not supported yet
                 File.WriteAllText(Path.Combine(binDir, "runtime.m"),
@@ -631,7 +630,6 @@ internal sealed class Xcode
                         .Replace("%EntryPointLibName%", Path.GetFileName(entryPointLib))
                         .Replace("%EnvVariables%", envVariables)
                         .Replace("%AppContextPropertyCount%", propertyCount.ToString())
-                        .Replace("%AppContextPropertyCount_InvariantGlobalization%", propertyCountInvariant.ToString())
                         .Replace("%AppContextKeys%", appContextKeys)
                         .Replace("%AppContextValues%", appContextValues));
             }
@@ -764,15 +762,12 @@ internal sealed class Xcode
         return Path.Combine(appDirectory, Path.GetFileNameWithoutExtension(xcodePrjPath) + ".app");
     }
 
-    private (string appContextKeys, string appContextValues, int propertyCount, int propertyCountInvariant) RenderCoreClrRuntimeConfigProperties(string workspace)
+    private (string appContextKeys, string appContextValues, int propertyCount) RenderCoreClrRuntimeConfigProperties(string workspace)
     {
         Dictionary<string, string> configProperties = ParseRuntimeConfigProperties(workspace);
 
-        // Hardcoded properties count:
-        // - RUNTIME_IDENTIFIER, APP_CONTEXT_BASE_DIRECTORY, TRUSTED_PLATFORM_ASSEMBLIES, HOST_RUNTIME_CONTRACT = 4
-        // - ICU_DAT_FILE_PATH (only when !INVARIANT_GLOBALIZATION) = 1
-        const int hardcodedPropertiesWithIcu = 5;
-        const int hardcodedPropertiesWithoutIcu = 4;
+        // Hardcoded properties count: RUNTIME_IDENTIFIER, APP_CONTEXT_BASE_DIRECTORY, TRUSTED_PLATFORM_ASSEMBLIES, HOST_RUNTIME_CONTRACT = 4
+        const int hardcodedProperties = 4;
 
         var appContextKeys = new StringBuilder();
         var appContextValues = new StringBuilder();
@@ -780,24 +775,14 @@ internal sealed class Xcode
         int i = 0;
         foreach ((string key, string value) in configProperties)
         {
-            appContextKeys.AppendLine($"#if defined(INVARIANT_GLOBALIZATION)");
-            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedPropertiesWithoutIcu}] = \"{key}\";");
-            appContextKeys.AppendLine($"#else");
-            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedPropertiesWithIcu}] = \"{key}\";");
-            appContextKeys.AppendLine($"#endif");
-
-            appContextValues.AppendLine($"#if defined(INVARIANT_GLOBALIZATION)");
-            appContextValues.AppendLine($"    appctx_values[{i + hardcodedPropertiesWithoutIcu}] = \"{value}\";");
-            appContextValues.AppendLine($"#else");
-            appContextValues.AppendLine($"    appctx_values[{i + hardcodedPropertiesWithIcu}] = \"{value}\";");
-            appContextValues.AppendLine($"#endif");
+            appContextKeys.AppendLine($"    appctx_keys[{i + hardcodedProperties}] = \"{key}\";");
+            appContextValues.AppendLine($"    appctx_values[{i + hardcodedProperties}] = \"{value}\";");
             i++;
         }
 
-        int propertyCount = hardcodedPropertiesWithIcu + configProperties.Count;
-        int propertyCountInvariant = hardcodedPropertiesWithoutIcu + configProperties.Count;
+        int propertyCount = hardcodedProperties + configProperties.Count;
 
-        return (appContextKeys.ToString().TrimEnd(), appContextValues.ToString().TrimEnd(), propertyCount, propertyCountInvariant);
+        return (appContextKeys.ToString().TrimEnd(), appContextValues.ToString().TrimEnd(), propertyCount);
     }
 
     private Dictionary<string, string> ParseRuntimeConfigProperties(string workspace)

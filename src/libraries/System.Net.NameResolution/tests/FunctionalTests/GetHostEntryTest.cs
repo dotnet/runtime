@@ -16,6 +16,7 @@ namespace System.Net.NameResolution.Tests
     public class GetHostEntryTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132750", TestPlatforms.OSX | TestPlatforms.MacCatalyst)]
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
@@ -421,8 +422,8 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
         }
 
-        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
-        // It's equivalent to plain "localhost" and should resolve via OS resolver.
+        // "localhost." is equivalent to plain "localhost".
+        // The OS resolver is tried first, falling back to plain "localhost" if resolution fails or returns no addresses.
         [Fact]
         public async Task DnsGetHostEntry_LocalhostWithTrailingDot_ReturnsLoopback()
         {

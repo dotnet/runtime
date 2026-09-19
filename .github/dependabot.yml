@@ -7,7 +7,8 @@ updates:
     update-types:
     - version-update:semver-patch
     - version-update:semver-minor
-  - dependency-name: "github/gh-aw-actions/**" # Managed by gh aw compile. Version-locked to the gh-aw compiler; do not bump.
+  - dependency-name: "github/gh-aw-actions/**"
+  - dependency-name: "github/gh-aw-actions" # Managed by gh aw compile. Version-locked to the gh-aw compiler; do not bump.
   labels:
   - area-codeflow
   open-pull-requests-limit: 5

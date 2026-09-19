@@ -189,6 +189,12 @@
   <data name="AlreadyImplementsValidateMethodMessage" xml:space="preserve">
     <value>Type {0} already implements the Validate method.</value>
   </data>
+  <data name="AlreadyImplementsValidateAsyncMethodTitle" xml:space="preserve">
+    <value>A type already includes an implementation of the 'ValidateAsync' method.</value>
+  </data>
+  <data name="AlreadyImplementsValidateAsyncMethodMessage" xml:space="preserve">
+    <value>Type {0} already implements the ValidateAsync method.</value>
+  </data>
   <data name="CantBeStaticClassTitle" xml:space="preserve">
     <value>'OptionsValidatorAttribute' can't be applied to a static class.</value>
   </data>

@@ -279,27 +279,6 @@
   <data name="PropertyNameTooLarge" xml:space="preserve">
     <value>The JSON property name of length {0} is too large and not supported.</value>
   </data>
-  <data name="FormatDecimal" xml:space="preserve">
-    <value>The JSON value is either too large or too small for a Decimal.</value>
-  </data>
-  <data name="FormatDouble" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a Double.</value>
-  </data>
-  <data name="FormatInt32" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int32.</value>
-  </data>
-  <data name="FormatInt64" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int64.</value>
-  </data>
-  <data name="FormatSingle" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a Single.</value>
-  </data>
-  <data name="FormatUInt32" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt32.</value>
-  </data>
-  <data name="FormatUInt64" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt64.</value>
-  </data>
   <data name="RequiredDigitNotFoundAfterDecimal" xml:space="preserve">
     <value>'{0}' is invalid within a number, immediately after a decimal point ('.'). Expected a digit ('0'-'9').</value>
   </data>
@@ -440,18 +419,6 @@
   </data>
   <data name="SerializeUnableToSerialize" xml:space="preserve">
     <value>The object or value could not be serialized.</value>
-  </data>
-  <data name="FormatByte" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for an unsigned byte.</value>
-  </data>
-  <data name="FormatInt16" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int16.</value>
-  </data>
-  <data name="FormatSByte" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a signed byte.</value>
-  </data>
-  <data name="FormatUInt16" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt16.</value>
   </data>
   <data name="SerializerCycleDetected" xml:space="preserve">
     <value>A possible object cycle was detected. This can either be due to a cycle or if the object depth is larger than the maximum allowed depth of {0}. Consider using ReferenceHandler.Preserve on JsonSerializerOptions to support cycles.</value>
@@ -689,6 +656,12 @@
   <data name="Polymorphism_TypeDicriminatorIdIsAlreadySpecified" xml:space="preserve">
     <value>The polymorphic type '{0}' has already specified a type discriminator '{1}'.</value>
   </data>
+  <data name="Polymorphism_InferredDerivedTypeIsNotAccessible" xml:space="preserve">
+    <value>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</value>
+  </data>
+  <data name="Polymorphism_InferClosedTypePolymorphismOnNonClosedType" xml:space="preserve">
+    <value>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</value>
+  </data>
   <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
     <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
   </data>
@@ -758,14 +731,8 @@
   <data name="ObjectCreationHandlingPropertyDoesNotSupportParameterizedConstructors" xml:space="preserve">
     <value>JsonObjectCreationHandling.Populate is currently not supported in types with parameterized constructors.</value>
   </data>
-  <data name="FormatInt128" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int128.</value>
-  </data>
-  <data name="FormatUInt128" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for an UInt128.</value>
-  </data>
-  <data name="FormatHalf" xml:space="preserve">
-    <value>Either the JSON value is not in a supported format, or is out of bounds for a Half.</value>
+  <data name="FormatNumericType" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for the {0} type.</value>
   </data>
   <data name="InvalidIndentCharacter" xml:space="preserve">
     <value>Supported indentation characters are space and horizontal tab.</value>
@@ -881,9 +848,6 @@
   <data name="UnionAmbiguousJsonValueType" xml:space="preserve">
     <value>JSON value type '{0}' is ambiguous for union type '{1}' because multiple case types can use this value type. Specify a custom type classifier to support deserialization.</value>
   </data>
-  <data name="UnionCaseWithCustomConverterRequiresClassifier" xml:space="preserve">
-    <value>The union type '{0}' contains a case type that uses a custom JsonConverter. Specify a custom type classifier to support deserialization.</value>
-  </data>
   <data name="UnionCannotCreateValue" xml:space="preserve">
     <value>Cannot create values for union type '{0}'. Ensure the type has a public single-parameter constructor for each union case, or configure a constructor in its JSON contract.</value>
   </data>
@@ -904,5 +868,20 @@
   </data>
   <data name="UnionTypeClassifierReturnedNull" xml:space="preserve">
     <value>The custom type classifier for union type '{0}' returned null for JSON token type '{1}'.</value>
+  </data>
+  <data name="UnionTypeStructuralClassifierAmbiguousCases" xml:space="preserve">
+    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case types '{1}' and '{2}' can both deserialize JSON values of type '{3}'. At most one case without object property metadata per JSON value type is supported.</value>
+  </data>
+  <data name="UnionTypeStructuralClassifierCaseNotSupported" xml:space="preserve">
+    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' uses polymorphism or is itself a union type. Union cases that use polymorphism or are union types are not supported.</value>
+  </data>
+  <data name="UnionTypeStructuralClassifierOnlyForUnions" xml:space="preserve">
+    <value>The JsonUnionTypeStructuralClassifier only supports union types. The type '{0}' is being configured as a polymorphic type or another non-union classification.</value>
+  </data>
+  <data name="UnionTypeStructuralClassifierPreserveReferencesNotSupported" xml:space="preserve">
+    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' when reference preservation is enabled. Reference-preserving deserialization is not supported.</value>
+  </data>
+  <data name="UnionTypeStructuralClassifierUnreachableObjectCase" xml:space="preserve">
+    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' can never be selected uniquely. The case type '{2}' recognizes every property name recognized by '{1}' and has no stricter required-property or unmapped-member constraints.</value>
   </data>
 </root>

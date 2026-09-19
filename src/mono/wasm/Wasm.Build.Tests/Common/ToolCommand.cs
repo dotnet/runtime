@@ -112,18 +112,24 @@ namespace Wasm.Build.Tests
         private async Task<CommandResult> ExecuteAsyncInternal(string executable, string args)
         {
             var output = new List<string>();
-            CurrentProcess = CreateProcess(executable, args);
+
+            // Capture the process in a local. Dispose() can run concurrently — e.g. a test's
+            // `using` scope ending while a long-running server process is still executing (see
+            // BrowserRunner) — and it kills the process and sets the CurrentProcess field to null.
+            // Reading the field after that point would throw NullReferenceException, so all
+            // subsequent member access goes through the local instead.
+            Process process = CurrentProcess = CreateProcess(executable, args);
 
             try
             {
-                CurrentProcess.Start();
+                process.Start();
 
                 // Process.ReadAllLinesAsync (added in .NET 11) yields each redirected stdout/stderr
                 // line as it arrives and completes once both streams have hit EOF. The streams
                 // close when the child process closes its pipe handles — typically (but not always)
                 // observable before Exited fires. We still call WaitForExitAsync after the loop so
-                // CurrentProcess.ExitCode is safe to read.
-                await foreach (ProcessOutputLine line in CurrentProcess.ReadAllLinesAsync().ConfigureAwait(false))
+                // process.ExitCode is safe to read.
+                await foreach (ProcessOutputLine line in process.ReadAllLinesAsync().ConfigureAwait(false))
                 {
                     if (isDisposed)
                         break;
@@ -138,7 +144,16 @@ namespace Wasm.Build.Tests
                         _onOutputLine?.Invoke(line.Content);
                 }
 
-                await CurrentProcess.WaitForExitAsync().ConfigureAwait(false);
+                if (isDisposed)
+                {
+                    // The command was disposed while still running, so Dispose() has already killed
+                    // the process. There is no meaningful exit code to report and touching the
+                    // disposed process would throw, so return the output collected so far.
+                    RemoveNullTerminator(output);
+                    return new CommandResult(process.StartInfo, exitCode: -1, string.Join(System.Environment.NewLine, output));
+                }
+
+                await process.WaitForExitAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -154,8 +169,8 @@ namespace Wasm.Build.Tests
             RemoveNullTerminator(output);
 
             return new CommandResult(
-                CurrentProcess.StartInfo,
-                CurrentProcess.ExitCode,
+                process.StartInfo,
+                process.ExitCode,
                 string.Join(System.Environment.NewLine, output));
         }
 

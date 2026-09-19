@@ -28,7 +28,6 @@ set(COMMON_RUNTIME_SOURCES
     rhassert.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
-    DebugHeader.cpp
     MethodTable.cpp
     EHHelpers.cpp
     event.cpp
@@ -142,12 +141,22 @@ if (WIN32)
   include_directories(windows)
 
   list(APPEND COMMON_RUNTIME_SOURCES
+    ${RUNTIME_DIR}/windows/CLREventBase.cpp
     windows/PalCommon.cpp
     windows/PalMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
+
+  if(CLR_CMAKE_TARGET_ARCH_ARM64)
+    list(APPEND FULL_RUNTIME_SOURCES
+      ../../unwinder/arm64/unwinder.cpp
+    )
+    include_directories(../../inc)
+    include_directories(../../unwinder)
+    include_directories(../../unwinder/arm64)
+  endif()
 
   set(ASM_SUFFIX asm)
 else()
@@ -172,11 +181,23 @@ else()
   # Compile unwinding only for the current compilation target architecture
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 
+  include(CheckSymbolExists)
+  check_symbol_exists(getauxval "sys/auxv.h" HAVE_GETAUXVAL)
+  if (HAVE_GETAUXVAL)
+    add_definitions(-D_LIBUNWIND_HAVE_GETAUXVAL)
+  endif()
+
+  check_symbol_exists(elf_aux_info "sys/auxv.h" HAVE_ELF_AUX_INFO)
+  if (HAVE_ELF_AUX_INFO)
+    add_definitions(-D_LIBUNWIND_HAVE_ELF_AUX_INFO)
+  endif()
+
   if(CLR_CMAKE_TARGET_HAIKU)
     add_definitions(-DPT_GNU_EH_FRAME=PT_EH_FRAME)
   endif()
 
   list(APPEND COMMON_RUNTIME_SOURCES
+    ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp
@@ -290,7 +311,6 @@ if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_definitions(-DFEATURE_HIJACK)
 endif()
 
-add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
 if(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_RISCV64 OR CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
   add_definitions(-DFEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP)

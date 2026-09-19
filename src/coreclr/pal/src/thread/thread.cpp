@@ -101,10 +101,7 @@ CObjectType CorUnix::otThread(
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
-                NULL,   // No process local data cleanup routine
-                CObjectType::WaitableObject,
-                CObjectType::SingleTransitionObject,
-                CObjectType::ThreadReleaseHasNoSideEffects
+                NULL    // No process local data cleanup routine
                 );
 
 CAllowedObjectTypes aotThread(otiThread);
@@ -658,10 +655,16 @@ ExitThread(
     pThread->SetExitCode(dwExitCode);
 
     /* kill the thread (itself), resulting in a call to InternalEndCurrentThread */
+#if defined(TARGET_WASI)
+    // wasi-libc pthread_exit is a _Static_assert stub. PAL only reaches here
+    // on the orderly-shutdown path which is not exercised on WASI.
+    abort();
+#else
     pthread_exit(NULL);
 
     ASSERT("pthread_exit should not return!\n");
     while (true);
+#endif
 }
 
 /*++
@@ -677,9 +680,6 @@ CorUnix::InternalEndCurrentThread(
     CPalThread *pThread
     )
 {
-    PAL_ERROR palError = NO_ERROR;
-    ISynchStateController *pSynchStateController = NULL;
-
     //
     // Need to synchronize setting the thread state to TS_DONE since
     // this is checked for in InternalSuspendThreadFromData.
@@ -687,32 +687,8 @@ CorUnix::InternalEndCurrentThread(
     //
 
     pThread->suspensionInfo.AcquireSuspensionLock(pThread);
-    pThread->synchronizationInfo.SetThreadState(TS_DONE);
+    pThread->SetThreadState(TS_DONE);
     pThread->suspensionInfo.ReleaseSuspensionLock(pThread);
-
-    //
-    // Mark the thread object as signaled
-    //
-
-    palError = pThread->GetThreadObject()->GetSynchStateController(
-        pThread,
-        &pSynchStateController
-        );
-
-    if (NO_ERROR == palError)
-    {
-        palError = pSynchStateController->SetSignalCount(1);
-        if (NO_ERROR != palError)
-        {
-            ASSERT("Unable to mark thread object as signaled");
-        }
-
-        pSynchStateController->ReleaseController();
-    }
-    else
-    {
-        ASSERT("Unable to obtain state controller for thread");
-    }
 
     //
     // Add a reference to the thread data before releasing the
@@ -912,7 +888,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     /* check if the thread is still running */
-    if (TS_DONE == pTargetThread->synchronizationInfo.GetThreadState())
+    if (TS_DONE == pTargetThread->GetThreadState())
     {
         /* the thread has exited, set the priority in the thread structure
            and exit */
@@ -922,6 +898,14 @@ CorUnix::InternalSetThreadPriority(
 
     /* get the previous thread schedule parameters.  We need to know the
        scheduling policy to determine the priority range */
+#if defined(TARGET_WASI)
+    // wasi-libc replaces pthread scheduling functions with _Static_assert
+    // stubs (single-threaded). Record the requested priority but skip the
+    // pthread plumbing.
+    pTargetThread->m_iThreadPriority = iNewPriority;
+    palError = NO_ERROR;
+    goto InternalSetThreadPriorityExit;
+#else
     if (pthread_getschedparam(
             pTargetThread->GetPThreadSelf(),
             &policy,
@@ -1017,6 +1001,7 @@ CorUnix::InternalSetThreadPriority(
     }
 
     pTargetThread->m_iThreadPriority = iNewPriority;
+#endif // !TARGET_WASI
 
 InternalSetThreadPriorityExit:
 
@@ -1265,6 +1250,12 @@ CorUnix::GetThreadTimesInternal(
     close(fd);
 
     ts = status.pr_utime;
+#elif defined(TARGET_WASI)
+    // WASI 0.2.8 has no per-thread CPU time clock. Report zero rather than
+    // fail the build.
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 0;
 #else // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
 #error "Don't know how to obtain user cpu time on this platform."
 #endif // HAVE_PTHREAD_GETCPUCLOCKID || HAVE_CLOCK_THREAD_CPUTIME
@@ -1400,7 +1391,8 @@ CPalThread::ThreadEntry(
             configuredCpuCount = CPU_SETSIZE;
         }
 
-        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        int cpusToAllocate = std::max(configuredCpuCount, CPU_SETSIZE);
+        cpu_set_t* pCpuSet = CPU_ALLOC(cpusToAllocate);
         if (pCpuSet == nullptr)
         {
             ASSERT("CPU_ALLOC failed!\n");
@@ -1408,13 +1400,13 @@ CPalThread::ThreadEntry(
             goto fail;
         }
 
-        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        size_t cpuSetSize = CPU_ALLOC_SIZE(cpusToAllocate);
         CPU_ZERO_S(cpuSetSize, pCpuSet);
 
         st = sched_getaffinity(gPID, cpuSetSize, pCpuSet);
         if (st == 0)
         {
-            st = sched_setaffinity(0, CPU_ALLOC_SIZE(configuredCpuCount), pCpuSet);
+            st = sched_setaffinity(0, cpuSetSize, pCpuSet);
             if (st != 0)
             {
                 if (errno == EPERM || errno == EACCES)
@@ -1492,7 +1484,7 @@ CPalThread::ThreadEntry(
         pThread->SetStartStatus(TRUE);
     }
 
-    pThread->synchronizationInfo.SetThreadState(TS_RUNNING);
+    pThread->SetThreadState(TS_RUNNING);
 
     /* Inform all loaded modules that a thread has been created */
     /* note : no need to take a critical section to serialize here; the loader
@@ -1518,7 +1510,7 @@ fail:
 
     if (NULL != pThread)
     {
-        pThread->synchronizationInfo.SetThreadState(TS_FAILED);
+        pThread->SetThreadState(TS_FAILED);
         pThread->SetStartStatus(FALSE);
     }
 
@@ -1949,12 +1941,6 @@ CPalThread::RunPreCreateInitializers(
     // Call the pre-create initializers for embedded classes
     //
 
-    palError = synchronizationInfo.InitializePreCreate();
-    if (NO_ERROR != palError)
-    {
-        goto RunPreCreateInitializersExit;
-    }
-
     palError = suspensionInfo.InitializePreCreate();
     if (NO_ERROR != palError)
     {
@@ -2032,12 +2018,6 @@ CPalThread::RunPostCreateInitializers(
     {
         ASSERT("Unable to set the thread object key's value\n");
         palError = ERROR_INTERNAL_ERROR;
-        goto RunPostCreateInitializersExit;
-    }
-
-    palError = synchronizationInfo.InitializePostCreate(this, m_threadId, m_dwLwpId);
-    if (NO_ERROR != palError)
-    {
         goto RunPostCreateInitializersExit;
     }
 
@@ -2333,7 +2313,14 @@ CPalThread::GetStackBase()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // wasm-component-ld places the stack first with -Wl,-z,stack-size (see
+    // corerun CMakeLists.txt). Keep in sync with that value.
+    (void)thread; (void)stackAddr; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    constexpr size_t s_wasiStackSize = 8 * 1024 * 1024;
+    stackBase = (void*)s_wasiStackSize;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP
@@ -2385,7 +2372,13 @@ CPalThread::GetStackLimit()
     status = pthread_attr_init(&attr);
     _ASSERT_MSG(status == 0, "pthread_attr_init call failed");
 
-#ifndef TARGET_BROWSER
+#if defined(TARGET_WASI)
+    // See GetStackBase. CoreCLR rejects NULL stack limits, so return a
+    // small non-null placeholder.
+    (void)thread; (void)stackSize; (void)status;
+    pthread_attr_destroy(&attr);
+    stackLimit = (void*)4096;
+#elif !defined(TARGET_BROWSER)
 #if HAVE_PTHREAD_ATTR_GET_NP
     status = pthread_attr_get_np(thread, &attr);
 #elif HAVE_PTHREAD_GETATTR_NP

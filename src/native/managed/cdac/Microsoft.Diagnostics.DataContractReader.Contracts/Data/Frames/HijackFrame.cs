@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HijackFrame))]
 internal partial class HijackFrame : IData<HijackFrame>
 {
-    [Field] public TargetCodePointer ReturnAddress { get; }
-    [Field] public TargetPointer HijackArgsPtr { get; }
+    [Field] public partial TargetCodePointer ReturnAddress { get; }
+    [Field] public partial TargetPointer HijackArgsPtr { get; }
 }

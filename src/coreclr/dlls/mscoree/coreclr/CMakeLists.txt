@@ -109,6 +109,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
         kernel32.lib
+        ntdll.lib
         advapi32.lib
         ole32.lib
         oleaut32.lib

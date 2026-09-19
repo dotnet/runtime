@@ -46,7 +46,7 @@ static bool
 event_pipe_available (void);
 
 static EventPipeSessionID
-event_pipe_enable (
+event_pipe_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfigurationNative *providers,
@@ -97,11 +97,11 @@ static MonoComponentEventPipe fn_table = {
 	&ep_init,
 	&ep_finish_init,
 	&ep_shutdown,
-	&event_pipe_enable,
+	&event_pipe_init_session,
 	&ep_disable,
 	&event_pipe_get_next_event,
 	&ep_get_wait_handle,
-	&ep_start_streaming,
+	&ep_start_session,
 	&ep_write_event_2,
 	&event_pipe_add_rundown_execution_checkpoint,
 	&event_pipe_add_rundown_execution_checkpoint_2,
@@ -140,7 +140,7 @@ event_pipe_available (void)
 }
 
 static EventPipeSessionID
-event_pipe_enable (
+event_pipe_init_session (
 	const ep_char8_t *output_path,
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfigurationNative *providers,
@@ -170,7 +170,7 @@ event_pipe_enable (
 		}
 	}
 
-	session_id = ep_enable (
+	session_id = ep_init_session (
 		output_path,
 		circular_buffer_size_in_mb,
 		config_providers,

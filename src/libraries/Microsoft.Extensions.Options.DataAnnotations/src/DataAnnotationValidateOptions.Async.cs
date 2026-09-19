@@ -139,11 +139,16 @@ namespace Microsoft.Extensions.Options
                     visited.Add(options);
 
                     int index = 0;
-                    foreach (object item in enumerable)
+                    foreach (object? item in enumerable)
                     {
-                        bool innerRes;
-                        (innerRes, errors) = await TryValidateOptionsAsync(item, $"{qualifiedName}.{propertyInfo.Name}[{index++}]", results, errors, visited, cancellationToken).ConfigureAwait(false);
-                        res = innerRes && res;
+                        if (item is not null)
+                        {
+                            bool innerRes;
+                            (innerRes, errors) = await TryValidateOptionsAsync(item, $"{qualifiedName}.{propertyInfo.Name}[{index}]", results, errors, visited, cancellationToken).ConfigureAwait(false);
+                            res = innerRes && res;
+                        }
+
+                        index++;
                     }
                 }
             }

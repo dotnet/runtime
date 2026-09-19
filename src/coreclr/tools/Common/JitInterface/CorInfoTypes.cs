@@ -64,6 +64,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -427,7 +431,6 @@ namespace Internal.JitInterface
     {
         CORINFO_SIGFLAG_IS_LOCAL_SIG = 0x01,
         CORINFO_SIGFLAG_IL_STUB = 0x02,
-        // unused = 0x04,
         CORINFO_SIGFLAG_FAT_CALL = 0x08,
     };
 
@@ -512,6 +515,8 @@ namespace Internal.JitInterface
         WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
         WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
                                                //  i32.const instruction, e.g. taking the address of a function.
+        WASM_TABLE_INDEX_I32,                // Wasm: a function table index stored as a 4-byte little-endian uint32 in the data section,
+                                               //  e.g. recording a function reference in a JIT-emitted constant pool entry.
         WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
@@ -523,6 +528,7 @@ namespace Internal.JitInterface
         WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                                // e.g. in R2R scenarios, encoding an offset from $imageBase
         WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
+        WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
     }
 
     public enum CorInfoGCType
@@ -543,6 +549,7 @@ namespace Internal.JitInterface
         CLASSID_STRING,
         CLASSID_ARGUMENT_HANDLE,
         CLASSID_RUNTIME_TYPE,
+        CLASSID_NUMERICS_VECTORT,
     }
     public enum CorInfoInline
     {
@@ -848,6 +855,7 @@ namespace Internal.JitInterface
         CORINFO_TYPE_MASK = 0x3F,        // lower 6 bits are type mask
         CORINFO_TYPE_MOD_PINNED = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
         CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80, // can be applied to VALUECLASS to indicate 'needs helper to copy'
+        CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
     };
 
     public struct CORINFO_HELPER_ARG
@@ -966,8 +974,27 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreInlinedFrameContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionWithContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionNoContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionNoContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
+    }
+
+    // The well-known wasm globals referenced by JIT-generated code via
+    // WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
+    // corresponding well-known global; the object writer resolves it to the final wasm global index.
+    public unsafe struct CORINFO_WASM_WELLKNOWN_GLOBALS
+    {
+        // Shadow stack pointer global (read at the root frame, then threaded through locals).
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* stackPointer;
+        // Image base global (__memory_base), added to static data offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* imageBase;
+        // Table base global (__table_base), added to funclet pointer offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* tableBase;
+        // Runtime-async continuation return value global.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* asyncContinuation;
     }
 
     // Flags passed from JIT to runtime.
@@ -1533,6 +1560,7 @@ namespace Internal.JitInterface
         CORJIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
 
         CORJIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
+        CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS = 32, // The JIT should emit the diagnostic helpers that verify GC mode transitions are legal
     }
 
     public struct CORJIT_FLAGS

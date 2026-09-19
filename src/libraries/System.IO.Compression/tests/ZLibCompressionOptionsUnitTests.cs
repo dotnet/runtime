@@ -43,11 +43,11 @@ namespace System.IO.Compression
         }
 
         [Fact]
-        public void WindowLog_DefaultValue()
+        public void WindowLog2_DefaultValue()
         {
             ZLibCompressionOptions options = new();
 
-            Assert.Equal(-1, options.WindowLog);
+            Assert.Equal(-1, options.WindowLog2);
         }
 
         [Theory]
@@ -55,11 +55,11 @@ namespace System.IO.Compression
         [InlineData(10)]
         [InlineData(15)]
         [InlineData(-1)]
-        public void WindowLog_SetToValidRange_Succeeds(int windowLog)
+        public void WindowLog2_SetToValidRange_Succeeds(int windowLog2)
         {
             ZLibCompressionOptions options = new();
-            options.WindowLog = windowLog;
-            Assert.Equal(windowLog, options.WindowLog);
+            options.WindowLog2 = windowLog2;
+            Assert.Equal(windowLog2, options.WindowLog2);
         }
 
         [Theory]
@@ -69,18 +69,18 @@ namespace System.IO.Compression
         [InlineData(16)]
         [InlineData(int.MinValue)]
         [InlineData(int.MaxValue)]
-        public void WindowLog_SetOutOfRange_ThrowsArgumentOutOfRangeException(int windowLog)
+        public void WindowLog2_SetOutOfRange_ThrowsArgumentOutOfRangeException(int windowLog2)
         {
             ZLibCompressionOptions options = new();
-            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog = windowLog);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.WindowLog2 = windowLog2);
         }
 
         [Fact]
         public void StaticWindowLogProperties_ReturnExpectedValues()
         {
-            Assert.Equal(15, ZLibCompressionOptions.DefaultWindowLog);
-            Assert.Equal(8, ZLibCompressionOptions.MinWindowLog);
-            Assert.Equal(15, ZLibCompressionOptions.MaxWindowLog);
+            Assert.Equal(15, ZLibCompressionOptions.DefaultWindowLog2);
+            Assert.Equal(8, ZLibCompressionOptions.MinWindowLog2);
+            Assert.Equal(15, ZLibCompressionOptions.MaxWindowLog2);
         }
     }
 }

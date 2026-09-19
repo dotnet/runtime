@@ -295,10 +295,10 @@ llvm_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		// corresponding APIs on Math/MathF -- e.g. there is no `Math.MinNumber` --
 		// so the existing Math/MathF block above doesn't catch them.
 		//
-		// * MinNumber / MaxNumber: IEEE 754-2008 minNum / maxNum (NaN-suppressing).
-		//   Lower to llvm.minnum / llvm.maxnum, which on AArch64 maps to a single
-		//   fminnm / fmaxnm instruction; matches the BCL spec "if either is NaN
-		//   return the non-NaN; if both are NaN return NaN".
+		// * MinNumber / MaxNumber: IEEE 754-2019 minimumNumber / maximumNumber
+		//   (NaN-suppressing and sign-of-zero aware, treating -0 as less than +0).
+		//   Lowered in mini-llvm.c by composing llvm.minimum / llvm.maximum with an
+		//   explicit NaN fixup; see the OP_FMINNUM case there and llvm-intrinsics.h.
 		// * Abs: BCL forwarder to MathF.Abs / Math.Abs. Today this usually inlines
 		//   into the Math/MathF recognition above, but adding direct recognition
 		//   keeps the lowering working even if the JIT inliner declines.
@@ -2078,6 +2078,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				mini_set_inline_failure (cfg, "MethodBase:GetCurrentMethod ()");
 			return ins;
 		}
+
+		/* The stack-walk implementation also needs its caller to survive LLVM inlining. */
+		cfg->no_inline |= COMPILE_LLVM (cfg) && !strcmp (cmethod->name, "GetCurrentMethod");
 	} else if (cmethod->klass == mono_class_try_get_math_class ()) {
 		/*
 		 * There is general branchless code for Min/Max, but it does not work for

@@ -763,6 +763,9 @@ internal class ARM64Unwinder(Target target)
                     return false;
                 }
 
+                // TODO-PAC: Enable processing PAC-enabled return address
+                // context.Lr &= 0x0000FFFFFFFFFFFF;
+
                 //
                 // TODO: Implement support for UnwindFlags RTL_VIRTUAL_UNWIND2_VALIDATE_PAC.
                 //
@@ -1217,9 +1220,9 @@ internal class ARM64Unwinder(Target target)
         public byte o = (byte)(val1 & 0x3f);
         public byte f = (byte)(val1 >> 6);
         public byte r = (byte)(val2 & 0x1f);
-        public byte x = (byte)((val1 >> 5) & 0x1);
-        public byte p = (byte)((val1 >> 6) & 0x1);
-        public byte fixedOp = (byte)((val1 >> 7) & 0x1);
+        public byte x = (byte)((val2 >> 5) & 0x1);
+        public byte p = (byte)((val2 >> 6) & 0x1);
+        public byte fixedOp = (byte)((val2 >> 7) & 0x1);
     }
 
     #endregion

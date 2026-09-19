@@ -24,16 +24,28 @@ bool IsEnabled(RuntimeFeature feature);
 
 ## Version 1
 
-Global variables used:
-| Global Name | Type | Purpose |
+<!-- BEGIN GENERATED: usage contract=FeatureFlags version=c1 -->
+### Data descriptors used
+
+_None._
+
+### Global variables used
+
+| Global | Type | Meaning |
 | --- | --- | --- |
-| FeatureCOMInterop | uint8 | Present (nonzero) when COM interop is enabled |
-| FeatureComWrappers | uint8 | Present (nonzero) when ComWrappers is enabled |
-| FeatureObjCMarshal | uint8 | Present (nonzero) when Objective-C marshalling is enabled |
-| FeatureJavaMarshal | uint8 | Present (nonzero) when Java marshalling is enabled |
-| FeatureOnStackReplacement | uint8 | Present (nonzero) when on-stack replacement is enabled |
-| FeaturePortableEntrypoints | uint8 | Present (nonzero) when portable entrypoints are enabled |
-| FeatureWebcil | uint8 | Present (nonzero) when Webcil is enabled |
+| `FeatureCOMInterop` | `uint8` | Present (nonzero) when COM interop is enabled |
+| `FeatureComWrappers` | `uint8` | Present (nonzero) when ComWrappers is enabled |
+| `FeatureJavaMarshal` | `uint8` | Present (nonzero) when Java marshalling is enabled |
+| `FeatureObjCMarshal` | `uint8` | Present (nonzero) when Objective-C marshalling is enabled |
+| `FeatureOnStackReplacement` | `uint8` | Present (nonzero) when on-stack replacement is enabled |
+| `FeaturePortableEntrypoints` | `uint8` | Present (nonzero) when portable entrypoints are enabled |
+| `FeatureWebcil` | `uint8` | Present (nonzero) when Webcil is enabled |
+
+### Contracts used
+
+_None._
+<!-- END GENERATED: usage contract=FeatureFlags version=c1 -->
+
 
 Feature flag globals are **only present in the descriptor when the feature is enabled**. A missing global and a zero-valued global are both treated as "disabled".
 

@@ -266,6 +266,7 @@ class Diff:
             "-spmi_location", self.spmi_location,
             "-error_limit", "100",
             "--summary_as_json",
+            "-full_ir_checks",
             "-log_level", "debug",
             "-log_file", log_file] + self.create_jit_options_args())
 

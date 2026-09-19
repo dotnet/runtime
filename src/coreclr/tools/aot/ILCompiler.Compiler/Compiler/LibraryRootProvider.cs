@@ -85,9 +85,9 @@ namespace ILCompiler
         {
             MethodSignature signature = method.Signature;
 
-            // Vararg methods are not supported in .NET Core
+            // Vararg methods are not supported
             if ((signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.CallingConventionVarargs)
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException();
 
             CheckTypeCanBeUsedInSignature(signature.ReturnType);
 

@@ -13,13 +13,13 @@
 #include "corimage.h"
 #include "metadata.h"
 
-
-class UTSemReadWrite;
-
 // Creation function to get IMetaDataDispenser(Ex) interface.
 STDAPI CreateMetaDataDispenser(
     REFIID riid,
     void ** pMetaDataDispenserOut);
+
+// Helper function to get a do-nothing IMetaDataImport2 instance for DIA.
+IMetaDataImport2* GetNoopMetaDataImport2();
 
 // Helper function to get an Internal interface with an in-memory metadata section
 STDAPI  GetMDInternalInterface(
@@ -109,8 +109,8 @@ DECLARE_INTERFACE_(IMetaDataHelper, IUnknown)
 
     STDMETHOD_(IUnknown *, GetCachedInternalInterface)(BOOL fWithLock) PURE;    // S_OK or error
     STDMETHOD(SetCachedInternalInterface)(IUnknown * pUnk) PURE;    // S_OK or error
-    STDMETHOD_(UTSemReadWrite*, GetReaderWriterLock)() PURE;   // return the reader writer lock
-    STDMETHOD(SetReaderWriterLock)(UTSemReadWrite * pSem) PURE;
+    STDMETHOD_(minipal_rwlock*, GetReaderWriterLock)() PURE;   // return the reader writer lock
+    STDMETHOD(SetReaderWriterLock)(minipal_rwlock * pLock) PURE;
 };  // IMetaDataHelper
 
 
@@ -370,4 +370,3 @@ DECLARE_INTERFACE_(IGetIMDInternalImport, IUnknown)
 };
 
 #endif  // _CORPRIV_H_
-

@@ -61,6 +61,8 @@ public class Program
         }
     }
 
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.Wasi, "This exhaustive test performs billions of iterations and takes too long to run on WebAssembly.")]
+    [SkipOnCoreClr("This test runs too long under GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {

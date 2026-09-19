@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Xunit;
@@ -9,6 +10,32 @@ namespace System.Net.Mime.Tests
 {
     public class QuotedPrintableStreamTest
     {
+        public static IEnumerable<object[]> DecodeData()
+        {
+            yield return [new[] { "Hello=20World=21" }, "Hello World!"];
+            yield return [new[] { "Hello=", "20World=21" }, "Hello World!"];
+            yield return [new[] { "Hello=2", "0World=21" }, "Hello World!"];
+            yield return [new[] { "Hello=", "\r\nWorld" }, "HelloWorld"];
+            yield return [new[] { "Hello=\r", "\nWorld" }, "HelloWorld"];
+        }
+
+        [Theory]
+        [MemberData(nameof(DecodeData))]
+        public static void DecodeBytes_SplitInput_DecodesCorrectly(string[] chunks, string expected)
+        {
+            using var testStream = new QuotedPrintableStream(Stream.Null, EncodedStreamFactory.DefaultMaxLineLength);
+            var result = new StringBuilder();
+
+            foreach (string chunk in chunks)
+            {
+                byte[] buffer = Encoding.ASCII.GetBytes(chunk);
+                int bytesWritten = testStream.DecodeBytes(buffer);
+                result.Append(Encoding.ASCII.GetString(buffer, 0, bytesWritten));
+            }
+
+            Assert.Equal(expected, result.ToString());
+        }
+
         [Theory]
         [InlineData("Hello \r\n World", "Hello \r\n World", "ASCII", false)]
         [InlineData("Hello World  ", "Hello World =20", "ASCII", true)]

@@ -57,14 +57,13 @@ BOOL InvokeUtil::IsVoidPtr(TypeHandle th)
 
 OBJECTREF InvokeUtil::CreatePointer(TypeHandle th, void * p)
 {
-    CONTRACT(OBJECTREF) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(!th.IsNull());
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     OBJECTREF refObj = NULL;
     GCPROTECT_BEGIN(refObj);
@@ -77,51 +76,50 @@ OBJECTREF InvokeUtil::CreatePointer(TypeHandle th, void * p)
     SetObjectReference(&(((ReflectionPointer *)OBJECTREFToObject(refObj))->_ptrType), refType);
 
     GCPROTECT_END();
-    RETURN refObj;
+    _ASSERTE(refObj != NULL);
+    return refObj;
 }
 
 TypeHandle InvokeUtil::GetPointerType(OBJECTREF pObj) {
-    CONTRACT(TypeHandle) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(pObj != NULL);
-        POSTCONDITION(!RETVAL.IsNull());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ReflectionPointer * pReflectionPointer = (ReflectionPointer *)OBJECTREFToObject(pObj);
     REFLECTCLASSBASEREF o = (REFLECTCLASSBASEREF)pReflectionPointer->_ptrType;
     TypeHandle typeHandle = o->GetType();
-    RETURN typeHandle;
+    _ASSERTE(!typeHandle.IsNull());
+    return typeHandle;
 }
 
 void* InvokeUtil::GetPointerValue(OBJECTREF pObj) {
-    CONTRACT(void*) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(pObj != NULL);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ReflectionPointer * pReflectionPointer = (ReflectionPointer *)OBJECTREFToObject(pObj);
     void *value = pReflectionPointer->_ptr;
-    RETURN value;
+    return value;
 }
 
 void *InvokeUtil::GetIntPtrValue(OBJECTREF pObj) {
-    CONTRACT(void*) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(pObj != NULL);
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    RETURN *(void **)((pObj)->UnBox());
+    return *(void **)((pObj)->UnBox());
 }
 
 void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
@@ -130,7 +128,6 @@ void InvokeUtil::CopyArg(TypeHandle th, PVOID argRef, ArgDestination *argDest) {
         GC_NOTRIGGER; // Caller does not protect object references
         MODE_COOPERATIVE;
         PRECONDITION(!th.IsNull());
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -277,7 +274,6 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
         MODE_COOPERATIVE;
         PRECONDITION(srcObj != NULL);
         PRECONDITION(CheckPointer(pDst));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
     CreatePrimitiveValue(dstType, srcType, srcObj->UnBox(), srcObj->GetMethodTable(), pDst);
@@ -294,7 +290,6 @@ void InvokeUtil::CreatePrimitiveValue(CorElementType dstType,
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pDst));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -453,7 +448,6 @@ void InvokeUtil::ValidField(TypeHandle th, OBJECTREF* value)
         PRECONDITION(!th.IsNull());
         PRECONDITION(CheckPointer(value));
         PRECONDITION(IsProtectedByGCFrame (value));
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -537,7 +531,6 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
         MODE_COOPERATIVE;
         PRECONDITION(!th.IsNull());
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -585,18 +578,16 @@ OBJECTREF InvokeUtil::CreateObjectAfterInvoke(TypeHandle th, void * pValue) {
 }
 
 OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
-    CONTRACT(OBJECTREF) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(except));
         PRECONDITION(IsProtectedByGCFrame (except));
 
-        POSTCONDITION(RETVAL != NULL);
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     struct
     {
@@ -618,7 +609,8 @@ OBJECTREF InvokeUtil::CreateTargetExcept(OBJECTREF* except) {
     createTargetExcept.InvokeThrowing(&gc.innerEx, &gc.oRet);
 
     GCPROTECT_END();
-    RETURN gc.oRet;
+    _ASSERTE(gc.oRet != NULL);
+    return gc.oRet;
 }
 
 // Ensure that the field is declared on the type or subtype of the type to which the typed reference refers.
@@ -633,7 +625,6 @@ void InvokeUtil::ValidateObjectTarget(FieldDesc *pField, TypeHandle enclosingTyp
         PRECONDITION(!enclosingType.IsNull() || pField->IsStatic());
         PRECONDITION(CheckPointer(target));
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -679,7 +670,6 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         PRECONDITION(IsProtectedByGCFrame (valueObj));
         PRECONDITION(declaringType.IsNull () || !declaringType.IsTypeDesc());
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -900,7 +890,6 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
         PRECONDITION(CheckPointer(target));
         PRECONDITION(declaringType.IsNull () || !declaringType.IsTypeDesc());
 
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

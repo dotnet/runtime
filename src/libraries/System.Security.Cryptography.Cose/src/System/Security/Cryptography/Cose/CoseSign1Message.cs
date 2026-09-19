@@ -771,18 +771,7 @@ namespace System.Security.Cryptography.Cose
         private bool VerifyCore(CoseKey key, ReadOnlySpan<byte> contentBytes, Stream? contentStream, ReadOnlySpan<byte> associatedData)
         {
             Debug.Assert(contentStream == null || contentBytes.Length == 0);
-            ReadOnlyMemory<byte> encodedAlg = CoseHelpers.GetCoseAlgorithmFromProtectedHeaders(ProtectedHeaders);
-
-            CoseAlgorithm? nullableAlg = CoseHelpers.DecodeCoseAlgorithmHeader(encodedAlg);
-            if (nullableAlg == null)
-            {
-                throw new CryptographicException(SR.Sign1VerifyAlgHeaderWasIncorrect);
-            }
-
-            if (nullableAlg.Value != key.Algorithm)
-            {
-                throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, nullableAlg));
-            }
+            ValidateAlgorithm(key);
 
             using (ToBeSignedBuilder toBeSignedBuilder = key.CreateToBeSignedBuilder())
             {
@@ -932,6 +921,7 @@ namespace System.Security.Cryptography.Cose
                 throw new InvalidOperationException(SR.ContentWasEmbedded);
             }
 
+            ValidateAlgorithm(key);
             return VerifyAsyncCore(key, detachedContent, associatedData, cancellationToken);
         }
 
@@ -1047,6 +1037,16 @@ namespace System.Security.Cryptography.Cose
             }
 
             return nullableAlg.Value;
+        }
+
+        private void ValidateAlgorithm(CoseKey key)
+        {
+            CoseAlgorithm algorithm = GetCoseAlgorithmFromProtectedHeaders();
+
+            if (algorithm != key.Algorithm)
+            {
+                throw new CryptographicException(SR.Format(SR.Sign1VerifyAlgDoesNotMatchKeyAlgorithm, algorithm, key.Algorithm));
+            }
         }
     }
 }

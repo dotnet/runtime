@@ -134,7 +134,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     PrepareCodeConfig;
 class     NativeCodeVersion;
 struct    InterpThreadContext;
 
@@ -329,7 +328,13 @@ DWORD GetRuntimeId();
 // One-time initialization. Called during Dll initialization.
 //---------------------------------------------------------------------------
 void InitThreadManager();
-void InitThreadManagerPerfMapData();
+void InitThreadManagerTracingData();
+#ifndef FEATURE_PORTABLE_HELPERS
+void ReportCopiedWriteBarriersToPerfMap();
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions);
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:
@@ -425,6 +430,43 @@ PLATFORM_THREAD_LOCAL RuntimeThreadLocals t_runtime_thread_locals;
 typedef DPTR(struct RuntimeThreadLocals) PTR_RuntimeThreadLocals;
 typedef DPTR(struct gc_alloc_context) PTR_gc_alloc_context;
 
+#if !defined(DACCESS_COMPILE) && defined(_DEBUG)
+// Tracks whether the current thread is allowed to transition between cooperative and preemptive
+// GC mode.
+//
+// This is normally true. It is cleared for the duration of the WebAssembly restore-context unwind
+// (see RtlRestoreContext in vm/wasm/helpers.cpp), which resumes managed code at a catch
+// continuation by throwing a native exception tag. That unwind runs arbitrary native cleanup
+// between the catch funclet and the resumed managed code, and any GC mode transition performed
+// there would leave the thread in the wrong mode when managed code resumes.
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH sets it back to true at the resumption point.
+//
+// Only asserts consume this, so the whole mechanism is debug-only; a release runtime neither
+// tracks nor checks it.
+extern thread_local bool t_gcModeSwitchPermitted;
+
+// Assert that a cooperative/preemptive GC mode transition is legal at this point.
+#define ASSERT_GC_MODE_SWITCH_PERMITTED()                                                                              \
+    _ASSERTE_MSG(t_gcModeSwitchPermitted,                                                                              \
+                 "GC mode transition while a restore-context unwind is in progress. The thread is between "            \
+                 "RtlRestoreContext and the managed catch continuation, where the mode must not change.")
+#else
+#define ASSERT_GC_MODE_SWITCH_PERMITTED()
+#endif // !DACCESS_COMPILE && _DEBUG
+
+#if defined(TARGET_WASM) && !defined(DACCESS_COMPILE) && defined(_DEBUG)
+// True when a catch resuming into the frame at handlerFrameControlPC will call
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH, and so is able to lift a GC mode switch restriction
+// imposed for the duration of the restore-context unwind. See vm/wasm/helpers.cpp.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC);
+#else
+inline bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
+{
+    UNREFERENCED_PARAMETER(handlerFrameControlPC);
+    return false;
+}
+#endif // TARGET_WASM && !DACCESS_COMPILE && _DEBUG
+
 // #ThreadClass
 //
 // A code:Thread contains all the per-thread information needed by the runtime.  We can get this
@@ -491,11 +533,9 @@ public:
     // If we are trying to suspend a thread, we set the appropriate pending bit to
     // indicate why we want to suspend it (TS_AbortRequested or TS_DebugSuspendPending).
     //
-    // If instead the thread has blocked itself, via WaitSuspendEvent, we indicate
-    // this with TS_SyncSuspended.  However, we need to know whether the synchronous
-    // suspension is for a user request, or for an internal one (GC & Debug).  That's
-    // because a user request is not allowed to resume a thread suspended for
-    // debugging or GC.  -- That's not stricly true.  It is allowed to resume such a
+    // If instead the thread has blocked itself, via WaitForDebugSuspend, we indicate
+    // this with TS_DebugSyncSuspended.  A user request is not allowed to resume a thread
+    // suspended for debugging.  -- That's not strictly true.  It is allowed to resume such a
     // thread so long as it was ALSO suspended by the user.  In other words, this
     // ensures that user resumptions aren't unbalanced from user suspensions.
     //
@@ -505,10 +545,10 @@ public:
 
         TS_AbortRequested         = 0x00000001,    // Abort the thread
 
-        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code)
-        TS_GCSuspendRedirected    = 0x00000004,    // ThreadSuspend::SuspendRuntime has redirected the thread to suspention routine.
+        TS_SuspensionTrapped      = 0x00000002,    // Thread is trapped waiting for suspension to complete (was in managed code). [cDAC] [Thread]: Contract depends on this value.
+        TS_GCSuspendRedirected    = 0x00000004,    // Thread has been redirected to suspension routine. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads?
+        TS_DebugSuspendPending    = 0x00000008,    // Is the debugger suspending threads? [cDAC] [Thread]: Contract depends on this value.
         TS_GCOnTransitions        = 0x00000010,    // Force a GC on stub transitions (GCStress only)
 
         TS_SyncBlockCleanup       = 0x00000020,    // The synch block needs to be cleaned up.
@@ -526,10 +566,10 @@ public:
 
         TS_WeOwn                  = 0x00001000,    // Exposed object initiated this thread
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
-        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread
+        TS_CoInitialized          = 0x00002000,    // CoInitialize has been called for this thread. [cDAC] [Thread]: Contract depends on this value.
 
-        TS_InSTA                  = 0x00004000,    // Thread hosts an STA
-        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA
+        TS_InSTA                  = 0x00004000,    // Thread hosts an STA. [cDAC] [Thread]: Contract depends on this value.
+        TS_InMTA                  = 0x00008000,    // Thread is part of the MTA. [cDAC] [Thread]: Contract depends on this value.
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
         // Some bits that only have meaning for reporting the state to clients.
@@ -538,8 +578,8 @@ public:
 
         // unused                 = 0x00040000,
 
-        TS_SyncSuspended          = 0x00080000,    // Suspended via WaitSuspendEvent
-        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync
+        TS_DebugSyncSuspended     = 0x00080000,    // Thread has suspended itself at a safe point in response to a debugger suspend request. [cDAC] [Thread]: Contract depends on this value.
+        TS_DebugWillSync          = 0x00100000,    // Debugger will wait for this thread to sync. [cDAC] [Thread]: Contract depends on this value.
 
         TS_StackCrawlNeeded       = 0x00200000,    // A stackcrawl is needed on this thread, such as for thread abort
                                                    // See comment for s_pWaitForStackCrawlEvent for reason.
@@ -560,7 +600,7 @@ public:
                                                    // We can clean up the unmanaged part now.
 
         TS_FailStarted            = 0x40000000,    // The thread fails during startup.
-        TS_Detached               = 0x80000000,    // Thread was detached by DllMain
+        TS_Detached               = 0x80000000,    // Thread was detached by DllMain. [cDAC] [Thread]: Contract depends on this value.
 
         // <TODO> @TODO: We need to reclaim the bits that have no concurrency issues (i.e. they are only
         //         manipulated by the owning thread) and move them off to a different DWORD.  Note if this
@@ -576,7 +616,7 @@ public:
     {
         TSNC_Unknown                    = 0x00000000, // threads are initialized this way
 
-        // unused                       = 0x00000001,
+        TSNC_DebuggerThreadStartSent    = 0x00000001, // The debugger thread-start event has been sent for this thread.
         // unused                       = 0x00000002,
         TSNC_DebuggerIsStepping         = 0x00000004, // debugger is stepping this thread
         TSNC_DebuggerIsManagedException = 0x00000008, // EH is re-raising a managed exception.
@@ -1189,6 +1229,7 @@ public:
         WRAPPER_NO_CONTRACT;
         _ASSERTE(this == GetThread());
         _ASSERTE(!m_fPreemptiveGCDisabled);
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         // holding a spin lock in preemp mode and transit to coop mode will cause other threads
         // spinning waiting for GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
@@ -1252,6 +1293,7 @@ public:
 #ifndef DACCESS_COMPILE
         _ASSERTE(this == GetThread());
         _ASSERTE(m_fPreemptiveGCDisabled);
+        ASSERT_GC_MODE_SWITCH_PERMITTED();
         // holding a spin lock in coop mode and transit to preemp mode will cause deadlock on GC
         _ASSERTE ((m_StateNC & Thread::TSNC_OwnsSpinLock) == 0);
 
@@ -2077,7 +2119,9 @@ public:
     DWORD          DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout, WaitMode mode);
     DWORD          DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode);
 private:
+#ifdef TARGET_WINDOWS
     DWORD          DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll, DWORD timeout, WaitMode mode);
+#endif
 public:
 
     //************************************************************************
@@ -2421,8 +2465,8 @@ private:
 
     // For suspends.  The thread waits on this event.  A client sets the event to cause
     // the thread to resume.
-    void    WaitSuspendEvents();
-    BOOL    WaitSuspendEventsHelper(void);
+    void    WaitForDebugSuspend();
+    BOOL    WaitForDebugSuspendHelper(void);
 
     // Helpers to ensure that the bits for suspension and the number of active
     // traps remain coordinated.
@@ -2455,7 +2499,7 @@ private:
             //
             // Construct the destination state we desire - all suspension bits turned off.
             //
-            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_SyncSuspended));
+            ThreadState newState = (ThreadState)(oldState & ~(TS_DebugSuspendPending | TS_DebugSyncSuspended));
 
             if (InterlockedCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
             {
@@ -2576,9 +2620,20 @@ public:
         return m_ThreadHandle;
     }
 
+#if defined(TARGET_UNIX) && !defined(DACCESS_COMPILE)
+    void SetThreadExited()
+    {
+        WRAPPER_NO_CONTRACT;
+        m_ThreadExitedEvent.Set();
+    }
+#endif // TARGET_UNIX && !DACCESS_COMPILE
+
 private:
     // For suspends:
     CLREvent        m_DebugSuspendEvent;
+#ifdef TARGET_UNIX
+    CLREvent        m_ThreadExitedEvent;
+#endif // TARGET_UNIX
 
     void        SetThreadHandle(HANDLE h)
     {
@@ -2598,12 +2653,11 @@ private:
 
     // <TODO> It would be nice to remove m_ThreadHandleForClose to simplify Thread.Join,
     //   but at the moment that isn't possible without extensive work.
-    //   This handle is used by SwitchOut to store the old handle which may need to be closed
-    //   if we are the owner.  The handle can't be closed before checking the external count
+    //   This handle is used by SwitchOut to store the old handle that needs to be closed.
+    //   The handle can't be closed before checking the external count,
     //   which we can't do in SwitchOut since that may require locking or switching threads.</TODO>
     HANDLE          m_ThreadHandleForClose;
     HANDLE          m_ThreadHandleForResume;
-    BOOL            m_WeOwnThreadHandle;
     SIZE_T          m_OSThreadId;
 
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
@@ -3647,32 +3701,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    class CurrentPrepareCodeConfigHolder
-    {
-    private:
-        Thread *const m_thread;
-#ifdef _DEBUG
-        PrepareCodeConfig *const m_config;
-#endif
-
-    public:
-        CurrentPrepareCodeConfigHolder(Thread *thread, PrepareCodeConfig *config);
-        ~CurrentPrepareCodeConfigHolder();
-    };
-
-public:
-    PrepareCodeConfig *GetCurrentPrepareCodeConfig() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_currentPrepareCodeConfig;
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    PrepareCodeConfig *m_currentPrepareCodeConfig;
-
-#ifndef DACCESS_COMPILE
-public:
     bool IsInForbidSuspendForDebuggerRegion() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -3791,6 +3819,8 @@ struct cdac_data<Thread>
     static constexpr size_t UEWatsonBucketTrackerBuckets = offsetof(Thread, m_ExceptionState) + offsetof(ThreadExceptionState, m_UEWatsonBucketTracker)
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
+
+    static_assert(State == 0, "Thread.NativeThread depends on Thread::m_State being the first field");
 };
 
 // End of class Thread
@@ -4022,7 +4052,7 @@ public:
             CAN_TAKE_LOCK;
         }
         CONTRACTL_END;
-        s_pWaitForStackCrawlEvent->Wait(INFINITE,FALSE);
+        s_pWaitForStackCrawlEvent->Wait(INFINITE, FALSE, false);
     }
     static void SetStackCrawlEvent()
     {
@@ -5137,7 +5167,7 @@ class GCForbidLoaderUseHolder
 
 #endif
 
-// Declaring this macro turns off the GC_TRIGGERS/THROWS/INJECT_FAULT contract in LoadTypeHandle.
+// Declaring this macro turns off the GC_TRIGGERS/THROWS contract in LoadTypeHandle.
 // If you do this, you must restrict your use of the loader only to retrieve TypeHandles
 // for types that have already been loaded and resolved. If you fail to observe this restriction, you will
 // reach a GC_TRIGGERS point somewhere in the loader and assert. If you're lucky, that is.
@@ -5167,8 +5197,7 @@ class GCForbidLoaderUseHolder
 #ifdef ENABLE_CONTRACTS_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    GCForbidLoaderUseHolder __gcfluh; \
                                                        CANNOTTHROWCOMPLUSEXCEPTION();  \
-                                                       GCX_NOTRIGGER(); \
-                                                       FAULT_FORBID();
+                                                       GCX_NOTRIGGER();
 #else   // _DEBUG_IMPL
 #define ENABLE_FORBID_GC_LOADER_USE_IN_THIS_SCOPE()    ;
 #endif  // _DEBUG_IMPL

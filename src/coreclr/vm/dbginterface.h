@@ -20,6 +20,7 @@ typedef DPTR(struct ICorDebugInfo::NativeVarInfo) PTR_NativeVarInfo;
 typedef void (*FAVORCALLBACK)(void *);
 
 class DebuggerSteppingInfo;
+class COR_ILMETHOD_DECODER;
 
 //
 // The purpose of this object is to serve as an entry point to the
@@ -211,7 +212,8 @@ public:
 
     virtual void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers) = 0;
+                 bool *extendOthers,
+                 unsigned ilCodeSize) = 0;
 
     virtual BOOL CheckGetPatchedOpcode(CORDB_ADDRESS_TYPE *address, /*OUT*/ PRD_TYPE *pOpcode) = 0;
 

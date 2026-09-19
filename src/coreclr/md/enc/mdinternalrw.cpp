@@ -61,8 +61,8 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
 
     IMetaModelCommon *pCommonAssemImport = pAssemImport ? pAssemImport->GetMetaModelCommon() : NULL;
 
-    CMDSemReadWrite cSem(pEmitRM->m_pSemReadWrite);
-    IfFailGo(cSem.LockWrite());
+    CMDReadWriteLock lockHolder(pEmitRM->m_pReadWriteLock COMMA_INDEBUG(pMiniMdEmit));
+    IfFailGo(lockHolder.LockWrite());
 
     hr = ImportHelper::MergeUpdateTokenInSig(
                 pMiniMdAssemEmit,   // The assembly emit scope.
@@ -176,6 +176,24 @@ ErrExit:
     return hr;
 } // GetInternalWithRWFormat
 
+// This holder trait is slightly different from ReleaseHolderTraits
+// to account for the narrower contract.
+template <typename TYPE>
+struct MDReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using MDReleaseHolder = LifetimeHolder<MDReleaseHolderTraits<_TYPE>>;
 
 //*****************************************************************************
 // This function returns a IMDInternalImport interface based on the given
@@ -188,7 +206,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
     void        **ppIUnkInternal)       // [out] Return interface on success.
 {
     HRESULT hr = S_OK;
-    ReleaseHolder<IGetIMDInternalImport> pGetIMDInternalImport;
+    MDReleaseHolder<IGetIMDInternalImport> pGetIMDInternalImport;
 
     // IMDInternalImport is the only internal import interface currently supported by
     // this function.
@@ -196,7 +214,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
 
     if (riid != IID_IMDInternalImport || pIUnkPublic == NULL || ppIUnkInternal == NULL)
         IfFailGo(E_INVALIDARG);
-    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, &pGetIMDInternalImport));
+    IfFailGo( pIUnkPublic->QueryInterface(IID_IGetIMDInternalImport, (void**)&pGetIMDInternalImport));
     IfFailGo( pGetIMDInternalImport->GetIMDInternalImport((IMDInternalImport **)ppIUnkInternal));
 
 ErrExit:
@@ -220,7 +238,7 @@ STDAPI GetMDPublicInterfaceFromInternal(
     void        **ppIUnkPublic)         // [out] Return interface on success.
 {
     HRESULT     hr = S_OK;
-    IMDInternalImport *pInternalImport = 0;;
+    MDReleaseHolder<IMDInternalImport> pInternalImport;
     IUnknown    *pIUnkPublic = NULL;
     OptionValue optVal = { MDDupAll, MDRefToDefDefault, MDNotifyDefault, MDUpdateFull, MDErrorOutOfOrderDefault , MDThreadSafetyOn};
     RegMeta     *pMeta = 0;
@@ -245,8 +263,10 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
     // grab the write lock when we are creating the corresponding regmeta for the public interface
     _ASSERTE( pInternalImport->GetReaderWriterLock() != NULL );
+    IfFailGo(AcquireMDWriteLock(
+        pInternalImport->GetReaderWriterLock()
+        COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon()))));
     isLockedForWrite = true;
-    IfFailGo(pInternalImport->GetReaderWriterLock()->LockWrite());
 
     // check again. Maybe someone else beat us to setting the public interface while we are waiting
     // for the write lock. Don't need to grab the read lock since we already have the write lock.
@@ -262,7 +282,7 @@ STDAPI GetMDPublicInterfaceFromInternal(
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
     IfFailGo(pMeta->SetOption(&optVal));
-    IfFailGo( pMeta->InitWithStgdb((IUnknown*)pInternalImport, ((MDInternalRW*)pInternalImport)->GetMiniStgdb()) );
+    IfFailGo( pMeta->InitWithStgdb(pInternalImport, ((MDInternalRW*)(IMDInternalImport*)pInternalImport)->GetMiniStgdb()) );
     IfFailGo( pMeta->QueryInterface(riid, ppIUnkPublic) );
 
     // The following makes the public object and the internal object point to each other.
@@ -276,10 +296,9 @@ STDAPI GetMDPublicInterfaceFromInternal(
 
 ErrExit:
     if (isLockedForWrite)
-        pInternalImport->GetReaderWriterLock()->UnlockWrite();
-
-    if (pInternalImport)
-        pInternalImport->Release();
+        ReleaseMDWriteLock(
+            pInternalImport->GetReaderWriterLock()
+            COMMA_INDEBUG(static_cast<CMiniMdRW *>(pInternalImport->GetMetaModelCommon())));
 
     if (FAILED(hr))
     {
@@ -301,7 +320,7 @@ STDAPI ConvertMDInternalImport(         // S_OK, S_FALSE (no conversion), or err
     IMDInternalImport **ppIMD)          // [out] Put the RW here.
 {
     HRESULT     hr;                     // A result.
-    IMDInternalImportENC *pENC = NULL;  // ENC interface on the metadata.
+    MDReleaseHolder<IMDInternalImportENC> pENC;  // ENC interface on the metadata.
 
     _ASSERTE(pIMD != NULL);
     _ASSERTE(ppIMD != NULL);
@@ -319,8 +338,6 @@ STDAPI ConvertMDInternalImport(         // S_OK, S_FALSE (no conversion), or err
     }
 
 ErrExit:
-    if (pENC)
-        pENC->Release();
     return hr;
 } // ConvertMDInternalImport
 
@@ -338,8 +355,8 @@ MDInternalRW::MDInternalRW()
     m_pUnk(NULL),
     m_pUserUnk(NULL),
     m_pIMetaDataHelper(NULL),
-    m_pSemReadWrite(NULL),
-    m_fOwnSem(false)
+    m_pReadWriteLock(NULL),
+    m_fOwnLock(false)
 {
 } // MDInternalRW::MDInternalRW
 
@@ -369,14 +386,14 @@ MDInternalRW::~MDInternalRW()
 
             m_pIMetaDataHelper->SetCachedInternalInterface(NULL);
             m_pIMetaDataHelper = NULL;
-            m_fOwnSem = false;
+            m_fOwnLock = false;
 
         }
 
         UNLOCKWRITE();
     }
-    if (m_pSemReadWrite && m_fOwnSem)
-        delete m_pSemReadWrite;
+    if (m_pReadWriteLock && m_fOwnLock)
+        DestroyMDReadWriteLock(m_pReadWriteLock);
 
     if ( m_pStgdb && m_fOwnStgdb )
     {
@@ -416,7 +433,7 @@ HRESULT MDInternalRW::SetCachedPublicInterface(IUnknown * pUnk)
     {
         // public object is going away before the internal object. If we don't own the
         // reader writer lock, just take over the ownership.
-        m_fOwnSem = true;
+        m_fOwnLock = true;
         m_pIMetaDataHelper = NULL;
     }
     return hr;
@@ -453,7 +470,7 @@ ErrExit:
 //*****************************************************************************
 // Get the Reader-Writer lock
 //*****************************************************************************
-UTSemReadWrite * MDInternalRW::GetReaderWriterLock()
+minipal_rwlock * MDInternalRW::GetReaderWriterLock()
 {
     return getReaderWriterLock();
 } // MDInternalRW::GetReaderWriterLock
@@ -519,11 +536,9 @@ HRESULT MDInternalRW::Init(
     pStgdb = new (nothrow) CLiteWeightStgdbRW;
     IfNullGo(pStgdb);
 
-    m_pSemReadWrite = new (nothrow) UTSemReadWrite;
-    IfNullGo(m_pSemReadWrite);
-    IfFailGo(m_pSemReadWrite->Init());
-    m_fOwnSem = true;
-    INDEBUG(pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+    m_fOwnLock = true;
+    INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
     IfFailGo(pStgdb->InitOnMem(cbData, (BYTE*)pData, bReadOnly));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));
@@ -549,7 +564,7 @@ HRESULT MDInternalRW::InitWithStgdb(
     IUnknown        *pUnk,              // The IUnknow that owns the life time for the existing stgdb
     CLiteWeightStgdbRW *pStgdb)         // existing lightweight stgdb
 {
-    // m_fOwnSem should be false because this is the case where we create the internal interface given a public
+    // m_fOwnLock should be false because this is the case where we create the internal interface given a public
     // interface.
 
     m_tdModule = COR_GLOBAL_PARENT_TOKEN;
@@ -580,11 +595,9 @@ HRESULT MDInternalRW::InitWithRO(
     pStgdb = new (nothrow) CLiteWeightStgdbRW;
     IfNullGo(pStgdb);
 
-    m_pSemReadWrite = new (nothrow) UTSemReadWrite;
-    IfNullGo(m_pSemReadWrite);
-    IfFailGo(m_pSemReadWrite->Init());
-    m_fOwnSem = true;
-    INDEBUG(pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+    IfFailGo(CreateMDReadWriteLock(&m_pReadWriteLock));
+    m_fOwnLock = true;
+    INDEBUG(pStgdb->m_MiniMd.Debug_EnableLockCheck();)
 
     IfFailGo(pStgdb->m_MiniMd.InitOnRO(&pRO->m_LiteWeightStgdb.m_MiniMd, bReadOnly));
     IfFailGo(pStgdb->m_MiniMd.SetOption(&optVal));

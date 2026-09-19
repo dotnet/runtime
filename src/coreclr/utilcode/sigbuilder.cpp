@@ -8,7 +8,12 @@
 
 void SigBuilder::AppendByte(BYTE b)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     Ensure(1);
     m_pBuffer[m_dwLength++] = b;
@@ -16,7 +21,12 @@ void SigBuilder::AppendByte(BYTE b)
 
 void SigBuilder::AppendData(ULONG data)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     //
     // Inlined logic from CorSigCompressData
@@ -65,7 +75,12 @@ void SigBuilder::AppendData(ULONG data)
 
 void SigBuilder::AppendToken(mdToken tk)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     //
     // Inlined logic from CorSigCompressToken
@@ -111,7 +126,12 @@ void SigBuilder::AppendToken(mdToken tk)
 
 void SigBuilder::AppendBlob(const PVOID pBlob, SIZE_T cbBlob)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     Ensure(cbBlob);
     memcpy(m_pBuffer + m_dwLength, pBlob, cbBlob);
@@ -120,7 +140,12 @@ void SigBuilder::AppendBlob(const PVOID pBlob, SIZE_T cbBlob)
 
 void SigBuilder::Grow(SIZE_T cbMin)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     DWORD dwNewAllocation = max(m_dwLength + (DWORD)cbMin, 2 * m_dwAllocation);
 
@@ -148,7 +173,12 @@ SigBuilder::~SigBuilder()
 
 SigBuilder::SigBuilder(DWORD cbPreallocationSize)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
 
     m_dwLength = 0;
     if (cbPreallocationSize <= sizeof(m_prealloc))

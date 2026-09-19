@@ -174,7 +174,6 @@ BOOL gc_heap::is_mark_bit_set (uint8_t* add)
     return (mark_array [mark_word_of (add)] & (1 << mark_bit_bit_of (add)));
 }
 
-#ifdef FEATURE_BASICFREEZE
 // end must be page aligned addresses.
 void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
 {
@@ -227,7 +226,6 @@ void gc_heap::clear_mark_array (uint8_t* from, uint8_t* end)
     }
 }
 
-#endif //FEATURE_BASICFREEZE
 #endif //BACKGROUND_GC
 #ifdef MULTIPLE_HEAPS
 static size_t target_mark_count_for_heap (size_t total_mark_count, int heap_count, int heap_number)
@@ -893,7 +891,6 @@ void gc_heap::grow_mark_list ()
 }
 
 #ifdef BACKGROUND_GC
-#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
 {
@@ -915,7 +912,6 @@ void gc_heap::seg_set_mark_array_bits_soh (heap_segment* seg)
     }
 }
 
-#endif //FEATURE_BASICFREEZE
 
 void gc_heap::bgc_clear_batch_mark_array_bits (uint8_t* start, uint8_t* end)
 {
@@ -1160,7 +1156,8 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                     }
                 }
                 assert (start_region);
-                dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %zx", start_region));
+                dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %p",
+                    hp->heap_number, gen_idx, start_region));
                 heap_segment_next (start_region) = nullptr;
 
                 assert (heap_segment_heap (start_region) == nullptr && hp != nullptr);
@@ -1984,7 +1981,7 @@ gc_heap::mark_steal()
 
 #ifdef SNOOP_STATS
         dprintf (SNOOP_LOG, ("(GC%d)heap%d: start snooping %d", settings.gc_index, heap_number, (heap_number+1)%n_heaps));
-        uint64_t begin_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        int64_t begin_tick = minipal_lowres_ticks();
 #endif //SNOOP_STATS
 
     int idle_loop_count = 0;
@@ -2084,18 +2081,18 @@ gc_heap::mark_steal()
                 {
 
 #ifdef SNOOP_STATS
-                    dprintf (SNOOP_LOG, ("heap%d: marking %zx from %d [%d] tl:%dms",
+                    dprintf (SNOOP_LOG, ("heap%d: marking %zx from %d [%d] tl:%I64dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
-                            (GCToOSInterface::GetLowPrecisionTimeStamp()-begin_tick)));
-                    uint64_t start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+                            (minipal_lowres_ticks()-begin_tick)));
+                    int64_t start_tick = minipal_lowres_ticks();
 #endif //SNOOP_STATS
 
                     mark_object_simple1 (o, start, heap_number);
 
 #ifdef SNOOP_STATS
-                    dprintf (SNOOP_LOG, ("heap%d: done marking %zx from %d [%d] %dms tl:%dms",
+                    dprintf (SNOOP_LOG, ("heap%d: done marking %zx from %d [%d] %I64dms tl:%I64dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
-                            (GCToOSInterface::GetLowPrecisionTimeStamp()-start_tick),(GCToOSInterface::GetLowPrecisionTimeStamp()-begin_tick)));
+                            (minipal_lowres_ticks()-start_tick),(minipal_lowres_ticks()-begin_tick)));
 #endif //SNOOP_STATS
 
                     mark_stack_busy() = 0;
@@ -3020,14 +3017,14 @@ void gc_heap::mark_phase (int condemned_gen_number)
         }
 #endif // FEATURE_SIZED_REF_HANDLES
 
-#if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
         if (ro_segments_in_range)
         {
             dprintf(3,("Marking in range ro segments"));
             mark_ro_segments();
             // Should fire an ETW event here.
         }
-#endif //FEATURE_BASICFREEZE && !USE_REGIONS
+#endif //!USE_REGIONS
 
         dprintf(3,("Marking Roots"));
 
@@ -3506,7 +3503,6 @@ void gc_heap::reset_mark_stack ()
     min_overflow_address = MAX_PTR;
 }
 
-#ifdef FEATURE_BASICFREEZE
 inline
 void gc_heap::seg_set_mark_bits (heap_segment* seg)
 {
@@ -3552,7 +3548,6 @@ void gc_heap::mark_ro_segments()
 #endif //!USE_REGIONS
 }
 
-#endif //FEATURE_BASICFREEZE
 #ifdef USE_REGIONS
 void gc_heap::grow_mark_list_piece()
 {

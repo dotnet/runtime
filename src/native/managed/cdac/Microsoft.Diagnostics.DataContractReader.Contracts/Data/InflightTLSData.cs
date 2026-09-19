@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InFlightTLSData))]
 internal sealed partial class InflightTLSData : IData<InflightTLSData>
 {
-    [Field] public TargetPointer Next { get; }
-    [Field] public TLSIndex TlsIndex { get; }
-    [Field] public ObjectHandle TLSData { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TLSIndex TlsIndex { get; }
+    [Field] public partial ObjectHandle TLSData { get; }
 }

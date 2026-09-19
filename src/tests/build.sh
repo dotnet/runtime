@@ -391,8 +391,10 @@ fi
 
 if [[ $__Mono -eq 1 ]]; then
     __RuntimeFlavor="mono"
+    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=Mono $__CMakeArgs"
 else
     __RuntimeFlavor="coreclr"
+    __CMakeArgs="-DCMAKE_BUILD_RUNTIME_FLAVOR=CoreCLR $__CMakeArgs"
 fi
 
 # Get the number of processors available to the scheduler
@@ -402,7 +404,7 @@ if [[ "$platform" == "freebsd" || "$platform" == "openbsd" ]]; then
 elif [[ "$platform" == "netbsd" || "$platform" == "sunos" ]]; then
   __NumProc="$(($(getconf NPROCESSORS_ONLN)+1))"
 elif [[ "$platform" == "darwin" ]]; then
-  __NumProc="$(($(getconf _NPROCESSORS_ONLN)+1))"
+  __NumProc="$(getconf _NPROCESSORS_ONLN)"
 elif command -v nproc > /dev/null 2>&1; then
   __NumProc="$(nproc)"
 elif (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then

@@ -13,12 +13,12 @@ namespace System.Globalization.Tests
         {
             List<CharUnicodeInfoTestCase> testCases = new List<CharUnicodeInfoTestCase>();
             string fileName = "UnicodeData.txt";
-            Stream stream = typeof(CharUnicodeInfoTestData).GetTypeInfo().Assembly.GetManifestResourceStream(fileName);
+            Stream stream = typeof(CharUnicodeInfoTestData).GetTypeInfo().Assembly.GetManifestResourceStream(fileName)!;
             using (StreamReader reader = new StreamReader(stream))
             {
                 while (!reader.EndOfStream)
                 {
-                    Parse(testCases, reader.ReadLine());
+                    Parse(testCases, reader.ReadLine()!);
                 }
             }
             return testCases;
@@ -153,7 +153,7 @@ namespace System.Globalization.Tests
 
     public class CharUnicodeInfoTestCase
     {
-        public string Utf32CodeValue { get; set; }
+        public string Utf32CodeValue { get; set; } = null!; // Can't use required in net481.
         public int CodePoint { get; set; }
         public UnicodeCategory GeneralCategory { get; set; }
         public double NumericValue { get; set; }

@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 24
-#define READYTORUN_MINOR_VERSION 0x0000
+#define READYTORUN_MAJOR_VERSION 29
+#define READYTORUN_MINOR_VERSION 0x0002
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 24
+#define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -64,6 +64,18 @@
 // R2R Version 22 changes NativeVarInfo encoding to include CALL_RETURN_VALUE
 // R2R Version 23 changes delegate layout to have target before methodPtr
 // R2R Version 24 changes ARM32 virtual stub dispatch hidden parameter register to R12
+// R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
+// R2R Version 26 changes ARM64 NativeVarInfo register encoding to include V0-V31
+// R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
+// R2R Version 27 redefines READYTORUN_FIXUP_DeclaringTypeHandle to be encoded as a method signature instead of a pair of type signatures
+// R2R Version 28 allows entries in the ExternalTypeMaps and ProxyTypeMaps sections to append a sequence of serialized (string, string) type map entries after the per-group NativeHashtable.
+// R2R Version 29 adds the WasmAsyncResumeInfo fixup section and stores method-relative virtual IPs in Wasm async resume information.
+//     R2R 29 is not backward compatible with 28.x or earlier.
+// R2R Version 29.1 adds READYTORUN_HELPER_ResumeAfterCatch for WebAssembly exception resumption.
+// R2R Version 29.2 adds READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS, which records that the image was
+// compiled with the GC mode transition verification scaffolding (and therefore emits
+// READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
+// consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -104,6 +116,7 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_IL_BODIES          = 0x00000200,   // IL method bodies have been stripped from the image
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
+    READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
 };
 
 enum class ReadyToRunSectionType : uint32_t
@@ -135,6 +148,7 @@ enum class ReadyToRunSectionType : uint32_t
     ExternalTypeMaps            = 124, // Added in V18.3
     ProxyTypeMaps               = 125, // Added in V18.3
     TypeMapAssemblyTargets      = 126, // Added in V18.3
+    WasmAsyncResumeInfo         = 127, // Added in V29
 
     // If you add a new section consider whether it is a breaking or non-breaking change.
     // Usually it is non-breaking, but if it is preferable to have older runtimes fail
@@ -300,7 +314,7 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_Check_FieldOffset          = 0x2B,
 
     READYTORUN_FIXUP_DelegateCtor               = 0x2C, /* optimized delegate ctor */
-    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D,
+    READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D, /* Type which declares the method described by the (method) signature */
 
     READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target (indirect) of an inlined pinvoke */
     READYTORUN_FIXUP_PInvokeTarget              = 0x2F, /* Target of an inlined pinvoke */
@@ -319,6 +333,8 @@ enum ReadyToRunFixupKind
     READYTORUN_FIXUP_ResumptionStubEntryPoint   = 0x38, /* Entry point of an async method resumption stub */
 
     READYTORUN_FIXUP_InjectStringThunks         = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
+
+    READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
@@ -387,6 +403,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GCPoll                    = 0x44,
     READYTORUN_HELPER_ReversePInvokeEnter       = 0x45,
     READYTORUN_HELPER_ReversePInvokeExit        = 0x46,
+    READYTORUN_HELPER_ResumeAfterCatch          = 0x47,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50, // No longer supported as of READYTORUN_MAJOR_VERSION 17.0

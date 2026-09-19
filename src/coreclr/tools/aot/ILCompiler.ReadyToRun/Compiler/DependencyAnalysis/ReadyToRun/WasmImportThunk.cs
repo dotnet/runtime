@@ -24,31 +24,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly ImportThunkKind _thunkKind;
 
-        private readonly ImportSectionNode _containingImportSection;
-
         public override bool StaticDependenciesAreComputed => true;
 
         public override bool IsShareable => false;
 
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
         /// <summary>
-        /// Import thunks are used to call a runtime-provided helper which fixes up an indirection cell in a particular
-        /// import section. Optionally they may also contain a relocation for a specific indirection cell to fix up.
+        /// Import thunks call a runtime-provided helper that fixes up the indirection cell identified by the portable entrypoint.
         /// </summary>
-        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, ImportSectionNode containingImportSection, bool useVirtualCall, bool useJumpableStub)
+        public WasmImportThunk(NodeFactory factory, WasmSignature wasmSignature, ReadyToRunHelper helperId, bool useJumpableStub)
         {
             _context = factory.TypeSystemContext;
             _wasmSignature = wasmSignature;
             _typeNode = factory.WasmTypeNode(wasmSignature);
             _helperCell = factory.GetReadyToRunHelperCell(helperId);
-            _containingImportSection = containingImportSection;
 
-            if (useVirtualCall)
-            {
-                // In wasm we should always be using a helper to get the function pointer target, and then dispatching on that instead of using a thunk
-                throw new System.NotSupportedException(nameof(useVirtualCall));
-            }
-            else if (useJumpableStub)
+            if (useJumpableStub)
             {
                 _thunkKind = ImportThunkKind.DelayLoadHelperWithExistingIndirectionCell;
             }
@@ -75,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             sb.Append("WasmDelayLoadHelper->"u8);
             _helperCell.AppendMangledName(nameMangler, sb);
-            sb.Append($"(ImportSection:{_containingImportSection.Name},Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
+            sb.Append($"(Kind:{_thunkKind},Sig:{_wasmSignature.SignatureString})");
         }
 
         protected override string GetName(NodeFactory factory)
@@ -90,8 +81,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
 
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => false;
+        bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+
+        private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
+        private bool HasGenericContextBeforeAsync
+        {
+            get
+            {
+                int asyncMarkerIndex = _wasmSignature.SignatureString.IndexOf('a');
+                if (asyncMarkerIndex < 0)
+                {
+                    return false;
+                }
+
+                int pos = 1;
+                if (_wasmSignature.SignatureString[0] == 'S')
+                {
+                    while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
+                    {
+                        pos++;
+                    }
+                }
+
+                if ((pos < _wasmSignature.SignatureString.Length) && (_wasmSignature.SignatureString[pos] == 'T'))
+                {
+                    pos++;
+                }
+
+                char hiddenParamChar = (_context.Target.PointerSize == 4) ? 'i' : 'l';
+                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == hiddenParamChar);
+            }
+        }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
@@ -101,10 +122,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             result = _wasmSignature.CompareTo(otherNode._wasmSignature);
-            if (result != 0)
-                return result;
-
-            result = ((ImportSectionNode)_containingImportSection).CompareToImpl((ImportSectionNode)otherNode._containingImportSection, comparer);
             if (result != 0)
                 return result;
 
@@ -125,7 +142,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            bool hasAsyncContinuation = HasAsyncContinuation;
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
 
             int[] offsets = new int[methodSignature.Length];
             bool[] isIndirectStructArg = new bool[methodSignature.Length];
@@ -147,6 +166,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Align total allocation (args + transition block) to 16 byte boundaries
             int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray() + transitionBlock.SizeOfTransitionBlock, 16);
+            int asyncContinuationOffset = hasAsyncContinuation ? argit.GetAsyncContinuationArgOffset() : 0;
 
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
@@ -202,6 +222,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 wasmLocalIndex++;
             }
 
+            // The async continuation is a wasm local but not a methodSignature param; store it here,
+            // unless a generic context precedes it (handled after the first param below).
+            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)asyncContinuationOffset));
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -214,7 +244,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 int currentOffset = offsets[i];
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm locals — stash each one.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(0));
+                        expressions.Add(Local.Get(wasmLocalIndex));
+                        ulong slotOffset = (ulong)(currentOffset + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Store(slotOffset) : V128.Store(slotOffset));
+                        wasmLocalIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
                     int structSize = paramType.GetElementSize().AsInt;
@@ -257,6 +300,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                     wasmLocalIndex++;
                 }
+
+                // Async continuation follows the generic context param; store it now.
+                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    expressions.Add(I32.Store((ulong)asyncContinuationOffset));
+                    wasmLocalIndex++;
+                }
             }
             //
             // ; Call the right helper to fill in the table
@@ -265,7 +317,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             expressions.Add(Local.Get(0)); // The address of the args is passed as the first argument
             expressions.Add(Local.Get(portableEntrypointLocalIndex)); // The address of the portable entrypoint is passed as the second
-            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex)); // The module base address is passed as the third argument
 
             // Pass the RVA of the Module fixup as the fourth argument
             // i32.const (RVA of Module fixup)
@@ -273,7 +325,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Load the helper function address and dispatch
             // global.get {module base}
-            expressions.Add(Global.Get(WasmObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
+            expressions.Add(Global.Get(WebCilObjectWriter.ImageBaseGlobalIndex)); // Module base used to load the helper function address
             expressions.Add(I32.LoadWithRVAOffset(_helperCell)); // Load the helper call function pointer from the helper cell, using a load with an RVA offset so that the helper cell can be left as a zero in the R2R image and fixed up at runtime. This avoids the need to emit a runtime relocation for the helper cell.
             // call_indirect (i32, i32, i32, i32) -> (i32)
             expressions.Add(ControlFlow.CallIndirect(helperTypeIndex, 0));
@@ -316,6 +368,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 wasmLocalIndex++;
             }
 
+            // Forward the async continuation stored above (unless a generic context precedes it).
+            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(I32.Load((ulong)asyncContinuationOffset));
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -326,7 +386,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm locals — reload each one.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    int slotBase = offsets[i];
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(0));
+                        ulong slotOffset = (ulong)(slotBase + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
+                        wasmLocalIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — pass the original byref pointer from the caller
                     expressions.Add(Local.Get(wasmLocalIndex));
@@ -358,6 +431,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         default:
                             throw new System.Exception("Unexpected wasm type arg");
                     }
+                    wasmLocalIndex++;
+                }
+
+                // Async continuation follows the generic context param; forward it now.
+                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(I32.Load((ulong)asyncContinuationOffset));
                     wasmLocalIndex++;
                 }
             }

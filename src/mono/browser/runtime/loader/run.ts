@@ -466,9 +466,10 @@ async function createEmscriptenWorker (): Promise<EmscriptenModuleInternal> {
 
     await mono_download_assets();
 
+    const CMD_LOAD = 1; // emscripten/src/lib/libpthread.js CMD_LOAD
     self.dispatchEvent(new MessageEvent("message", {
         data: {
-            cmd: "load",
+            cmd: CMD_LOAD,
             handlers: emscriptenModule.handlers,
             wasmMemory: emscriptenModule.wasmMemory,
             wasmModule: emscriptenModule.wasmModule

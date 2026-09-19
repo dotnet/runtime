@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Text;
 using System.Text.Unicode;
 
 namespace System.Globalization
@@ -700,12 +702,176 @@ namespace System.Globalization
 
             if (GlobalizationMode.UseNls)
             {
-                TextInfo.Invariant.ChangeCaseToUpper(source, destination); // this is the best so far for NLS.
+                ChangeCaseNlsOrdinal(source, destination, toUpper: true);
                 return source.Length;
             }
 
             OrdinalCasing.ToUpperOrdinal(source, destination);
             return source.Length;
+        }
+
+        internal static int ToLowerOrdinal(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            if (source.Overlaps(destination))
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_SpanOverlappedOperation);
+
+            // Assuming that changing case does not affect length
+            if (destination.Length < source.Length)
+                return -1;
+
+            if (GlobalizationMode.Invariant)
+            {
+                InvariantModeCasing.ToLower(source, destination);
+                PreserveOrdinalLowerCasingClass(source, destination);
+                return source.Length;
+            }
+
+            if (GlobalizationMode.UseNls)
+            {
+                ChangeCaseNlsOrdinal(source, destination, toUpper: false);
+                PreserveOrdinalLowerCasingClass(source, destination);
+                return source.Length;
+            }
+
+            OrdinalCasing.ToLowerOrdinal(source, destination);
+            return source.Length;
+        }
+
+        private static void ChangeCaseNlsOrdinal(ReadOnlySpan<char> source, Span<char> destination, bool toUpper)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+
+            OperationStatus operationStatus = toUpper
+                ? Ascii.ToUpper(source, destination, out int charsConsumed)
+                : Ascii.ToLower(source, destination, out charsConsumed);
+
+            if (operationStatus != OperationStatus.InvalidData)
+            {
+                Debug.Assert(operationStatus == OperationStatus.Done);
+                return;
+            }
+
+            source = source.Slice(charsConsumed);
+            destination = destination.Slice(charsConsumed);
+
+            if (toUpper)
+            {
+                TextInfo.Invariant.ChangeCaseToUpper(source, destination);
+            }
+            else
+            {
+                TextInfo.Invariant.ChangeCaseToLower(source, destination);
+            }
+
+            PreserveNlsOrdinalCasingClass(source, destination);
+        }
+
+        private static void PreserveNlsOrdinalCasingClass(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+            Debug.Assert(destination.Length >= source.Length);
+
+            destination = destination.Slice(0, source.Length);
+
+            int i = source.IndexOfAnyInRange('\uD800', '\uDBFF');
+            if (i < 0)
+            {
+                return;
+            }
+
+            while (i < source.Length - 1)
+            {
+                if (char.IsLowSurrogate(source[i + 1]))
+                {
+                    if (source[i] != destination[i] || source[i + 1] != destination[i + 1])
+                    {
+                        if (CompareInfo.NlsCompareStringOrdinalIgnoreCase(
+                                ref MemoryMarshal.GetReference(source.Slice(i)), 2,
+                                ref MemoryMarshal.GetReference(destination.Slice(i)), 2) != 0)
+                        {
+                            destination[i] = source[i];
+                            destination[i + 1] = source[i + 1];
+                        }
+
+                        i += 2;
+                    }
+                    else
+                    {
+                        i += source.Slice(i).CommonPrefixLength(destination.Slice(i));
+
+                        if (i < source.Length && char.IsLowSurrogate(source[i]) && char.IsHighSurrogate(source[i - 1]))
+                        {
+                            i--;
+                        }
+                    }
+                }
+                else
+                {
+                    i++;
+                }
+
+                int next = source.Slice(i).IndexOfAnyInRange('\uD800', '\uDBFF');
+                if (next < 0)
+                {
+                    return;
+                }
+
+                i += next;
+            }
+        }
+
+        internal static uint PreserveNlsOrdinalCasingClass(uint source, uint destination)
+        {
+            Debug.Assert(GlobalizationMode.UseNls);
+            Debug.Assert(source > char.MaxValue);
+            Debug.Assert(destination > char.MaxValue);
+
+            if (source == destination)
+            {
+                return destination;
+            }
+
+            Span<char> sourceChars = stackalloc char[2];
+            Span<char> destinationChars = stackalloc char[2];
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(source, out sourceChars[0], out sourceChars[1]);
+            UnicodeUtility.GetUtf16SurrogatesFromSupplementaryPlaneScalar(destination, out destinationChars[0], out destinationChars[1]);
+
+            return CompareInfo.NlsCompareStringOrdinalIgnoreCase(
+                ref MemoryMarshal.GetReference(sourceChars), sourceChars.Length,
+                ref MemoryMarshal.GetReference(destinationChars), destinationChars.Length) == 0
+                    ? destination
+                    : source;
+        }
+
+        // The only BMP scalars whose simple invariant/NLS lower mapping moves them out of their ordinal
+        // upper-casing class. Each one is its own ordinal upper-casing (ToUpperOrdinal(c) == c) yet lowers to a
+        // different letter, so simple lowering would break OrdinalIgnoreCase consistency for them. The ICU ordinal
+        // table already keeps them unchanged; invariant and NLS lowering do not, so they must be restored.
+        // U+03F4 GREEK CAPITAL THETA SYMBOL, U+1E9E LATIN CAPITAL LETTER SHARP S, U+2126 OHM SIGN,
+        // U+212A KELVIN SIGN, U+212B ANGSTROM SIGN. The ToLowerOrdinal_EveryBmpChar tests would fail if this set
+        // ever became incomplete.
+        private static readonly SearchValues<char> s_ordinalLowerCasingClassRestoreChars =
+            SearchValues.Create("\u03F4\u1E9E\u2126\u212A\u212B");
+
+        // Ordinal lower casing must never move a character out of its ordinal upper-casing class, otherwise it
+        // would stop being consistent with OrdinalIgnoreCase (for example the Kelvin, Ohm and Angstrom signs).
+        // Only the fixed set above is ever affected, so skip the pass entirely unless one of them is present.
+        private static void PreserveOrdinalLowerCasingClass(ReadOnlySpan<char> source, Span<char> destination)
+        {
+            int i = source.IndexOfAny(s_ordinalLowerCasingClassRestoreChars);
+            if (i < 0)
+            {
+                return;
+            }
+
+            // Restore each affected character to its original form; its ordinal lower casing is itself.
+            for (; i < source.Length; i++)
+            {
+                if (s_ordinalLowerCasingClassRestoreChars.Contains(source[i]))
+                {
+                    destination[i] = source[i];
+                }
+            }
         }
     }
 }

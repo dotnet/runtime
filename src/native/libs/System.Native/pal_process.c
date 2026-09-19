@@ -573,16 +573,6 @@ static int32_t ForkAndExecProcessInternal(
 #endif
 
     *childPid = -1;
-
-    // Make sure we can find and access the executable. exec will do this, of course, but at that point it's already
-    // in the child process, at which point it'll translate to the child process' exit code rather than to failing
-    // the Start itself.  There's a race condition here, in that this could change prior to exec's checks, but there's
-    // little we can do about that. There are also more rigorous checks exec does, such as validating the executable
-    // format of the target; such errors will emerge via the child process' exit code.
-    if (access(filename, X_OK) != 0)
-    {
-        return -1;
-    }
 #endif
 
 #if defined(TARGET_OSX) || defined(TARGET_MACCATALYST)

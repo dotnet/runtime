@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public class DecryptTestsUsingExplicitPrivateKey : DecryptTests
     {
         public DecryptTestsUsingExplicitPrivateKey() : base(true) { }

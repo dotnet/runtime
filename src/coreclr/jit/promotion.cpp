@@ -645,7 +645,7 @@ public:
 
             if (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT)
             {
-                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size());
+                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size(), lclNum);
                 break;
             }
         }
@@ -778,7 +778,16 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
+            // Small fields can pack many values into each parameter register, so eagerly
+            // extracting rarely used fields can add substantial work and register pressure.
+            // Wider fields naturally limit the number of extractions per register.
+            // Restrict the credit for small fields with few accesses to target these cases.
+            const weight_t MIN_RELATIVE_ACCESS_WEIGHT = 0.10;
+            bool           allowBitwiseExtraction =
+                !varTypeIsSmall(access.AccessType) ||
+                (access.CountWtd + inducedCountWtd) >= MIN_RELATIVE_ACCESS_WEIGHT * comp->fgFirstBB->getBBWeight(comp);
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType,
+                                                   allowBitwiseExtraction))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -1116,6 +1125,15 @@ public:
                     accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
                 }
 
+#ifdef DEBUG
+                if ((accessFlags & (AccessKindFlags::IsCallRetBuf | AccessKindFlags::IsStoreDestination)) !=
+                    AccessKindFlags::None)
+                {
+                    assert(!IsInsideQmarkArm() &&
+                           "Stores to physical promotion candidates in QMARK arms must be expanded early");
+                }
+#endif
+
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
                 unsigned   offs = lcl->GetLclOffs();
                 uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
@@ -1352,6 +1370,28 @@ public:
     }
 
 private:
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // IsInsideQmarkArm:
+    //   Check whether the current node is contained in a QMARK arm.
+    //
+    // Returns:
+    //   True if the current node is contained in a QMARK arm.
+    //
+    bool IsInsideQmarkArm()
+    {
+        for (int i = 1; i < m_ancestors.Height(); i++)
+        {
+            if (m_ancestors.Top(i)->OperIs(GT_COLON))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+#endif
+
     //------------------------------------------------------------------------
     // GetOrCreateUses:
     //   Get the uses information for a local. Create it if it does not already exist.
@@ -3000,7 +3040,7 @@ bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 //   Find the effective user given an ancestor stack.
 //
 // Returns:
-//   The user, or null if all users are commas.
+//   The user of the value or null if nothing uses the value.
 //
 GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 {
@@ -3010,9 +3050,14 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
         GenTree* ancestor = ancestors.Top(userIndex);
         GenTree* child    = ancestors.Top(userIndex - 1);
 
-        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
+        if (!ancestor->OperIs(GT_COMMA))
         {
             return ancestor;
+        }
+
+        if (ancestor->gtGetOp1() == child)
+        {
+            return nullptr;
         }
 
         userIndex++;
@@ -3027,15 +3072,17 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   expected to map to a register.
 //
 // Parameters:
-//   comp       - Compiler instance
-//   lclNum     - Local being accessed into
-//   offset     - Offset being accessed at
-//   accessType - Type of access
+//   comp                   - Compiler instance
+//   lclNum                 - Local being accessed into
+//   offset                 - Offset being accessed at
+//   accessType             - Type of access
+//   allowBitwiseExtraction - Whether to allow mappings requiring extraction or a register-class change
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
+bool Promotion::MapsToParameterRegister(
+    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool allowBitwiseExtraction)
 {
     assert(lclNum < comp->info.compArgsCount);
 
@@ -3064,6 +3111,12 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
         }
 
         if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+        {
+            continue;
+        }
+
+        if (!allowBitwiseExtraction && ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size) ||
+                                        (varTypeUsesIntReg(accessType) != genIsValidIntReg(seg.GetRegister()))))
         {
             continue;
         }

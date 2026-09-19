@@ -1040,6 +1040,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVX10v1:
         case InstructionSet_AVX10v2:
         case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVXVNNIINT:
@@ -1894,6 +1895,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
         case NI_AVX512_FusedMultiplyAdd:
         case NI_AVX512_FusedMultiplyAddScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         case NI_AVX512_FusedMultiplyAddNegated:
         case NI_AVX512_FusedMultiplyAddNegatedScalar:
         case NI_AVX512_FusedMultiplyAddSubtract:
@@ -2278,10 +2280,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector_AsVector3:
         case NI_Vector_ToScalar:
         {
-            // genOperandDesc looks through a contained CreateScalar/CreateScalarUnsafe to the operand it
-            // wraps, which may itself live in a register (e.g. Vector128.CreateScalarUnsafe(x).ToScalar()).
-            // We therefore use the descriptor's containment - not op1 directly - to decide instruction
-            // selection: only a true memory operand can be read with a plain integer load.
+            // op1 may be a contained memory operand or live in a register. We use the descriptor's
+            // containment - not op1 directly - to decide instruction selection: only a true memory
+            // operand can be read with a plain integer load.
             OperandDesc op1Desc = genOperandDesc(ins, op1);
 
             if (op1Desc.IsContained())
@@ -2452,9 +2453,6 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             {
                 divTypeSize = EA_32BYTE;
             }
-            simd_t               negOneIntVec = simd_t::AllBitsSet();
-            CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
-
             // div-by-zero check
             emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg2, tmpReg2, tmpReg2, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg2, tmpReg2, op2Reg, instOptions);
@@ -2471,6 +2469,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     minValueInt.i32[i] = INT_MIN;
                 }
                 CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
+
+                simd_t               negOneIntVec = simd_t::AllBitsSet();
+                CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
 
                 emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op1Reg, minValueFld, 0, instOptions);
                 emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg3, op2Reg, negOneFld, 0, instOptions);
@@ -2767,7 +2768,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             GenTree*    op1 = node->Op(1);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
-            if (!varTypeIsSIMD(op1->TypeGet()))
+            if (node->OperIsMemoryLoad())
             {
                 // Until we improve the handling of addressing modes in the emitter, we'll create a
                 // temporary GT_IND to generate code with.
@@ -2887,6 +2888,24 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
 }
 
 //------------------------------------------------------------------------
+// ClearUnusedMaskBits: Zeroes up to 8 bits of the mask register, for small lane counts
+//
+// Arguments:
+//    maskReg - The mask register to clear the unused bits of
+//    count   - The number of live lanes in the mask, which must be less than 8
+//
+void CodeGen::ClearUnusedMaskBits(regNumber maskReg, uint32_t count)
+{
+    assert((count == 2) || (count == 4));
+    assert(emitter::isMaskReg(maskReg));
+
+    emitter* emit = GetEmitter();
+
+    emit->emitIns_R_R_I(INS_kshiftlb, EA_8BYTE, maskReg, maskReg, (int8_t)(8 - count));
+    emit->emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, maskReg, maskReg, (int8_t)(8 - count));
+}
+
+//------------------------------------------------------------------------
 // genAvxFamilyIntrinsic: Generates the code for an AVX/AVX2/AVX512 hardware intrinsic node
 //
 // Arguments:
@@ -2970,7 +2989,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         {
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
-            if (!varTypeIsSIMD(op1->gtType))
+            if (node->OperIsMemoryLoad())
             {
                 // Until we improve the handling of addressing modes in the emitter, we'll create a
                 // temporary GT_IND to generate code with.
@@ -3427,6 +3446,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(emitter::isMaskReg(op1Reg));
 
             emit->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
+
+            if (count < 8)
+            {
+                // Emit shifts to clear bits N to 7 for 2-bit or 4-bit NotMask.
+                // There is no 2 or 4-bit knot*.  Normally not an issue, but would cause wrong codegen
+                // if k is used in a kmovb+POPCNT for example.
+
+                ClearUnusedMaskBits(targetReg, count);
+            }
             break;
         }
 
@@ -3629,6 +3657,13 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
             // Use EA_32BYTE to ensure the VEX.L bit gets set
             emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+
+            if (count < 8)
+            {
+                // Same issue here as with knotb/NI_AVX512_NotMask above.
+
+                ClearUnusedMaskBits(targetReg, count);
+            }
             break;
         }
 
@@ -3702,6 +3737,19 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
+            break;
+        }
+
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        {
+            // For integer sources the value is read directly from a general purpose register, so the
+            // operand size must reflect the source type (e.g. `ecx` rather than `rcx`). Floating-point
+            // sources come from a vector register and use the full 128-bit size.
+            if (varTypeIsIntegral(baseType))
+            {
+                attr = emitActualTypeSize(baseType);
+            }
+            genHWIntrinsic_R_R_RM(node, ins, attr, instOptions);
             break;
         }
 

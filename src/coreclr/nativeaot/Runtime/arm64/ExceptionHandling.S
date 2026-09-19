@@ -332,6 +332,7 @@ LOCAL_LABEL(ClearThreadState):
         // clear the Thread's hijack state
         str         xzr, [x2, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
         str         xzr, [x2, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        str         xzr, [x2, #OFFSETOF__Thread__m_pSpForPacSign]
 
 LOCAL_LABEL(NotHijacked):
 

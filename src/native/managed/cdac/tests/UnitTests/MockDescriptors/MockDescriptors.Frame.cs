@@ -56,6 +56,18 @@ internal sealed class MockInlinedCallFrame : MockFrame
         get => ReadPointerField(CallerReturnAddressFieldName);
         set => WritePointerField(CallerReturnAddressFieldName, value);
     }
+
+    public ulong CallSiteSP
+    {
+        get => ReadPointerField(CallSiteSPFieldName);
+        set => WritePointerField(CallSiteSPFieldName, value);
+    }
+
+    public ulong CalleeSavedFP
+    {
+        get => ReadPointerField(CalleeSavedFPFieldName);
+        set => WritePointerField(CalleeSavedFPFieldName, value);
+    }
 }
 
 internal sealed class MockFramedMethodFrame : MockFrame
@@ -74,6 +86,31 @@ internal sealed class MockFramedMethodFrame : MockFrame
         get => ReadPointerField(MethodDescPtrFieldName);
         set => WritePointerField(MethodDescPtrFieldName, value);
     }
+}
+
+internal sealed class MockInterpMethodContextFrame : TypedView
+{
+    // Field order mirrors src/coreclr/vm/interpexec.h InterpMethodContextFrame.
+    private const string StartIpFieldName = "StartIp";
+    private const string ParentPtrFieldName = "ParentPtr";
+    private const string IpFieldName = "Ip";
+    private const string NextPtrFieldName = "NextPtr";
+    private const string StackFieldName = "Stack";
+
+    public static Layout<MockInterpMethodContextFrame> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("InterpMethodContextFrame", architecture)
+            .AddPointerField(StartIpFieldName)
+            .AddPointerField(ParentPtrFieldName)
+            .AddPointerField(IpFieldName)
+            .AddPointerField(NextPtrFieldName)
+            .AddPointerField(StackFieldName)
+            .Build<MockInterpMethodContextFrame>();
+
+    public ulong StartIp { get => ReadPointerField(StartIpFieldName); set => WritePointerField(StartIpFieldName, value); }
+    public ulong ParentPtr { get => ReadPointerField(ParentPtrFieldName); set => WritePointerField(ParentPtrFieldName, value); }
+    public ulong Ip { get => ReadPointerField(IpFieldName); set => WritePointerField(IpFieldName, value); }
+    public ulong NextPtr { get => ReadPointerField(NextPtrFieldName); set => WritePointerField(NextPtrFieldName, value); }
+    public ulong Stack { get => ReadPointerField(StackFieldName); set => WritePointerField(StackFieldName, value); }
 }
 
 internal sealed class MockFuncEvalFrame : MockFrame
@@ -188,6 +225,7 @@ internal sealed class MockFrameBuilder
     public Layout<MockFuncEvalFrame> FuncEvalFrameLayout { get; }
     public Layout<MockDebuggerEval> DebuggerEvalLayout { get; }
     public Layout<MockResumableFrame> ResumableFrameLayout { get; }
+    public Layout<MockInterpMethodContextFrame> InterpMethodContextFrameLayout { get; }
 
     public MockFrameBuilder(MockMemorySpace.Builder builder)
         : this(builder, (DefaultAllocationRangeStart, DefaultAllocationRangeEnd))
@@ -207,6 +245,7 @@ internal sealed class MockFrameBuilder
         FuncEvalFrameLayout = MockFuncEvalFrame.CreateLayout(FrameLayout);
         DebuggerEvalLayout = MockDebuggerEval.CreateLayout(_helpers.Arch);
         ResumableFrameLayout = MockResumableFrame.CreateLayout(FrameLayout);
+        InterpMethodContextFrameLayout = MockInterpMethodContextFrame.CreateLayout(_helpers.Arch);
     }
 
     public ulong FrameTopTerminator => _terminator;
@@ -228,13 +267,15 @@ internal sealed class MockFrameBuilder
     /// Allocates an InlinedCallFrame. <paramref name="callerReturnAddress"/> set non-zero
     /// makes the frame "active" (matching native InlinedCallFrame::HasActiveCall).
     /// </summary>
-    public MockInlinedCallFrame AddInlinedCallFrame(ulong callerReturnAddress, ulong datum)
+    public MockInlinedCallFrame AddInlinedCallFrame(ulong callerReturnAddress, ulong datum, ulong callSiteSP = 0, ulong calleeSavedFP = 0)
     {
         MockInlinedCallFrame frame = InlinedCallFrameLayout.Create(_allocator.Allocate((ulong)InlinedCallFrameLayout.Size, "InlinedCallFrame"));
         frame.Identifier = InlinedCallFrameIdentifierValue;
         frame.Next = _terminator;
         frame.CallerReturnAddress = callerReturnAddress;
         frame.Datum = datum;
+        frame.CallSiteSP = callSiteSP;
+        frame.CalleeSavedFP = calleeSavedFP;
         return frame;
     }
 
@@ -244,6 +285,19 @@ internal sealed class MockFrameBuilder
         frame.Identifier = FramedMethodFrameIdentifierValue;
         frame.Next = _terminator;
         frame.MethodDescPtr = methodDescPtr;
+        return frame;
+    }
+
+    /// <summary>
+    /// Allocates an InterpMethodContextFrame -- a node in the interpreter's per-thread
+    /// call chain walked by the interpreter virtual unwind (via <c>pParent</c>).
+    /// </summary>
+    public MockInterpMethodContextFrame AddInterpMethodContextFrame(ulong parentPtr, ulong ip, ulong stack)
+    {
+        MockInterpMethodContextFrame frame = InterpMethodContextFrameLayout.Create(_allocator.Allocate((ulong)InterpMethodContextFrameLayout.Size, "InterpMethodContextFrame"));
+        frame.ParentPtr = parentPtr;
+        frame.Ip = ip;
+        frame.Stack = stack;
         return frame;
     }
 

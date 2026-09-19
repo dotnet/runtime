@@ -317,9 +317,9 @@ namespace System.Net.Security
                 clientCertPolicy.pwszSslCtlStoreName = ptr;
                 Interop.SECURITY_STATUS errorCode = Interop.SspiCli.SetCredentialsAttributesW(
                             cred._handle,
-                            (long)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY,
+                            (uint)Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_CERT_POLICY,
                             clientCertPolicy,
-                            sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
+                            (uint)sizeof(Interop.SspiCli.SecPkgCred_ClientCertPolicy));
 
                 if (errorCode != Interop.SECURITY_STATUS.OK)
                 {
@@ -734,7 +734,7 @@ namespace System.Net.Security
             return protocolFlags;
         }
 
-        private static Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
+        private static unsafe Interop.SspiCli.SCHANNEL_CRED CreateSecureCredential(
             Interop.SspiCli.SCHANNEL_CRED.Flags flags,
             int protocols, EncryptionPolicy policy)
         {

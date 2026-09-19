@@ -26,7 +26,6 @@ public class WasmTemplateTestsBase : BuildTestBase
     private readonly string _extraBuildArgsPublish = "-p:CompressionEnabled=false -p:WasmEnableHotReload=false";
     protected readonly PublishOptions _defaultPublishOptions;
     protected readonly BuildOptions _defaultBuildOptions;
-    protected const string DefaultRuntimeAssetsRelativePath = "./_framework/";
 
     private static bool s_wasmTemplatesInstalled;
     private static readonly object s_wasmTemplatesLock = new();
@@ -159,29 +158,32 @@ public class WasmTemplateTestsBase : BuildTestBase
         if (!s_buildEnv.IsCoreClrRuntime)
             return;
 
-        string versionSuffix = s_buildEnv.IsRunningOnCI ? "ci" : "dev";
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
 
         extraProperties +=
         """
             <UseMonoRuntime>false</UseMonoRuntime>
-            <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
         """;
         extraItems +=
         $$"""
-            <KnownFrameworkReference Update="Microsoft.NETCore.App">
-              <TargetingPackVersion>11.0.0-{{versionSuffix}}</TargetingPackVersion>
-              <DefaultRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</DefaultRuntimeFrameworkVersion>
-              <LatestRuntimeFrameworkVersion>11.0.0-{{versionSuffix}}</LatestRuntimeFrameworkVersion>
-              <RuntimePackRuntimeIdentifiers>browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
+            <KnownFrameworkReference Update="Microsoft.NETCore.App"
+                                     Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
+              <TargetingPackVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</TargetingPackVersion>
+              <LatestRuntimeFrameworkVersion Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</LatestRuntimeFrameworkVersion>
+              <RuntimePackRuntimeIdentifiers Condition="'%(KnownFrameworkReference.TargetFramework)' == '{{DefaultTargetFramework}}'">browser-wasm;%(RuntimePackRuntimeIdentifiers)</RuntimePackRuntimeIdentifiers>
             </KnownFrameworkReference>
         """;
         insertAtEnd +=
         $$"""
-            <Target Name="_UpdateKnownWebAssemblySdkPack" BeforeTargets="ProcessFrameworkReferences">
+            <Target Name="_UpdateKnownCoreClrWebAssemblyPacks" BeforeTargets="ProcessFrameworkReferences"
+                    Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
                 <ItemGroup>
                 <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
-                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == 'net11.0'">11.0.0-{{versionSuffix}}</WebAssemblySdkPackVersion>
+                    <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</WebAssemblySdkPackVersion>
                 </KnownWebAssemblySdkPack>
+                <KnownCrossgen2Pack Update="@(KnownCrossgen2Pack)">
+                    <Crossgen2PackVersion Condition="'%(KnownCrossgen2Pack.TargetFramework)' == '{{DefaultTargetFramework}}'">{{runtimePackVersion}}</Crossgen2PackVersion>
+                </KnownCrossgen2Pack>
                 </ItemGroup>
             </Target>
         """;
@@ -392,7 +394,9 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void UpdateFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
     {
         var path = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        string text = File.ReadAllText(path);
+        // Normalize line endings so that replacement anchors containing '\n' match regardless of
+        // whether the file was checked out with LF or CRLF (e.g. on Windows).
+        string text = File.ReadAllText(path).Replace("\r\n", "\n");
         foreach (var replacement in replacements)
         {
             text = StringReplaceWithAssert(text, replacement.Key, replacement.Value);
@@ -435,7 +439,7 @@ public class WasmTemplateTestsBase : BuildTestBase
         File.Copy(Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "minimal_main.js"), mainJsPath, overwrite: true);
     }
 
-    protected void UpdateBrowserMainJs(string? targetFramework = null, string runtimeAssetsRelativePath = DefaultRuntimeAssetsRelativePath, bool forwardConsole = false)
+    protected void UpdateBrowserMainJs(string? targetFramework = null, bool forwardConsole = false)
     {
         targetFramework ??= DefaultTargetFramework;
         string mainJsPath = Path.Combine(_projectDir, "wwwroot", "main.js");
@@ -460,9 +464,6 @@ public class WasmTemplateTestsBase : BuildTestBase
             // dotnet.run() is used instead of runMain() in net9.0+
             updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "runMain()", "dotnet.run()");
         }
-
-        updatedMainJsContent = StringReplaceWithAssert(updatedMainJsContent, "from './_framework/dotnet.js'", $"from '{runtimeAssetsRelativePath}dotnet.js'");
-
 
         File.WriteAllText(mainJsPath, updatedMainJsContent);
     }

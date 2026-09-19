@@ -222,6 +222,7 @@ namespace System.Net.Security
 
 #if !TARGET_WINDOWS && !SYSNETSECURITY_NO_OPENSSL
             _sslAuthenticationOptions.SslStream = this;
+            _sslAuthenticationOptions.RemoteCertificateValidator = VerifyRemoteCertificate;
 #endif
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SslStreamCtor(this, innerStream);

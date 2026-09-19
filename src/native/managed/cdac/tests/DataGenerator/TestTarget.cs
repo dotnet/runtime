@@ -176,7 +176,7 @@ internal sealed class TestTarget : Target
 
     public override T Read<T>(ulong address)
     {
-        Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        Span<byte> span = GetSpan(address, sizeof(T));
         return System.Runtime.InteropServices.MemoryMarshal.Read<T>(span);
     }
 
@@ -204,7 +204,7 @@ internal sealed class TestTarget : Target
 
     public override void Write<T>(ulong address, T value)
     {
-        Span<byte> span = GetSpan(address, System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        Span<byte> span = GetSpan(address, sizeof(T));
         System.Runtime.InteropServices.MemoryMarshal.Write(span, in value);
     }
 
@@ -271,20 +271,23 @@ internal sealed class TestTarget : Target
 
         public override IManagedTypeSource ManagedTypeSource => _managedTypeSource;
 
-        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, out string? failureReason)
+        public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
         {
             if (typeof(TContract) == typeof(IManagedTypeSource))
             {
                 contract = (TContract)_managedTypeSource;
-                failureReason = null;
+                failureException = null;
                 return true;
             }
             contract = default!;
-            failureReason = "Not registered in TestContractRegistry.";
+            failureException = new ContractMissingException(TContract.Name);
             return false;
         }
 
         public override void Register<TContract>(string version, Func<Target, TContract> creator)
+            => throw new NotImplementedException();
+
+        public override void RegisterUnsupported<TContract>(string version)
             => throw new NotImplementedException();
 
         public override void Flush(FlushScope scope) { }

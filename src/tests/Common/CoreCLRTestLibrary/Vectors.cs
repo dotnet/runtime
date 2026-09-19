@@ -18,7 +18,7 @@ namespace TestLibrary
 
         public static Vector<T> GetRandomVector<T>()
         {
-            long vsize = Unsafe.SizeOf<Vector<T>>();
+            long vsize = sizeof(Vector<T>);
             byte[] data = new byte[vsize];
             for (int i = 0; i < vsize; i++)
             {
@@ -48,8 +48,8 @@ namespace TestLibrary
 
         public static Vector<T> GetRandomMask<T>()
         {
-            long vsize = Unsafe.SizeOf<Vector<T>>();
-            long tsize = Unsafe.SizeOf<T>();
+            long vsize = sizeof(Vector<T>);
+            long tsize = sizeof(T);
 
             byte[] data = new byte[vsize];
 
@@ -80,13 +80,13 @@ namespace TestLibrary
             {
                 unsafe
                 {
-                    int sizeOfinArray1 = data.Length * Unsafe.SizeOf<T>();
-                    if ((alignment != 64 && alignment != 16 && alignment != 8) || (alignment * 2) < sizeOfinArray1)
+                    int sizeOfinArray1 = data.Length * sizeof(T);
+                    if (alignment != 64 && alignment != 16 && alignment != 8)
                     {
                         throw new ArgumentException($"Invalid value of alignment: {alignment}, sizeOfinArray1: {sizeOfinArray1}");
                     }
 
-                    buf = new byte[alignment * 2];
+                    buf = new byte[alignment + sizeOfinArray1];
                     inHandle = GCHandle.Alloc(buf, GCHandleType.Pinned);
                     this.alignment = (ulong)alignment;
                     Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(Ptr), ref Unsafe.As<T, byte>(ref data[0]), (uint)sizeOfinArray1);
@@ -100,8 +100,8 @@ namespace TestLibrary
 
             public PinnedVector(Vector<T> inVector, int alignment)
             {
-                long tsize = Unsafe.SizeOf<T>();
-                long vsize = Unsafe.SizeOf<Vector<T>>();
+                long tsize = sizeof(T);
+                long vsize = sizeof(Vector<T>);
                 long count = vsize / tsize;
                 T[] data = new T[count];
                 VectorToArray(ref data, inVector);

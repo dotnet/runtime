@@ -115,7 +115,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
 
-        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY));
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY) ||
+               block->hasEHBoundaryOut());
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -142,6 +143,14 @@ PhaseStatus Compiler::fgInsertGCPolls()
             // We don't want to deal with all the outgoing edges of a switch block.
             //
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
+            pollType = GCPOLL_CALL;
+        }
+        else if (block->hasEHBoundaryOut())
+        {
+            // We can't split a block that leaves an EH region: fgCreateGCPoll does not know how to
+            // move its outgoing flow onto the new bottom block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it ends an EH region\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (block->HasFlag(BBF_COLD))
@@ -758,11 +767,15 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         case CORINFO_HELP_GETPINNED_GCSTATIC_BASE:
         case CORINFO_HELP_GETPINNED_NONGCSTATIC_BASE:
-            type = TYP_I_IMPL;
+            // In async calls we model these helpers as byrefs to get "killed
+            // across suspensions" behavior for free, while also properly
+            // ensuring derived addresses are byref typed and are treated
+            // similarly.
+            type = impInlineRoot()->compIsAsync() ? TYP_BYREF : TYP_I_IMPL;
             break;
 
         case CORINFO_HELP_INITCLASS:
-            type = TYP_VOID;
+            type = HelperInitClassRetType;
             break;
 
         default:
@@ -3894,11 +3907,11 @@ unsigned Compiler::bbThrowIndex(BasicBlock* blk, AcdKeyDesignator* dsg)
     if (ehGetDsc(hndIndex - 1)->InFilterRegionBBRange(blk))
     {
         *dsg = AcdKeyDesignator::KD_FLT;
-        return hndIndex | 0x80000000;
+        return hndIndex | AddCodeDscKey::AcdFilterFlag;
     }
 
     *dsg = AcdKeyDesignator::KD_HND;
-    return hndIndex | 0x40000000;
+    return hndIndex | AddCodeDscKey::AcdHandlerFlag;
 }
 
 //------------------------------------------------------------------------
@@ -3952,10 +3965,10 @@ Compiler::AddCodeDscKey::AddCodeDscKey(AddCodeDsc* add)
                 acdData = add->acdTryIndex;
                 break;
             case AcdKeyDesignator::KD_HND:
-                acdData = add->acdHndIndex | 0x40000000;
+                acdData = add->acdHndIndex | AcdHandlerFlag;
                 break;
             case AcdKeyDesignator::KD_FLT:
-                acdData = add->acdHndIndex | 0x80000000;
+                acdData = add->acdHndIndex | AcdFilterFlag;
                 break;
             default:
                 unreached();
@@ -5804,6 +5817,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
     info->LimitOffset            = 0;
+    info->LimitVar               = BAD_VAR_NUM;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5916,6 +5930,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasInvariantLocalLimit = true;
+        info->LimitVar               = limitOp->AsLclVarCommon()->GetLclNum();
     }
     else if (limitOp->OperIs(GT_ARR_LENGTH))
     {
@@ -5944,6 +5959,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasArrayLengthLimit = true;
+        info->LimitVar            = array->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -6119,11 +6135,24 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, Nat
 bool FlowGraphNaturalLoop::HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info)
 {
     assert(!preheader->KindIs(BBJ_COND));
+    Compiler*   comp     = GetDfsTree()->GetCompiler();
     BasicBlock* curBlock = preheader;
     while (true)
     {
+        for (Statement* stmt : curBlock->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            if (comp->gtTreeHasLocalStore(tree, info->IterVar) ||
+                ((info->LimitVar != BAD_VAR_NUM) && comp->gtTreeHasLocalStore(tree, info->LimitVar)))
+            {
+                JITDUMP("  Iterator or limit modified by [%06u] in " FMT_BB "\n", Compiler::dspTreeID(tree),
+                        curBlock->bbNum);
+                return false;
+            }
+        }
+
         BasicBlock* prevBlock = curBlock;
-        curBlock              = curBlock->GetUniquePred(GetDfsTree()->GetCompiler());
+        curBlock              = curBlock->GetUniquePred(comp);
 
         if (curBlock == nullptr)
         {
@@ -7730,7 +7759,7 @@ FlowGraphTryRegions::FlowGraphTryRegions(Compiler* comp, FlowGraphDfsTree* dfsTr
     , m_numRegions(0)
     , m_numTryCatchRegions(0)
     , m_tryRegionsIncludeHandlerBlocks(false)
-    , m_hasMultipleEntryTryRegions(false)
+    , m_hasSideEntry(false)
     , m_traits((dfsTree == nullptr) ? comp->fgBBNumMax + 1 : dfsTree->GetPostOrderCount(), comp)
 {
 }
@@ -7777,7 +7806,6 @@ FlowGraphTryRegion::FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* reg
     , m_entryEdges(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_unreachableBlocks(regions->GetCompiler()->getAllocator(CMK_BasicBlock))
     , m_requiresRuntimeResumption(false)
-    , m_hasSideEntry(false)
 {
     BitVecTraits* const traits = regions->GetBlockBitVecTraits();
     m_blocks                   = BitVecOps::MakeEmpty(traits);
@@ -7915,31 +7943,14 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
                         continue;
                     }
 
-                    // Async resumption and catch resumption entry edges
+                    // Any other edge is a side entry, which fgWasmRepairTryEntries
+                    // should already have routed through the region header. Record it
+                    // so wasm codegen can bail out rather than emit a region that
+                    // cannot be expressed.
                     //
-                    if (predBlock->HasAnyFlag(BBF_ASYNC_RESUMPTION | BBF_CATCH_RESUMPTION))
-                    {
-                        JITDUMP("Found %s resumption edge from " FMT_BB " to " FMT_BB "\n",
-                                predBlock->HasFlag(BBF_ASYNC_RESUMPTION) ? "async" : "catch", predBlock->bbNum,
-                                block->bbNum);
-
-                        region->AddEntryEdge(edge);
-                        region->SetHasSideEntry();
-
-                        // Only try/catch regions need to be reshaped into single-entry form for
-                        // Wasm codegen (they will be lowered to a wasm try_table). Try/fault and
-                        // try/finally are emitted differently and tolerate multi-entry.
-                        //
-                        if (dsc->HasCatchHandler())
-                        {
-                            regions->SetHasMultipleEntryTryRegions();
-                        }
-                        continue;
-                    }
-
                     JITDUMP("Unexpected try region entry edge from " FMT_BB " to " FMT_BB "\n", predBlock->bbNum,
                             block->bbNum);
-                    assert(!"Unexpected try region entry edge");
+                    regions->SetHasSideEntry();
                 }
 
                 region = region->m_parent;
@@ -7968,80 +7979,6 @@ FlowGraphTryRegions* FlowGraphTryRegions::Build(Compiler* comp, FlowGraphDfsTree
     }
 
     return regions;
-}
-
-//------------------------------------------------------------------------
-// FlowGraphTryRegions::AddMultipleEntryRegionEdges: Add temporary
-//    edges for multiple entry try regions.
-//
-// Arguments:
-//    edges -- collection of temporary edges to augment
-//
-void FlowGraphTryRegions::AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
-{
-    for (FlowGraphTryRegion* region : m_tryRegions)
-    {
-        if (region != nullptr && region->HasCatchHandler() && region->HasSideEntry())
-        {
-            BasicBlock* const headerBlock = region->GetHeaderBlock();
-
-            for (FlowEdge* edge : region->EntryEdges())
-            {
-                BasicBlock* const destBlock = edge->getDestinationBlock();
-
-                // Skip the normal entry edges.
-                //
-                if (destBlock == headerBlock)
-                {
-                    continue;
-                }
-
-                // We need an edge from dest to try header.
-                FlowEdge* const destheaderEdge = m_compiler->fgAddRefPred(headerBlock, destBlock);
-                edges.Push(destheaderEdge);
-
-                // And an edge from method entry to dest.
-                FlowEdge* const entryDestEdge = m_compiler->fgAddRefPred(destBlock, m_compiler->fgFirstBB);
-                edges.Push(entryDestEdge);
-
-                // If the dest is not reachable within the try, then we need to also add
-                // a temporary edge from the try header to the dest to create the SCC.
-                // Since we've pruned away dead blocks, any other pred edge suffices to
-                // establish reachability.
-                //
-                bool isReachableInTry = false;
-                for (FlowEdge* const predEdge : destBlock->PredEdges())
-                {
-                    if (predEdge != edge)
-                    {
-                        isReachableInTry = true;
-                        break;
-                    }
-                }
-
-                if (!isReachableInTry)
-                {
-                    FlowEdge* const headerDestEdge = m_compiler->fgAddRefPred(destBlock, headerBlock);
-                    edges.Push(headerDestEdge);
-                }
-            }
-        }
-    }
-}
-
-//------------------------------------------------------------------------
-// FlowGraphTryRegions::RemoveMultipleEntryRegionEdges: Remove temporary
-//    edges added for multiple entry try regions.
-//
-// Arguments:
-//    edges -- collection of edges to remove
-//
-void FlowGraphTryRegions::RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges)
-{
-    for (FlowEdge* const edge : edges.BottomUpOrder())
-    {
-        m_compiler->fgRemoveRefPred(edge);
-    }
 }
 
 //------------------------------------------------------------------------

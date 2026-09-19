@@ -22,7 +22,7 @@ public class ManagedHolder
 /// <summary>
 /// Value type with an embedded GC ref. Exercises the encoder's
 /// GCDesc-driven REF emission across module boundaries: the
-/// argument's TypeHandle resolves through the main module's
+/// argument's ITypeHandle resolves through the main module's
 /// CrossModule.exe metadata, but the field-list walk (and offset
 /// arithmetic) crosses into this library's MethodTable.
 /// </summary>

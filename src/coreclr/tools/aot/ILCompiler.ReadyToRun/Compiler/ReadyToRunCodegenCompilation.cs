@@ -244,20 +244,33 @@ namespace ILCompiler
                 _rootAdder(_deferredPhaseNode, "Deferred nodes");
             }
 
+            private void AddCompilationRootHelper(DependencyNodeCore<NodeFactory> node, bool rootMinimalDependencies, string reason)
+            {
+                if (rootMinimalDependencies)
+                {
+                    _deferredPhaseNode.AddDependency(node);
+                }
+                else
+                {
+                    _rootAdder(node, reason);
+                }
+            }
+
             public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
-                    IMethodNode methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    MethodWithGCInfo methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
-                    if (rootMinimalDependencies)
+                    // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
+                    // and GVMDependenciesNode are meant to deal with methods that have some of the type args instantiated
+                    // with valuetypes.
+                    if (_factory.NeedsUnboxingStub(canonMethod))
                     {
-                        _deferredPhaseNode.AddDependency((DependencyNodeCore<NodeFactory>)methodEntryPoint);
-                    }
-                    else
-                    {
-                        _rootAdder(methodEntryPoint, reason);
+                        DependencyNodeCore<NodeFactory> unboxingStub = _factory.UnboxingStub(canonMethod);
+                        AddCompilationRootHelper(unboxingStub, rootMinimalDependencies, reason);
                     }
                 }
             }
@@ -283,7 +296,6 @@ namespace ILCompiler
         private readonly bool _resilient;
 
         private readonly int _parallelism;
-        private readonly CorInfoImpl[] _corInfoImpls;
 
         private readonly bool _generateMapFile;
         private readonly bool _generateMapCsvFile;
@@ -358,7 +370,6 @@ namespace ILCompiler
             _computedFixedLayoutTypesUncached = IsLayoutFixedInCurrentVersionBubbleInternal;
             _resilient = resilient;
             _parallelism = parallelism;
-            _corInfoImpls = new CorInfoImpl[_parallelism];
             _generateMapFile = generateMapFile;
             _generateMapCsvFile = generateMapCsvFile;
             _generatePdbFile = generatePdbFile;
@@ -370,27 +381,30 @@ namespace ILCompiler
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
+            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
                 nodeFactory.CrossModuleInlningInfo.Initialize(SymbolNodeFactory);
             if (nodeFactory.ImportReferenceProvider != null)
-                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory);
+                nodeFactory.ImportReferenceProvider.Initialize(SymbolNodeFactory, _tokenManager);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
             _printReproInstructions = printReproInstructions;
             CompilationModuleGroup = (ReadyToRunCompilationModuleGroupBase)nodeFactory.CompilationModuleGroup;
 
             // Generate baseline support specification for InstructionSetSupport. This will prevent usage of the generated
-            // code if the runtime environment doesn't support the specified instruction set
-            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport);
+            // code if the runtime environment doesn't support the specified instruction set. Targets that cannot generate
+            // code at runtime must not encode "must be absent" assertions, since a failing eager fixup is a fatal startup
+            // error with no JIT fallback (see ToInstructionSetSupportString).
+            bool targetAllowsRuntimeCodeGeneration = ((ReadyToRunCompilerContext)nodeFactory.TypeSystemContext).TargetAllowsRuntimeCodeGeneration;
+            string instructionSetSupportString = ReadyToRunInstructionSetSupportSignature.ToInstructionSetSupportString(instructionSetSupport, emitExplicitlyUnsupported: targetAllowsRuntimeCodeGeneration);
             ReadyToRunInstructionSetSupportSignature instructionSetSupportSig = new ReadyToRunInstructionSetSupportSignature(instructionSetSupportString);
             _dependencyGraph.AddRoot(new Import(NodeFactory.EagerImports, instructionSetSupportSig), "Baseline instruction set support");
 
             _profileData = profileData;
 
             _fileLayoutOptimizer = new FileLayoutOptimizer(logger, methodLayoutAlgorithm, fileLayoutAlgorithm, profileData, _nodeFactory);
-            _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
         }
 
         private readonly static string s_folderUpPrefix = ".." + Path.DirectorySeparatorChar;
@@ -399,9 +413,8 @@ namespace ILCompiler
         {
             _dependencyGraph.ComputeMarkedNodes();
 
-            _doneAllCompiling = true;
-            Array.Clear(_corInfoImpls);
-            _compilationThreadSemaphore.Release(_parallelism);
+            // Release single-threaded JIT state before object emission to reduce peak memory usage.
+            _singleThreadedWorkerState = default;
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
@@ -459,6 +472,12 @@ namespace ILCompiler
                             relativeMsilPath = Path.GetFileName(inputFile);
                         }
                         string standaloneMsilOutputFile = Path.Combine(outputDirectory, relativeMsilPath);
+                        if (_format == ReadyToRunContainerFormat.Wasm)
+                        {
+                            // For wasm, component stubs are webcil-in-wasm modules loaded by name
+                            // as "<assembly>.wasm" (matching the browser/wasi external-assembly probe).
+                            standaloneMsilOutputFile = Path.ChangeExtension(standaloneMsilOutputFile, ".wasm");
+                        }
                         RewriteComponentFile(inputFile: inputFile, outputFile: standaloneMsilOutputFile, ownerExecutableName: ownerExecutableName, compiledMethodDefs: compiledMethodDefs);
                     }
                 }
@@ -503,6 +522,7 @@ namespace ILCompiler
             }
 
             flags |= _nodeFactory.CompilationModuleGroup.GetReadyToRunFlags() & ReadyToRunFlags.READYTORUN_FLAG_MultiModuleVersionBubble;
+            flags |= _nodeFactory.Header.Flags & ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
 
             bool isNativeCompositeImage = false;
             if (NodeFactory.Target.IsWindows && NodeFactory.Format == ReadyToRunContainerFormat.PE)
@@ -519,6 +539,11 @@ namespace ILCompiler
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_PlatformNativeImage;
             }
 
+            // Component (per-assembly forwarding) stubs are emitted as PE (even when the composite image is native),
+            // except on wasm where we emit webcil-in-wasm stubs to match the browser/wasi loading model.
+            // The PE/COFF writer does not support the Wasm32 architecture.
+            ReadyToRunContainerFormat componentFormat =
+                _format == ReadyToRunContainerFormat.Wasm ? ReadyToRunContainerFormat.Wasm : ReadyToRunContainerFormat.PE;
             CopiedCorHeaderNode copiedCorHeader = new CopiedCorHeaderNode(inputModule);
             // Re-written components shouldn't have any additional diagnostic information - only information about the forwards.
             // Even with all of this, we might be modifying the image in a silly manner - adding a directory when if didn't have one.
@@ -533,7 +558,7 @@ namespace ILCompiler
                 win32Resources: new Win32Resources.ResourceData(inputModule),
                 flags: flags,
                 nodeFactoryOptimizationFlags: optimizationFlags,
-                format: ReadyToRunContainerFormat.PE,
+                format: componentFormat,
                 imageBase: _nodeFactory.ImageBase,
                 associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
@@ -569,7 +594,7 @@ namespace ILCompiler
                 perfMapFormatVersion: _perfMapFormatVersion,
                 generateProfileFile: false,
                 _profileData.CallChainProfile,
-                ReadyToRunContainerFormat.PE,
+                componentFormat,
                 customPESectionAlignment: 0,
                 _logger);
         }
@@ -692,15 +717,16 @@ namespace ILCompiler
             }
         }
 
-        [ThreadStatic]
-        private static int s_methodsCompiledPerThread = 0;
+        private struct WorkerState
+        {
+            public CorInfoImpl CorInfoImpl;
+            public int MethodsCompiled;
+        }
 
-        private SemaphoreSlim _compilationThreadSemaphore = new(0);
-        private volatile IEnumerator<DependencyNodeCore<NodeFactory>> _currentCompilationMethodList;
-        private volatile bool _doneAllCompiling;
-        private int _finishedThreadCount;
-        private ManualResetEventSlim _compilationSessionComplete = new ManualResetEventSlim();
-        private bool _hasCreatedCompilationThreads = false;
+        // SuperPMI collection runs crossgen2 with parallelism 1 and requires ObjectToHandle
+        // handles to remain stable across compilation waves, so retain this state between calls.
+        private WorkerState _singleThreadedWorkerState;
+        private int _compilationSessionGeneratedColdCode;
         private bool _hasAddedAsyncReferences = false;
 
         protected override void ComputeDependencyNodeDependencies(List<DependencyNodeCore<NodeFactory>> obj)
@@ -738,8 +764,8 @@ namespace ILCompiler
                         if (method.IsAsyncCall() && shouldBeCompiled)
                             AddNecessaryAsyncReferences(method);
 
-                        if (method.IsCompilerGeneratedILBodyForAsync() && shouldBeCompiled)
-                            EnsureAsyncThunkTokensAreAvailable(method);
+                        if ((method.IsCompilerGeneratedILBodyForAsync() || ((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method)) && shouldBeCompiled)
+                            EnsureGeneratedILTokensAreAvailable(method);
 
                         if (!_nodeFactory.CompilationModuleGroup.VersionsWithMethodBody(method))
                             EnsureInstantiationReferencesArePresentForExternalMethod(method);
@@ -748,7 +774,7 @@ namespace ILCompiler
 
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
-                CompileMethodList(obj);
+                generatedColdCode |= CompileMethodList(obj);
 
                 while (_methodsToRecompile.Count > 0)
                 {
@@ -762,7 +788,7 @@ namespace ILCompiler
                     if (Logger.IsVerbose)
                         Logger.Writer.WriteLine($"Processing {methodsToRecompile.Length} recompiles");
 
-                    CompileMethodList(methodsToRecompile);
+                    generatedColdCode |= CompileMethodList(methodsToRecompile);
                 }
             }
 
@@ -778,9 +804,9 @@ namespace ILCompiler
                 _nodeFactory.GenerateHotColdMap(_dependencyGraph);
             }
 
-            void EnsureAsyncThunkTokensAreAvailable(MethodDesc method)
+            void EnsureGeneratedILTokensAreAvailable(MethodDesc method)
             {
-                if (!method.IsCompilerGeneratedILBodyForAsync())
+                if (!method.IsCompilerGeneratedILBodyForAsync() && !((CompilerTypeSystemContext)method.Context).IsUnboxingThunk(method))
                     return;
                 MethodIL il = _methodILCache.ILProvider.GetMethodIL(method);
                 if (il is null)
@@ -836,162 +862,115 @@ namespace ILCompiler
                 if (_methodILCache.Count > 1000 || _methodILCache.ILProvider.Version != _methodILCache.ExpectedILProviderVersion)
                     _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
             }
+        }
 
-            void CompileMethodList(IEnumerable<DependencyNodeCore<NodeFactory>> methodList)
+        private bool CompileMethodList(IReadOnlyList<DependencyNodeCore<NodeFactory>> methodList)
+        {
+            _compilationSessionGeneratedColdCode = 0;
+
+            NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = true;
+            try
             {
-                // Disable generation of new tokens across the multi-threaded compile
-                NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = true;
-
                 if (_parallelism == 1)
                 {
-                    foreach (var dependency in methodList)
-                        CompileOneMethod(dependency, 0);
+                    foreach (DependencyNodeCore<NodeFactory> dependency in methodList)
+                    {
+                        CompileOneMethod(dependency, ref _singleThreadedWorkerState);
+                    }
                 }
                 else
                 {
-                    _currentCompilationMethodList = methodList.GetEnumerator();
-                    _finishedThreadCount = 0;
-                    _compilationSessionComplete.Reset();
-
-                    if (!_hasCreatedCompilationThreads)
-                    {
-                        for (int compilationThreadId = 1; compilationThreadId < _parallelism; compilationThreadId++)
-                        {
-                            new Thread(CompilationThread).Start((object)compilationThreadId);
-                        }
-                        _hasCreatedCompilationThreads = true;
-                    }
-
-                    _compilationThreadSemaphore.Release(_parallelism - 1);
-                    CompileOnThread(0);
-                    _compilationSessionComplete.Wait();
+                    Parallel.ForEach<DependencyNodeCore<NodeFactory>, WorkerState>(
+                        // Method compilation costs vary widely, so avoid buffering work into imbalanced partitions.
+                        Partitioner.Create(methodList, EnumerablePartitionerOptions.NoBuffering),
+                        new ParallelOptions { MaxDegreeOfParallelism = _parallelism },
+                        static () => default,
+                        CompileOneMethodInParallel,
+                        static _ => { });
                 }
 
-                // Re-enable generation of new tokens after the multi-threaded compile
+                return Volatile.Read(ref _compilationSessionGeneratedColdCode) != 0;
+            }
+            finally
+            {
                 NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = false;
             }
+        }
 
-            void CompilationThread(object objThreadId)
+        private WorkerState CompileOneMethodInParallel(
+            DependencyNodeCore<NodeFactory> dependency,
+            ParallelLoopState _,
+            WorkerState workerState)
+        {
+            CompileOneMethod(dependency, ref workerState);
+            return workerState;
+        }
+
+        private void CompileOneMethod(DependencyNodeCore<NodeFactory> dependency, ref WorkerState workerState)
+        {
+            MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
+            if (methodCodeNodeNeedingCode == null)
             {
-                while (true)
+                if (dependency is DeferredTillPhaseNode deferredPhaseNode)
                 {
-                    _compilationThreadSemaphore.Wait();
-                    lock (this)
-                    {
-                        if (_doneAllCompiling)
-                            return;
-                    }
-                    CompileOnThread((int)objThreadId);
+                    if (Logger.IsVerbose)
+                        _logger.Writer.WriteLine($"Moved to phase {_nodeFactory.CompilationCurrentPhase}");
+                    deferredPhaseNode.NotifyCurrentPhase(_nodeFactory.CompilationCurrentPhase);
+                    return;
                 }
             }
 
-            void CompileOnThread(int compilationThreadId)
+            Debug.Assert((_nodeFactory.CompilationCurrentPhase == 0) || ((_nodeFactory.CompilationCurrentPhase == 2) && !_finishedFirstCompilationRunInPhase2));
+
+            MethodDesc method = methodCodeNodeNeedingCode.Method;
+
+            if (Logger.IsVerbose)
             {
-                var compilationMethodList = _currentCompilationMethodList;
-                while (true)
-                {
-                    DependencyNodeCore<NodeFactory> dependency;
-                    lock (compilationMethodList)
-                    {
-                        if (!compilationMethodList.MoveNext())
-                        {
-                            if (Interlocked.Increment(ref _finishedThreadCount) == _parallelism)
-                                _compilationSessionComplete.Set();
-
-                            return;
-                        }
-                        dependency = compilationMethodList.Current;
-                    }
-
-                    CompileOneMethod(dependency, compilationThreadId);
-                }
+                string methodName = method.ToString();
+                Logger.Writer.WriteLine("Compiling " + methodName);
             }
 
-            void CompileOneMethod(DependencyNodeCore<NodeFactory> dependency, int compileThreadId)
+            if (_nodeFactory.OptimizationFlags.PrintReproArgs)
             {
-                MethodWithGCInfo methodCodeNodeNeedingCode = dependency as MethodWithGCInfo;
-                if (methodCodeNodeNeedingCode == null)
+                Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
+            }
+
+            try
+            {
+                using (PerfEventSource.StartStopEvents.JitMethodEvents())
                 {
-                    if (dependency is DeferredTillPhaseNode deferredPhaseNode)
+                    workerState.MethodsCompiled++;
+                    if (workerState.CorInfoImpl is null ||
+                        (_parallelism != 1 && (workerState.MethodsCompiled % 3000) == 0))
                     {
-                        if (Logger.IsVerbose)
-                            _logger.Writer.WriteLine($"Moved to phase {_nodeFactory.CompilationCurrentPhase}");
-                        deferredPhaseNode.NotifyCurrentPhase(_nodeFactory.CompilationCurrentPhase);
-                        return;
+                        // Periodically create a new CorInfoImpl to clear out stale caches. For single-threaded
+                        // compilation, reuse one instance so SuperPMI can rely on non-reuse of ObjectToHandle handles.
+                        workerState.CorInfoImpl = new CorInfoImpl(this);
+                    }
+
+                    CorInfoImpl corInfoImpl = workerState.CorInfoImpl;
+                    corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
+                    if (corInfoImpl.HasColdCode)
+                    {
+                        Volatile.Write(ref _compilationSessionGeneratedColdCode, 1);
                     }
                 }
-
-                Debug.Assert((_nodeFactory.CompilationCurrentPhase == 0) || ((_nodeFactory.CompilationCurrentPhase == 2) && !_finishedFirstCompilationRunInPhase2));
-
-                MethodDesc method = methodCodeNodeNeedingCode.Method;
-
+            }
+            catch (TypeSystemException ex)
+            {
+                // If compilation fails, don't emit code for this method. It will be Jitted at runtime
                 if (Logger.IsVerbose)
-                {
-                    string methodName = method.ToString();
-                    Logger.Writer.WriteLine("Compiling " + methodName);
-                }
-
-                if (_nodeFactory.OptimizationFlags.PrintReproArgs)
-                {
-                    Logger.Writer.WriteLine($"Single method repro args:{GetReproInstructions(method)}");
-                }
-
-                try
-                {
-                    using (PerfEventSource.StartStopEvents.JitMethodEvents())
-                    {
-                        s_methodsCompiledPerThread++;
-                        bool createNewCorInfoImpl = false;
-
-                        if (_corInfoImpls[compileThreadId] == null)
-                            createNewCorInfoImpl = true;
-                        else
-                        {
-                            if (_parallelism == 1)
-                            {
-                                // Create only 1 CorInfoImpl if not using parallelism
-                                // This allows SuperPMI to rely on non-reuse of handles in ObjectToHandle
-                            }
-                            else
-                            {
-                                // Periodically create a new CorInfoImpl to clear out stale caches
-                                // This is done as the CorInfoImpl holds a cache of data structures visible to the JIT
-                                // Those data structures include both structures which will last for the lifetime of the compilation
-                                // process, as well as various temporary structures that would really be better off with thread lifetime.
-                                if ((s_methodsCompiledPerThread % 3000) == 0)
-                                {
-                                    createNewCorInfoImpl = true;
-                                }
-                            }
-                        }
-
-                        if (createNewCorInfoImpl)
-                            _corInfoImpls[compileThreadId] = new CorInfoImpl(this);
-
-                        CorInfoImpl corInfoImpl = _corInfoImpls[compileThreadId];
-                        corInfoImpl.CompileMethod(methodCodeNodeNeedingCode, Logger);
-                        if (corInfoImpl.HasColdCode)
-                        {
-                            generatedColdCode = true;
-                        }
-                    }
-                }
-                catch (TypeSystemException ex)
-                {
-                    // If compilation fails, don't emit code for this method. It will be Jitted at runtime
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
-                }
-                catch (RequiresRuntimeJitException ex)
-                {
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
-                }
-                catch (CodeGenerationFailedException ex) when (_resilient)
-                {
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
-                }
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because: {ex.Message}");
+            }
+            catch (RequiresRuntimeJitException ex)
+            {
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Info: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
+            }
+            catch (CodeGenerationFailedException ex) when (_resilient)
+            {
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Warning: Method `{method}` was not compiled because `{ex.Message}` requires runtime JIT");
             }
         }
 
@@ -1023,6 +1002,14 @@ namespace ILCompiler
                 continuation.GetKnownField("State"u8),
                 continuation.GetKnownField("Flags"u8),
             ];
+            // The signature types for the TransparentAwait overloads used by
+            // CorInfoImpl.getAwaitReturnCall (kept in sync with that method).
+            TypeDesc voidType = TypeSystemContext.GetWellKnownType(WellKnownType.Void);
+            TypeDesc taskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+            TypeDesc valueTaskType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8);
+            MetadataType taskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8);
+            MetadataType valueTaskOfTType = TypeSystemContext.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8);
+            TypeDesc methodVar = TypeSystemContext.GetSignatureVariable(0, method: true);
             MethodDesc[] requiredMethods =
             [
                 // For CorInfoImpl.getAsyncInfo
@@ -1033,11 +1020,34 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
                 asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
                 asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionNoContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionContinueOnThreadPool"u8, null),
 
                 // R2R Helpers
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationClass"u8, null),
                 asyncHelpers.GetKnownMethod("AllocContinuationMethod"u8, null),
+
+                // For CorInfoImpl.getAwaitReturnCall. The JIT synthesizes calls to these overloads, so they
+                // have no IL token in the caller and their manifest tokens must be pre-seeded here.
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [taskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
+                asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+
+                // For CorInfoImpl.getAwaitAwaiterInContinuationCall. Same as above: the JIT rewrites calls
+                // to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter into calls to these, so nothing in the
+                // caller's IL refers to them and their manifest tokens must be pre-seeded here.
+                //
+                // Only the typical definitions need tokens. The method fixup signature emits the method's
+                // def/ref token and encodes the instantiation separately as type signatures (see
+                // SignatureBuilder.EmitMethodSpecificationSignature), so no MethodSpec token is required.
+                // The instantiation argument is the awaiter type, which the caller already refers to in its
+                // own IL, so that is guaranteed to be encodable as well.
+                asyncHelpers.GetKnownMethod("AwaitAwaiterInContinuation"u8, null),
+                asyncHelpers.GetKnownMethod("UnsafeAwaitAwaiterInContinuation"u8, null),
             ];
             var moduleForNewReferences = ((EcmaMethod)method.GetPrimaryMethodDesc().GetTypicalMethodDefinition()).Module;
             _tokenManager.EnsureDefTokensAreAvailable([..requiredMethods, ..requiredTypes, ..requiredFields], moduleForNewReferences, true);
@@ -1057,6 +1067,8 @@ namespace ILCompiler
 
         public override void Dispose()
         {
+            _singleThreadedWorkerState = default;
+
             // Workaround for https://github.com/dotnet/runtime/issues/23103.
             // ManifestMetadataTable.Dispose() allows to break circular reference
             // ConcurrentBag<EcmaModule> -> EcmaModule -> EcmaAssembly -> ReadyToRunCompilerContext -> ... -> ConcurrentBag<EcmaModule>.

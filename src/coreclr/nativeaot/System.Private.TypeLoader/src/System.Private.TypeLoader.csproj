@@ -54,6 +54,7 @@
     <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Runtime\CompilerServices\IntrinsicAttribute.cs">
       <Link>IntrinsicAttribute.cs</Link>
     </Compile>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Runtime\CompilerServices\AnalysisCharacteristicAttribute.cs" />
     <Compile Include="$(CompilerCommonPath)\Internal\Text\Utf8Span.cs">
       <Link>Internal\Text\Utf8Span.cs</Link>
     </Compile>

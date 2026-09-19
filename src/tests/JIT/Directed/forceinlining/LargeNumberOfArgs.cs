@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_forceinlining_LargeNumberOfArgs;
+
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -13,6 +15,7 @@ public class My
         return a1 + a2 + a3 + a4 + a5 + a6 + a7 + a8 + a9 + a10 + a11 + a12 + a13 + a14 + a15 + a16;
     }
 
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

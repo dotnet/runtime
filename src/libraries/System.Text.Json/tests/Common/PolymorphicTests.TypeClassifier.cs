@@ -21,16 +21,16 @@ namespace System.Text.Json.Serialization.Tests
             .GetConstructor(
                 BindingFlags.Instance | BindingFlags.NonPublic,
                 binder: null,
-                types: [typeof(JsonTypeClassifierKind), typeof(Type), typeof(IReadOnlyList<JsonUnionCaseInfo>), typeof(IReadOnlyList<JsonDerivedType>), typeof(string)],
+                types: [typeof(JsonTypeClassifierKind), typeof(JsonTypeInfo), typeof(IReadOnlyList<JsonUnionCaseInfo>), typeof(IReadOnlyList<JsonDerivedType>), typeof(string)],
                 modifiers: null)!;
 
         public static JsonTypeClassifierContext Create(
-            Type declaringType,
+            JsonTypeInfo declaringTypeInfo,
             IReadOnlyList<JsonUnionCaseInfo> unionCases,
             IReadOnlyList<JsonDerivedType> derivedTypes,
             string? typeDiscriminatorPropertyName,
             JsonTypeClassifierKind kind = JsonTypeClassifierKind.PolymorphicType)
-            => (JsonTypeClassifierContext)s_ctor.Invoke([kind, declaringType, unionCases, derivedTypes, typeDiscriminatorPropertyName]);
+            => (JsonTypeClassifierContext)s_ctor.Invoke([kind, declaringTypeInfo, unionCases, derivedTypes, typeDiscriminatorPropertyName]);
     }
 
     /// <summary>
@@ -310,7 +310,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 var innerFactory = new TestDiscriminatorClassifierFactory();
                 var innerContext = JsonTypeClassifierContextTestExtensions.Create(
-                                    context.DeclaringType,
+                                    options.GetTypeInfo(context.DeclaringType),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                         new JsonDerivedType(typeof(ClassifiedDog), "dog"),
@@ -642,14 +642,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             var factory = new TestDiscriminatorClassifierFactory();
             var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),
                     new JsonDerivedType(typeof(ClassifiedParrot), "parrot"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
 
@@ -664,13 +664,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var factory = new TestDiscriminatorClassifierFactory();
             var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
 
@@ -686,13 +686,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var factory = new TestDiscriminatorClassifierFactory();
             var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), 1),
                     new JsonDerivedType(typeof(ClassifiedCat), 2),},
                                     "type_id");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
 
@@ -990,13 +990,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var factory = new TestDiscriminatorClassifierFactory();
             var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             var options = CreateOptionsWithClassifier<ClassifiedAnimalBase>(classify);
             string json = """[{"kind":"dog","Name":"Rex","Breed":"Lab"},{"kind":"cat","Name":"Whiskers","Lives":9}]""";
@@ -1109,13 +1109,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var factory = new TestDiscriminatorClassifierFactory();
             var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
@@ -1233,13 +1233,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var animalFactory = new TestDiscriminatorClassifierFactory();
             var animalContext = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier animalClassify = animalFactory.CreateJsonClassifier(animalContext, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier animalClassify = animalFactory.CreateJsonClassifier(animalContext, Serializer.DefaultOptions);
 
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {
@@ -1440,7 +1440,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     var factory = new TestStructuralClassifierFactory();
                     var context = JsonTypeClassifierContextTestExtensions.Create(
-                        typeof(TBase),
+                        typeInfo,
                         Array.Empty<JsonUnionCaseInfo>(),
                         typeInfo.PolymorphismOptions.DerivedTypes.ToList(),
                         typeInfo.PolymorphismOptions.TypeDiscriminatorPropertyName);
@@ -1456,13 +1456,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             var factory = new TestDiscriminatorClassifierFactory();
             var context = JsonTypeClassifierContextTestExtensions.Create(
-                                    typeof(ClassifiedAnimalBase),
+                                    Serializer.GetTypeInfo<ClassifiedAnimalBase>(),
                                     Array.Empty<JsonUnionCaseInfo>(),
                                     new JsonDerivedType[] {
                     new JsonDerivedType(typeof(ClassifiedDog), "dog"),
                     new JsonDerivedType(typeof(ClassifiedCat), "cat"),},
                                     "kind");
-            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, new JsonSerializerOptions { TypeInfoResolver = new DefaultJsonTypeInfoResolver() });
+            JsonTypeClassifier classify = factory.CreateJsonClassifier(context, Serializer.DefaultOptions);
 
             JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
             {

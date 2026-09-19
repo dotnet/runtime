@@ -178,6 +178,15 @@ public:
     }
 
     //------------------------------------------------------------------------
+    // Reverse:
+    //   Reverse the order of the planned copies.
+    //
+    void Reverse()
+    {
+        m_entries.Reverse();
+    }
+
+    //------------------------------------------------------------------------
     // Finalize:
     //   Create IR to perform the full decomposed struct copy as specified by
     //   the entries that were added to the decomposition plan. Add the
@@ -1159,12 +1168,19 @@ private:
         //
         GenTreeFlags GetIndirFlags(var_types type)
         {
-            if (genTypeSize(type) == 1)
+            GenTreeFlags flags = m_indirFlags;
+            if (!varTypeIsGC(type))
             {
-                return m_indirFlags & ~GTF_IND_UNALIGNED;
+                // These accesses are pieces of a whole struct copy, so they do not need to be atomic.
+                flags |= GTF_IND_ALLOW_NON_ATOMIC;
             }
 
-            return m_indirFlags;
+            if (genTypeSize(type) == 1)
+            {
+                flags &= ~GTF_IND_UNALIGNED;
+            }
+
+            return flags;
         }
     };
 
@@ -1763,5 +1779,13 @@ void ReplaceVisitor::CopyBetweenFields(GenTree*                    store,
                     LastUseString(srcLcl, srcRep));
             srcRep++;
         }
+    }
+
+    if ((dstLcl != nullptr) && (srcLcl != nullptr) && (dstLcl->GetLclNum() == srcLcl->GetLclNum()) &&
+        (dstBaseOffs > srcBaseOffs) && (dstBaseOffs - srcBaseOffs < srcLcl->GetLayout(m_compiler)->GetSize()))
+    {
+        // Copy overlapping slices from high to low so stores do not overwrite later sources.
+        JITDUMP("  Reversing copy order for overlapping slices of the same local\n");
+        plan->Reverse();
     }
 }

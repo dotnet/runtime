@@ -2751,10 +2751,6 @@ HRESULT RegMeta::DefineProperty(
     IfFailGo(_SetPropertyProps(*pmdProp, dwPropFlags, dwCPlusTypeFlag, pValue, cchValue, mdSetter,
                               mdGetter, rmdOtherMethods));
 
-    // Add the <property token, typedef token> to the lookup table
-    if (m_pStgdb->m_MiniMd.HasIndirectTable(TBL_Property))
-        IfFailGo( m_pStgdb->m_MiniMd.AddPropertyToLookUpTable(*pmdProp, td) );
-
 ErrExit:
     SetCallerExternal();
 

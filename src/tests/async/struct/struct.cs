@@ -10,7 +10,7 @@ using Xunit;
 
 public class Async2Struct
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Async().Wait();
@@ -31,7 +31,6 @@ public class Async2Struct
         await s.Test();
         AssertEqual(100, s.Value);
     }
-
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEqual(int expected, int val)

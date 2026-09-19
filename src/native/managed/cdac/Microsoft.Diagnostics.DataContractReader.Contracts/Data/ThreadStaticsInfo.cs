@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ThreadStaticsInfo : IData<ThreadStaticsInfo>
 {
     [FieldAddress]
-    public TargetPointer GCTlsIndex { get; }
+    public partial TargetPointer GCTlsIndex { get; }
 
     [FieldAddress]
-    public TargetPointer NonGCTlsIndex { get; }
+    public partial TargetPointer NonGCTlsIndex { get; }
 }

@@ -9,13 +9,13 @@ using Xunit;
 
 public class Async2ExecutionContext
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestDefaultFlow()
     {
         Test().GetAwaiter().GetResult();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestSuppressedFlow()
     {
         TestNoFlowOuter().GetAwaiter().GetResult();
@@ -120,7 +120,7 @@ public class Async2ExecutionContext
         s_local.Value = 123;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static int TestRestoreTier0ContextInOsr()
     {
         return TestRestoreTier0ContextInOsrAsync().GetAwaiter().GetResult();
@@ -169,5 +169,42 @@ public class Async2ExecutionContext
     private static async ValueTask ChangeThenReturnValueTask()
     {
         s_local.Value = 123;
+    }
+
+    private static AsyncLocal<int> s_leakLocal = new AsyncLocal<int>();
+
+    // Regression test: a callee that changes the ExecutionContext and then
+    // suspends must not leak the change to its synchronous caller through the
+    // task-returning thunk. The check must happen in the caller's synchronous
+    // region (before the caller itself suspends); a suspension in the caller
+    // would otherwise mask the leak via the caller's own context restore.
+    [Fact]
+    public static void TestNoExecutionContextLeakOnSuspension()
+    {
+        TestNoExecutionContextLeakOnSuspensionAsync().GetAwaiter().GetResult();
+    }
+
+    private static async Task TestNoExecutionContextLeakOnSuspensionAsync()
+    {
+        s_leakLocal.Value = 100;
+
+        var tcs = new TaskCompletionSource();
+        Task callee = ChangeExecutionContextThenSuspend(tcs.Task);
+
+        // The callee changed the AsyncLocal and then suspended. That change must
+        // not have leaked out to us through the task-returning thunk.
+        Assert.Equal(100, s_leakLocal.Value);
+
+        tcs.SetResult();
+        await callee;
+
+        Assert.Equal(100, s_leakLocal.Value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static async Task ChangeExecutionContextThenSuspend(Task toAwait)
+    {
+        s_leakLocal.Value = 999;
+        await toAwait;
     }
 }

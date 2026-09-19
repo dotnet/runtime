@@ -9,10 +9,6 @@
     <IsPackable>true</IsPackable>
     <IsShipping>false</IsShipping>
     <PackageId>Microsoft.NET.ILLink</PackageId>
-    <!-- Disabling baseline validation since this is a brand new package.
-       Once this package has shipped a stable version, the following line
-       should be removed in order to re-enable validation. -->
-    <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <!-- There are currently no translations, so the satellite assemblies are a waste of space. -->
     <EnableXlfLocalization>false</EnableXlfLocalization>
     <NoWarn Condition="'$(DotNetBuildSourceOnly)' == 'true'">$(NoWarn);CS8524</NoWarn>

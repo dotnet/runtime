@@ -1,8 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
+using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 using X509KeyUsageCSharpStyle=System.Formats.Asn1.Tests.Reader.ReadNamedBitListBase.X509KeyUsageCSharpStyle;
@@ -11,6 +15,230 @@ namespace System.Formats.Asn1.Tests.Reader
 {
     public static class ComprehensiveReadTests
     {
+        public static IEnumerable<object[]> VectorBoundaryLengths
+        {
+            get
+            {
+                yield return new object[] { Vector<byte>.Count - 1 };
+                yield return new object[] { Vector<byte>.Count };
+                yield return new object[] { Vector<byte>.Count + 1 };
+            }
+        }
+
+        public static IEnumerable<object[]> RestrictedAsciiVectorBoundaryData
+        {
+            get
+            {
+                foreach (UniversalTagNumber encodingType in new[] { UniversalTagNumber.NumericString, UniversalTagNumber.PrintableString })
+                {
+                    foreach (object[] length in VectorBoundaryLengths)
+                    {
+                        yield return new object[] { encodingType, length[0] };
+                    }
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> RestrictedAsciiCharacterSets
+        {
+            get
+            {
+                yield return new object[] { UniversalTagNumber.NumericString, "0123456789 " };
+                yield return new object[]
+                {
+                    UniversalTagNumber.PrintableString,
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 '()+,-./:=?",
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> RestrictedAsciiInvalidData
+        {
+            get
+            {
+                byte[] numericInvalid = { (byte)'/', (byte)':', (byte)'A', 0x7F, 0xFF };
+                byte[] printableInvalid = { (byte)'!', (byte)'&', (byte)'*', (byte)';', (byte)'<', (byte)'>', (byte)'@', (byte)'[', (byte)'`', (byte)'{', 0x7F, 0xFF };
+
+                foreach (bool invalidInVector in new[] { true, false })
+                {
+                    foreach (byte invalidValue in numericInvalid)
+                    {
+                        yield return new object[] { UniversalTagNumber.NumericString, invalidInVector, invalidValue };
+                    }
+
+                    foreach (byte invalidValue in printableInvalid)
+                    {
+                        yield return new object[] { UniversalTagNumber.PrintableString, invalidInVector, invalidValue };
+                    }
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(RestrictedAsciiVectorBoundaryData))]
+        public static void ReadRestrictedAsciiString_DoesNotAccessOutsideBounds(
+            UniversalTagNumber encodingType,
+            int payloadLength)
+        {
+            AssertExtensions.LessThan(payloadLength, 128);
+
+            using BoundedMemory<byte> encoded = BoundedMemory.Allocate<byte>(payloadLength + 2);
+            using BoundedMemory<char> destination = BoundedMemory.Allocate<char>(payloadLength);
+
+            encoded.Span[0] = (byte)encodingType;
+            encoded.Span[1] = (byte)payloadLength;
+            encoded.Span.Slice(2).Fill((byte)'0');
+            encoded.MakeReadonly();
+
+            Assert.True(
+                AsnDecoder.TryReadCharacterString(
+                    encoded.Span,
+                    destination.Span,
+                    AsnEncodingRules.DER,
+                    encodingType,
+                    out int bytesConsumed,
+                    out int charsWritten));
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, charsWritten);
+            AssertExtensions.FilledWith('0', destination.Span);
+        }
+
+        [Theory]
+        [MemberData(nameof(RestrictedAsciiCharacterSets))]
+        public static void ReadRestrictedAsciiString_VectorSizedCharacterSet(
+            UniversalTagNumber encodingType,
+            string allowedCharacters)
+        {
+            const int PayloadLength = 128;
+            byte[] encoded = new byte[PayloadLength + 3];
+            char[] expected = new char[PayloadLength];
+            encoded[0] = (byte)encodingType;
+            encoded[1] = 0x81;
+            encoded[2] = PayloadLength;
+
+            for (int i = 0; i < PayloadLength; i++)
+            {
+                char value = allowedCharacters[i % allowedCharacters.Length];
+                encoded[i + 3] = (byte)value;
+                expected[i] = value;
+            }
+
+            Assert.Equal(
+                new string(expected),
+                AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    encodingType,
+                    out int bytesConsumed));
+            Assert.Equal(encoded.Length, bytesConsumed);
+        }
+
+        [Theory]
+        [MemberData(nameof(RestrictedAsciiInvalidData))]
+        public static void ReadRestrictedAsciiString_Invalid(
+            UniversalTagNumber encodingType,
+            bool invalidInVector,
+            byte invalidValue)
+        {
+            int invalidIndex = invalidInVector ? 1 : Vector<byte>.Count;
+            int payloadLength = Vector<byte>.Count + 1;
+            AssertExtensions.LessThan(payloadLength, 128);
+
+            byte[] encoded = new byte[payloadLength + 2];
+            encoded[0] = (byte)encodingType;
+            encoded[1] = (byte)payloadLength;
+            encoded.AsSpan(2).Fill((byte)'0');
+            encoded[invalidIndex + 2] = invalidValue;
+
+            AsnContentException exception = Assert.Throws<AsnContentException>(
+                () => AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    encodingType,
+                    out _));
+            DecoderFallbackException fallback = Assert.IsType<DecoderFallbackException>(exception.InnerException);
+            Assert.Equal(invalidIndex, fallback.Index);
+        }
+
+        [Theory]
+        [MemberData(nameof(VectorBoundaryLengths))]
+        public static void ReadVisibleString_DoesNotAccessOutsideBounds(int payloadLength)
+        {
+            AssertExtensions.LessThan(payloadLength, 128);
+
+            using BoundedMemory<byte> encoded = BoundedMemory.Allocate<byte>(payloadLength + 2);
+            using BoundedMemory<char> destination = BoundedMemory.Allocate<char>(payloadLength);
+
+            encoded.Span[0] = (byte)UniversalTagNumber.VisibleString;
+            encoded.Span[1] = (byte)payloadLength;
+            encoded.Span.Slice(2).Fill((byte)'A');
+            encoded.MakeReadonly();
+
+            Assert.True(
+                AsnDecoder.TryReadCharacterString(
+                    encoded.Span,
+                    destination.Span,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.VisibleString,
+                    out int bytesConsumed,
+                    out int charsWritten));
+            Assert.Equal(encoded.Length, bytesConsumed);
+            Assert.Equal(payloadLength, charsWritten);
+            AssertExtensions.FilledWith('A', destination.Span);
+        }
+
+        [Fact]
+        public static void ReadVisibleString_VectorSizedRange()
+        {
+            const int PayloadLength = 128;
+            byte[] encoded = new byte[PayloadLength + 3];
+            char[] expected = new char[PayloadLength];
+            encoded[0] = (byte)UniversalTagNumber.VisibleString;
+            encoded[1] = 0x81;
+            encoded[2] = PayloadLength;
+
+            for (int i = 0; i < PayloadLength; i++)
+            {
+                byte value = i % 2 == 0 ? (byte)0x20 : (byte)0x7E;
+                encoded[i + 3] = value;
+                expected[i] = (char)value;
+            }
+
+            Assert.Equal(
+                new string(expected),
+                AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.VisibleString,
+                    out int bytesConsumed));
+            Assert.Equal(encoded.Length, bytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(0x1F, 10)]
+        [InlineData(0x7F, 10)]
+        [InlineData(0x1F, 128)]
+        [InlineData(0x7F, 128)]
+        public static void ReadVisibleString_Invalid(byte invalidValue, int invalidIndex)
+        {
+            const int PayloadLength = 129;
+            byte[] encoded = new byte[PayloadLength + 3];
+            encoded[0] = (byte)UniversalTagNumber.VisibleString;
+            encoded[1] = 0x81;
+            encoded[2] = PayloadLength;
+            encoded.AsSpan(3).Fill((byte)'A');
+            encoded[invalidIndex + 3] = invalidValue;
+
+            AsnContentException exception = Assert.Throws<AsnContentException>(
+                () => AsnDecoder.ReadCharacterString(
+                    encoded,
+                    AsnEncodingRules.DER,
+                    UniversalTagNumber.VisibleString,
+                    out _));
+            DecoderFallbackException fallback = Assert.IsType<DecoderFallbackException>(exception.InnerException);
+            Assert.Equal(invalidIndex, fallback.Index);
+        }
+
         [Fact]
         public static void ReadMicrosoftComCert()
         {
