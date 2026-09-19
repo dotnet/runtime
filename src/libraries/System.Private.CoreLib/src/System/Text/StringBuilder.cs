@@ -1057,8 +1057,20 @@ namespace System.Text
         /// </summary>
         /// <param name="value">The UTF-32-encoded code unit to append.</param>
         /// <returns>A reference to this instance after the append operation has completed.</returns>
-        public unsafe StringBuilder Append(Rune value)
+        public StringBuilder Append(Rune value)
         {
+            if (value.IsBmp)
+            {
+                return Append((char)value.Value);
+            }
+
+            return AppendRune(value);
+        }
+
+        private unsafe StringBuilder AppendRune(Rune value)
+        {
+            Debug.Assert(!value.IsBmp);
+
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
@@ -1372,8 +1384,20 @@ namespace System.Text
         /// <param name="index">The position in this instance where insertion begins.</param>
         /// <param name="value">The value to insert.</param>
         /// <returns>A reference to this instance after the insert operation has completed.</returns>
-        public unsafe StringBuilder Insert(int index, Rune value)
+        public StringBuilder Insert(int index, Rune value)
         {
+            if (value.IsBmp)
+            {
+                return Insert(index, (char)value.Value);
+            }
+
+            return InsertRune(index, value);
+        }
+
+        private unsafe StringBuilder InsertRune(int index, Rune value)
+        {
+            Debug.Assert(!value.IsBmp);
+
             // Convert value to span
             ReadOnlySpan<char> valueChars = value.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
 
@@ -2320,7 +2344,17 @@ namespace System.Text
         /// A reference to this instance with <paramref name="oldRune"/> replaced by <paramref name="newRune"/> in the range
         /// from <paramref name="startIndex"/> to <paramref name="startIndex"/> + <paramref name="count"/> - 1.
         /// </returns>
-        public unsafe StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        public StringBuilder Replace(Rune oldRune, Rune newRune, int startIndex, int count)
+        {
+            if (oldRune.IsBmp && newRune.IsBmp)
+            {
+                return Replace((char)oldRune.Value, (char)newRune.Value, startIndex, count);
+            }
+
+            return ReplaceRune(oldRune, newRune, startIndex, count);
+        }
+
+        private unsafe StringBuilder ReplaceRune(Rune oldRune, Rune newRune, int startIndex, int count)
         {
             // Convert oldRune to span
             ReadOnlySpan<char> oldChars = oldRune.AsSpan(stackalloc char[Rune.MaxUtf16CharsPerRune]);
