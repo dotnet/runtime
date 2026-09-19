@@ -713,6 +713,15 @@ ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 	;
 }
 
+static
+inline
+void
+ep_rt_session_stopping (EventPipeSessionID session_id, uint64_t session_mask)
+{
+	(void)session_id;
+	(void)session_mask;
+}
+
 /*
  * Arrays.
  */

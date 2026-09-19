@@ -6,9 +6,14 @@
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-types.h>
 #include <eventpipe/ep.h>
+#include <eventpipe/ep-event.h>
+#include <eventpipe/ep-session.h>
 #include <eventpipe/ep-stack-contents.h>
 #include <eventpipe/ep-rt.h>
 #include "threadsuspend.h"
+#ifdef FEATURE_PGO
+#include "pgo.h"
+#endif
 
 ep_rt_lock_handle_t _ep_rt_coreclr_config_lock_handle;
 CrstStatic _ep_rt_coreclr_config_lock;
@@ -167,6 +172,49 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	ThreadSuspend::RestartEE (true /* SuspendSucceeded */);
 
 	return;
+}
+
+void
+ep_rt_coreclr_session_stopping (EventPipeSessionID session_id, uint64_t session_mask)
+{
+	STATIC_CONTRACT_NOTHROW;
+#if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
+	// Flush block-count PGO only into the session that enabled the JitInstrumentationData events
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, session_mask))
+	{
+		// Mark this thread as a rundown thread bound to the stopping session so the events emitted by the
+		// flush are routed to that single session (ep_session_write_event) instead of broadcast to every
+		// enabled session; the marker is cleared after the flush, including on exception. Dereferencing the
+		// session is safe here: this path is single-threaded (PERFTRACING_DISABLE_THREADS), so nothing frees
+		// it before section2 disables it.
+		EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
+		EventPipeThread *thread = ep_thread_get_or_create ();
+		if (thread != NULL)
+		{
+			ep_thread_set_as_rundown_thread (thread, session);
+			EX_TRY
+			{
+				PgoManager::EmitInstrumentationDataToEventPipe ();
+			}
+			EX_CATCH { }
+			EX_END_CATCH
+			ep_thread_set_as_rundown_thread (thread, NULL);
+		}
+	}
+#elif defined(FEATURE_PGO) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
+	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
+	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
+		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, session_mask))
+	{
+		PORTABILITY_ASSERT ("Interpreter block-count PGO flush is not implemented for multithreaded WASM (requires PERFTRACING_DISABLE_THREADS).");
+	}
+	(void)session_id;
+#else
+	(void)session_id;
+	(void)session_mask;
+#endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 
 #endif /* ENABLE_PERFTRACING */
