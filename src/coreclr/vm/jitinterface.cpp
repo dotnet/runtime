@@ -11905,7 +11905,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, false, &m_CodeHeader, &m_CodeHeaderRW,
         &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
@@ -13239,7 +13239,23 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, &m_CodeHeader,
+    bool isTier1Code = false;
+#ifdef FEATURE_TIERED_COMPILATION
+    PrepareCodeConfig* config = m_pPrepareCodeConfig;
+    _ASSERTE(config != nullptr);
+
+    // The JIT may change the requested optimization level before allocMem, but
+    // the VM updates the NativeCodeVersion's tier only after the JIT completes.
+    // Use the requested tier here and account for a switch to MinOpt separately.
+    NativeCodeVersion::OptimizationTier optimizationTier =
+        config->GetCodeVersion().GetOptimizationTier();
+    isTier1Code =
+        !config->JitSwitchedToMinOpt() &&
+        (optimizationTier == NativeCodeVersion::OptimizationTier1 ||
+         optimizationTier == NativeCodeVersion::OptimizationTier1OSR);
+#endif // FEATURE_TIERED_COMPILATION
+
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, isTier1Code, &m_CodeHeader,
         &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
 
     m_moduleBase = m_pCodeHeap->GetModuleBase();

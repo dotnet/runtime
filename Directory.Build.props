@@ -16,6 +16,7 @@
     <!-- Propagate the configuration and platform to project references. When building in VS, this defaults to true.
          Explicitly setting it to false ensures projects are built in the corresponding configuration both in VS and on the command line. -->
     <ShouldUnsetParentConfigurationAndPlatform>false</ShouldUnsetParentConfigurationAndPlatform>
+    <EnableSourceLink Condition="'$(ROSLYN_CACHE_PATH)' != ''">false</EnableSourceLink>
   </PropertyGroup>
 
   <!-- We don't have RepoRoot or RepositoryEngineeringDir available at this point -->
