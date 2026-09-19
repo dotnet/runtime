@@ -44,19 +44,28 @@ namespace System
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsOpenBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
+#if NET
+        public static bool IsAndroid => OperatingSystem.IsAndroid();
+        public static bool IsiOS => OperatingSystem.IsIOS();
+        public static bool IstvOS => OperatingSystem.IsTvOS();
+        public static bool IsMacCatalyst => OperatingSystem.IsMacCatalyst();
+        public static bool IsBrowser => OperatingSystem.IsBrowser();
+        public static bool IsWasi => OperatingSystem.IsWasi();
+#else
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
-        public static bool IsNotAndroid => !IsAndroid;
-        public static bool IsAndroidX86 => IsAndroid && IsX86Process;
-        public static bool IsNotAndroidX86 => !IsAndroidX86;
         public static bool IsiOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS"));
         public static bool IstvOS => RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS"));
         public static bool IsMacCatalyst => RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST"));
+        public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
+        public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
+#endif
+        public static bool IsNotAndroid => !IsAndroid;
+        public static bool IsAndroidX86 => IsAndroid && IsX86Process;
+        public static bool IsNotAndroidX86 => !IsAndroidX86;
         public static bool IsNotMacCatalyst => !IsMacCatalyst;
         public static bool Isillumos => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ILLUMOS"));
         public static bool IsSolaris => RuntimeInformation.IsOSPlatform(OSPlatform.Create("SOLARIS"));
         public static bool IsSunOS => Isillumos || IsSolaris;
-        public static bool IsBrowser => RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER"));
-        public static bool IsWasi => RuntimeInformation.IsOSPlatform(OSPlatform.Create("WASI"));
         public static bool IsWasm => IsBrowser || IsWasi;
         public static bool IsNotBrowser => !IsBrowser;
         public static bool IsNotWasi => !IsWasi;
