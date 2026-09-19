@@ -1074,6 +1074,8 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
+
+    virtual uintptr_t* GetPendingBridgeHandles(size_t* count) PURE_VIRTUAL;
 };
 
 #ifdef WRITE_BARRIER_CHECK
