@@ -3925,7 +3925,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	}
 
-	if (csignature->call_convention == MONO_CALL_VARARG)
+	if (target_method && csignature->call_convention == MONO_CALL_VARARG)
 		csignature = mono_method_get_signature_checked (target_method, image, token, generic_context, error);
 
 	if (need_null_check) {
