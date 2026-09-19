@@ -404,8 +404,6 @@ namespace System.Memory.Tests
             Assert.Equal(0, memory.Length);
             Assert.True(buffer.TryGet(ref start, out memory));
             Assert.Equal(0, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
-            Assert.Equal(0, memory.Length);
             Assert.False(buffer.TryGet(ref start, out memory));
         }
 
@@ -511,8 +509,6 @@ namespace System.Memory.Tests
             SequencePosition start = buffer.Start;
             Assert.True(buffer.TryGet(ref start, out ReadOnlyMemory<T> memory));
             Assert.Equal(100, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
-            Assert.Equal(0, memory.Length);
             Assert.False(buffer.TryGet(ref start, out memory));
         }
 
@@ -527,9 +523,48 @@ namespace System.Memory.Tests
             SequencePosition start = buffer.Start;
             Assert.True(buffer.TryGet(ref start, out ReadOnlyMemory<T> memory));
             Assert.Equal(100, memory.Length);
-            Assert.True(buffer.TryGet(ref start, out memory));
-            Assert.Equal(0, memory.Length);
             Assert.False(buffer.TryGet(ref start, out memory));
+        }
+
+        [Fact]
+        public void TryGetReturnsFalseAtEndPosition()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/27769
+            // TryGet must return false (not true with an empty memory) when the position
+            // is at the end of the sequence, since no segment is being returned.
+
+            // Single segment array
+            var arrayBuffer = new ReadOnlySequence<T>(new T[10]);
+            SequencePosition endPos = arrayBuffer.End;
+            Assert.False(arrayBuffer.TryGet(ref endPos, out ReadOnlyMemory<T> memory));
+            Assert.True(memory.IsEmpty);
+
+            endPos = arrayBuffer.GetPosition(10);
+            Assert.False(arrayBuffer.TryGet(ref endPos, out memory));
+            Assert.True(memory.IsEmpty);
+
+            // Empty sequence
+            ReadOnlySequence<T> emptyBuffer = ReadOnlySequence<T>.Empty;
+            endPos = emptyBuffer.End;
+            Assert.False(emptyBuffer.TryGet(ref endPos, out memory));
+            Assert.True(memory.IsEmpty);
+
+            endPos = emptyBuffer.Start;
+            Assert.False(emptyBuffer.TryGet(ref endPos, out memory));
+            Assert.True(memory.IsEmpty);
+
+            // Multi-segment
+            var bufferSegment1 = new BufferSegment<T>(new T[10]);
+            BufferSegment<T> bufferSegment2 = bufferSegment1.Append(new T[10]);
+            var multiSegmentBuffer = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment2, 10);
+
+            endPos = multiSegmentBuffer.End;
+            Assert.False(multiSegmentBuffer.TryGet(ref endPos, out memory));
+            Assert.True(memory.IsEmpty);
+
+            endPos = multiSegmentBuffer.GetPosition(20);
+            Assert.False(multiSegmentBuffer.TryGet(ref endPos, out memory));
+            Assert.True(memory.IsEmpty);
         }
 
         #endregion
@@ -568,8 +603,8 @@ namespace System.Memory.Tests
                 sizes.Add(memory.Length);
             }
 
-            Assert.Equal(2, sizes.Count);
-            Assert.Equal(new[] { 100, 0 }, sizes);
+            Assert.Equal(1, sizes.Count);
+            Assert.Equal(new[] { 100 }, sizes);
         }
 
         [Fact]
@@ -586,8 +621,8 @@ namespace System.Memory.Tests
                 sizes.Add(memory.Length);
             }
 
-            Assert.Equal(2, sizes.Count);
-            Assert.Equal(new[] { 100, 0 }, sizes);
+            Assert.Equal(1, sizes.Count);
+            Assert.Equal(new[] { 100 }, sizes);
         }
 
         #endregion
