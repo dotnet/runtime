@@ -189,7 +189,6 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Console\tests\System.Console.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.IO.FileSystem.Tests\System.IO.FileSystem.Tests.csproj" />
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.Ports\tests\System.IO.Ports.Tests.csproj" />
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' == 'android' or '$(TargetsLinuxBionic)' == 'true') and '$(TargetArchitecture)' == 'arm' and '$(RunDisabledAndroidTests)' != 'true'">

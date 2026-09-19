@@ -78,15 +78,17 @@
              Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
     <Compile Include="System\Net\Security\TlsOperationStatus.cs" />
     <Compile Include="System\Net\Security\TlsSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != ''" />
     <Compile Include="System\Net\Security\TlsBufferSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != ''" />
     <Compile Include="System\Net\Security\TlsSocketSession.cs"
-             Condition="'$(TargetPlatformIdentifier)' != '' and '$(UseAndroidCrypto)' != 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' != ''" />
+    <Compile Include="System\Net\Security\TlsSession.Android.cs"
+             Condition="'$(UseAndroidCrypto)' == 'true'" />
     <Compile Include="System\Net\Security\TlsSession.OpenSsl.cs"
              Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(UseAndroidCrypto)' != 'true' and '$(UseAppleCrypto)' != 'true'" />
     <Compile Include="System\Net\Security\TlsSession.Stub.cs"
-             Condition="'$(TargetPlatformIdentifier)' == '' or '$(UseAndroidCrypto)' == 'true'" />
+             Condition="'$(TargetPlatformIdentifier)' == ''" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />
