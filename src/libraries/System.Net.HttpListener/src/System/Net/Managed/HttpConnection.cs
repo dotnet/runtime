@@ -423,6 +423,13 @@ namespace System.Net
             {
                 used++;
                 byte b = buffer[i];
+                if (_lineState == LineState.CR && b != 10)
+                {
+                    // A CR must be immediately followed by a LF. Reject a bare CR, as http.sys does,
+                    // rather than dropping it and joining the text on either side of it.
+                    throw new ProtocolViolationException();
+                }
+
                 if (b == 13)
                 {
                     _lineState = LineState.CR;
