@@ -31,6 +31,12 @@ namespace System.Net.Security
             // Enum value names should match the cipher suite name, so we just parse the
             string cipherSuite = Interop.AndroidCrypto.SSLStreamGetCipherSuite(sslContext);
             MapCipherSuite(Enum.Parse<TlsCipherSuite>(cipherSuite));
+
+            // The Java/Conscrypt SSLEngine API does not expose a reliable signal for whether the
+            // TLS session was resumed (SSLSession has no isReused()). The only heuristic would be
+            // caching and comparing SSLSession.getId() across the handshake, which is fragile.
+            // Leave TlsResumed as false so that the peer certificate is always revalidated on this
+            // backend, matching the safe fallback.
         }
     }
 }
