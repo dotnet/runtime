@@ -35,7 +35,7 @@ namespace System
         public static unsafe bool IsProcessElevated()
         {
             // Browser does not have the concept of an elevated process
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
+            if (OperatingSystem.IsBrowser())
             {
                 return false;
             }

@@ -751,7 +751,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.array
     public class Program
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/133193", typeof(System.PlatformDetection), nameof(System.PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(System.PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134265", typeof(System.PlatformDetection), nameof(System.PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(System.PlatformDetection.IsBrowser))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
@@ -847,7 +847,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.array
     public class Program
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/133193", typeof(System.PlatformDetection), nameof(System.PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(System.PlatformDetection.IsBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134265", typeof(System.PlatformDetection), nameof(System.PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(System.PlatformDetection.IsBrowser))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());
