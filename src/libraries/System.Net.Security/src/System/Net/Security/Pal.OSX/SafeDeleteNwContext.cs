@@ -99,10 +99,7 @@ namespace System.Net.Security
         private bool _disposed;
         private int _challengeCallbackCompleted;  // 0 = not called, 1 = called
         private IntPtr _selectedClientCertificate;  // Cached result from challenge callback
-        // True when the transport reported EOF before NW signalled a clean close_notify;
-        // any pending or future app receive should surface as IOException(net_io_eof) rather than 0.
-        private volatile bool _transportEofUnclean;
-
+        private volatile bool _transportEofWithinTlsRecord;
         private ResettableValueTaskSource _appWriteTcs = new ResettableValueTaskSource()
         {
             CancellationAction = target =>
@@ -131,6 +128,13 @@ namespace System.Net.Security
         public static bool IsNetworkFrameworkAvailable => IsSwitchEnabled && s_isNetworkFrameworkAvailable.Value;
 
         internal bool ClientCertificateRequested => _challengeCallbackCompleted == 1 && _selectedClientCertificate != IntPtr.Zero;
+        internal bool IsServer => SslAuthenticationOptions.IsServer;
+
+        internal void SetServerTargetHost(string targetHost)
+        {
+            Debug.Assert(IsServer);
+            SslAuthenticationOptions.TargetHost = targetHost;
+        }
 
         internal async Task<Exception?> HandshakeAsync(CancellationToken cancellationToken)
         {
@@ -154,6 +158,7 @@ namespace System.Net.Security
 
                         using CancellationTokenSource handshakeReadCts = CancellationTokenSource.CreateLinkedTokenSource(
                             _shutdownCts.Token, _handshakeReadCts.Token);
+                        TlsRecordFramingTracker recordTracker = default;
 
                         while (!_shutdownCts.IsCancellationRequested)
                         {
@@ -189,6 +194,11 @@ namespace System.Net.Security
 
                             if (bytesRead > 0)
                             {
+                                if (!handshakePhase)
+                                {
+                                    recordTracker.Track(readBuffer.Span.Slice(0, bytesRead));
+                                }
+
                                 // Process the read data
                                 await WriteInboundWireDataAsync(readBuffer.Slice(0, bytesRead)).ConfigureAwait(false);
 
@@ -203,21 +213,12 @@ namespace System.Net.Security
                             }
                             else
                             {
-                                // EOF reached, signal completion
                                 _transportReadTcs.TrySetResult(final: true);
-
-                                // If NW hasn't already signalled a clean TLS close, treat this as
-                                // an unclean EOF (possibly mid-frame) and fault any pending app
-                                // receive directly. NW's pending nw_connection_receive may never
-                                // complete once the framer has buffered a partial TLS record.
-                                if (!_connectionClosedTcs.Task.IsCompleted)
+                                _transportEofWithinTlsRecord = recordTracker.IsMidRecord;
+                                if (_transportEofWithinTlsRecord)
                                 {
-                                    _transportEofUnclean = true;
                                     _appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
-                                    _handshakeCompletionSource.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
                                 }
-
-                                // TODO: can this race with actual handshake completion?
                                 Interop.NetworkFramework.Tls.NwConnectionCancel(ConnectionHandle);
                                 break;
                             }
@@ -399,9 +400,8 @@ namespace System.Net.Security
                         if (error->ErrorDomain == (int)Interop.NetworkFramework.NetworkFrameworkErrorDomain.POSIX &&
                             error->ErrorCode == (int)Interop.NetworkFramework.NWErrorDomainPOSIX.OperationCanceled)
                         {
-                            if (thisContext._transportEofUnclean)
+                            if (thisContext._transportEofWithinTlsRecord)
                             {
-                                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(thisContext, "Connection read cancelled after unclean transport EOF");
                                 thisContext._appReceiveBufferTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_io_eof)));
                                 return;
                             }
@@ -627,7 +627,6 @@ namespace System.Net.Security
                 var disposedException = new ObjectDisposedException(nameof(SafeDeleteNwContext));
 
                 _appReceiveBufferTcs.TrySetException(disposedException);
-                _transportReadTcs.TrySetException(disposedException);
                 _handshakeCompletionSource.TrySetException(disposedException);
 
                 // Complete any pending writes with disposed exception
@@ -861,6 +860,52 @@ namespace System.Net.Security
             }
         }
 
+        // Tracks encrypted TLS record boundaries across the transport reads so a transport EOF
+        // landing mid-record can be told apart from one on a record boundary. Only the two length
+        // bytes of the 5-byte header are retained, so no buffer is needed to straddle reads.
+        private struct TlsRecordFramingTracker
+        {
+            private int _headerBytesSeen;
+            private int _pendingRecordLength;
+            private int _recordBytesRemaining;
+
+            public readonly bool IsMidRecord => _headerBytesSeen != 0 || _recordBytesRemaining != 0;
+
+            public void Track(ReadOnlySpan<byte> data)
+            {
+                while (!data.IsEmpty)
+                {
+                    if (_recordBytesRemaining > 0)
+                    {
+                        int consumed = Math.Min(_recordBytesRemaining, data.Length);
+                        _recordBytesRemaining -= consumed;
+                        data = data.Slice(consumed);
+                        continue;
+                    }
+
+                    byte value = data[0];
+                    data = data.Slice(1);
+
+                    // TLSCiphertext header: type(1) + version(2) + length(2).
+                    if (_headerBytesSeen == 3)
+                    {
+                        _pendingRecordLength = value << 8;
+                    }
+                    else if (_headerBytesSeen == 4)
+                    {
+                        _pendingRecordLength |= value;
+                    }
+
+                    if (++_headerBytesSeen == TlsFrameHelper.HeaderSize)
+                    {
+                        _recordBytesRemaining = _pendingRecordLength;
+                        _pendingRecordLength = 0;
+                        _headerBytesSeen = 0;
+                    }
+                }
+            }
+        }
+
         public override bool IsInvalid => ConnectionHandle is null || ConnectionHandle.IsInvalid || (_framerHandle?.IsInvalid ?? true);
 
         [UnmanagedCallersOnly]
@@ -943,6 +988,7 @@ namespace System.Net.Security
             Exception ex = Interop.NetworkFramework.CreateExceptionForNetworkFrameworkError(in error);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"TLS handshake failed with error: {ex.Message}");
             _handshakeCompletionSource.TrySetResult(ExceptionDispatchInfo.SetCurrentStackTrace(ex));
+            _appReceiveBufferTcs.TrySetException(ex);
             // The framer may never start now; release anyone waiting to deliver inbound data.
             _framerReadyTcs.TrySetResult();
         }

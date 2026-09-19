@@ -222,6 +222,18 @@ static nw_parameters_t BuildTlsParameters(int32_t isServer, void* context, const
     {
         // Without this the server never sends a CertificateRequest, so SslServerAuthenticationOptions
         // .ClientCertificateRequired would be silently ignored and the peer would stay unauthenticated.
+        //
+        // This is stricter than the other PALs. .NET treats ClientCertificateRequired as "request a
+        // certificate and let RemoteCertificateValidationCallback decide", so a callback may accept a
+        // client that sent none (SslPolicyErrors.RemoteCertificateNotAvailable). Network.framework
+        // enforces the requirement itself and aborts the handshake with errSSLCertificateRequired
+        // before any verify block runs, so there is no point at which managed code can accept the
+        // absence. sec_protocol_options_set_peer_authentication_optional() expresses exactly the
+        // semantics .NET wants, but it is declared API_UNAVAILABLE(macos, ios, watchos, tvos), and
+        // per its own documentation it is disregarded whenever peer_authentication_required is set.
+        //
+        // Net effect: with Network.framework a server that requires a client certificate rejects a
+        // client that provides none, even when the validation callback would have allowed it.
         sec_protocol_options_set_peer_authentication_required(sec_options, true);
     }
 
@@ -827,8 +839,30 @@ PALEXPORT void AppleCryptoNative_NwConnectionReceive(nw_connection_t connection,
     });
 }
 
-// This wil get TLS details after handshake is finished
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength)
+static bool TryCopyMetadataString(const char* source, char* destination, int32_t* destinationLength)
+{
+    int32_t destinationCapacity = *destinationLength;
+    *destinationLength = 0;
+
+    if (source == NULL)
+    {
+        return true;
+    }
+
+    size_t sourceLength = strlen(source);
+    if (destinationCapacity <= 0 || sourceLength >= (size_t)destinationCapacity)
+    {
+        return false;
+    }
+
+    memcpy(destination, source, sourceLength);
+    destination[sourceLength] = '\0';
+    *destinationLength = (int32_t)sourceLength;
+    return true;
+}
+
+// This will get TLS details after handshake is finished
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* protocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength, char* serverName, int32_t* serverNameLength)
 {
     nw_protocol_metadata_t meta = nw_connection_copy_protocol_metadata(connection, _tlsDefinition);
 
@@ -841,15 +875,24 @@ PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection
     sec_protocol_metadata_t secMeta = nw_tls_copy_sec_protocol_metadata(meta);
 
     const char* alpn = sec_protocol_metadata_get_negotiated_protocol(secMeta);
-    if (alpn != NULL)
+    if (!TryCopyMetadataString(alpn, negotiatedAlpn, negotiatedAlpnLength))
     {
-        strcpy(negotiatedAlpn, alpn);
-        *negotiatedAlpnLength = (int32_t)strlen(alpn);
+        LOG_ERROR(context, "Negotiated ALPN exceeds the supplied buffer");
+        nw_release(meta);
+        sec_release(secMeta);
+        return -1;
     }
-    else
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    const char* negotiatedServerName = sec_protocol_metadata_get_server_name(secMeta);
+#pragma clang diagnostic pop
+    if (!TryCopyMetadataString(negotiatedServerName, serverName, serverNameLength))
     {
-        negotiatedAlpn[0] = '\0';
-        *negotiatedAlpnLength = 0;
+        LOG_ERROR(context, "Server name exceeds the supplied buffer");
+        nw_release(meta);
+        sec_release(secMeta);
+        return -1;
     }
 
     tls_protocol_version_t version = sec_protocol_metadata_get_negotiated_tls_protocol_version(secMeta);
