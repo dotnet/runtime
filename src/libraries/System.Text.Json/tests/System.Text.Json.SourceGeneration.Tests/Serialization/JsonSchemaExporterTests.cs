@@ -73,6 +73,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IntEnum))]
         [JsonSerializable(typeof(StringEnum))]
         [JsonSerializable(typeof(FlagsStringEnum))]
+        [JsonSerializable(typeof(FlagsEnumWithNameAttributes))]
         [JsonSerializable(typeof(EnumWithNameAttributes))]
         // Nullable<T> types
         [JsonSerializable(typeof(bool?))]
