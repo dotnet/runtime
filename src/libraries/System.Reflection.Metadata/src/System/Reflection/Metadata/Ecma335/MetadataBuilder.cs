@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata.Ecma335
             var heapSizes = ImmutableArray.Create(
                 _userStringBuilder.Count,
                 stringHeapBuilder.Count,
-                _blobHeapSize,
+                _blobBuilder.Count,
                 _guidBuilder.Count);
 
             var sizes = new MetadataSizes(GetRowCounts(), externalRowCounts, heapSizes, metadataVersionByteCount, isStandaloneDebugMetadata);
