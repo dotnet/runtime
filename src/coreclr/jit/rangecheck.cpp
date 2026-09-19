@@ -1617,6 +1617,16 @@ void RangeCheck::MergeEdgeAssertionsWorker(Compiler*                        comp
         }
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
+
+        // A checked-bound VN can be negative on paths that skip its allocation.
+        // Symbolic limits require a non-negative base; the preferred bound is the length being checked.
+        if (limit.IsBinOpArray() && (limit.vn != preferredBoundVN) &&
+            !((limit.vn == curAssertion.GetOp2().GetVN()) && curAssertion.GetOp2().IsVNNeverNegative()) &&
+            !comp->vnStore->IsVNNeverNegative(limit.vn))
+        {
+            continue;
+        }
+
 #ifdef DEBUG
         if (comp->verbose)
         {
