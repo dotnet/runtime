@@ -1040,6 +1040,78 @@ namespace System.Tests
             Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
+        [Fact]
+        public static void WriteBigEndianTest()
+        {
+            byte[] destination = new byte[9];
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, destination));
+            Assert.Equal<byte>([0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x00], destination);
+
+            destination = new byte[9];
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, destination, 1));
+            Assert.Equal<byte>([0x00, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0], destination);
+
+            destination = new byte[9];
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, destination.AsSpan(1)));
+            Assert.Equal<byte>([0x00, 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0], destination);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, (byte[])null!));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, new byte[7]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, new byte[9], 2));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, Span<byte>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, new byte[9], 10));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, (byte[])null!, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, (byte[])null!, 1));
+        }
+
+        [Fact]
+        public static void WriteLittleEndianTest()
+        {
+            byte[] destination = new byte[9];
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, destination));
+            Assert.Equal<byte>([0xF0, 0xDE, 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12, 0x00], destination);
+
+            destination = new byte[9];
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, destination, 1));
+            Assert.Equal<byte>([0x00, 0xF0, 0xDE, 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12], destination);
+
+            destination = new byte[9];
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, destination.AsSpan(1)));
+            Assert.Equal<byte>([0x00, 0xF0, 0xDE, 0xBC, 0x9A, 0x78, 0x56, 0x34, 0x12], destination);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, (byte[])null!));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, new byte[7]));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, new byte[9], 2));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, Span<byte>.Empty));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, new byte[9], 10));
+            AssertExtensions.Throws<ArgumentException>("destination", () => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, (byte[])null!, 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, (byte[])null!, 1));
+        }
+
+        [Fact]
+        public static void WriteEndianDoesNotAllocateTest()
+        {
+            byte[] destination = new byte[8];
+            long allocatedBytes = 0;
+
+            // The first iteration warms up; only the second is asserted.
+            for (int i = 0; i < 2; i++)
+            {
+                allocatedBytes = GC.GetAllocatedBytesForCurrentThread();
+
+                BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, destination);
+                BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, destination, 0);
+                BinaryIntegerHelper<ulong>.WriteBigEndian(0x123456789ABCDEF0UL, destination.AsSpan());
+                BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, destination);
+                BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, destination, 0);
+                BinaryIntegerHelper<ulong>.WriteLittleEndian(0x123456789ABCDEF0UL, destination.AsSpan());
+
+                allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedBytes;
+            }
+
+            Assert.Equal(0, allocatedBytes);
+        }
+
         //
         // IBinaryNumber
         //
