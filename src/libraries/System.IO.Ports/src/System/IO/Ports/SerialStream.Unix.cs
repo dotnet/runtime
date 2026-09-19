@@ -390,6 +390,8 @@ namespace System.IO.Ports
 
         internal bool IsOpen => _handle != null;
 
+        internal bool NeedDispose => _handle != null && !_handle.IsClosed;
+
 
         // Flush dumps the contents of the serial driver's internal read and write buffers.
         // We actually expose the functionality for each, but fulfilling Stream's contract
