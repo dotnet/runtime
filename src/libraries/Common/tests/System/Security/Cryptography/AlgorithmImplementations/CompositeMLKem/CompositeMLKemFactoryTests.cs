@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Formats.Asn1;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -39,16 +41,35 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void IsAlgorithmSupported_AgreesWithPlatform(CompositeMLKemAlgorithm algorithm)
         {
-            // No platform implements Composite ML-KEM yet.
-            AssertExtensions.FalseExpression(CompositeMLKem.IsAlgorithmSupported(algorithm));
+            bool supported =
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
+                MLKem.IsSupported &&
+                CompositeMLKemTestData.ExecuteComponentFunc(
+                    algorithm,
+                    rsa => true,
+                    ecdh => ecdh.IsSecg,
+                    xdh => xdh.IsX25519 && X25519DiffieHellman.IsSupported);
+
+            Assert.Equal(supported, CompositeMLKem.IsAlgorithmSupported(algorithm));
         }
 
-        [Theory]
-        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void AlgorithmMatches_GenerateKey(CompositeMLKemAlgorithm algorithm)
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void IsSupported_InitializesCrypto()
         {
-            using CompositeMLKem kem = CompositeMLKem.GenerateKey(algorithm);
-            Assert.Equal(algorithm, kem.Algorithm);
+            CompositeMLKemAlgorithm algorithm = CompositeMLKemAlgorithm.MLKem768WithX25519;
+            string arg = CompositeMLKem.IsAlgorithmSupported(algorithm) ? "1" : "0";
+
+            // This ensures that Composite ML-KEM is the first cryptographic algorithm touched in the process, which kicks off
+            // the initialization of the crypto layer on some platforms. Running in a remote executor ensures no other
+            // test has pre-initialized anything.
+            RemoteExecutor.Invoke(static (string isSupportedStr) =>
+            {
+                CompositeMLKemAlgorithm algorithm = CompositeMLKemAlgorithm.MLKem768WithX25519;
+                bool isSupported = isSupportedStr == "1";
+                return CompositeMLKem.IsAlgorithmSupported(algorithm) == isSupported ?
+                    RemoteExecutor.SuccessExitCode :
+                    0;
+            }, arg).Dispose();
         }
 
         [Theory]
@@ -69,6 +90,24 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void ImportEncapsulationKey_Success(CompositeMLKemTestVector vector)
+        {
+            CompositeMLKemTestHelpers.AssertImportEncapsulationKey(
+                import =>
+                {
+                    using (CompositeMLKem kem = import())
+                    {
+                        Assert.Equal(vector.Algorithm, kem.Algorithm);
+                        AssertExtensions.SequenceEqual(vector.EncapsulationKey, kem.ExportEncapsulationKey());
+                        Assert.Throws<CryptographicException>(() => kem.ExportDecapsulationKey());
+                    }
+                },
+                vector.Algorithm,
+                vector.EncapsulationKey.ToArray());
+        }
+
+        [Theory]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void ImportDecapsulationKey_InvalidSizes(CompositeMLKemAlgorithm algorithm)
         {
@@ -83,6 +122,24 @@ namespace System.Security.Cryptography.Tests
             AssertImportBadDecapsulationKey(
                 algorithm,
                 new byte[CompositeMLKemTestData.GetMLKemAlgorithm(algorithm).PrivateSeedSizeInBytes]);
+        }
+
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void ImportDecapsulationKey_Success(CompositeMLKemTestVector vector)
+        {
+            CompositeMLKemTestHelpers.AssertImportDecapsulationKey(
+                import =>
+                {
+                    using (CompositeMLKem kem = import())
+                    {
+                        Assert.Equal(vector.Algorithm, kem.Algorithm);
+                        AssertExtensions.SequenceEqual(vector.EncapsulationKey, kem.ExportEncapsulationKey());
+                        AssertExtensions.SequenceEqual(vector.DecapsulationKey, kem.ExportDecapsulationKey());
+                    }
+                },
+                vector.Algorithm,
+                vector.DecapsulationKey.ToArray());
         }
 
         [Fact]
@@ -195,6 +252,20 @@ namespace System.Security.Cryptography.Tests
             AssertPkcs8PrivateKeyImportThrows(TruncateLastByte(CreateEmptyPkcs8PrivateKey()));
         }
 
+        [Theory]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void ImportPkcs8PrivateKey_AllowsBerEncoding(CompositeMLKemTestVector vector)
+        {
+            byte[] ber = AsnUtils.ConvertDerToNonDerBer(vector.Pkcs8);
+
+            using (CompositeMLKem kem = CompositeMLKem.ImportPkcs8PrivateKey(ber))
+            {
+                Assert.Equal(vector.Algorithm, kem.Algorithm);
+                AssertExtensions.SequenceEqual(vector.EncapsulationKey, kem.ExportEncapsulationKey());
+                AssertExtensions.SequenceEqual(vector.DecapsulationKey, kem.ExportDecapsulationKey());
+            }
+        }
+
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires AES, which is not supported on Browser.")]
         public static void ImportEncryptedPkcs8PrivateKey_TrailingData()
@@ -262,6 +333,54 @@ namespace System.Security.Cryptography.Tests
             CompositeMLKemTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
                 import => Assert.Throws<CryptographicException>(() => import("PLACEHOLDER", encryptedPkcs8)),
                 CompositeMLKemTestHelpers.EncryptionPasswordType.Byte);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires AES, which is not supported on Browser.")]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void ImportEncryptedPkcs8PrivateKey_BytePassword_Success(CompositeMLKemTestVector vector)
+        {
+            byte[] encryptedPkcs8 =  CompositeMLKemTestHelpers.CreateEncryptedPkcs8PrivateKey(
+                CompositeMLKemTestHelpers.AlgorithmToOid(vector.Algorithm),
+                vector.DecapsulationKey.ToArray(),
+                new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 42),
+                CompositeMLKemTestHelpers.EncryptionPasswordType.Byte);
+
+            CompositeMLKemTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
+                import =>
+                {
+                    using (CompositeMLKem kem = import("PLACEHOLDER", encryptedPkcs8))
+                    {
+                        Assert.Equal(vector.Algorithm, kem.Algorithm);
+                        AssertExtensions.SequenceEqual(vector.EncapsulationKey, kem.ExportEncapsulationKey());
+                        AssertExtensions.SequenceEqual(vector.DecapsulationKey, kem.ExportDecapsulationKey());
+                    }
+                },
+                CompositeMLKemTestHelpers.EncryptionPasswordType.Byte);
+        }
+
+        [Theory]
+        [SkipOnPlatform(TestPlatforms.Browser, "Password-based encryption requires AES, which is not supported on Browser.")]
+        [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLKemTestData))]
+        public static void ImportEncryptedPkcs8PrivateKey_CharPassword_Success(CompositeMLKemTestVector vector)
+        {
+            byte[] encryptedPkcs8 = CompositeMLKemTestHelpers.CreateEncryptedPkcs8PrivateKey(
+                CompositeMLKemTestHelpers.AlgorithmToOid(vector.Algorithm),
+                vector.DecapsulationKey.ToArray(),
+                new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 42),
+                CompositeMLKemTestHelpers.EncryptionPasswordType.Char);
+
+            CompositeMLKemTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
+                import =>
+                {
+                    using (CompositeMLKem kem = import("PLACEHOLDER", encryptedPkcs8))
+                    {
+                        Assert.Equal(vector.Algorithm, kem.Algorithm);
+                        AssertExtensions.SequenceEqual(vector.EncapsulationKey, kem.ExportEncapsulationKey());
+                        AssertExtensions.SequenceEqual(vector.DecapsulationKey, kem.ExportDecapsulationKey());
+                    }
+                },
+                CompositeMLKemTestHelpers.EncryptionPasswordType.Char);
         }
 
         [Fact]
