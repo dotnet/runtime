@@ -90,6 +90,7 @@ class DebuggerEval;
 class DebuggerControllerQueue;
 class DebuggerController;
 class Crst;
+class ExternalMemoryHandle;
 
 typedef CUnorderedArray<DebuggerControllerPatch *, 17> PATCH_UNORDERED_ARRAY;
 template<class T> void DeleteInteropSafe(T *p);
@@ -3364,6 +3365,24 @@ public:
  * type arguments <string,List<int>> you get string followed by List followed by int.
  * ------------------------------------------------------------------------ */
 
+// Owns an interop-safe buffer and the ExternalMemoryHandle registration that keeps references in
+// the buffer visible to the GC.
+class DebuggerExternalMemoryOwner
+{
+public:
+    DebuggerExternalMemoryOwner(MethodTable *pMT, BYTE *pMemory);
+    ~DebuggerExternalMemoryOwner();
+
+    BYTE *GetMemory() const
+    {
+        return m_pMemory;
+    }
+
+private:
+    ExternalMemoryHandle *m_pHandle;
+    BYTE                 *m_pMemory;
+};
+
 class DebuggerEval
 {
 public:
@@ -3397,6 +3416,7 @@ public:
     PCODE                              m_targetCodeAddr;
     ARG_SLOT                           m_result[NUMBER_RETURNVALUE_SLOTS];
     TypeHandle                         m_resultType;
+    DebuggerExternalMemoryOwner       *m_externalMemoryOwner;
     SIZE_T                             m_arrayRank;
     FUNC_EVAL_ABORT_TYPE               m_aborting;          // Has an abort been requested, and what type.
     bool                               m_aborted;           // Was this eval aborted
@@ -3407,6 +3427,8 @@ public:
     DebuggerEvalBreakpointInfoSegment* m_bpInfoSegment;
 
     DebuggerEval(T_CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEvalInfo, DebuggerEvalBreakpointInfoSegment* bpInfoSegmentRX);
+
+    BYTE *CreateExternalMemory(MethodTable *pMT, SIZE_T size);
 
     bool Init()
     {
@@ -3443,8 +3465,13 @@ public:
     {
         WRAPPER_NO_CONTRACT;
 
+        if (m_externalMemoryOwner != NULL)
+        {
+            DeleteInteropSafe(m_externalMemoryOwner);
+        }
+
         // Clean up any temporary buffers used to send the argument type information.  These were allocated
-        // in respnse to a GET_BUFFER message
+        // in response to a GET_BUFFER message.
         DebuggerIPCE_FuncEvalArgData *argData = GetArgData();
         for (unsigned int i = 0; i < m_argCount; i++)
         {
@@ -3466,6 +3493,7 @@ public:
         m_completed = false;
 #endif
     }
+
 };
 
 /* ------------------------------------------------------------------------ *

@@ -531,7 +531,13 @@ public class TestPlaceholderTarget : Target
     }
     #endregion subclass reader helpers
 
-    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes) => throw new NotImplementedException();
+    public override TargetPointer ReadPointerFromSpan(ReadOnlySpan<byte> bytes)
+    {
+        ulong value = PointerSize == sizeof(uint)
+            ? ReadFromSpan<uint>(bytes.Slice(0, sizeof(uint)), IsLittleEndian)
+            : ReadFromSpan<ulong>(bytes.Slice(0, sizeof(ulong)), IsLittleEndian);
+        return new TargetPointer(value);
+    }
 
     public override Target.TypeInfo GetTypeInfo(string typeName)
     {

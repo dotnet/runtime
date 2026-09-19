@@ -357,7 +357,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
     // =====================================================================
 
     private const int MaxGCRefMapBlobLength = 252;
-    private const int MaxByRefLikeRecursionDepth = 16;
 
     private byte[]? ComputeArgGCRefMapBlobCore(MethodDescHandle methodDesc)
     {
@@ -456,27 +455,14 @@ internal sealed class CallingConvention_1 : ICallingConvention
 
                             if (arg.IsByRefLikeStruct)
                             {
-                                // ByRefLike value type (Span<T>, ReadOnlySpan<T>,
-                                // ByteRef, any ref struct). Mirrors the runtime's
-                                // ByRefPointerOffsetsReporter (siginfo.cpp): walk
-                                // the type's instance fields and emit INTERIOR
-                                // for each ELEMENT_TYPE_BYREF field at its
-                                // in-struct offset. ELEMENT_TYPE_PTR / IntPtr /
-                                // void* fields are explicitly NOT reported
-                                // (so QCallTypeHandle, ObjectHandleOnStack,
-                                // StringHandleOnStack contribute nothing).
-                                //
-                                // For uncached generic instantiations (Span<int>
-                                // whose closed MT isn't loaded), the field
-                                // layout lives on the open generic (Span<T>).
-                                // The byref/ptr distinction is preserved at the
-                                // FieldDesc level regardless of which T closes
-                                // the type.
-                                EmitByRefLikeInterior(
-                                    rts,
-                                    arg.TypeInfo,
-                                    arg.Offset,
-                                    tokens);
+                                ITypeHandle? layoutType =
+                                    arg.TypeInfo.ExactTypeHandle ?? arg.TypeInfo.GenericTypeDefinition;
+                                if (layoutType is not null)
+                                {
+                                    ByRefPointerOffsetsReporter reporter = new(_target);
+                                    foreach (ulong offset in reporter.Find(layoutType))
+                                        tokens[checked(arg.Offset + (int)offset)] = GCRefMapToken.Interior;
+                                }
                                 emitted = true;
                             }
 
@@ -607,103 +593,6 @@ internal sealed class CallingConvention_1 : ICallingConvention
         catch
         {
             return GenericContextLoc.None;
-        }
-    }
-
-    // Mirror of runtime ByRefPointerOffsetsReporter (siginfo.cpp): walk the
-    // instance fields of a ByRefLike value type and emit one INTERIOR token
-    // per ELEMENT_TYPE_BYREF field at its offset within the unboxed struct
-    // (so absolute offset is baseOffset + fieldOffset). Recurses into nested
-    // ByRefLike value-type fields. ELEMENT_TYPE_PTR / IntPtr / void* fields
-    // are deliberately skipped to match runtime behavior for QCall-style
-    // handle wrappers.
-    private void EmitByRefLikeInterior(
-        IRuntimeTypeSystem rts,
-        SignatureTypeInfo byRefLikeType,
-        int baseOffset,
-        SortedDictionary<int, GCRefMapToken> tokens)
-    {
-        // Bound recursion just in case the data is corrupt / cycles in a dump.
-        EmitByRefLikeInteriorRecursive(
-            rts,
-            byRefLikeType,
-            baseOffset,
-            tokens,
-            depth: 0);
-    }
-
-    private void EmitByRefLikeInteriorRecursive(
-        IRuntimeTypeSystem rts,
-        SignatureTypeInfo byRefLikeType,
-        int baseOffset,
-        SortedDictionary<int, GCRefMapToken> tokens,
-        int depth)
-    {
-        if (depth > MaxByRefLikeRecursionDepth)
-            return;
-
-        ITypeHandle? layoutType = byRefLikeType.ExactTypeHandle ?? byRefLikeType.GenericTypeDefinition;
-        if (layoutType is null)
-            return;
-
-        IEnumerable<TargetPointer> fieldDescs;
-        try
-        {
-            fieldDescs = rts.GetFieldDescList(layoutType);
-        }
-        catch
-        {
-            return;
-        }
-
-        foreach (TargetPointer fdPtr in fieldDescs)
-        {
-            bool isStatic;
-            CorElementType fieldType;
-            uint fieldOffset;
-            try
-            {
-                isStatic = rts.IsFieldDescStatic(fdPtr);
-                if (isStatic)
-                    continue;
-                fieldType = rts.GetFieldDescType(fdPtr);
-                fieldOffset = rts.GetFieldDescOffset(fdPtr, fieldDef: null);
-            }
-            catch
-            {
-                continue;
-            }
-
-            int absOffset = baseOffset + (int)fieldOffset;
-
-            if (fieldType == CorElementType.Byref)
-            {
-                tokens[absOffset] = GCRefMapToken.Interior;
-            }
-            else if (fieldType == CorElementType.ValueType)
-            {
-                SignatureTypeInfo nestedType;
-                try
-                {
-                    nestedType = GetFieldTypeInfo(fdPtr, byRefLikeType);
-                }
-                catch
-                {
-                    continue;
-                }
-
-                ITypeHandle? nestedProbe =
-                    nestedType.ExactTypeHandle ?? nestedType.GenericTypeDefinition;
-                if (nestedProbe is null || !rts.IsByRefLike(nestedProbe))
-                    continue;
-
-                EmitByRefLikeInteriorRecursive(
-                    rts,
-                    nestedType,
-                    absOffset,
-                    tokens,
-                    depth + 1);
-            }
         }
     }
 
