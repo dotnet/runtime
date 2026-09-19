@@ -58,7 +58,7 @@ PALEXPORT void AppleCryptoNative_NwConnectionCancel(nw_connection_t connection);
 
 PALEXPORT int32_t AppleCryptoNative_NwFramerDeliverInput(nw_framer_t framer, void* context, const uint8_t* data, int dataLength, CompletionCallback completionCallback);
 
-PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength);
+PALEXPORT int32_t AppleCryptoNative_GetConnectionInfo(nw_connection_t connection, void* context, PAL_SslProtocol* pProtocol, uint16_t* pCipherSuiteOut, char* negotiatedAlpn, int32_t* negotiatedAlpnLength, char* serverName, int32_t* serverNameLength);
 
 #ifdef __cplusplus
 }

@@ -52,7 +52,7 @@ internal static partial class Interop
 
             // gets TLS connection information
             [LibraryImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_GetConnectionInfo")]
-            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr context, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength);
+            internal static unsafe partial int GetConnectionInfo(SafeNwHandle connection, IntPtr context, out SslProtocols pProtocol, out TlsCipherSuite pCipherSuiteOut, byte* negotiatedAlpn, ref int negotiatedAlpnLength, byte* serverName, ref int serverNameLength);
         }
 
         // Status enumeration for Network Framework TLS operations

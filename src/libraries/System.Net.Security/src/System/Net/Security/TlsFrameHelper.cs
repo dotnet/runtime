@@ -768,6 +768,8 @@ namespace System.Net.Security
             };
         }
 
+        internal static string? DecodeSni(ReadOnlySpan<byte> bytes) => DecodeString(bytes);
+
         private static string? DecodeString(ReadOnlySpan<byte> bytes)
         {
             // https://tools.ietf.org/html/rfc3546#section-3.1
