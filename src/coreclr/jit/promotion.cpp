@@ -98,20 +98,20 @@ struct Access
     weight_t CountCallArgsWtd       = 0;
     weight_t CountRegCallArgsWtd    = 0;
 
-#ifdef DEBUG
     // Number of times this access is the source of a store.
     unsigned CountStoreSource = 0;
     // Number of times this access is the destination of a store.
     unsigned CountStoreDestination = 0;
-    unsigned CountReturns          = 0;
     // Number of times this is stored by being passed as the retbuf.
     // These stores need a readback
     unsigned CountPassedAsRetbuf = 0;
 
     weight_t CountStoreSourceWtd      = 0;
     weight_t CountStoreDestinationWtd = 0;
-    weight_t CountReturnsWtd          = 0;
     weight_t CountPassedAsRetbufWtd   = 0;
+#ifdef DEBUG
+    unsigned CountReturns    = 0;
+    weight_t CountReturnsWtd = 0;
 #endif
 
     Access(unsigned offset, var_types accessType, ClassLayout* layout)
@@ -146,15 +146,15 @@ struct Access
 
 enum class AccessKindFlags : uint32_t
 {
-    None             = 0,
-    IsCallArg        = 1,
-    IsRegCallArg     = 2,
-    IsStoredFromCall = 4,
-    IsCallRetBuf     = 8,
-#ifdef DEBUG
+    None               = 0,
+    IsCallArg          = 1,
+    IsRegCallArg       = 2,
+    IsStoredFromCall   = 4,
+    IsCallRetBuf       = 8,
     IsStoreSource      = 16,
     IsStoreDestination = 32,
-    IsReturned         = 64,
+#ifdef DEBUG
+    IsReturned = 64,
 #endif
 };
 
@@ -297,7 +297,11 @@ void AggregateInfoMap::Add(AggregateInfo* agg)
 //
 AggregateInfo* AggregateInfoMap::Lookup(unsigned lclNum)
 {
-    assert(lclNum < m_numLocals);
+    // Temporaries introduced while replacing uses were not promotion candidates.
+    if (lclNum >= m_numLocals)
+    {
+        return nullptr;
+    }
     unsigned index = m_lclNumToAggregateIndex[lclNum];
 
     if (index == UINT_MAX)
@@ -402,7 +406,6 @@ public:
             access->CountStoredFromCallWtd += weight;
         }
 
-#ifdef DEBUG
         if ((flags & AccessKindFlags::IsCallRetBuf) != AccessKindFlags::None)
         {
             access->CountPassedAsRetbuf++;
@@ -421,6 +424,7 @@ public:
             access->CountStoreDestinationWtd += weight;
         }
 
+#ifdef DEBUG
         if ((flags & AccessKindFlags::IsReturned) != AccessKindFlags::None)
         {
             access->CountReturns++;
@@ -707,12 +711,22 @@ public:
         weight_t countOverlappedCallArgWtd        = 0;
         weight_t countOverlappedStoredFromCallWtd = 0;
 
-        bool overlap = false;
+        unsigned countVectorCopies    = 0;
+        weight_t countVectorCopiesWtd = 0;
+        unsigned primitiveAccessCount = 1;
+        bool     costVectorCopies =
+            (genTypeSize(access.AccessType) < TARGET_POINTER_SIZE) && varTypeIsSIMD(layout->GetRegisterType());
         for (const Access& otherAccess : m_accesses)
         {
             if (&otherAccess == &access)
             {
                 continue;
+            }
+
+            if (otherAccess.AccessType != TYP_STRUCT)
+            {
+                primitiveAccessCount++;
+                costVectorCopies &= genTypeSize(otherAccess.AccessType) < TARGET_POINTER_SIZE;
             }
 
             if (!otherAccess.Overlaps(access.Offset, genTypeSize(access.AccessType)))
@@ -730,6 +744,15 @@ public:
 
             countOverlappedCallArgWtd += otherAccess.CountCallArgsWtd;
             countOverlappedStoredFromCallWtd += otherAccess.CountStoredFromCallWtd;
+
+            if (costVectorCopies && (otherAccess.GetAccessSize() == layout->GetSize()))
+            {
+                // Call-result read-backs are already costed separately.
+                countVectorCopies += otherAccess.CountStoreSource + otherAccess.CountStoreDestination +
+                                     otherAccess.CountPassedAsRetbuf - otherAccess.CountStoredFromCall;
+                countVectorCopiesWtd += otherAccess.CountStoreSourceWtd + otherAccess.CountStoreDestinationWtd +
+                                        otherAccess.CountPassedAsRetbufWtd - otherAccess.CountStoredFromCallWtd;
+            }
 
             if (otherAccess.CountRegCallArgs > 0)
             {
@@ -851,7 +874,18 @@ public:
         costWith += countWriteBacksWtd * writeBackCost;
         sizeWith += countWriteBacks * writeBackSize;
 
-        // Overlapping stores are decomposable so we don't cost them as
+        // Charge for fragmenting vector-sized copies into sub-native fields.
+        // Keep smaller splits and mixed-width copies unpenalized.
+        unsigned nativeParts = layout->GetSize() / TARGET_POINTER_SIZE;
+        if (costVectorCopies && (primitiveAccessCount > nativeParts))
+        {
+            // Amortize the original vector move over its fields.
+            weight_t extraMoves = 1 - (weight_t)genTypeSize(access.AccessType) / layout->GetSize();
+            costWith += countVectorCopiesWtd * extraMoves * COST_REG_ACCESS_CYCLES;
+            sizeWith += countVectorCopies * extraMoves * COST_REG_ACCESS_SIZE;
+        }
+
+        // Other overlapping stores are decomposable so we don't cost them as
         // being more expensive than their unpromoted counterparts (i.e. we
         // don't consider them at all). However, we should do something more
         // clever here, since:
@@ -1535,7 +1569,7 @@ private:
         AccessKindFlags flags = AccessKindFlags::None;
         if (lcl->OperIsLocalStore())
         {
-            INDEBUG(flags |= AccessKindFlags::IsStoreDestination);
+            flags |= AccessKindFlags::IsStoreDestination;
 
             if (lcl->AsLclVarCommon()->Data()->gtEffectiveVal()->IsCall())
             {
@@ -1574,12 +1608,12 @@ private:
             }
         }
 
-#ifdef DEBUG
         if (user->OperIsStore() && (user->Data()->gtEffectiveVal() == lcl))
         {
             flags |= AccessKindFlags::IsStoreSource;
         }
 
+#ifdef DEBUG
         if (user->OperIs(GT_RETURN, GT_SWIFT_ERROR_RET))
         {
             flags |= AccessKindFlags::IsReturned;
@@ -2150,9 +2184,10 @@ void ReplaceVisitor::InsertPreStatementWriteBacks()
                         continue;
                     }
 
-                    if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()))
+                    if (m_replacer->CanReplaceCallArgWithFieldListOfReplacements(call, &arg, node->AsLclVarCommon()) ||
+                        m_replacer->CanCopyCallArgFromReplacements(call, &arg, node->AsLclVarCommon()))
                     {
-                        // Register arg that can be decomposed into FIELD_LIST.
+                        // The argument can be sourced directly from replacements.
                         continue;
                     }
 
@@ -2408,8 +2443,8 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 
 //------------------------------------------------------------------------
 // ReplaceCallArgWithFieldList:
-//   Handle a call that may pass a struct local with replacements as the
-//   retbuf.
+//   Source a struct argument from its replacements, either as a FIELD_LIST
+//   or by materializing the outgoing copy before global morph.
 //
 // Parameters:
 //   call    - The call
@@ -2417,8 +2452,7 @@ GenTreeFieldList* ReplaceVisitor::CreateFieldListForStructLocal(GenTreeLclVarCom
 //   argNode - The argument node
 //
 // Returns:
-//   True if the call argument was replaced with a FIELD_LIST; false if the
-//   argument could not be represented as a FIELD_LIST.
+//   True if the argument was replaced; false if write-backs are required.
 //
 bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** use, GenTreeLclVarCommon* argNode)
 {
@@ -2431,6 +2465,23 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
 
     if (!CanReplaceCallArgWithFieldListOfReplacements(call, callArg, argNode))
     {
+        if (CanCopyCallArgFromReplacements(call, callArg, argNode))
+        {
+            // Materialize the outgoing copy while the replacement values are
+            // available. Global morph can pass this temporary at its last use
+            // instead of making another copy from synchronized source storage.
+            unsigned temp = m_compiler->lvaGrabTemp(true DEBUGARG("Decomposed struct argument"));
+            m_compiler->lvaSetStruct(temp, argNode->GetLayout(m_compiler), false);
+            GenTree* copy = m_compiler->gtNewStoreLclVarNode(temp, argNode);
+            HandleStructStore(&copy, nullptr);
+            GenTree* value = m_compiler->gtNewLclvNode(temp, TYP_STRUCT);
+            value->gtFlags |= GTF_VAR_DEATH;
+            Statement* copyStmt = m_compiler->fgNewStmtFromTree(copy);
+            m_compiler->fgInsertStmtBefore(m_currentBlock, m_currentStmt, copyStmt);
+            *use          = value;
+            m_madeChanges = true;
+            return true;
+        }
         return false;
     }
 
@@ -2443,6 +2494,43 @@ bool ReplaceVisitor::ReplaceCallArgWithFieldList(GenTreeCall* call, GenTree** us
     *use          = fieldList;
     m_madeChanges = true;
     return true;
+}
+
+//------------------------------------------------------------------------
+// CanCopyCallArgFromReplacements:
+//   Check whether to materialize an outgoing by-value argument before morph.
+//   Limit this to a standalone direct call with one argument, a dirty non-GC
+//   whole-local source, and a remainder needing at most one primitive copy.
+//   A dying source can already be passed without copying.
+//
+bool ReplaceVisitor::CanCopyCallArgFromReplacements(GenTreeCall* call, CallArg* callArg, GenTreeLclVarCommon* lcl)
+{
+    if (!lcl->OperIs(GT_LCL_VAR) || !callArg->AbiInfo.IsPassedByReference() || (call->gtArgs.CountArgs() != 1) ||
+        (call->gtCallType != CT_USER_FUNC) || (call != m_currentStmt->GetRootNode()) || (callArg->GetNode() != lcl) ||
+        call->IsTailCall() || lcl->GetLayout(m_compiler)->HasGCPtr() ||
+        m_currentBlock->HasPotentialEHSuccs(m_compiler) || IsPromotedStructLocalDying(lcl))
+    {
+        return false;
+    }
+
+    AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
+    // Whole-local arguments can reuse the remainder computed during promotion.
+    unsigned remainderSize = agg->UnpromotedMax - agg->UnpromotedMin;
+    bool canCopyRemainder  = (remainderSize == 0) || (isPow2(remainderSize) && (remainderSize <= TARGET_POINTER_SIZE));
+#ifdef FEATURE_SIMD
+    canCopyRemainder |= (remainderSize == 16) && (m_compiler->getPreferredVectorByteLength() >= 16);
+#endif
+    if (canCopyRemainder)
+    {
+        for (const Replacement& rep : agg->Replacements)
+        {
+            if (rep.NeedsWriteBack)
+            {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 //------------------------------------------------------------------------
