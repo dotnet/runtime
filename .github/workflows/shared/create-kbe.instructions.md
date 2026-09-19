@@ -39,13 +39,17 @@ responsible for:
 
 ## Search for an existing KBE
 
-Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
-these variations in order, scanning the first ~10 results of each. GitHub
-best-match ranking can place noisier hits above the correct one.
+Search open `dotnet/runtime` issues with the `Known Build Error` label.
 
-For every `search_issues` call in this flow, include `user` in the requested
-`fields`, even when the author is not otherwise needed. The integrity gateway
-uses `user.login` to recognize trusted bots before filtering search results.
+Use the issue search and full-issue read transports available in the caller's
+environment. If using `search_issues`, include `user` in the requested fields so
+integrity filtering can recognize trusted bot authors.
+
+Regardless of transport, inspect the full issue before deciding whether it is a
+semantic/non-exact match. Never infer a match from search metadata, and never
+conclude that a query missed until every returned candidate has been read.
+GitHub best-match ranking can place noisier hits above the correct one, so try
+these variations in order and inspect all returned candidates from each:
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -112,14 +116,16 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If a KBE-labeled search returns a `[Filtered]` marker, treat it as a likely
-existing-KBE hit and record
+If the issue search fails, or a full candidate read fails or returns a
+`[Filtered]` marker for any candidate from a KBE-oriented search, treat it as a
+likely existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-If variation 5 returns a `[Filtered]` marker, record
-`linked-tracker: integrity-filtered, needs human review` for cross-linking, but
-do not treat it as a KBE substitute.
+If a full read fails or returns a `[Filtered]` marker for any plain tracker
+candidate, stop the search and record
+`skipped: integrity-filtered tracker candidate, needs human review`. Do not
+continue to issue creation.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
@@ -133,7 +139,8 @@ it does not end the inspection.
 The existing-KBE search above is open-only, so a `[ci-scan]` KBE already closed
 as fixed, duplicate, or stale is invisible and a recurring signature gets
 re-filed from scratch. After the open search misses, also scan recently-closed
-candidates:
+candidates, then read every returned candidate before comparing its contents or
+`closed_at`:
 
 - `is:issue is:closed label:"Known Build Error" "<assertion-or-test-name>" closed:>=<30-days-ago>`
 - `is:issue is:closed in:title "<test-name>" closed:>=<30-days-ago>` to catch a
@@ -186,7 +193,7 @@ fall back to the post-close recurrence rule above.
 
 ## Search for an area-team tracker
 
-Search for a plain tracker with:
+Search for a plain tracker, then read every returned candidate:
 
 - `is:issue is:open in:title "<test-name>"`
 - `in:body "<test-file-path>"`
@@ -207,6 +214,10 @@ A plain tracker is **not** a KBE substitute. Build Analysis only matches
 <a id="search-existing-prs"></a>
 
 ## Search for existing PRs already handling the failure
+
+Use the PR search and full-PR read transports available in the caller's
+environment. Do not decide that a PR handles the failure from search metadata
+alone.
 
 ### Existing test-disable PR
 
@@ -305,7 +316,8 @@ so explicitly in the KBE body with both the fix PR `#<n>` and the post-fix build
 For every `<n>` you plan to embed into source, issue bodies, or PR bodies
 (`Linked KBE: #<n>`, `Tracking: dotnet/runtime#<n>`,
 `[ActiveIssue("...issues/<n>")]`, inline comments referencing an issue, and so
-on), verify that `dotnet/runtime#<n>` is still open before reusing it.
+on), read `dotnet/runtime#<n>` in full and verify that it is still open before
+reusing it.
 
 If the issue does not exist or is no longer open, stop and treat it as an
 unhandled case that needs human review.
