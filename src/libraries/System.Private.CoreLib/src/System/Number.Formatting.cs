@@ -276,15 +276,6 @@ namespace System
             internal static readonly string?[] Value = new string[SmallNumberCacheLength];
         }
 
-        // Keep the pair's alignment equal to char so every char span can be safely reinterpreted.
-        [StructLayout(LayoutKind.Sequential, Pack = sizeof(char))]
-        private readonly struct DigitPair
-        {
-            public readonly uint Value;
-
-            public DigitPair(uint value) => Value = value;
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Span<char> GetFreshStringSpan(string result)
         {
@@ -1773,29 +1764,29 @@ namespace System
                 NegativeInt32ToDecStr(value, -1, NumberFormatInfo.CurrentInfo.NegativeSign);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void UInt32ToDecChars(uint value, Span<char> buffer)
+        private static void UInt32ToDecChars<TChar>(uint value, Span<TChar> buffer) where TChar : unmanaged, IUtfChar<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(!buffer.IsEmpty);
 
-            int leadingDigits = 2 - (buffer.Length & 1);
-            Span<DigitPair> pairs = MemoryMarshal.Cast<char, DigitPair>(buffer.Slice(leadingDigits));
+            int leadingDigits = buffer.Length & 1;
 
-            for (int i = pairs.Length - 1; (uint)i < (uint)pairs.Length; i--)
+            if (leadingDigits != 0)
             {
+                int pos = UInt32ToDecChars<TChar>(buffer, buffer.Length, value, buffer.Length);
+                Debug.Assert(pos == 0);
+                return;
+            }
+
+            for (int i = buffer.Length; i > 2;)
+            {
+                i -= 2;
                 (value, uint remainder) = Math.DivRem(value, 100);
-                pairs[i] = new DigitPair(GetTwoDigitsChars(remainder));
+                WriteTwoDigits(remainder, buffer.Slice(i, 2));
             }
 
-            if (leadingDigits == 1)
-            {
-                Debug.Assert(value < 10);
-                buffer[0] = (char)(value + '0');
-            }
-            else
-            {
-                Debug.Assert(value < 100);
-                WriteTwoDigits(value, buffer.Slice(0, 2));
-            }
+            Debug.Assert(value < 100);
+            WriteTwoDigits(value, buffer);
         }
 
         private static string NegativeInt32ToDecStr(int value, int digits, string sNegative)
@@ -2025,11 +2016,10 @@ namespace System
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             int bufferLength = FormattingHelpers.CountDigits(value);
-            if (bufferLength <= destination.Length)
+            if ((uint)bufferLength <= (uint)destination.Length)
             {
                 charsWritten = bufferLength;
-                int pos = UInt32ToDecChars<TChar>(destination, bufferLength, value);
-                Debug.Assert(pos == 0);
+                UInt32ToDecChars(value, destination.Slice(0, bufferLength));
                 return true;
             }
 
@@ -2043,13 +2033,18 @@ namespace System
 
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
-            if (bufferLength <= destination.Length)
+            if ((uint)bufferLength <= (uint)destination.Length)
             {
                 charsWritten = bufferLength;
-                int pos = digits > countedDigits ?
-                    UInt32ToDecChars<TChar>(destination, bufferLength, value, digits) :
-                    UInt32ToDecChars<TChar>(destination, bufferLength, value);
-                Debug.Assert(pos == 0);
+                if (digits > countedDigits)
+                {
+                    int pos = UInt32ToDecChars<TChar>(destination, bufferLength, value, digits);
+                    Debug.Assert(pos == 0);
+                }
+                else
+                {
+                    UInt32ToDecChars(value, destination.Slice(0, bufferLength));
+                }
                 return true;
             }
 
@@ -2283,8 +2278,9 @@ namespace System
 #if TARGET_64BIT
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #endif
-        private static void UInt64ToDecChars(ulong value, Span<char> buffer)
+        private static void UInt64ToDecChars<TChar>(ulong value, Span<TChar> buffer) where TChar : unmanaged, IUtfChar<TChar>
         {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             Debug.Assert(!buffer.IsEmpty);
 
 #if TARGET_32BIT
@@ -2297,25 +2293,24 @@ namespace System
             }
             UInt32ToDecChars((uint)value, buffer);
 #else
-            int leadingDigits = 2 - (buffer.Length & 1);
-            Span<DigitPair> pairs = MemoryMarshal.Cast<char, DigitPair>(buffer.Slice(leadingDigits));
+            int leadingDigits = buffer.Length & 1;
 
-            for (int i = pairs.Length - 1; (uint)i < (uint)pairs.Length; i--)
+            if (leadingDigits != 0)
             {
+                int pos = UInt64ToDecChars<TChar>(buffer, buffer.Length, value, buffer.Length);
+                Debug.Assert(pos == 0);
+                return;
+            }
+
+            for (int i = buffer.Length; i > 2;)
+            {
+                i -= 2;
                 (value, ulong remainder) = Math.DivRem(value, 100);
-                pairs[i] = new DigitPair(GetTwoDigitsChars((uint)remainder));
+                WriteTwoDigits((uint)remainder, buffer.Slice(i, 2));
             }
 
-            if (leadingDigits == 1)
-            {
-                Debug.Assert(value < 10);
-                buffer[0] = (char)(value + '0');
-            }
-            else
-            {
-                Debug.Assert(value < 100);
-                WriteTwoDigits((uint)value, buffer.Slice(0, 2));
-            }
+            Debug.Assert(value < 100);
+            WriteTwoDigits((uint)value, buffer);
 #endif
         }
 
@@ -2420,11 +2415,10 @@ namespace System
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
 
             int bufferLength = FormattingHelpers.CountDigits(value);
-            if (bufferLength <= destination.Length)
+            if ((uint)bufferLength <= (uint)destination.Length)
             {
                 charsWritten = bufferLength;
-                int pos = UInt64ToDecChars<TChar>(destination, bufferLength, value);
-                Debug.Assert(pos == 0);
+                UInt64ToDecChars(value, destination.Slice(0, bufferLength));
                 return true;
             }
 
@@ -2436,13 +2430,18 @@ namespace System
         {
             int countedDigits = FormattingHelpers.CountDigits(value);
             int bufferLength = Math.Max(digits, countedDigits);
-            if (bufferLength <= destination.Length)
+            if ((uint)bufferLength <= (uint)destination.Length)
             {
                 charsWritten = bufferLength;
-                int pos = digits > countedDigits ?
-                    UInt64ToDecChars<TChar>(destination, bufferLength, value, digits) :
-                    UInt64ToDecChars<TChar>(destination, bufferLength, value);
-                Debug.Assert(pos == 0);
+                if (digits > countedDigits)
+                {
+                    int pos = UInt64ToDecChars<TChar>(destination, bufferLength, value, digits);
+                    Debug.Assert(pos == 0);
+                }
+                else
+                {
+                    UInt64ToDecChars(value, destination.Slice(0, bufferLength));
+                }
                 return true;
             }
 
