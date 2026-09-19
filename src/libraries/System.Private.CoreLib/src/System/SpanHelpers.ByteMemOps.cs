@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System
 {
@@ -25,6 +26,19 @@ namespace System
 #endif
         private const nuint ZeroMemoryNativeThreshold = 1024;
 
+#if (TARGET_AMD64 || TARGET_ARM64) && !MONO
+        // Blocks are copied with a constant-length Memmove, which the JIT unrolls into "load the whole
+        // block into registers, then store it" - which is what makes a block correct under any overlap.
+        private const nuint OverlappedBlockSize = 64;
+
+#if TARGET_ARM64
+        // arm64 has no 'rep movsb' cliff and its platform memmove is well tuned, so past this it wins.
+        private const nuint OverlappedForwardThreshold = 1024;
+#else
+        // ulong because nuint.MaxValue is not a compile-time constant; the comparison folds away.
+        private const ulong OverlappedForwardThreshold = ulong.MaxValue;
+#endif
+#endif
 
 #if HAS_CUSTOM_BLOCKS
         [StructLayout(LayoutKind.Sequential, Size = 16)]
@@ -35,6 +49,7 @@ namespace System
 #endif // HAS_CUSTOM_BLOCKS
 
         [Intrinsic] // Unrolled for small constant lengths
+        [MethodImpl(MethodImplOptions.NoInlining)] // keeping the call is what lets the JIT unroll it
         internal static void Memmove(ref byte dest, ref byte src, nuint len)
         {
             // P/Invoke into the native version when the buffers are overlapping.
@@ -235,13 +250,131 @@ namespace System
                 return;
             }
 
+#if (TARGET_AMD64 || TARGET_ARM64) && !MONO
+            // Handle left shifts in managed code under the threshold.
+            // Right shifts had no issues on all tested platforms with the platform memmove.
+            if (Vector128.IsHardwareAccelerated &&
+                len <= OverlappedForwardThreshold && (nuint)Unsafe.ByteOffset(ref dest, ref src) < len)
+            {
+                CopyOverlappedForward(ref dest, ref src, len);
+                return;
+            }
+#endif
+
         PInvoke:
             // Implicit nullchecks
             Debug.Assert(len > 0);
             _ = Unsafe.ReadUnaligned<byte>(ref dest);
             _ = Unsafe.ReadUnaligned<byte>(ref src);
+#if !MONO
+            // Skip the GC transition for small copies.
+            if (len <= Buffer.BulkMoveWithWriteBarrierChunk)
+            {
+                MemmoveNativeNoGCTransition(ref dest, ref src, len);
+                return;
+            }
+#endif
             MemmoveNative(ref dest, ref src, len);
         }
+
+#if (TARGET_AMD64 || TARGET_ARM64) && !MONO
+        // Each step loads everything it writes before it writes any of it - either a constant-length
+        // Memmove the JIT unrolls, or a single load feeding a single store. Steps then run in ascending,
+        // non-overlapping order, so a store never reaches a source byte a later step still has to read.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CopyOverlappedForward(ref byte dest, ref byte src, nuint len)
+        {
+            Debug.Assert(len > 0);
+
+            // Align the destination - only one side can be, and stores suffer more than loads.
+            // Worth the extra leading block only on larger copies.
+            if (len >= 2048)
+            {
+                nuint head = 64 - Unsafe.OpportunisticMisalignment(ref dest, 64);
+                if (head != 64)
+                {
+                    CopyOverlappedForwardTail(ref dest, ref src, head);
+                    dest = ref Unsafe.Add(ref dest, head);
+                    src = ref Unsafe.Add(ref src, head);
+                    len -= head;
+                }
+            }
+
+            // The widest block the JIT still unrolls: its budget is four vector registers, so 256 bytes
+            // under AVX512 and 128 under AVX2. Wider blocks mean fewer boundaries where one block's
+            // store and the next one's load share a cache line, which a tight overlap is sensitive to.
+            // arm64 tops out at the 64-byte loop below.
+            if (Vector512.IsHardwareAccelerated)
+            {
+                while (len > 256)
+                {
+                    Memmove(ref dest, ref src, 256);
+                    dest = ref Unsafe.Add(ref dest, 256);
+                    src = ref Unsafe.Add(ref src, 256);
+                    len -= 256;
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                while (len > 128)
+                {
+                    Memmove(ref dest, ref src, 128);
+                    dest = ref Unsafe.Add(ref dest, 128);
+                    src = ref Unsafe.Add(ref src, 128);
+                    len -= 128;
+                }
+            }
+
+            while (len > OverlappedBlockSize)
+            {
+                Memmove(ref dest, ref src, OverlappedBlockSize);
+                dest = ref Unsafe.Add(ref dest, OverlappedBlockSize);
+                src = ref Unsafe.Add(ref src, OverlappedBlockSize);
+                len -= OverlappedBlockSize;
+            }
+
+            CopyOverlappedForwardTail(ref dest, ref src, len);
+        }
+
+        // Finishes at most OverlappedBlockSize bytes, ascending. Must not call Memmove: a block the JIT
+        // didn't unroll lands back here, so calling it again is what recursion would look like. One step
+        // per set bit of len, so the steps tile the range without overlapping.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CopyOverlappedForwardTail(ref byte dest, ref byte src, nuint len)
+        {
+            Debug.Assert(len <= OverlappedBlockSize);
+
+            while (len >= 16)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<Block16>(ref src));
+                dest = ref Unsafe.Add(ref dest, 16);
+                src = ref Unsafe.Add(ref src, 16);
+                len -= 16;
+            }
+            if ((len & 8) != 0)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<ulong>(ref src));
+                dest = ref Unsafe.Add(ref dest, 8);
+                src = ref Unsafe.Add(ref src, 8);
+            }
+            if ((len & 4) != 0)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<uint>(ref src));
+                dest = ref Unsafe.Add(ref dest, 4);
+                src = ref Unsafe.Add(ref src, 4);
+            }
+            if ((len & 2) != 0)
+            {
+                Unsafe.WriteUnaligned(ref dest, Unsafe.ReadUnaligned<ushort>(ref src));
+                dest = ref Unsafe.Add(ref dest, 2);
+                src = ref Unsafe.Add(ref src, 2);
+            }
+            if ((len & 1) != 0)
+            {
+                dest = src;
+            }
+        }
+#endif
 
         // Non-inlinable wrapper around the QCall that avoids polluting the fast path
         // with P/Invoke prolog/epilog.
@@ -255,6 +388,19 @@ namespace System
             }
         }
 
+#if !MONO
+        // Inlinable: a SuppressGCTransition call sets up no P/Invoke frame, and the JIT emits the GC poll.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe void MemmoveNativeNoGCTransition(ref byte dest, ref byte src, nuint len)
+        {
+            fixed (byte* pDest = &dest)
+            fixed (byte* pSrc = &src)
+            {
+                memmoveNoGCTransition(pDest, pSrc, len);
+            }
+        }
+#endif
+
 #if MONO
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe void memmove(void* dest, void* src, nuint len);
@@ -263,6 +409,12 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         private static unsafe partial void* memmove(void* dest, void* src, nuint len);
+
+        // Same entry point; the attribute can only be applied per declaration.
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "memmove")]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        [SuppressGCTransition]
+        private static unsafe partial void* memmoveNoGCTransition(void* dest, void* src, nuint len);
 #pragma warning restore CS3016
 #endif
 
