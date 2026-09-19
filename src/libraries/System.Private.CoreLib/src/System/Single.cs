@@ -1121,34 +1121,28 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
         public static bool IsEvenInteger(float value)
         {
-            uint bits = BitConverter.SingleToUInt32Bits(Abs(value));
-
-            if (bits < 0x3F80_0000)
-            {
-                return bits == 0;
-            }
-
-            if (bits >= 0x4B80_0000)
-            {
-                return bits < 0x7F80_0000;
-            }
-
-            uint exponent = ((bits >> 23) & 0xFF) - 127;
-            uint fractionalBits = 23 - exponent;
-            uint firstIntegerBit = 1u << (int)fractionalBits;
-            uint fractionalBitMask = firstIntegerBit - 1;
-
-            return ((bits & fractionalBitMask) == 0) && ((bits & firstIntegerBit) == 0);
+            // Subtract from the original value so halving a subnormal cannot make it appear even.
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - (Truncate(value * 0.5f) * 2.0f)) == 0.0f;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
         static bool INumberBase<float>.IsImaginaryNumber(float value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
-        public static bool IsInteger(float value) => IsFinite(value) && (value == Truncate(value));
+        public static bool IsInteger(float value)
+        {
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - Truncate(value)) == 0.0f;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
-        public static bool IsOddInteger(float value) => IsInteger(value) && (Abs((value) % 2) == 1);
+        public static bool IsOddInteger(float value)
+        {
+            // Half an odd integer has a fractional magnitude of 0.5; nonfinite values produce NaN.
+            float half = value * 0.5f;
+            return Abs(half - Truncate(half)) == 0.5f;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
         public static bool IsPositive(float value) => BitConverter.SingleToInt32Bits(value) >= 0;
@@ -1650,7 +1644,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = (float)double.Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1660,7 +1654,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = 0.0f;
                     }
@@ -1695,7 +1689,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = (float)double.Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1705,7 +1699,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = PositiveInfinity;
                     }

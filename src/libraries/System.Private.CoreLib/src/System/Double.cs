@@ -1124,16 +1124,30 @@ namespace System
         static bool INumberBase<double>.IsComplexNumber(double value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
-        public static bool IsEvenInteger(double value) => IsInteger(value) && (Abs(value % 2) == 0);
+        public static bool IsEvenInteger(double value)
+        {
+            // Subtract from the original value so halving a subnormal cannot make it appear even.
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - (Truncate(value * 0.5) * 2.0)) == 0.0;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
         static bool INumberBase<double>.IsImaginaryNumber(double value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
-        public static bool IsInteger(double value) => IsFinite(value) && (value == Truncate(value));
+        public static bool IsInteger(double value)
+        {
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - Truncate(value)) == 0.0;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
-        public static bool IsOddInteger(double value) => IsInteger(value) && (Abs(value % 2) == 1);
+        public static bool IsOddInteger(double value)
+        {
+            // Half an odd integer has a fractional magnitude of 0.5; nonfinite values produce NaN.
+            double half = value * 0.5;
+            return Abs(half - Truncate(half)) == 0.5;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
         public static bool IsPositive(double value) => BitConverter.DoubleToInt64Bits(value) >= 0;
@@ -1736,7 +1750,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1746,7 +1760,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = 0.0;
                     }
@@ -1781,7 +1795,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1791,7 +1805,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = PositiveInfinity;
                     }
