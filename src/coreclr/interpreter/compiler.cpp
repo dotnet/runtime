@@ -3732,6 +3732,52 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
 
+        case NI_System_Math_MinNative:
+        case NI_System_Math_MaxNative:
+        {
+            bool isVector = sig.retType == CORINFO_TYPE_VALUECLASS;
+            if (isVector && !mustExpand)
+            {
+                return false;
+            }
+
+            CHECK_STACK(2);
+            assert(!isVector || sig.sigInst.methInstCount == 1);
+            CorInfoType elementType = isVector ? m_compHnd->asCorInfoType(sig.sigInst.methInst[0]) : sig.retType;
+            if (elementType != CORINFO_TYPE_FLOAT && elementType != CORINFO_TYPE_DOUBLE)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+
+            InterpType type = GetInterpType(elementType);
+            int elementSize = elementType == CORINFO_TYPE_FLOAT ? sizeof(float) : sizeof(double);
+            int size = isVector ? m_compHnd->getClassSize(sig.retTypeClass) : elementSize;
+            assert(size >= elementSize && size % elementSize == 0);
+            if (!isVector)
+            {
+                ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-2], g_stackTypeFromInterpType[type]);
+                ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-1], g_stackTypeFromInterpType[type]);
+            }
+
+            int32_t left = m_pStackPointer[-2].var;
+            int32_t right = m_pStackPointer[-1].var;
+            m_pStackPointer -= 2;
+            AddIns(elementType == CORINFO_TYPE_FLOAT ? INTOP_MINMAX_NATIVE_R4 : INTOP_MINMAX_NATIVE_R8);
+            m_pLastNewIns->SetSVars2(left, right);
+            m_pLastNewIns->data[0] = size / elementSize;
+            m_pLastNewIns->data[1] = ni == NI_System_Math_MaxNative;
+            if (isVector)
+            {
+                PushTypeVT(sig.retTypeClass, size);
+            }
+            else
+            {
+                PushInterpType(type, NULL);
+            }
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
         case NI_System_Math_MultiplyAddEstimate:
         {
             CHECK_STACK(3);

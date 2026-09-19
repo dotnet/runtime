@@ -487,6 +487,9 @@ OPDEF(INTOP_EXCHANGEADD_I4, "exchangeadd.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGEADD_I8, "exchangeadd.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R4, "sqrt.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R8, "sqrt.r8", 3, 1, 1, InterpOpNoArgs)
+// Element count and whether to select the maximum.
+OPDEF(INTOP_MINMAX_NATIVE_R4, "minmax.native.r4", 6, 1, 2, InterpOpTwoInts)
+OPDEF(INTOP_MINMAX_NATIVE_R8, "minmax.native.r8", 6, 1, 2, InterpOpTwoInts)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)

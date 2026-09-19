@@ -1225,8 +1225,11 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
 {
     assert(isa != InstructionSet_ILLEGAL);
 
+    bool isShuffleNative = (id == NI_Vector_ShuffleNative) || (id == NI_Vector_ShuffleNativeFallback);
+
     bool     isHWIntrinsicEnabled      = (JitConfig.EnableHWIntrinsic() != 0);
-    bool     isIsaSupported            = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa);
+    bool     isIsaSupported            = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa, isShuffleNative);
+
     bool     isHardwareAcceleratedProp = (id == NI_IsHardwareAccelerated);
     bool     isSupportedProp           = (id == NI_IsSupported);
     uint32_t vectorByteLength          = 0;
@@ -1834,13 +1837,14 @@ GenTree* Compiler::addRangeCheckForHWIntrinsic(GenTree* immOp, int immLowerBound
 // compSupportsHWIntrinsic: check whether a given instruction is enabled via configuration
 //
 // Arguments:
-//    isa - Instruction set
+//    isa                        - Instruction set
+//    preserveNegativeDependency - Whether to retain an unsupported ISA prerequisite in CoreLib
 //
 // Return Value:
 //    true iff the given instruction set is enabled via configuration (environment variables, etc.).
-bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
+bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency)
 {
-    return compHWIntrinsicDependsOn(isa);
+    return compHWIntrinsicDependsOn(isa, preserveNegativeDependency);
 }
 
 //------------------------------------------------------------------------
@@ -2894,7 +2898,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 //    entryPoint      -- The entry point information required for R2R scenarios
 //    simdBaseJitType -- generic argument of the intrinsic.
 //    retType         -- return type of the intrinsic.
-//    mustExpand      -- true if the intrinsic must return a GenTree*; otherwise, false
+//    simdSize        -- size of the SIMD value, in bytes.
 //
 // Return Value:
 //    the expanded intrinsic.
@@ -2913,8 +2917,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                                      CORINFO_SIG_INFO* sig R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                      var_types             simdBaseType,
                                      var_types             retType,
-                                     unsigned              simdSize,
-                                     bool                  mustExpand)
+                                     unsigned              simdSize)
 {
     assert(HWIntrinsicInfo::lookupIsa(intrinsic) == InstructionSet_Vector);
 
@@ -3024,7 +3027,10 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        if (potentiallyNotSupported && !compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        bool isShuffleNative =
+            (intrinsic == NI_Vector_ShuffleNative) || (intrinsic == NI_Vector_ShuffleNativeFallback);
+
+        if (potentiallyNotSupported && !compShuffleDependsOn(InstructionSet_AVX2, isShuffleNative))
         {
             return nullptr;
         }
@@ -3618,11 +3624,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
             op1     = impSIMDPopStack();
             retNode = gtNewSimdCvtNativeNode(retType, op1, TYP_INT, simdBaseType, simdSize);
             break;
@@ -3654,11 +3655,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
-
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
 
 #if defined(TARGET_XARCH)
             if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -3754,11 +3750,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_FLOAT);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_XARCH)
             if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
             {
@@ -3797,11 +3788,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 1);
             assert(simdBaseType == TYP_DOUBLE);
-
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
 
 #if defined(TARGET_XARCH)
             if (!compOpportunisticallyDependsOn(InstructionSet_AVX512))
@@ -4575,11 +4561,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 3);
 
-            if (BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
-
 #if defined(TARGET_ARM64)
             if (varTypeIsFloating(simdBaseType))
             {
@@ -4600,7 +4581,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 #if defined(TARGET_XARCH)
             if (isFmaSupported)
             {
-                isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2);
+                isFmaSupported = compExactlyDependsOn(InstructionSet_AVX2, true);
             }
 #elif defined(TARGET_WASM)
             isFmaSupported = false;
@@ -4901,20 +4882,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 
-            bool isShuffleNative    = (intrinsic != NI_Vector_Shuffle);
-            bool isNonDeterministic = isShuffleNative;
-
-#if defined(TARGET_ARM64) || defined(TARGET_WASM)
-            if (isNonDeterministic)
-            {
-                isNonDeterministic = genTypeSize(simdBaseType) > 1;
-            }
-#endif
-
-            if (isNonDeterministic && BlockNonDeterministicIntrinsics(mustExpand))
-            {
-                break;
-            }
+            bool isShuffleNative = (intrinsic != NI_Vector_Shuffle);
 
             GenTree* indices = impStackTop(0).val;
 
@@ -5799,11 +5767,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     {
         assert(sig->numArgs == 2);
         assert(retNode == nullptr);
-
-        if (isNative && BlockNonDeterministicIntrinsics(mustExpand))
-        {
-            return nullptr;
-        }
 
         op2 = impSIMDPopStack();
         op1 = impSIMDPopStack();
