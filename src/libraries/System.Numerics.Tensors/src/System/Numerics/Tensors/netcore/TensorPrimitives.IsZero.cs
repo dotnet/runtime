@@ -50,6 +50,14 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.Equals(x, Vector128<T>.Zero);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.Equals(x, Vector256<T>.Zero);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.Equals(x, Vector512<T>.Zero);
+
+            // Zero is the value whose bits, for the floating-point types apart from the sign, are below one.
+            public static bool HasThresholdForm => IsPrimitiveBinaryInteger<T>() || typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool TrueBelowThreshold => true;
+            public static ulong ThresholdBits => 1;
+            public static Vector128<T> Key(Vector128<T> x) => typeof(T) == typeof(float) || typeof(T) == typeof(double) ? Vector128.Abs(x) : x;
+            public static Vector256<T> Key(Vector256<T> x) => typeof(T) == typeof(float) || typeof(T) == typeof(double) ? Vector256.Abs(x) : x;
+            public static Vector512<T> Key(Vector512<T> x) => typeof(T) == typeof(float) || typeof(T) == typeof(double) ? Vector512.Abs(x) : x;
         }
     }
 }

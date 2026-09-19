@@ -57,6 +57,15 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsSubnormal(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsSubnormal(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsSubnormal(x);
+
+            // A subnormal value is one whose absolute bit pattern lies between one (inclusive) and that of the smallest normal value (exclusive),
+            // the same range test as the operator's, which the subtraction turns into a single comparison: zero wraps around.
+            public static bool HasThresholdForm => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool TrueBelowThreshold => true;
+            public static ulong ThresholdBits => SmallestNormalBits<T>() - 1;
+            public static Vector128<T> Key(Vector128<T> x) => SubtractBits(Vector128.Abs(x), 1);
+            public static Vector256<T> Key(Vector256<T> x) => SubtractBits(Vector256.Abs(x), 1);
+            public static Vector512<T> Key(Vector512<T> x) => SubtractBits(Vector512.Abs(x), 1);
         }
     }
 }
