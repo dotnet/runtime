@@ -2454,21 +2454,29 @@ namespace System.StubHelpers
             }
         }
 
+        [Conditional("DEBUG")]
+        private static void ValidateArrayElementType<T>(Array managed)
+        {
+            Debug.Assert(managed is not null);
+            Type elementType = managed.GetType().GetElementType()!;
+            // Pointer and function pointer types cannot be generic arguments, so their marshalers use nint
+            // even though their arrays are not assignable to nint[].
+            Debug.Assert((typeof(T) == typeof(nint) && (elementType.IsPointer || elementType.IsFunctionPointer))
+                || elementType.MakeArrayType().IsAssignableTo(typeof(T[])),
+                $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+        }
+
         public static unsafe void ConvertArrayContentsToUnmanaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            // Assert that the array is actually an array of compatible type.
-            Debug.Assert(managed is not null);
-            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+            ValidateArrayElementType<T>(managed);
             TMarshaler.ConvertContentsToUnmanaged(managed, pNative, numElements);
         }
 
         public static unsafe void ConvertArrayContentsToManaged<T, TMarshaler>(Array managed, byte* pNative, int numElements)
             where TMarshaler : IArrayMarshaler<T, TMarshaler>
         {
-            // Assert that the array is actually an array of compatible type.
-            Debug.Assert(managed is not null);
-            Debug.Assert(managed.GetType().GetElementType()!.MakeArrayType().IsAssignableTo(typeof(T[])), $"Managed array type {managed.GetType()} is not compatible with expected element type {typeof(T)}");
+            ValidateArrayElementType<T>(managed);
             TMarshaler.ConvertContentsToManaged(managed, pNative, numElements);
         }
 
