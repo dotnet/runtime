@@ -439,6 +439,7 @@
     <Compile Include="System\Xml\Serialization\CodeGenerator.cs" />
     <Compile Include="System\Xml\Serialization\CodeIdentifier.cs" />
     <Compile Include="System\Xml\Serialization\CodeIdentifiers.cs" />
+    <Compile Include="System\Xml\Serialization\CollectionBuilderInfo.cs" />
     <Compile Include="System\Xml\Serialization\Compilation.cs" />
     <Compile Include="System\Xml\Serialization\Compiler.cs" />
     <Compile Include="System\Xml\Serialization\ContextAwareTables.cs" />
