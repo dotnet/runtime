@@ -42,6 +42,16 @@ extern PGET_GCMARKER_EXCEPTION_CODE g_getGcMarkerExceptionCode;
 #define CONTEXT_ALL_FLOATING CONTEXT_FLOATING_POINT
 #endif
 
+#if defined(XSTATE_SUPPORTED) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(__APPLE__)
+static inline bool IsValidSveVectorLengthInBytes(DWORD vectorLengthInBytes)
+{
+    return (vectorLengthInBytes >= 16) && (vectorLengthInBytes <= 256) &&
+           ((vectorLengthInBytes & (vectorLengthInBytes - 1)) == 0);
+}
+
+static const CONTEXT_SVE_STATE_HEADER *GetArm64SveStateHeader(const CONTEXT *context);
+#endif
+
 #if !HAVE_MACH_EXCEPTIONS
 
 #ifndef __GLIBC__
@@ -896,36 +906,41 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
 #endif //  !TARGET_OSX
         }
 #elif defined(HOST_ARM64)
-        if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
+        if((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE)
         {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-            // Use sve->vl from the signal frame to avoid SIGILL on platforms that
-            // provide an SVE context record without supporting SVE instructions
-            // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
-            if (sve->vl == 16)
+            const CONTEXT_SVE_STATE_HEADER *sveStateHeader = GetArm64SveStateHeader(lpContext);
+
+            // The native signal frame should have SVE state space.
+            _ASSERTE(sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)));
+            // The VL should have been initialized in the SVE header matching the signal frame.
+            _ASSERTE((sveStateHeader != nullptr) && (sveStateHeader->VectorLengthInBytes == sve->vl));
+
+            const uint16_t vectorQuadwordCount = sve_vq_from_vl(sve->vl);
+            uint8_t *nativeSveBytes = reinterpret_cast<uint8_t *>(sve);
+
+            const uint8_t *contextZRegisters = reinterpret_cast<const uint8_t *>(sveStateHeader + 1);
+            for (int i = 0; i < 32; i++)
             {
-                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == XSTATE_MASK_ARM64_SVE);
-
-                // Derive vq from the signal frame's vl (the authoritative layout)
-                // rather than lpContext->Vl, to ensure offset calculations always
-                // match the actual frame even in non-debug builds.
-                uint16_t vq = sve_vq_from_vl(sve->vl);
-
-                // Vector length should not have changed.
-                _ASSERTE(lpContext->Vl == sve->vl);
-
-                //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-                *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq)) = lpContext->Ffr;
-
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-
-                for (int i = 0; i < 16; i++)
-                {
-                    //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                    *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i)) = lpContext->P[i];
-                }
+                uint8_t *nativeZRegister =
+                    nativeSveBytes + SVE_SIG_ZREG_OFFSET(vectorQuadwordCount, i);
+                memcpy(nativeZRegister, contextZRegisters + (i * sve->vl), sve->vl);
+                _ASSERTE(memcmp(nativeZRegister, &lpContext->V[i], sizeof(NEON128)) == 0);
             }
+
+            const SIZE_T predicateRegisterSize = SVE_SIG_PREG_SIZE(vectorQuadwordCount);
+            const uint8_t *contextPredicateRegisters = contextZRegisters + (32 * sve->vl);
+            for (int i = 0; i < 16; i++)
+            {
+                memcpy(nativeSveBytes + SVE_SIG_PREG_OFFSET(vectorQuadwordCount, i),
+                    contextPredicateRegisters + (i * predicateRegisterSize),
+                    predicateRegisterSize);
+            }
+
+            const uint8_t *contextFirstFaultRegister =
+                contextPredicateRegisters + (16 * predicateRegisterSize);
+            memcpy(nativeSveBytes + SVE_SIG_FFR_OFFSET(vectorQuadwordCount),
+                contextFirstFaultRegister,
+                predicateRegisterSize);
         }
 #endif //HOST_AMD64
     }
@@ -1023,6 +1038,23 @@ void _GetNativeSigSimdContext(uint8_t *data, uint32_t size, fpsimd_context **fp_
         *sve_ptr = sve;
     }
 }
+
+#if defined(XSTATE_SUPPORTED)
+static const CONTEXT_SVE_STATE_HEADER *GetArm64SveStateHeader(const CONTEXT *context)
+{
+    if (((context->ContextFlags & CONTEXT_XSTATE) != CONTEXT_XSTATE) ||
+        ((context->XStateFeaturesMask & XSTATE_MASK_ARM64_SVE) == 0))
+    {
+        return nullptr;
+    }
+
+    const CONTEXT_SVE_STATE_HEADER *sveStateHeader =
+        reinterpret_cast<const CONTEXT_SVE_STATE_HEADER *>(context + 1);
+    _ASSERTE(IsValidSveVectorLengthInBytes(sveStateHeader->VectorLengthInBytes));
+
+    return sveStateHeader;
+}
+#endif // XSTATE_SUPPORTED
 #endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !__APPLE__
 
 /*++
@@ -1263,31 +1295,36 @@ void CONTEXTFromNativeContext(const native_context_t *native, LPCONTEXT lpContex
 #elif defined(HOST_ARM64)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))
         {
-            //TODO-SVE: This only handles vector lengths of 128bits.
-            // Use sve->vl from the signal frame to avoid SIGILL on platforms that
-            // provide an SVE context record without supporting SVE instructions
-            // (e.g. Apple M4 with SME streaming SVE under Virtualization.Framework).
-            if (sve->vl == 16)
+            const CONTEXT_SVE_STATE_HEADER *sveStateHeader = GetArm64SveStateHeader(lpContext);
+
+            // The VL should have been initialized in the SVE header matching the signal frame.
+            _ASSERTE((sveStateHeader != nullptr) && (sveStateHeader->VectorLengthInBytes == sve->vl));
+
+            const uint16_t vectorQuadwordCount = sve_vq_from_vl(sve->vl);
+            const uint8_t *nativeSveBytes = reinterpret_cast<const uint8_t *>(sve);
+            uint8_t *contextZRegisters = reinterpret_cast<uint8_t *>(lpContext + 1) + sizeof(*sveStateHeader);
+
+            for (int i = 0; i < 32; i++)
             {
-                _ASSERTE(sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(16)));
-                lpContext->Vl  = sve->vl;
-
-                uint16_t vq = sve_vq_from_vl(sve->vl);
-
-                lpContext->XStateFeaturesMask |= XSTATE_MASK_ARM64_SVE;
-
-                //Note: Size of ffr register is SVE_SIG_FFR_SIZE(vq) bytes.
-                lpContext->Ffr = *(WORD*) (((uint8_t*)sve) + SVE_SIG_FFR_OFFSET(vq));
-
-                //TODO-SVE: Copy SVE registers once they are >128bits
-                //Note: Size of a Z register is SVE_SIG_ZREGS_SIZE(vq) bytes.
-
-                for (int i = 0; i < 16; i++)
-                {
-                    //Note: Size of a P register is SVE_SIG_PREGS_SIZE(vq) bytes.
-                    lpContext->P[i] = *(WORD*) (((uint8_t*)sve) + SVE_SIG_PREG_OFFSET(vq, i));
-                }
+                const uint8_t *nativeZRegister =
+                    nativeSveBytes + SVE_SIG_ZREG_OFFSET(vectorQuadwordCount, i);
+                memcpy(contextZRegisters + (i * sve->vl), nativeZRegister, sve->vl);
+                _ASSERTE(memcmp(&lpContext->V[i], nativeZRegister, sizeof(NEON128)) == 0);
             }
+
+            const SIZE_T predicateRegisterSize = sve->vl / 8;
+            uint8_t *contextPredicateRegisters = contextZRegisters + (32 * sve->vl);
+            for (int i = 0; i < 16; i++)
+            {
+                memcpy(contextPredicateRegisters + (i * predicateRegisterSize),
+                       nativeSveBytes + SVE_SIG_PREG_OFFSET(vectorQuadwordCount, i),
+                       predicateRegisterSize);
+            }
+
+            uint8_t *contextFirstFaultRegister = contextPredicateRegisters + (16 * predicateRegisterSize);
+            memcpy(contextFirstFaultRegister,
+                   nativeSveBytes + SVE_SIG_FFR_OFFSET(vectorQuadwordCount),
+                   predicateRegisterSize);
         }
 #endif // HOST_AMD64
         else
