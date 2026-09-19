@@ -1637,6 +1637,28 @@ void* GetVirtualDispatchThunk(MethodDesc *pMD)
     return ComputePortableEntryPointThunk(sig, "V", true /* wasmCallingConventionOnly */);
 }
 
+bool WasmMethodReturnsViaRetBuf(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+
+    MetaSig sig(pMD);
+    if (sig.IsReturnTypeVoid())
+        return false;
+
+    ConvertResult result = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
+    return result.type == ConvertType::ToStruct ||
+        result.type == ConvertType::ToSlotsI64 ||
+        result.type == ConvertType::ToSlotsV128;
+}
+
+void* GetClosedStaticRetBufThunk(MethodDesc* pDelegateInvoke)
+{
+    STANDARD_VM_CONTRACT;
+
+    MetaSig sig(pDelegateInvoke);
+    return ComputePortableEntryPointThunk(sig, "D", true /* wasmCallingConventionOnly */);
+}
+
 void* GetUnboxingStub(MethodDesc* pMD, MethodDesc** ppTargetMethodDesc, PCODE* pTargetEntryPoint)
 {
     STANDARD_VM_CONTRACT;

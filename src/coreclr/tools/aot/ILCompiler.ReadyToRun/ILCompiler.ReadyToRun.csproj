@@ -336,6 +336,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmAsyncResumeInfoFixupsNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmClosedStaticRetBufThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmInterpreterToR2RThunkNode.cs" />

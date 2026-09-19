@@ -22,6 +22,9 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 #include "typestring.h"
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+#include "wasm/helpers.hpp"
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
@@ -847,6 +850,73 @@ static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     return JitILStub(pStubMD);
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke)
+{
+    STANDARD_VM_CONTRACT;
+
+    LoaderAllocator* pTargetLoaderAllocator = pTargetMD->GetLoaderAllocator();
+    LoaderAllocator* pDelegateLoaderAllocator = pDelegateInvoke->GetLoaderAllocator();
+    LoaderAllocator* pStubLoaderAllocator =
+        pDelegateLoaderAllocator->IsCollectible() ? pDelegateLoaderAllocator : pTargetLoaderAllocator;
+
+    if (pStubLoaderAllocator->IsCollectible() &&
+        pTargetLoaderAllocator != pDelegateLoaderAllocator &&
+        pTargetLoaderAllocator->IsCollectible())
+    {
+        pStubLoaderAllocator->EnsureReference(pTargetLoaderAllocator);
+    }
+
+    PCODE targetEntryPoint = pTargetMD->GetMultiCallableAddrOfCode();
+    // Shared generic targets are represented by an instantiating wrapper for ldftn, so any
+    // required generic context is handled by the wrapper rather than appearing in this signature.
+    _ASSERTE(!pTargetMD->RequiresInstArg());
+
+    FuncPtrStubs* pFuncPtrStubs = pStubLoaderAllocator->GetFuncPtrStubs();
+    PCODE pStub = pFuncPtrStubs->LookupClosedStaticRetBufStub(pTargetMD, pDelegateInvoke);
+    if (pStub == (PCODE)NULL)
+    {
+        void* thunk = GetClosedStaticRetBufThunk(pDelegateInvoke);
+        AllocMemTracker amt;
+        ClosedStaticRetBufPortableEntryPoint* pNewStub =
+            reinterpret_cast<ClosedStaticRetBufPortableEntryPoint*>(
+                amt.Track(pStubLoaderAllocator->GetHighFrequencyHeap()->AllocMem(
+                    S_SIZE_T(sizeof(ClosedStaticRetBufPortableEntryPoint)))));
+        pNewStub->Init(pTargetMD, pDelegateInvoke, targetEntryPoint, thunk);
+
+        PCODE pNewEntryPoint = (PCODE)pNewStub->GetEntryPoint();
+        pStub = pFuncPtrStubs->AddClosedStaticRetBufStub(pTargetMD, pDelegateInvoke, pNewEntryPoint);
+        if (pStub == pNewEntryPoint)
+            amt.SuppressRelease();
+    }
+
+    // Cache publication precedes the fallible pending registration, so retry it on cache hits too.
+    if (!PortableEntryPoint::ToPortableEntryPoint(pStub)->HasNativeCode())
+    {
+        pStubLoaderAllocator->AddPendingClosedStaticRetBufThunk(
+            ClosedStaticRetBufPortableEntryPoint::FromEntryPoint(pStub));
+    }
+
+    return pStub;
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
+static bool NeedsClosedStaticRetBufThunk(MethodDesc* pTargetMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (!pTargetMD->IsStatic())
+        return false;
+
+#ifdef HAS_THISPTR_RETBUF_PRECODE
+    return pTargetMD->HasRetBuffArg() && IsRetBuffPassedAsFirstArg();
+#elif defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    return !pTargetMD->IsAsyncMethod() && WasmMethodReturnsViaRetBuf(pTargetMD);
+#else
+    return false;
+#endif
+}
+
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 {
     CONTRACTL
@@ -1195,11 +1265,17 @@ void COMDelegate::BindToMethod(MethodTable* pDelegateMT,
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfVirtualizedCode((OBJECTREF*)targetParameter.GetObjectPointer(), pTargetMT, pTargetMethod->GetMethodTable());
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-        else if (pTargetMethod->IsStatic() && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        else if (NeedsClosedStaticRetBufThunk(pTargetMethod))
         {
             pTargetCode = pTargetMethod->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pTargetMethod, PRECODE_THISPTR_RETBUF);
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        else if (NeedsClosedStaticRetBufThunk(pTargetMethod))
+        {
+            pTargetCode = SetupClosedStaticRetBufThunk(pTargetMethod, COMDelegate::FindDelegateInvokeMethod(pDelegateMT));
+        }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         else
         {
             pTargetCode = pTargetMethod->GetMultiCallableAddrOfCode();
@@ -1684,11 +1760,17 @@ extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTab
             }
         }
 #ifdef HAS_THISPTR_RETBUF_PRECODE
-        else if (pMeth->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        else if (NeedsClosedStaticRetBufThunk(pMeth))
         {
             method = pMeth->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMeth, PRECODE_THISPTR_RETBUF);
         }
 #endif // HAS_THISPTR_RETBUF_PRECODE
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS)
+        else if (NeedsClosedStaticRetBufThunk(pMeth))
+        {
+            method = SetupClosedStaticRetBufThunk(pMeth, pDelegateInvoke);
+        }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
         pBindToMethodDetails->methodPtr = (PCODE)(void *)method;
     }
@@ -2601,12 +2683,10 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
         //TODO: need to differentiate on 5
         _ASSERTE(invokeArgCount + 1 == methodArgCount);
 
-#ifdef HAS_THISPTR_RETBUF_PRECODE
         // Force closed delegates over static methods with return buffer to go via
-        // the slow path to create ThisPtrRetBufPrecode
-        if (isStatic && pTargetMethod->HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
+        // the slow path to create the platform-specific adapter.
+        if (isStatic && NeedsClosedStaticRetBufThunk(pTargetMethod))
             return NULL;
-#endif
 
         // under the conditions below the delegate ctor needs to perform some heavy operation
         // to get the unboxing stub
