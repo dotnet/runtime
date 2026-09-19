@@ -94,15 +94,21 @@ namespace System.Formats.Cbor
 
         private void HandleMapKeyWritten()
         {
-            Debug.Assert(_currentKeyOffset != null && _currentValueOffset == null);
+            Debug.Assert(_currentKeyOffset != null);
 
             if (CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
             {
-                HashSet<(int Offset, int Length)> keyEncodingRanges = GetKeyEncodingRanges();
-
                 (int Offset, int Length) currentKey = (_currentKeyOffset.Value, _offset - _currentKeyOffset.Value);
+                HashSet<(int Offset, int Length)>? keyEncodingRanges = _keyEncodingRanges;
 
-                if (!keyEncodingRanges.Add(currentKey))
+                if (keyEncodingRanges is null && _currentValueOffset is not null)
+                {
+                    keyEncodingRanges = GetKeyEncodingRanges();
+                    var firstKey = (_frameOffset, _currentValueOffset.Value - _frameOffset);
+                    keyEncodingRanges.Add(firstKey);
+                }
+
+                if (keyEncodingRanges is not null && !keyEncodingRanges.Add(currentKey))
                 {
                     // reset writer state to right before the offending key write
                     _buffer.AsSpan(currentKey.Offset, _offset).Clear();
@@ -144,7 +150,10 @@ namespace System.Formats.Cbor
 
             // update offset state to the next key
             _currentKeyOffset = _offset;
-            _currentValueOffset = null;
+            if (_itemsWritten != 1 || !CborConformanceModeHelpers.RequiresUniqueKeys(ConformanceMode))
+            {
+                _currentValueOffset = null;
+            }
         }
 
         private void CompleteMapWrite()
