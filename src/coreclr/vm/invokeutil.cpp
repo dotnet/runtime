@@ -852,22 +852,21 @@ void InvokeUtil::SetValidField(CorElementType fldType,
     {
         _ASSERTE(!fldTH.IsTypeDesc());
         MethodTable *pMT = fldTH.AsMethodTable();
-        {
-            void* pFieldData;
-            if (pField->IsStatic())
-            {
-                pFieldData = pField->GetCurrentStaticAddress();
-            }
-            else
-            {
-                pFieldData = pField->GetInstanceAddress(*target);
-            }
 
-            if (*valueObj == NULL)
-                InitValueClass(pFieldData, pMT);
-            else
-                pMT->UnBoxIntoUnchecked(pFieldData, *valueObj);
+        void* pFieldData;
+        if (pField->IsStatic())
+        {
+            pFieldData = pField->GetCurrentStaticAddress();
         }
+        else
+        {
+            pFieldData = pField->GetInstanceAddress(*target);
+        }
+
+        if (*valueObj == NULL)
+            InitValueClass(pFieldData, pMT);
+        else
+            pMT->UnBoxIntoUnchecked(pFieldData, *valueObj);
     }
     break;
 
@@ -876,6 +875,36 @@ void InvokeUtil::SetValidField(CorElementType fldType,
         // this is really an impossible condition
         COMPlusThrow(kNotSupportedException);
     }
+}
+
+static OBJECTREF GetBoxedPrimitiveFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+        PRECONDITION(CheckPointer(pField));
+        PRECONDITION(!fieldType.IsNull());
+        PRECONDITION(CheckPointer(target));
+    }
+    CONTRACTL_END;
+
+    MethodTable* pMT = fieldType.AsMethodTable();
+    pMT->EnsureActive();
+    UINT fieldSize = pField->LoadSize();
+
+    OBJECTREF obj = AllocateObject(pMT);
+    GCPROTECT_BEGIN(obj);
+
+    void* pFieldData = pField->IsStatic() ?
+        pField->GetCurrentStaticAddress() :
+        pField->GetInstanceAddress(*target);
+    FieldDesc::GetPrimitiveValue(pFieldData, obj->UnBox(), fieldSize);
+
+    GCPROTECT_END();
+
+    return obj;
 }
 
 // GetFieldValue
@@ -959,17 +988,7 @@ OBJECTREF InvokeUtil::GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJ
     case ELEMENT_TYPE_I:
     case ELEMENT_TYPE_U:
     {
-        // create the object and copy
-        fieldType.AsMethodTable()->EnsureActive();
-        obj = AllocateObject(fieldType.AsMethodTable());
-        GCPROTECT_BEGIN(obj);
-        if (pField->IsStatic())
-            CopyValueClass(obj->UnBox(),
-                           pField->GetCurrentStaticAddress(),
-                           fieldType.AsMethodTable());
-        else
-            pField->GetInstanceField(*target, obj->UnBox());
-        GCPROTECT_END();
+        obj = GetBoxedPrimitiveFieldValue(pField, fieldType, target);
         break;
     }
 
