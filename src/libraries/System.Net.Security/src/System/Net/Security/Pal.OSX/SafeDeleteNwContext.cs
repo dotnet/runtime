@@ -113,6 +113,11 @@ namespace System.Net.Security
 
         private TaskCompletionSource? _currentWriteCompletionSource;
 
+        // Completed once an application send has observed every native callback it triggered
+        // (the nw_connection_send completion and the framer output write). Both resolve the
+        // GCHandle, so Dispose must not free it while one is outstanding.
+        private TaskCompletionSource? _pendingSendCompletion;
+
         public SafeDeleteNwContext(SslStream stream) : base(IntPtr.Zero)
         {
             _sslStream = stream;
@@ -266,29 +271,44 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"App sending {buffer.Length} bytes");
 
-            TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _currentWriteCompletionSource = transportWriteCompletion;
+            // Published before the native send is issued so a concurrent Dispose can see that
+            // callbacks resolving the GCHandle are still outstanding.
+            TaskCompletionSource sendCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingSendCompletion = sendCompletion;
 
-            bool success = _appWriteTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
-            Debug.Assert(success, "Concurrent WriteAsync detected");
-
-            using MemoryHandle memoryHandle = buffer.Pin();
-            unsafe
-            {
-                Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
-            }
             try
             {
-                await valueTask.ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _currentWriteCompletionSource = null;
-                transportWriteCompletion.TrySetException(ex);
-            }
+                TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                _currentWriteCompletionSource = transportWriteCompletion;
 
-            // Wait for the transport write to complete
-            await transportWriteCompletion.Task.ConfigureAwait(false);
+                bool success = _appWriteTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
+                Debug.Assert(success, "Concurrent WriteAsync detected");
+
+                using MemoryHandle memoryHandle = buffer.Pin();
+                unsafe
+                {
+                    Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
+                }
+                try
+                {
+                    await valueTask.ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _currentWriteCompletionSource = null;
+                    transportWriteCompletion.TrySetException(ex);
+                }
+
+                // Wait for the transport write to complete
+                await transportWriteCompletion.Task.ConfigureAwait(false);
+            }
+            finally
+            {
+                // Never faulted: this only reports that the native callbacks are done with the
+                // handle, so Dispose can wait on it without observing a write failure.
+                _pendingSendCompletion = null;
+                sendCompletion.TrySetResult();
+            }
 
             [UnmanagedCallersOnly]
             static unsafe void CompletionCallback(IntPtr context, Interop.NetworkFramework.NetworkFrameworkError* error)
@@ -652,12 +672,28 @@ namespace System.Net.Security
                 _handshakeReadCts?.Dispose();
                 _shutdownCts?.Dispose();
 
-                // The GCHandle is the resolution target for native callbacks (framer
-                // completion, status updates). Only free it once we know the transport
-                // read loop has stopped issuing native calls. If it did not finish in
-                // the bounded wait above, defer the free via a continuation (same
-                // pattern used by SocketsHttpHandler for orphaned tasks).
-                if (transportCompleted)
+                // The GCHandle is the resolution target for native callbacks (framer completion,
+                // status updates, send completions). Only free it once every native call that
+                // resolves it has been observed. The send wait deliberately happens here, after
+                // the pending write above was faulted: an application write parked on that source
+                // would otherwise never release, and Dispose would wait on itself.
+                Task? pendingSend = _pendingSendCompletion?.Task;
+                bool sendCompleted = true;
+                if (pendingSend is not null)
+                {
+                    try
+                    {
+                        sendCompleted = pendingSend.Wait(TimeSpan.FromMilliseconds(250));
+                    }
+                    catch
+                    {
+                        sendCompleted = pendingSend.IsCompleted;
+                    }
+                }
+
+                // If either did not finish in the bounded waits, defer the free via a continuation
+                // (same pattern used by SocketsHttpHandler for orphaned tasks).
+                if (transportCompleted && sendCompleted)
                 {
                     if (_thisHandle.IsAllocated)
                     {
@@ -667,8 +703,13 @@ namespace System.Net.Security
                 else
                 {
                     GCHandle handleToFree = _thisHandle;
-                    _transportReadTask!.ContinueWith(static (_, state) =>
+                    Task drain = Task.WhenAll(
+                        _transportReadTask ?? Task.CompletedTask,
+                        pendingSend ?? Task.CompletedTask);
+
+                    drain.ContinueWith(static (completed, state) =>
                     {
+                        _ = completed.Exception;
                         GCHandle h = (GCHandle)state!;
                         if (h.IsAllocated)
                         {
