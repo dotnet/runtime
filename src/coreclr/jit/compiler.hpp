@@ -1702,8 +1702,8 @@ inline GenTreeIndexAddr* Compiler::gtNewIndexAddr(GenTree*             arrayOp,
                                                   unsigned             firstElemOffset,
                                                   unsigned             lengthOffset)
 {
-    unsigned elemSize =
-        (elemType == TYP_STRUCT) ? info.compCompHnd->getClassSize(elemClassHandle) : genTypeSize(elemType);
+    ValueSize elemSize = (elemType == TYP_STRUCT) ? ValueSize(info.compCompHnd->getClassSize(elemClassHandle))
+                                                  : ValueSize::FromJitType(elemType);
 
 #ifdef DEBUG
     bool boundsCheck = JitConfig.JitSkipArrayBoundCheck() != 1;

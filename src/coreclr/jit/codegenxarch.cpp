@@ -5232,7 +5232,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 #endif // TARGET_64BIT
 
     // Compute the address of the array element.
-    unsigned scale = node->gtElemSize;
+    unsigned scale = node->GetElemSize();
 
     switch (scale)
     {
