@@ -467,6 +467,16 @@
 		<!-- domain.c: mono_defaults.field_info_class -->
 		<type fullname="System.Reflection.FieldInfo" preserve="nothing" />
 
+		<!-- sre.c: ves_icall_EnumBuilder_setup_enum_type -->
+		<type fullname="System.Reflection.Emit.RuntimeEnumBuilder" preserve="nothing">
+			<method name=".ctor" />
+		</type>
+
+		<!-- sre.c: ves_icall_TypeBuilder_create_runtime_class -->
+		<type fullname="System.Reflection.Emit.RuntimeTypeBuilder" preserve="nothing">
+			<method name=".ctor" />
+		</type>
+
 		<!-- reflection.c: mono_method_body_get_object -->
 		<type fullname="System.Reflection.RuntimeLocalVariableInfo" preserve="fields" >
 			<!-- reflection.c mono_object_new_checked in add_local_var_info_to_array -->

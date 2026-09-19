@@ -5,7 +5,8 @@
     <RuntimeIdentifier>$(NETCoreSdkRuntimeIdentifier)</RuntimeIdentifier>
     <PublishDir>$(RuntimeBinDir)$(BuildArchitecture)/ilc/</PublishDir>
     <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
+    <!-- Re-enable once this linker change is available in the toolchain. -->
+    <!-- <PublishTrimmed>true</PublishTrimmed> -->
     <PublishSingleFile>true</PublishSingleFile>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
