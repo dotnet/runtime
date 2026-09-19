@@ -170,8 +170,49 @@ namespace System.Reflection
                 }
             }
 
-            // Push the arguments.
             ReadOnlySpan<ParameterInfo> parameters = method.GetParametersAsSpan();
+#if !MONO
+            if (emitNew)
+            {
+                Label allocateAndInvoke = il.DefineLabel();
+                il.Emit(OpCodes.Ldarg_1);
+                il.Emit(OpCodes.Brfalse, allocateAndInvoke);
+
+                if (!CanCallConstructorOnExistingInstance(method.DeclaringType!))
+                {
+                    il.Emit(OpCodes.Ldnull);
+                    il.Emit(OpCodes.Ret);
+                    il.MarkLabel(allocateAndInvoke);
+                }
+                else
+                {
+                    Debug.Assert(method.DeclaringType != typeof(string));
+                    Debug.Assert(!method.DeclaringType!.IsArray);
+
+                    il.Emit(OpCodes.Ldarg_1);
+                    if (method.DeclaringType!.IsValueType)
+                    {
+                        il.Emit(OpCodes.Unbox, method.DeclaringType);
+                    }
+
+                    EmitLoadRefArguments(il, parameters);
+                    EmitCallAndReturnHandling(il, method, emitNew: false, backwardsCompat);
+                    il.MarkLabel(allocateAndInvoke);
+                }
+            }
+#endif
+            EmitLoadRefArguments(il, parameters);
+            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
+
+            // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
+            return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
+        }
+
+        private static bool CanCallConstructorOnExistingInstance(Type declaringType) =>
+            declaringType != typeof(string) && !declaringType.IsArray;
+
+        private static void EmitLoadRefArguments(ILGenerator il, ReadOnlySpan<ParameterInfo> parameters)
+        {
             for (int i = 0; i < parameters.Length; i++)
             {
                 il.Emit(OpCodes.Ldarg_2);
@@ -189,11 +230,6 @@ namespace System.Reflection
                     il.Emit(OpCodes.Ldobj, parameterType.IsPointer || parameterType.IsFunctionPointer ? typeof(IntPtr) : parameterType);
                 }
             }
-
-            EmitCallAndReturnHandling(il, method, emitNew, backwardsCompat);
-
-            // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
-            return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
 
         private static void Unbox(ILGenerator il, Type parameterType)
@@ -224,6 +260,10 @@ namespace System.Reflection
             {
                 il.Emit(OpCodes.Newobj, (ConstructorInfo)method);
             }
+            else if (method is ConstructorInfo constructor)
+            {
+                il.Emit(OpCodes.Call, constructor);
+            }
             else if (method.IsStatic || method.DeclaringType!.IsValueType)
             {
                 il.Emit(OpCodes.Call, (MethodInfo)method);
@@ -241,6 +281,10 @@ namespace System.Reflection
                 {
                     il.Emit(OpCodes.Box, returnType);
                 }
+            }
+            else if (method is ConstructorInfo)
+            {
+                il.Emit(OpCodes.Ldnull);
             }
             else
             {
