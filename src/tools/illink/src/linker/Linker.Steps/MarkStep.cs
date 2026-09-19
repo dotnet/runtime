@@ -3707,6 +3707,11 @@ namespace Mono.Linker.Steps
             const bool includeStaticFields = false;
             if (returnTypeDefinition != null)
             {
+                // Interop can hand back an instance of the return type. This is also true for COM-imported
+                // types: the instance is created by a COM class factory and wrapped in an RCW instead of
+                // going through the managed constructor, but the managed type is still instantiated.
+                MarkRequirementsForInstantiatedTypes(returnTypeDefinition);
+
                 if (!returnTypeDefinition.IsImport)
                 {
                     // What we keep here is correct most of the time, but not every time. Fine for now.
@@ -3732,6 +3737,13 @@ namespace Mono.Linker.Steps
                 TypeDefinition? paramTypeDefinition = Context.TryResolve(paramTypeReference);
                 if (paramTypeDefinition != null)
                 {
+                    if (pd.ParameterType.IsByReference)
+                    {
+                        // Interop can store a new instance into a by-ref parameter, including a COM-imported
+                        // one created by a COM class factory and wrapped in an RCW.
+                        MarkRequirementsForInstantiatedTypes(paramTypeDefinition);
+                    }
+
                     if (!paramTypeDefinition.IsImport)
                     {
                         // What we keep here is correct most of the time, but not every time. Fine for now.
