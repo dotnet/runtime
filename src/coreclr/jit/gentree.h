@@ -752,22 +752,6 @@ public:
     }
 };
 
-struct LocalDef
-{
-    GenTreeLclVarCommon* Def;
-    bool                 IsEntire;
-    ssize_t              Offset;
-    ValueSize            Size;
-
-    LocalDef(GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size)
-        : Def(def)
-        , IsEntire(isEntire)
-        , Offset(offset)
-        , Size(size)
-    {
-    }
-};
-
 #ifndef HOST_64BIT
 #include <pshpack4.h>
 #endif
@@ -2170,11 +2154,20 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    template <typename TVisitor>
-    VisitResult VisitLocalDefs(Compiler* comp, TVisitor visitor);
+    bool IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def);
 
     template <typename TVisitor>
-    VisitResult VisitLocalDefNodes(Compiler* comp, TVisitor visitor);
+    VisitResult VisitLocalDef(Compiler* comp, GenTreeLclVarCommon* def, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLocalDef(
+        Compiler* comp, GenTreeLclVarCommon* def, bool isEntire, ssize_t offset, ValueSize size, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor);
+
+    template <typename TVisitor>
+    VisitResult VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor);
 
     bool HasAnyLocalDefs(Compiler* comp);
 
