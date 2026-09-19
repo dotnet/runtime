@@ -179,14 +179,23 @@ namespace System
         internal static TextReader GetOrCreateReader()
         {
             Stream inputStream = OpenStandardInput();
-            return SyncTextReader.GetSynchronizedTextReader(inputStream == Stream.Null ?
-                StreamReader.Null :
+            if (inputStream == Stream.Null)
+            {
+                return SyncTextReader.GetSynchronizedTextReader(StreamReader.Null);
+            }
+
+            Encoding encoding = new ConsoleEncoding(Console.InputEncoding);
+
+            // A console ends a line with a lone '\r' while ENABLE_PROCESSED_INPUT is clear, which
+            // StreamReader would read ahead over; redirected input is an ordinary stream and keeps it.
+            return SyncTextReader.GetSynchronizedTextReader(Console.IsInputRedirected ?
                 new StreamReader(
                     stream: inputStream,
-                    encoding: new ConsoleEncoding(Console.InputEncoding),
+                    encoding: encoding,
                     detectEncodingFromByteOrderMarks: false,
                     bufferSize: Console.ReadBufferSize,
-                    leaveOpen: true));
+                    leaveOpen: true) :
+                new ConsoleStreamReader(inputStream, encoding, Console.ReadBufferSize));
         }
 
         // Use this for blocking in Console.ReadKey, which needs to protect itself in case multiple threads call it simultaneously.

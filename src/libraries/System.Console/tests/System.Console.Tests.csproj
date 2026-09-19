@@ -50,6 +50,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="ConsoleEncoding.Windows.cs" />
+    <Compile Include="ConsoleStreamReaderTests.Windows.cs" />
+    <Compile Include="..\src\System\IO\ConsoleStreamReader.cs" Link="src\System\IO\ConsoleStreamReader.cs" />
+    <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
+             Link="Common\System\Text\ValueStringBuilder.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows'">
     <Compile Include="CancelKeyPress.Unix.cs" />
