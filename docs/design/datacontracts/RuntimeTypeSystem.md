@@ -561,7 +561,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `EEClass` | `NumStaticFields` | `uint16` | Count of static fields of the EEClass |
 | `EEClass` | `NumThreadStaticFields` | `uint16` | Count of threadstatic fields of the EEClass |
 | `EEClass` | `OptionalFields` | `pointer` | Pointer to the `EEClassOptionalFields` for this type, or null if it has none |
-| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass` and its `LayoutInfo` may be read |
+| `EEClass` | `VMFlags` | `uint32` | Optional flags for the EEClass. Bit `0x40` (`VMFLAG_HASLAYOUT`) indicates the EEClass is a `LayoutEEClass`; bit `0x10000` (`VMFLAG_INLINE_ARRAY`) indicates repeated inline-array field layout |
 | `EEClassLayoutInfo` | `AlignmentRequirement` | `uint8` | Largest alignment requirement of all members of the type |
 | `EEClassLayoutInfo` | `Flags` | `uint8` | Layout flags. Bit `0x01` (`e_BLITTABLE`) indicates the type is blittable |
 | `EEClassLayoutInfo` | `LayoutType` | `uint8` | Layout kind: `Auto` (0), `Sequential` (1), `Explicit` (2), `CStruct` (3), `CUnion` (4) |
@@ -2565,3 +2565,37 @@ void GetCoreLibFieldDescAndDef(string @namespace, string typeName, string fieldN
     fieldDef = mdReader.GetFieldDefinition(fieldHandle);
 }
 ```
+
+## Version 2
+
+Version 2 adds inline-array inspection APIs:
+
+<!-- BEGIN GENERATED: usage contract=RuntimeTypeSystem version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=RuntimeTypeSystem version=c2 diff-from=c1 -->
+
+```csharp
+partial interface IRuntimeTypeSystem : IContract
+{
+    // True if the MethodTable represents an inline array.
+    bool IsInlineArray(ITypeHandle typeHandle);
+
+    // Returns the size of a single inline-array element represented by a field type.
+    uint GetInlineArrayElementSize(CorElementType fieldType, ITypeHandle? nestedType);
+}
+```
+
+`IsInlineArray` follows a MethodTable's `EEClassOrCanonMT` link to its canonical `EEClass` and
+returns whether the `EEClass.VMFlags` inline-array bit is set. `GetInlineArrayElementSize`
+returns the target pointer size for a byref field, the nested value type's instance-field size for
+a value-type field, and zero when the element type cannot be determined.

@@ -9,5 +9,6 @@ internal sealed partial class GCFrame : IData<GCFrame>
     [Field] public partial TargetPointer Next { get; }
     [Field] public partial TargetPointer ObjRefs { get; }
     [Field] public partial uint NumObjRefs { get; }
+    [Field] public partial TargetPointer ValueClassInfoList { get; }
     [Field] public partial uint GCFlags { get; }
 }
