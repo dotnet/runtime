@@ -10,9 +10,10 @@
 
     Debuggees are auto-discovered from the Debuggees/ subdirectory. Each debuggee csproj
     can set a DumpTypes property to control which dump types are generated:
+      "Mini"       — mini dump only (type 1)
       "Heap"       — heap dump only (type 2, default)
       "Full"       — full dump only (type 4)
-      "Heap;Full"  — both heap and full dumps
+      "Mini;Heap;Full" — mini, heap, and full dumps
 
     Each debuggee csproj can also set an R2RModes property to control ReadyToRun behavior:
       "R2R"          — run with ReadyToRun enabled (default)
@@ -169,9 +170,10 @@
 
     <ItemGroup>
       <!-- Exclude heap entries for net10.0 — heap dumps are not generated for that version. -->
+      <_DumpInfoMini Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Mini'))" DumpDir="mini" />
       <_DumpInfoHeap Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Heap')) AND '$(DumpRuntimeVersion)' != 'net10.0'" DumpDir="heap" />
       <_DumpInfoFull Include="@(_DumpInfoDebuggeeTypes)" Condition="$([System.String]::new('%(DumpTypes)').Contains('Full'))" DumpDir="full" />
-      <_DumpInfoByType Include="@(_DumpInfoHeap);@(_DumpInfoFull)" />
+      <_DumpInfoByType Include="@(_DumpInfoMini);@(_DumpInfoHeap);@(_DumpInfoFull)" />
       <_DumpInfoR2R Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('R2R'))" R2RDir="r2r" />
       <_DumpInfoJit Include="@(_DumpInfoByType)" Condition="$([System.String]::new('%(R2RModes)').Contains('Jit'))" R2RDir="jit" />
       <_DumpInfoAll Include="@(_DumpInfoR2R);@(_DumpInfoJit)" />
@@ -208,7 +210,7 @@
   </Target>
 
   <Target Name="_GenerateDumpsForDebuggee">
-    <!-- Expand DumpTypes (e.g. "Heap;Full") into individual _DumpTypeItem entries -->
+    <!-- Expand DumpTypes (e.g. "Mini;Heap;Full") into individual _DumpTypeItem entries -->
     <ItemGroup>
       <_DumpTypeItem Remove="@(_DumpTypeItem)" />
       <_DumpTypeItem Include="$(_DebuggeeDumpTypes)" />
@@ -222,8 +224,10 @@
   <Target Name="_GenerateDumpsForDumpType">
     <!-- Map dump type name to DOTNET_DbgMiniDumpType value and directory name -->
     <PropertyGroup>
+      <_MiniDumpType Condition="'$(_DumpTypeName)' == 'Mini'">1</_MiniDumpType>
       <_MiniDumpType Condition="'$(_DumpTypeName)' == 'Heap'">2</_MiniDumpType>
       <_MiniDumpType Condition="'$(_DumpTypeName)' == 'Full'">4</_MiniDumpType>
+      <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Mini'">mini</_DumpTypeDirName>
       <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Heap'">heap</_DumpTypeDirName>
       <_DumpTypeDirName Condition="'$(_DumpTypeName)' == 'Full'">full</_DumpTypeDirName>
     </PropertyGroup>
