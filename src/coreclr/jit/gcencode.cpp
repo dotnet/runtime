@@ -4128,6 +4128,13 @@ void GCInfo::gcMakeRegPtrTable(
 
         if (varTypeIsGC(varDsc->TypeGet()))
         {
+            // This local is reported conditionally below. Its stack home can remain after
+            // optimizations eliminate the generic context use that caused it to be allocated.
+            if (varNum == m_compiler->lvaCachedGenericContextArg)
+            {
+                continue;
+            }
+
             // Do we have an argument or local variable?
             if (!varDsc->lvIsParam)
             {
