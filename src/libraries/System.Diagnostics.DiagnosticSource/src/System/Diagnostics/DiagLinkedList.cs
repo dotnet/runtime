@@ -7,7 +7,7 @@ using System.Text;
 
 namespace System.Diagnostics
 {
-    internal sealed partial class DiagNode<T>
+    internal partial class DiagNode<T>
     {
         public DiagNode(T value) => Value = value;
         public T Value;
