@@ -577,9 +577,6 @@ bool MulticoreJitProfilePlayer::CompileMethodDesc(Module * pModule, MethodDesc *
 
         m_stats.m_nTryCompiling ++;
 
-        // Reset the flag to allow managed code to be called in multicore JIT background thread from this routine
-        ThreadStateNCStackHolder holder(-1, Thread::TSNC_CallingManagedCodeDisabled);
-
         // PrepareCode calls back to MulticoreJitCodeStorage::StoreMethodCode under MethodDesc lock
         MulticoreJitPrepareCodeConfig config(pMD);
         pMD->PrepareCode(&config);
@@ -1385,9 +1382,6 @@ DWORD WINAPI MulticoreJitProfilePlayer::StaticJITThreadProc(void *args)
 
         if ((pThread != NULL) && pThread->HasStarted())
         {
-            // Disable calling managed code in background thread
-            ThreadStateNCStackHolder holder(TRUE, Thread::TSNC_CallingManagedCodeDisabled);
-
             // Run as background thread, so ThreadStore::WaitForOtherThreads will not wait for it
             pThread->SetBackground(TRUE);
 
