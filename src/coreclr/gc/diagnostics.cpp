@@ -1581,6 +1581,34 @@ void gc_heap::verify_heap (BOOL begin_gc_p)
 }
 
 #endif //VERIFY_HEAP
+#ifndef FEATURE_NATIVEAOT
+void gc_heap::publish_gc_pause(uint64_t duration_microseconds)
+{
+    // Pause accounting is serialized by gc_lock, including the heap-0 BGC accounting.
+    uint32_t write_index = VolatileLoadWithoutBarrier(&gc_pause_write_index);
+    uint32_t read_index = gc_pause_read_index;
+    if (write_index - read_index == gc_pause_record_capacity)
+    {
+        Interlocked::ExchangeAdd64(&gc_pause_dropped, uint64_t{1});
+        return;
+    }
+
+    GCPauseRecord& record = gc_pause_records[write_index % gc_pause_record_capacity];
+    record.duration_microseconds = duration_microseconds;
+    record.collection_index = settings.gc_index;
+    record.generation = static_cast<uint32_t>(settings.condemned_generation);
+    record.kind = settings.concurrent ? 1 : 0;
+    gc_pause_write_index = write_index + 1;
+
+    // Publish before exchanging the notification flag. The consumer arms and then rechecks
+    // the queue, so a producer racing with the transition to waiting cannot lose a wake-up.
+    if (Interlocked::Exchange(&gc_pause_notification_pending, int32_t{1}) == 0)
+    {
+        gc_pause_event.Set();
+    }
+}
+#endif // !FEATURE_NATIVEAOT
+
 #ifdef BACKGROUND_GC
 void gc_heap::add_bgc_pause_duration_0()
 {
@@ -1596,6 +1624,7 @@ void gc_heap::add_bgc_pause_duration_0()
         }
 
         total_suspended_time += last_gc_info->pause_durations[0];
+        record_gc_pause(last_gc_info->pause_durations[0]);
     }
 }
 
