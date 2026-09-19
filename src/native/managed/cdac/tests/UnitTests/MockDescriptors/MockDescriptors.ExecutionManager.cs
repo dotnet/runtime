@@ -667,7 +667,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
     internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
     internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
-    internal (string Name, ulong Value)[] Globals { get; }
+    internal (string Name, ulong Value)[] Globals { get; private set; }
     internal ulong EEJitManagerAddress { get; }
     internal ulong RangeSectionMapTopLevelAddress => _rangeSectionMapTopLevelAddress;
 
@@ -742,6 +742,20 @@ internal sealed class MockExecutionManagerBuilder
 
     public void SetAllCodeHeaps(ulong headNodeAddress)
         => _eeJitManager.AllCodeHeaps = headNodeAddress;
+
+    public void SetInterpreterCodeHeaps(ulong headNodeAddress)
+    {
+        MockEEJitManager interpreterJitManager = AllocateAndCreate(EEJitManagerLayout, "InterpreterJitManager");
+        interpreterJitManager.AllCodeHeaps = headNodeAddress;
+        ulong interpreterJitManagerGlobalAddress = AddPointerGlobal(
+            interpreterJitManager.Address,
+            nameof(Constants.Globals.InterpreterJitManagerAddress));
+        Globals =
+        [
+            .. Globals,
+            (nameof(Constants.Globals.InterpreterJitManagerAddress), interpreterJitManagerGlobalAddress),
+        ];
+    }
 
     internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
     {

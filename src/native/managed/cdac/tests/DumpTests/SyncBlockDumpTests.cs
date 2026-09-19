@@ -51,5 +51,6 @@ public class SyncBlockDumpTests : DumpTestBase
         Assert.True(ownerThreadId != 0, "Expected non-zero lock owner thread id.");
         Assert.True(recursion >= 1, "Expected recursion count >= 1.");
         Assert.True(syncBlock != TargetPointer.Null, "Expected non-null sync block");
+        Assert.NotEqual(TargetPointer.Null, Target.Contracts.Thread.IdToThread(ownerThreadId));
     }
 }

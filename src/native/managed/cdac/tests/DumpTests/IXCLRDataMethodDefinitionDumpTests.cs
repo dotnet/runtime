@@ -207,7 +207,7 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
 
             MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
             string? name = DumpTestHelpers.GetMethodName(Target, mdHandle);
-            if (name is null || !name.Contains(methodName))
+            if (name is null || !name.Contains(methodName, StringComparison.Ordinal))
                 continue;
 
             uint token = rts.GetMethodToken(mdHandle);

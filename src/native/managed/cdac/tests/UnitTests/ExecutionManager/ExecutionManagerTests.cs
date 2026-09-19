@@ -740,6 +740,40 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapList_IncludesInterpreterJitManagerHeaps(string version, MockTarget.Architecture arch)
+    {
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockLoaderCodeHeap eeHeap = emBuilder.AddLoaderCodeHeap();
+        MockHostCodeHeap interpreterHeap = emBuilder.AddHostCodeHeap(0x0004_0000, 0x0004_8000);
+
+        MockCodeHeapListNode eeNode = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: 0x1000_0000,
+            endAddress: 0x1000_1000,
+            mapBase: 0,
+            headerMap: 0,
+            heap: eeHeap.Address);
+        MockCodeHeapListNode interpreterNode = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: 0x2000_0000,
+            endAddress: 0x2000_1000,
+            mapBase: 0,
+            headerMap: 0,
+            heap: interpreterHeap.Address);
+        emBuilder.SetAllCodeHeaps(eeNode.Address);
+        emBuilder.SetInterpreterCodeHeaps(interpreterNode.Address);
+
+        var target = CreateTarget(emBuilder);
+        List<ICodeHeapInfo> heapInfos = target.Contracts.ExecutionManager.GetCodeHeapInfos().ToList();
+
+        Assert.Collection(
+            heapInfos,
+            heap => Assert.Equal(eeHeap.Address, Assert.IsType<LoaderCodeHeapInfo>(heap).HeapAddress.Value),
+            heap => Assert.Equal(interpreterHeap.Address, Assert.IsType<HostCodeHeapInfo>(heap).HeapAddress.Value));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
     public void GetStubKind_NoRangeSection(string version, MockTarget.Architecture arch)
     {
         IExecutionManager em = CreateExecutionManagerContract(version, arch);

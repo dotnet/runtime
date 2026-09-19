@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 /// and the underlying <see cref="IStackDataFrameHandle"/>
 /// so that callers can perform ad-hoc assertions (e.g. frame type checks).
 /// </summary>
-/// <param name="Name">The resolved method name, or <c>null</c> if unavailable.</param>
+/// <param name="Name">The fully formatted method name, or <c>null</c> if unavailable.</param>
 /// <param name="MethodDescPtr">The raw MethodDesc pointer for this frame.</param>
 /// <param name="FrameName">
 /// The runtime Frame name (e.g. "InterpreterFrame", "InlinedCallFrame") when this
@@ -278,7 +278,7 @@ public sealed class DumpTestStackWalker
     /// </summary>
     public DumpTestStackWalker AssertHasFrame(string methodName)
     {
-        Assert.True(_frames.Any(f => string.Equals(f.Name, methodName, StringComparison.Ordinal)),
+        Assert.True(_frames.Any(f => f.Name?.Contains(methodName, StringComparison.Ordinal) == true),
             $"Expected frame '{methodName}' not found. Call stack: [{FormatCallStack(_frames)}]");
         return this;
     }
@@ -377,7 +377,7 @@ public sealed class DumpTestStackWalker
             if (_predicate is not null)
                 return _predicate(frame);
 
-            return string.Equals(frame.Name, _name, StringComparison.Ordinal);
+            return _name is string name && frame.Name?.Contains(name, StringComparison.Ordinal) == true;
         }
 
         public void RunAssert(ResolvedFrame frame)

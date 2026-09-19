@@ -488,13 +488,34 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
     {
-        TargetPointer heapListAddress = ((IExecutionManager)this).GetEEJitManagerInfo().HeapListAddress;
-        TargetPointer nodeAddr = heapListAddress;
-        while (nodeAddr != TargetPointer.Null)
+        foreach (TargetPointer heapListAddress in GetCodeHeapListAddresses())
         {
-            Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
-            yield return GetCodeHeapInfo(node.Heap);
-            nodeAddr = node.Next;
+            TargetPointer nodeAddr = heapListAddress;
+            while (nodeAddr != TargetPointer.Null)
+            {
+                Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
+                yield return GetCodeHeapInfo(node.Heap);
+                nodeAddr = node.Next;
+            }
+        }
+    }
+
+    private IEnumerable<TargetPointer> GetCodeHeapListAddresses()
+    {
+        yield return ((IExecutionManager)this).GetEEJitManagerInfo().HeapListAddress;
+
+        if (_target.TryReadGlobalPointer(
+                Constants.Globals.InterpreterJitManagerAddress,
+                out TargetPointer? interpreterJitManagerPointer)
+            && interpreterJitManagerPointer is TargetPointer interpreterJitManagerPointerAddress)
+        {
+            TargetPointer interpreterJitManagerAddress = _target.ReadPointer(interpreterJitManagerPointerAddress);
+            if (interpreterJitManagerAddress != TargetPointer.Null)
+            {
+                Data.EEJitManager interpreterJitManager =
+                    _target.ProcessedData.GetOrAdd<Data.EEJitManager>(interpreterJitManagerAddress);
+                yield return interpreterJitManager.AllCodeHeaps;
+            }
         }
     }
 
