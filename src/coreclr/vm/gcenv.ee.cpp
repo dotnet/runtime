@@ -1823,6 +1823,7 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     // WARNING: To change an event's GC level, perfcollect script needs to be updated simultaneously to reflect it.
     BOOL keyword_gc_verbose = EventXplatEnabledGCJoin_V2() || EventPipeEventEnabledGCJoin_V2();
     BOOL keyword_gc_informational = EventXplatEnabledGCStart() || EventPipeEventEnabledGCStart();
+    BOOL keyword_gc_pause_informational = EventXplatEnabledGCPause_V1() || EventPipeEventEnabledGCPause_V1();
 
     BOOL keyword_gc_heapsurvival_and_movement_informational = EventXplatEnabledGCGenerationRange() || EventPipeEventEnabledGCGenerationRange();
     BOOL keyword_gchandle_informational = EventXplatEnabledSetGCHandle() || EventPipeEventEnabledSetGCHandle();
@@ -1832,8 +1833,9 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
     BOOL prv_gcprv_verbose = EventXplatEnabledPinPlugAtGCTime() || EventPipeEventEnabledPinPlugAtGCTime();
 
     int publicProviderLevel = keyword_gc_verbose ? GCEventLevel_Verbose :
-                                 ((keyword_gc_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);
+                                 ((keyword_gc_informational || keyword_gc_pause_informational || keyword_gc_heapsurvival_and_movement_informational) ? GCEventLevel_Information : GCEventLevel_None);
     int publicProviderKeywords = (keyword_gc_informational ? GCEventKeyword_GC : GCEventKeyword_None) |
+                                 (keyword_gc_pause_informational ? GCEventKeyword_GCPause : GCEventKeyword_None) |
                                  (keyword_gchandle_informational ? GCEventKeyword_GCHandle : GCEventKeyword_None) |
                                  (keyword_gc_heapsurvival_and_movement_informational ? GCEventKeyword_GCHeapSurvivalAndMovement : GCEventKeyword_None);
 

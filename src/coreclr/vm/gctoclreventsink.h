@@ -93,6 +93,7 @@ public:
     void FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation);
     void FireDestroyGCHandle(void *handleID);
     void FirePrvDestroyGCHandle(void *handleID);
+    void FireGCPause_V1(uint64_t collectionIndex, uint64_t durationMicroseconds, uint32_t generation, uint32_t kind);
 };
 
 extern GCToCLREventSink g_gcToClrEventSink;

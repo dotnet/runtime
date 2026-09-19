@@ -49,6 +49,7 @@ nomac:GarbageCollection:::GCEnd
 noclrinstanceid:GarbageCollection:::GCEnd
 nostack:GarbageCollection:::GCEnd
 nostack:GarbageCollection:::GCEnd_V1
+nostack:GarbageCollection:::GCPause_V1
 nomac:GarbageCollection:::GCRestartEEEnd
 noclrinstanceid:GarbageCollection:::GCRestartEEEnd
 nostack:GarbageCollection:::GCRestartEEEnd

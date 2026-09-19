@@ -55,6 +55,15 @@ namespace WKS {
 #include "gcimpl.h"
 #include "gcpriv.h"
 
+inline void gc_heap::record_gc_pause(uint64_t duration_microseconds)
+{
+    if (EVENT_ENABLED(GCPause_V1))
+    {
+        FIRE_EVENT(GCPause_V1, static_cast<uint64_t>(settings.gc_index), duration_microseconds,
+            static_cast<uint32_t>(settings.condemned_generation), static_cast<uint32_t>(settings.concurrent != 0));
+    }
+}
+
 #ifdef DACCESS_COMPILE
 #error this source file should not be compiled with DACCESS_COMPILE!
 #endif //DACCESS_COMPILE
