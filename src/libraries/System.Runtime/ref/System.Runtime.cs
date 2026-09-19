@@ -8124,6 +8124,7 @@ namespace System.CodeDom.Compiler
         public override void Write(char value) { }
         public override void Write(char[]? buffer) { }
         public override void Write(char[] buffer, int index, int count) { }
+        public override void Write(System.ReadOnlySpan<char> buffer) { }
         public override void Write(double value) { }
         public override void Write(int value) { }
         public override void Write(long value) { }
@@ -8144,6 +8145,7 @@ namespace System.CodeDom.Compiler
         public override void WriteLine(char value) { }
         public override void WriteLine(char[]? buffer) { }
         public override void WriteLine(char[] buffer, int index, int count) { }
+        public override void WriteLine(System.ReadOnlySpan<char> buffer) { }
         public override void WriteLine(double value) { }
         public override void WriteLine(int value) { }
         public override void WriteLine(long value) { }
