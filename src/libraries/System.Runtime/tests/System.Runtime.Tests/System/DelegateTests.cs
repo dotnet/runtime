@@ -486,6 +486,15 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void DifferentMethodForDerivedBase()
+        {
+            var d1 = (Action<Derived>)Delegate.CreateDelegate(typeof(Action<Derived>), typeof(Base).GetMethod("M")!);
+            var d2 = (Action<Derived>)Delegate.CreateDelegate(typeof(Action<Derived>), typeof(Derived).GetMethod("M")!);
+            Assert.False(d1.Equals(d2));
+            Assert.False(d1.Method.Equals(d2.Method));
+        }
+
+        [Fact]
         public static void SameMethodObtainedViaDelegateAndReflectionAreSameForClass()
         {
             var m1 = ((MethodCallExpression)((Expression<Action>)(() => new Class().M())).Body).Method;
@@ -570,6 +579,9 @@ namespace System.Tests
             internal virtual void M1() { }
             internal virtual void M2() { }
         }
+
+        class Base { public virtual void M() { } }
+        class Derived : Base { public override void M() { } }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);

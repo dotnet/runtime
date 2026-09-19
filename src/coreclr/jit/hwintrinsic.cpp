@@ -2928,10 +2928,18 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             switch (intrinsic)
             {
                 case NI_Vector_Abs:
+                {
+                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    break;
+                }
+
                 case NI_Vector_IsNegative:
                 case NI_Vector_IsPositive:
                 {
-                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    // The 256-bit signed integer comparisons used for sign checks require AVX2.
+                    // Floating-point sign checks reinterpret the lanes as signed integers and use
+                    // the same comparison path.
+                    potentiallyNotSupported = !varTypeIsUnsigned(simdBaseType);
                     break;
                 }
 
