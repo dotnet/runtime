@@ -240,6 +240,10 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\SymbolNodeRange.cs" />
     <Compile Include="Compiler\CallChainProfile.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeValidationChecker.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AccessValidationChecker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\ILVerification\AccessVerificationHelpers.cs">
+      <Link>Compiler\DependencyAnalysis\ReadyToRun\AccessVerificationHelpers.cs</Link>
+    </Compile>
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ReadyToRunExternalTypeMapNode.cs" />
     <Compile Include="Compiler\ReadyToRunProxyTypeMapNode.cs" />

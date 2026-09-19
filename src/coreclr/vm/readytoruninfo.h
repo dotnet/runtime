@@ -265,6 +265,12 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_SKIP_TYPE_VALIDATION;
     }
 
+    BOOL SkipAccessValidation()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_SKIP_ACCESS_VALIDATION;
+    }
+
     BOOL IsPartial()
     {
         LIMITED_METHOD_CONTRACT;

@@ -464,6 +464,9 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
         if (m_pReadyToRunInfo->SkipTypeValidation())
             m_dwPersistedFlags = m_dwPersistedFlags | SKIP_TYPE_VALIDATION; // Skip type validation on System
 
+        if (m_pReadyToRunInfo->SkipAccessValidation())
+            m_dwPersistedFlags = m_dwPersistedFlags | SKIP_ACCESS_VALIDATION; // Skip JIT-time access validation; crossgen2 already proved every reference is accessible
+
         m_pNativeImage = m_pReadyToRunInfo->GetNativeImage();
         if (m_pNativeImage != NULL)
         {

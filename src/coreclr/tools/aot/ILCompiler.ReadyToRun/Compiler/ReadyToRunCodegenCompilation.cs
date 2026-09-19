@@ -503,6 +503,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
+            if (_nodeFactory.OptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipAccessValidation;
+            }
 
             NodeFactoryOptimizationFlags optimizationFlags = _nodeFactory.OptimizationFlags with { IsComponentModule = true, CompiledMethodDefs = compiledMethodDefs };
 
@@ -562,7 +566,8 @@ namespace ILCompiler
                 imageBase: _nodeFactory.ImageBase,
                 associatedModule: automaticTypeValidation ? inputModule : null,
                 genericCycleDepthCutoff: -1, // We don't need generic cycle detection when rewriting component assemblies
-                genericCycleBreadthCutoff: -1); // as we're not actually compiling anything
+                genericCycleBreadthCutoff: -1, // as we're not actually compiling anything
+                associatedModuleForAccessValidation: automaticTypeValidation ? inputModule : null);
 
             IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> componentGraph = new DependencyAnalyzer<NoLogStrategy<NodeFactory>, NodeFactory>(componentFactory, comparer);

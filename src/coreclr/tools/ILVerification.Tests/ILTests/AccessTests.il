@@ -480,3 +480,77 @@
 		IL_0007: ret
 	}
 }
+
+// Protected ("family") static-abstract interface members, called through a generic type
+// parameter constrained to the interface, are the pattern used e.g. by INumberBase<TSelf>'s
+// TryConvertToChecked/Saturating/Truncating. The CLR only checks that the caller's type
+// implements *some* instantiation of the same interface type definition; the instantiation
+// argument used at the call site does not need to match.
+
+.class interface public auto ansi abstract FamilyStaticInterface`1<T>
+{
+    .method family hidebysig newslot abstract virtual static void FamilyStaticMethod() cil managed
+    {
+    }
+}
+
+.class public sequential ansi sealed beforefieldinit FamilyStaticInterfaceImpl
+       extends [System.Runtime]System.ValueType
+       implements class FamilyStaticInterface`1<int32>
+{
+    .pack 0
+    .size 1
+
+    .method family hidebysig static void FamilyStaticMethod() cil managed
+    {
+        .override method void class FamilyStaticInterface`1<int32>::FamilyStaticMethod()
+        ret
+    }
+}
+
+// Implements the interface at a *different* instantiation than the one used at the call
+// site below - the CLR's loose typedef-only match still permits this.
+.class public auto ansi beforefieldinit FamilyStaticInterfaceCaller
+        extends [System.Runtime]System.Object
+        implements class FamilyStaticInterface`1<string>
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+    {
+        ldarg.0
+        call        instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method family hidebysig static void FamilyStaticMethod() cil managed
+    {
+        .override method void class FamilyStaticInterface`1<string>::FamilyStaticMethod()
+        ret
+    }
+
+    .method public hidebysig static void ConstrainedCall.FamilyStaticInterfaceMethodDifferentInstantiation_Valid<(class FamilyStaticInterface`1<int32>) T>() cil managed
+    {
+        constrained. !!T
+        call    void class FamilyStaticInterface`1<int32>::FamilyStaticMethod()
+        ret
+    }
+}
+
+// Does not implement FamilyStaticInterface<T> at all - the protected member must remain
+// inaccessible regardless of the loose interface-typedef match.
+.class public auto ansi beforefieldinit NonImplementingFamilyStaticInterfaceCaller
+        extends [System.Runtime]System.Object
+{
+    .method public hidebysig specialname rtspecialname instance void .ctor() cil managed
+    {
+        ldarg.0
+        call        instance void [System.Runtime]System.Object::.ctor()
+        ret
+    }
+
+    .method public hidebysig static void ConstrainedCall.FamilyStaticInterfaceMethodWithoutImplementing_Invalid_MethodAccess<(class FamilyStaticInterface`1<int32>) T>() cil managed
+    {
+        constrained. !!T
+        call    void class FamilyStaticInterface`1<int32>::FamilyStaticMethod()
+        ret
+    }
+}
