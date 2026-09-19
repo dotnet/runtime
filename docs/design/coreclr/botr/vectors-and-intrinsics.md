@@ -132,7 +132,9 @@ int DoSomethingHelper()
 - NOTE: If the helper needs to be used AND behave differently with different instruction sets enabled, correct logic requires spreading the `CompExactlyDependsOn` attribute to all callers such that no caller could be compiled expecting the wrong behavior. See the `Vector128.ShuffleUnsafe` method, and various uses.
 
 
-The behavior of the `CompExactlyDependsOn` is that 1 or more attributes may be applied to a given method. If any of the types specified via the attribute will not have an invariant result for its associated `IsSupported` property at runtime, then the method will not be compiled or inlined into another function during R2R compilation. If no type so described will have a true result for the `IsSupported` method, then the method will not be compiled or inlined into another function during R2R compilation.
+The behavior of the `CompExactlyDependsOn` is that 1 or more attributes may be applied to a given method. If any of the types specified via the attribute will not have an invariant result for its associated `IsSupported` property at runtime, then the method will not be compiled, inlined into another function, or expanded as an intrinsic during R2R compilation. Crossgen2 enforces the expansion restriction through `CORINFO_FLG_INTRINSIC` and `isIntrinsic`, independently of the normal IL inlining check. The caller retains a call to the method instead.
+
+If no specified type will have a true result for `IsSupported`, the method is also excluded unless it has `CompHasFallback`. That attribute declares a functional fallback that can be compiled when all the ISA requirements are known but none are supported. An ISA that does not apply to the target architecture is treated as known unsupported. On targets without runtime code generation, Crossgen2 fixes the supported ISA set and marks the other specifiable ISAs explicitly unsupported, allowing these fallback methods to be precompiled.
 
 5. In addition to directly using the IsSupported properties to enable/disable support for intrinsics, simple static properties written in the following style may be used to reduce code duplication.
 

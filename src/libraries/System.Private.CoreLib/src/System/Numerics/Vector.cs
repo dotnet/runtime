@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics
 {
@@ -2607,6 +2609,9 @@ namespace System.Numerics
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         internal static Vector<T> MultiplyAddEstimate<T>(Vector<T> left, Vector<T> right, Vector<T> addend)
         {
             Unsafe.SkipInit(out Vector<T> result);
@@ -2623,6 +2628,9 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{double}, Vector128{double}, Vector128{double})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static Vector<double> MultiplyAddEstimate(Vector<double> left, Vector<double> right, Vector<double> addend)
         {
             Unsafe.SkipInit(out Vector<double> result);
@@ -2639,6 +2647,9 @@ namespace System.Numerics
         /// <inheritdoc cref="Vector128.MultiplyAddEstimate(Vector128{float}, Vector128{float}, Vector128{float})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompHasFallback]
         public static Vector<float> MultiplyAddEstimate(Vector<float> left, Vector<float> right, Vector<float> addend)
         {
             Unsafe.SkipInit(out Vector<float> result);
