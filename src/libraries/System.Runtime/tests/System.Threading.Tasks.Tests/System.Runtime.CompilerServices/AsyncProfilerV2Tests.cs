@@ -1807,6 +1807,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133627", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task RuntimeAsync_WhenAny_TracksAllBranches()
         {
             var events = await CollectEventsAsync(RuntimeAsyncCallstackKeywords, RuntimeAsync_WhenAny_TracksAllBranches_Marker);

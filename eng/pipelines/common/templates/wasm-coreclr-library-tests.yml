@@ -6,9 +6,13 @@ parameters:
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
+  readyToRun: false
   scenarios: ['WasmTestOnChrome']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
+  # Default matches the fast interpreter lane. The R2R lane crossgen2-publishes every
+  # test app serially (/maxcpucount:1), which is ~5.5x slower, so its callers raise this.
+  timeoutInMinutes: 240
   useHelixMonitor: false
 
 jobs:
@@ -77,13 +81,18 @@ jobs:
           value: /p:InstallV8ForTests=true
         ${{ else }}:
           value: ''
+      - name: wasmReadyToRunArgs
+        ${{ if eq(parameters.readyToRun, true) }}:
+          value: /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true
+        ${{ else }}:
+          value: ''
 
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTestsCoreCLR${{ parameters.nameSuffix }}
-      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
-      timeoutInMinutes: 240
+      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(chromeInstallArg) $(firefoxInstallArg) $(v8InstallArg) $(wasmReadyToRunArgs) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
       # if !alwaysRun, then:
       #   if this is runtime-wasm (isWasmOnlyBuild):
       #     - then run only if it would not have run on default pipelines (based
@@ -98,7 +107,7 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
-            testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
-            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
+            testRunNamePrefixSuffix: CoreCLR${{ parameters.nameSuffix }}_$(_BuildConfig)
+            extraHelixArguments: /p:BrowserHost=$(_hostedOs) $(_wasmRunSmokeTestsOnlyArg) $(wasmReadyToRunArgs) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
