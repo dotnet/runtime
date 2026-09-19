@@ -118,6 +118,7 @@ enum CORINFO_InstructionSet
     InstructionSet_SHA_X64=44,
     InstructionSet_WAITPKG_X64=45,
     InstructionSet_X86Serialize_X64=46,
+    InstructionSet_ADX=47,
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
     InstructionSet_X86Base=1,
@@ -166,6 +167,7 @@ enum CORINFO_InstructionSet
     InstructionSet_SHA_X64=44,
     InstructionSet_WAITPKG_X64=45,
     InstructionSet_X86Serialize_X64=46,
+    InstructionSet_ADX=47,
 #endif // TARGET_X86
 
 };
@@ -879,6 +881,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "AVXVNNIINT";
         case InstructionSet_AVXVNNIINT_V512 :
             return "AVXVNNIINT_V512";
+        case InstructionSet_ADX :
+            return "ADX";
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         case InstructionSet_X86Base :
@@ -941,6 +945,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "AVXVNNIINT";
         case InstructionSet_AVXVNNIINT_V512 :
             return "AVXVNNIINT_V512";
+        case InstructionSet_ADX :
+            return "ADX";
 #endif // TARGET_X86
 
         default:
@@ -1063,6 +1069,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_AvxVnniInt8_V512: return InstructionSet_AVXVNNIINT_V512;
         case READYTORUN_INSTRUCTION_AvxVnniInt16: return InstructionSet_AVXVNNIINT;
         case READYTORUN_INSTRUCTION_AvxVnniInt16_V512: return InstructionSet_AVXVNNIINT_V512;
+        case READYTORUN_INSTRUCTION_Adx: return InstructionSet_ADX;
 #endif // TARGET_AMD64
 #ifdef TARGET_X86
         case READYTORUN_INSTRUCTION_X86Base: return InstructionSet_X86Base;
@@ -1133,6 +1140,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_AvxVnniInt8_V512: return InstructionSet_AVXVNNIINT_V512;
         case READYTORUN_INSTRUCTION_AvxVnniInt16: return InstructionSet_AVXVNNIINT;
         case READYTORUN_INSTRUCTION_AvxVnniInt16_V512: return InstructionSet_AVXVNNIINT_V512;
+        case READYTORUN_INSTRUCTION_Adx: return InstructionSet_ADX;
 #endif // TARGET_X86
 
         default:

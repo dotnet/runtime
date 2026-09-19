@@ -498,6 +498,7 @@ enum GenTreeFlags : unsigned
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH/GT_CAST -- Do not CSE this node only, forms complex
                                               //                                 addressing mode
 
+    GTF_ADD_CARRY_FLAGS         = 0x04000000, // GT_ADD -- CF is consumed; INC/DEC cannot implement this add
     GTF_MUL_64RSLT              = 0x40000000, // GT_MUL     -- produce 64-bit result
 
     GTF_RELOP_NAN_UN            = 0x80000000, // GT_<relop> -- Is branch taken if ops are NaN?
@@ -528,6 +529,8 @@ enum GenTreeFlags : unsigned
 
     GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
 
+    GTF_DIV_REM_PAIR            = 0x08000000, // GT_[U]DIV, GT_PHYSREG -- adjacent quotient/remainder definitions on xarch.
+
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
@@ -537,6 +540,7 @@ enum GenTreeFlags : unsigned
     GTF_ALLOCOBJ_EMPTY_STATIC = 0x80000000, // GT_ALLOCOBJ -- allocation site is part of an empty static pattern
 
 #ifdef FEATURE_HW_INTRINSICS
+    GTF_HW_MULX                   = 0x08000000, // GT_HWINTRINSIC -- unsigned BigMul in a matched multiply-carry chain uses MULX
     GTF_HW_EM_OP                  = 0x10000000, // GT_HWINTRINSIC -- node is used as an operand to an embedded mask
     GTF_HW_USER_CALL              = 0x20000000, // GT_HWINTRINSIC -- node is implemented via a user call
 #endif // FEATURE_HW_INTRINSICS
@@ -1861,6 +1865,18 @@ public:
 
     bool OperConsumesFlags() const
     {
+#ifdef TARGET_AMD64
+        if (OperIs(GT_ADCX, GT_ADOX, GT_ADX_DRAIN))
+        {
+            return true;
+        }
+#endif
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+        if (OperIs(GT_ADD_CARRY, GT_SUB_BORROW, GT_ADD_BORROW))
+        {
+            return true;
+        }
+#endif
 #if !defined(TARGET_64BIT)
         if (OperIs(GT_ADD_HI, GT_SUB_HI))
         {
@@ -2466,6 +2482,12 @@ public:
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
+    bool IsFunnelShift() const;
+
+    bool IsDivRemPair() const
+    {
+        return OperIs(GT_DIV, GT_UDIV, GT_PHYSREG) && ((gtFlags & GTF_DIV_REM_PAIR) != 0);
+    }
 
 #ifdef DEBUG
     static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
@@ -9528,6 +9550,8 @@ struct GenTreeOpCC : public GenTreeOp
     {
 #ifdef TARGET_ARM64
         assert(OperIs(GT_SELECTCC, GT_SELECT_INCCC, GT_SELECT_INVCC, GT_SELECT_NEGCC));
+#elif defined(TARGET_AMD64)
+        assert(OperIs(GT_SELECTCC, GT_JCMP));
 #else
         assert(OperIs(GT_SELECTCC));
 #endif

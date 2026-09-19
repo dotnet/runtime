@@ -2691,6 +2691,25 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
     var_types        targetType = tree->TypeGet();
     emitter*         emit       = GetEmitter();
 
+    if (oper == GT_ADD_BORROW)
+    {
+        assert(!tree->gtSetFlags() && tree->gtGetOp2()->IsIntegralConst(0));
+        emit->emitIns_R_R_COND(INS_cinc, emitActualTypeSize(tree), targetReg, tree->gtGetOp1()->GetRegNum(),
+                               INS_COND_LO);
+        genProduceReg(tree);
+        return;
+    }
+    if (oper == GT_ADD_CARRY || oper == GT_SUB_BORROW)
+    {
+        instruction ins = oper == GT_SUB_BORROW ? (tree->gtSetFlags() ? INS_sbcs : INS_sbc)
+                                                : (tree->gtSetFlags() ? INS_adcs : INS_adc);
+        emit->emitIns_R_R_R(ins, emitActualTypeSize(tree), targetReg,
+                            tree->gtGetOp1()->isContainedIntOrIImmed() ? REG_ZR : tree->gtGetOp1()->GetRegNum(),
+                            tree->gtGetOp2()->isContainedIntOrIImmed() ? REG_ZR : tree->gtGetOp2()->GetRegNum());
+        genProduceReg(tree);
+        return;
+    }
+
     assert(tree->OperIs(GT_ADD, GT_SUB, GT_MUL, GT_DIV, GT_UDIV, GT_AND, GT_AND_NOT, GT_OR, GT_OR_NOT, GT_XOR,
                         GT_XOR_NOT));
 
@@ -2699,6 +2718,16 @@ void CodeGen::genCodeForBinary(GenTreeOp* tree)
 
     // The arithmetic node must be sitting in a register (since it's not contained)
     assert(targetReg != REG_NA);
+
+    if (tree->IsFunnelShift())
+    {
+        assert(!tree->gtSetFlags());
+        emit->emitIns_R_R_R_I(INS_extr, emitTypeSize(tree), targetReg, op2->gtGetOp1()->GetRegNum(),
+                              op1->gtGetOp1()->GetRegNum(),
+                              static_cast<unsigned>(op1->gtGetOp2()->AsIntCon()->IconValue()));
+        genProduceReg(tree);
+        return;
+    }
 
     // Handles combined operations: 'madd', 'msub'
     if (op2->OperIs(GT_MUL) && op2->isContained())

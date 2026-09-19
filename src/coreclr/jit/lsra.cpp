@@ -8982,6 +8982,15 @@ void LinearScan::handleOutgoingCriticalEdges(BasicBlock* block)
     {
         GenTree* lastNode = LIR::AsRange(block).LastNode();
 
+#ifdef TARGET_AMD64
+        if (lastNode->OperIs(GT_JCMP))
+        {
+            // The flag-preserving zero test consumes RCX even when the local
+            // itself remains in another register. Edge resolution must not
+            // restore an outgoing value into RCX before the branch.
+            consumedRegs |= SRBM_ECX;
+        }
+#endif
         if (lastNode->OperIs(GT_JTRUE, GT_JCMP, GT_JTEST))
         {
             assert(!lastNode->OperIs(GT_JTRUE) || !lastNode->gtGetOp1()->isContained());
@@ -13752,6 +13761,53 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
             matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
         }
     }
+
+#ifdef TARGET_AMD64
+    // Carry arithmetic can constrain the multiplier to RDX and a flags-preserving loop count to RCX.
+    // A preference that encounters one of these fixed references before the next use can force a spill.
+    // At a definition, prefer a free register that covers the range when one is available instead.
+    // Keep the original preferences if none of the alternatives can cover it.
+    if (linearScan->m_hasCarryArithmetic && currentInterval->isLocalVar && !found &&
+        RefTypeIsDef(refPosition->refType) && !refPosition->isFixedRegRef)
+    {
+        SingleTypeRegSet coveringRegisters      = RBM_NONE;
+        SingleTypeRegSet conflictingPreferences = RBM_NONE;
+        for (SingleTypeRegSet remaining = freeCandidates; remaining != RBM_NONE;)
+        {
+            regNumber        reg = genFirstRegNumFromMask(remaining, regType);
+            SingleTypeRegSet bit = genSingleTypeRegMask(reg);
+            remaining &= ~bit;
+
+            LsraLocation fixedLocation = linearScan->getNextFixedRef(reg, regType);
+            if ((fixedLocation == rangeEndLocation) && rangeEndRefPosition->isFixedRefOfReg(reg))
+            {
+                fixedLocation++;
+            }
+            if (fixedLocation <= rangeEndLocation)
+            {
+                // Register kills (for example, at calls) are handled by the existing callee-save preferences.
+                RefPosition* fixedRef = linearScan->getRegisterRecord(reg)->getNextRefPosition();
+                if ((fixedRef != nullptr) && (fixedRef->refType == RefTypeFixedReg) &&
+                    (fixedRef->nodeLocation == fixedLocation))
+                {
+                    conflictingPreferences |= preferences & bit;
+                }
+            }
+            else if (linearScan->getNextIntervalRef(reg, regType) > rangeEndLocation)
+            {
+                coveringRegisters |= bit;
+            }
+        }
+        if ((conflictingPreferences != RBM_NONE) && (coveringRegisters != RBM_NONE))
+        {
+            preferences &= ~conflictingPreferences;
+            if ((preferences & freeCandidates) == RBM_NONE)
+            {
+                preferences |= coveringRegisters;
+            }
+        }
+    }
+#endif // TARGET_AMD64
 
 #define IF_FOUND_GOTO_DONE                                                                                             \
     if (found)                                                                                                         \

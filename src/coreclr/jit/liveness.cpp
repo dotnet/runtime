@@ -2461,6 +2461,9 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_STORE_BLK:
             case GT_JCMP:
             case GT_JTEST:
+#ifdef TARGET_AMD64
+            case GT_ADX_SEED:
+#endif
             case GT_JCC:
             case GT_JTRUE:
             case GT_RETURN:
@@ -2653,6 +2656,13 @@ bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockR
     }
 
     assert(!node->OperIsLocal());
+    // A paired divide also defines RDX for the following physical-register
+    // capture. That implicit use must survive even when the quotient is dead
+    // and the division has been proven non-throwing.
+    if (node->OperIs(GT_DIV, GT_UDIV) && node->IsDivRemPair())
+    {
+        return false;
+    }
     if (!node->IsValue() || node->IsUnusedValue())
     {
         // We are only interested in avoiding the removal of nodes with direct side effects
@@ -2669,7 +2679,7 @@ bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockR
                 return GenTree::VisitResult::Continue;
             });
 
-            if (node->OperConsumesFlags() && node->gtPrev->gtSetFlags())
+            if (node->OperConsumesFlags() && (node->gtPrev != nullptr) && node->gtPrev->gtSetFlags())
             {
                 node->gtPrev->gtFlags &= ~GTF_SET_FLAGS;
             }

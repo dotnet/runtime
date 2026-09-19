@@ -8353,6 +8353,9 @@ public:
     bool optMakeLoopDownwardsCounted(ScalarEvolutionContext& scevContext,
                                      FlowGraphNaturalLoop*   loop,
                                      PerLoopInfo*            loopLocals);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    void optFoldFourLimbOffsets(ScalarEvolutionContext& scevContext, BasicBlock* block);
+#endif
     bool optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevContext,
                                          FlowGraphNaturalLoop*   loop,
                                          BasicBlock*             exiting,

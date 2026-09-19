@@ -943,6 +943,11 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
+        case GT_SUB_BORROW:
+        case GT_ADD_BORROW:
+        case GT_ADD_CARRY:
+            m_hasCarryArithmetic = true;
+            FALLTHROUGH;
         case GT_ADD:
         case GT_SUB:
             if (varTypeIsFloating(tree->TypeGet()))

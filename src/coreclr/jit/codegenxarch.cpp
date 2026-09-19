@@ -921,6 +921,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     emit->emitInsBinary(ins, size, treeNode, divisor);
 
     // DIV/IDIV instructions always store the quotient in RAX and the remainder in RDX.
+    assert(!treeNode->IsDivRemPair() || (targetReg == REG_RAX));
     // Move the result to the desired register, if necessary
     if (oper == GT_DIV || oper == GT_UDIV)
     {
@@ -951,6 +952,9 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 {
 #ifdef DEBUG
     bool isValidOper = treeNode->OperIs(GT_ADD, GT_SUB);
+#ifdef TARGET_AMD64
+    isValidOper |= treeNode->OperIs(GT_ADD_CARRY, GT_SUB_BORROW, GT_ADD_BORROW, GT_ADCX, GT_ADOX);
+#endif
     if (varTypeIsFloating(treeNode->TypeGet()))
     {
         isValidOper |= treeNode->OperIs(GT_MUL, GT_DIV);
@@ -974,6 +978,18 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
+
+    if (treeNode->IsFunnelShift())
+    {
+        regNumber lo = op1->gtGetOp1()->GetRegNum();
+        regNumber hi = op2->gtGetOp1()->GetRegNum();
+        assert(targetReg != hi);
+        inst_Mov(targetType, targetReg, lo, /* canSkip */ true);
+        inst_RV_RV_IV(INS_shrd, emitTypeSize(targetType), targetReg, hi,
+                      static_cast<unsigned>(op1->gtGetOp2()->AsIntCon()->IconValue()));
+        genProduceReg(treeNode);
+        return;
+    }
 
     bool eligibleForNDD = false;
 
@@ -1098,7 +1114,8 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     assert(!varTypeIsFloating(treeNode));
 
     // try to use an inc or dec
-    if (oper == GT_ADD && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx())
+    if (oper == GT_ADD && src->isContainedIntOrIImmed() && !treeNode->gtOverflowEx() &&
+        ((treeNode->gtFlags & GTF_ADD_CARRY_FLAGS) == 0))
     {
         if (src->IsIntegralConst(1))
         {
@@ -1940,6 +1957,13 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_SUB_HI:
 #endif // !defined(TARGET_64BIT)
 
+#ifdef TARGET_AMD64
+        case GT_SUB_BORROW:
+        case GT_ADD_BORROW:
+        case GT_ADD_CARRY:
+        case GT_ADCX:
+        case GT_ADOX:
+#endif
         case GT_ADD:
         case GT_SUB:
             genCodeForBinary(treeNode->AsOp());
@@ -2080,6 +2104,58 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForJTrue(treeNode->AsOp());
             break;
 
+#ifdef TARGET_AMD64
+        case GT_ADX_SEED:
+        {
+            // TEST clears CF and OF without a temporary register or changing SP.
+            GetEmitter()->emitIns_R_R(INS_test, EA_4BYTE, REG_ESP, REG_ESP);
+            break;
+        }
+        case GT_ADX_DRAIN:
+        {
+            genConsumeOperands(treeNode->AsOp());
+            regNumber target = treeNode->GetRegNum();
+            regNumber zero   = internalRegisters.GetSingle(treeNode);
+            inst_Mov(TYP_LONG, target, treeNode->gtGetOp1()->GetRegNum(), true);
+            // A MOV is required: XOR would destroy the carries being drained.
+            GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, zero, 0);
+            GetEmitter()->emitIns_R_R(INS_adcx, EA_8BYTE, target, zero);
+            GetEmitter()->emitIns_R_R(INS_adox, EA_8BYTE, target, zero);
+            genProduceReg(treeNode);
+            break;
+        }
+        case GT_JCMP:
+        {
+            genConsumeOperands(treeNode->AsOp());
+            GenTree* count = treeNode->gtGetOp1();
+            // Enregistered local uses can retain their source register here.
+            // Copy the count to RCX when necessary. The countdown's 32-bit LEA
+            // (or its 32-bit reload/copy) has already cleared the upper half when
+            // this move is skipped; bare JRCXZ tests all of RCX, not just ECX.
+            GetEmitter()->emitIns_Mov(INS_mov, emitTypeSize(count), REG_ECX, count->GetRegNum(), true);
+            assert(treeNode->gtGetOp2()->IsIntegralConst(0) && treeNode->gtGetOp2()->isContained());
+            // JRCXZ preserves both carry flags but has only a rel8 encoding.
+            // Skip a JMP to reach the loop: two branch instructions per backedge.
+            GenCondition::Code condition = treeNode->AsOpCC()->gtCondition.GetCode();
+            assert(condition == GenCondition::EQ || condition == GenCondition::NE);
+            BasicBlock* done = genCreateTempLabel();
+            if (condition == GenCondition::NE)
+            {
+                GetEmitter()->emitIns_J(INS_jrcxz, done, true);
+                GetEmitter()->emitIns_J(INS_jmp, m_compiler->compCurBB->GetTrueTarget());
+            }
+            else
+            {
+                BasicBlock* taken = genCreateTempLabel();
+                GetEmitter()->emitIns_J(INS_jrcxz, taken, true);
+                GetEmitter()->emitIns_J(INS_jmp, done, true);
+                genDefineTempLabel(taken);
+                GetEmitter()->emitIns_J(INS_jmp, m_compiler->compCurBB->GetTrueTarget());
+            }
+            genDefineTempLabel(done);
+            break;
+        }
+#endif
         case GT_JCC:
             genCodeForJcc(treeNode->AsCC());
             break;
@@ -4496,6 +4572,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
 void CodeGen::genCodeForPhysReg(GenTreePhysReg* tree)
 {
     assert(tree->OperIs(GT_PHYSREG));
+    assert(!tree->IsDivRemPair() || ((tree->GetRegNum() == REG_RDX) && (tree->gtSrcReg == REG_RDX)));
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->GetRegNum();
@@ -4537,6 +4614,19 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
 
     switch (oper)
     {
+#ifdef TARGET_AMD64
+        case GT_ADCX:
+            return INS_adcx;
+        case GT_ADOX:
+            return INS_adox;
+        case GT_SUB_BORROW:
+            ins = INS_sbb;
+            break;
+        case GT_ADD_BORROW:
+        case GT_ADD_CARRY:
+            ins = INS_adc;
+            break;
+#endif
         case GT_ADD:
             ins = INS_add;
             break;

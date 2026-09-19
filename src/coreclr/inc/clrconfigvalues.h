@@ -674,6 +674,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntri
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX,                    W("EnableAVX"),                 1, "Allows AVX and dependent hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableADX,                    W("EnableADX"),                 1, "Allows ADX carry-chain instructions to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX2,                   W("EnableAVX2"),                1, "Allows AVX2, BMI1, BMI2, F16C, FMA, LZCNT, MOVBE and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512,                 W("EnableAVX512"),              1, "Allows AVX512 F+BW+CD+DQ+VL and dependent hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableAVX512BMM,              W("EnableAVX512BMM"),           1, "Allows AVX512BMM and dependent hardware intrinsics to be disabled")

@@ -391,6 +391,21 @@ GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)          
 GTNODE(IL_OFFSET        , GenTreeILOffset    ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // marks an IL offset for debugging purposes
 GTNODE(RECORD_ASYNC_RESUME, GenTreeVal       ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // record native offset for async resumption info
 
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#ifdef TARGET_AMD64
+// Independent unsigned carry chains, introduced only after whole-loop validation.
+GTNODE(ADCX             , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(ADOX             , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(ADX_SEED         , GenTree            ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)
+GTNODE(ADX_DRAIN        , GenTreeOp          ,0,0,GTK_UNOP|DBK_NOTHIR)
+#endif
+// Adds two operands and the carry flag. Only introduced during lowering.
+GTNODE(ADD_CARRY        , GenTreeOp          ,1,0,GTK_BINOP|DBK_NOTHIR)
+// Subtract op2 and borrow; add op2 and subtraction borrow to op1 (op2 is zero on arm64).
+GTNODE(SUB_BORROW       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+GTNODE(ADD_BORROW       , GenTreeOp          ,0,0,GTK_BINOP|DBK_NOTHIR)
+#endif
+
 /*****************************************************************************/
 #undef  GTNODE
 /*****************************************************************************/

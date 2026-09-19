@@ -188,6 +188,24 @@ namespace System
                 }
             }
 
+            // Keep the limbs separate so x86/x64 can use them directly as the
+            // widening divide inputs. The incoming high limb must be below den.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static (uint Quotient, uint Remainder) Div64By32(uint low, uint high, uint den)
+            {
+                if (X86.X86Base.IsSupported)
+                {
+                    return X86.X86Base.DivRem(low, high, den);
+                }
+
+                ulong dividend = ((ulong)high << 32) | low;
+                uint quotient = (uint)(dividend / den);
+                // high < den guarantees that the quotient fits in uint. The remainder is
+                // below den and fits in uint too, so computing dividend - quotient * den
+                // modulo 2^32 gives the exact remainder using only the low limb.
+                return (quotient, low - quotient * den);
+            }
+
             /// <summary>
             /// Do full divide, yielding 96-bit result and 32-bit remainder.
             /// </summary>
@@ -200,6 +218,7 @@ namespace System
                 if (X86.X86Base.IsSupported)
                 {
                     uint remainder = 0;
+                    uint quotient;
 
                     if (bufNum.U2 != 0)
                         goto Div3Word;
@@ -210,11 +229,14 @@ namespace System
                     bufNum.U1 = 0;
                     goto Div1Word;
 Div3Word:
-                    (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
+                    (quotient, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
+                    bufNum.U2 = quotient;
 Div2Word:
-                    (bufNum.U1, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
+                    (quotient, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
+                    bufNum.U1 = quotient;
 Div1Word:
-                    (bufNum.U0, remainder) = X86.X86Base.DivRem(bufNum.U0, remainder, den);
+                    (quotient, remainder) = X86.X86Base.DivRem(bufNum.U0, remainder, den);
+                    bufNum.U0 = quotient;
                     return remainder;
                 }
                 else
@@ -237,7 +259,8 @@ Div1Word:
                     tmp = bufNum.Low64;
                     if (tmp == 0)
                         return 0;
-                    (bufNum.Low64, rem) = Math.DivRem(tmp, den);
+                    (div, rem) = Math.DivRem(tmp, den);
+                    bufNum.Low64 = div;
                     return (uint)rem;
                 }
             }
@@ -477,6 +500,35 @@ Div1Word:
                 // Compute full remainder, rem = dividend - (quo * divisor).
                 //
                 ulong prod1;
+#if TARGET_64BIT
+                // A 64-by-32-bit product has at most 32 high bits. Keep that
+                // result wide so the subtraction can consume the low borrow directly.
+                ulong prod2 = Math.BigMul(bufDen.Low64, quo, out prod1);
+                ulong low = bufNum.Low64;
+                ulong num = low - prod1;
+                // Keep the high word signed so its sign records the full-width
+                // borrow. Both subtraction and correction stay within Int64.
+                long high = (long)remainder - (long)prod2;
+                high -= (num > low) ? 1L : 0L;
+
+                if (high < 0)
+                {
+                    // The quotient estimate is at most two too large. Add the
+                    // divisor back, including the low word's carry, until nonnegative.
+                    prod1 = bufDen.Low64;
+                    do
+                    {
+                        quo--;
+                        num += prod1;
+                        high += den;
+                        high += (num < prod1) ? 1L : 0L;
+                    } while (high < 0);
+                }
+
+                bufNum.Low64 = num;
+                bufNum.U2 = (uint)high;
+                return quo;
+#else
                 uint prod2 = (uint)Math.BigMul(bufDen.Low64, quo, out prod1);
                 ulong num = bufNum.Low64 - prod1;
                 remainder -= (uint)prod2;
@@ -521,6 +573,7 @@ PosRem:
                 bufNum.Low64 = num;
                 bufNum.U2 = remainder;
                 return quo;
+#endif
             }
 
             /// <summary>
@@ -935,12 +988,12 @@ PosRem:
             /// <returns>Returns false if there is an overflow</returns>
             private static bool Add32To96(ref Buf12 bufNum, uint value)
             {
-                if ((bufNum.Low64 += value) < value)
-                {
-                    if (++bufNum.U2 == 0)
-                        return false;
-                }
-                return true;
+                ulong low = bufNum.Low64 + value;
+                ulong high = bufNum.U2;
+                high += low < value ? 1UL : 0UL;
+                bufNum.Low64 = low;
+                bufNum.U2 = (uint)high;
+                return high <= uint.MaxValue;
             }
 
             /// <summary>
@@ -1237,6 +1290,14 @@ AlignedAdd:
                         // Signs differ - subtract
                         //
                         low64 = d1Low64 - d2.Low64;
+#if TARGET_64BIT
+                        // The signed high word retains the full-width borrow.
+                        long difference = (long)d1High - d2.High;
+                        difference -= low64 > d1Low64 ? 1L : 0L;
+                        high = (uint)difference;
+                        if (difference < 0)
+                            goto SignFlip;
+#else
                         high = d1High - d2.High;
 
                         // Propagate carry
@@ -1249,12 +1310,21 @@ AlignedAdd:
                         }
                         else if (high > d1High)
                             goto SignFlip;
+#endif
                     }
                     else
                     {
                         // Signs are the same - add
                         //
                         low64 = d1Low64 + d2.Low64;
+#if TARGET_64BIT
+                        // Keep the 97th bit until the overflow/rescaling check.
+                        ulong sum = (ulong)d1High + d2.High;
+                        sum += low64 < d1Low64 ? 1UL : 0UL;
+                        high = (uint)sum;
+                        if (sum > uint.MaxValue)
+                            goto AlignedScale;
+#else
                         high = d1High + d2.High;
 
                         // Propagate carry
@@ -1267,6 +1337,7 @@ AlignedAdd:
                         }
                         else if (high < d1High)
                             goto AlignedScale;
+#endif
                     }
                     goto ReturnResult;
                 }
@@ -1508,7 +1579,7 @@ ThrowOverflow:
                 {
                     // At least one operand has bits set in the upper 64 bits.
                     //
-                    // Compute and accumulate the 9 partial products into a
+                    // Compute and accumulate the four partial products into a
                     // 192-bit (3*64bit) result.
                     //
                     //                [l-hi][l-lo]   left high32, low64
@@ -1531,10 +1602,22 @@ ThrowOverflow:
                         // hi64 will never overflow since the result will always fit in 192 (2*96) bits
                         ulong hi64 = Math.BigMul(d1.High, d2.High);
 
-                        // Do crosswise multiplications between upper 32bit and lower 64 bits
+                        // Do crosswise multiplications between upper 32bit and lower 64 bits.
+#if TARGET_64BIT
+                        // Consume d1.High first so MULX need not preserve it across the other product.
+                        ulong crossHigh = Math.BigMul(d2.Low64, d1.High, out tmp);
+                        mid64 += tmp;
+                        // Add the high product and carry together after the low addition,
+                        // so the JIT can combine them into an add-with-carry instruction.
+                        hi64 = hi64 + crossHigh + ((mid64 < tmp) ? 1UL : 0UL);
+
+                        crossHigh = Math.BigMul(d1.Low64, d2.High, out tmp);
+                        mid64 += tmp;
+                        hi64 = hi64 + crossHigh + ((mid64 < tmp) ? 1UL : 0UL);
+#else
+                        // Keep conditional increments when 64-bit arithmetic is decomposed into 32-bit operations.
                         hi64 += Math.BigMul(d1.Low64, d2.High, out tmp);
                         mid64 += tmp;
-                        // propagate carry, can be simplified if https://github.com/dotnet/runtime/issues/48247 is done
                         if (mid64 < tmp)
                             ++hi64;
 
@@ -1542,6 +1625,7 @@ ThrowOverflow:
                         mid64 += tmp;
                         if (mid64 < tmp)
                             ++hi64;
+#endif
 
                         bufProd.Mid64 = mid64;
                         bufProd.High64 = hi64;
@@ -2252,8 +2336,19 @@ RoundUp:
                     {
                         uint den = d2.Low;
                         ulong tmp = ((ulong)d1.High << 32) | d1.Mid;
-                        tmp = ((tmp % den) << 32) | d1.Low;
-                        d1.Low64 = tmp % den;
+                        if (X86.X86Base.IsSupported)
+                        {
+                            // The first remainder is below den, so the final quotient
+                            // fits in 32 bits and the limbs can feed a widening divide.
+                            uint remainder = (uint)(tmp % den);
+                            (_, remainder) = Div64By32(d1.Low, remainder, den);
+                            d1.Low64 = remainder;
+                        }
+                        else
+                        {
+                            tmp = ((tmp % den) << 32) | d1.Low;
+                            d1.Low64 = tmp % den;
+                        }
                         d1.High = 0;
                     }
                     else
@@ -2433,7 +2528,6 @@ RoundUp:
 
                 {
                     power = UInt32Powers10[(int)scale];
-                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     uint n = d.uhi;
                     if (n == 0)
                     {
@@ -2445,25 +2539,34 @@ RoundUp:
                             remainder = 0;
                             goto checkRemainder;
                         }
+#if TARGET_64BIT
+                        (ulong quotient, ulong rem) = Math.DivRem(tmp, power);
+                        d.Low64 = quotient;
+                        remainder = (uint)rem;
+#else
+                        // Keep the remainder calculation narrow on 32-bit targets.
                         ulong div = tmp / power;
                         d.Low64 = div;
                         remainder = (uint)(tmp - div * power);
+#endif
                     }
                     else
                     {
-                        uint q;
-                        (d.uhi, remainder) = Math.DivRem(n, power);
+                        (uint highQuotient, remainder) = Math.DivRem(n, power);
+                        d.uhi = highQuotient;
+                        // Each remainder is less than power, so the next quotient
+                        // fits in 32 bits. Reuse the widening divide's remainder.
                         n = d.umid;
                         if ((n | remainder) != 0)
                         {
-                            d.umid = q = (uint)((((ulong)remainder << 32) | n) / power);
-                            remainder = n - q * power;
+                            (uint quotient, remainder) = Div64By32(n, remainder, power);
+                            d.umid = quotient;
                         }
                         n = d.ulo;
                         if ((n | remainder) != 0)
                         {
-                            d.ulo = q = (uint)((((ulong)remainder << 32) | n) / power);
-                            remainder = n - q * power;
+                            (uint quotient, remainder) = Div64By32(n, remainder, power);
+                            d.ulo = quotient;
                         }
                     }
                 }

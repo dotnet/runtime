@@ -268,6 +268,11 @@ void LinearScan::resolveConflictingDefAndUse(Interval* interval, RefPosition* de
     // to change the register assignments to RDX and RAX respectively.
     bool canChangeDef = !defRefPosition->treeNode->IsMultiRegNode();
 
+    // A lowered divide/remainder pair defines RAX followed immediately by RDX.
+    // Redirecting either definition could overwrite the other hardware result
+    // before the physical-register capture has taken place.
+    canChangeDef &= !defRefPosition->treeNode->IsDivRemPair();
+
     // Avoid changing the def reg away from its assignment if that register is
     // currently busy. The reason is that we have a number of places in LSRA
     // that assume that BuildDef(tree, SRBM_REG) means that SRBM_REG will be
@@ -417,6 +422,10 @@ void LinearScan::checkConflictingDefUse(RefPosition* useRP)
         if (!isSingleRegister(newAssignment) || !theInterval->hasInterferingUses)
         {
             defRP->registerAssignment = newAssignment;
+            if (isSingleRegister(newAssignment) && !defRP->isFixedRegRef && !theInterval->isConstant)
+            {
+                m_hasUnmodeledFixedDefs = true;
+            }
         }
     }
     else
@@ -2776,6 +2785,11 @@ void LinearScan::buildIntervals()
         actualRegistersMask = regMaskTP(~RBM_NONE, ~0);
     }
 
+    if (m_hasUnmodeledFixedDefs && m_hasCarryArithmetic)
+    {
+        addFixedRefsForPropagatedDefs();
+    }
+
 #ifdef DEBUG
     // Make sure we don't have any blocks that were not visited
     for (BasicBlock* const block : m_compiler->Blocks())
@@ -2791,6 +2805,72 @@ void LinearScan::buildIntervals()
     validateIntervals();
 
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// addFixedRefsForPropagatedDefs: Make inherited single-register constraints
+// visible to allocations that precede the constrained definition.
+//
+// Notes:
+//    Runs after reference construction, when all use constraints are known.
+//    Maintains the global and physical-register reference lists in one pass.
+//    Limited to methods with lowered carry arithmetic. Applying the additional
+//    constraints to general call argument setup can introduce spills.
+//    Constants retain their existing register-reuse handling.
+//
+void LinearScan::addFixedRefsForPropagatedDefs()
+{
+    // A tree-temp definition can inherit a single-register constraint from its
+    // use after its RefPosition has been built. Model that constraint in the
+    // physical register's timeline too, so earlier allocations see the conflict.
+    // Insert in both ordered lists without moving existing RefPositions.
+    RefPosition* previousRegRef[REG_COUNT] = {};
+    INDEBUG(unsigned refNumber = 0;)
+    for (auto it = refPositions.begin(); it != refPositions.end(); ++it)
+    {
+        RefPosition& ref = *it;
+        if (ref.isPhysRegRef)
+        {
+            previousRegRef[ref.getReg()->regNum] = &ref;
+        }
+        // Keep constant definitions under the existing constant-reuse handling.
+        // A physical fixed reference would discard an already-matching constant
+        // before its definition gets a chance to reuse the register.
+        else if ((ref.refType == RefTypeDef) && !ref.isFixedRegRef && !ref.getInterval()->isLocalVar &&
+                 !ref.getInterval()->isConstant && isSingleRegister(ref.registerAssignment))
+        {
+            regNumber    reg      = genRegNumFromMask(ref.registerAssignment, ref.getInterval()->registerType);
+            RegRecord*   record   = getRegisterRecord(reg);
+            RefPosition* previous = previousRegRef[reg];
+            if ((previous == nullptr) || (previous->nodeLocation != ref.nodeLocation) ||
+                (previous->refType != RefTypeFixedReg))
+            {
+                auto fixedIt =
+                    refPositions.emplace(it, ref.bbNum, ref.nodeLocation, nullptr, RefTypeFixedReg DEBUG_ARG(nullptr));
+                RefPosition* fixed = &*fixedIt;
+                fixed->setReg(record);
+                if (previous == nullptr)
+                {
+                    fixed->nextRefPosition   = record->firstRefPosition;
+                    record->firstRefPosition = fixed;
+                }
+                else
+                {
+                    fixed->nextRefPosition    = previous->nextRefPosition;
+                    previous->nextRefPosition = fixed;
+                }
+                if (fixed->nextRefPosition == nullptr)
+                {
+                    record->lastRefPosition   = fixed;
+                    record->recentRefPosition = fixed;
+                }
+                previousRegRef[reg] = fixed;
+                INDEBUG(fixed->rpNum = refNumber++;)
+            }
+            ref.isFixedRegRef = true;
+        }
+        INDEBUG(ref.rpNum = refNumber++;)
+    }
 }
 
 //------------------------------------------------------------------------
