@@ -5772,7 +5772,11 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
             }
 
             case GenIntCastDesc::ZERO_EXTEND_INT:
-                if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zba))
+                if (emit->AreUpper32BitsZero(srcReg))
+                {
+                    emit->emitIns_Mov(EA_PTRSIZE, dstReg, srcReg, /* canSkip */ true);
+                }
+                else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_Zba))
                 {
                     emit->emitIns_R_R_R(INS_add_uw, EA_PTRSIZE, dstReg, srcReg, REG_R0);
                 }
