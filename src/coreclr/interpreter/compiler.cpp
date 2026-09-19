@@ -1960,7 +1960,7 @@ void InterpCompiler::PrepareInterpMethod()
     // Store method data for later finalization
     m_initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
     m_unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-    m_publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
+    m_publishSecretStubParam = (m_hiddenArgumentVar >= 0) && m_unmanagedCallersOnly;
 
     // Reserve space in the builder for each section
     // Bytecode section
@@ -2547,7 +2547,22 @@ void InterpCompiler::CreateILVars()
     for (int i = argIndexOffset; i < numArgs; i++)
     {
         CORINFO_CLASS_HANDLE argClass;
-        CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
+        CorInfoTypeWithMod argCorTypeWithMod = m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass);
+        CorInfoType argCorType = strip(argCorTypeWithMod);
+        if ((argCorTypeWithMod & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (argCorType != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (m_hiddenArgumentVar >= 0)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            m_hiddenArgumentVar = i;
+        }
         InterpType interpType = GetInterpType(argCorType);
         sigArg = m_compHnd->getArgNext(sigArg);
         CreateNextLocalVar(i, argClass, interpType, &offset);
@@ -3848,16 +3863,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             AddIns(INTOP_THROW_PNSE);
             return true;
         }
-        case NI_System_StubHelpers_GetStubContext:
-        {
-            assert(m_hiddenArgumentVar >= 0);
-            AddIns(INTOP_MOV_P);
-            PushStackType(StackTypeI, NULL);
-            m_pLastNewIns->SetSVar(m_hiddenArgumentVar);
-            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-            return true;
-        }
-
         case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
         {
             CHECK_STACK(1);
@@ -5171,7 +5176,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (
-                    ni == NI_System_StubHelpers_GetStubContext ||
                     ni == NI_System_StubHelpers_NextCallReturnAddress ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
@@ -8829,12 +8833,12 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if ((m_hiddenArgumentVar >= 0) &&
+        m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         assert(!"Generating INTOP_STORESTUBCONTEXT on invalid platform");
 #else
-        m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);
         m_pLastNewIns->SetDVar(m_hiddenArgumentVar);
 #endif

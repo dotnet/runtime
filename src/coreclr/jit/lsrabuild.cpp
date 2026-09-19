@@ -2277,18 +2277,6 @@ void LinearScan::buildIntervals()
         buildInitialParamDef(lclDsc, paramReg);
     }
 
-    // If there is a secret stub param, it is also live in
-    if (m_compiler->info.compPublishStubParam)
-    {
-        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
-
-        LclVarDsc* stubParamDsc = m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar);
-        if (isCandidateVar(stubParamDsc))
-        {
-            buildInitialParamDef(stubParamDsc, REG_SECRET_STUB_PARAM);
-        }
-    }
-
 #ifdef DEBUG
     if (stressInitialParamReg())
     {
