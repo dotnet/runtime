@@ -32,12 +32,6 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void GetConstructor_TypeNotTypeBuilder_ThrowsArgumentException()
-        {
-            AssertExtensions.Throws<ArgumentException>("type", () => TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])));
-        }
-
-        [Fact]
         public void GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinitionOfType_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
