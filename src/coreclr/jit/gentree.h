@@ -6928,6 +6928,13 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
                                            unsigned   simdSize,
                                            bool       reverseCond = false);
 
+#ifdef TARGET_ARM64
+    static NamedIntrinsic GetSveIntrinsicIdForBinOp(genTreeOps oper,
+                                                    GenTree*   op1,
+                                                    GenTree*   op2,
+                                                    var_types  simdBaseType);
+#endif
+
     static genTreeOps GetOperForHWIntrinsicId(NamedIntrinsic id, var_types simdBaseType, bool* isScalar);
 
     genTreeOps GetOperForHWIntrinsicId(bool* isScalar, bool getEffectiveOp = false) const;

@@ -743,6 +743,17 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             op2 = impSIMDPopStack();
             op1 = impSIMDPopStack();
 
+#ifdef FEATURE_MASKED_HW_INTRINSICS
+            // Preserve SVE BitwiseClear when both operands originated as masks so the mask-variant folding
+            // can handle it.
+            if ((intrinsic == NI_Sve_BitwiseClear) && op1->OperIsConvertMaskToVector() &&
+                op2->OperIsConvertMaskToVector())
+            {
+                retNode = gtNewSimdHWIntrinsicNode(retType, op1, op2, intrinsic, simdBaseType, simdSize);
+                break;
+            }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
             op2     = gtFoldExpr(gtNewSimdUnOpNode(GT_NOT, retType, op2, simdBaseType, simdSize));
             retNode = gtNewSimdBinOpNode(GT_AND, retType, op1, op2, simdBaseType, simdSize);
             break;
@@ -1650,6 +1661,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         {
             return nullptr;
         }
+    }
+
+    if (retNode != nullptr && (retType == TYP_SIMD || retType == TYP_MASK))
+    {
+        assert(retNode->TypeIs(retType));
     }
 
     assert(!isScalar || isValidScalarIntrinsic);

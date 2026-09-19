@@ -908,6 +908,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
         }
+        else if (node->GetSimdSize() == SIZE_UNKNOWN)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_VectorT));
+        }
         else
         {
             assert((node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
@@ -2000,6 +2004,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             case NI_Vector_AsVector128Unsafe:
             case NI_Vector_GetLower:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
+                break;
+
+            case NI_Sve_AsVector:
+                // This NEON move performs an implicit zeroing of the upper bytes of the Z register,
+                // if VL > 128. See Arm ARM B1.4.3 (R_WKYLB)
+                GetEmitter()->emitIns_Mov(ins, EA_16BYTE, targetReg, op1Reg, false);
                 break;
 
             case NI_Vector_GetElement:
