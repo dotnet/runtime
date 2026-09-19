@@ -166,7 +166,7 @@ namespace System
             if (value is null)
                 return source;
 
-            if (!RuntimeHelpers.TypeEquivalent(source, value))
+            if (!RuntimeHelpers.AreTypesEquivalent(source, value))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             return source.RemoveImpl(value);
@@ -316,7 +316,7 @@ namespace System
                 return this;
 
             // Verify that the types are the same...
-            if (!RuntimeHelpers.TypeEquivalent(this, d))
+            if (!RuntimeHelpers.AreTypesEquivalent(this, d))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             Wrapper wrapper = new Wrapper(d);
@@ -432,7 +432,7 @@ namespace System
             if (ReferenceEquals(this, obj))
                 return true;
 
-            if (obj is null || !RuntimeHelpers.TypeEquivalent(this, obj))
+            if (obj is null || !RuntimeHelpers.AreTypesEquivalent(this, obj))
                 return false;
 
             // Since this is a Delegate, and we know the types are the same, obj should also be a Delegate

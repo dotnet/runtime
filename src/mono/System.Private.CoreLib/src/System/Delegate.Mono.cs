@@ -484,7 +484,7 @@ namespace System
 
         public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            if (!(obj is Delegate d) || !RuntimeHelpers.TypeEquivalent(this, obj))
+            if (!(obj is Delegate d) || !RuntimeHelpers.AreTypesEquivalent(this, obj))
                 return false;
 
             // Do not compare method_ptr, since it can point to a trampoline

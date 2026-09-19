@@ -136,7 +136,7 @@ namespace System
 
         private unsafe bool EqualsCore(Delegate other)
         {
-            Debug.Assert(RuntimeHelpers.TypeEquivalent(this, other));
+            Debug.Assert(RuntimeHelpers.AreTypesEquivalent(this, other));
 
             // Check closed delegates first
             if (IsClosed)
@@ -654,6 +654,7 @@ namespace System
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool SlotEquals(Delegate previous, Delegate o) =>
             previous._methodPtr == o._methodPtr &&
             previous._methodPtrAux == o._methodPtrAux &&

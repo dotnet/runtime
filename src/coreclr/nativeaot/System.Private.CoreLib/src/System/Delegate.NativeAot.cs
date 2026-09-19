@@ -56,7 +56,6 @@ namespace System
             }
         }
 
-        // V1 API: Create closed instance delegates. Method name matching is case sensitive.
         [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
         {
@@ -67,7 +66,6 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        // V1 API: Create open static delegates. Method name matching is case insensitive.
         protected Delegate([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method)
         {
             // This constructor cannot be used by application code. To create a delegate by specifying the name of a method, an
@@ -446,6 +444,7 @@ namespace System
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool SlotEquals(Delegate previous, Delegate o) =>
             ReferenceEquals(previous._target, o._target) &&
             ReferenceEquals(previous._helperObject, o._helperObject) &&
@@ -454,7 +453,7 @@ namespace System
 
         private bool EqualsCore(Delegate other)
         {
-            Debug.Assert(RuntimeHelpers.TypeEquivalent(this, other));
+            Debug.Assert(RuntimeHelpers.AreTypesEquivalent(this, other));
 
             if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
                 return other.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations) && invocations.SequenceEqual(otherInvocations);

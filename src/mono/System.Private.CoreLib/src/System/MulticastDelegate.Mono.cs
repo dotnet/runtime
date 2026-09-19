@@ -124,7 +124,7 @@ namespace System
                 return this;
 
             // Verify that the types are the same...
-            if (!RuntimeHelpers.TypeEquivalent(this, follow))
+            if (!RuntimeHelpers.AreTypesEquivalent(this, follow))
                 throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             MulticastDelegate other = (MulticastDelegate)follow;

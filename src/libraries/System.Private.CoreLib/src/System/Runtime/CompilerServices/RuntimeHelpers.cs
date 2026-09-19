@@ -5,10 +5,6 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-#if NATIVEAOT
-using Internal.Runtime;
-#endif
-
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
@@ -200,7 +196,8 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
 
-        internal static unsafe bool TypeEquivalent(object a, object b)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool AreTypesEquivalent(object a, object b)
         {
             Debug.Assert(a is not null);
             Debug.Assert(b is not null);
