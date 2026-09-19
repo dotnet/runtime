@@ -44,7 +44,10 @@ _None._
 
 ### Global variables used
 
-_None._
+| Global | Type | Meaning |
+| --- | --- | --- |
+| `WasmDebugRegisterTypeShift` | `uint8` | Bit position at which the JIT debug-register encoding stores its WASM value type |
+| `WasmDebugValueTypeCount` | `uint8` | Number of values in the JIT's WASM debug-register value-type encoding |
 
 ### Contracts used
 
@@ -173,6 +176,30 @@ public enum DebugVarLocKind
     DoubleStack,
     FloatingPointStack,
     FixedVarArg,
+    // The variable lives in a WebAssembly local (see "WebAssembly Variable Locations" below).
+    WasmLocal,
+    // The variable spans two WebAssembly locals.
+    WasmLocalPair,
+}
+
+// A value type in the JIT's WebAssembly debug-register encoding.
+public enum WasmDebugValueType : uint
+{
+    Invalid = 0,
+    I32 = 1,
+    I64 = 2,
+    F32 = 3,
+    F64 = 4,
+    V128 = 5,
+    ExnRef = 6,
+    Count = 7,
+}
+
+// Identifies a WebAssembly local by index and value type.
+public readonly struct WasmLocalInfo
+{
+    public uint Index { get; init; }
+    public WasmDebugValueType ValueType { get; init; }
 }
 
 public readonly struct DebugVarInfo
@@ -192,6 +219,9 @@ public readonly struct DebugVarInfo
     public uint FloatingPointStackRegister { get; init; }
     public uint FixedVarArgOffset { get; init; }
     public uint CallReturnValueILOffset { get; init; }
+    // WASM only; null on every other architecture.
+    public WasmLocalInfo? WasmLocal { get; init; }
+    public WasmLocalInfo? WasmLocal2 { get; init; }
 }
 
 // Given a code pointer, return the variable location info for the method.
@@ -222,6 +252,111 @@ Each variable entry in the Vars section is nibble-encoded as follows:
 | `VLT_FIXED_VA` | offset (encoded unsigned) |
 
 Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
+
+### WebAssembly Variable Register Encoding
+
+WASM has no physical registers. RyuJIT packs a `(local index, debug value type)` tuple into the
+32-bit `regNumber` payload, and that packed value appears in every register field of the Vars
+stream:
+
+```text
+packedRegister = localIndex | ((uint)debugValueType << WasmDebugRegisterTypeShift)
+```
+
+The encoding uses the following values:
+
+| Value type | Encoded value |
+| --- | --- |
+| `Invalid` | `0` |
+| `I32` | `1` |
+| `I64` | `2` |
+| `F32` | `3` |
+| `F64` | `4` |
+| `V128` | `5` |
+| `ExnRef` | `6` |
+
+The target advertises `WasmDebugRegisterTypeShift` and `WasmDebugValueTypeCount` as `uint8`
+numeric data descriptor globals. These values define how to separate the local index from the
+debug value type. A reader must reject an unsupported or missing encoding rather than fall back
+to a compiled-in shift and plausibly decode the wrong local or type.
+
+Debug value type `0` is reserved so that small raw values remain available for pseudo-registers
+such as `REGNUM_AMBIENT_SP`. A packed value whose value type is `0` or greater than or equal to
+`WasmDebugValueTypeCount` does not name a local.
+
+`WasmDebugValueTypeCount` is JIT debug-encoding vocabulary, not the complete WebAssembly
+specification type set. Managed references currently use the JIT's machine `I32`/`I64`
+representation; the encoding does not independently identify a managed GC reference. A future
+bit-width or value-count change requires a format-aware, versioned reader update.
+
+### WebAssembly Stack Base Encoding
+
+WASM `VLT_STK` and `VLT_STK2` records currently encode base register `2`.
+`REG_FPBASE`, `REG_SPBASE`, and `REGNUM_AMBIENT_SP` all have that value on this target, so the
+debug record identifies a logical frame-relative stack home; it does not identify a particular
+WebAssembly engine local.
+
+The absolute logical frame address is reconstructed by the runtime stack-walk and unwind
+protocol from shadow-stack linear memory. The engine's current per-function SP/FP local allocation
+is a separate code-generation detail:
+
+* Frame access allocates an FP value when a method has frame locals, uses `localloc`, or has
+  funclets.
+* Without `localloc`, the root function's FP aliases its SP, including methods that make calls.
+* `localloc` gives the root a distinct FP so later SP movement does not change frame-relative
+  addresses.
+* Funclets receive a distinct parent establishing FP; with `localloc`, that remains the root's
+  pre-adjustment frame base.
+
+The numeric WebAssembly local indices holding those values can vary with function parameters and
+compiler-created locals and are not part of this debug-info format. Readers must not infer the
+logical frame address from a hardcoded `$varN`, and the producer does not advertise SP/FP engine
+local indices. A future producer that changes stack records away from base `2` requires a
+coordinated, fail-loud reader update.
+
+### WebAssembly Variable Locations
+
+On WASM the contract therefore reports:
+
+* `VLT_REG` / `VLT_REG_BYREF` as `DebugVarLocKind.WasmLocal`, and `VLT_REG_REG` as
+  `DebugVarLocKind.WasmLocalPair`. WASM locals are engine-private frame state: they are not in
+  linear memory and cannot be read through the data target, so the contract names them rather than
+  resolving them. A consumer attached to the WASM engine (for example over the Chrome DevTools
+  Protocol) can fetch the value from the local index.
+* Stack-based kinds unchanged, because their storage is linear memory and is readable. Only the
+  base register differs, as described below.
+
+The frame pointer to add the offset to is the *logical* frame pointer, which for a method's root
+function is its own frame base and for a funclet is the parent method's frame base.
+`WasmContext.Unwind` and wasm explicit-frame seeding populate it by mirroring
+`RtlVirtualUnwind` / `GetWasmFramePointerFromStackPointer` in
+`src/coreclr/vm/wasm/helpers.cpp`; variable resolution consumes that context value rather than
+independently unwinding again.
+
+The JIT never emits `VLT_REG_FP` or `VLT_FPSTK` on WASM; `f32` and `f64` locals are reported as
+`VLT_REG` with the value type in the packed bits, so `IsFloatingPoint` is not set for them.
+
+`DebugVarInfo` exposes decoded register locations in `WasmLocal` and `WasmLocal2`, corresponding to
+`Register` and `Register2`. Both are null on every other architecture. Stack base register `2` is
+not a WASM local descriptor.
+
+The managed cDAC reader reports engine-private WASM register locals with no native locations.
+Existing `ClrDataValue` behavior then reports those values unavailable (`GetNumLocations == 0`,
+`GetBytes`/`GetAddress` fail) instead of fabricating a register value of zero.
+
+An unreadable or null WASM `VLT_STK_BYREF` indirection preserves one logical location, matching
+the native DAC's location count, but its address/value/object accessors fail with
+`CORDBG_E_READVIRTUAL_FAILURE`. This distinguishes a failed indirection from a direct
+stack-homed null reference, which remains one readable location containing zero.
+
+There is no native DAC build on WASM, so live `_legacyImpl` comparison assertions cannot validate
+this representation. DacDbi coverage is structural managed unit coverage.
+
+WASM local index spaces are per function, and a method's funclets are separate WASM functions from
+its root (`WasmRegAlloc` in `src/coreclr/jit/regallocwasm.cpp`). Variable ranges, by contrast, are
+method-relative, and a funclet's virtual IP is rebased onto its root function. A consumer must
+therefore establish which WASM function the current virtual IP belongs to before interpreting a
+local index.
 
 ### Async Suspension Point APIs
 

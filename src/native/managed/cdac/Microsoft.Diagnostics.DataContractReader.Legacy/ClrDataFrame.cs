@@ -540,6 +540,7 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
                     AddressOrValue = locations[0].AddressOrValue,
                     Size = (ulong)typeSize,
                     IsRegisterValue = locations[0].IsRegisterValue,
+                    HasReadFailure = locations[0].HasReadFailure,
                 },
             ];
         }
@@ -943,12 +944,15 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
     /// Resolves a DebugVarInfo entry to physical NativeVarLocation(s)
     /// using the given CPU context. Mirrors the native NativeVarLocations() from util.cpp.
     /// </summary>
-    private static NativeVarLocation[] ResolveVarLocation(
+    internal static NativeVarLocation[] ResolveVarLocation(
         DebugVarInfo varInfo,
         IPlatformAgnosticContext context,
         Target target)
     {
         int pointerSize = target.PointerSize;
+
+        if (target.Contracts.RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.Wasm)
+            return ResolveWasmVarLocation(varInfo, context, target, pointerSize);
 
         return (varInfo.Kind, varInfo.IsByRef) switch
         {
@@ -987,6 +991,84 @@ public sealed unsafe partial class ClrDataFrame : IXCLRDataFrame, IXCLRDataFrame
 
             _ => [],
         };
+    }
+
+    /// <summary>
+    /// Resolves a variable location on WASM.
+    /// </summary>
+    /// <remarks>
+    /// WASM has no register file — <see cref="WasmContext"/>.<c>TryReadRegister(int)</c> always
+    /// fails — and a WASM "register" in debug info is not a register at all but a packed
+    /// (local index, value type) tuple naming a WASM local. WASM locals are engine-private frame
+    /// state: they are not in linear memory and cannot be read through the data target, so they
+    /// are reported as having no location rather than resolved. Routing them through
+    /// <see cref="ReadRegister"/> would instead silently report the value 0 for every variable.
+    /// Stack slots, by contrast, live in linear memory and are resolved here against the frame's
+    /// logical frame pointer.
+    /// </remarks>
+    private static NativeVarLocation[] ResolveWasmVarLocation(
+        DebugVarInfo varInfo,
+        IPlatformAgnosticContext context,
+        Target target,
+        int pointerSize)
+    {
+        // On WASM, REG_FPBASE, REG_SPBASE (both REG_NA == REG_COUNT == 2) and
+        // ICorDebugInfo::REGNUM_AMBIENT_SP (also 2) all collapse to this single value, so it is the
+        // only base register a JIT-emitted WASM stack location can carry.
+        const uint WasmFrameBaseRegister = 2;
+        switch (varInfo.Kind)
+        {
+            case DebugVarLocKind.Stack:
+            case DebugVarLocKind.DoubleStack:
+                break;
+            default:
+                // WasmLocal, WasmLocalPair, and the mixed register/stack kinds all have at least
+                // part of their storage in a WASM local, which is unreadable from here.
+                return [];
+        }
+
+        // Determine the base the stack offset is relative to.
+        //
+        // RyuJIT's getSiVarLoc always passes REG_FPBASE or REG_SPBASE as the base register, and on
+        // WASM both are REG_NA (src/coreclr/jit/targetwasm.h). REG_NA is REG_COUNT, which is 2 on
+        // WASM because registerwasm.h defines only REG_STK. siFillStackVarLoc may additionally
+        // rewrite the base to ICorDebugInfo::REGNUM_AMBIENT_SP, which is also 2 on WASM
+        // (src/coreclr/inc/cordebuginfo.h). So every JIT-emitted WASM stack location carries base
+        // register 2, and the two cases are indistinguishable.
+        //
+        // WASM codegen addresses the frame exclusively through the frame-pointer local -- see
+        // genZeroInitFrame's "Wasm locals are at non-negative offsets from FP" assert and the
+        // GetFramePointerRegIndex() uses throughout codegenwasm.cpp -- so base 2 means the logical
+        // frame pointer stored in the frame's stack-walk context.
+        if (varInfo.BaseRegister != WasmFrameBaseRegister)
+            return [];
+
+        TargetPointer framePointer = context.FramePointer;
+        if (framePointer == TargetPointer.Null)
+            return [];
+
+        ulong address = (ulong)((long)framePointer.Value + varInfo.StackOffset);
+        ulong size = varInfo.Kind == DebugVarLocKind.DoubleStack ? 2 * (ulong)pointerSize : (ulong)pointerSize;
+
+        if (varInfo.IsByRef)
+        {
+            if (!target.TryReadPointer(address, out TargetPointer byRefAddress) ||
+                byRefAddress == TargetPointer.Null)
+            {
+                return
+                [
+                    new NativeVarLocation
+                    {
+                        AddressOrValue = 0,
+                        Size = (ulong)pointerSize,
+                        HasReadFailure = true,
+                    },
+                ];
+            }
+            address = byRefAddress.Value;
+        }
+
+        return [new NativeVarLocation { AddressOrValue = address, Size = size, IsRegisterValue = false }];
     }
 
     private static NativeVarLocation[] ResolveRegByRef(IPlatformAgnosticContext context, Target target, uint register, int pointerSize)

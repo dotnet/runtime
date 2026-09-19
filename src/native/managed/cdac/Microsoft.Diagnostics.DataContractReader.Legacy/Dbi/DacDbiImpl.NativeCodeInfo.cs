@@ -54,6 +54,13 @@ public sealed unsafe partial class DacDbiImpl
             (DebugVarLocKind.Register, false, false) => VarLocType.VLT_REG,
             (DebugVarLocKind.Register, false, true) => VarLocType.VLT_REG_FP,
             (DebugVarLocKind.Register, true, _) => VarLocType.VLT_REG_BYREF,
+            // WASM locals are reported to DacDbi in their original ICorDebugInfo form. VarLoc is a
+            // mirror of ICorDebugInfo::VarLoc, and the JIT encodes a WASM local as VLT_REG whose
+            // register number is the packed (local index, value type) tuple. Preserving that keeps
+            // parity with the native DAC, which passes the JIT's encoding through untouched.
+            (DebugVarLocKind.WasmLocal, false, _) => VarLocType.VLT_REG,
+            (DebugVarLocKind.WasmLocal, true, _) => VarLocType.VLT_REG_BYREF,
+            (DebugVarLocKind.WasmLocalPair, _, _) => VarLocType.VLT_REG_REG,
             (DebugVarLocKind.Stack, false, _) => VarLocType.VLT_STK,
             (DebugVarLocKind.Stack, true, _) => VarLocType.VLT_STK_BYREF,
             (DebugVarLocKind.RegisterRegister, _, _) => VarLocType.VLT_REG_REG,
@@ -68,6 +75,7 @@ public sealed unsafe partial class DacDbiImpl
         switch (varInfo.Kind)
         {
             case DebugVarLocKind.Register:
+            case DebugVarLocKind.WasmLocal:
                 loc.vlrReg = varInfo.Register;
                 break;
             case DebugVarLocKind.Stack:
@@ -75,6 +83,7 @@ public sealed unsafe partial class DacDbiImpl
                 loc.vlsOffset = varInfo.StackOffset;
                 break;
             case DebugVarLocKind.RegisterRegister:
+            case DebugVarLocKind.WasmLocalPair:
                 loc.vlrrReg1 = varInfo.Register;
                 loc.vlrrReg2 = varInfo.Register2;
                 break;

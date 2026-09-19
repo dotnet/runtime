@@ -4389,7 +4389,8 @@ public:
 #endif                                // TARGET_X86
 
 #if defined(TARGET_WASM)
-    unsigned lvaWasmSpArg = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmSpArg               = BAD_VAR_NUM; // lcl var index of Wasm stack pointer arg
+    unsigned lvaWasmPortableEntryPtrArg = BAD_VAR_NUM; // lcl var index of Wasm portable entry point arg
     unsigned lvaWasmVirtualIP = BAD_VAR_NUM; // Wasm virtual IP slot
     unsigned lvaWasmFunctionIndex = BAD_VAR_NUM; // Wasm function index slot
     unsigned lvaWasmResumeIP = BAD_VAR_NUM; // Wasm catch resumption IP slot

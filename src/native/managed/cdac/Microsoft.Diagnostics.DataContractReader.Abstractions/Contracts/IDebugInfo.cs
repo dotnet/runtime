@@ -48,6 +48,62 @@ public enum DebugVarLocKind
     DoubleStack,
     FloatingPointStack,
     FixedVarArg,
+    /// <summary>
+    /// The variable lives in a WebAssembly local. WASM locals are engine-private frame state:
+    /// they are not in linear memory and cannot be read through the data target. Consumers with
+    /// access to the WASM engine (for example a debugger attached over the Chrome DevTools
+    /// Protocol) can fetch the value using <see cref="DebugVarInfo.WasmLocal"/>.
+    /// </summary>
+    WasmLocal,
+    /// <summary>
+    /// The variable spans two WebAssembly locals, described by
+    /// <see cref="DebugVarInfo.WasmLocal"/> and <see cref="DebugVarInfo.WasmLocal2"/>.
+    /// </summary>
+    WasmLocalPair,
+}
+
+/// <summary>
+/// A value type in the JIT's WebAssembly debug-register encoding.
+/// This is encoding vocabulary, not the WebAssembly specification's complete or stable type set.
+/// </summary>
+public enum WasmDebugValueType : uint
+{
+    /// <summary>Reserved so that small packed values can encode pseudo-registers.</summary>
+    Invalid = 0,
+    I32 = 1,
+    I64 = 2,
+    F32 = 3,
+    F64 = 4,
+    V128 = 5,
+    ExnRef = 6,
+    Count = 7,
+}
+
+/// <summary>
+/// Identifies a WebAssembly local by index and value type.
+/// </summary>
+/// <remarks>
+/// <para>
+/// On WASM, RyuJIT has no physical registers. It packs a <c>(local index, value type)</c> tuple
+/// into <c>regNumber</c> using the target-described <c>WasmDebugRegisterTypeShift</c>
+/// (<c>MakeWasmReg</c> in <c>src/coreclr/jit/registeropswasm.cpp</c>). That packed value is what
+/// lands in the <c>ICorDebugInfo</c> variable-location stream. <see cref="Index"/> is the index
+/// the emitted <c>local.get</c> / <c>local.set</c> instructions use directly, so it can be handed
+/// to a WASM engine as-is after selecting the correct module/function.
+/// </para>
+/// <para>
+/// WASM local index spaces are per function, and a method's funclets are separate WASM functions
+/// from its root (see <c>WasmRegAlloc</c> in <c>src/coreclr/jit/regallocwasm.cpp</c>). Variable
+/// ranges, by contrast, are method-relative. A consumer must therefore know which WASM function
+/// the current virtual IP belongs to before interpreting <see cref="Index"/>.
+/// </para>
+/// </remarks>
+public readonly struct WasmLocalInfo
+{
+    /// <summary>The WASM local index, as used by <c>local.get</c> / <c>local.set</c>.</summary>
+    public uint Index { get; init; }
+    /// <summary>The JIT debug-encoding value type of the local.</summary>
+    public WasmDebugValueType ValueType { get; init; }
 }
 
 /// <summary>
@@ -84,6 +140,17 @@ public readonly struct DebugVarInfo
     /// the call site whose return value this entry describes. Zero for all other entries.
     /// </summary>
     public uint CallReturnValueILOffset { get; init; }
+
+    /// <summary>
+    /// On WASM, <see cref="Register"/> decoded into a local index and value type.
+    /// Null on every other architecture.
+    /// </summary>
+    public WasmLocalInfo? WasmLocal { get; init; }
+    /// <summary>
+    /// On WASM, <see cref="Register2"/> decoded into a local index and value type.
+    /// Null on every other architecture.
+    /// </summary>
+    public WasmLocalInfo? WasmLocal2 { get; init; }
 }
 
 /// <summary>

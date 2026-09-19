@@ -91,7 +91,8 @@ public readonly record struct GCInfoHeader(
     uint GSCookieValidRangeEnd,            // End (exclusive) of the GS cookie valid range
     SpecialSlot? PSPSym,                   // PSP sym stack slot, or null if none
     SpecialSlot? GenericsInstContext,      // Generics instantiation context stack slot, or null if none
-    GenericsContextKind GenericsInstContextKind); // Kind of the generics instantiation context
+    GenericsContextKind GenericsInstContextKind, // Kind of the generics instantiation context
+    bool HasReversePInvokeFrame);          // True if unwinding leaves managed code through reverse P/Invoke
 
 // Unified lifetime (live code range) of a GC slot, register or stack.
 public readonly record struct GCSlotLifetime(
