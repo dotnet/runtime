@@ -1365,6 +1365,7 @@ public:
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast, Compiler* compiler);
+    static IntegralRange ForCastOutput(GenTreeCast* cast, const IntegralRange& operandRange);
     static IntegralRange Union(IntegralRange range1, IntegralRange range2);
 
 #ifdef DEBUG
