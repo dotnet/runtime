@@ -21,7 +21,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// (pcode, pArgs, pRet, pPortableEntryPointContext) and calls a function
     /// compiled via R2R with the appropriate wasm-level calling convention.
     /// </summary>
-    public class WasmInterpreterToR2RThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmInterpreterToR2RThunkNode : StringDiscoverableAssemblyStubNode, INodeWithWasmSignature, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _wasmSignature;
@@ -36,10 +36,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override string LookupString => "M" + _wasmSignature.SignatureString;
 
         private static WasmSignature sigForInterpToR2RThunks = new WasmSignature(new WasmFuncType(new WasmResultType(new WasmValueType[]{WasmValueType.I32, WasmValueType.I32, WasmValueType.I32}), new WasmResultType(Array.Empty<WasmValueType>())), "viii");
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(sigForInterpToR2RThunks, _context);
-        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => false;
-        bool INodeWithTypeSignature.HasGenericContextArg => false;
+        WasmSignature INodeWithWasmSignature.WasmSignature => sigForInterpToR2RThunks;
 
         private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
         private bool HasGenericContextBeforeAsync

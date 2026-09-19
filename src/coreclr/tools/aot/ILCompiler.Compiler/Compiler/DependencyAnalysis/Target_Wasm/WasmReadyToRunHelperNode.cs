@@ -8,7 +8,6 @@ using System.Diagnostics;
 using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter.WasmInstructions;
 
-using Internal.JitInterface;
 using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
@@ -17,10 +16,10 @@ namespace ILCompiler.DependencyAnalysis
     {
         private MethodSignature _signature;
 
-        public MethodSignature Signature => _signature ??= InitializeWasmSignature();
-        public bool IsUnmanagedCallersOnly => false;
-        public bool IsAsyncCall => false;
-        public bool HasGenericContextArg => false;
+        MethodSignature INodeWithTypeSignature.Signature => _signature ??= InitializeWasmSignature();
+        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
+        bool INodeWithTypeSignature.IsAsyncCall => false;
+        bool INodeWithTypeSignature.HasGenericContextArg => false;
 
         private MethodSignature InitializeWasmSignature()
         {
@@ -200,7 +199,7 @@ namespace ILCompiler.DependencyAnalysis
                     throw new NotImplementedException();
             }
 
-            encoder.FunctionBody = new WasmFunctionBody(WasmLowering.GetSignature(this).FuncType, expressions.ToArray());
+            encoder.FunctionBody = new WasmFunctionBody(((INodeWithWasmSignature)this).WasmSignature.FuncType, expressions.ToArray());
         }
     }
 }
