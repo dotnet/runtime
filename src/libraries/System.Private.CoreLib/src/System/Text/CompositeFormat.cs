@@ -122,6 +122,9 @@ namespace System.Text
             // allows us to merge those segments back together easily prior to their being appended to the list.
             var vsb = new ValueStringBuilder(stackalloc char[string.StackallocCharBufferSizeLimit]);
 
+            const int IndexLimit = 1_000_000;
+            const int WidthLimit = 1_000_000;
+
             // Repeatedly find the next hole and process it.
             int pos = 0;
             char ch;
@@ -198,7 +201,7 @@ namespace System.Text
                 if (ch != '}')
                 {
                     // Continue consuming optional additional digits.
-                    while (char.IsAsciiDigit(ch))
+                    while (char.IsAsciiDigit(ch) && index < IndexLimit)
                     {
                         index = index * 10 + ch - '0';
                         if (!TryMoveNext(format, ref pos, out ch))
@@ -255,7 +258,7 @@ namespace System.Text
                         {
                             goto FailureUnclosedFormatItem;
                         }
-                        while (char.IsAsciiDigit(ch))
+                        while (char.IsAsciiDigit(ch) && width < WidthLimit)
                         {
                             width = width * 10 + ch - '0';
                             if (!TryMoveNext(format, ref pos, out ch))
