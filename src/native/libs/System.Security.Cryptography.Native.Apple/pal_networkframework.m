@@ -630,16 +630,6 @@ static nw_framer_stop_handler_t framer_stop_handler = ^bool(nw_framer_t framer)
     return TRUE;
 };
 
-static nw_framer_cleanup_handler_t framer_cleanup_handler = ^(nw_framer_t framer)
-{
-    // Balances the retain taken in FramerOptionsSetSessionQueue.
-    dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
-    if (sessionQueue != NULL)
-    {
-        dispatch_release(sessionQueue);
-    }
-};
-
 // This is called when connection start to set up framer
 static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_framer_t framer)
 {
@@ -653,7 +643,19 @@ static nw_framer_start_handler_t framer_start = ^nw_framer_start_result_t(nw_fra
     nw_framer_set_output_handler(framer, framer_output_handler);
 
     nw_framer_set_stop_handler(framer, framer_stop_handler);
-    nw_framer_set_cleanup_handler(framer, framer_cleanup_handler);
+
+    // Balance the retain taken in FramerOptionsSetSessionQueue. The queue is captured here, while
+    // the framer options are still readable, rather than looked up from the cleanup handler: options
+    // are gone once teardown starts, and a lookup that returns NULL there would leak the retain.
+    dispatch_queue_t sessionQueue = FramerGetSessionQueue(framer);
+    nw_framer_set_cleanup_handler(framer, ^(nw_framer_t cleanupFramer)
+    {
+        (void)cleanupFramer;
+        if (sessionQueue != NULL)
+        {
+            dispatch_release(sessionQueue);
+        }
+    });
 
     return nw_framer_start_result_ready;
 };
