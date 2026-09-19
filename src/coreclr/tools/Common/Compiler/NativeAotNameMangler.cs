@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
 
 using Internal.Text;
 using Internal.TypeSystem;
@@ -74,16 +76,38 @@ namespace ILCompiler
                         sb.Append(s.Slice(0, i));
                 }
 
+                if ((sbyte)c < 0)
+                {
+                    // Non-ASCII codepoint: encode it as "_u" followed by the hex value of the scalar so that
+                    // distinct non-ASCII identifiers stay distinct after sanitization. Replacing every codepoint
+                    // with a single underscore made identifiers that consist only of non-ASCII characters (for
+                    // example Japanese type and method names) collapse into runs of underscores. Because the
+                    // mangled name of a method is "<type>__<method>", a type with an 8-character name and a
+                    // 9-character method then produced exactly the same symbol as a type with a 9-character
+                    // name and an 8-character method, and the linker rejected the duplicate symbols.
+                    int codepoint;
+                    if (Rune.DecodeFromUtf8(s.Slice(i), out Rune rune, out int bytesConsumed) == OperationStatus.Done)
+                    {
+                        codepoint = rune.Value;
+                        i += bytesConsumed - 1;
+                    }
+                    else
+                    {
+                        // Malformed sequence: keep the lead byte as the discriminator and skip its continuation bytes
+                        // so that the produced name is still deterministic.
+                        codepoint = c;
+                        while ((i + 1 < s.Length) && ((s[i + 1] & 0b1100_0000) == 0b1000_0000))
+                            i++;
+                    }
+                    sb.Append('_');
+                    sb.Append('u');
+                    AppendHex(sb, codepoint);
+                    continue;
+                }
+
                 // Everything else is replaced by underscore.
                 // TODO: We assume that there won't be collisions with our own or C++ built-in identifiers.
                 sb.Append('_');
-
-                // If this is a multibyte codepoint, seek to the next character
-                if ((sbyte)c < 0)
-                {
-                    while ((i + 1 < s.Length) && ((s[i + 1] & 0b1100_0000) == 0b1000_0000))
-                        i++;
-                }
             }
 
             Utf8String sanitizedName = (sb != null) ? sb.ToUtf8String() : new Utf8String(s.ToArray());
@@ -92,6 +116,15 @@ namespace ILCompiler
             // restricted to that use only. Replace them if they happened to be used in any identifiers in
             // the compilation input.
             return sanitizedName;
+        }
+
+        private static void AppendHex(Utf8StringBuilder sb, int value)
+        {
+            const string hexDigits = "0123456789abcdef";
+            // At least four digits so that names read like "\uXXXX" escapes; longer for supplementary planes.
+            int digits = value > 0xFFFF ? 6 : 4;
+            for (int shift = (digits - 1) * 4; shift >= 0; shift -= 4)
+                sb.Append(hexDigits[(value >> shift) & 0xF]);
         }
 
         private static bool ContainsUtf8ReplacementCharacter(ReadOnlySpan<byte> bytes)
