@@ -426,10 +426,16 @@
              Link="Common\System\Security\Cryptography\CompositeMLKem.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemAlgorithm.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemAlgorithm.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCng.Windows.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.Windows.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.Windows.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\PqcBlobHelpers.CompositeMLKem.cs"
+             Link="Common\System\Security\Cryptography\PqcBlobHelpers.CompositeMLKem.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildX25519)' == 'true'">

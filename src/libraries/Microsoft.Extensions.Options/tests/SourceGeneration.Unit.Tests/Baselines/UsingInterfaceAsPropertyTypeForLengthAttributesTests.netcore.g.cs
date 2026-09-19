@@ -163,6 +163,10 @@ namespace __OptionValidationGeneratedAttributes
             return (uint)(length - MinimumLength) <= (uint)(MaximumLength - MinimumLength);
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, MinimumLength, MaximumLength);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, MinimumLength, MaximumLength);
+        }
     }
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
     [global::System.AttributeUsage(global::System.AttributeTargets.Property | global::System.AttributeTargets.Field | global::System.AttributeTargets.Parameter, AllowMultiple = false)]
@@ -174,6 +178,10 @@ namespace __OptionValidationGeneratedAttributes
         public __SourceGen__MaxLengthAttribute(): base(() => DefaultErrorMessageString) { Length = MaxAllowableLength; }
         public int Length { get; }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
+        }
         public override bool IsValid(object? value)
         {
             if (Length == 0 || Length < -1)
@@ -254,5 +262,9 @@ namespace __OptionValidationGeneratedAttributes
             return length >= Length;
         }
         public override string FormatErrorMessage(string name) => string.Format(global::System.Globalization.CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+        public override string FormatMessage([global::System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("CompositeFormat")] string format, string name)
+        {
+            return string.Format(global::System.Globalization.CultureInfo.CurrentCulture, format, name, Length);
+        }
     }
 }

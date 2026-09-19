@@ -31,6 +31,12 @@ namespace Microsoft.Interop
         public Location DiagnosticLocation { get; init; }
         public bool IsExternallyDefined { get; init; }
 
+        /// <summary>
+        /// Whether the compilation uses the updated memory safety rules ("unsafe evolution"), which decides
+        /// whether generated types need an <c>unsafe</c> modifier for their pointer members to be legal.
+        /// </summary>
+        public bool UseUpdatedMemorySafetyRules { get; init; }
+
         private ComInterfaceInfo(
             ManagedTypeInfo type,
             string thisInterfaceKey,
@@ -108,7 +114,10 @@ namespace Microsoft.Interop
                     new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
                     guid ?? Guid.Empty,
                     interfaceAttributeData.Options,
-                    syntax.Identifier.GetLocation()),
+                    syntax.Identifier.GetLocation())
+                {
+                    UseUpdatedMemorySafetyRules = env.EnvironmentFlags.HasFlag(EnvironmentFlags.UpdatedMemorySafetyRules)
+                },
                 symbol);
 
             // Now that we've validated all of our requirements, we will check for some non-blocking scenarios

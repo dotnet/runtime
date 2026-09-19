@@ -5881,9 +5881,6 @@ struct GenTreeCall final : public GenTree
 
     union
     {
-        // The serialized CALLI unmanaged call (CT_INDIRECT) cookie; reified into argument IR in morph
-        CORINFO_CONST_LOOKUP* gtCallCookie;
-
         // gtInlineCandidateInfo is only used when inlining methods
         InlineCandidateInfo* gtInlineCandidateInfo;
         // gtInlineCandidateInfoList is used when we have more than one GDV candidate
@@ -5938,6 +5935,8 @@ struct GenTreeCall final : public GenTree
     bool IsSpecialIntrinsic(Compiler* compiler, NamedIntrinsic ni) const;
 
     CorInfoHelpFunc GetHelperNum() const;
+
+    ExceptionSetFlags CallExceptions() const;
 
     bool AreArgsComplete() const;
 
@@ -7427,6 +7426,12 @@ struct GenTreeVecCon : public GenTree
     bool IsNaN(var_types simdBaseType) const;
 
     bool IsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsNaN(var_types simdBaseType) const;
+
+    bool ContainsNegativeZero(var_types simdBaseType) const;
+
+    bool ContainsPositiveZero(var_types simdBaseType) const;
 
     bool IsZero() const
     {

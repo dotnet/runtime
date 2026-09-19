@@ -12,6 +12,7 @@ namespace NetClient
     public class Program
     {
         [Fact]
+        [SkipOnCoreClr("Stack trace assertions are unreliable under JIT stress due to aggressive inlining", RuntimeTestModes.JitStress)]
         public static int TestEntryPoint()
         {
             // RegFree COM is not supported on Windows Nano

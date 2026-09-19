@@ -5,7 +5,7 @@ include_directories( ${INC_PLATFORM_DIR} )
 set(SOURCES IjwCopyConstructorMarshaler.cpp)
 
 # add the shared library
-add_library (IjwCopyConstructorMarshaler SHARED ${SOURCES})
+add_library (IjwCopyConstructorMarshaler ${TEST_LIB_TYPE} ${SOURCES})
 target_link_libraries(IjwCopyConstructorMarshaler PRIVATE ${LINK_LIBRARIES_ADDITIONAL})
 add_ijw_msbuild_project_properties(IjwCopyConstructorMarshaler ijwhost)
 

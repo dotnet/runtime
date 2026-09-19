@@ -157,8 +157,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null)
+            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null, TypeRef? knownTypeRef = null)
             {
+                Debug.Assert(knownTypeRef is null || knownTypeRef.FullyQualifiedName == memberTypeSymbol.GetFullyQualifiedName(),
+                    $"'{nameof(knownTypeRef)}' must describe '{nameof(memberTypeSymbol)}'.");
+
                 TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
 
                 if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
@@ -168,7 +171,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _typesToParse.Enqueue(memberTypeParseInfo);
-                return new TypeRef(memberTypeSymbol);
+                return knownTypeRef ?? new TypeRef(memberTypeSymbol);
             }
 
             private TypeSpec CreateTypeSpec(TypeParseInfo typeParseInfo)
@@ -641,6 +644,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
+            private static bool BacksConstructorParameter(IMethodSymbol? ctor, string propertyName)
+            {
+                return ctor is not null
+                    && ctor.Parameters.Any(parameter => string.Equals(parameter.Name, propertyName, StringComparison.OrdinalIgnoreCase));
+            }
+
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
             {
                 INamedTypeSymbol typeSymbol = (INamedTypeSymbol)typeParseInfo.TypeSymbol;
@@ -745,18 +754,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 continue;
                             }
 
-                            TypeRef propertyTypeRef = EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
                             ImmutableArray<AttributeData> attributes = property.GetAttributes();
 
                             AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
                             bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
 
-                            PropertySpec spec = new(property, propertyTypeRef)
+                            PropertySpec spec = new(property, new TypeRef(property.Type))
                             {
                                 ConfigurationKeyName = configKeyName,
                                 IsIgnored = isIgnored,
                             };
+
+                            if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
+                            {
+                                EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName, spec.TypeRef);
+                            }
 
                             (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
                         }
