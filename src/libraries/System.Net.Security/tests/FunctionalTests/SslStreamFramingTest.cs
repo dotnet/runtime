@@ -305,6 +305,82 @@ namespace System.Net.Security.Tests
             }, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public async Task Dispose_RacingApplicationWrite_CompletesWithoutCrash()
+        {
+            // Disposing while a send is in flight must not release the native callback context
+            // early: the nw_connection_send completion and the framer output write both resolve
+            // it, and resolving a freed handle corrupts an unrelated connection or terminates the
+            // process. Dispose must also not wait on a write it is itself responsible for
+            // unblocking, which would hang instead.
+            //
+            // This is a smoke test for that shutdown ordering, not a reproduction of the
+            // use-after-free: on loopback the send completion has already run by the time Dispose
+            // is reached, so the test passes with or without the wait in Dispose. Reproducing it
+            // reliably needs a stalled send completion, which the PAL offers no hook for.
+            var psi = new ProcessStartInfo();
+            psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1");
+
+            await RemoteExecutor.Invoke(static async () =>
+            {
+                byte[] payload = new byte[256 * 1024];
+                using X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate();
+
+                for (int i = 0; i < 25; i++)
+                {
+                    (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                    using (server)
+                    {
+                        var clientOptions = new SslClientAuthenticationOptions
+                        {
+                            TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false),
+                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                            RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+                        };
+                        var serverOptions = new SslServerAuthenticationOptions
+                        {
+                            ServerCertificate = certificate,
+                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                        };
+
+                        await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                            client.AuthenticateAsClientAsync(clientOptions),
+                            server.AuthenticateAsServerAsync(serverOptions));
+
+                        // Large enough that the send is still outstanding when Dispose runs, since
+                        // nothing is draining the peer.
+                        var writeIssued = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        Task writeTask = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                // Signal only once the send has actually been handed to the PAL, so
+                                // Dispose races an in-flight native callback rather than a no-op.
+                                ValueTask write = client.WriteAsync(payload);
+                                writeIssued.TrySetResult();
+                                await write;
+                            }
+                            catch (Exception ex) when (ex is ObjectDisposedException or IOException or OperationCanceledException or InvalidOperationException)
+                            {
+                                // Expected: the stream may be disposed before or during the write.
+                            }
+                            finally
+                            {
+                                writeIssued.TrySetResult();
+                            }
+                        });
+
+                        await writeIssued.Task.WaitAsync(TestConfiguration.PassingTestTimeout);
+                        client.Dispose();
+
+                        // A hang here means Dispose and the write are waiting on each other.
+                        await writeTask.WaitAsync(TestConfiguration.PassingTestTimeout);
+                    }
+                }
+            }, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+        }
+
         // Wraps a stream in a length prefixed envelope while the handshake runs and switches to
         // pass-through afterwards, modelling a transport that multiplexes the TLS handshake inside
         // its own protocol framing.
