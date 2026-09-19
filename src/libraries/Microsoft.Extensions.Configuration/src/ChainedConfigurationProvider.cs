@@ -92,15 +92,44 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
-            IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
-            var keys = new List<string>();
-            foreach (IConfigurationSection child in section.GetChildren())
+            ArgumentNullException.ThrowIfNull(earlierKeys);
+
+            bool sharedAccumulator;
+            ChildKeysAggregator accumulator;
+            if (earlierKeys is ChildKeysAggregator existing)
             {
-                keys.Add(child.Key);
+                accumulator = existing;
+                sharedAccumulator = true;
             }
-            keys.AddRange(earlierKeys);
-            keys.Sort(ConfigurationKeyComparer.Comparison);
-            return keys;
+            else
+            {
+                accumulator = new ChildKeysAggregator(earlierKeys);
+                sharedAccumulator = false;
+            }
+
+            if (_config is IConfigurationRoot root)
+            {
+                ChildKeysAggregator? aggregator = root.GetChildKeysImplementation(parentPath);
+                if (aggregator is not null)
+                {
+                    accumulator.Add(aggregator);
+                }
+            }
+            else
+            {
+                IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
+                foreach (IConfigurationSection child in section.GetChildren())
+                {
+                    accumulator.Add(child.Key);
+                }
+            }
+
+            if (!sharedAccumulator)
+            {
+                ChildKeySorter.Sort(accumulator.Items, accumulator.Count);
+            }
+
+            return accumulator;
         }
 
         /// <inheritdoc />
