@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -1309,7 +1310,7 @@ namespace System.Xml
             return ReadArray(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri), array, offset, count);
         }
 
-        private sealed class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo
+        private sealed class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo, IXmlNamespaceResolver
         {
             private readonly XmlReader _reader;
             private XmlNamespaceManager? _nsMgr;
@@ -1428,6 +1429,27 @@ namespace System.Xml
             public override string? LookupNamespace(string namespaceUri)
             {
                 return _reader.LookupNamespace(namespaceUri);
+            }
+
+            IDictionary<string, string> IXmlNamespaceResolver.GetNamespacesInScope(XmlNamespaceScope scope)
+            {
+                return _reader is IXmlNamespaceResolver resolver
+                    ? resolver.GetNamespacesInScope(scope)
+                    : new Dictionary<string, string>();
+            }
+
+            string? IXmlNamespaceResolver.LookupNamespace(string prefix)
+            {
+                return _reader is IXmlNamespaceResolver resolver
+                    ? resolver.LookupNamespace(prefix)
+                    : _reader.LookupNamespace(prefix);
+            }
+
+            string? IXmlNamespaceResolver.LookupPrefix(string namespaceName)
+            {
+                return _reader is IXmlNamespaceResolver resolver
+                    ? resolver.LookupPrefix(namespaceName)
+                    : null;
             }
 
             public override void MoveToAttribute(int index)

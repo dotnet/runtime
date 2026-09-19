@@ -240,6 +240,11 @@ namespace System.Xml
 
         private void WriteElementNode(XmlDictionaryReader reader, bool defattr)
         {
+            WriteElementNode(reader, defattr, inScopeNamespaces: null);
+        }
+
+        private void WriteElementNode(XmlDictionaryReader reader, bool defattr, IXmlNamespaceResolver? inScopeNamespaces)
+        {
             XmlDictionaryString? localName;
             XmlDictionaryString? namespaceUri;
             if (reader.TryGetLocalNameAsDictionaryString(out localName) && reader.TryGetNamespaceUriAsDictionaryString(out namespaceUri))
@@ -281,9 +286,33 @@ namespace System.Xml
                     reader.MoveToElement();
                 }
             }
+            // Re-declare any namespaces that are in scope at the source but would otherwise be
+            // lost during the copy (e.g. a prefix used only inside content such as an xsi:type
+            // value). This is opt-in via WriteNode(..., preserveNamespacesInScope: true).
+            if (inScopeNamespaces is not null)
+            {
+                WriteInScopeNamespaces(inScopeNamespaces);
+            }
             if (reader.IsEmptyElement)
             {
                 WriteEndElement();
+            }
+        }
+
+        private void WriteInScopeNamespaces(IXmlNamespaceResolver inScopeNamespaces)
+        {
+            foreach (KeyValuePair<string, string> pair in inScopeNamespaces.GetNamespacesInScope(XmlNamespaceScope.ExcludeXml))
+            {
+                string prefix = pair.Key;
+                string namespaceUri = pair.Value;
+                // Skip declarations the writer has already emitted (for example the prefixes
+                // used by this element's own name and attributes). LookupPrefix returns the
+                // prefix currently bound to the namespace in the writer's scope.
+                if (LookupPrefix(namespaceUri) == prefix)
+                {
+                    continue;
+                }
+                WriteXmlnsAttribute(prefix, namespaceUri);
             }
         }
 
@@ -384,6 +413,24 @@ namespace System.Xml
         {
             ArgumentNullException.ThrowIfNull(reader);
 
+            WriteNodeCore(reader, defattr, preserveNamespacesInScope: false);
+        }
+
+        public void WriteNode(XmlDictionaryReader reader, bool defattr, bool preserveNamespacesInScope)
+        {
+            ArgumentNullException.ThrowIfNull(reader);
+
+            WriteNodeCore(reader, defattr, preserveNamespacesInScope);
+        }
+
+        private void WriteNodeCore(XmlDictionaryReader reader, bool defattr, bool preserveNamespacesInScope)
+        {
+            // When preserving namespaces, capture the namespaces in scope at the source so they can
+            // be re-declared on the root of the copied subtree. Descendant elements inherit them and
+            // don't need their own copy, so this is only applied to the first element written.
+            IXmlNamespaceResolver? rootNamespaces =
+                preserveNamespacesInScope ? reader as IXmlNamespaceResolver : null;
+
             int d = (reader.NodeType == XmlNodeType.None ? -1 : reader.Depth);
             do
             {
@@ -404,7 +451,8 @@ namespace System.Xml
                     switch (nodeType)
                     {
                         case XmlNodeType.Element:
-                            WriteElementNode(reader, defattr);
+                            WriteElementNode(reader, defattr, rootNamespaces);
+                            rootNamespaces = null;
                             break;
                         case XmlNodeType.CDATA:
                             WriteCData(reader.Value);
