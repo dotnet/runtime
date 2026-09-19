@@ -34,6 +34,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Caching;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,6 +48,7 @@ using Xunit.Abstractions;
 
 namespace MonoTests.System.Runtime.Caching
 {
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "The tests intentionally exercise MemoryCache, and ILLink.Descriptors.xml roots the configuration constructor required by these scenarios.")]
     public class MemoryCacheTest
     {
         public static bool SupportsPhysicalMemoryMonitor
@@ -1497,6 +1499,7 @@ namespace MonoTests.System.Runtime.Caching
         }
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "The tests intentionally exercise MemoryCache, and ILLink.Descriptors.xml roots the configuration constructor required by these scenarios.")]
     public class MemoryCacheTestExpires4
     {
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
@@ -1556,6 +1559,7 @@ namespace MonoTests.System.Runtime.Caching
         }
     }
 
+    [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode", Justification = "The tests intentionally exercise MemoryCache, and ILLink.Descriptors.xml roots the configuration constructor required by these scenarios.")]
     public class MemoryCacheTestExpires5
     {
         public static bool SupportsPhysicalMemoryMonitor => MemoryCacheTest.SupportsPhysicalMemoryMonitor;
