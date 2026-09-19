@@ -16,11 +16,11 @@ using JSize = int;
 namespace MonoDroid.NativeAOT;
 
 #pragma warning disable IDE0060 // Remove unused parameter
-internal static unsafe partial class MonoDroidExports
+internal static partial class MonoDroidExports
 {
     // void Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_setEnv", CallConvs = [typeof(CallConvCdecl)])]
-    public static void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
+    public static unsafe void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
     {
         string? key = env->GetStringUTFChars(j_key);
         string? value = env->GetStringUTFChars(j_value);
@@ -33,7 +33,7 @@ internal static unsafe partial class MonoDroidExports
 
     // int Java_net_dot_MonoRunner_initRuntime (JNIEnv* env, jobject thiz, jstring j_files_dir, jstring j_entryPointLibName, long current_local_time);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_initRuntime", CallConvs = [typeof(CallConvCdecl)])]
-    public static int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
+    public static unsafe int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
     {
         Console.WriteLine("Initializing Android crypto native library");
         // The NativeAOT runtime does not need to be initialized, but the crypto library does.
@@ -47,16 +47,16 @@ internal static unsafe partial class MonoDroidExports
     }
 
     [LibraryImport("System.Security.Cryptography.Native.Android")]
-    internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
+    internal static unsafe partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
 
 #if !SINGLE_FILE_TEST_RUNNER
     [DllImport("*", EntryPoint = "__managed__Main")]
-    static extern int ManagedMain(int argc, void** argv);
+    static unsafe extern int ManagedMain(int argc, void** argv);
 #endif
 
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
-    public static int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
+    public static unsafe int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
     {
         int argc = env->GetArrayLength(j_args);
         string[] args = new string[argc];
@@ -104,7 +104,7 @@ internal static unsafe partial class MonoDroidExports
 
     // void Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_freeNativeResources", CallConvs = [typeof(CallConvCdecl)])]
-    public static void FreeNativeResources(JNIEnv* env, JObject thiz)
+    public static unsafe void FreeNativeResources(JNIEnv* env, JObject thiz)
     {
         // Placeholder for actual implementation
         Console.WriteLine("FreeNativeResources start");
@@ -113,10 +113,10 @@ internal static unsafe partial class MonoDroidExports
 
 
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct JNIEnv
+internal struct JNIEnv
 {
     JNINativeInterface* NativeInterface;
-    public string? GetStringUTFChars(JString str)
+    public unsafe string? GetStringUTFChars(JString str)
     {
         fixed (JNIEnv* thisptr = &this)
         {
@@ -135,7 +135,7 @@ internal unsafe struct JNIEnv
         }
     }
 
-    public JavaVM* GetJavaVM()
+    public unsafe JavaVM* GetJavaVM()
     {
         fixed (JNIEnv* thisptr = &this)
         {
@@ -148,7 +148,7 @@ internal unsafe struct JNIEnv
         }
     }
 
-    public JSize GetArrayLength(JObjectArray array)
+    public unsafe JSize GetArrayLength(JObjectArray array)
     {
         fixed (JNIEnv* thisptr = &this)
         {
@@ -156,7 +156,7 @@ internal unsafe struct JNIEnv
         }
     }
 
-    public JObject GetObjectArrayElement(JObjectArray array, JSize index)
+    public unsafe JObject GetObjectArrayElement(JObjectArray array, JSize index)
     {
         fixed (JNIEnv* thisptr = &this)
         {
@@ -165,7 +165,7 @@ internal unsafe struct JNIEnv
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    unsafe struct JNINativeInterface
+    struct JNINativeInterface
     {
         void* reserved0;
         void* reserved1;
@@ -484,7 +484,7 @@ internal unsafe struct JNIEnv
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct JavaVM
+internal struct JavaVM
 {
     JNIInvokeInterface* InvokeInterface;
 
