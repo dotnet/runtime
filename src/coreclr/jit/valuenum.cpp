@@ -15189,9 +15189,9 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_NEWFAST:
         case CORINFO_HELP_NEWSFAST:
         case CORINFO_HELP_NEWSFAST_FINALIZE:
-        case CORINFO_HELP_NEWSFAST_ALIGN8:
-        case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
-        case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
+        case CORINFO_HELP_NEWSFAST_ALIGN_2XPTR:
+        case CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_VC:
+        case CORINFO_HELP_NEWSFAST_ALIGN_2XPTR_FINALIZE:
             vnf = VNF_JitNew;
             break;
 
@@ -15202,7 +15202,7 @@ VNFunc Compiler::fgValueNumberJitHelperMethodVNFunc(CorInfoHelpFunc helpFunc)
         case CORINFO_HELP_NEWARR_1_DIRECT:
         case CORINFO_HELP_NEWARR_1_PTR:
         case CORINFO_HELP_NEWARR_1_VC:
-        case CORINFO_HELP_NEWARR_1_ALIGN8:
+        case CORINFO_HELP_NEWARR_1_ALIGN_2XPTR:
             vnf = VNF_JitNewArr;
             break;
 

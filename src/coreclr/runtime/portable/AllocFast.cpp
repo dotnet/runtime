@@ -90,8 +90,8 @@ static Object* NewArrayFastCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER
     return AllocateObject(pMT, 0, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
 }
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
-static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+static Object* NewArrayFastAlign2xPtrCore(MethodTable* pMT, INT_PTR size TRANSITION_HELPER_ARG_DECL)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -108,7 +108,7 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_
     sizeInBytes = ALIGN_UP(sizeInBytes, sizeof(void*));
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    bool requiresPadding = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    bool requiresPadding = !IS_ALIGNED(alloc_ptr, 2 * sizeof(void*));
     size_t paddedSize = sizeInBytes;
     if (requiresPadding)
     {
@@ -122,22 +122,23 @@ static Object* NewArrayFastAlign8Core(MethodTable* pMT, INT_PTR size TRANSITION_
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
         {
-            Object* dummy = (Object*)alloc_ptr;
+            PtrArray* dummy = (PtrArray*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            dummy->SetNumComponents(0);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
-        _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
+        _ASSERTE(IS_ALIGNED(alloc_ptr, 2 * sizeof(void*)));
         PtrArray* pObject = (PtrArray *)alloc_ptr;
         pObject->SetMethodTable(pMT);
         pObject->SetNumComponents((INT32)size);
         return pObject;
     }
 
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR, size TRANSITION_HELPER_ARG_HELPER_PASSTHRU);
 }
 
-EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size);
-FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
+EXTERN_C FCDECL2(Object*, RhpNewArrayFastAlign2xPtr, MethodTable* pMT, INT_PTR size);
+FCIMPL2(Object*, RhpNewArrayFastAlign2xPtr, MethodTable* pMT, INT_PTR size)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -148,13 +149,13 @@ FCIMPL2(Object*, RhpNewArrayFastAlign8, MethodTable* pMT, INT_PTR size)
     if (size > 0x10000)
     {
         // Overflow here should result in an OOM. Let the slow path take care of it.
-        return AllocateObject(pMT, GC_ALLOC_ALIGN8, size TRANSITION_HELPER_ARG_PREPARED);
+        return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR, size TRANSITION_HELPER_ARG_PREPARED);
     }
 
-    return NewArrayFastAlign8Core(pMT, size TRANSITION_HELPER_ARG_PREPARED);
+    return NewArrayFastAlign2xPtrCore(pMT, size TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 EXTERN_C FCDECL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size);
 FCIMPL2(Object*, RhpNewArrayFast, MethodTable* pMT, INT_PTR size)
@@ -222,9 +223,9 @@ FCIMPL1(Object*, RhpNewFast, MethodTable* pMT)
 }
 FCIMPLEND
 
-#if defined(FEATURE_64BIT_ALIGNMENT)
-EXTERN_C FCDECL1(Object*, RhpNewFastAlign8, MethodTable* pMT);
-FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
+#if defined(FEATURE_2XPTR_ALIGNMENT)
+EXTERN_C FCDECL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT);
+FCIMPL1(Object*, RhpNewFastAlign2xPtr, MethodTable* pMT)
 {
     FCALL_CONTRACT;
     _ASSERTE(pMT != NULL);
@@ -235,7 +236,7 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
     size_t sizeInBytes = (size_t)pMT->GetBaseSize();
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    bool requiresPadding = !IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    bool requiresPadding = !IS_ALIGNED(alloc_ptr, 2 * sizeof(void*));
     size_t paddedSize = sizeInBytes;
     if (requiresPadding)
     {
@@ -249,18 +250,19 @@ FCIMPL1(Object*, RhpNewFastAlign8, MethodTable* pMT)
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
         {
-            Object* dummy = (Object*)alloc_ptr;
+            PtrArray* dummy = (PtrArray*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            dummy->SetNumComponents(0);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
-        _ASSERTE(IS_ALIGNED(alloc_ptr, sizeof(int64_t)));
+        _ASSERTE(IS_ALIGNED(alloc_ptr, 2 * sizeof(void*)));
         PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
 
     PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR, 0 TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
 
@@ -276,7 +278,7 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
     size_t sizeInBytes = (size_t)pMT->GetBaseSize();
 
     uint8_t* alloc_ptr = cxt->getAllocPtr();
-    bool requiresPadding = IS_ALIGNED(alloc_ptr, sizeof(int64_t));
+    bool requiresPadding = IS_ALIGNED(alloc_ptr, 2 * sizeof(void*));
     size_t paddedSize = sizeInBytes;
     if (requiresPadding)
     {
@@ -290,21 +292,22 @@ FCIMPL1(Object*, RhpNewFastMisalign, MethodTable* pMT)
         cxt->setAllocPtr(alloc_ptr + paddedSize);
         if (requiresPadding)
         {
-            Object* dummy = (Object*)alloc_ptr;
+            PtrArray* dummy = (PtrArray*)alloc_ptr;
             dummy->SetMethodTable(g_pFreeObjectMethodTable);
+            dummy->SetNumComponents(0);
             alloc_ptr += MIN_OBJECT_SIZE;
         }
-        _ASSERTE((((uint32_t)alloc_ptr) & (sizeof(int64_t) - 1)) == sizeof(int32_t));
+        _ASSERTE((((size_t)alloc_ptr) & (2 * sizeof(void*) - 1)) == sizeof(void*));
         PtrArray* pObject = (PtrArray*)alloc_ptr;
         pObject->SetMethodTable(pMT);
         return pObject;
     }
 
     PREPARE_TRANSITION_ARG();
-    return AllocateObject(pMT, GC_ALLOC_ALIGN8 | GC_ALLOC_ALIGN8_BIAS, 0 TRANSITION_HELPER_ARG_PREPARED);
+    return AllocateObject(pMT, GC_ALLOC_ALIGN_2XPTR | GC_ALLOC_ALIGN_2XPTR_BIAS, 0 TRANSITION_HELPER_ARG_PREPARED);
 }
 FCIMPLEND
-#endif // FEATURE_64BIT_ALIGNMENT
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #define MAX_STRING_LENGTH 0x3FFFFFDF
 

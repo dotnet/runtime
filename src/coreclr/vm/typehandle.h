@@ -343,9 +343,9 @@ public:
 
     bool IsVectorT() const;
 
-#ifdef FEATURE_64BIT_ALIGNMENT
-    bool RequiresAlign8() const;
-#endif // FEATURE_64BIT_ALIGNMENT
+#ifdef FEATURE_2XPTR_ALIGNMENT
+    bool RequiresAlign2xPtr() const;
+#endif // FEATURE_2XPTR_ALIGNMENT
 
 #ifndef DACCESS_COMPILE
 

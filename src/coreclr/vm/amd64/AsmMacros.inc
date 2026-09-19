@@ -560,3 +560,5 @@ PUSH_COOP_PINVOKE_FRAME_WITH_FLOATS macro target
 
 ;; GC type flags
 GC_ALLOC_FINALIZE               equ 1
+GC_ALLOC_ALIGN_2XPTR_BIAS       equ 4
+GC_ALLOC_ALIGN_2XPTR            equ 8

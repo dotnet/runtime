@@ -118,7 +118,7 @@ contracts to the following operations:
 | `IsValueType` and `IsPointerType` | Signature element type; exact handle as a fallback | Uses the structural classification. |
 | `PointerSize` | `Target.PointerSize` | Always available. |
 | `GetSize` and `HasIndeterminateSize` | `RuntimeTypeSystem.GetBaseSize` for an exact value type | An unresolved value type has indeterminate size; size-dependent ABI paths are declined. |
-| `RequiresAlign8` | `RuntimeTypeSystem.RequiresAlign8` | Returns false without an exact handle. |
+| `RequiresAlign2xPtr` | `RuntimeTypeSystem.RequiresAlign2xPtr` | Returns false without an exact handle. |
 | `IsHomogeneousAggregate` and `GetHomogeneousAggregateElementSize` | `RuntimeTypeSystem.TryGetHFAElementSize` | Returns false without an exact handle. |
 | `GetSystemVAmd64PassStructInRegisterDescriptor` | `RuntimeTypeSystem.TryGetSystemVAmd64EightByteClassification` | Reports that the struct is not register-classified without an exact handle. |
 | `IsTrivialPointerSizedStruct` | Exact value-type size plus its instance `FieldDesc` list and field signatures | Returns false unless the exact layout proves the x86 special case. |

@@ -1361,7 +1361,11 @@ BOOL gc_heap::size_fit_p (size_t size REQD_ALIGN_AND_OFFSET_DCL, uint8_t* alloc_
     }
 #endif //SHORT_PLUGS
 
-    if (!((old_loc == 0) || same_large_alignment_p (old_loc, alloc_pointer)))
+    if (!((old_loc == 0) || same_large_alignment_p (old_loc, alloc_pointer))
+#ifdef RESPECT_LARGE_ALIGNMENT
+        && plug_requires_large_align
+#endif //RESPECT_LARGE_ALIGNMENT
+       )
         size = size + switch_alignment_size (already_padded);
 
 #ifdef FEATURE_STRUCTALIGN
@@ -1470,7 +1474,11 @@ int gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* allocated, uint8_t* 
     }
 #endif //SHORT_PLUGS
 
-    if (!((old_loc == 0) || same_large_alignment_p (old_loc, allocated)))
+    if (!((old_loc == 0) || same_large_alignment_p (old_loc, allocated))
+#ifdef RESPECT_LARGE_ALIGNMENT
+        && plug_requires_large_align
+#endif //RESPECT_LARGE_ALIGNMENT
+       )
         size += switch_alignment_size (already_padded);
 
 #ifdef FEATURE_STRUCTALIGN
@@ -4770,7 +4778,8 @@ uint8_t* gc_heap::allocate_in_older_generation (generation* gen, size_t size,
         real_size += Align (min_obj_size);
 
 #ifdef RESPECT_LARGE_ALIGNMENT
-    real_size += switch_alignment_size (pad_in_front);
+    if (plug_requires_large_align)
+        real_size += switch_alignment_size (pad_in_front);
 #endif //RESPECT_LARGE_ALIGNMENT
 
     if (! (size_fit_p (size REQD_ALIGN_AND_OFFSET_ARG, generation_allocation_pointer (gen),
@@ -5290,7 +5299,11 @@ allocate_in_free:
             adjacentp = FALSE;
         }
 #else // FEATURE_STRUCTALIGN
-        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
+        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad))
+#ifdef RESPECT_LARGE_ALIGNMENT
+            && plug_requires_large_align
+#endif //RESPECT_LARGE_ALIGNMENT
+           )
         {
             pad += switch_alignment_size (pad != 0);
             set_node_realigned (old_loc);
@@ -5676,7 +5689,11 @@ retry:
             pad += pad1;
         }
 #else // FEATURE_STRUCTALIGN
-        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad)))
+        if (!((old_loc == 0) || same_large_alignment_p (old_loc, result+pad))
+#ifdef RESPECT_LARGE_ALIGNMENT
+            && plug_requires_large_align
+#endif //RESPECT_LARGE_ALIGNMENT
+           )
         {
             pad += switch_alignment_size (pad != 0);
             set_node_realigned(old_loc);

@@ -1271,6 +1271,9 @@ void gc_heap::init_heap_segment (heap_segment* seg, gc_heap* hp
     set_region_gen_num (seg, gen_num_for_region);
     heap_segment_plan_gen_num (seg) = gen_num_for_region;
     heap_segment_swept_in_plan (seg) = false;
+#ifdef RESPECT_LARGE_ALIGNMENT
+    heap_segment_large_align (seg) = false;
+#endif //RESPECT_LARGE_ALIGNMENT
     int num_basic_regions = (int)(size >> min_segment_size_shr);
     size_t basic_region_size = (size_t)1 << min_segment_size_shr;
     dprintf (REGIONS_LOG, ("this region contains %d basic regions", num_basic_regions));
