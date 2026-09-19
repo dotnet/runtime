@@ -3,8 +3,6 @@ trigger:
   branches:
     include:
     - release/*.*
-    exclude:
-    - release/6.0*
   paths:
     include:
     - '*'
@@ -17,6 +15,15 @@ trigger:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
+
+pr:
+  branches:
+    include:
+    - main
+    - release/*.*
+  paths:
+    include:
+    - eng/pipelines/runtime-community.yml
 
 schedules:
   - cron: "0 7,19 * * *" # run at 7:00 and 19:00 (UTC) which is 23:00 and 11:00 (PST).
@@ -100,3 +107,37 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
+
+      #
+      # Build CoreCLR + Libs + Host using bootstrap
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
+          buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+          runtimeFlavor: coreclr
+          platforms:
+          - freebsd_x64
+          - freebsd_arm64
+          - linux_riscv64
+          - linux_loongarch64
+          - openbsd_x64
+          variables:
+            # map dependencies variables to local variables
+            - name: coreclrContainsChange
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'] ]
+            - name: installerContainsChange
+              value: $[ stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'] ]
+          jobParameters:
+            testScope: innerloop
+            nameSuffix: CoreCLR_Bootstrapped
+            buildArgs: -s clr+libs+host+packs+tools.cdac -c $(_BuildConfig) -rc Checked --bootstrap
+            timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+                parameters:
+                  testBuildArgs: skipmanaged generatelayoutonly --use-bootstrap
