@@ -204,11 +204,20 @@ namespace System.Net.Security
 
                                 if (handshakePhase && _handshakeCompletionSource.Task.IsCompleted)
                                 {
-                                    // The record just delivered completed the handshake. Leave the
-                                    // transport alone until the application starts its own I/O, by
-                                    // which point it has finished re-framing the stream.
-                                    handshakePhase = false;
-                                    await _appIoStartedTcs.Task.WaitAsync(_shutdownCts.Token).ConfigureAwait(false);
+                                    if (_handshakeCompletionSource.Task is { IsCompletedSuccessfully: true, Result: null })
+                                    {
+                                        // The record just delivered completed the handshake. Leave the
+                                        // transport alone until the application starts its own I/O, by
+                                        // which point it has finished re-framing the stream.
+                                        handshakePhase = false;
+                                        await _appIoStartedTcs.Task.WaitAsync(_shutdownCts.Token).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        // The handshake failed or was cancelled, so no application I/O
+                                        // will ever start. Stop pumping instead of parking forever.
+                                        break;
+                                    }
                                 }
                             }
                             else
@@ -843,7 +852,16 @@ namespace System.Net.Security
 
             unsafe
             {
-                Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, StateHandle, (byte*)memoryHandle.Pointer, buf.Length, &CompletionCallback);
+                int status = Interop.NetworkFramework.Tls.NwFramerDeliverInput(_framerHandle, StateHandle, (byte*)memoryHandle.Pointer, buf.Length, &CompletionCallback);
+                if (status != 0)
+                {
+                    // The native side does not invoke the completion callback when it fails to
+                    // create the framer message, which happens when the connection is failing or
+                    // being cancelled underneath us. Nothing else will ever complete this source,
+                    // so fault it here rather than awaiting forever.
+                    _transportReadTcs.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(
+                        new IOException(SR.net_io_eof)));
+                }
             }
 
             await valueTask.ConfigureAwait(false);
