@@ -223,6 +223,67 @@ Each variable entry in the Vars section is nibble-encoded as follows:
 
 Signed integers are encoded using the same unsigned scheme, with the sign bit stored in bit 0 (`value = unsigned >> 1`, negate if `unsigned & 1`). On x86, stack offsets are DWORD-aligned and stored divided by `sizeof(DWORD)`.
 
+### WebAssembly Variable Register Encoding
+
+WASM has no physical registers. RyuJIT packs a `(local index, debug value type)` tuple into the
+32-bit `regNumber` payload, and that packed value appears in every register field of the Vars
+stream:
+
+```text
+packedRegister = localIndex | ((uint)debugValueType << WasmDebugRegisterTypeShift)
+```
+
+The encoding uses the following values:
+
+| Value type | Encoded value |
+| --- | --- |
+| `Invalid` | `0` |
+| `I32` | `1` |
+| `I64` | `2` |
+| `F32` | `3` |
+| `F64` | `4` |
+| `V128` | `5` |
+| `ExnRef` | `6` |
+
+The target advertises `WasmDebugRegisterTypeShift` and `WasmDebugValueTypeCount` as `uint8`
+numeric data descriptor globals. These values define how to separate the local index from the
+debug value type. A reader must reject an unsupported or missing encoding rather than fall back
+to a compiled-in shift and plausibly decode the wrong local or type.
+
+Debug value type `0` is reserved so that small raw values remain available for pseudo-registers
+such as `REGNUM_AMBIENT_SP`. A packed value whose value type is `0` or greater than or equal to
+`WasmDebugValueTypeCount` does not name a local.
+
+`WasmDebugValueTypeCount` is JIT debug-encoding vocabulary, not the complete WebAssembly
+specification type set. Managed references currently use the JIT's machine `I32`/`I64`
+representation; the encoding does not independently identify a managed GC reference. A future
+bit-width or value-count change requires a format-aware, versioned reader update.
+
+### WebAssembly Stack Base Encoding
+
+WASM `VLT_STK` and `VLT_STK2` records currently encode base register `2`.
+`REG_FPBASE`, `REG_SPBASE`, and `REGNUM_AMBIENT_SP` all have that value on this target, so the
+debug record identifies a logical frame-relative stack home; it does not identify a particular
+WebAssembly engine local.
+
+The absolute logical frame address is reconstructed by the runtime stack-walk and unwind
+protocol from shadow-stack linear memory. The engine's current per-function SP/FP local allocation
+is a separate code-generation detail:
+
+* Frame access allocates an FP value when a method has frame locals, uses `localloc`, or has
+  funclets.
+* Without `localloc`, the root function's FP aliases its SP, including methods that make calls.
+* `localloc` gives the root a distinct FP so later SP movement does not change frame-relative
+  addresses.
+* Funclets receive a distinct parent establishing FP; with `localloc`, that remains the root's
+  pre-adjustment frame base.
+
+The numeric WebAssembly local indices holding those values can vary with function parameters and
+compiler-created locals and are not part of this debug-info format. Readers must not infer the
+logical frame address from a hardcoded `$varN`, and the producer does not advertise SP/FP engine
+local indices. A future producer that changes stack records away from base `2` requires a
+coordinated, fail-loud reader update.
+
 ### Async Suspension Point APIs
 
 We also support decoding async suspension points (and their captured continuation-object locals) from the `AsyncInfo` chunk of the debug info blob. The chunk is present only for methods that the JIT compiled with runtime-async suspension points; for all other methods, `AsyncInfoSize` is `0` in the FAT header and the API returns an empty list.
