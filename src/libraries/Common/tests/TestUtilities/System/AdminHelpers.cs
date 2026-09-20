@@ -32,22 +32,21 @@ namespace System
             }
         }
 
+        // ActiveIssue https://github.com/dotnet/runtime/issues/133614
+        [DllImport("libc", SetLastError = true)]
+        internal static extern unsafe uint geteuid();
+
         public static unsafe bool IsProcessElevated()
         {
             // Browser does not have the concept of an elevated process
-#if NET
-            // ActiveIssue https://github.com/dotnet/runtime/issues/133614
-            if (OperatingSystem.IsBrowser())
-#else
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")))
-#endif
             {
                 return false;
             }
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                uint userId = Interop.Sys.GetEUid();
+                uint userId = geteuid();
                 return(userId == 0);
             }
 
