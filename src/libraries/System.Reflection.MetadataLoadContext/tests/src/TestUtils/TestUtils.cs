@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using Xunit;
 
+[assembly: ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(System.PlatformDetection), nameof(System.PlatformDetection.IsWasi))]
+
 namespace System.Reflection.Tests
 {
     internal static partial class TestUtils

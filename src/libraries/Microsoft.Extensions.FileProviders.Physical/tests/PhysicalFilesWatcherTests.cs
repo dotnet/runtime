@@ -14,6 +14,7 @@ using Xunit.Sdk;
 
 namespace Microsoft.Extensions.FileProviders.Physical.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public class PhysicalFilesWatcherTests : FileCleanupTestBase
     {
         private const int WaitTimeForTokenToFire = 500;
@@ -24,7 +25,7 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             {
                 var data = new TheoryData<bool>();
 
-                if (!PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
+                if (!PlatformDetection.IsWasm && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
                 {
                     data.Add(false); // useActivePolling = false: real FileSystemWatcher
                 }

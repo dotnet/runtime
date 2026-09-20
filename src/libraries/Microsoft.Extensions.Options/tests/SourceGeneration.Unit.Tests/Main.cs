@@ -1659,6 +1659,7 @@ public class EmitterTests
     private static bool SupportRemoteExecutionAndNotInBrowser => RemoteExecutor.IsSupported && !PlatformDetection.IsBrowser;
 
     [ConditionalFact(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public void ProduceDiagnosticFromOtherAssemblyTest()
     {
         string source = """
@@ -1725,6 +1726,7 @@ public class EmitterTests
     }
 
     [ConditionalTheory(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     [InlineData(LanguageVersion.CSharp10)]
     [InlineData(LanguageVersion.CSharp11)]
     public async Task InternalsVisibleToAssembliesTest(LanguageVersion languageVersion)
@@ -1857,6 +1859,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public async Task InaccessibleValidationAttributesTest()
     {
         string source = """

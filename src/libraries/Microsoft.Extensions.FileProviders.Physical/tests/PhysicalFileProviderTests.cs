@@ -15,6 +15,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public partial class PhysicalFileProviderTests : FileCleanupTestBase
     {
         private static readonly TimeSpan s_waitTimeForTokenToFire = TimeSpan.FromMilliseconds(500);

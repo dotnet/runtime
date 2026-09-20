@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Microsoft.Extensions.FileProviders.Physical
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
     public class PollingWildCardChangeTokenTest
     {
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads

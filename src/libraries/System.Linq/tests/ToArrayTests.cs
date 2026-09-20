@@ -374,7 +374,7 @@ namespace System.Linq.Tests
         public static IEnumerable<object[]> ToArrayShouldWorkWithSpecialLengthLazyEnumerables_MemberData()
         {
             // Return array sizes that should be small enough not to OOM
-            int MaxPower = PlatformDetection.IsBrowser ? 15 : 18;
+            int MaxPower = PlatformDetection.IsWasm ? 15 : 18;
             yield return [1];
             yield return [2];
             for (int i = 2; i <= MaxPower; i++)
