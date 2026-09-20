@@ -8,6 +8,7 @@ using Xunit;
 public class Runtime_134006
 {
     [Theory]
+    [SkipOnMono("CoreCLR JIT regression test")]
     [InlineData(0)]
     [InlineData(1)]
     public static void TestEntryPoint(int value)
