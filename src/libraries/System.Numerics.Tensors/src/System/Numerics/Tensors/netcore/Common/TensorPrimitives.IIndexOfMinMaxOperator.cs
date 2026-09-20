@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Numerics.Tensors
@@ -18,6 +19,12 @@ namespace System.Numerics.Tensors
             static abstract Vector128<T> Compare(Vector128<T> x, Vector128<T> y);
             static abstract Vector256<T> Compare(Vector256<T> x, Vector256<T> y);
             static abstract Vector512<T> Compare(Vector512<T> x, Vector512<T> y);
+            /// <summary>Selects per lane the input the other does not beat under <see cref="Compare(T, T)"/>.</summary>
+            static abstract Vector128<T> MinMax(Vector128<T> x, Vector128<T> y);
+            /// <inheritdoc cref="MinMax(Vector128{T}, Vector128{T})"/>
+            static abstract Vector256<T> MinMax(Vector256<T> x, Vector256<T> y);
+            /// <inheritdoc cref="MinMax(Vector128{T}, Vector128{T})"/>
+            static abstract Vector512<T> MinMax(Vector512<T> x, Vector512<T> y);
         }
 
         private static int IndexOfMinMaxCore<T, TOperator>(ReadOnlySpan<T> x)
@@ -26,6 +33,31 @@ namespace System.Numerics.Tensors
             if (x.IsEmpty)
             {
                 return -1;
+            }
+
+            if (typeof(T) != typeof(float) && typeof(T) != typeof(double))
+            {
+                if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported)
+                {
+                    if (x.Length >= IndexOfMinMaxVectorsPerBlock * Vector512<T>.Count)
+                    {
+                        return IndexOfMinMaxBlockSearch512<T, TOperator>(x);
+                    }
+                }
+                else if (Vector256.IsHardwareAccelerated && Vector256<T>.IsSupported)
+                {
+                    if (x.Length >= IndexOfMinMaxVectorsPerBlock * Vector256<T>.Count)
+                    {
+                        return IndexOfMinMaxBlockSearch256<T, TOperator>(x);
+                    }
+                }
+                else if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported)
+                {
+                    if (x.Length >= IndexOfMinMaxVectorsPerBlock * Vector128<T>.Count)
+                    {
+                        return IndexOfMinMaxBlockSearch128<T, TOperator>(x);
+                    }
+                }
             }
 
             if (Vector512.IsHardwareAccelerated && Vector512<T>.IsSupported && x.Length >= Vector512<T>.Count)
@@ -80,6 +112,272 @@ namespace System.Numerics.Tensors
             }
 
             return resultIndex;
+        }
+
+        /// <summary>Number of vectors reduced together before the running result is examined.</summary>
+        private const int IndexOfMinMaxVectorsPerBlock = 32;
+
+        /// <summary>Gets the exclusive end of the block starting at <paramref name="blockStart"/>, clamped to the input.</summary>
+        private static int IndexOfMinMaxBlockEnd<T>(ReadOnlySpan<T> x, int blockStart, int vectorCount) =>
+            blockStart + Math.Min(IndexOfMinMaxVectorsPerBlock * vectorCount, x.Length - blockStart);
+
+        /// <summary>Finds the first element in <paramref name="x"/>[<paramref name="start"/>..<paramref name="end"/>] that <paramref name="value"/> does not beat.</summary>
+        private static int IndexOfFirstNotBeatenFallback<T, TOperator>(ReadOnlySpan<T> x, T value, int start, int end)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            for (int i = start; i < end; i++)
+            {
+                if (!TOperator.Compare(value, x[i]))
+                {
+                    return i;
+                }
+            }
+
+            Debug.Fail("The winning block must contain the result.");
+            return -1;
+        }
+
+        /// <summary>Finds the first element the winning block's result does not beat, searching only that block.</summary>
+        private static int IndexOfFirstNotBeaten128<T, TOperator>(ReadOnlySpan<T> x, T value, int blockStart)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            int end = IndexOfMinMaxBlockEnd(x, blockStart, Vector128<T>.Count);
+            int oneVectorFromEnd = end - Vector128<T>.Count;
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            Vector128<T> best = Vector128.Create(value);
+            int i = blockStart;
+
+            while (i <= oneVectorFromEnd)
+            {
+                Vector128<T> notBeaten = ~TOperator.Compare(best, Vector128.LoadUnsafe(ref xRef, (uint)i));
+                if (notBeaten != Vector128<T>.Zero)
+                {
+                    return i + IndexOfFirstMatch(notBeaten);
+                }
+
+                i += Vector128<T>.Count;
+            }
+
+            return IndexOfFirstNotBeatenFallback<T, TOperator>(x, value, i, end);
+        }
+
+        /// <summary>Finds the first element the winning block's result does not beat, searching only that block.</summary>
+        private static int IndexOfFirstNotBeaten256<T, TOperator>(ReadOnlySpan<T> x, T value, int blockStart)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            int end = IndexOfMinMaxBlockEnd(x, blockStart, Vector256<T>.Count);
+            int oneVectorFromEnd = end - Vector256<T>.Count;
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            Vector256<T> best = Vector256.Create(value);
+            int i = blockStart;
+
+            while (i <= oneVectorFromEnd)
+            {
+                Vector256<T> notBeaten = ~TOperator.Compare(best, Vector256.LoadUnsafe(ref xRef, (uint)i));
+                if (notBeaten != Vector256<T>.Zero)
+                {
+                    return i + IndexOfFirstMatch(notBeaten);
+                }
+
+                i += Vector256<T>.Count;
+            }
+
+            return IndexOfFirstNotBeatenFallback<T, TOperator>(x, value, i, end);
+        }
+
+        /// <summary>Finds the first element the winning block's result does not beat, searching only that block.</summary>
+        private static int IndexOfFirstNotBeaten512<T, TOperator>(ReadOnlySpan<T> x, T value, int blockStart)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            int end = IndexOfMinMaxBlockEnd(x, blockStart, Vector512<T>.Count);
+            int oneVectorFromEnd = end - Vector512<T>.Count;
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            Vector512<T> best = Vector512.Create(value);
+            int i = blockStart;
+
+            while (i <= oneVectorFromEnd)
+            {
+                Vector512<T> notBeaten = ~TOperator.Compare(best, Vector512.LoadUnsafe(ref xRef, (uint)i));
+                if (notBeaten != Vector512<T>.Zero)
+                {
+                    return i + IndexOfFirstMatch(notBeaten);
+                }
+
+                i += Vector512<T>.Count;
+            }
+
+            return IndexOfFirstNotBeatenFallback<T, TOperator>(x, value, i, end);
+        }
+
+        /// <summary>Reduces each block of vectors to its best element, then locates the result in the winning block.</summary>
+        private static int IndexOfMinMaxBlockSearch128<T, TOperator>(ReadOnlySpan<T> x)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            Debug.Assert(typeof(T) != typeof(float) && typeof(T) != typeof(double));
+            Debug.Assert(x.Length >= IndexOfMinMaxVectorsPerBlock * Vector128<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            int oneVectorFromEnd = x.Length - Vector128<T>.Count;
+            T best = x[0];
+            int bestBlockStart = 0;
+            int i = 0;
+
+            while (i <= oneVectorFromEnd)
+            {
+                int blockStart = i;
+                int blockEnd = IndexOfMinMaxBlockEnd(x, blockStart, Vector128<T>.Count);
+                int oneVectorFromBlockEnd = blockEnd - Vector128<T>.Count;
+                int twoVectorsFromBlockEnd = blockEnd - (2 * Vector128<T>.Count);
+
+                Vector128<T> first = Vector128.LoadUnsafe(ref xRef, (uint)i);
+                i += Vector128<T>.Count;
+                Vector128<T> even = first, odd = first;
+
+                while (i <= twoVectorsFromBlockEnd)
+                {
+                    even = TOperator.MinMax(even, Vector128.LoadUnsafe(ref xRef, (uint)i));
+                    odd = TOperator.MinMax(odd, Vector128.LoadUnsafe(ref xRef, (uint)(i + Vector128<T>.Count)));
+                    i += 2 * Vector128<T>.Count;
+                }
+
+                if (i <= oneVectorFromBlockEnd)
+                {
+                    even = TOperator.MinMax(even, Vector128.LoadUnsafe(ref xRef, (uint)i));
+                    i += Vector128<T>.Count;
+                }
+
+                T blockBest = TOperator.Aggregate(TOperator.MinMax(even, odd));
+                if (TOperator.Compare(blockBest, best))
+                {
+                    best = blockBest;
+                    bestBlockStart = blockStart;
+                }
+            }
+
+            for (int j = i; j < x.Length; j++)
+            {
+                if (TOperator.Compare(x[j], best))
+                {
+                    best = x[j];
+                    bestBlockStart = j;
+                }
+            }
+
+            return IndexOfFirstNotBeaten128<T, TOperator>(x, best, bestBlockStart);
+        }
+
+        /// <summary>Reduces each block of vectors to its best element, then locates the result in the winning block.</summary>
+        private static int IndexOfMinMaxBlockSearch256<T, TOperator>(ReadOnlySpan<T> x)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            Debug.Assert(typeof(T) != typeof(float) && typeof(T) != typeof(double));
+            Debug.Assert(x.Length >= IndexOfMinMaxVectorsPerBlock * Vector256<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            int oneVectorFromEnd = x.Length - Vector256<T>.Count;
+            T best = x[0];
+            int bestBlockStart = 0;
+            int i = 0;
+
+            while (i <= oneVectorFromEnd)
+            {
+                int blockStart = i;
+                int blockEnd = IndexOfMinMaxBlockEnd(x, blockStart, Vector256<T>.Count);
+                int oneVectorFromBlockEnd = blockEnd - Vector256<T>.Count;
+                int twoVectorsFromBlockEnd = blockEnd - (2 * Vector256<T>.Count);
+
+                Vector256<T> first = Vector256.LoadUnsafe(ref xRef, (uint)i);
+                i += Vector256<T>.Count;
+                Vector256<T> even = first, odd = first;
+
+                while (i <= twoVectorsFromBlockEnd)
+                {
+                    even = TOperator.MinMax(even, Vector256.LoadUnsafe(ref xRef, (uint)i));
+                    odd = TOperator.MinMax(odd, Vector256.LoadUnsafe(ref xRef, (uint)(i + Vector256<T>.Count)));
+                    i += 2 * Vector256<T>.Count;
+                }
+
+                if (i <= oneVectorFromBlockEnd)
+                {
+                    even = TOperator.MinMax(even, Vector256.LoadUnsafe(ref xRef, (uint)i));
+                    i += Vector256<T>.Count;
+                }
+
+                T blockBest = TOperator.Aggregate(TOperator.MinMax(even, odd));
+                if (TOperator.Compare(blockBest, best))
+                {
+                    best = blockBest;
+                    bestBlockStart = blockStart;
+                }
+            }
+
+            for (int j = i; j < x.Length; j++)
+            {
+                if (TOperator.Compare(x[j], best))
+                {
+                    best = x[j];
+                    bestBlockStart = j;
+                }
+            }
+
+            return IndexOfFirstNotBeaten256<T, TOperator>(x, best, bestBlockStart);
+        }
+
+        /// <summary>Reduces each block of vectors to its best element, then locates the result in the winning block.</summary>
+        private static int IndexOfMinMaxBlockSearch512<T, TOperator>(ReadOnlySpan<T> x)
+            where T : INumber<T> where TOperator : struct, IIndexOfMinMaxOperator<T>
+        {
+            Debug.Assert(typeof(T) != typeof(float) && typeof(T) != typeof(double));
+            Debug.Assert(x.Length >= IndexOfMinMaxVectorsPerBlock * Vector512<T>.Count);
+
+            ref T xRef = ref MemoryMarshal.GetReference(x);
+            int oneVectorFromEnd = x.Length - Vector512<T>.Count;
+            T best = x[0];
+            int bestBlockStart = 0;
+            int i = 0;
+
+            while (i <= oneVectorFromEnd)
+            {
+                int blockStart = i;
+                int blockEnd = IndexOfMinMaxBlockEnd(x, blockStart, Vector512<T>.Count);
+                int oneVectorFromBlockEnd = blockEnd - Vector512<T>.Count;
+                int twoVectorsFromBlockEnd = blockEnd - (2 * Vector512<T>.Count);
+
+                Vector512<T> first = Vector512.LoadUnsafe(ref xRef, (uint)i);
+                i += Vector512<T>.Count;
+                Vector512<T> even = first, odd = first;
+
+                while (i <= twoVectorsFromBlockEnd)
+                {
+                    even = TOperator.MinMax(even, Vector512.LoadUnsafe(ref xRef, (uint)i));
+                    odd = TOperator.MinMax(odd, Vector512.LoadUnsafe(ref xRef, (uint)(i + Vector512<T>.Count)));
+                    i += 2 * Vector512<T>.Count;
+                }
+
+                if (i <= oneVectorFromBlockEnd)
+                {
+                    even = TOperator.MinMax(even, Vector512.LoadUnsafe(ref xRef, (uint)i));
+                    i += Vector512<T>.Count;
+                }
+
+                T blockBest = TOperator.Aggregate(TOperator.MinMax(even, odd));
+                if (TOperator.Compare(blockBest, best))
+                {
+                    best = blockBest;
+                    bestBlockStart = blockStart;
+                }
+            }
+
+            for (int j = i; j < x.Length; j++)
+            {
+                if (TOperator.Compare(x[j], best))
+                {
+                    best = x[j];
+                    bestBlockStart = j;
+                }
+            }
+
+            return IndexOfFirstNotBeaten512<T, TOperator>(x, best, bestBlockStart);
         }
 
         private static int IndexOfMinMaxVectorized128Size4Plus<T, TOperator, TInt>(ReadOnlySpan<T> x)

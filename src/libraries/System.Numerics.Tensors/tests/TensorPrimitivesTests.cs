@@ -1101,7 +1101,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IndexOfMax_AllLengths()
         {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
+            Assert.All(Helpers.TensorLengthsIncludingBlockSpanning, tensorLength =>
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
@@ -1109,6 +1109,38 @@ namespace System.Numerics.Tensors.Tests
                     x[expected] = Enumerable.Max(MemoryMarshal.ToEnumerable<T>(x.Memory));
                     int actual = IndexOfMax(x.Span);
                     Assert.True(actual == expected || (actual < expected && x[actual].Equals(x[expected])), $"{tensorLength} {actual} {expected}     {string.Join(",", MemoryMarshal.ToEnumerable<T>(x.Memory))}");
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMax_FirstOfEqualMaximumsReturnedAcrossBlocks()
+        {
+            Assert.All(Helpers.TensorLengthsSpanningBlocks, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, 1, tensorLength / 2, tensorLength - 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(1));
+                    x[expected] = ConvertFromSingle(2);
+                    x[tensorLength - 1] = ConvertFromSingle(2);
+                    Assert.Equal(expected, IndexOfMax(x.Span));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMax_FirstOfEqualMaximumsReturned()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(1));
+                    x[expected] = ConvertFromSingle(2);
+                    x[tensorLength - 1] = ConvertFromSingle(2);
+                    Assert.Equal(expected, IndexOfMax(x.Span));
                 }
             });
         }
@@ -1178,7 +1210,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IndexOfMaxMagnitude_AllLengths()
         {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
+            Assert.All(Helpers.TensorLengthsIncludingBlockSpanning, tensorLength =>
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
@@ -1205,6 +1237,38 @@ namespace System.Numerics.Tensors.Tests
                             Assert.Equal(x[expected], x[actual]);
                         }
                     }
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_FirstOfEqualMagnitudesReturnedAcrossBlocks()
+        {
+            Assert.All(Helpers.TensorLengthsSpanningBlocks, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, 1, tensorLength / 2, tensorLength - 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(1));
+                    x[expected] = ConvertFromSingle(2);
+                    x[tensorLength - 1] = ConvertFromSingle(2);
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x.Span));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMaxMagnitude_FirstOfEqualMagnitudesReturned()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(1));
+                    x[expected] = ConvertFromSingle(2);
+                    x[tensorLength - 1] = ConvertFromSingle(2);
+                    Assert.Equal(expected, IndexOfMaxMagnitude(x.Span));
                 }
             });
         }
@@ -1292,7 +1356,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IndexOfMin_AllLengths()
         {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
+            Assert.All(Helpers.TensorLengthsIncludingBlockSpanning, tensorLength =>
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
@@ -1300,6 +1364,38 @@ namespace System.Numerics.Tensors.Tests
                     x[expected] = Enumerable.Min(MemoryMarshal.ToEnumerable<T>(x.Memory));
                     int actual = IndexOfMin(x.Span);
                     Assert.True(actual == expected || (actual < expected && x[actual].Equals(x[expected])), $"{tensorLength} {actual} {expected}     {string.Join(",", MemoryMarshal.ToEnumerable<T>(x.Memory))}");
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMin_FirstOfEqualMinimumsReturnedAcrossBlocks()
+        {
+            Assert.All(Helpers.TensorLengthsSpanningBlocks, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, 1, tensorLength / 2, tensorLength - 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(2));
+                    x[expected] = ConvertFromSingle(1);
+                    x[tensorLength - 1] = ConvertFromSingle(1);
+                    Assert.Equal(expected, IndexOfMin(x.Span));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMin_FirstOfEqualMinimumsReturned()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(2));
+                    x[expected] = ConvertFromSingle(1);
+                    x[tensorLength - 1] = ConvertFromSingle(1);
+                    Assert.Equal(expected, IndexOfMin(x.Span));
                 }
             });
         }
@@ -1368,7 +1464,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IndexOfMinMagnitude_AllLengths()
         {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
+            Assert.All(Helpers.TensorLengthsIncludingBlockSpanning, tensorLength =>
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
@@ -1395,6 +1491,38 @@ namespace System.Numerics.Tensors.Tests
                             Assert.Equal(x[expected], x[actual]);
                         }
                     }
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_FirstOfEqualMagnitudesReturnedAcrossBlocks()
+        {
+            Assert.All(Helpers.TensorLengthsSpanningBlocks, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, 1, tensorLength / 2, tensorLength - 2, tensorLength - 1 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(2));
+                    x[expected] = ConvertFromSingle(1);
+                    x[tensorLength - 1] = ConvertFromSingle(1);
+                    Assert.Equal(expected, IndexOfMinMagnitude(x.Span));
+                }
+            });
+        }
+
+        [Fact]
+        public void IndexOfMinMagnitude_FirstOfEqualMagnitudesReturned()
+        {
+            Assert.All(Helpers.TensorLengths, tensorLength =>
+            {
+                foreach (int expected in new[] { 0, tensorLength / 2 })
+                {
+                    using BoundedMemory<T> x = CreateTensor(tensorLength);
+                    x.Span.Fill(ConvertFromSingle(2));
+                    x[expected] = ConvertFromSingle(1);
+                    x[tensorLength - 1] = ConvertFromSingle(1);
+                    Assert.Equal(expected, IndexOfMinMagnitude(x.Span));
                 }
             });
         }

@@ -86,6 +86,15 @@ namespace System.Numerics.Tensors
                     return Vector512.LessThan(x, y);
                 }
             }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector128<T> MinMax(Vector128<T> x, Vector128<T> y) => MinOperator<T>.Invoke(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector256<T> MinMax(Vector256<T> x, Vector256<T> y) => MinOperator<T>.Invoke(x, y);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Vector512<T> MinMax(Vector512<T> x, Vector512<T> y) => MinOperator<T>.Invoke(x, y);
         }
     }
 }

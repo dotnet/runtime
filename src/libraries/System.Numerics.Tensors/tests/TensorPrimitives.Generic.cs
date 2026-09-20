@@ -1809,7 +1809,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IndexOfMaxMagnitude_HandlesMinValue()
         {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
+            Assert.All(Helpers.TensorLengthsIncludingBlockSpanning, tensorLength =>
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
@@ -1825,7 +1825,7 @@ namespace System.Numerics.Tensors.Tests
         [Fact]
         public void IndexOfMinMagnitude_HandlesMinValue()
         {
-            Assert.All(Helpers.TensorLengths, tensorLength =>
+            Assert.All(Helpers.TensorLengthsIncludingBlockSpanning, tensorLength =>
             {
                 foreach (int expected in new[] { 0, tensorLength / 2, tensorLength - 1 })
                 {
