@@ -11,6 +11,16 @@
 
   <Import Project="..\..\Directory.Build.props" />
 
+  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <!-- WASI library tests do not import WasiApp.InTree.props because test projects own
+         their target properties. Register the same post-SDK ReadyToRun overrides here. -->
+    <WasiR2RComposeToolPath>$(MonoProjectRoot)wasi/build/compose-r2r.py</WasiR2RComposeToolPath>
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets Condition="Exists('$(MonoProjectRoot)wasi/build/WasiApp.ReadyToRun.targets')">$(AfterMicrosoftNETSdkTargets);$(MonoProjectRoot)wasi/build/WasiApp.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+  <Import Project="$(Crossgen2SdkOverridePropsPath)"
+          Condition="'$(TestWasmReadyToRun)' == 'true' and '$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
+
   <PropertyGroup Condition="'$(UseBootstrap)' == 'true' and ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true' or '$(IsTrimmingTestProject)' == 'true')">
     <UseBootstrapLayout>true</UseBootstrapLayout>
   </PropertyGroup>

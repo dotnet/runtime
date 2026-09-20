@@ -166,7 +166,7 @@ XHARNESS_COMMAND=test-browser ./dotnet.sh build /t:Test \
   /p:Scenario=WasmTestOnChrome /p:InstallChromeForTests=true
 ```
 
-`TestWasmReadyToRun` enables `PublishReadyToRun` only in browser CoreCLR library test projects.
+`TestWasmReadyToRun` enables `PublishReadyToRun` only in browser or WASI CoreCLR library test projects.
 Do not pass `PublishReadyToRun=true` globally to `build.sh`: that also attempts to publish
 host-side build tools with ReadyToRun.
 `EnableAggressiveTrimming` selects the shared mobile test trimming configuration, including
@@ -193,6 +193,25 @@ stale staged assets can otherwise cause assembly-loading failures before tests s
 
 The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
 tests for execution on Helix. The existing interpreter jobs remain separate.
+
+For WASI, build the CoreCLR runtime, libraries, packs, and host crossgen2 first:
+
+```bash
+./build.sh clr+libs+host+packs -os wasi -arch wasm -c Release \
+  -rc Release -lc Release -hc Release /p:TestAssemblies=false
+```
+
+Then run the focused WASI smoke suite with trimmed composite ReadyToRun images:
+
+```bash
+XHARNESS_COMMAND=test ./build.sh libs.tests -test -os wasi -c Release \
+  /p:RuntimeFlavor=CoreCLR /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true \
+  /p:RunSmokeTestsOnly=true /p:Scenario=WasmTestOnWasmtime
+```
+
+The `LibraryTestsCoreCLR_WASI_R2R` CI job uses this configuration to run
+`System.Collections.Tests`; the existing interpreter smoke job continues to run the broader
+`System.Runtime.Tests` suite separately.
 
 ## AOT library tests
 

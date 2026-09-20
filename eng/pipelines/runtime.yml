@@ -197,6 +197,17 @@ extends:
           alwaysRun: ${{ variables.isRollingBuild }}
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
+      # CoreCLR library-test smoke leg with trimmed composite ReadyToRun images.
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          nameSuffix: _R2R
+          readyToRun: true
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml

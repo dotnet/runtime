@@ -116,6 +116,10 @@
       <_WasiReadyToRunFrameworkInput Include="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
       <_WasiReadyToRunFrameworkInput Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll"
                                      Exclude="$(WasiCoreCLRSystemPrivateCoreLibPath)" />
+      <!-- Test applications can carry package implementations with the same simple name as
+           framework assemblies. Keep the app-selected copy authoritative for crossgen2. -->
+      <_WasiReadyToRunFrameworkInput Remove="@(ResolvedFileToPublish)"
+                                     MatchOnMetadata="Filename;Extension" />
       <ResolvedFileToPublish Include="@(_WasiReadyToRunFrameworkInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(_WasiReadyToRunFrameworkInput.FileName)%(_WasiReadyToRunFrameworkInput.Extension)"

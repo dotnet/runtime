@@ -99,6 +99,10 @@
   <Import Project="$(WasiProjectRoot)build\WasiApp.InTree.targets"
           Condition="'$(BuildAOTTestsOn)' == 'local'" />
 
+  <ItemGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true'">
+    <WasmEnvironmentVariable Include="TEST_READY_TO_RUN_MODE" Value="1" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(BuildAOTTestsOnHelix)' == 'true'">
     <!-- wasm targets are not imported at all, in this case, because we run the wasm build on helix -->
   </PropertyGroup>
