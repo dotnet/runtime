@@ -2232,6 +2232,7 @@ namespace ILAssembler
         public sealed class MethodDebugInfo
         {
             public string? DocumentPath { get; set; }
+            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
         }
 

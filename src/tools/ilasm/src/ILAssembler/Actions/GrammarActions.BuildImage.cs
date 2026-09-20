@@ -626,18 +626,20 @@ namespace ILAssembler
                 DocumentHandle documentHandle = default;
                 if (debugInfo.DocumentPath is not null)
                 {
-                    if (!_documentHandles.TryGetValue(debugInfo.DocumentPath, out documentHandle))
+                    (string Path, Guid LanguageGuid) documentKey =
+                        (debugInfo.DocumentPath, debugInfo.LanguageGuid);
+                    if (!_documentHandles.TryGetValue(documentKey, out documentHandle))
                     {
                         var nameHandle = _pdbBuilder.GetOrAddDocumentName(debugInfo.DocumentPath);
-                        var languageGuidHandle = _currentLanguageGuid != Guid.Empty
-                            ? _pdbBuilder.GetOrAddGuid(_currentLanguageGuid)
+                        var languageGuidHandle = debugInfo.LanguageGuid != Guid.Empty
+                            ? _pdbBuilder.GetOrAddGuid(debugInfo.LanguageGuid)
                             : default;
                         documentHandle = _pdbBuilder.AddDocument(
                             nameHandle,
                             default, // hash algorithm
                             default, // hash
                             languageGuidHandle);
-                        _documentHandles[debugInfo.DocumentPath] = documentHandle;
+                        _documentHandles[documentKey] = documentHandle;
                     }
                 }
 
