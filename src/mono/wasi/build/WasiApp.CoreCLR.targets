@@ -520,11 +520,12 @@
       <_WasiR2RComposeOutputDir>$([MSBuild]::NormalizeDirectory('$(_WasmIntermediateOutputPath)', 'r2r-compose'))</_WasiR2RComposeOutputDir>
       <_WasiR2RComposedHost>$(_WasiR2RComposeOutputDir)corerun-composite.wasm</_WasiR2RComposedHost>
       <_WasiR2RStubDir>$([MSBuild]::NormalizeDirectory('$(WasmAppDir)', 'managed', 'comp'))</_WasiR2RStubDir>
+      <_WasiR2RToolPath>$(WasmToolsCacheDir):$(BinaryenCacheDir)bin:$(PATH)</_WasiR2RToolPath>
     </PropertyGroup>
     <RemoveDir Directories="$(_WasiR2RStubDir)" />
     <MakeDir Directories="$(_WasiR2RComposeOutputDir);$(_WasiR2RStubDir)" />
     <Exec Command="&quot;$(WasiR2RPythonCommand)&quot; &quot;$(WasiR2RComposeToolPath)&quot;"
-          EnvironmentVariables="COMP=$(_WasiR2RCompositePath);CORERUN=$(_WasiRelinkOutput);OUTDIR=$(_WasiR2RComposeOutputDir)" />
+          EnvironmentVariables="COMP=$(_WasiR2RCompositePath);CORERUN=$(_WasiRelinkOutput);OUTDIR=$(_WasiR2RComposeOutputDir);PATH=$(_WasiR2RToolPath)" />
     <Copy SourceFiles="$(_WasiR2RComposedHost)"
           DestinationFiles="$(_WasiPublishedHost)" />
     <ItemGroup>

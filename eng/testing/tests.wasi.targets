@@ -20,6 +20,12 @@
   <!-- On CI this is installed as part of pretest, but it should still be installed
        for WBT, and debugger tests -->
   <Import Project="$(MSBuildThisFileDirectory)wasi-provisioning.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)wasi-r2r-provisioning.targets" />
+
+  <Target Name="_ProvisionWasiR2RToolsForLibraryTests"
+          BeforeTargets="_WasiCoreCLRComposeReadyToRun"
+          DependsOnTargets="ProvisionWasiR2RTools"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == 'true'" />
 
   <!-- CoreCLR-WASI: WasiApp.CoreCLR.targets links the wasihost corehost per-app (so
        library/test reverse P/Invoke thunks are covered), and the host preloads icudt.dat,
