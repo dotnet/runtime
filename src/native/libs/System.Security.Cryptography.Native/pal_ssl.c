@@ -874,6 +874,11 @@ void CryptoNative_SslSessionFree(SSL_SESSION* session)
     SSL_SESSION_free(session);
 }
 
+int32_t CryptoNative_SslSessionUpRef(SSL_SESSION* session)
+{
+    return SSL_SESSION_up_ref(session);
+}
+
 const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)
 {
     return SSL_SESSION_get0_hostname(session);
