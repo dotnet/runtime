@@ -213,5 +213,33 @@ namespace ILAssembler.Tests
 
             Assert.Equal<byte>(firstImage, secondImage);
         }
+
+        [Fact]
+        public void RawVTable_ReportsDiagnosticInsteadOfThrowing()
+        {
+            string source = """
+                .assembly test { }
+                .vtable = (01 00 00 00)
+                """;
+            ImmutableArray<Diagnostic> diagnostics = default;
+            CompilationResult? result = null;
+            DocumentCompiler compiler = new();
+
+            Exception? exception = Record.Exception(
+                () => (diagnostics, result) = compiler.Compile(
+                    new SourceText(source, "test.il"),
+                    _ => throw new InvalidOperationException("Unexpected include"),
+                    _ => throw new InvalidOperationException("Unexpected resource"),
+                    new Options { ErrorTolerant = true }));
+
+            Assert.Null(exception);
+            Diagnostic diagnostic = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.UnsupportedVTableDeclaration, diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+        }
     }
 }

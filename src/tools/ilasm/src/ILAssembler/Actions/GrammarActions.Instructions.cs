@@ -163,12 +163,7 @@ internal sealed partial class GrammarActions
 
         CurrentMethodContext method = instruction.Method;
         string labelName = ParseIdentifier(labelToken);
-        if (!method.Labels.TryGetValue(labelName, out LabelHandle label))
-        {
-            label = method.Definition.MethodBody.DefineLabel();
-            method.Labels[labelName] = label;
-            method.UndefinedLabelReferences.TryAdd(labelName, opcodeToken);
-        }
+        LabelHandle label = GetOrCreateMethodLabel(method, labelName, opcodeToken);
 
         method.Definition.MethodBody.Branch(instruction.OpCode, label);
     }
@@ -328,12 +323,10 @@ internal sealed partial class GrammarActions
             }
 
             string labelName = ParseIdentifier(token);
-            if (!method.Labels.TryGetValue(labelName, out LabelHandle label))
-            {
-                label = method.Definition.MethodBody.DefineLabel();
-                method.Labels[labelName] = label;
-                method.UndefinedLabelReferences.TryAdd(labelName, builder.OpcodeToken);
-            }
+            LabelHandle label = GetOrCreateMethodLabel(
+                method,
+                labelName,
+                builder.OpcodeToken);
 
             labels.Add((label, null));
         }

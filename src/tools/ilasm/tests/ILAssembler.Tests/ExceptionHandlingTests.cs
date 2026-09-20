@@ -654,6 +654,68 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void UndefinedLabelsInExceptionRegion_ReportDiagnostics()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try MISSING_START to TRY_END filter MISSING_FILTER handler HANDLER_START to HANDLER_END
+                    TRY_START:
+                        nop
+                        leave.s DONE
+                    TRY_END:
+                    FILTER_START:
+                        pop
+                        ldc.i4.1
+                        endfilter
+                    HANDLER_START:
+                        pop
+                        leave.s DONE
+                    HANDLER_END:
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => throw new InvalidOperationException("Unexpected include"),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            Diagnostic[] labelErrors = diagnostics
+                .Where(diagnostic => diagnostic.Id == DiagnosticIds.LabelNotFound)
+                .ToArray();
+            Assert.Collection(
+                labelErrors,
+                diagnostic =>
+                {
+                    Assert.Equal("Label 'MISSING_START' not found", diagnostic.Message);
+                    Assert.Equal(
+                        source.IndexOf("MISSING_START", StringComparison.Ordinal),
+                        diagnostic.Location.Span.Start);
+                },
+                diagnostic =>
+                {
+                    Assert.Equal("Label 'MISSING_FILTER' not found", diagnostic.Message);
+                    Assert.Equal(
+                        source.IndexOf("MISSING_FILTER", StringComparison.Ordinal),
+                        diagnostic.Location.Span.Start);
+                });
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+        }
+
+        [Fact]
         public void NestedTryBlocks_EmitInnerRegionBeforeOuterRegion()
         {
             string source = """

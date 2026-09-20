@@ -45,7 +45,9 @@ public partial class CILParser
 
     public sealed record LabelExceptionRangeValue(
         string Start,
-        string End) : ExceptionRangeValue;
+        IToken StartToken,
+        string End,
+        IToken EndToken) : ExceptionRangeValue;
 
     public sealed record OffsetExceptionRangeValue(
         int Start,
@@ -63,7 +65,8 @@ public partial class CILParser
         ScopeBlockContext Scope) : ExceptionFilterValue;
 
     public sealed record LabelExceptionFilterValue(
-        string Label) : ExceptionFilterValue;
+        string Label,
+        IToken Token) : ExceptionFilterValue;
 
     public sealed record OffsetExceptionFilterValue(
         int Offset) : ExceptionFilterValue;
