@@ -15,6 +15,7 @@
 #include <palsuite.h>
 
 DWORD dwResumeThreadTestParameter = 0;
+LONG completedThreadCount_ResumeThread_test1 = 0;
 
 DWORD PALAPI ResumeThreadTestThread( LPVOID lpParameter)
 {
@@ -25,6 +26,7 @@ DWORD PALAPI ResumeThreadTestThread( LPVOID lpParameter)
     */
     
     dwResumeThreadTestParameter = (DWORD)(SIZE_T)lpParameter;
+    InterlockedIncrement(&completedThreadCount_ResumeThread_test1);
 
     return dwRet;
 }
@@ -53,65 +55,40 @@ BOOL ResumeThreadTest()
     
     if (hThread != NULL)
     {
-        /* Wait for one second.  This should return WAIT_TIMEOUT */
-        dwRet = WaitForSingleObject(hThread,1000);
+        minipal_sleep(100);
 
-        if (dwRet != WAIT_TIMEOUT)
+        /* Check to ensure the parameter hasn't changed. The function
+           shouldn't have occurred yet.
+        */
+        if (dwResumeThreadTestParameter != 0)
         {
-            Trace("ResumeThreadTest:WaitForSingleObject "
-                   "failed (%x)\n",GetLastError());
+            Trace("ResumeThreadTest:parameter error\n");
         }
         else
         {
-            /* Check to ensure the parameter hasn't changed.  The
-               function shouldn't have occurred yet.
-            */
-            if (dwResumeThreadTestParameter != 0)
+            /* Call ResumeThread and ensure the return value is correct. */
+            dwRet = ResumeThread(hThread);
+
+            if (dwRet != 1)
             {
-                Trace("ResumeThreadTest:parameter error\n");
+                Trace("ResumeThreadTest:ResumeThread "
+                       "failed (%x)\n",GetLastError());
             }
             else
             {
-                /* Call ResumeThread and ensure the return value is
-                   correct.
-                */
-                
-                dwRet = ResumeThread(hThread);
+                WaitForThreadCompletion(&completedThreadCount_ResumeThread_test1, 1);
 
-                if (dwRet != 1)
+                if (dwResumeThreadTestParameter != (DWORD)(SIZE_T)lpParameter)
                 {
-                    Trace("ResumeThreadTest:ResumeThread "
-                           "failed (%x)\n",GetLastError());
+                    Trace("ResumeThreadTest:parameter error\n");
                 }
                 else
                 {
-                    /* Wait again, now that the thread has been
-                       resumed, and the return should be WAIT_OBJECT_0
-                    */
-                    dwRet = WaitForSingleObject(hThread,INFINITE);
-
-                    if (dwRet != WAIT_OBJECT_0)
-                    {
-                        Trace("ResumeThreadTest:WaitForSingleObject "
-                               "failed (%x)\n",GetLastError());
-                    }
-                    else
-                    {
-                        /* Check the param now and it should have been
-                           set.
-                        */
-                        if (dwResumeThreadTestParameter != (DWORD)(SIZE_T)lpParameter)
-                        {
-                            Trace("ResumeThreadTest:parameter error\n");
-                        }
-                        else
-                        {
-                            bRet = TRUE;
-                        }
-                    }
+                    bRet = TRUE;
                 }
             }
         }
+        CloseHandle(hThread);
     }
     else
     {

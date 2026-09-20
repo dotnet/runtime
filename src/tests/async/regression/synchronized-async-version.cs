@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,48 @@ using Xunit;
 
 public class Async2Synchronized
 {
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void FaultedAwaitable(bool useValueTask, bool callerHoldsLock)
+    {
+        Async2Synchronized p = new();
+        InvalidOperationException expected = new("boom");
+        Task task = Task.FromException(expected);
+
+        if (callerHoldsLock)
+        {
+            Monitor.Enter(p);
+        }
+
+        try
+        {
+            InvalidOperationException actual = Assert.Throws<InvalidOperationException>(() =>
+            {
+                if (useValueTask)
+                {
+                    p.FooValueTask(new ValueTask(task)).GetAwaiter().GetResult();
+                }
+                else
+                {
+                    p.Foo(task).GetAwaiter().GetResult();
+                }
+            });
+
+            Assert.Same(expected, actual);
+            Assert.Equal(callerHoldsLock, Monitor.IsEntered(p));
+        }
+        finally
+        {
+            if (Monitor.IsEntered(p))
+            {
+                Monitor.Exit(p);
+            }
+        }
+    }
+
     [Fact]
     public static void TestEntryPoint()
     {

@@ -791,18 +791,18 @@ bool emitter::HasRegularWideImmediateForm(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// DoesSetZeroFlagOnResult: check if the instruction sets ZF according to
+// DoesWriteZeroFlagForResult: check if the instruction writes ZF according to
 //     whether its result is zero.
 //
 // Arguments:
 //    ins - instruction to test
 //
 // Return Value:
-//    true if instruction sets ZF based on its result, false otherwise.
+//    true if instruction writes ZF based on its result, false otherwise.
 //
-bool emitter::DoesSetZeroFlagOnResult(instruction ins)
+bool emitter::DoesWriteZeroFlagForResult(instruction ins)
 {
-    // BSF/BSR set ZF based on the source, not the result.
+    // BSF/BSR write ZF based on the source, not the result.
     if ((ins == INS_bsf) || (ins == INS_bsr))
     {
         return false;
@@ -1624,7 +1624,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
     // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesSetZeroFlagOnResult(lastIns) &&
+    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlagForResult(lastIns) &&
         DoesWriteParityFlag(lastIns))
     {
         return id->idOpSize() == opSize;
@@ -1632,7 +1632,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
 
     if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
     {
-        if (DoesSetZeroFlagOnResult(lastIns) && IsFlagsAlwaysModified(id))
+        if (DoesWriteZeroFlagForResult(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }
@@ -14985,6 +14985,7 @@ DONE:
                 else
                 {
                     assert((id->idGCref() == GCT_GCREF) && (ins == INS_cmpxchg || ins == INS_xchg));
+                    emitGCregLiveUpd(id->idGCref(), (ins == INS_cmpxchg) ? REG_EAX : id->idReg1(), dst);
                 }
                 break;
 

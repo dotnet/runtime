@@ -19,7 +19,7 @@
 
   <!-- The framework P/Invoke modules, shared with the runtime tests' corerun relink so the
        checked-in tables and the ones the tests generate cannot drift apart. -->
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)" />
 
   <PropertyGroup>
     <_TesthostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost'))</_TesthostDir>
@@ -100,7 +100,7 @@
     <Error Condition="!Exists('$(_ScanPath)')"
            Text="Scan path for $(_TargetOS) does not exist: $(_ScanPath). Build the runtime first: $(_BuildScript) clr+libs -os $(_TargetOS) -c $(Configuration)" />
     <Error Condition="'@(WasmCoreClrFrameworkPInvokeModule)' == ''"
-           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(RepositoryEngineeringDir)wasm/WasmPInvokeModules.props." />
+           Text="No WasmCoreClrFrameworkPInvokeModule entries were found in $(WasmPInvokeModulesPropsPath)." />
 
     <Message Importance="High" Text="[$(_TargetOS)] Scan path: $(_ScanPath)" />
     <Message Importance="High" Text="[$(_TargetOS)] Output path: $(_OutputDir)" />
@@ -117,11 +117,16 @@
            Text="No assemblies to scan were found in $(_ScanPath)." />
 
     <ItemGroup>
+      <_TargetPInvokeModule Remove="@(_TargetPInvokeModule)" />
+      <_TargetPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))"
+                            Condition="'$(_TargetOS)' == 'browser'" />
+      <_TargetPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))"
+                            Condition="'$(_TargetOS)' == 'wasi'" />
       <_GeneratorArg Remove="@(_GeneratorArg)" />
       <_GeneratorArg Include="--targetos:$(_TargetOS)" />
       <_GeneratorArg Include="--targetarch:wasm" />
       <_GeneratorArg Include="--generate-portable-callhelpers:$(_StagingDir)" />
-      <_GeneratorArg Include="@(WasmCoreClrFrameworkPInvokeModule->'--directpinvoke:%(Identity)')" />
+      <_GeneratorArg Include="@(_TargetPInvokeModule->'--directpinvoke:%(Identity)')" />
       <_GeneratorArg Include="@(_ScanAssembly->'%(FullPath)')" />
     </ItemGroup>
 
