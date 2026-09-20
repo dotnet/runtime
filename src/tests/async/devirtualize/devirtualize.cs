@@ -129,7 +129,7 @@ public class Async2Devirtualize
         return await obj.GetValue();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Assert.Equal(42, CallOnNewOpenDerived().Result);

@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 
 using Internal.Reflection.Core.Execution;
 using Internal.Runtime.Augments;
+using Internal.Metadata.NativeFormat;
 
 namespace System.Reflection
 {
@@ -84,25 +85,33 @@ namespace System.Reflection
             return result;
         }
 
-        public abstract override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get;
-        }
-
-        public sealed override object[] GetCustomAttributes(bool inherit) => RuntimeCustomAttribute.GetCustomAttributes(this, typeof(object), inherit);
+        public sealed override object[] GetCustomAttributes(bool inherit) =>
+            RuntimeCustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object), inherit);
 
         public sealed override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
-        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => CustomAttributes.ToReadOnlyCollection();
+        public sealed override IList<CustomAttributeData> GetCustomAttributesData() => RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
+
+        internal virtual MetadataReader? GetMetadataReader() => null;
+
+        internal virtual CustomAttributeHandleCollection GetCustomAttributeHandles() => default;
 
         public sealed override bool IsDefined(Type attributeType, bool inherit)
         {
             ArgumentNullException.ThrowIfNull(attributeType);
-            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
+
+            if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
         public sealed override Type DeclaringType

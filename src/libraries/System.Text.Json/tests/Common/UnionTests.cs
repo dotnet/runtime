@@ -413,6 +413,126 @@ namespace System.Text.Json.Serialization.Tests
             Assert.NotNull(typeInfo);
         }
 
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union IntOrString(int, string);
+
+        [Theory]
+        [InlineData("42", 42)]
+        [InlineData("\"hello\"", "hello")]
+        [InlineData("\"42\"", "42")]
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults(string json, object expectedValue)
+        {
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
+
+            IntOrString? value = await Serializer.DeserializeWrapper<IntOrString>(json, options);
+
+            Assert.Equal(expectedValue, GetUnionValue(value!));
+        }
+
+        [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)]
+        public union NumberHandlingUnion(int, int[], bool);
+
+        [Theory]
+        [InlineData("42", "\"42\"")]
+        [InlineData("\"42\"", "\"42\"")]
+        [InlineData("[1,2,3,4,5,6,7,8]", "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]")]
+        [InlineData("[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]", "[\"1\",\"2\",\"3\",\"4\",\"5\",\"6\",\"7\",\"8\"]")]
+        [InlineData("true", "true")]
+        public async Task UnionNumberHandling_TypeAttributeAppliesToCaseConverter(string json, string expectedJson)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(configure: options =>
+            {
+                options.NumberHandling = JsonNumberHandling.Strict;
+                options.DefaultBufferSize = 1;
+            });
+
+            NumberHandlingUnion value = await Serializer.DeserializeWrapper<NumberHandlingUnion>(json, options);
+            Assert.Equal(expectedJson, await Serializer.SerializeWrapper(value, options));
+        }
+
+        [Fact]
+        public async Task UnionNumberHandling_StrictTypeAttributeOverridesGlobalWriteAsString()
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: options => options.NumberHandling = JsonNumberHandling.WriteAsString);
+
+            Assert.Equal("42", await Serializer.SerializeWrapper(new IntOrString(42), options));
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTestHelper.GetUnionCaseNumberHandlingPrecedenceTestData), MemberType = typeof(JsonTestHelper))]
+        public async Task UnionNumberHandling_CaseConvertersHonorPrecedence(
+            JsonNumberHandling globalHandling, JsonNumberHandling? unionHandling, JsonNumberHandling? caseHandling, JsonNumberHandling expectedHandling)
+        {
+            foreach ((Type unionType, Type numberType) in new[] { (typeof(IntOrBool), typeof(int)), (typeof(SingleNullableValueTypeUnion), typeof(int?)) })
+            {
+                JsonSerializerOptions options = Serializer.CreateOptions(
+                    configure: options => options.NumberHandling = globalHandling,
+                    modifier: typeInfo =>
+                    {
+                        if (typeInfo.Type == unionType)
+                        {
+                            typeInfo.NumberHandling = unionHandling;
+                        }
+                        else if (typeInfo.Type == numberType)
+                        {
+                            typeInfo.NumberHandling = caseHandling;
+                        }
+                    });
+
+                object value = await Serializer.DeserializeWrapper("42", unionType, options);
+                Assert.Equal(42, ((IUnion)value).Value);
+
+                string expectedJson = (expectedHandling & JsonNumberHandling.WriteAsString) != 0 ? "\"42\"" : "42";
+                Assert.Equal(expectedJson, await Serializer.SerializeWrapper(value, unionType, options));
+
+                if ((expectedHandling & JsonNumberHandling.AllowReadingFromString) != 0)
+                {
+                    value = await Serializer.DeserializeWrapper("\"42\"", unionType, options);
+                    Assert.Equal(42, ((IUnion)value).Value);
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<JsonException>(() => Serializer.DeserializeWrapper("\"42\"", unionType, options));
+                }
+
+                if (numberType == typeof(int?))
+                {
+                    value = await Serializer.DeserializeWrapper("null", unionType, options);
+                    Assert.Null(((IUnion)value).Value);
+                    Assert.Equal("null", await Serializer.SerializeWrapper(value, unionType, options));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(JsonNumberHandling.Strict, JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString, """{"Name":"item","Values":["42"]}""")]
+        [InlineData(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString, JsonNumberHandling.Strict, """{"Name":"item","Values":[42]}""")]
+        public async Task UnionNumberHandling_DoesNotOverridePocoMembers(
+            JsonNumberHandling unionHandling, JsonNumberHandling pocoHandling, string expectedJson)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                modifier: typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(MixedUnion))
+                    {
+                        typeInfo.NumberHandling = unionHandling;
+                    }
+                    else if (typeInfo.Type == typeof(Payload))
+                    {
+                        typeInfo.NumberHandling = pocoHandling;
+                    }
+                });
+
+            MixedUnion value = new(new Payload { Name = "item", Values = [42] });
+            JsonTestHelper.AssertJsonEqual(expectedJson, await Serializer.SerializeWrapper(value, options));
+            MixedUnion? result = await Serializer.DeserializeWrapper<MixedUnion>(expectedJson, options);
+            Assert.Equal(new[] { 42 }, Assert.IsType<Payload>(GetUnionValue(result!)).Values);
+        }
+
         public class Animal { }
         public class Dog : Animal { }
         public class Lab : Dog { }
