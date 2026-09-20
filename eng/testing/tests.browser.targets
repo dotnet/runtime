@@ -382,7 +382,7 @@
       <WasmAssembliesToBundle Condition="'%(WasmAssembliesToBundle.FileName)' == 'WasmSymbolicator'" AOT_InternalForceToInterpret="true" />
     </ItemGroup>
 
-    <ForceMSBuildGC />
+    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">
