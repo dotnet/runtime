@@ -294,7 +294,9 @@ internal sealed partial class GrammarActions
             }
 
             EntityRegistry.CustomAttributeEntity? attribute =
-                MaterializeCustomAttributeDeclaration(application.Value);
+                MaterializeCustomAttributeDeclaration(
+                    application.Value,
+                    application.Location);
             if (attribute is not null)
             {
                 attribute.Owner ??= parameterEntity;
@@ -349,7 +351,9 @@ internal sealed partial class GrammarActions
             }
 
             EntityRegistry.CustomAttributeEntity? attribute =
-                MaterializeCustomAttributeDeclaration(application.Value);
+                MaterializeCustomAttributeDeclaration(
+                    application.Value,
+                    application.Location);
             if (attribute is not null)
             {
                 attribute.Owner ??= owner;

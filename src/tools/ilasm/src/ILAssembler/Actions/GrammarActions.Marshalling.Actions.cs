@@ -301,6 +301,13 @@ internal sealed partial class GrammarActions
             case VariantBoolNativeTypeElementValue:
                 return CreateNativeTypeBlob(UnmanagedType.VariantBool);
             case NativeTypeTypedefValue typedef:
+                if (TryResolveTypedefAsTypeBlob(typedef.Alias) is { } resolved)
+                {
+                    BlobBuilder blob = new(resolved.Count);
+                    resolved.WriteContentTo(blob);
+                    return blob;
+                }
+
                 ReportError(
                     DiagnosticIds.TypedefNotFound,
                     string.Format(DiagnosticMessageTemplates.TypedefNotFound, typedef.Alias),

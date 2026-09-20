@@ -252,10 +252,17 @@ internal sealed partial class GrammarActions
                 blob.WriteSerializedString(GetReflectionNotation(classEnum.ClassName));
                 break;
             case TypedefSerializationTypeValue typedef:
-                ReportError(
-                    DiagnosticIds.TypedefNotFound,
-                    string.Format(DiagnosticMessageTemplates.TypedefNotFound, typedef.Alias),
-                    typedef.Token);
+                if (TryResolveTypedefAsTypeBlob(typedef.Alias) is { } resolved)
+                {
+                    resolved.WriteContentTo(blob);
+                }
+                else
+                {
+                    ReportError(
+                        DiagnosticIds.TypedefNotFound,
+                        string.Format(DiagnosticMessageTemplates.TypedefNotFound, typedef.Alias),
+                        typedef.Token);
+                }
                 break;
         }
 

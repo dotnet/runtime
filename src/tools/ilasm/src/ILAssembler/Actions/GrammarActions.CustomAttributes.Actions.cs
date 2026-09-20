@@ -179,12 +179,17 @@ internal sealed partial class GrammarActions
     }
 
     private EntityRegistry.CustomAttributeEntity? MaterializeCustomAttributeDeclaration(
-        CustomAttributeDeclarationValue? value)
+        CustomAttributeDeclarationValue? value,
+        IToken location)
     {
         if (value is CustomAttributeTypedefValue typedef)
         {
             if (TryResolveTypedefAsCustomAttribute(typedef.Alias) is not { } resolved)
             {
+                ReportError(
+                    DiagnosticIds.TypedefNotFound,
+                    string.Format(DiagnosticMessageTemplates.TypedefNotFound, typedef.Alias),
+                    location);
                 return null;
             }
 
@@ -205,7 +210,7 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.CustomAttributeEntity? MaterializeCustomAttributeDeclaration(
         CILParser.CustomAttrDeclContext context)
-        => MaterializeCustomAttributeDeclaration(context.Value);
+        => MaterializeCustomAttributeDeclaration(context.Value, context.Start);
 
     internal EntityRegistry.CustomAttributeEntity MaterializeCustomAttributeDescriptor(
         CILParser.CustomDescrContext context)
@@ -213,7 +218,7 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.CustomAttributeEntity? MaterializeMethodBodyCustomAttributeDeclaration(
         CILParser.CustomDescrInMethodBodyContext context)
-        => MaterializeCustomAttributeDeclaration(context.Value);
+        => MaterializeCustomAttributeDeclaration(context.Value, context.Start);
 
     internal EntityRegistry.EntityBase MaterializeOwnerType(
         CILParser.OwnerTypeContext context)
