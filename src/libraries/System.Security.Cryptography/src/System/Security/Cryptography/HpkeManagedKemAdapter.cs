@@ -110,13 +110,21 @@ namespace System.Security.Cryptography
             Debug.Assert(KeyDerivationKdf.IsTwoStage);
             Debug.Assert(prk.Length == KeyDerivationKdf.Nh);
 
-            using (IncrementalHash hmac = IncrementalHash.CreateHMAC(KeyDerivationKdf.HkdfHashAlgorithm, salt))
+            ReadOnlySpan<byte> suiteId = Suite.KemMetadata.SuiteId;
+            int labeledIkmLength = checked(VersionLabel.Length + suiteId.Length + label.Length + ikm.Length);
+
+            using (CryptoPoolLease labeledIkm = CryptoPoolLease.Rent(labeledIkmLength))
             {
-                hmac.AppendData(VersionLabel);
-                hmac.AppendData(Suite.KemMetadata.SuiteId);
-                hmac.AppendData(label);
-                hmac.AppendData(ikm);
-                int written = hmac.GetHashAndReset(prk);
+                Span<byte> destination = labeledIkm.Span;
+                VersionLabel.CopyTo(destination);
+                int offset = VersionLabel.Length;
+                suiteId.CopyTo(destination.Slice(offset));
+                offset += suiteId.Length;
+                label.CopyTo(destination.Slice(offset));
+                offset += label.Length;
+                ikm.CopyTo(destination.Slice(offset));
+
+                int written = HKDF.Extract(KeyDerivationKdf.HkdfHashAlgorithm, destination, salt, prk);
                 Debug.Assert(written == prk.Length);
             }
         }
