@@ -1047,6 +1047,16 @@ CreateMutexExW(
     IN DWORD dwFlags,
     IN DWORD dwDesiredAccess);
 
+PALIMPORT
+HANDLE
+PALAPI
+CreateMutexExWForScope(
+    IN LPSECURITY_ATTRIBUTES lpMutexAttributes,
+    IN LPCWSTR lpName,
+    IN DWORD dwFlags,
+    IN DWORD dwDesiredAccess,
+    IN BOOL bIsUserScope);
+
 // CreateMutexExW: dwFlags
 #define CREATE_MUTEX_INITIAL_OWNER ((DWORD)0x1)
 
@@ -1059,6 +1069,15 @@ OpenMutexW(
        IN DWORD dwDesiredAccess,
        IN BOOL bInheritHandle,
        IN LPCWSTR lpName);
+
+PALIMPORT
+HANDLE
+PALAPI
+OpenMutexWForScope(
+       IN DWORD dwDesiredAccess,
+       IN BOOL bInheritHandle,
+       IN LPCWSTR lpName,
+       IN BOOL bIsUserScope);
 
 #ifdef UNICODE
 #define OpenMutex  OpenMutexW

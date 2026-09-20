@@ -20,9 +20,7 @@ const char *const ChildEventNamePrefix0 = "paltest_namedmutex_test1_ce0_";
 const char *const ChildEventNamePrefix1 = "paltest_namedmutex_test1_ce1_";
 const char *const ChildRunningEventNamePrefix = "paltest_namedmutex_test1_cr_";
 
-const char *const GlobalShmFilePathPrefix = "/tmp/.dotnet/shm/global/";
-
-#define MaxPathSize 200
+#define MaxPathSize 4096
 const DWORD PollLoopSleepMilliseconds = 100;
 const DWORD FailTimeoutMilliseconds = 30000;
 DWORD g_expectedTimeoutMilliseconds = 500;
@@ -41,13 +39,28 @@ extern int (*test_sscanf)(const char *str, const char *format, ...);
 extern int(*test_close)(int fd);
 extern int (*test_unlink)(const char *pathname);
 extern unsigned int test_getpid();
+extern unsigned int test_getsid();
+extern unsigned int test_geteuid();
 extern int test_kill(unsigned int pid);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Test helpers
 
 extern bool TestFileExists(const char *path);
+extern bool CreateSymbolicLink(const char *target, const char *linkPath);
 extern bool WriteHeaderInfo(const char *path, char sharedMemoryType, char version, int *fdRef);
+extern bool PrepareUserScopeBase(char *path, size_t pathSize);
+extern bool BuildExpectedSharedMemoryPath(
+    char *path,
+    size_t pathSize,
+    bool isUserScope,
+    const char *contentsDirectoryName,
+    bool includeSessionDirectory,
+    const char *name);
+extern bool BuildExpectedGlobalSharedMemoryPath(char *path, size_t pathSize, const char *name);
+extern bool TestPathAttributes(const char *path, bool isDirectory, unsigned int expectedUid, unsigned int expectedMode);
+extern bool TestUserBaseAttributes(const char *path, unsigned int expectedUid);
+extern void CleanupPreparedUserScopeBase(const char *basePath);
 
 #define TestAssert(expression) \
     do \
@@ -95,20 +108,23 @@ char *BuildName(const char *testName, char *buffer, const char *prefix0, const c
 
 char *BuildGlobalShmFilePath(const char *testName, char *buffer, const char *namePrefix)
 {
-    size_t pathLength = 0;
-    test_strcpy(&buffer[pathLength], GlobalShmFilePathPrefix);
-    pathLength += test_strlen(GlobalShmFilePathPrefix);
-    test_strcpy(&buffer[pathLength], namePrefix);
-    pathLength += test_strlen(namePrefix);
+    char fileName[MaxPathSize];
+    size_t fileNameLength = 0;
+    test_strcpy(&fileName[fileNameLength], namePrefix);
+    fileNameLength += test_strlen(namePrefix);
 
     if (g_isStress)
     {
         // Append the test name so that tests can run in parallel
-        pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%s", testName);
-        buffer[pathLength++] = '_';
+        fileNameLength += test_snprintf(&fileName[fileNameLength], MaxPathSize - fileNameLength, "%s", testName);
+        fileName[fileNameLength++] = '_';
     }
 
-    pathLength += test_snprintf(&buffer[pathLength], MaxPathSize - pathLength, "%u", g_parentPid);
+    fileNameLength += test_snprintf(&fileName[fileNameLength], MaxPathSize - fileNameLength, "%u", g_parentPid);
+    if (!BuildExpectedGlobalSharedMemoryPath(buffer, MaxPathSize, fileName))
+    {
+        buffer[0] = '\0';
+    }
     return buffer;
 }
 
@@ -179,9 +195,25 @@ void TestCreateMutex(AutoCloseMutexHandle &m, const char *name, bool initiallyOw
     free(nameW);
 }
 
+void TestCreateMutexForScope(AutoCloseMutexHandle &m, const char *name, bool isUserScope)
+{
+    m.Close();
+    LPWSTR nameW = convert(name);
+    m = CreateMutexExWForScope(nullptr, nameW, 0, 0, isUserScope);
+    free(nameW);
+}
+
 HANDLE TestOpenMutex(const char *name)
 {
     return OpenMutexA(SYNCHRONIZE, false, name);
+}
+
+HANDLE TestOpenMutexForScope(const char *name, bool isUserScope)
+{
+    LPWSTR nameW = convert(name);
+    HANDLE handle = OpenMutexWForScope(SYNCHRONIZE, false, nameW, isUserScope);
+    free(nameW);
+    return handle;
 }
 
 bool StartProcess(const char *funcName)
@@ -387,6 +419,179 @@ bool YieldToParent(AutoCloseMutexHandle parentEvents[2], AutoCloseMutexHandle ch
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests
+
+bool ScopeAndPermissionsTests()
+{
+    const char *testName = "ScopeAndPermissionsTests";
+    char preparedUserBase[MaxPathSize];
+    TestAssert(PrepareUserScopeBase(preparedUserBase, ARRAY_SIZE(preparedUserBase)));
+
+    char name[MaxPathSize];
+    BuildName(testName, name, "scope_");
+
+    AutoCloseMutexHandle userMutex;
+    TestCreateMutexForScope(userMutex, name, true /* isUserScope */);
+    TestAssert(userMutex != nullptr);
+    TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+
+    AutoCloseMutexHandle secondUserMutex;
+    TestCreateMutexForScope(secondUserMutex, name, true /* isUserScope */);
+    TestAssert(secondUserMutex != nullptr);
+    TestAssert(GetLastError() == ERROR_ALREADY_EXISTS);
+
+    AutoCloseMutexHandle openedUserMutex(TestOpenMutexForScope(name, true /* isUserScope */));
+    TestAssert(openedUserMutex != nullptr);
+
+    AutoCloseMutexHandle globalMutex;
+    TestCreateMutex(globalMutex, name);
+    TestAssert(globalMutex != nullptr);
+    TestAssert(GetLastError() != ERROR_ALREADY_EXISTS);
+
+    AutoCloseMutexHandle openedGlobalMutex(TestOpenMutex(name));
+    TestAssert(openedGlobalMutex != nullptr);
+
+    char userPath[MaxPathSize];
+    char globalPath[MaxPathSize];
+    unsigned int effectiveUid = test_geteuid();
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            userPath,
+            ARRAY_SIZE(userPath),
+            true /* isUserScope */,
+            "shm",
+            false /* includeSessionDirectory */,
+            nullptr));
+    TestAssert(TestPathAttributes(userPath, true /* isDirectory */, effectiveUid, 0700));
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            userPath,
+            ARRAY_SIZE(userPath),
+            true /* isUserScope */,
+            "shm",
+            true /* includeSessionDirectory */,
+            nullptr));
+    TestAssert(TestPathAttributes(userPath, true /* isDirectory */, effectiveUid, 0700));
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            userPath,
+            ARRAY_SIZE(userPath),
+            true /* isUserScope */,
+            "shm",
+            true /* includeSessionDirectory */,
+            name));
+    TestAssert(TestPathAttributes(userPath, false /* isDirectory */, effectiveUid, 0600));
+    char userMutexPath[MaxPathSize];
+    test_strcpy(userMutexPath, userPath);
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            globalPath,
+            ARRAY_SIZE(globalPath),
+            false /* isUserScope */,
+            "shm",
+            false /* includeSessionDirectory */,
+            nullptr));
+    TestAssert(TestPathAttributes(globalPath, true /* isDirectory */, effectiveUid, 0777));
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            globalPath,
+            ARRAY_SIZE(globalPath),
+            false /* isUserScope */,
+            "shm",
+            true /* includeSessionDirectory */,
+            nullptr));
+    TestAssert(TestPathAttributes(globalPath, true /* isDirectory */, effectiveUid, 0777));
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            globalPath,
+            ARRAY_SIZE(globalPath),
+            false /* isUserScope */,
+            "shm",
+            true /* includeSessionDirectory */,
+            name));
+    TestAssert(TestPathAttributes(globalPath, false /* isDirectory */, effectiveUid, 0666));
+    TestAssert(test_strcmp(userPath, globalPath) != 0);
+
+    TestAssert(TestUserBaseAttributes(preparedUserBase, effectiveUid));
+
+    char invalidName[MaxPathSize];
+    BuildName(testName, invalidName, "invalid_permissions_");
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            userPath,
+            ARRAY_SIZE(userPath),
+            true /* isUserScope */,
+            "shm",
+            true /* includeSessionDirectory */,
+            invalidName));
+    int invalidFileDescriptor;
+    TestAssert(WriteHeaderInfo(userPath, 0, 1, &invalidFileDescriptor));
+    AutoCloseMutexHandle invalidPermissionsMutex;
+    TestCreateMutexForScope(invalidPermissionsMutex, invalidName, true /* isUserScope */);
+    TestAssert(invalidPermissionsMutex == nullptr);
+    TestAssert(test_close(invalidFileDescriptor) == 0);
+    TestAssert(test_unlink(userPath) == 0);
+
+    char symlinkName[MaxPathSize];
+    BuildName(testName, symlinkName, "symlink_");
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            userPath,
+            ARRAY_SIZE(userPath),
+            true /* isUserScope */,
+            "shm",
+            true /* includeSessionDirectory */,
+            symlinkName));
+    TestAssert(CreateSymbolicLink(userMutexPath, userPath));
+    AutoCloseMutexHandle symlinkMutex;
+    TestCreateMutexForScope(symlinkMutex, symlinkName, true /* isUserScope */);
+    TestAssert(symlinkMutex == nullptr);
+    TestAssert(test_unlink(userPath) == 0);
+
+    TestAssert(
+        BuildExpectedSharedMemoryPath(
+            userPath,
+            ARRAY_SIZE(userPath),
+            true /* isUserScope */,
+            "lockfiles",
+            true /* includeSessionDirectory */,
+            name));
+    if (TestFileExists(userPath))
+    {
+        TestAssert(TestPathAttributes(userPath, false /* isDirectory */, effectiveUid, 0600));
+        TestAssert(
+            BuildExpectedSharedMemoryPath(
+                userPath,
+                ARRAY_SIZE(userPath),
+                true /* isUserScope */,
+                "lockfiles",
+                true /* includeSessionDirectory */,
+                nullptr));
+        TestAssert(TestPathAttributes(userPath, true /* isDirectory */, effectiveUid, 0700));
+        TestAssert(
+            BuildExpectedSharedMemoryPath(
+                userPath,
+                ARRAY_SIZE(userPath),
+                true /* isUserScope */,
+                "lockfiles",
+                false /* includeSessionDirectory */,
+                nullptr));
+        TestAssert(TestPathAttributes(userPath, true /* isDirectory */, effectiveUid, 0700));
+    }
+
+    openedGlobalMutex.Close();
+    globalMutex.Close();
+    openedUserMutex.Close();
+    secondUserMutex.Close();
+    userMutex.Close();
+    CleanupPreparedUserScopeBase(preparedUserBase);
+    return true;
+}
 
 bool NameTests()
 {
@@ -1110,7 +1315,7 @@ bool (*const TestList[])() =
 
 bool RunTests()
 {
-    bool allPassed = true;
+    bool allPassed = ScopeAndPermissionsTests();
     for (SIZE_T i = 0; i < ARRAY_SIZE(TestList); ++i)
     {
         if (!TestList[i]())
