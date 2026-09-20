@@ -32,7 +32,6 @@ namespace System
             }
         }
 
-        // ActiveIssue https://github.com/dotnet/runtime/issues/133614
         [DllImport("libc", SetLastError = true)]
         internal static extern unsafe uint geteuid();
 
