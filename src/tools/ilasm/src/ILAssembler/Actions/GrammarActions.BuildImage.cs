@@ -39,7 +39,13 @@ namespace ILAssembler
                 ApplyDebuggableAttribute();
             }
 
-            Machine machine = VTableFixupSupport.GetEffectiveMachine(_options.Machine ?? Machine.I386);
+            Machine requestedMachine = _options.Machine ?? Machine.I386;
+            Machine machine = requestedMachine == Machine.Unknown ? Machine.I386 : requestedMachine;
+            if (!(machine is Machine.I386 or Machine.Amd64 or Machine.Arm64))
+            {
+                throw new NotSupportedException($"Target machine '{machine}' is not supported.");
+            }
+
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups =
                 ValidateVTableFixups(machine);
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations =
@@ -93,13 +99,18 @@ namespace ILAssembler
                 dllCharacteristics &= ~DllCharacteristics.DynamicBase;
             }
 
-            Characteristics imageCharacteristics = Characteristics.ExecutableImage |
-                (machine is Machine.Amd64 or Machine.IA64 or Machine.Arm64 or Machine.LoongArch64 or Machine.RiscV64
-                    ? Characteristics.LargeAddressAware
-                    : Characteristics.Bit32Machine);
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage;
             if (_options.Dll)
             {
                 imageCharacteristics |= Characteristics.Dll;
+            }
+            if (machine == Machine.I386)
+            {
+                imageCharacteristics |= Characteristics.Bit32Machine;
+            }
+            else if (machine is Machine.Amd64 or Machine.Arm64)
+            {
+                imageCharacteristics |= Characteristics.LargeAddressAware;
             }
 
             // Compute stack reserve: command-line option overrides directive, which overrides default

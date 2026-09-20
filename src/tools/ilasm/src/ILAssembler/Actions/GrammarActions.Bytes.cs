@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Immutable;
 using System.Globalization;
 using Antlr4.Runtime;
@@ -26,18 +27,33 @@ internal sealed partial class GrammarActions
     internal static byte ParseHexbyte(IToken token)
     {
         // hexbyte can be HEXBYTE, INT32, or ID token (due to lexer ambiguity).
-        // Validate the text is 1-2 hex characters to avoid FormatException
-        // from non-hex ID tokens or values > 0xFF from longer INT32 tokens.
-        string text = token.Text;
-        if (text.Length <= 2 && byte.TryParse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out byte value))
+        ReadOnlySpan<char> text = token.Text.AsSpan();
+        bool isNegative = text.StartsWith("-");
+        if (isNegative)
         {
-            return value;
+            text = text.Slice(1);
         }
 
-        // For invalid hex values, mask to byte (matching native ilasm tolerance).
-        return int.TryParse(text, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out int intValue)
-            ? (byte)(intValue & 0xFF)
-            : (byte)0;
+        if (text.StartsWith("0x"))
+        {
+            text = text.Slice(2);
+        }
+
+        if (!uint.TryParse(
+                text,
+                NumberStyles.AllowHexSpecifier,
+                CultureInfo.InvariantCulture,
+                out uint value))
+        {
+            return 0;
+        }
+
+        if (isNegative)
+        {
+            value = unchecked(0u - value);
+        }
+
+        return (byte)(value & byte.MaxValue);
     }
 
 }
