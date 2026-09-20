@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -29,7 +28,7 @@ internal sealed partial class GrammarActions
             "amd64" => (GetFlagForArch(ProcessorArchitecture.Amd64), AssemblyFlags.ArchitectureMask),
             "arm" => (GetFlagForArch(ProcessorArchitecture.Arm), AssemblyFlags.ArchitectureMask),
             "arm64" => (GetFlagForArch((ProcessorArchitecture)6), AssemblyFlags.ArchitectureMask),
-            _ => throw new UnreachableException()
+            _ => ((AssemblyFlags)0, (AssemblyFlags)0)
         };
         context.Value = value;
         context.Mask = mask;

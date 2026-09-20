@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 using Antlr4.Runtime;
 
@@ -21,7 +20,7 @@ internal sealed partial class GrammarActions
         {
             "public" => ManifestResourceAttributes.Public,
             "private" => ManifestResourceAttributes.Private,
-            _ => throw new UnreachableException()
+            _ => 0
         };
 
     internal ManifestResourceHeaderValue CreateManifestResourceHeader(

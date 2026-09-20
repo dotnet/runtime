@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -19,7 +18,7 @@ internal sealed partial class GrammarActions
             "callmostderived" => VTableFixupSupport.COR_VTABLE_CALL_MOST_DERIVED,
             "retainappdomain" =>
                 VTableFixupSupport.COR_VTABLE_FROM_UNMANAGED_RETAIN_APPDOMAIN,
-            _ => throw new UnreachableException()
+            _ => 0
         };
 
     internal ushort AddVTableFixupAttribute(ushort attributes, ushort value)

@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 using Antlr4.Runtime;
 
@@ -29,7 +28,7 @@ internal sealed partial class GrammarActions
             "nestedassembly" => (TypeAttributes.NestedAssembly, TypeAttributes.VisibilityMask),
             "nestedfamandassem" => (TypeAttributes.NestedFamANDAssem, TypeAttributes.VisibilityMask),
             "nestedfamorassem" => (TypeAttributes.NestedFamORAssem, TypeAttributes.VisibilityMask),
-            _ => throw new UnreachableException()
+            _ => ((TypeAttributes)0, (TypeAttributes)0)
         };
         context.Value = value;
         context.Mask = mask;

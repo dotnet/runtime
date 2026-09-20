@@ -30,7 +30,7 @@ internal sealed partial class GrammarActions
             "noncasdemand" => DeclarativeSecurityAction.NonCasDemand,
             "noncaslinkdemand" => DeclarativeSecurityAction.NonCasLinkDemand,
             "noncasinheritance" => DeclarativeSecurityAction.NonCasInheritanceDemand,
-            _ => throw new UnreachableException(),
+            _ => DeclarativeSecurityAction.Request,
         };
 
     internal SecurityDeclarationValue CreateNamedPermissionDeclaration(

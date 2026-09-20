@@ -12,10 +12,7 @@ namespace ILAssembler;
 internal sealed partial class GrammarActions
 {
     internal bool ParseFileAttribute(IToken token)
-    {
-        Debug.Assert(token.Text == "nometadata");
-        return false;
-    }
+        => token.Text != "nometadata";
 
     internal bool ParseFileEntry(IToken token)
     {

@@ -195,7 +195,7 @@ namespace ILAssembler
                 Location.From(token, _documents)));
         }
 
-        internal bool ParseBoolean(IToken token) => bool.Parse(token.Text);
+        internal bool ParseBoolean(IToken token) => token.Text == "true";
 
     }
 }
