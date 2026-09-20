@@ -55,8 +55,7 @@ internal sealed class StringCharStream : ICharStream
     public void Seek(int index)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _text.Length);
-        _position = index;
+        _position = Math.Min(index, _text.Length);
     }
 
     public string GetText(Interval interval)

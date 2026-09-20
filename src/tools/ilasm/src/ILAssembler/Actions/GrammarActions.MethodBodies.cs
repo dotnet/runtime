@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -23,6 +24,21 @@ internal sealed partial class GrammarActions
                 string.Format(DiagnosticMessageTemplates.LabelNotFound, undefinedLabel.Key),
                 undefinedLabel.Value);
         }
+    }
+
+    private static LabelHandle GetOrCreateMethodLabel(
+        CurrentMethodContext method,
+        string name,
+        IToken reference)
+    {
+        if (!method.Labels.TryGetValue(name, out LabelHandle label))
+        {
+            label = method.Definition.MethodBody.DefineLabel();
+            method.Labels[name] = label;
+            method.UndefinedLabelReferences.TryAdd(name, reference);
+        }
+
+        return label;
     }
 
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.

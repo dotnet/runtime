@@ -38,6 +38,25 @@ namespace ILAssembler.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public void StringCharStream_SeekPastEnd_ClampsToEnd()
+        {
+            Type streamType = typeof(DocumentCompiler).Assembly.GetType(
+                "ILAssembler.StringCharStream",
+                throwOnError: true)!;
+            var stream = (ICharStream)Activator.CreateInstance(
+                streamType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args: ["abc", "test.il"],
+                culture: null)!;
+
+            stream.Seek(10);
+
+            Assert.Equal(stream.Size, stream.Index);
+            Assert.Equal(TokenConstants.EOF, stream.LA(1));
+        }
+
 
         [Fact]
         public void Diagnostic_LiteralOutOfRange()

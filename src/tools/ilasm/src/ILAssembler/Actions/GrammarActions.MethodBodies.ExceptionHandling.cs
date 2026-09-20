@@ -172,7 +172,11 @@ internal sealed partial class GrammarActions
         => new ScopeExceptionRangeValue(scope);
 
     internal ExceptionRangeValue CreateLabelExceptionRange(IToken start, IToken end)
-        => new LabelExceptionRangeValue(ParseIdentifier(start), ParseIdentifier(end));
+        => new LabelExceptionRangeValue(
+            ParseIdentifier(start),
+            start,
+            ParseIdentifier(end),
+            end);
 
     internal ExceptionRangeValue CreateOffsetExceptionRange(IToken start, IToken end)
         => new OffsetExceptionRangeValue(ParseInt32(start), ParseInt32(end));
@@ -181,7 +185,7 @@ internal sealed partial class GrammarActions
         => new ScopeExceptionFilterValue(scope);
 
     internal ExceptionFilterValue CreateLabelFilter(IToken label)
-        => new LabelExceptionFilterValue(ParseIdentifier(label));
+        => new LabelExceptionFilterValue(ParseIdentifier(label), label);
 
     internal ExceptionFilterValue CreateOffsetFilter(IToken offset)
         => new OffsetExceptionFilterValue(ParseInt32(offset));
@@ -217,8 +221,8 @@ internal sealed partial class GrammarActions
         {
             ScopeExceptionRangeValue scope => GetScopeRange(scope.Scope),
             LabelExceptionRangeValue labels => (
-                GetOrCreateMethodLabel(labels.Start),
-                GetOrCreateMethodLabel(labels.End)),
+                GetOrCreateMethodLabel(labels.Start, labels.StartToken),
+                GetOrCreateMethodLabel(labels.End, labels.EndToken)),
             OffsetExceptionRangeValue offsets => (
                 DefineMethodLabelAtOffset(offsets.Start),
                 DefineMethodLabelAtOffset(offsets.End)),
@@ -229,7 +233,7 @@ internal sealed partial class GrammarActions
         => filter switch
         {
             ScopeExceptionFilterValue scope => GetScopeRange(scope.Scope).Start,
-            LabelExceptionFilterValue label => GetOrCreateMethodLabel(label.Label),
+            LabelExceptionFilterValue label => GetOrCreateMethodLabel(label.Label, label.Token),
             OffsetExceptionFilterValue offset => DefineMethodLabelAtOffset(offset.Offset),
             _ => null,
         };
@@ -247,16 +251,10 @@ internal sealed partial class GrammarActions
             DefineMethodLabelAtOffset(range.End));
     }
 
-    private LabelHandle GetOrCreateMethodLabel(string name)
+    private LabelHandle GetOrCreateMethodLabel(string name, IToken reference)
     {
         Debug.Assert(_currentMethod is not null);
-        if (!_currentMethod.Labels.TryGetValue(name, out LabelHandle label))
-        {
-            label = _currentMethod.Definition.MethodBody.DefineLabel();
-            _currentMethod.Labels[name] = label;
-        }
-
-        return label;
+        return GetOrCreateMethodLabel(_currentMethod, name, reference);
     }
 
     private LabelHandle DefineMethodLabelAtOffset(int offset)

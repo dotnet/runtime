@@ -111,8 +111,13 @@ namespace ILAssembler
             {
                 // Octal support isn't built-in, so we'll do it manually.
                 result = 0;
-                for (int i = 0; i < value.Length; i++, result *= 8)
+                for (int i = 0; i < value.Length; i++)
                 {
+                    if (i != 0)
+                    {
+                        result *= 8;
+                    }
+
                     int digitValue = value[i] - '0';
                     if (digitValue < 0 || digitValue > 7)
                     {

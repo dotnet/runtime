@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using Antlr4.Runtime;
@@ -59,8 +58,10 @@ internal sealed partial class GrammarActions
         => new(value);
 
     internal void MaterializeVTable(CILParser.VtableDeclContext context)
-        => throw new NotImplementedException(
-            "raw vtable fixups blob (.vtable) not supported - use .vtfixup instead");
+        => ReportError(
+            DiagnosticIds.UnsupportedVTableDeclaration,
+            DiagnosticMessageTemplates.UnsupportedVTableDeclaration,
+            context);
 
     internal void MaterializeVTableFixup(CILParser.VtfixupDeclContext context)
     {
