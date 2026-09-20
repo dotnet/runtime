@@ -1058,6 +1058,14 @@
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.ECDsa.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs"
              Link="Common\System\Security\Cryptography\CompositeMLDsaManaged.RSA.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.ECDiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.ECDiffieHellman.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.RSA.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.RSA.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemManaged.XDiffieHellman.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemManaged.XDiffieHellman.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\DSAOpenSsl.cs"
              Link="Common\System\Security\Cryptography\DSAOpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\ECDiffieHellmanDerivation.cs"
@@ -1093,8 +1101,7 @@
     <Compile Include="System\Security\Cryptography\CapiHelper.Unix.cs" />
     <Compile Include="System\Security\Cryptography\ChaCha20Poly1305.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\CompositeMLDsaImplementation.OpenSsl.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs"
-             Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.NotSupported.cs" />
+    <Compile Include="System\Security\Cryptography\CompositeMLKemImplementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\Cng.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.NotSupported.cs" />
     <Compile Include="System\Security\Cryptography\DESCryptoServiceProvider.Unix.cs" />
