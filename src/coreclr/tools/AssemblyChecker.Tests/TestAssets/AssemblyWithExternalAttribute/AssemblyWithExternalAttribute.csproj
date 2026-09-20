@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Optimize>true</Optimize>
+    <OutputType>Library</OutputType>
+    <SkipTestRun>true</SkipTestRun>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ExternalAttribute/ExternalAttribute.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Marker.cs" />
+  </ItemGroup>
+</Project>

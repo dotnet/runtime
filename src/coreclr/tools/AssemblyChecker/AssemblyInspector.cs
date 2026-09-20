@@ -3,17 +3,19 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace AssemblyChecker
 {
     internal static class AssemblyInspector
     {
-        private static readonly RuntimeAssemblyResolver s_resolver = new();
-
         internal static bool IsDebug(string path)
         {
             string assemblyPath = Path.GetFullPath(path);
-            using MetadataLoadContext loadContext = new(s_resolver);
+            string? assemblyDirectory = Path.GetDirectoryName(assemblyPath);
+            Debug.Assert(assemblyDirectory is not null);
+
+            using MetadataLoadContext loadContext = new(new AssemblyResolver(assemblyDirectory));
             Assembly assembly = loadContext.LoadFromAssemblyPath(assemblyPath);
             foreach (CustomAttributeData attribute in assembly.GetCustomAttributesData())
             {
@@ -56,10 +58,10 @@ namespace AssemblyChecker
             return false;
         }
 
-        private sealed class RuntimeAssemblyResolver : MetadataAssemblyResolver
+        private sealed class AssemblyResolver(string assemblyDirectory) : MetadataAssemblyResolver
         {
-            private readonly string _runtimeDirectory = Path.GetDirectoryName(typeof(object).Assembly.Location)
-                ?? throw new InvalidOperationException("The runtime assembly directory is not available.");
+            private readonly string _assemblyDirectory = assemblyDirectory;
+            private readonly string _runtimeDirectory = RuntimeEnvironment.GetRuntimeDirectory();
 
             public override Assembly? Resolve(MetadataLoadContext context, AssemblyName assemblyName)
             {
@@ -68,7 +70,13 @@ namespace AssemblyChecker
                     return null;
                 }
 
-                string assemblyPath = Path.Combine(_runtimeDirectory, name + ".dll");
+                string fileName = name + ".dll";
+                string assemblyPath = Path.Combine(_assemblyDirectory, fileName);
+                if (!File.Exists(assemblyPath))
+                {
+                    assemblyPath = Path.Combine(_runtimeDirectory, fileName);
+                }
+
                 return File.Exists(assemblyPath) ? context.LoadFromAssemblyPath(assemblyPath) : null;
             }
         }

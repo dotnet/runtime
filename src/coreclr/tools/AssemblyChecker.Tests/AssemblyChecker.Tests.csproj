@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>AssemblyChecker.Tests</AssemblyName>
+    <Configurations>Debug;Release;Checked</Configurations>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AssemblyChecker/AssemblyChecker.csproj" />
+    <ProjectReference Include="TestAssets/AssemblyWithExternalAttribute/AssemblyWithExternalAttribute.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="AssemblyInspectorTests.cs" />
+  </ItemGroup>
+</Project>
