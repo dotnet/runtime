@@ -11,6 +11,12 @@ namespace System.Security.Cryptography
     [Experimental(Experimentals.HpkeExperimentalDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
     public abstract class Hpke : IDisposable
     {
+        // These inputs limits are somewhat arbitrary however 256 MB of any IKM, salt, info, etc. is excessively large.
+        // Keeping them at 256 MB or less allows avoiding overflowing some contiguous buffers. This is not a promise
+        // that 256 MB is accepted, either. Some HPKE suites have smaller limits, like single-stage keying material
+        // cannot be larger than 2^16.
+        internal const int MaximumInputSizeInBytes = 256 * 1024 * 1024;
+
         private bool _disposed;
 
         /// <summary>
@@ -69,6 +75,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> or <paramref name="ikm" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ikm" /> exceeds the maximum length supported by the cipher suite's KEM.
+        /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   <paramref name="suite" /> is not supported on the current platform.
         /// </exception>
@@ -93,12 +102,25 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ikm" /> exceeds the maximum length supported by the cipher suite's KEM.
+        /// </exception>
         /// <exception cref="PlatformNotSupportedException">
         ///   <paramref name="suite" /> is not supported on the current platform.
         /// </exception>
         public static Hpke DeriveKey(HpkeSuite suite, ReadOnlySpan<byte> ikm)
         {
             ArgumentNullException.ThrowIfNull(suite);
+
+            if (ikm.Length > HpkeKemMetadata.MaximumInputKeyingMaterialLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(
+                        SR.Argument_HpkeIkmTooLong,
+                        HpkeKemMetadata.MaximumInputKeyingMaterialLength),
+                    nameof(ikm));
+            }
+
             ThrowIfNotSupported(suite);
             return HpkeImplementation.DeriveKeyImpl(suite, ikm);
         }

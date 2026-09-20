@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
 
@@ -759,6 +760,25 @@ namespace System.Security.Cryptography.Tests
         [InlineData(HpkeKdf.HKDF_SHA256)]
         [InlineData(HpkeKdf.HKDF_SHA384)]
         [InlineData(HpkeKdf.HKDF_SHA512)]
+        public static void InfoLength_HkdfMaximumInputSize(HpkeKdf kdf)
+        {
+            HpkeSuite suite = new(HpkeKem.MLKEM_768, kdf, HpkeAead.AES_128_GCM);
+
+            using (HpkeContract hpke = new(suite))
+            {
+                hpke.OnCreateSenderCore = (enc, info) => new ReturnedSender(suite);
+
+                hpke.CreateSender(out _, SpanOfLength(HpkeTestData.MaximumInputSizeInBytes)).Dispose();
+                AssertExtensions.Throws<ArgumentException>(
+                    "info",
+                    () => hpke.CreateSender(out _, SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1)));
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256)]
+        [InlineData(HpkeKdf.HKDF_SHA384)]
+        [InlineData(HpkeKdf.HKDF_SHA512)]
         [InlineData(HpkeKdf.SHAKE128)]
         [InlineData(HpkeKdf.SHAKE256)]
         public static void PskInputs_Boundaries(HpkeKdf kdf)
@@ -837,6 +857,37 @@ namespace System.Security.Cryptography.Tests
                         AssertExtensions.Throws<ArgumentException>(parameterName, operation);
                     }
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256)]
+        [InlineData(HpkeKdf.HKDF_SHA384)]
+        [InlineData(HpkeKdf.HKDF_SHA512)]
+        public static void PskInputs_HkdfMaximumInputSize(HpkeKdf kdf)
+        {
+            HpkeSuite suite = new(HpkeKem.MLKEM_768, kdf, HpkeAead.AES_128_GCM);
+
+            using (HpkeContract hpke = new(suite))
+            {
+                hpke.OnCreatePskSenderCore = (enc, info, psk, id) => new ReturnedSender(suite);
+
+                hpke.CreatePskSender(
+                    SpanOfLength(HpkeTestData.MaximumInputSizeInBytes),
+                    SpanOfLength(HpkeTestData.MaximumInputSizeInBytes),
+                    out _).Dispose();
+                AssertExtensions.Throws<ArgumentException>(
+                    "psk",
+                    () => hpke.CreatePskSender(
+                        SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1),
+                        new byte[1],
+                        out _));
+                AssertExtensions.Throws<ArgumentException>(
+                    "pskId",
+                    () => hpke.CreatePskSender(
+                        new byte[32],
+                        SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1),
+                        out _));
             }
         }
 
@@ -1377,6 +1428,9 @@ namespace System.Security.Cryptography.Tests
             return buffer;
         }
 
+        private static ReadOnlySpan<byte> SpanOfLength(int length) =>
+            MemoryMarshal.CreateReadOnlySpan(ref Unsafe.NullRef<byte>(), length);
+
         private static void AssertGuardedOutput(byte[] buffer, byte value)
         {
             Assert.Equal(0xA5, buffer[0]);
@@ -1553,15 +1607,17 @@ namespace System.Security.Cryptography.Tests
 
         private void AssertInfo(ReadOnlySpan<byte> info)
         {
-            if (HasInputLengthLimit(Suite.KdfAlgorithm))
-            {
-                Assert.InRange(info.Length, 0, ushort.MaxValue);
-            }
+            int maximumLength = HasInputLengthLimit(Suite.KdfAlgorithm) ?
+                ushort.MaxValue :
+                HpkeTestData.MaximumInputSizeInBytes;
+            Assert.InRange(info.Length, 0, maximumLength);
         }
 
         private void AssertPskInputs(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
-            int maximumLength = HasInputLengthLimit(Suite.KdfAlgorithm) ? ushort.MaxValue : int.MaxValue;
+            int maximumLength = HasInputLengthLimit(Suite.KdfAlgorithm) ?
+                ushort.MaxValue :
+                HpkeTestData.MaximumInputSizeInBytes;
             Assert.InRange(psk.Length, 32, maximumLength);
             Assert.InRange(pskId.Length, 1, maximumLength);
         }

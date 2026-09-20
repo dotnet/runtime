@@ -5,6 +5,8 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class HpkeKemMetadata
     {
+        internal const int MaximumInputKeyingMaterialLength = Hpke.MaximumInputSizeInBytes;
+
         internal HpkeKem Kem { get; }
         internal int Nsk { get; }
         internal int Npk { get; }

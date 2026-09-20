@@ -78,6 +78,12 @@
   <data name="Argument_HpkeExportLengthTooLarge" xml:space="preserve">
     <value>The exported secret length can be at most {0} bytes.</value>
   </data>
+  <data name="Argument_HpkeExporterContextTooLong" xml:space="preserve">
+    <value>The exporter context exceeds the maximum length of {0} bytes.</value>
+  </data>
+  <data name="Argument_HpkeIkmTooLong" xml:space="preserve">
+    <value>The input keying material exceeds the maximum length of {0} bytes.</value>
+  </data>
   <data name="Argument_HpkeKdfInfoLength" xml:space="preserve">
     <value>The specified info exceeds the maximum length of {0} bytes.</value>
   </data>

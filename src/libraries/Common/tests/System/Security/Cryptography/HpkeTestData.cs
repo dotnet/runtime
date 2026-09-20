@@ -8,6 +8,8 @@ namespace System.Security.Cryptography.Tests
 {
     public static partial class HpkeTestData
     {
+        internal const int MaximumInputSizeInBytes = 256 * 1024 * 1024;
+
         // A test-data portability bound, not a limit of the HPKE API.
         internal const int MaxExporterContextLength = 1024;
 

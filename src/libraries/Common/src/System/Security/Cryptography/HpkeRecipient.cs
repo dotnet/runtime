@@ -216,6 +216,9 @@ namespace System.Security.Cryptography
         /// <returns>
         ///   A new byte array containing the exported secret.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="exporterContext" /> exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="length" /> is negative or exceeds the maximum export length supported by the cipher suite's KDF.
         /// </exception>
@@ -227,6 +230,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] Export(ReadOnlySpan<byte> exporterContext, int length)
         {
+            ThrowIfExporterContextExceedsLimit(exporterContext);
             ArgumentOutOfRangeException.ThrowIfNegative(length);
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
@@ -267,6 +271,9 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="exporterContext" /> is <see langword="null" />.
         /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="exporterContext" /> exceeds the maximum length supported by the cipher suite's KDF.
+        /// </exception>
         /// <exception cref="ArgumentOutOfRangeException">
         ///   <paramref name="length" /> is negative or exceeds the maximum export length supported by the cipher suite's KDF.
         /// </exception>
@@ -292,7 +299,8 @@ namespace System.Security.Cryptography
         ///   The buffer to receive the exported secret.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   The length of <paramref name="destination" /> exceeds the maximum export length supported by the cipher suite's KDF.
+        ///   <paramref name="exporterContext" /> exceeds the maximum length supported by the cipher suite's KDF,
+        ///   or the length of <paramref name="destination" /> exceeds the maximum export length supported by the cipher suite's KDF.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -308,6 +316,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
         {
+            ThrowIfExporterContextExceedsLimit(exporterContext);
             int maximumLength = Suite.KdfMetadata.MaximumExportLength;
 
             if (destination.Length > maximumLength)
@@ -362,6 +371,18 @@ namespace System.Security.Cryptography
         /// </param>
         protected virtual void Dispose(bool disposing)
         {
+        }
+
+        private void ThrowIfExporterContextExceedsLimit(ReadOnlySpan<byte> exporterContext)
+        {
+            if (exporterContext.Length > Suite.KdfMetadata.MaximumExporterContextLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(
+                        SR.Argument_HpkeExporterContextTooLong,
+                        Suite.KdfMetadata.MaximumExporterContextLength),
+                    nameof(exporterContext));
+            }
         }
 
         private int GetPlaintextLength(ReadOnlySpan<byte> ciphertext)

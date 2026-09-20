@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
 
@@ -384,6 +385,30 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
+        [InlineData(HpkeKdf.HKDF_SHA256)]
+        [InlineData(HpkeKdf.HKDF_SHA384)]
+        [InlineData(HpkeKdf.HKDF_SHA512)]
+        [InlineData(HpkeKdf.SHAKE128)]
+        [InlineData(HpkeKdf.SHAKE256)]
+        public static void Export_ContextMaximumInputSize(HpkeKdf kdf)
+        {
+            HpkeSuite suite = new(HpkeKem.MLKEM_768, kdf, HpkeAead.AES_128_GCM);
+
+            using (HpkeSenderContract sender = new(suite))
+            {
+                sender.OnExportCore = static (context, destination) => { };
+
+                sender.Export(SpanOfLength(HpkeTestData.MaximumInputSizeInBytes), 0);
+                AssertExtensions.Throws<ArgumentException>(
+                    "exporterContext",
+                    () => sender.Export(SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1), 0));
+                AssertExtensions.Throws<ArgumentException>(
+                    "exporterContext",
+                    () => sender.Export(SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1), Span<byte>.Empty));
+            }
+        }
+
+        [Theory]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
@@ -466,6 +491,9 @@ namespace System.Security.Cryptography.Tests
             yield return () => sender.Export(ReadOnlySpan<byte>.Empty, 1);
             yield return () => sender.Export(ReadOnlySpan<byte>.Empty, new byte[1].AsSpan());
         }
+
+        private static ReadOnlySpan<byte> SpanOfLength(int length) =>
+            MemoryMarshal.CreateReadOnlySpan(ref Unsafe.NullRef<byte>(), length);
 
         private static byte[] Data(int length)
         {

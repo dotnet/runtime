@@ -11,9 +11,10 @@ namespace System.Security.Cryptography
         internal int Nh { get; }
         internal bool IsTwoStage { get; }
         internal string Name { get; }
-        internal int? MaximumInfoLength { get; }
-        internal int? MaximumPskLength { get; }
-        internal int? MaximumPskIdLength { get; }
+        internal int MaximumExporterContextLength { get; }
+        internal int MaximumInfoLength { get; }
+        internal int MaximumPskLength { get; }
+        internal int MaximumPskIdLength { get; }
 
         // HKDF is limited to 255 hash blocks; HPKE encodes SHAKE output lengths in two bytes.
         // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-4.4
@@ -27,11 +28,17 @@ namespace System.Security.Cryptography
             Nh = nh;
             IsTwoStage = isTwoStage;
             Name = name;
+            MaximumExporterContextLength = Hpke.MaximumInputSizeInBytes;
 
-            if (!IsTwoStage)
+            if (IsTwoStage)
+            {
+                MaximumInfoLength = Hpke.MaximumInputSizeInBytes;
+                MaximumPskLength = Hpke.MaximumInputSizeInBytes;
+                MaximumPskIdLength = Hpke.MaximumInputSizeInBytes;
+            }
+            else
             {
                 // One-stage KDFs length-prefix each of these inputs with a 16-bit length.
-                // HKDF input limits exceed the length representable by a span.
                 // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-5.1
                 MaximumInfoLength = ushort.MaxValue;
                 MaximumPskLength = ushort.MaxValue;
@@ -43,8 +50,7 @@ namespace System.Security.Cryptography
         {
             switch (kdf)
             {
-                // HKDF SHAs have limits on their info size, 2^61 - 91 and 2^125 - 155. Since this is well above
-                // A Span's possible length we'll treat it as unlimited.
+                // HKDF's limits exceed the maximum input size supported by the HPKE API.
                 // https://datatracker.ietf.org/doc/html/draft-ietf-hpke-hpke-04#section-7.2
                 case HpkeKdf.HKDF_SHA256:
                     return new HpkeKdfMetadata(kdf, nh: 32, isTwoStage: true, name: "HKDF-SHA256");
