@@ -407,14 +407,8 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                try
-                {
-                    _aeadAdapter.Dispose();
-                }
-                finally
-                {
-                    _exporterSecret.Dispose();
-                }
+                _aeadAdapter.Dispose();
+                _exporterSecret.Dispose();
             }
 
             base.Dispose(disposing);
@@ -492,14 +486,8 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                try
-                {
-                    _aeadAdapter.Dispose();
-                }
-                finally
-                {
-                    _exporterSecret.Dispose();
-                }
+                _aeadAdapter.Dispose();
+                _exporterSecret.Dispose();
             }
 
             base.Dispose(disposing);
