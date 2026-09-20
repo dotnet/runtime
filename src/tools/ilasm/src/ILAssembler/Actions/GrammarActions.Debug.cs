@@ -134,7 +134,12 @@ internal sealed partial class GrammarActions
         }
 
         int ilOffset = _currentMethod.Definition.MethodBody.Offset;
-        _currentMethod.Definition.DebugInfo.DocumentPath ??= _currentDocumentPath;
+        EntityRegistry.MethodDebugInfo debugInfo = _currentMethod.Definition.DebugInfo;
+        if (debugInfo.DocumentPath is null)
+        {
+            debugInfo.DocumentPath = _currentDocumentPath;
+            debugInfo.LanguageGuid = _currentLanguageGuid;
+        }
 
         EntityRegistry.SequencePoint sequencePoint;
         if (value.StartLine == 0xFEEFEE)
@@ -157,8 +162,7 @@ internal sealed partial class GrammarActions
                 endColumn);
         }
 
-        List<EntityRegistry.SequencePoint> sequencePoints =
-            _currentMethod.Definition.DebugInfo.SequencePoints;
+        List<EntityRegistry.SequencePoint> sequencePoints = debugInfo.SequencePoints;
         if (sequencePoints.Count > 0 && sequencePoints[^1].ILOffset == ilOffset)
         {
             sequencePoints[^1] = sequencePoint;
