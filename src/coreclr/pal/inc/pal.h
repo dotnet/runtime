@@ -932,6 +932,7 @@ PALAPI
 PAL_CreateMutexW(
     IN BOOL bInitialOwner,
     IN LPCWSTR lpName,
+    IN BOOL bCurrentUserOnly,
     IN LPSTR lpSystemCallErrors,
     IN DWORD dwSystemCallErrorsBufferSize);
 
@@ -953,6 +954,7 @@ HANDLE
 PALAPI
 PAL_OpenMutexW(
        IN LPCWSTR lpName,
+       IN BOOL bCurrentUserOnly,
        IN LPSTR lpSystemCallErrors,
        IN DWORD dwSystemCallErrorsBufferSize);
 
