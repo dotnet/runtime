@@ -5067,6 +5067,10 @@ BasicBlock* AsyncTransformation::CreateOSRJumpBB(GenTree* osrAddress)
     jmpOSR->bbSetRunRarely();
     jmpOSR->clearTryIndex();
     jmpOSR->clearHndIndex();
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        jmpOSR->SetFlags(BBF_PROF_WEIGHT);
+    }
 
     JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
