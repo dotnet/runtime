@@ -215,6 +215,14 @@ namespace System.Security.Cryptography
         /// </remarks>
         public static CngKeyBlobFormat MLKemPrivateSeedBlob => field ??= new CngKeyBlobFormat("MLKEMPRIVATESEEDBLOB");
 
+        internal static CngKeyBlobFormat CompositeMLKemPublicBlob => field ??= new CngKeyBlobFormat("COMPMLKEMPUBLICBLOB");
+
+        // IETF LAMPS private key format
+        internal static CngKeyBlobFormat CompositeMLKemPrivateBlob => field ??= new CngKeyBlobFormat("COMPMLKEMPRIVATELAMPSBLOB");
+
+        // CFRG private key format
+        internal static CngKeyBlobFormat CompositeMLKemPrivateIrtfSeedBlob => field ??= new CngKeyBlobFormat("COMPMLKEMPRIVATEIRTFSEEDBLOB");
+
         public static CngKeyBlobFormat OpaqueTransportBlob
         {
             get
