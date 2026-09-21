@@ -170,6 +170,50 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
+            static Type PassToAnnotatedParam(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) => type;
+
+            static object AnnotatedGeneric<
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>() => null;
+
+            [ExpectedWarning("IL2067", nameof(PassToAnnotatedParam))]
+            [ExpectedWarning("IL2091", nameof(AnnotatedGeneric))]
+            static void DeconstructTupleLiteralEvaluatesElements<TUnannotated>(Type unannotatedParam)
+            {
+                Type x;
+                object y;
+                (x, y) = (PassToAnnotatedParam(unannotatedParam), AnnotatedGeneric<TUnannotated>());
+            }
+
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructTupleLiteralEvaluatesElementAssignments(
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                Type x;
+                object y;
+                (x, y) = ((type = unannotated), new object());
+                type.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2067", nameof(PassToAnnotatedParam))]
+            [ExpectedWarning("IL2091", nameof(AnnotatedGeneric))]
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            static void DeconstructConditionalTupleEvaluatesElements<TUnannotated>(
+                bool condition,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                Type x;
+                object y;
+                (x, y) = condition
+                    ? (PassToAnnotatedParam(unannotated), AnnotatedGeneric<TUnannotated>())
+                    : ((type = unannotated), new object());
+                type.RequiresPublicMethods();
+            }
+
             static void DeconstructConditionalTuple(bool condition)
             {
                 string methodName;
@@ -563,6 +607,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructNestedTuple(((typeof(string), null), null));
                 DeconstructTupleLiteral(typeof(string));
                 DeconstructTupleLiteralUnannotated(typeof(string));
+                DeconstructTupleLiteralEvaluatesElements<object>(typeof(object));
+                DeconstructTupleLiteralEvaluatesElementAssignments(typeof(string), typeof(object));
+                DeconstructConditionalTupleEvaluatesElements<object>(false, typeof(string), typeof(object));
                 DeconstructConditionalTuple(false);
                 DeconstructConditionalTupleUnannotated(false, typeof(string));
                 DeconstructCoalescedTuple(false);
