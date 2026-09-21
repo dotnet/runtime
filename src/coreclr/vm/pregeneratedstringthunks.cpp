@@ -213,14 +213,20 @@ void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocato
         pLoaderAllocator->m_registeredForPendingThunkResolution = true;
     }
 
-    pLoaderAllocator->m_pendingPortableEntryPointThunks.Append(pMD);
+    pLoaderAllocator->m_pendingPortableEntryPointThunks.Append((void*)pMD);
 
     pMD->SetPendingThunkResolution(true);
 }
 
 static bool TryResolveClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     PortableEntryPoint* pep = pEntryPoint->GetEntryPoint();
     if (pep->HasNativeCode())
@@ -236,6 +242,7 @@ static bool TryResolveClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoi
         return false;
 
     PortableEntryPoint::SetActualCode((PCODE)pep, thunk);
+    pep->ClearPendingClosedStaticRetBufResolution();
     return true;
 }
 
@@ -256,20 +263,19 @@ void AddPendingClosedStaticRetBufThunkUnderLock(
     if (TryResolveClosedStaticRetBufThunk(pEntryPoint))
         return;
 
+    if (pEntryPoint->GetEntryPoint()->IsPendingClosedStaticRetBufResolution())
+        return;
+
     if (!pLoaderAllocator->m_registeredForPendingThunkResolution)
     {
         s_pendingThunkLoaderAllocators.Append(pLoaderAllocator);
         pLoaderAllocator->m_registeredForPendingThunkResolution = true;
     }
 
-    SArray<ClosedStaticRetBufPortableEntryPoint*>& pending = pLoaderAllocator->m_pendingClosedStaticRetBufThunks;
-    for (COUNT_T i = 0; i < pending.GetCount(); i++)
-    {
-        if (pending[i] == pEntryPoint)
-            return;
-    }
+    pLoaderAllocator->m_pendingClosedStaticRetBufThunks.Append((void*)pEntryPoint);
 
-    pending.Append(pEntryPoint);
+    // Publish the flag only after the fallible appends, so a failed registration can be retried.
+    pEntryPoint->GetEntryPoint()->SetPendingClosedStaticRetBufResolution();
 }
 
 void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator* pLoaderAllocator)
@@ -306,6 +312,103 @@ void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator* pLoader
     // which attempts to register a thunk after this.
 }
 
+// Resolver signature shared by every pending-entry kind: given one pending entry, attempt
+// to resolve it and return true if it is done (resolved, or otherwise no longer pending and
+// safe to drop from the list).
+typedef bool (*PendingEntryResolver)(void* pEntry);
+
+// Attempts to resolve every entry in `pending` via `resolveEntry`, then compacts the array
+// by dropping resolved (or already-cleared) slots. Shared by every pending-entry kind so the
+// scan/compact algorithm only needs to be written and maintained once.
+static void ResolvePendingEntries(SArray<void*>& pending, PendingEntryResolver resolveEntry)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    COUNT_T count = pending.GetCount();
+    COUNT_T nullCount = 0;
+
+    for (COUNT_T i = 0; i < count; i++)
+    {
+        void* pEntry = pending[i];
+        if (pEntry == nullptr || resolveEntry(pEntry))
+        {
+            pending[i] = nullptr;
+            nullCount++;
+        }
+    }
+
+    // Compact: move non-null entries to the front, then truncate.
+    if (nullCount > 0 && nullCount < count)
+    {
+        COUNT_T dest = 0;
+        for (COUNT_T src = 0; src < count; src++)
+        {
+            if (pending[src] != nullptr)
+            {
+                pending[dest] = pending[src];
+                dest++;
+            }
+        }
+        pending.SetCount(dest);
+    }
+    else if (nullCount == count)
+    {
+        pending.Clear();
+    }
+}
+
+static bool ResolvePendingPortableEntryPointThunk(void* pEntry)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    MethodDesc* pMD = (MethodDesc*)pEntry;
+    if (!pMD->IsPendingThunkResolution())
+    {
+        _ASSERTE(pMD->IsDynamicMethod());
+        // This can happen if the method was GC'd and its slot reused for a new method. Report
+        // done so the generic compaction drops the entry and we don't repeatedly check it.
+        return true;
+    }
+
+    void* thunk = GetPortableEntryPointToInterpreterThunk(pMD);
+    if (thunk == nullptr)
+        return false;
+
+    PCODE portableEntry = pMD->GetPortableEntryPointIfExists();
+    if (portableEntry != (PCODE)NULL)
+    {
+        PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
+        pep->TrySetInterpreterThunk(thunk);
+    }
+    pMD->SetPendingThunkResolution(false);
+    return true;
+}
+
+static bool ResolvePendingClosedStaticRetBufThunk(void* pEntry)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    return TryResolveClosedStaticRetBufThunk((ClosedStaticRetBufPortableEntryPoint*)pEntry);
+}
+
 void ResolvePendingPortableEntryPointThunksGlobal()
 {
     CONTRACTL
@@ -322,99 +425,16 @@ void ResolvePendingPortableEntryPointThunksGlobal()
     for (COUNT_T laIdx = 0; laIdx < laCount; laIdx++)
     {
         LoaderAllocator* pLA = s_pendingThunkLoaderAllocators[laIdx];
-        SArray<MethodDesc*>& pending = pLA->m_pendingPortableEntryPointThunks;
-        COUNT_T count = pending.GetCount();
-        COUNT_T nullCount = 0;
+        ResolvePendingEntries(pLA->m_pendingPortableEntryPointThunks, ResolvePendingPortableEntryPointThunk);
+    }
 
-        for (COUNT_T i = 0; i < count; i++)
-        {
-            MethodDesc* pMD = pending[i];
-            if (pMD == nullptr)
-            {
-                nullCount++;
-                continue;
-            }
-
-            if (!pMD->IsPendingThunkResolution())
-            {
-                _ASSERTE(pMD->IsDynamicMethod());
-                // This can happen if the method was GC'd and its slot reused for a new method. Clear the entry so we don't repeatedly check it.
-                pending[i] = nullptr;
-                nullCount++;
-                continue;
-            }
-
-            void* thunk = GetPortableEntryPointToInterpreterThunk(pMD);
-            if (thunk != nullptr)
-            {
-                PCODE portableEntry = pMD->GetPortableEntryPointIfExists();
-                if (portableEntry != (PCODE)NULL)
-                {
-                    PortableEntryPoint* pep = PortableEntryPoint::ToPortableEntryPoint(portableEntry);
-                    pep->TrySetInterpreterThunk(thunk);
-                }
-                pending[i] = nullptr;
-                nullCount++;
-
-                if (pMD->IsPendingThunkResolution())
-                {
-                    pMD->SetPendingThunkResolution(false);
-                }
-            }
-        }
-
-        // Compact: move non-null entries to the front, then truncate.
-        if (nullCount > 0 && nullCount < count)
-        {
-            COUNT_T dest = 0;
-            for (COUNT_T src = 0; src < count; src++)
-            {
-                if (pending[src] != nullptr)
-                {
-                    pending[dest] = pending[src];
-                    dest++;
-                }
-            }
-            pending.SetCount(dest);
-        }
-        else if (nullCount == count)
-        {
-            pending.Clear();
-        }
-
-        SArray<ClosedStaticRetBufPortableEntryPoint*>& pendingClosedStatic =
-            pLA->m_pendingClosedStaticRetBufThunks;
-        count = pendingClosedStatic.GetCount();
-        nullCount = 0;
-
-        for (COUNT_T i = 0; i < count; i++)
-        {
-            ClosedStaticRetBufPortableEntryPoint* pEntryPoint = pendingClosedStatic[i];
-            if (pEntryPoint == nullptr || TryResolveClosedStaticRetBufThunk(pEntryPoint))
-            {
-                pendingClosedStatic[i] = nullptr;
-                nullCount++;
-            }
-        }
-
-        if (nullCount > 0 && nullCount < count)
-        {
-            COUNT_T dest = 0;
-            for (COUNT_T src = 0; src < count; src++)
-            {
-                if (pendingClosedStatic[src] != nullptr)
-                {
-                    pendingClosedStatic[dest] = pendingClosedStatic[src];
-                    dest++;
-                }
-            }
-            pendingClosedStatic.SetCount(dest);
-        }
-        else if (nullCount == count)
-        {
-            pendingClosedStatic.Clear();
-        }
-
+    // Closed-static adapters can depend on target PEPs owned by another loader allocator.
+    // Resolve all target PEPs before attempting any adapters so both can complete during
+    // the same string-thunk injection.
+    for (COUNT_T laIdx = 0; laIdx < laCount; laIdx++)
+    {
+        LoaderAllocator* pLA = s_pendingThunkLoaderAllocators[laIdx];
+        ResolvePendingEntries(pLA->m_pendingClosedStaticRetBufThunks, ResolvePendingClosedStaticRetBufThunk);
     }
 }
 

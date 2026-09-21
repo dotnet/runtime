@@ -893,8 +893,16 @@ static PCODE SetupClosedStaticRetBufThunk(MethodDesc* pTargetMD, MethodDesc* pDe
     // Cache publication precedes the fallible pending registration, so retry it on cache hits too.
     if (!PortableEntryPoint::ToPortableEntryPoint(pStub)->HasNativeCode())
     {
-        pStubLoaderAllocator->AddPendingClosedStaticRetBufThunk(
-            ClosedStaticRetBufPortableEntryPoint::FromEntryPoint(pStub));
+#ifdef FEATURE_READYTORUN
+        // R2R disabled: no R2R code can ever trigger the string-thunk injection that resolves
+        // this adapter, so registering it would retain it on the pending list for the lifetime
+        // of the loader allocator. Match EnsurePortableEntryPointIsCallableFromR2R's guard.
+        if (g_pConfig->ReadyToRun())
+#endif // FEATURE_READYTORUN
+        {
+            pStubLoaderAllocator->AddPendingClosedStaticRetBufThunk(
+                ClosedStaticRetBufPortableEntryPoint::FromEntryPoint(pStub));
+        }
     }
 
     return pStub;

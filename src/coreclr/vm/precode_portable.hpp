@@ -36,6 +36,10 @@ private:
         kUnmanagedCallersOnly_Has = 0x1,
         kUnmanagedCallersOnly_Checked = 0x2,
         kPrefersInterpreterEntryPoint = 0x4,
+        // Set while this entry point is registered on a loader allocator's pending
+        // closed-static-retbuf resolution list, so a redundant registration attempt
+        // can be rejected without a linear scan of that list.
+        kPendingClosedStaticRetBufResolution = 0x8,
     };
     Volatile<int32_t> _flags;
 
@@ -115,6 +119,27 @@ public:
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(IsValid());
         ClearFlagsInterlocked(kPrefersInterpreterEntryPoint);
+    }
+
+    bool IsPendingClosedStaticRetBufResolution() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        return (_flags & kPendingClosedStaticRetBufResolution) != 0;
+    }
+
+    void SetPendingClosedStaticRetBufResolution()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        SetFlagsInterlocked(kPendingClosedStaticRetBufResolution);
+    }
+
+    void ClearPendingClosedStaticRetBufResolution()
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(IsValid());
+        ClearFlagsInterlocked(kPendingClosedStaticRetBufResolution);
     }
 
     // Atomically install an interpreter thunk if _pActualCode is still NULL.

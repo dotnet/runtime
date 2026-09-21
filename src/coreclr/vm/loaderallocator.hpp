@@ -502,12 +502,15 @@ private:
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Methods whose PortableEntryPoint was initialized without an R2R-to-interpreter thunk
-    // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
-    // these methods are re-checked and resolved if a thunk is now available.
-    // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
-    SArray<MethodDesc*> m_pendingPortableEntryPointThunks;
-    SArray<ClosedStaticRetBufPortableEntryPoint*> m_pendingClosedStaticRetBufThunks;
+    // Entries whose resolution couldn't complete immediately (e.g. a PortableEntryPoint
+    // initialized without an R2R-to-interpreter thunk because the thunk wasn't yet loaded,
+    // or a closed-static-retbuf adapter whose target wasn't yet resolved). When a new R2R
+    // module injects string thunks, these are re-checked and resolved if now available.
+    // Untyped so both pending lists can share the generic resolve-and-compact helper in
+    // pregeneratedstringthunks.cpp; elements are MethodDesc* / ClosedStaticRetBufPortableEntryPoint*
+    // respectively. Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
+    SArray<void*> m_pendingPortableEntryPointThunks;
+    SArray<void*> m_pendingClosedStaticRetBufThunks;
     bool m_registeredForPendingThunkResolution;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 

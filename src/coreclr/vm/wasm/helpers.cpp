@@ -1653,7 +1653,13 @@ bool WasmMethodReturnsViaRetBuf(MethodDesc* pMD)
 
 void* GetClosedStaticRetBufThunk(MethodDesc* pDelegateInvoke)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     MetaSig sig(pDelegateInvoke);
     return ComputePortableEntryPointThunk(sig, "D", true /* wasmCallingConventionOnly */);
