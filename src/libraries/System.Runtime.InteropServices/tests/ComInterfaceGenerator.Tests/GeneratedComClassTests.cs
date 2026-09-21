@@ -37,6 +37,20 @@ namespace ComInterfaceGenerator.Tests
     {
     }
 
+    [GeneratedComClass]
+    partial class QueryCountingComObject : ManagedObjectExposedToCom, ICustomQueryInterface
+    {
+        public int QueryCount { get; private set; }
+        public bool FailQuery { get; set; }
+
+        public CustomQueryInterfaceResult GetInterface(ref Guid iid, out nint ppv)
+        {
+            QueryCount++;
+            ppv = 0;
+            return FailQuery ? CustomQueryInterfaceResult.Failed : CustomQueryInterfaceResult.NotHandled;
+        }
+    }
+
     [GeneratedComInterface]
     [Guid("781E56C2-A530-4A8F-90FE-01244426E0CC")]
     partial interface IActivationFactory
@@ -53,6 +67,182 @@ namespace ComInterfaceGenerator.Tests
     public unsafe class GeneratedComClassTests
     {
         private const int E_NOINTERFACE = unchecked((int)0x80004002);
+
+        [Theory]
+        [InlineData(false, CreateComInterfaceFlags.None)]
+        [InlineData(true, CreateComInterfaceFlags.None)]
+        [InlineData(false, CreateComInterfaceFlags.TrackerSupport)]
+        [InlineData(true, CreateComInterfaceFlags.TrackerSupport)]
+        public void GetOrCreateComInterfaceForObject_RequestedInterface(bool useGenericOverload, CreateComInterfaceFlags flags)
+        {
+            DerivedComObject obj = new();
+            StrategyBasedComWrappers wrappers = new();
+            Guid iid = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IGetAndSetInt).TypeHandle).Iid;
+            nint ptr = useGenericOverload
+                ? wrappers.GetOrCreateComInterfaceForObject<IGetAndSetInt>(obj, flags)
+                : wrappers.GetOrCreateComInterfaceForObject(obj, flags, in iid);
+            int remainingReferences;
+            try
+            {
+                Assert.NotEqual(0, ptr);
+                void** vtable = *(void***)ptr;
+                Assert.Equal(0, ((delegate* unmanaged[MemberFunction]<nint, int, int>)vtable[4])(ptr, 42));
+                Assert.Equal(42, obj.Data);
+                int value = 0;
+                Assert.Equal(0, ((delegate* unmanaged[MemberFunction]<nint, int*, int>)vtable[3])(ptr, &value));
+                Assert.Equal(42, value);
+
+                nint unknown = wrappers.GetOrCreateComInterfaceForObject(obj, flags);
+                try
+                {
+                    Assert.Equal(0, Marshal.QueryInterface(unknown, in iid, out nint expected));
+                    try
+                    {
+                        Assert.Equal(expected, ptr);
+                    }
+                    finally
+                    {
+                        Marshal.Release(expected);
+                    }
+                }
+                finally
+                {
+                    Assert.Equal(1, Marshal.Release(unknown));
+                }
+            }
+            finally
+            {
+                remainingReferences = Marshal.Release(ptr);
+            }
+            Assert.Equal(0, remainingReferences);
+            GC.KeepAlive(obj);
+            GC.KeepAlive(wrappers);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetOrCreateComInterfaceForObject_NullInstance(bool useGenericOverload)
+        {
+            StrategyBasedComWrappers wrappers = new();
+            Assert.Throws<ArgumentNullException>("instance", () =>
+                useGenericOverload
+                    ? wrappers.GetOrCreateComInterfaceForObject<IGetAndSetInt>(null, CreateComInterfaceFlags.None)
+                    : wrappers.GetOrCreateComInterfaceForObject(null, CreateComInterfaceFlags.None, Guid.Empty));
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GetOrCreateComInterfaceForObject_UnsupportedInterfacePreservesCache(bool useGenericOverload)
+        {
+            ManagedObjectExposedToCom obj = new();
+            InterfaceDetailsComWrappers wrappers = new();
+            Guid iid = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IActivationFactory).TypeHandle).Iid;
+            for (int i = 0; i < 2; i++)
+            {
+                Assert.Throws<InvalidCastException>(() =>
+                    useGenericOverload
+                        ? wrappers.GetOrCreateComInterfaceForObject<IActivationFactory>(obj, CreateComInterfaceFlags.None)
+                        : wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None, in iid));
+            }
+
+            Assert.Equal(1, wrappers.Details.ExposedTypeLookups);
+            nint ptr = wrappers.GetOrCreateComInterfaceForObject<IGetAndSetInt>(obj, CreateComInterfaceFlags.None);
+            Assert.Equal(0, Marshal.Release(ptr));
+            Assert.Equal(1, wrappers.Details.ExposedTypeLookups);
+            GC.KeepAlive(obj);
+            GC.KeepAlive(wrappers);
+        }
+
+        [Fact]
+        public void GetOrCreateComInterfaceForObject_UnknownInterfaceType()
+        {
+            StrategyBasedComWrappers wrappers = new();
+            ManagedObjectExposedToCom obj = new();
+            Assert.Throws<ArgumentException>("TInterface", () => wrappers.GetOrCreateComInterfaceForObject<IDisposable>(obj, CreateComInterfaceFlags.None));
+            Assert.Throws<ArgumentException>("TInterface", () => wrappers.GetOrCreateComInterfaceForObject<object>(obj, CreateComInterfaceFlags.None));
+            Assert.Throws<ArgumentException>("TInterface", () => wrappers.GetOrCreateComInterfaceForObject<int>(obj, CreateComInterfaceFlags.None));
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public void GetOrCreateComInterfaceForObject_QueriesOnEveryCall(bool useGenericOverload, bool failQuery)
+        {
+            QueryCountingComObject obj = new() { FailQuery = failQuery };
+            StrategyBasedComWrappers wrappers = new();
+            Guid iid = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IGetAndSetInt).TypeHandle).Iid;
+            for (int i = 0; i < 2; i++)
+            {
+                if (failQuery)
+                {
+                    Assert.Throws<InvalidCastException>(() => GetInterface());
+                }
+                else
+                {
+                    Assert.Equal(0, Marshal.Release(GetInterface()));
+                }
+            }
+            Assert.Equal(2, obj.QueryCount);
+            nint unknown = wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None);
+            Assert.Equal(0, Marshal.Release(unknown));
+            GC.KeepAlive(obj);
+            GC.KeepAlive(wrappers);
+
+            nint GetInterface() => useGenericOverload
+                ? wrappers.GetOrCreateComInterfaceForObject<IGetAndSetInt>(obj, CreateComInterfaceFlags.None)
+                : wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None, in iid);
+        }
+
+        [Fact]
+        public void GetOrCreateComInterfaceForObject_UsesCustomInterfaceDetails()
+        {
+            ManagedObjectExposedToCom obj = new();
+            InterfaceDetailsComWrappers wrappers = new();
+            nint ptr = wrappers.GetOrCreateComInterfaceForObject<IDisposable>(obj, CreateComInterfaceFlags.None);
+            try
+            {
+                void** vtable = *(void***)ptr;
+                Assert.Equal(0, ((delegate* unmanaged[MemberFunction]<nint, int, int>)vtable[4])(ptr, 123));
+                Assert.Equal(123, obj.Data);
+            }
+            finally
+            {
+                Assert.Equal(0, Marshal.Release(ptr));
+            }
+            GC.KeepAlive(obj);
+            GC.KeepAlive(wrappers);
+        }
+
+        private sealed class InterfaceDetailsComWrappers : StrategyBasedComWrappers
+        {
+            public CountingInterfaceDetailsStrategy Details { get; } = new();
+
+            protected override IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy() => Details;
+        }
+
+        private sealed class CountingInterfaceDetailsStrategy : IIUnknownInterfaceDetailsStrategy
+        {
+            public int ExposedTypeLookups { get; private set; }
+
+            public IComExposedDetails GetComExposedTypeDetails(RuntimeTypeHandle type)
+            {
+                ExposedTypeLookups++;
+                return StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetComExposedTypeDetails(type);
+            }
+
+            public IIUnknownDerivedDetails GetIUnknownDerivedDetails(RuntimeTypeHandle type)
+            {
+                if (type.Equals(typeof(IDisposable).TypeHandle))
+                {
+                    type = typeof(IGetAndSetInt).TypeHandle;
+                }
+                return StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(type);
+            }
+        }
 
         [Fact]
         public void ComInstanceProvidesInterfaceForDirectlyImplementedComInterface()

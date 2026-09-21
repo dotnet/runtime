@@ -835,6 +835,33 @@ namespace System.Runtime.InteropServices
             return managedObjectWrapper.ComIp;
         }
 
+        /// <summary>
+        /// Gets or creates a COM representation of the supplied object and queries it for the specified interface.
+        /// </summary>
+        /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
+        /// <param name="flags">A bitwise combination of the enumeration values that specifies how to create the COM representation.</param>
+        /// <param name="interfaceId">The identifier of the requested COM interface.</param>
+        /// <returns>A pointer to the requested COM interface. The caller is responsible for releasing the returned reference.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="instance"/> is <see langword="null"/>.</exception>
+        /// <exception cref="InvalidCastException">The COM representation does not support <paramref name="interfaceId"/>.</exception>
+        /// <remarks>
+        /// The COM representation is cached before querying for the requested interface, even if the query fails.
+        /// The requested interface is queried on every call.
+        /// </remarks>
+        public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags, in Guid interfaceId)
+        {
+            IntPtr unknown = GetOrCreateComInterfaceForObject(instance, flags);
+            try
+            {
+                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(unknown, in interfaceId, out IntPtr result), new IntPtr(-1));
+                return result;
+            }
+            finally
+            {
+                Marshal.Release(unknown);
+            }
+        }
+
         private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
         {
             public readonly ComWrappers ComWrappers = comWrappers;
