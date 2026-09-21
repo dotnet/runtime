@@ -3181,6 +3181,11 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
     }
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
 
+    // Mark a backward leave target as a loop head here, while pTargetBB is still the real IL block: below it
+    // may be redirected to a finally call island, which shares its IL offset with another block.
+    if (target < ilOffset && pTargetBB != NULL)
+        pTargetBB->isBackwardBranchTarget = true;
+
     m_pStackPointer = m_pStackBase;
 
     // The leave will jump:
@@ -10311,6 +10316,10 @@ retry_emit:
                     uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
                     InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
                     assert(targetBB);
+                    // Offsets are relative to the instruction after the switch, so a negative one is a
+                    // backward branch, i.e. a loop head.
+                    if (offset < 0)
+                        targetBB->isBackwardBranchTarget = true;
                     targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
                     m_ip += 4;
