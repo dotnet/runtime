@@ -74,9 +74,10 @@ namespace System.Formats.Cbor
         Finished,
 
         /// <summary>
-        /// <para>Indicates that the next CBOR data item is incomplete in the current buffer.</para>
-        /// <para>This value is only reported by readers whose current data is not the final block.
-        /// Supply more data using <see cref="CborReader.SlideData" />.</para>
+        /// <para>Indicates that the reader cannot determine whether another data item is available
+        /// from the current non-final buffer: the next data item may be incomplete, or the buffer may end
+        /// after a complete root-level value when <see cref="CborReader.AllowMultipleRootLevelValues" /> is enabled.</para>
+        /// <para>Supply more data using <see cref="CborReader.SlideData" />.</para>
         /// </summary>
         NeedsMoreData,
     }
