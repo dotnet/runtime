@@ -64,6 +64,56 @@ public class RedundantBranchSimplify
     [InlineData(101, 2)]
     public static void TestGeLeSwapped(int a, int expected) => Assert.Equal(expected, GeLeSwapped(a));
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int MaterializedNeLessThan(int a, int b)
+    {
+        bool c = a != b;
+        if (a > b)
+        {
+            goto Shared;
+        }
+
+        if (c)
+        {
+            return 1;
+        }
+
+    Shared:
+        return 0;
+    }
+
+    [Theory]
+    [InlineData(3, 5, 1)]
+    [InlineData(5, 3, 0)]
+    [InlineData(5, 5, 0)]
+    public static void TestMaterializedNeLessThan(int a, int b, int expected) =>
+        Assert.Equal(expected, MaterializedNeLessThan(a, b));
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int MaterializedNeGreaterThan(int a, int b)
+    {
+        bool c = a != b;
+        if (a < b)
+        {
+            goto Shared;
+        }
+
+        if (c)
+        {
+            return 1;
+        }
+
+    Shared:
+        return 0;
+    }
+
+    [Theory]
+    [InlineData(3, 5, 0)]
+    [InlineData(5, 3, 1)]
+    [InlineData(5, 5, 0)]
+    public static void TestMaterializedNeGreaterThan(int a, int b, int expected) =>
+        Assert.Equal(expected, MaterializedNeGreaterThan(a, b));
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int NeLeUnsigned(uint a, uint b)
     {
