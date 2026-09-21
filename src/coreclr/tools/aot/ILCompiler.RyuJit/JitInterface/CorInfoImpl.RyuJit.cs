@@ -533,10 +533,10 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL when PointerSize == 8:
-                    return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhBulkMoveWithWriteBarrier"u8));
-                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_ASSIGN_REF_EAX:

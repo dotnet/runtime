@@ -10352,9 +10352,8 @@ void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 //
 void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
-    // Match the managed Release chunk size (Buffer.BulkMoveWithWriteBarrierChunk).
-    // The limits need not stay in sync for correctness; they bound GC suspension latency.
-    const unsigned BULK_WRITEBARRIER_SMALL_SIZE = 0x4000;
+    // Keep direct copies small to limit GC suspension latency.
+    const unsigned BULK_WRITEBARRIER_SMALL_SIZE = 128;
 
     assert(blk->OperIs(GT_STORE_BLK));
     assert(blk->GetLayout()->HasGCPtr());
