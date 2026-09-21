@@ -20,6 +20,72 @@ namespace System.Numerics.Tensors
             static abstract T Invoke(Vector512<T> x);
 
             static virtual T IdentityValue => throw new NotSupportedException();
+
+            /// <summary>Gets whether combining values in a different order produces the same result.</summary>
+            static virtual bool CanReassociate => false;
+        }
+
+        /// <summary>Aggregates four vectors into <paramref name="vresult"/>, as a tree when the operator allows it.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector128<T> AggregateFour<T, TAggregationOperator>(
+            Vector128<T> vresult, Vector128<T> vector1, Vector128<T> vector2, Vector128<T> vector3, Vector128<T> vector4)
+            where TAggregationOperator : struct, IAggregationOperator<T>
+        {
+            if (TAggregationOperator.CanReassociate)
+            {
+                return TAggregationOperator.Invoke(
+                    vresult,
+                    TAggregationOperator.Invoke(
+                        TAggregationOperator.Invoke(vector1, vector2),
+                        TAggregationOperator.Invoke(vector3, vector4)));
+            }
+
+            vresult = TAggregationOperator.Invoke(vresult, vector1);
+            vresult = TAggregationOperator.Invoke(vresult, vector2);
+            vresult = TAggregationOperator.Invoke(vresult, vector3);
+            return TAggregationOperator.Invoke(vresult, vector4);
+        }
+
+        /// <inheritdoc cref="AggregateFour{T, TAggregationOperator}(Vector128{T}, Vector128{T}, Vector128{T}, Vector128{T}, Vector128{T})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector256<T> AggregateFour<T, TAggregationOperator>(
+            Vector256<T> vresult, Vector256<T> vector1, Vector256<T> vector2, Vector256<T> vector3, Vector256<T> vector4)
+            where TAggregationOperator : struct, IAggregationOperator<T>
+        {
+            if (TAggregationOperator.CanReassociate)
+            {
+                return TAggregationOperator.Invoke(
+                    vresult,
+                    TAggregationOperator.Invoke(
+                        TAggregationOperator.Invoke(vector1, vector2),
+                        TAggregationOperator.Invoke(vector3, vector4)));
+            }
+
+            vresult = TAggregationOperator.Invoke(vresult, vector1);
+            vresult = TAggregationOperator.Invoke(vresult, vector2);
+            vresult = TAggregationOperator.Invoke(vresult, vector3);
+            return TAggregationOperator.Invoke(vresult, vector4);
+        }
+
+        /// <inheritdoc cref="AggregateFour{T, TAggregationOperator}(Vector128{T}, Vector128{T}, Vector128{T}, Vector128{T}, Vector128{T})"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Vector512<T> AggregateFour<T, TAggregationOperator>(
+            Vector512<T> vresult, Vector512<T> vector1, Vector512<T> vector2, Vector512<T> vector3, Vector512<T> vector4)
+            where TAggregationOperator : struct, IAggregationOperator<T>
+        {
+            if (TAggregationOperator.CanReassociate)
+            {
+                return TAggregationOperator.Invoke(
+                    vresult,
+                    TAggregationOperator.Invoke(
+                        TAggregationOperator.Invoke(vector1, vector2),
+                        TAggregationOperator.Invoke(vector3, vector4)));
+            }
+
+            vresult = TAggregationOperator.Invoke(vresult, vector1);
+            vresult = TAggregationOperator.Invoke(vresult, vector2);
+            vresult = TAggregationOperator.Invoke(vresult, vector3);
+            return TAggregationOperator.Invoke(vresult, vector4);
         }
 
         /// <summary>Adapts a stateless <see cref="IUnaryOperator{TInput, TOutput}"/> to be used as a stateful <see cref="IStatefulUnaryOperator{T}"/>.</summary>
@@ -218,10 +284,7 @@ namespace System.Numerics.Tensors
                             vector3 = transform.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 2)));
                             vector4 = transform.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 3)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We load, process, and store the next four vectors
 
@@ -230,10 +293,7 @@ namespace System.Numerics.Tensors
                             vector3 = transform.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 6)));
                             vector4 = transform.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 7)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We adjust the source and destination references, then update
                             // the count of remaining elements to process.
@@ -400,10 +460,7 @@ namespace System.Numerics.Tensors
                             vector3 = transform.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 2)));
                             vector4 = transform.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 3)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We load, process, and store the next four vectors
 
@@ -412,10 +469,7 @@ namespace System.Numerics.Tensors
                             vector3 = transform.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 6)));
                             vector4 = transform.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 7)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We adjust the source and destination references, then update
                             // the count of remaining elements to process.
@@ -582,10 +636,7 @@ namespace System.Numerics.Tensors
                             vector3 = transform.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 2)));
                             vector4 = transform.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 3)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We load, process, and store the next four vectors
 
@@ -594,10 +645,7 @@ namespace System.Numerics.Tensors
                             vector3 = transform.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 6)));
                             vector4 = transform.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 7)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We adjust the source and destination references, then update
                             // the count of remaining elements to process.
@@ -1351,10 +1399,7 @@ namespace System.Numerics.Tensors
                             vector4 = TBinaryOperator.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 3)),
                                                              Vector128.Load(yPtr + (uint)(Vector128<T>.Count * 3)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We load, process, and store the next four vectors
 
@@ -1367,10 +1412,7 @@ namespace System.Numerics.Tensors
                             vector4 = TBinaryOperator.Invoke(Vector128.Load(xPtr + (uint)(Vector128<T>.Count * 7)),
                                                              Vector128.Load(yPtr + (uint)(Vector128<T>.Count * 7)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We adjust the source and destination references, then update
                             // the count of remaining elements to process.
@@ -1558,10 +1600,7 @@ namespace System.Numerics.Tensors
                             vector4 = TBinaryOperator.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 3)),
                                                              Vector256.Load(yPtr + (uint)(Vector256<T>.Count * 3)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We load, process, and store the next four vectors
 
@@ -1574,10 +1613,7 @@ namespace System.Numerics.Tensors
                             vector4 = TBinaryOperator.Invoke(Vector256.Load(xPtr + (uint)(Vector256<T>.Count * 7)),
                                                              Vector256.Load(yPtr + (uint)(Vector256<T>.Count * 7)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We adjust the source and destination references, then update
                             // the count of remaining elements to process.
@@ -1765,10 +1801,7 @@ namespace System.Numerics.Tensors
                             vector4 = TBinaryOperator.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 3)),
                                                              Vector512.Load(yPtr + (uint)(Vector512<T>.Count * 3)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We load, process, and store the next four vectors
 
@@ -1781,10 +1814,7 @@ namespace System.Numerics.Tensors
                             vector4 = TBinaryOperator.Invoke(Vector512.Load(xPtr + (uint)(Vector512<T>.Count * 7)),
                                                              Vector512.Load(yPtr + (uint)(Vector512<T>.Count * 7)));
 
-                            vresult = TAggregationOperator.Invoke(vresult, vector1);
-                            vresult = TAggregationOperator.Invoke(vresult, vector2);
-                            vresult = TAggregationOperator.Invoke(vresult, vector3);
-                            vresult = TAggregationOperator.Invoke(vresult, vector4);
+                            vresult = AggregateFour<T, TAggregationOperator>(vresult, vector1, vector2, vector3, vector4);
 
                             // We adjust the source and destination references, then update
                             // the count of remaining elements to process.

@@ -17,6 +17,9 @@ namespace System.Numerics.Tensors.Tests
         public static IEnumerable<int> TensorLengthsIncluding0 => Enumerable.Range(0, 257);
 
         public static IEnumerable<int> TensorLengths => Enumerable.Range(1, 256);
+
+        public static IEnumerable<int> TensorLengthsSpanningUnrolledBlocks =>
+            [1, 3, 8, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256, 257, 511, 512, 513, 1023, 1024, 1025, 4099];
         public static IEnumerable<nint[]> TensorShapes => [[1], [2], [10], [1, 1], [1, 2], [2, 2], [5, 5], [2, 2, 2], [5, 5, 5], [3, 3, 3, 3], [4, 4, 4, 4, 4], [1, 2, 3, 4, 5, 6, 7, 1, 2]];
         public static nint[][] TensorSliceShapes => [[1], [1], [5], [1, 1], [1, 1], [1, 2], [3, 3], [2, 2, 1], [5, 3, 5], [3, 2, 1, 3], [4, 3, 2, 1, 2], [1, 2, 2, 2, 2, 1, 1, 1, 1]];
         public static nint[][] TensorSliceShapesForBroadcast => [[1], [1], [1], [1, 1], [1, 1], [1, 2], [1, 1], [2, 2, 1], [1, 5, 5], [3, 1, 1, 3], [4, 1, 4, 1, 4], [1, 2, 1, 4, 1, 1, 7, 1, 1]];

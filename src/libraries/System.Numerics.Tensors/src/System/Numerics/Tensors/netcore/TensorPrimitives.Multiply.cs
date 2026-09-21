@@ -65,6 +65,8 @@ namespace System.Numerics.Tensors
         {
             public static bool Vectorizable => true;
 
+            public static bool CanReassociate => typeof(T) != typeof(float) && typeof(T) != typeof(double);
+
             public static T Invoke(T x, T y) => x * y;
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y) => x * y;
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y) => x * y;

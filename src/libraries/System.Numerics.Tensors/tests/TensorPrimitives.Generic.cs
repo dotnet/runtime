@@ -1842,6 +1842,42 @@ namespace System.Numerics.Tensors.Tests
     public unsafe abstract class GenericIntegerTensorPrimitivesTests<T> : GenericNumberTensorPrimitivesTests<T>
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
+        #region Sum
+        [Fact]
+        public void Sum_MatchesScalarSumAcrossUnrolledBlocks()
+        {
+            Assert.All(Helpers.TensorLengthsSpanningUnrolledBlocks, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+
+                T expected = T.Zero;
+                foreach (T value in x.Span)
+                {
+                    expected += value;
+                }
+
+                Assert.Equal(expected, Sum(x.Span));
+            });
+        }
+
+        [Fact]
+        public void SumOfSquares_MatchesScalarSumAcrossUnrolledBlocks()
+        {
+            Assert.All(Helpers.TensorLengthsSpanningUnrolledBlocks, tensorLength =>
+            {
+                using BoundedMemory<T> x = CreateAndFillTensor(tensorLength);
+
+                T expected = T.Zero;
+                foreach (T value in x.Span)
+                {
+                    expected += value * value;
+                }
+
+                Assert.Equal(expected, SumOfSquares(x.Span));
+            });
+        }
+        #endregion
+
         #region Divide
         [Fact]
         public void Divide_TwoTensors_ByZero_Throws()
