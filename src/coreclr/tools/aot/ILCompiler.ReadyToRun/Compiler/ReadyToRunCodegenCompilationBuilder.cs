@@ -22,6 +22,7 @@ namespace ILCompiler
     {
         private static bool _isJitInitialized = false;
 
+        private readonly ReadyToRunCompilerContext _r2rContext;
         private readonly IEnumerable<string> _inputFiles;
         private readonly string _compositeRootPath;
         private bool _generateMapFile;
@@ -57,12 +58,13 @@ namespace ILCompiler
         private ILProvider _ilProvider;
 
         public ReadyToRunCodegenCompilationBuilder(
-            CompilerTypeSystemContext context,
+            ReadyToRunCompilerContext context,
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
             : base(context, group, new NativeAotNameMangler())
         {
+            _r2rContext = context;
             _ilProvider = new ReadyToRunILProvider(group);
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -343,10 +345,16 @@ namespace ILCompiler
                 _isJitInitialized = true;
             }
 
+            List<ICompilationRootProvider> compilationRoots = new(_compilationRoots);
+            if (_r2rContext.BubbleIncludesCoreModule)
+            {
+                compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
+            }
+
             return new ReadyToRunCodegenCompilation(
                 graph,
                 factory,
-                _compilationRoots,
+                compilationRoots,
                 _ilProvider,
                 _logger,
                 new DependencyAnalysis.ReadyToRun.DevirtualizationManager(_compilationGroup),

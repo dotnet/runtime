@@ -1553,6 +1553,25 @@ DONE:
     }
 
 DONE_CALL:
+    // Collect value profiles in optimized instrumented tiers too, before wrapping inline candidates.
+    if (opts.IsInstrumented() && JitConfig.JitProfileValues() && call->IsCall() && call->AsCall()->IsSpecialIntrinsic())
+    {
+        const NamedIntrinsic ni = lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd);
+        if ((ni == NI_System_SpanHelpers_Memmove) || (ni == NI_System_SpanHelpers_SequenceEqual))
+        {
+            assert(!call->AsCall()->IsGuardedDevirtualizationCandidate());
+
+            // Reuse inline-candidate info: it derives from the probe info and shares the same union slot.
+            HandleHistogramProfileCandidateInfo* pInfo =
+                call->AsCall()->IsInlineCandidate() ? call->AsCall()->GetSingleInlineCandidateInfo()
+                                                    : new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
+            pInfo->ilOffset                                       = rawILOffset;
+            pInfo->probeIndex                                     = 0;
+            call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
+            compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
+        }
+    }
+
     // Push or append the result of the call
     if (callRetTyp == TYP_VOID)
     {
@@ -1565,19 +1584,9 @@ DONE_CALL:
         else if (JitConfig.JitProfileValues() && call->IsCall() &&
                  call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_Memmove))
         {
-            if (opts.IsOptimizedWithProfile())
+            if (opts.IsOptimizedWithProfile() && !opts.IsInstrumented())
             {
                 call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
-            }
-            else if (opts.IsInstrumented())
-            {
-                // We might want to instrument it for optimized versions too, but we don't currently.
-                HandleHistogramProfileCandidateInfo* pInfo =
-                    new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                pInfo->ilOffset                                       = rawILOffset;
-                pInfo->probeIndex                                     = 0;
-                call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
             }
             impAppendTree(call, CHECK_SPILL_ALL, impCurStmtDI);
         }
@@ -1721,7 +1730,7 @@ DONE_CALL:
                 if (JitConfig.JitProfileValues() && call->IsCall() &&
                     call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
                 {
-                    if (opts.IsOptimizedWithProfile())
+                    if (opts.IsOptimizedWithProfile() && !opts.IsInstrumented())
                     {
                         call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
                         if (call->OperIs(GT_QMARK))
@@ -1731,16 +1740,6 @@ DONE_CALL:
                             impStoreToTemp(tmp, call, CHECK_SPILL_ALL);
                             call = gtNewLclvNode(tmp, call->TypeGet());
                         }
-                    }
-                    else if (opts.IsInstrumented())
-                    {
-                        // We might want to instrument it for optimized versions too, but we don't currently.
-                        HandleHistogramProfileCandidateInfo* pInfo =
-                            new (this, CMK_Inlining) HandleHistogramProfileCandidateInfo;
-                        pInfo->ilOffset                                       = rawILOffset;
-                        pInfo->probeIndex                                     = 0;
-                        call->AsCall()->gtHandleHistogramProfileCandidateInfo = pInfo;
-                        compCurBB->SetFlags(BBF_HAS_VALUE_PROFILE);
                     }
                 }
             }
@@ -3399,7 +3398,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     impInlineRoot()->m_inlineStrategy->NoteHardwareIntrinsicCheckObserved();
 
-                    typeArgHnd      = info.compCompHnd->getTypeInstantiationArgument(clsHnd, 0);
+                    assert(sig->sigInst.classInstCount == 1);
+                    typeArgHnd      = sig->sigInst.classInst[0];
                     simdBaseJitType = info.compCompHnd->getTypeForPrimitiveNumericClass(typeArgHnd);
 
                     switch (simdBaseJitType)
@@ -3694,6 +3694,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_get_TypeHandle:
             case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_RuntimeTypeHandle_ToIntPtr:
+            case NI_System_Buffer_Memmove:
 
             // This one is not simple, but it will help us
             // to avoid some unnecessary boxing
@@ -5518,6 +5519,60 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_GC_KeepAlive:
             {
                 retNode = impKeepAliveIntrinsic(impPopStack().val);
+                break;
+            }
+
+            case NI_System_Buffer_Memmove:
+            {
+                // Convert Buffer.Memmove<T>(ref T dst, ref T src, count) to
+                // SpanHelpers.Memmove(ref byte dst, ref byte src, count * sizeof(T)).
+                if (sig->sigInst.methInstCount != 1)
+                {
+                    break;
+                }
+
+                const CorInfoType primitiveType =
+                    info.compCompHnd->getTypeForPrimitiveValueClass(sig->sigInst.methInst[0]);
+                if (primitiveType == CORINFO_TYPE_UNDEF)
+                {
+                    break;
+                }
+
+                const var_types elementType = JITtype2varType(primitiveType);
+                if (!varTypeIsArithmetic(elementType))
+                {
+                    break;
+                }
+
+                // TODO: Rename CORINFO_HELP_MEMCPY to CORINFO_HELP_MEMMOVE to reflect its overlap-safe semantics.
+                CORINFO_METHOD_HANDLE memmoveHnd = NO_METHOD_HANDLE;
+                info.compCompHnd->getHelperFtn(CORINFO_HELP_MEMCPY, nullptr, &memmoveHnd);
+                if (memmoveHnd == NO_METHOD_HANDLE)
+                {
+                    break;
+                }
+
+                assert(sig->numArgs == 3);
+                assert(sig->retType == CORINFO_TYPE_VOID);
+
+                GenTree*       length      = impImplicitIorI4Cast(impPopStack().val, TYP_I_IMPL, /* zeroExtend */ true);
+                GenTree*       source      = impPopStack().val;
+                GenTree*       destination = impPopStack().val;
+                const unsigned elementSize = genTypeSize(elementType);
+                if (elementSize != 1)
+                {
+                    length =
+                        gtFoldExpr(gtNewOperNode(GT_MUL, TYP_I_IMPL, length, gtNewIconNode(elementSize, TYP_I_IMPL)));
+                }
+
+                // Keep the byte-length probe at this call site, rather than inside the generic wrapper.
+                GenTreeCall* memmove = gtNewUserCallNode(memmoveHnd, TYP_VOID, impCurStmtDI);
+                memmove->gtArgs.PushBack(this, NewCallArg::Primitive(destination));
+                memmove->gtArgs.PushBack(this, NewCallArg::Primitive(source));
+                memmove->gtArgs.PushBack(this, NewCallArg::Primitive(length));
+                memmove->gtCallMoreFlags |= GTF_CALL_M_SPECIAL_INTRINSIC;
+                gtUpdateNodeSideEffects(memmove);
+                retNode = memmove;
                 break;
             }
 
@@ -11756,6 +11811,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             result = NI_System_BitConverter_Int64BitsToDouble;
                         }
                     }
+                    else if (strcmp(className, "Buffer") == 0)
+                    {
+                        if (strcmp(methodName, "Memmove") == 0)
+                        {
+                            result = NI_System_Buffer_Memmove;
+                        }
+                    }
                     break;
                 }
 
@@ -13579,10 +13641,12 @@ GenTree* Compiler::impArrayAccessIntrinsic(
             info.compCompHnd->getChildType(localSig.retTypeClass, &actualElemClsHnd);
         }
 
-        // if it's not final, we can't do the optimization
-        if (!(info.compCompHnd->getClassAttribs(actualElemClsHnd) & CORINFO_FLG_FINAL))
+        // If it's not exact, we can't do the optimization: for instance, array and variant
+        // types are sealed yet still covariant, so the runtime element type of the array may
+        // be a proper subtype of the call site's element type.
+        if (!info.compCompHnd->isExactType(actualElemClsHnd))
         {
-            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not final\n",
+            JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because actualElemClsHnd (%p) is not exact\n",
                     dspPtr(actualElemClsHnd));
             return nullptr;
         }
