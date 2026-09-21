@@ -369,6 +369,54 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [Kept]
+            class SelfReferentialReflectionVisibleSignatures
+            {
+                [Kept]
+                [KeptMember(".ctor()")]
+                class RequiresPublicMethods<
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+                {
+                }
+
+                [Kept]
+                class RequiresPublicFields<
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] T>
+                {
+                }
+
+                [Kept]
+                class MethodSelfReference
+                {
+                    [Kept]
+                    public static RequiresPublicMethods<MethodSelfReference> GetValue() => new();
+
+                    [Kept]
+                    public static void RequiredMethod()
+                    {
+                    }
+                }
+
+                [Kept]
+                class FieldSelfReference
+                {
+                    [Kept]
+                    public static RequiresPublicFields<FieldSelfReference> Value;
+
+                    [Kept]
+                    public static int RequiredField;
+                }
+
+                [Kept]
+                public static void Test()
+                {
+                    _ = typeof(MethodSelfReference).GetMethods();
+                    _ = typeof(FieldSelfReference).GetFields();
+                }
+            }
+
+            [Kept]
             public static void Test()
             {
                 GenericMethodNoReference.Test();
@@ -381,6 +429,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 BaseTypeGenericNesting.Test();
                 InterfaceGenericNesting.Test();
                 InterfaceGenericMarkingUnderRuc.Test();
+                SelfReferentialReflectionVisibleSignatures.Test();
             }
         }
     }
