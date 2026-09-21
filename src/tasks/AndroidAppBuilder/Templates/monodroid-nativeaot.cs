@@ -16,14 +16,21 @@ using JSize = int;
 namespace MonoDroid.NativeAOT;
 
 #pragma warning disable IDE0060 // Remove unused parameter
-internal static unsafe partial class MonoDroidExports
+internal static partial class MonoDroidExports
 {
     // void Java_net_dot_MonoRunner_setEnv (JNIEnv* env, jobject thiz, jstring j_key, jstring j_value);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_setEnv", CallConvs = [typeof(CallConvCdecl)])]
     public static void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
     {
-        string? key = env->GetStringUTFChars(j_key);
-        string? value = env->GetStringUTFChars(j_value);
+        string? key;
+        string? value;
+        unsafe
+        {
+            // SAFETY: JNI provides a valid environment pointer for the duration of the callback.
+            key = env->GetStringUTFChars(j_key);
+            value = env->GetStringUTFChars(j_value);
+        }
+
         Console.WriteLine($"SetEnv: {key ?? "null"} = {value ?? "null"}");
         if (key != null && value != null)
         {
@@ -36,34 +43,53 @@ internal static unsafe partial class MonoDroidExports
     public static int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
     {
         Console.WriteLine("Initializing Android crypto native library");
-        // The NativeAOT runtime does not need to be initialized, but the crypto library does.
-        JavaVM* javaVM = env->GetJavaVM();
-        AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
+        string filesDir;
+        unsafe
+        {
+            // SAFETY: JNI provides a valid environment pointer and Java VM for the duration of the callback.
+            // The NativeAOT runtime does not need to be initialized, but the crypto library does.
+            JavaVM* javaVM = env->GetJavaVM();
+            AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
+            filesDir = env->GetStringUTFChars(j_files_dir) ?? string.Empty;
+        }
 
-        var filesDir = env->GetStringUTFChars(j_files_dir) ?? string.Empty;
         AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", filesDir);
         Environment.CurrentDirectory = filesDir;
         return 0;
     }
 
+    /// <safety>
+    /// <paramref name="vm"/> must point to the Java VM for the current process, and this method must be called
+    /// before using any APIs from System.Security.Cryptography.Native.Android.
+    /// </safety>
     [LibraryImport("System.Security.Cryptography.Native.Android")]
-    internal static partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
+    internal static unsafe partial int AndroidCryptoNative_InitLibraryOnLoad(JavaVM* vm, void* reserved);
 
 #if !SINGLE_FILE_TEST_RUNNER
+    /// <safety>
+    /// <paramref name="argv"/> must point to at least <paramref name="argc"/> valid pointers to null-terminated
+    /// UTF-8 strings that remain readable for the duration of the call.
+    /// </safety>
     [DllImport("*", EntryPoint = "__managed__Main")]
-    static extern int ManagedMain(int argc, void** argv);
+    static extern unsafe int ManagedMain(int argc, void** argv);
 #endif
 
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
     public static int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
     {
-        int argc = env->GetArrayLength(j_args);
-        string[] args = new string[argc];
-        for (int i = 0; i < argc; i++)
+        int argc;
+        string[] args;
+        unsafe
         {
-            JObject j_arg = env->GetObjectArrayElement(j_args, i);
-            args[i] = env->GetStringUTFChars((JString)j_arg)!;
+            // SAFETY: JNI provides a valid environment pointer and argument array for the duration of the callback.
+            argc = env->GetArrayLength(j_args);
+            args = new string[argc];
+            for (int i = 0; i < argc; i++)
+            {
+                JObject j_arg = env->GetObjectArrayElement(j_args, i);
+                args[i] = env->GetStringUTFChars((JString)j_arg)!;
+            }
         }
 
 #if SINGLE_FILE_TEST_RUNNER
@@ -78,27 +104,32 @@ internal static unsafe partial class MonoDroidExports
         // SingleFile unit tests
         return SingleFileTestRunner.Main(args);
 #else
-        string entryPointName = env->GetStringUTFChars(j_entryPointLibName)!;
-        IntPtr[] managedMainArgs = new IntPtr[argc + 1];
-        managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
-        for (int i = 0; i < argc; i++)
+        unsafe
         {
-            managedMainArgs[i + 1] = Marshal.StringToCoTaskMemUTF8(args[i]);
-        }
+            // SAFETY: The JNI strings remain valid while copying them, and the pinned array contains
+            // only pointers allocated by Marshal.StringToCoTaskMemUTF8.
+            string entryPointName = env->GetStringUTFChars(j_entryPointLibName)!;
+            IntPtr[] managedMainArgs = new IntPtr[argc + 1];
+            managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
+            for (int i = 0; i < argc; i++)
+            {
+                managedMainArgs[i + 1] = Marshal.StringToCoTaskMemUTF8(args[i]);
+            }
 
-        int ret;
-        fixed (IntPtr* argvPtrs = managedMainArgs)
-        {
-            void** argv = (void**)argvPtrs;
-            ret = ManagedMain(argc + 1, argv);
-        }
+            int ret;
+            fixed (IntPtr* argvPtrs = managedMainArgs)
+            {
+                void** argv = (void**)argvPtrs;
+                ret = ManagedMain(argc + 1, argv);
+            }
 
-        for (int i = 0; i < managedMainArgs.Length; i++)
-        {
-            Marshal.FreeCoTaskMem(managedMainArgs[i]);
-        }
+            for (int i = 0; i < managedMainArgs.Length; i++)
+            {
+                Marshal.FreeCoTaskMem(managedMainArgs[i]);
+            }
 
-        return ret;
+            return ret;
+        }
 #endif
     }
 
@@ -113,59 +144,75 @@ internal static unsafe partial class MonoDroidExports
 
 
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct JNIEnv
+internal struct JNIEnv
 {
     JNINativeInterface* NativeInterface;
     public string? GetStringUTFChars(JString str)
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, null);
-            if (chars is null)
-                return null;
+            // SAFETY: JNI initializes this value with a valid function table.
+            fixed (JNIEnv* thisptr = &this)
+            {
+                byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, null);
+                if (chars is null)
+                    return null;
 
-            try
-            {
-                return Marshal.PtrToStringUTF8((nint)chars)!;
-            }
-            finally
-            {
-                NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
+                try
+                {
+                    return Marshal.PtrToStringUTF8((nint)chars)!;
+                }
+                finally
+                {
+                    NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
+                }
             }
         }
     }
 
     public JavaVM* GetJavaVM()
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            JavaVM* vm;
-            int result = NativeInterface->GetJavaVM(thisptr, &vm);
-            if (result != 0)
-                return null;
+            // SAFETY: JNI initializes this value with a valid function table.
+            fixed (JNIEnv* thisptr = &this)
+            {
+                JavaVM* vm;
+                int result = NativeInterface->GetJavaVM(thisptr, &vm);
+                if (result != 0)
+                    return null;
 
-            return vm;
+                return vm;
+            }
         }
     }
 
     public JSize GetArrayLength(JObjectArray array)
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            return NativeInterface->GetArrayLength(thisptr, array);
+            // SAFETY: JNI initializes this value with a valid function table.
+            fixed (JNIEnv* thisptr = &this)
+            {
+                return NativeInterface->GetArrayLength(thisptr, array);
+            }
         }
     }
 
     public JObject GetObjectArrayElement(JObjectArray array, JSize index)
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            return NativeInterface->GetObjectArrayElement(thisptr, array, index);
+            // SAFETY: JNI initializes this value with a valid function table.
+            fixed (JNIEnv* thisptr = &this)
+            {
+                return NativeInterface->GetObjectArrayElement(thisptr, array, index);
+            }
         }
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    unsafe struct JNINativeInterface
+    struct JNINativeInterface
     {
         void* reserved0;
         void* reserved1;
@@ -484,7 +531,7 @@ internal unsafe struct JNIEnv
 }
 
 [StructLayout(LayoutKind.Sequential)]
-internal unsafe struct JavaVM
+internal struct JavaVM
 {
     JNIInvokeInterface* InvokeInterface;
 
