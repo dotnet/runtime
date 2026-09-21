@@ -175,45 +175,27 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_coreclr_session_stopping (EventPipeSessionID session_id, uint64_t session_mask)
+ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
 {
 	STATIC_CONTRACT_NOTHROW;
 #if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
-	// Flush block-count PGO only into the session that enabled the JitInstrumentationData events
+	// The EventPipe session_stopping helper has bound this thread to the stopping session as its rundown
+	// session, so ep_event_is_enabled_for_current_thread tests that session's mask and the events emitted by
+	// the flush route only to it (dotnet-pgo drops a method once data arrives after its final chunk, so a
+	// single destination is required).
 	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
 	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
-		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, session_mask))
+		ep_event_is_enabled_for_current_thread (EventPipeEventJitInstrumentationDataVerbose))
 	{
-		// Mark this thread as a rundown thread bound to the stopping session so the events emitted by the
-		// flush are routed to that single session (ep_session_write_event) instead of broadcast to every
-		// enabled session; the marker is cleared after the flush, including on exception. Dereferencing the
-		// session is safe here: this path is single-threaded (PERFTRACING_DISABLE_THREADS), so nothing frees
-		// it before section2 disables it.
-		EventPipeSession *session = reinterpret_cast<EventPipeSession *>(static_cast<uintptr_t>(session_id));
-		EventPipeThread *thread = ep_thread_get_or_create ();
-		if (thread != NULL)
+		EX_TRY
 		{
-			ep_thread_set_as_rundown_thread (thread, session);
-			EX_TRY
-			{
-				PgoManager::EmitInstrumentationDataToEventPipe ();
-			}
-			EX_CATCH { }
-			EX_END_CATCH
-			ep_thread_set_as_rundown_thread (thread, NULL);
+			PgoManager::LogInstrumentationData ();
 		}
+		EX_CATCH { }
+		EX_END_CATCH
 	}
-#elif defined(FEATURE_PGO) && (defined(TARGET_BROWSER) || defined(TARGET_WASI))
-	extern EventPipeEvent *EventPipeEventJitInstrumentationDataVerbose;
-	if (EventPipeEventJitInstrumentationDataVerbose != NULL &&
-		ep_event_is_enabled_by_mask (EventPipeEventJitInstrumentationDataVerbose, session_mask))
-	{
-		PORTABILITY_ASSERT ("Interpreter block-count PGO flush is not implemented for multithreaded WASM (requires PERFTRACING_DISABLE_THREADS).");
-	}
-	(void)session_id;
 #else
 	(void)session_id;
-	(void)session_mask;
 #endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 

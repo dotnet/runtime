@@ -779,6 +779,72 @@ disable_holding_lock (
 	return;
 }
 
+bool
+ep_event_is_enabled_for_current_thread (EventPipeEvent *ep_event)
+{
+	EP_ASSERT (ep_event != NULL);
+
+	// A thread scoped to a single session (rundown, or an end-of-session flush) consults only that session's
+	// mask, so the caller emits exactly what routes to it; otherwise fall back to global enablement.
+	EventPipeThread *thread = ep_thread_get ();
+	if (thread != NULL) {
+		EventPipeSession *rundown_session = ep_thread_get_rundown_session (thread);
+		if (rundown_session != NULL)
+			return ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (rundown_session));
+	}
+
+	return ep_event_is_enabled (ep_event);
+}
+
+#ifdef PERFTRACING_DISABLE_THREADS
+// Give the runtime a chance to emit end-of-session data (e.g. block-count PGO) into the stopping session
+// before it is disabled. Bind the current thread to that session as its rundown session so the runtime's
+// emitted events route only to it (see ep_event_is_enabled_for_current_thread and the rundown path in
+// write_event_2), invoke the hook, then restore the previous binding. Runs before the disable lock because
+// emitting events re-enters the write path, which must not run with the lock held.
+static
+void
+session_stopping (EventPipeSessionID id)
+{
+	EventPipeThread *thread = ep_thread_get_or_create ();
+	if (thread == NULL)
+		return;
+
+	EventPipeSession *prev_rundown_session = NULL;
+	bool bound = false;
+
+	EP_LOCK_ENTER (section1)
+		if (is_session_id_in_collection (id)) {
+			prev_rundown_session = ep_thread_get_rundown_session (thread);
+			ep_thread_set_rundown_session (thread, (EventPipeSession *)(uintptr_t)id);
+			bound = true;
+		}
+	EP_LOCK_EXIT (section1)
+
+	if (bound) {
+		ep_rt_session_stopping (id);
+
+		EP_LOCK_ENTER (section2)
+			ep_thread_set_rundown_session (thread, prev_rundown_session);
+		EP_LOCK_EXIT (section2)
+	}
+
+ep_on_exit:
+	return;
+
+ep_on_error:
+	ep_exit_error_handler ();
+}
+#else
+static
+inline
+void
+session_stopping (EventPipeSessionID id)
+{
+	(void)id;
+}
+#endif
+
 // Disable driver, entered without the lock from ep_disable and the deferred-disable replay in ep_finish_init:
 // take the lock and run the teardown, then dispatch the balanced provider-disable callbacks outside the lock.
 // This is the disable-side counterpart to the enable driver, which does the same take-lock / enable / dispatch
@@ -802,21 +868,10 @@ stop_session (EventPipeSessionID id)
 		EventPipeProviderCallbackData provider_callback_data;
 		EventPipeProviderCallbackDataQueue *provider_callback_data_queue = ep_provider_callback_data_queue_init (&callback_data_queue);
 
-		// Give the runtime a chance to emit any pending end-of-session data (e.g. block-count PGO) into
-		// the still-live session. Validate the session id first so a stale/invalid stop request doesn't
-		// flush into other open sessions, and pass it so the runtime can target only that session. This
-		// must run before the disable lock: emitting events re-enters the write path, which requires the
-		// lock not be held.
-		bool is_active_session = false;
-		uint64_t session_mask = 0;
-		EP_LOCK_ENTER (section1)
-			is_active_session = is_session_id_in_collection (id);
-			if (is_active_session)
-				session_mask = ep_session_get_mask ((EventPipeSession *)(uintptr_t)id);
-		EP_LOCK_EXIT (section1)
-
-		if (is_active_session)
-			ep_rt_session_stopping (id, session_mask);
+		// Give the runtime a chance to emit end-of-session data (e.g. block-count PGO) into the still-live
+		// session before it is disabled; session_stopping binds this thread to that session so the emitted
+		// events route only to it, and is a no-op on multithreaded runtimes.
+		session_stopping (id);
 
 		EP_LOCK_ENTER (section2)
 			if (is_session_id_in_collection (id))

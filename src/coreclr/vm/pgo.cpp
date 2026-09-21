@@ -161,7 +161,7 @@ void CallFClose(FILE* file)
 
 typedef Holder<FILE*, DoNothing, CallFClose> FILEHolder;
 
-void PgoManager::EmitInstrumentationDataToEventPipe()
+void PgoManager::LogInstrumentationData()
 {
     if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, JitInstrumentationDataVerbose))
     {
@@ -187,7 +187,7 @@ void PgoManager::EmitInstrumentationDataToEventPipe()
 void PgoManager::WritePgoData()
 {
 #ifndef PERFTRACING_DISABLE_THREADS
-    EmitInstrumentationDataToEventPipe();
+    LogInstrumentationData();
 #endif
 
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_WritePGOData) == 0)
