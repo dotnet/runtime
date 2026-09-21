@@ -30,14 +30,6 @@ namespace System.Reflection.Runtime.ParameterInfos
             }
         }
 
-        public sealed override IEnumerable<CustomAttributeData> CustomAttributes
-        {
-            get
-            {
-                return Array.Empty<CustomAttributeData>();
-            }
-        }
-
         public sealed override object DefaultValue
         {
             get
