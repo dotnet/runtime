@@ -2667,7 +2667,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
         {
             // Check to see if the entrypoint is into the interpreter. If so, grab the interpreter codes from the stub and put that directly
-            // into the MethodDesc. This has to be done before before redirecting the precode. Once the precode no longer points to the prestub,
+            // into the MethodDesc. This has to be done before redirecting the precode. Once the precode no longer points to the prestub,
             // another thread can skip DoPrestub and expect this to be initialized.
             TADDR byteCodeStartOrFunctionAddress = GetInterpreterCodeFromEntryPointIfPresent(pStub);
             if (byteCodeStartOrFunctionAddress != pStub)
