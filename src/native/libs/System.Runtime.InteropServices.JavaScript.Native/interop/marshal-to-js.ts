@@ -537,6 +537,8 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
     }
     args = fixupPointer(args, 0);
     const exc = getArg(args, 0);
+    // TODO-MT: always false until threads are enabled, only the cross-thread post paths set it.
+    // Keep in sync with resolve_or_reject_promise in src/mono/browser/runtime.
     const receiverShouldFree = isReceiverShouldFree(args);
     try {
         assertRuntimeRunning();
