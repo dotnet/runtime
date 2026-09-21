@@ -10500,7 +10500,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     var_types tgtSimdBaseType  = TYP_UNDEF;
                                     size_t    broadcastOpIndex = 0;
 
-                                    if (op2->isEmbeddedMaskingCompatible(m_compiler, tgtMaskSize, tgtSimdBaseType,
+                                    // An embedded mask can suppress faults from contained loads, including
+                                    // those nested in broadcasts. Keep such operations unconditional.
+                                    if (!op2->NodeOrContainedOperandsMayThrow(m_compiler) &&
+                                        op2->isEmbeddedMaskingCompatible(m_compiler, tgtMaskSize, tgtSimdBaseType,
                                                                          &broadcastOpIndex))
                                     {
                                         if (tgtSimdBaseType != TYP_UNDEF)
