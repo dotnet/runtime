@@ -10352,10 +10352,9 @@ void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 //
 void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
-    // Copies no larger than this are handed to CORINFO_HELP_BULK_WRITEBARRIER_SMALL, which skips the
-    // chunking and the GC poll that the general helper performs. Keep it small enough that the copy
-    // is negligible from a GC suspension latency point of view.
-    const unsigned BULK_WRITEBARRIER_SMALL_SIZE = 512;
+    // Match the managed Release chunk size (Buffer.BulkMoveWithWriteBarrierChunk).
+    // The limits need not stay in sync for correctness; they bound GC suspension latency.
+    const unsigned BULK_WRITEBARRIER_SMALL_SIZE = 0x4000;
 
     assert(blk->OperIs(GT_STORE_BLK));
     assert(blk->GetLayout()->HasGCPtr());
