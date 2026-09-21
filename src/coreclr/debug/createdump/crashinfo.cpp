@@ -5,11 +5,30 @@
 
 typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
 typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
+typedef HRESULT (STDAPICALLTYPE *PFN_CLRDataCreateInstanceFromContractDescriptor)(
+    REFIID iid,
+    ICLRDataTarget* dataTarget,
+    CLRDATA_ADDRESS contractDescriptorAddress,
+    void** iface);
 
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
+
+static HRESULT
+CreateDacInterface(
+    PFN_CLRDataCreateInstance createInstance,
+    PFN_CLRDataCreateInstanceFromContractDescriptor createInstanceFromContractDescriptor,
+    REFIID iid,
+    ICLRDataTarget* dataTarget,
+    CLRDATA_ADDRESS contractDescriptorAddress,
+    void** iface)
+{
+    return createInstanceFromContractDescriptor != nullptr
+        ? createInstanceFromContractDescriptor(iid, dataTarget, contractDescriptorAddress, iface)
+        : createInstance(iid, dataTarget, iface);
+}
 
 CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
@@ -303,11 +322,6 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     }
     ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
-    typedef HRESULT (STDAPICALLTYPE *PFN_CLRDataCreateInstanceFromContractDescriptor)(
-        REFIID iid,
-        ICLRDataTarget* dataTarget,
-        CLRDATA_ADDRESS contractDescriptorAddress,
-        void** iface);
     PFN_CLRDataCreateInstanceFromContractDescriptor pfnCLRDataCreateInstanceFromContractDescriptor = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
@@ -357,31 +371,26 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     }
     pfnCLRDataCreateInstanceFromContractDescriptor =
         (PFN_CLRDataCreateInstanceFromContractDescriptor)dlsym(m_dacModule, "CLRDataCreateInstanceFromContractDescriptor");
-    if (pfnCLRDataCreateInstanceFromContractDescriptor != nullptr)
-    {
-        hr = pfnCLRDataCreateInstanceFromContractDescriptor(
-            __uuidof(ICLRDataEnumMemoryRegions),
-            dataTarget,
-            m_contractDescriptorAddress,
-            (void**)&m_pClrDataEnumRegions);
-    }
-    else
-    {
-        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
-    }
+    hr = CreateDacInterface(
+        pfnCLRDataCreateInstance,
+        pfnCLRDataCreateInstanceFromContractDescriptor,
+        __uuidof(ICLRDataEnumMemoryRegions),
+        dataTarget,
+        m_contractDescriptorAddress,
+        (void**)&m_pClrDataEnumRegions);
     if (FAILED(hr))
     {
         printf_error("InitializeDAC: CreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
-    if (hr == E_NOINTERFACE)
-    {
-        // TODO: [cdac] Add targeted createdump APIs for the IXCLRDataProcess functionality used below
-        // instead of rooting the full SOSDacImpl implementation in the dump collector.
-        m_pClrDataProcess = nullptr;
-    }
-    else if (FAILED(hr))
+    hr = CreateDacInterface(
+        pfnCLRDataCreateInstance,
+        pfnCLRDataCreateInstanceFromContractDescriptor,
+        __uuidof(IXCLRDataProcess),
+        dataTarget,
+        m_contractDescriptorAddress,
+        (void**)&m_pClrDataProcess);
+    if (FAILED(hr))
     {
         printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
@@ -423,9 +432,6 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
 bool
 CrashInfo::EnumerateManagedModules()
 {
-    // TODO: [cdac] The dump collector does not provide IXCLRDataProcess, so createdump cannot
-    // add or rename managed module mappings, include PE header pages through AddModuleInfo,
-    // or record managed module timestamps, image sizes, MVIDs, and main-module identity.
     CLRDATA_ENUM enumModules = 0;
     HRESULT hr = S_OK;
 
@@ -504,9 +510,6 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
-    // TODO: [cdac] The dump collector does not provide IXCLRDataProcess or ISOSDacInterface,
-    // so createdump crash reports omit managed frames, method details, and managed exception
-    // object, type, and HRESULT information. Native frame unwinding still runs.
     // Don't unwind any threads if Native AOT since there isn't a DAC to get the remote
     // unwinder support and they are full dumps.
     if (m_appModel != AppModelType::NativeAOT)

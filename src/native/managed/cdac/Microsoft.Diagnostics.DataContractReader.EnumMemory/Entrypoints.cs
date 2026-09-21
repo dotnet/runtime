@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias LegacyImpl;
+
 using System;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
@@ -43,9 +45,6 @@ internal static class Entrypoints
         if (pIID == null || pDataTarget == IntPtr.Zero)
             return HResults.E_INVALIDARG;
 
-        if (*pIID != IClrDataEnumMemoryRegions)
-            return HResults.COR_E_INVALIDCAST;
-
         try
         {
             ICLRDataTarget dataTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pDataTarget)!;
@@ -62,11 +61,24 @@ internal static class Entrypoints
             if (contractAddress == 0)
                 return HResults.E_FAIL;
 
-            MemoryRegionEnumerator enumerator = new(dataTarget, contractAddress, runtimeModule);
-            *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegions>.ConvertToUnmanaged(enumerator);
-            return 0;
+            if (*pIID == IClrDataEnumMemoryRegions)
+            {
+                MemoryRegionEnumerator enumerator = new(dataTarget, contractAddress, runtimeModule);
+                *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegions>.ConvertToUnmanaged(enumerator);
+                return HResults.S_OK;
+            }
+
+            object legacyTarget =
+                ComInterfaceMarshaller<LegacyImpl::Microsoft.Diagnostics.DataContractReader.Legacy.ICLRDataTarget>
+                    .ConvertToManaged((void*)pDataTarget)!;
+            return LegacyImpl::Microsoft.Diagnostics.DataContractReader.Legacy.SOSDacImpl.CreateInstance(
+                pIID,
+                legacyTarget,
+                contractAddress,
+                legacyImplPtr: IntPtr.Zero,
+                iface);
         }
-        catch (Exception ex)
+        catch (System.Exception ex)
         {
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;

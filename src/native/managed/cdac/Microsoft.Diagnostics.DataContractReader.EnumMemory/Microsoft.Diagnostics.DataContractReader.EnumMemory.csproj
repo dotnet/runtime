@@ -75,6 +75,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\Microsoft.Diagnostics.DataContractReader.Legacy.csproj"
+                      Aliases="LegacyImpl"
+                      GlobalPropertiesToRemove="RuntimeIdentifier" />
   </ItemGroup>
 
   <Target Name="GenerateWindowsVersionResource"
