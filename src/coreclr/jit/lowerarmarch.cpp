@@ -1582,6 +1582,17 @@ bool Lowering::TryLowerSvePredicateBitwiseClear(GenTreeHWIntrinsic* node, NamedI
 
     if ((notNode != nullptr) && op1->IsSveMaskOperand() && op2->IsSveMaskOperand())
     {
+        // Reinterpreting a mask vector can change its element width. Removing the
+        // conversion in that case would not preserve the replicated vector bits.
+        const unsigned simdBaseTypeSize = genTypeSize(node->GetSimdBaseType());
+        if ((op1->OperIsConvertMaskToVector() &&
+             (genTypeSize(op1->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize)) ||
+            (op2->OperIsConvertMaskToVector() &&
+             (genTypeSize(op2->AsHWIntrinsic()->GetSimdBaseType()) != simdBaseTypeSize)))
+        {
+            return false;
+        }
+
         op1 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op1);
         op2 = ConvertSveMaskOperandToMask(BlockRange(), m_compiler, node, op2);
         BlockRange().Remove(notNode);

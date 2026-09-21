@@ -45,6 +45,9 @@ public class PredicateInstructions
             Assert.Equal(Vector.Create<short>(1), AndMaskWithOnes(Vector.Create<short>(3), vecs));
             VectorAndNot(vecs, vecs);
             PredicateBitwiseClearFloat(Vector.Create<float>(1), Vector.Create<float>(2));
+            Assert.Equal(Vector<int>.Zero, PredicateBitwiseClearMixedWidths(veci, Vector.Create<int>(5), vecl, vecl + vecl));
+            Assert.Equal(Vector.Create(-1), PredicateBitwiseClearMixedWidthsReversed(veci, veci, vecl, vecl + vecl));
+            Assert.Equal(Vector.Create(-1), PredicateBitwiseClearReinterpreted(vecl, vecl + vecl));
 
             PredicateCastFloatLoad(s_floatValues, 0, s_floatValues.Length);
             PredicateCastFloatLocalLoad(s_floatValues, 0, s_floatValues.Length);
@@ -225,6 +228,33 @@ public class PredicateInstructions
             Sve.CompareEqual(left, right));
 
         return firstMask & ~secondMask;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearMixedWidths(Vector<int> a, Vector<int> b, Vector<long> c, Vector<long> d)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<int> maskS = Sve.CompareLessThan(a, b);
+        Vector<long> maskD = Sve.CompareLessThan(c, d);
+        return maskS & ~Vector.AsVectorInt32(maskD);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearMixedWidthsReversed(Vector<int> a, Vector<int> b, Vector<long> c, Vector<long> d)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<int> maskS = Sve.CompareLessThan(a, b);
+        Vector<long> maskD = Sve.CompareLessThan(c, d);
+        return ~maskS & Vector.AsVectorInt32(maskD);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static Vector<int> PredicateBitwiseClearReinterpreted(Vector<long> a, Vector<long> b)
+    {
+        //ARM64-FULL-LINE: bic {{v[0-9]+}}.4s, {{v[0-9]+}}.4s, {{v[0-9]+}}.4s
+        Vector<long> firstMask = Sve.CompareLessThan(a, b);
+        Vector<long> secondMask = Sve.CompareGreaterThan(a, b);
+        return Vector.AsVectorInt32(firstMask) & ~Vector.AsVectorInt32(secondMask);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
