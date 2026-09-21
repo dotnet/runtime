@@ -8754,6 +8754,14 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     // We shouldn't have called in here if parentNode doesn't support containment
     assert(HWIntrinsicInfo::SupportsContainment(parentIntrinsicId));
 
+    if ((parentIntrinsicId == NI_AVX512_BlendVariableMask) && childNode->NodeOrContainedOperandsMayThrow(m_compiler))
+    {
+        // The blend itself suppresses faults from unselected memory lanes, even
+        // when we are not embedding another operation under its mask.
+        *supportsRegOptional = false;
+        return false;
+    }
+
     // In general, we can mark the child regOptional as long as it is at least as large as the parent instruction's
     // memory operand size.
     //
@@ -10500,10 +10508,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                     var_types tgtSimdBaseType  = TYP_UNDEF;
                                     size_t    broadcastOpIndex = 0;
 
-                                    // An embedded mask can suppress faults from contained loads, including
-                                    // those nested in broadcasts. Keep such operations unconditional.
-                                    if (!op2->NodeOrContainedOperandsMayThrow(m_compiler) &&
-                                        op2->isEmbeddedMaskingCompatible(m_compiler, tgtMaskSize, tgtSimdBaseType,
+                                    if (op2->isEmbeddedMaskingCompatible(m_compiler, tgtMaskSize, tgtSimdBaseType,
                                                                          &broadcastOpIndex))
                                     {
                                         if (tgtSimdBaseType != TYP_UNDEF)

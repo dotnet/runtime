@@ -19,32 +19,6 @@ public class Runtime_134197
     [InlineData(1, 1)]
     [InlineData(0, 1)]
     [InlineData(0, 0)]
-    public static void TestUnary128(int first, int rest)
-    {
-        Vector128<int> comparison = Vector128.Create(rest).WithElement(0, first);
-        Vector128<int> fallback = Vector128.Create(4);
-        Vector128<int> expected = Vector128.Create(rest == 0 ? 9 : 4).WithElement(0, first == 0 ? 9 : 4);
-        Assert.Equal(expected, Abs128(comparison, new Box<Vector128<int>> { V = Vector128.Create(-9) }, fallback));
-        Assert.Throws<NullReferenceException>(() => Abs128(comparison, null, fallback));
-    }
-
-    [Theory]
-    [InlineData(1, 1)]
-    [InlineData(0, 1)]
-    [InlineData(0, 0)]
-    public static void TestImmediate256(int first, int rest)
-    {
-        Vector256<int> comparison = Vector256.Create(rest).WithElement(0, first);
-        Vector256<int> fallback = Vector256.Create(4);
-        Vector256<int> expected = Vector256.Create(rest == 0 ? 18 : 4).WithElement(0, first == 0 ? 18 : 4);
-        Assert.Equal(expected, Shift256(comparison, new Box<Vector256<int>> { V = Vector256.Create(9) }, fallback));
-        Assert.Throws<NullReferenceException>(() => Shift256(comparison, null, fallback));
-    }
-
-    [Theory]
-    [InlineData(1, 1)]
-    [InlineData(0, 1)]
-    [InlineData(0, 0)]
     public static void TestBinary512(int first, int rest)
     {
         Vector512<int> comparison = Vector512.Create(rest).WithElement(0, first);
@@ -73,13 +47,26 @@ public class Runtime_134197
     [InlineData(1, 1)]
     [InlineData(0, 1)]
     [InlineData(0, 0)]
-    public static void TestZeroing512(int first, int rest)
+    public static void TestDirectLoad128(int first, int rest)
     {
-        Vector512<int> comparison = Vector512.Create(rest).WithElement(0, first);
-        Vector512<int> a = Vector512.Create(3);
-        Vector512<int> expected = Vector512.Create(rest == 0 ? 12 : 0).WithElement(0, first == 0 ? 12 : 0);
-        Assert.Equal(expected, AddZero512(comparison, a, new Box<Vector512<int>> { V = Vector512.Create(9) }));
-        Assert.Throws<NullReferenceException>(() => AddZero512(comparison, a, null));
+        Vector128<int> comparison = Vector128.Create(rest).WithElement(0, first);
+        Vector128<int> fallback = Vector128.Create(4);
+        Vector128<int> expected = Vector128.Create(rest == 0 ? 9 : 4).WithElement(0, first == 0 ? 9 : 4);
+        Assert.Equal(expected, Load128(comparison, new Box<Vector128<int>> { V = Vector128.Create(9) }, fallback));
+        Assert.Throws<NullReferenceException>(() => Load128(comparison, null, fallback));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(0, 1)]
+    [InlineData(0, 0)]
+    public static void TestDirectBroadcast256(int first, int rest)
+    {
+        Vector256<int> comparison = Vector256.Create(rest).WithElement(0, first);
+        Vector256<int> fallback = Vector256.Create(4);
+        Vector256<int> expected = Vector256.Create(rest == 0 ? 9 : 4).WithElement(0, first == 0 ? 9 : 4);
+        Assert.Equal(expected, LoadBroadcast256(comparison, new Box<int> { V = 9 }, fallback));
+        Assert.Throws<NullReferenceException>(() => LoadBroadcast256(comparison, null, fallback));
     }
 
     [ConditionalTheory(typeof(Avx512F), nameof(Avx512F.IsSupported))]
@@ -91,21 +78,13 @@ public class Runtime_134197
         const int Alignment = 64;
         byte* buffer = stackalloc byte[2 * Alignment - 1];
         int* source = (int*)(((nuint)buffer + Alignment - 1) & ~(nuint)(Alignment - 1));
-        Vector512.Create(-9).StoreAligned(source);
+        Vector512.Create(9).StoreAligned(source);
         Vector512<int> comparison = Vector512.Create(rest).WithElement(0, first);
         Vector512<int> fallback = Vector512.Create(4);
         Vector512<int> expected = Vector512.Create(rest == 0 ? 9 : 4).WithElement(0, first == 0 ? 9 : 4);
         Assert.Equal(expected, AlignedLoad512(comparison, source, fallback));
         Assert.Throws<NullReferenceException>(() => AlignedLoad512(comparison, null, fallback));
     }
-
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Vector128<int> Abs128(Vector128<int> comparison, Box<Vector128<int>> b, Vector128<int> fallback) =>
-        Vector128.ConditionalSelect(Vector128.Equals(comparison, Vector128<int>.Zero), Vector128.Abs(b.V), fallback);
-
-    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Vector256<int> Shift256(Vector256<int> comparison, Box<Vector256<int>> b, Vector256<int> fallback) =>
-        Vector256.ConditionalSelect(Vector256.Equals(comparison, Vector256<int>.Zero), b.V << 1, fallback);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static Vector512<int> Add512(Vector512<int> comparison, Vector512<int> a, Box<Vector512<int>> b, Vector512<int> fallback) =>
@@ -116,10 +95,14 @@ public class Runtime_134197
         Vector512.ConditionalSelect(Vector512.Equals(comparison, Vector512<int>.Zero), a + Vector512.Create(b.V), fallback);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-    private static Vector512<int> AddZero512(Vector512<int> comparison, Vector512<int> a, Box<Vector512<int>> b) =>
-        Vector512.ConditionalSelect(Vector512.Equals(comparison, Vector512<int>.Zero), a + b.V, Vector512<int>.Zero);
+    private static Vector128<int> Load128(Vector128<int> comparison, Box<Vector128<int>> b, Vector128<int> fallback) =>
+        Vector128.ConditionalSelect(Vector128.Equals(comparison, Vector128<int>.Zero), b.V, fallback);
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector256<int> LoadBroadcast256(Vector256<int> comparison, Box<int> b, Vector256<int> fallback) =>
+        Vector256.ConditionalSelect(Vector256.Equals(comparison, Vector256<int>.Zero), Vector256.Create(b.V), fallback);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static unsafe Vector512<int> AlignedLoad512(Vector512<int> comparison, int* b, Vector512<int> fallback) =>
-        Vector512.ConditionalSelect(Vector512.Equals(comparison, Vector512<int>.Zero), Avx512F.Abs(Avx512F.LoadAlignedVector512(b)).AsInt32(), fallback);
+        Vector512.ConditionalSelect(Vector512.Equals(comparison, Vector512<int>.Zero), Avx512F.LoadAlignedVector512(b), fallback);
 }
