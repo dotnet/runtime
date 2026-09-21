@@ -90,7 +90,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <exception cref="ArgumentException">The interface details strategy does not provide details for <typeparamref name="TInterface"/>.</exception>
         /// <exception cref="InvalidCastException">The COM representation does not support the interface represented by <typeparamref name="TInterface"/>.</exception>
         /// <remarks>
-        /// The interface identifier is obtained using the strategy returned by <see cref="GetOrCreateInterfaceDetailsStrategy"/>.
         /// The COM representation is cached before querying for the requested interface, even if the query fails.
         /// The requested interface is queried on every call.
         /// </remarks>
