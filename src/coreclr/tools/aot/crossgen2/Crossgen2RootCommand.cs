@@ -150,6 +150,8 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> VerifyGCModeTransitions { get; } =
+            new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
         public Option<bool> StripInliningInfo { get; } =
             new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
         public Option<bool> StripDebugInfo { get; } =
@@ -232,6 +234,7 @@ namespace ILCompiler
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
             Options.Add(VerifyTypeAndFieldLayout);
+            Options.Add(VerifyGCModeTransitions);
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);

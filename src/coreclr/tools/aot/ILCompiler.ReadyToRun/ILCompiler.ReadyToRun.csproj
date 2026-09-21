@@ -248,6 +248,7 @@
     <Compile Include="Compiler\ReadyToRunVisibilityRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunProfilingRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunHardwareIntrinsicRootProvider.cs" />
+    <Compile Include="Compiler\ReadyToRunJitHelperRootProvider.cs" />
     <Compile Include="Compiler\TypeMapAssemblyTargetsNode.cs" />
     <Compile Include="ObjectWriter\MapFileBuilder.cs" />
     <Compile Include="CodeGen\ReadyToRunObjectWriter.cs" />

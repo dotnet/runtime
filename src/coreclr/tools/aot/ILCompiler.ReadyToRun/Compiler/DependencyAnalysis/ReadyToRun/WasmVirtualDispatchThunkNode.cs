@@ -56,7 +56,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        public override int ClassCode => 115732791;
+        // Keep virtual dispatch thunks after compiled methods and the existing Wasm transition thunks.
+        public override int ClassCode => 948271451;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

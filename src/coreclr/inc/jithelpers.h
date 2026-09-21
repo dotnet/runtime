@@ -34,6 +34,7 @@
 #endif
 
 // pfnHelper is set to NULL if it is an unused helper.
+// Changes to the set of JIT helpers should update ReadyToRunJitHelperRootProvider.cs.
 
     JITHELPER(CORINFO_HELP_UNDEF,               NULL,               METHOD__NIL)
 
@@ -301,6 +302,7 @@
 
     JITHELPER(CORINFO_HELP_JIT_PINVOKE_BEGIN,         JIT_PInvokeBegin,     METHOD__NIL)
     JITHELPER(CORINFO_HELP_JIT_PINVOKE_END,           JIT_PInvokeEnd,       METHOD__NIL)
+    JITHELPER(CORINFO_HELP_JIT_RESUME_AFTER_CATCH,    JIT_ResumeAfterCatch, METHOD__NIL)
 
     JITHELPER(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER,                   JIT_ReversePInvokeEnter,                 METHOD__NIL)
     JITHELPER(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, JIT_ReversePInvokeEnterTrackTransitions, METHOD__NIL)
