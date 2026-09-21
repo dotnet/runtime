@@ -2292,7 +2292,7 @@ public class R2RTestSuites
                 Assert.True(payloadSegmentKind == 0, "Expected second segment to be active (kind 0)");
                 int payloadSegmentSizeOffset = payloadSegmentOffset + 1;
                 Assert.True(imageSpan[payloadSegmentSizeOffset] == 0x23, "Expected active payload segment offset to use global.get");
-                uint payloadSegmentOffsetGlobalIndex = DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentSizeOffset + 1), out int globalIndexBytes);
+                ulong payloadSegmentOffsetGlobalIndex = DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentSizeOffset + 1), out int globalIndexBytes);
                 Assert.True(payloadSegmentOffsetGlobalIndex == WebCilObjectWriter.ImageBaseGlobalIndex,
                     $"Expected active payload segment offset to use image base global {WebCilObjectWriter.ImageBaseGlobalIndex}, but got {payloadSegmentOffsetGlobalIndex}");
                 payloadSegmentSizeOffset += 1 + globalIndexBytes;
