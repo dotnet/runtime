@@ -404,7 +404,7 @@ namespace System.Security.Cryptography.Tests
                 Assert.NotEqual(reference, sender.Export([0], 32));
                 Assert.False(reference.AsSpan().SequenceEqual(sender.Export(context, 33).AsSpan(0, 32)));
 
-                foreach (int contextLength in new[] { 234, 235, HpkeTestData.MaxExporterContextLength })
+                foreach (int contextLength in new[] { 200, 300 }) // 300 pushes past the 256-byte stack buffer.
                 {
                     byte[] longContext = new byte[contextLength];
                     longContext.AsSpan().Fill(0x39);

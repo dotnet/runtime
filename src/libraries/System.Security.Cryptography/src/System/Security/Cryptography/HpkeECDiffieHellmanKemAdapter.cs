@@ -106,7 +106,17 @@ namespace System.Security.Cryptography
                 out ECParameters parameters);
 
             parameters.Curve = _curve;
-            return ECDiffieHellman.Create(parameters);
+
+            // Windows reports an invalid EC point as PlatformNotSupportedException. Suite support has already
+            // been validated, so normalize this to the documented invalid-key exception.
+            try
+            {
+                return ECDiffieHellman.Create(parameters);
+            }
+            catch (PlatformNotSupportedException e)
+            {
+                throw new CryptographicException(SR.Cryptography_NotValidPublicOrPrivateKey, e);
+            }
         }
 
         internal override void DeriveKeyPair(ReadOnlySpan<byte> ikm)
