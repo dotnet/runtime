@@ -64,6 +64,22 @@
         "unix-x64"
       ]
     },
+    "openharmony": {},
+    "openharmony-arm": {
+      "#import": [
+        "openharmony"
+      ]
+    },
+    "openharmony-arm64": {
+      "#import": [
+        "openharmony"
+      ]
+    },
+    "openharmony-x64": {
+      "#import": [
+        "openharmony"
+      ]
+    },
     "openbsd": {
       "#import": [
         "unix"
