@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -1490,6 +1491,38 @@ namespace System.Threading.Tests
             }
             Task.WaitAll(threads);
             Assert.Equal(1000*1000, count);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void MemoryBarrierProcessWide_ConcurrentCalls()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+                const int ThreadCount = 4;
+                const int IterationCount = 100;
+
+                using Barrier startBarrier = new Barrier(ThreadCount);
+                Thread[] threads = new Thread[ThreadCount];
+
+                for (int i = 0; i < threads.Length; i++)
+                {
+                    threads[i] = new Thread(() =>
+                    {
+                        startBarrier.SignalAndWait();
+
+                        for (int j = 0; j < IterationCount; j++)
+                        {
+                            Interlocked.MemoryBarrierProcessWide();
+                        }
+                    });
+                    threads[i].Start();
+                }
+
+                foreach (Thread thread in threads)
+                {
+                    thread.Join();
+                }
+            }).Dispose();
         }
 
         // Taking this lock on the same thread repeatedly is very fast because it has no interlocked operations.
