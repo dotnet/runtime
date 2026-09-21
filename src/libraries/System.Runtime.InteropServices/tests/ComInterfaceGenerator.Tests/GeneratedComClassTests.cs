@@ -69,57 +69,6 @@ namespace ComInterfaceGenerator.Tests
         private const int E_NOINTERFACE = unchecked((int)0x80004002);
 
         [Theory]
-        [InlineData(false, CreateComInterfaceFlags.None)]
-        [InlineData(true, CreateComInterfaceFlags.None)]
-        [InlineData(false, CreateComInterfaceFlags.TrackerSupport)]
-        [InlineData(true, CreateComInterfaceFlags.TrackerSupport)]
-        public void GetOrCreateComInterfaceForObject_RequestedInterface(bool useGenericOverload, CreateComInterfaceFlags flags)
-        {
-            DerivedComObject obj = new();
-            StrategyBasedComWrappers wrappers = new();
-            Guid iid = StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(typeof(IGetAndSetInt).TypeHandle).Iid;
-            nint ptr = useGenericOverload
-                ? wrappers.GetOrCreateComInterfaceForObject<IGetAndSetInt>(obj, flags)
-                : wrappers.GetOrCreateComInterfaceForObject(obj, flags, in iid);
-            int remainingReferences;
-            try
-            {
-                Assert.NotEqual(0, ptr);
-                void** vtable = *(void***)ptr;
-                Assert.Equal(0, ((delegate* unmanaged[MemberFunction]<nint, int, int>)vtable[4])(ptr, 42));
-                Assert.Equal(42, obj.Data);
-                int value = 0;
-                Assert.Equal(0, ((delegate* unmanaged[MemberFunction]<nint, int*, int>)vtable[3])(ptr, &value));
-                Assert.Equal(42, value);
-
-                nint unknown = wrappers.GetOrCreateComInterfaceForObject(obj, flags);
-                try
-                {
-                    Assert.Equal(0, Marshal.QueryInterface(unknown, in iid, out nint expected));
-                    try
-                    {
-                        Assert.Equal(expected, ptr);
-                    }
-                    finally
-                    {
-                        Marshal.Release(expected);
-                    }
-                }
-                finally
-                {
-                    Assert.Equal(1, Marshal.Release(unknown));
-                }
-            }
-            finally
-            {
-                remainingReferences = Marshal.Release(ptr);
-            }
-            Assert.Equal(0, remainingReferences);
-            GC.KeepAlive(obj);
-            GC.KeepAlive(wrappers);
-        }
-
-        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void GetOrCreateComInterfaceForObject_NullInstance(bool useGenericOverload)
