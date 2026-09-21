@@ -14,6 +14,12 @@
         "reportgenerator"
       ]
     },
+    "microsoft.dotnet.helix.jobmonitor": {
+      "version": "10.0.0-beta.26461.103",
+      "commands": [
+        "dotnet-helix-job-monitor"
+      ]
+    },
     "microsoft.dotnet.xharness.cli": {
       "version": "11.0.0-prerelease.26461.1",
       "commands": [

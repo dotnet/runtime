@@ -37,6 +37,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -44,11 +46,18 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
+            allowNoHelixJobs: true
 
       #
       # CoreCLR NativeAOT release build and libraries tests
       # Only when CoreCLR or library is changed
       #
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -76,6 +85,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
 
@@ -101,6 +111,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
 
@@ -126,6 +137,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
 
@@ -151,6 +163,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
 
@@ -180,6 +193,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
                   liveLibrariesBuildConfig: Release
@@ -214,6 +228,7 @@ extends:
             postBuildSteps:
               - template: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
                 parameters:
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
                   liveLibrariesBuildConfig: Release

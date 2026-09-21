@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   buildConfig: ''
   osGroup: ''
   osSubgroup: ''
@@ -111,6 +112,7 @@ jobs:
 
       - template: /eng/pipelines/libraries/helix.yml
         parameters:
+          useHelixMonitor: ${{ parameters.useHelixMonitor }}
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           osGroup: ${{ parameters.osGroup }}
           targetRid: ${{ parameters.targetRid }}
