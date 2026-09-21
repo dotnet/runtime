@@ -1845,11 +1845,6 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
             // Call popped these but stack level hasn't been adjusted yet, account for it here
             stackLevelBias -= (int)params.argSize;
         }
-#elif TARGET_ARM64
-        if (m_compiler->lvaLocalIsOnUnknownSizeFrame(lclNum))
-        {
-            return;
-        }
 #endif
 
         // We can't provide an accurate location if the local is allocated on the UnknownSizeFrame.
