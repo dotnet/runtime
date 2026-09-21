@@ -4394,6 +4394,24 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
         BitVecTraits*         m_traits;
         BitVec                m_defExec;
 
+        //------------------------------------------------------------------------
+        // IsIndirProvenNonFaulting: is this an indirection that was proven not to fault only because of
+        //    where it executes (an earlier null check or dereference of the same address), and was therefore
+        //    marked GTF_IND_NONFAULTING | GTF_ORDER_SIDEEFF instead of GTF_EXCEPT?
+        //
+        // Arguments:
+        //    node - the node to check
+        //
+        // Return Value:
+        //    true if the node is such an indirection. Volatile indirections are excluded; they carry
+        //    GTF_ORDER_SIDEEFF for a different reason and must never be hoisted.
+        //
+        static bool IsIndirProvenNonFaulting(GenTree* node)
+        {
+            return node->OperIsIndir() && ((node->gtFlags & GTF_IND_NONFAULTING) != 0) &&
+                   ((node->gtFlags & GTF_IND_VOLATILE) == 0) && ((node->gtFlags & GTF_EXCEPT) == 0);
+        }
+
         bool IsNodeHoistable(GenTree* node)
         {
             // TODO-CQ: This is a more restrictive version of a check that optIsCSEcandidate already does - it allows
@@ -4413,12 +4431,22 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             }
             else if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
             {
-                // If a node has an order side effect, we can't hoist it at all: we don't know what the order
-                // dependence actually is. For example, assertion prop might have determined a node can't throw
-                // an exception, and eliminated the GTF_EXCEPT flag, replacing it with GTF_ORDER_SIDEEFF. We
-                // can't hoist because we might then hoist above the expression that led assertion prop to make
-                // that decision. This can happen in JitOptRepeat, where hoisting can follow assertion prop.
-                return false;
+                // If a node has an order side effect, we generally can't hoist it: we don't know what the order
+                // dependence actually is. For example, morph may have added an explicit null check for the address
+                // of an indirection, or assertion prop may have proved an indirection non-faulting; in both cases
+                // the indirection is marked non-faulting (GTF_IND_NONFAULTING, no GTF_EXCEPT) and gets
+                // GTF_ORDER_SIDEEFF so that it is not reordered above whatever established that it cannot fault.
+                //
+                // The one case we do understand is that indirection: it is exactly a possibly-faulting load whose
+                // fault-freedom depends on its position. It is safe to hoist it under the same constraints that
+                // apply to a possibly-faulting indirection, which PostOrderVisit enforces by treating
+                // GTF_ORDER_SIDEEFF like GTF_EXCEPT when the m_canHoistSideEffects ordering constraint is checked.
+                // Since local assertion prop runs during morph, this is the common shape of an invariant field load
+                // in a loop; refusing it here would leave such loads in the loop.
+                if (!IsIndirProvenNonFaulting(node))
+                {
+                    return false;
+                }
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
@@ -4752,10 +4780,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     {
                         // For now, we give up on an expression that might raise an exception if it is after the
                         // first possible global side effect (and we assume we're after that if we're not in the first
-                        // block).
+                        // block). An indirection that was proven non-faulting because of its position (see
+                        // IsIndirProvenNonFaulting) has the same constraint: moving it earlier could make it fault.
                         // TODO-CQ: this is when we might do loop cloning.
                         //
-                        if ((tree->gtFlags & GTF_EXCEPT) != 0)
+                        if ((tree->gtFlags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) != 0)
                         {
                             INDEBUG(failReason = "side effect ordering constraint";)
                             treeIsHoistable = false;
