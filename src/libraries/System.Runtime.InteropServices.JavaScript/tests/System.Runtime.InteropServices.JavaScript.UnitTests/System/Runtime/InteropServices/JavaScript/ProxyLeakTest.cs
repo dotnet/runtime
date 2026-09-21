@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -183,6 +184,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         public Task JSExportWithPromiseArgument_DoesNotLeakProxies(string exportName, bool settled)
             => AssertNoLeak(count => JavaScriptTestHelper.InvokeExportWithPromiseNTimes(exportName, count, settled));
 
+        // CoreCLR only: its BindAssemblyExports marshals the failure back as a managed exception,
+        // while on Mono a missing assembly trips a native assert that aborts the runtime, leaving
+        // managed code nothing to catch.
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
         public Task FailingGetAssemblyExports_DoesNotLeakProxies()
             => AssertNoLeak(async count =>
@@ -193,5 +197,46 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                     Assert.DoesNotContain("resolved", result);
                 }
             });
+    }
+
+    // Separate from ProxyLeakTest because it counts managed PromiseHolders rather than JS proxies.
+    // That table is per-context and released explicitly, so it needs neither a forced collection
+    // nor a single-threaded runtime to settle.
+    public class PromiseHolderLeakTest : JSInteropTestBase, IAsyncLifetime
+    {
+        private const int Iterations = 100;
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = "get_PromiseHolderCount")]
+        private static extern int GetPromiseHolderCount(JSFunctionBinding binding);
+
+        private static async Task ThrowNTimes(int count)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                try
+                {
+                    // the JS side throws instead of returning a Promise, so the eagerly created
+                    // holder is never handed over
+                    await JavaScriptTestHelper.ThrowBeforePromise();
+                    Assert.Fail("expected the JS side to throw");
+                }
+                catch (JSException)
+                {
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ThrowingAsyncImport_DoesNotLeakHolders()
+        {
+            // warm up the binding so its one-time allocations are not counted
+            await ThrowNTimes(1);
+
+            int before = GetPromiseHolderCount(null);
+            await ThrowNTimes(Iterations);
+            int after = GetPromiseHolderCount(null);
+
+            Assert.True(after <= before, $"promise holders before: {before}, after: {after}");
+        }
     }
 }

@@ -40,6 +40,9 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [JSImport("reject", "JavaScriptTestHelper")]
         public static partial Task Reject([JSMarshalAs<JSType.Any>] object what);
 
+        [JSImport("throwBeforePromise", "JavaScriptTestHelper")]
+        internal static partial Task ThrowBeforePromise();
+
         [JSImport("intentionallyMissingImport", "JavaScriptTestHelper")]
         public static partial void IntentionallyMissingImport();
 

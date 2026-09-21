@@ -565,6 +565,11 @@ export function reject(what) {
     return new Promise((_, reject) => globalThis.setTimeout(() => reject(what), 0));
 }
 
+// throws instead of returning a Promise, so the pre-created Task is never adopted
+export function throwBeforePromise() {
+    throw new Error("intentionally thrown before returning a promise");
+}
+
 let setTimeoutHit = false;
 let promiseThenHit = false;
 export function beforeYield() {
