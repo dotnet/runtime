@@ -79,10 +79,22 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.IsByRefLike; }
         }
 
+        public override bool IsConstructedGenericType
+        {
+            get { return _typeInfo.IsConstructedGenericType; }
+        }
+
         public override bool IsEnum
         {
             get { return _typeInfo.IsEnum; }
         }
+
+#if NET
+        public override bool IsFunctionPointer
+        {
+            get { return _typeInfo.IsFunctionPointer; }
+        }
+#endif
 
         public override bool IsGenericParameter
         {
@@ -120,6 +132,28 @@ namespace System.Reflection.Context.Delegation
         public override bool IsSerializable
         {
             get { return _typeInfo.IsSerializable; }
+        }
+
+        public override bool IsSZArray
+        {
+            get { return _typeInfo.IsSZArray; }
+        }
+
+        public override bool IsTypeDefinition
+        {
+            get { return _typeInfo.IsTypeDefinition; }
+        }
+
+#if NET
+        public override bool IsUnmanagedFunctionPointer
+        {
+            get { return _typeInfo.IsUnmanagedFunctionPointer; }
+        }
+#endif
+
+        public override MemberTypes MemberType
+        {
+            get { return _typeInfo.MemberType; }
         }
 
         public override int MetadataToken
@@ -235,6 +269,23 @@ namespace System.Reflection.Context.Delegation
         {
             return _typeInfo.GetEvents();
         }
+
+#if NET
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            return _typeInfo.GetFunctionPointerCallingConventions();
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            return _typeInfo.GetFunctionPointerParameterTypes();
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            return _typeInfo.GetFunctionPointerReturnType();
+        }
+#endif
 
         public override Type[] GetGenericArguments()
         {

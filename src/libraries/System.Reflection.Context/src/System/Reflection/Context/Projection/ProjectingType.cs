@@ -90,6 +90,23 @@ namespace System.Reflection.Context.Projection
             return _projector.Project(base.GetEvents(), _projector.ProjectEvent);
         }
 
+#if NET
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            return _projector.Project(base.GetFunctionPointerCallingConventions(), _projector.ProjectType);
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            return _projector.Project(base.GetFunctionPointerParameterTypes(), _projector.ProjectType);
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            return _projector.ProjectType(base.GetFunctionPointerReturnType());
+        }
+#endif
+
         public override Type[] GetGenericArguments()
         {
             return _projector.Project(base.GetGenericArguments(), _projector.ProjectType);
