@@ -816,16 +816,17 @@ session_stopping (EventPipeSessionID id)
 	EP_LOCK_ENTER (section1)
 		if (is_session_id_in_collection (id)) {
 			prev_rundown_session = ep_thread_get_rundown_session (thread);
-			ep_thread_set_rundown_session (thread, (EventPipeSession *)(uintptr_t)id);
+			ep_thread_set_as_rundown_thread (thread, (EventPipeSession *)(uintptr_t)id);
 			bound = true;
 		}
 	EP_LOCK_EXIT (section1)
 
 	if (bound) {
-		ep_rt_session_stopping (id);
+		ep_rt_session_stopping ();
 
 		EP_LOCK_ENTER (section2)
-			ep_thread_set_rundown_session (thread, prev_rundown_session);
+			ep_thread_set_as_rundown_thread (thread, prev_rundown_session);
+			bound = false;
 		EP_LOCK_EXIT (section2)
 	}
 
@@ -833,6 +834,9 @@ ep_on_exit:
 	return;
 
 ep_on_error:
+	// The restore lock could not be acquired; unbind anyway rather than leave the thread scoped to a session.
+	if (bound)
+		ep_thread_set_as_rundown_thread (thread, prev_rundown_session);
 	ep_exit_error_handler ();
 }
 #else

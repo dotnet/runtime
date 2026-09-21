@@ -175,7 +175,7 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 }
 
 void
-ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
+ep_rt_coreclr_session_stopping (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 #if defined(FEATURE_PGO) && defined(PERFTRACING_DISABLE_THREADS)
@@ -194,8 +194,6 @@ ep_rt_coreclr_session_stopping (EventPipeSessionID session_id)
 		EX_CATCH { }
 		EX_END_CATCH
 	}
-#else
-	(void)session_id;
 #endif // FEATURE_PGO && PERFTRACING_DISABLE_THREADS
 }
 
