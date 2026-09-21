@@ -2274,7 +2274,8 @@ public class R2RTestSuites
                 // | (ULEB) segment size
                 // | (byte*) content - 2 little endian u32 (payloadsize, tablesize)
                 // Webcil payload
-                // | (segment kind) (1, passive)
+                // | (segment kind) (0, active)
+                // | (init expr) global.get __memory_base
                 // | (ULEB) segment size
                 // | (byte*) content - webcil data, aligned
 
@@ -2288,9 +2289,17 @@ public class R2RTestSuites
 
                 int payloadSegmentOffset = firstSegmentOffset + 1 + firstSegmentSizeBytes + firstSegmentSize;
                 int payloadSegmentKind = imageSpan[payloadSegmentOffset];
-                Assert.True(payloadSegmentKind == 1, "Expected second segment to be passive (kind 1)");
-                int payloadSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentOffset + 1), out int payloadSegmentSizeBytes);
-                int payloadContentOffset = payloadSegmentOffset + 1 + payloadSegmentSizeBytes;
+                Assert.True(payloadSegmentKind == 0, "Expected second segment to be active (kind 0)");
+                int payloadSegmentSizeOffset = payloadSegmentOffset + 1;
+                Assert.True(imageSpan[payloadSegmentSizeOffset] == 0x23, "Expected active payload segment offset to use global.get");
+                uint payloadSegmentOffsetGlobalIndex = DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentSizeOffset + 1), out int globalIndexBytes);
+                Assert.True(payloadSegmentOffsetGlobalIndex == WebCilObjectWriter.ImageBaseGlobalIndex,
+                    $"Expected active payload segment offset to use image base global {WebCilObjectWriter.ImageBaseGlobalIndex}, but got {payloadSegmentOffsetGlobalIndex}");
+                payloadSegmentSizeOffset += 1 + globalIndexBytes;
+                Assert.True(imageSpan[payloadSegmentSizeOffset] == 0x0B, "Expected active payload segment offset expression to end before payload size");
+                payloadSegmentSizeOffset++;
+                int payloadSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentSizeOffset), out int payloadSegmentSizeBytes);
+                int payloadContentOffset = payloadSegmentSizeOffset + payloadSegmentSizeBytes;
                 Assert.True(payloadContentOffset % WebCilObjectWriter.WebcilSectionAlignment == 0,
                     $"Expected payload content to be aligned to {WebCilObjectWriter.WebcilSectionAlignment} bytes, but got offset {payloadContentOffset}");
                 Assert.True(payloadContentOffset + payloadSegmentSize == offset + sectionSize + 1 + sectionSizeBytes,
