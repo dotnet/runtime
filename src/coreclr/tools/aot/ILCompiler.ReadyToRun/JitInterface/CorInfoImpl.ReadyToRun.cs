@@ -1039,6 +1039,9 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
+                // There is no R2R helper for the raw worker, so fall back to the chunking wrapper.
+                // It is a superset of the raw worker, so this is always correct.
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
 
