@@ -77,10 +77,11 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
     {
         if (!strcmp(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
-        if (!strcmp(className, "Vector") && !strcmp(methodName, "MinNative"))
-            return NI_System_Math_MinNative;
-        if (!strcmp(className, "Vector") && !strcmp(methodName, "MaxNative"))
-            return NI_System_Math_MaxNative;
+        if (!strcmp(className, "Vector") &&
+            (!strcmp(methodName, "MinNative") || !strcmp(methodName, "MaxNative")))
+        {
+            return compMethod == method ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+        }
 
         // Fall back to managed implementation for everything else.
         return NI_Illegal;
@@ -90,10 +91,11 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
         // Vector128<T> etc
         if (HAS_PREFIX(className, "Vector") && !strcmp(methodName, "get_IsHardwareAccelerated"))
             return NI_IsSupported_False;
-        if (HAS_PREFIX(className, "Vector") && !strcmp(methodName, "MinNative"))
-            return NI_System_Math_MinNative;
-        if (HAS_PREFIX(className, "Vector") && !strcmp(methodName, "MaxNative"))
-            return NI_System_Math_MaxNative;
+        if (HAS_PREFIX(className, "Vector") &&
+            (!strcmp(methodName, "MinNative") || !strcmp(methodName, "MaxNative")))
+        {
+            return compMethod == method ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
+        }
 
         // Fall back to managed implementation for everything else.
         return NI_Illegal;

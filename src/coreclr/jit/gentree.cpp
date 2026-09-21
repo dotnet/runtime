@@ -20642,7 +20642,7 @@ bool Compiler::IsValidForShuffle(
 
     if (simdSize == 32)
     {
-        if (!compShuffleDependsOn(InstructionSet_AVX2, isShuffleNative))
+        if (!compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
         {
             // While we could accelerate some functions on hardware with only AVX support
             // it's likely not worth it overall given that IsHardwareAccelerated reports false
@@ -20651,7 +20651,7 @@ bool Compiler::IsValidForShuffle(
     }
     else if (simdSize == 64)
     {
-        if (varTypeIsByte(simdBaseType) && !compShuffleDependsOn(InstructionSet_AVX512v2, isShuffleNative))
+        if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
         {
             // TYP_BYTE, TYP_UBYTE need AVX512v2.
             return false;
@@ -28805,7 +28805,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         canUseSignedComparisonHint = true;
     }
     else if ((elementSize == 1) && (simdSize == 32) &&
-             compShuffleDependsOn(InstructionSet_AVX512v2, isShuffleNative))
+             compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
     {
         NamedIntrinsic intrinsic = NI_AVX512v2_PermuteVar32x8;
 
@@ -28813,7 +28813,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
         retNode->SetReverseOp();
     }
-    else if ((elementSize == 2) && compShuffleDependsOn(InstructionSet_AVX512, isShuffleNative))
+    else if ((elementSize == 2) && compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative))
     {
         NamedIntrinsic intrinsic = (simdSize == 16) ? NI_AVX512_PermuteVar8x16 : NI_AVX512_PermuteVar16x16;
 
@@ -28821,7 +28821,8 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
         retNode->SetReverseOp();
     }
-    else if ((elementSize == 4) && ((simdSize == 32) || compShuffleDependsOn(InstructionSet_AVX, isShuffleNative)))
+    else if ((elementSize == 4) &&
+             ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
     {
         assert((simdSize == 16) || (simdSize == 32));
 
@@ -28859,7 +28860,8 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         assert(((elementSize == 1) && (simdSize == 32)) || (elementSize == 2) ||
                ((elementSize == 4) && (simdSize == 16)) || (elementSize == 8));
 
-        if ((elementSize == 8) && ((simdSize == 32) || compShuffleDependsOn(InstructionSet_AVX, isShuffleNative)))
+        if ((elementSize == 8) &&
+            ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
         {
             assert((simdSize == 16) || (simdSize == 32));
             if (simdSize == 32)

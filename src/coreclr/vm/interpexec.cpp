@@ -37,16 +37,6 @@ static inline void CompilerBarrier()
     std::atomic_signal_fence(std::memory_order_acq_rel);
 }
 
-template <typename T>
-static void MinMaxNative(T* destination, const T* left, const T* right, unsigned count, bool isMax)
-{
-    for (unsigned index = 0; index < count; index++)
-    {
-        destination[index] = (isMax ? left[index] > right[index] : left[index] < right[index])
-            ? left[index] : right[index];
-    }
-}
-
 struct InterpDispatchCacheEntry
 {
     // MethodTable of the calling object
@@ -4492,19 +4482,41 @@ do                                                                      \
                     INTOP_NEXT;
                 }
 
-                INTOP_CASE(INTOP_MINMAX_NATIVE_R4)
+                // Native min/max permits hardware-dependent NaN and signed-zero results, so these
+                // operations make no effort to match the JIT's target-specific result.
+                INTOP_CASE(INTOP_MAX_NATIVE_R4)
                 {
-                    MinMaxNative(LOCAL_VAR_ADDR(ip[1], float), LOCAL_VAR_ADDR(ip[2], float),
-                                 LOCAL_VAR_ADDR(ip[3], float), ip[4], ip[5] != 0);
-                    ip += 6;
+                    float left = LOCAL_VAR(ip[2], float);
+                    float right = LOCAL_VAR(ip[3], float);
+                    LOCAL_VAR(ip[1], float) = left > right ? left : right;
+                    ip += 4;
                     INTOP_NEXT;
                 }
 
-                INTOP_CASE(INTOP_MINMAX_NATIVE_R8)
+                INTOP_CASE(INTOP_MAX_NATIVE_R8)
                 {
-                    MinMaxNative(LOCAL_VAR_ADDR(ip[1], double), LOCAL_VAR_ADDR(ip[2], double),
-                                 LOCAL_VAR_ADDR(ip[3], double), ip[4], ip[5] != 0);
-                    ip += 6;
+                    double left = LOCAL_VAR(ip[2], double);
+                    double right = LOCAL_VAR(ip[3], double);
+                    LOCAL_VAR(ip[1], double) = left > right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MIN_NATIVE_R4)
+                {
+                    float left = LOCAL_VAR(ip[2], float);
+                    float right = LOCAL_VAR(ip[3], float);
+                    LOCAL_VAR(ip[1], float) = left < right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MIN_NATIVE_R8)
+                {
+                    double left = LOCAL_VAR(ip[2], double);
+                    double right = LOCAL_VAR(ip[3], double);
+                    LOCAL_VAR(ip[1], double) = left < right ? left : right;
+                    ip += 4;
                     INTOP_NEXT;
                 }
 

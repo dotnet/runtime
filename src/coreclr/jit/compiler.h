@@ -5418,8 +5418,7 @@ protected:
     GenTree* impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
-                                  NamedIntrinsic        intrinsicName,
-                                  bool                  mustExpand);
+                                  NamedIntrinsic        intrinsicName);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
@@ -5456,12 +5455,6 @@ protected:
     GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
-    // Use exact dependencies for ISA choices that change native shuffle results.
-    bool compShuffleDependsOn(CORINFO_InstructionSet isa, bool isNonDeterministic) const
-    {
-        return isNonDeterministic ? compExactlyDependsOn(isa, true) : compOpportunisticallyDependsOn(isa);
-    }
-
     bool IsValidForShuffle(GenTree* indices,
                            unsigned simdSize,
                            var_types simdBaseType,
@@ -10944,7 +10937,7 @@ public:
     bool compExactlyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-        // ISA usage for non deterministic intrinsisc always notifies the EE regardless of the cache, to make sure
+        // ISA usage for non-deterministic intrinsics always notifies the EE regardless of the cache, to make sure
         // that the method preserves a negative ISA prerequisite.
         if (preserveNegativeDependency || (opts.compSupportsISAReported.HasInstructionSet(isa) == false))
         {
@@ -10961,11 +10954,11 @@ public:
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will match the target machine if the result is true.
     // If the result is false, then the target machine may have support for the instruction.
-    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
+    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
-        if (opts.compSupportsISA.HasInstructionSet(isa))
+        if (preserveNegativeDependency || opts.compSupportsISA.HasInstructionSet(isa))
         {
-            return compExactlyDependsOn(isa);
+            return compExactlyDependsOn(isa, preserveNegativeDependency);
         }
         else
         {

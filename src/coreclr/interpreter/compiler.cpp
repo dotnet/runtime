@@ -3735,45 +3735,31 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
         case NI_System_Math_MinNative:
         case NI_System_Math_MaxNative:
         {
-            bool isVector = sig.retType == CORINFO_TYPE_VALUECLASS;
-            if (isVector && !mustExpand)
-            {
-                return false;
-            }
-
             CHECK_STACK(2);
-            assert(!isVector || sig.sigInst.methInstCount == 1);
-            CorInfoType elementType = isVector ? m_compHnd->asCorInfoType(sig.sigInst.methInst[0]) : sig.retType;
+            CorInfoType elementType = sig.retType;
             if (elementType != CORINFO_TYPE_FLOAT && elementType != CORINFO_TYPE_DOUBLE)
             {
                 goto FAIL_TO_EXPAND_INTRINSIC;
             }
-
             InterpType type = GetInterpType(elementType);
-            int elementSize = elementType == CORINFO_TYPE_FLOAT ? sizeof(float) : sizeof(double);
-            int size = isVector ? m_compHnd->getClassSize(sig.retTypeClass) : elementSize;
-            assert(size >= elementSize && size % elementSize == 0);
-            if (!isVector)
-            {
-                ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-2], g_stackTypeFromInterpType[type]);
-                ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-1], g_stackTypeFromInterpType[type]);
-            }
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-2], g_stackTypeFromInterpType[type]);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-1], g_stackTypeFromInterpType[type]);
 
             int32_t left = m_pStackPointer[-2].var;
             int32_t right = m_pStackPointer[-1].var;
             m_pStackPointer -= 2;
-            AddIns(elementType == CORINFO_TYPE_FLOAT ? INTOP_MINMAX_NATIVE_R4 : INTOP_MINMAX_NATIVE_R8);
-            m_pLastNewIns->SetSVars2(left, right);
-            m_pLastNewIns->data[0] = size / elementSize;
-            m_pLastNewIns->data[1] = ni == NI_System_Math_MaxNative;
-            if (isVector)
+            int32_t opcode;
+            if (elementType == CORINFO_TYPE_FLOAT)
             {
-                PushTypeVT(sig.retTypeClass, size);
+                opcode = ni == NI_System_Math_MaxNative ? INTOP_MAX_NATIVE_R4 : INTOP_MIN_NATIVE_R4;
             }
             else
             {
-                PushInterpType(type, NULL);
+                opcode = ni == NI_System_Math_MaxNative ? INTOP_MAX_NATIVE_R8 : INTOP_MIN_NATIVE_R8;
             }
+            AddIns(opcode);
+            m_pLastNewIns->SetSVars2(left, right);
+            PushInterpType(type, NULL);
             m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
             return true;
         }
@@ -3810,6 +3796,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
         case NI_System_Math_ReciprocalSqrtEstimate:
+            FALLTHROUGH;
+
         case NI_System_Math_Sqrt:
         {
             CHECK_STACK(1);
@@ -3840,7 +3828,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pStackPointer--;
             InterpType estimateType = GetInterpType(sig.retType);
             ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[0], g_stackTypeFromInterpType[estimateType]);
-
             int32_t argumentVar = m_pStackPointer[0].var;
 
             if (estimateType == InterpTypeR4)
