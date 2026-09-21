@@ -163,10 +163,23 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2070", nameof(Type.GetMethod), "input", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2070", nameof(Type.GetMethod), "input")]
             static void DeconstructTupleLiteralUnannotated(Type input)
             {
                 (var type, var methodName) = (input, nameof(string.ToString));
+                type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "The nested switch expression is materialized as a ValueTuple.")]
+            static void DeconstructTupleLiteralWithSwitchTupleElement(string value)
+            {
+                ((string methodName, Type type), object instance) = (
+                    value switch
+                    {
+                        "string" => (nameof(string.ToString), typeof(string)),
+                        _ => (nameof(object.ToString), typeof(object))
+                    },
+                    new object());
                 type.GetMethod(methodName);
             }
 
@@ -235,7 +248,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
             static void DeconstructCoalescedTuple(bool condition)
             {
                 (string, Type)? tuple = condition
@@ -247,8 +260,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080")]
-            [ExpectedWarning("IL2080", Tool.Trimmer, "Ref conditional produces one warning for each possible tuple reference.")]
+            [ExpectedWarning("IL2080", ".Item2")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer, "Ref conditional produces one warning for each possible tuple reference.")]
             [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
             static void DeconstructRefConditionalTuple(bool condition)
             {
@@ -287,7 +300,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     : (input2, new object());
             }
 
-            [ExpectedWarning("IL2080")]
+            [ExpectedWarning("IL2080", ".Item2")]
             static void DeconstructConditionalTupleLocal(bool condition)
             {
                 var tuple = condition
@@ -306,7 +319,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080")]
+            [ExpectedWarning("IL2080", ".Item2")]
             static void DeconstructNestedConditionalTupleLocal(bool condition)
             {
                 var tuple = condition
@@ -316,7 +329,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
             static void DeconstructSwitchTuple(string value)
             {
                 (string methodName, Type type) = value switch
@@ -331,7 +344,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
             static void DeconstructSwitchTupleUnannotated(string value, Type input)
             {
                 string methodName;
@@ -348,7 +361,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
             static void DeconstructSwitchTupleWithThrow(string value)
             {
                 (string methodName, Type type) = value switch
@@ -361,7 +374,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2080", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
             static void DeconstructSwitchOfMixedTupleSources(string value)
             {
                 var objectTuple = (nameof(object.ToString), typeof(object));
@@ -389,7 +402,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 first.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
             static void DeconstructTupleSwap(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
                 Type typeWithoutMethods)
@@ -504,7 +517,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // A discard target (IDiscardOperation) drops the corresponding source value entirely -
             // there's nothing to check dataflow-wise, and it must not affect tracking of the other
             // target in the same deconstruction.
-            [ExpectedWarning("IL2072", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
+            [ExpectedWarning("IL2072")]
             static void DeconstructDiscardTarget()
             {
                 (_, Type type) = (new object(), GetUnannotatedType());
@@ -607,6 +620,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructNestedTuple(((typeof(string), null), null));
                 DeconstructTupleLiteral(typeof(string));
                 DeconstructTupleLiteralUnannotated(typeof(string));
+                DeconstructTupleLiteralWithSwitchTupleElement("string");
                 DeconstructTupleLiteralEvaluatesElements<object>(typeof(object));
                 DeconstructTupleLiteralEvaluatesElementAssignments(typeof(string), typeof(object));
                 DeconstructConditionalTupleEvaluatesElements<object>(false, typeof(string), typeof(object));

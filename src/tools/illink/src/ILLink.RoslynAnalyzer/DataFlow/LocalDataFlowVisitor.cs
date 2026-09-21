@@ -684,20 +684,6 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return sourceValue;
         }
 
-        private DeconstructionValue CreateTopDeconstructionValue(IOperation target)
-        {
-            target = UnwrapDeconstructionTarget(target);
-
-            if (target is not ITupleOperation tuple)
-                return new DeconstructionValue(TopValue);
-
-            var values = ImmutableArray.CreateBuilder<DeconstructionValue>(tuple.Elements.Length);
-            foreach (IOperation element in tuple.Elements)
-                values.Add(CreateTopDeconstructionValue(element));
-
-            return new DeconstructionValue(values.MoveToImmutable());
-        }
-
         private readonly struct DeconstructionValue
         {
             public TValue Value { get; }
@@ -840,6 +826,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             if (source is ITupleOperation sourceTuple &&
                 sourceTuple.Elements.Length == targetTuple.Elements.Length)
             {
+                var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
                 {
                     IOperation sourceElement = UnwrapDeconstructionSource(sourceTuple.Elements[i]);
@@ -854,9 +841,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                         state);
                     if (nestedValue.DoesNotReturn)
                         return DeconstructionValue.NonReturning;
+                    nestedValues.Add(nestedValue);
                 }
 
-                return CreateTopDeconstructionValue(targetTuple);
+                return new DeconstructionValue(nestedValues.MoveToImmutable());
             }
 
             if (sourceType is not INamedTypeSymbol { IsTupleType: true } tupleType ||
