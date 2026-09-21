@@ -584,8 +584,6 @@ namespace ILCompiler
             List<DataFieldDescriptor> nonGcStaticFields = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> gcStaticFields = new List<DataFieldDescriptor>();
             List<DataFieldDescriptor> threadStaticFields = new List<DataFieldDescriptor>();
-            // Unix static declarations discard the field offset, so preserve it for the thread-static storage layout.
-            List<DataFieldDescriptor> threadStaticStorageFields = new List<DataFieldDescriptor>();
             List<StaticDataFieldDescriptor> staticsDescs = new List<StaticDataFieldDescriptor>();
 
             Utf8String nonGcStaticDataName = NodeFactory.NameMangler.NodeMangler.NonGCStatics(type);
@@ -676,11 +674,15 @@ namespace ILCompiler
 
                 if (fieldDesc.IsStatic)
                 {
+                    if (fieldDesc.IsThreadStatic)
+                        threadStaticFields.Add(field);
+                    else if (fieldDesc.HasGCStaticBase)
+                        gcStaticFields.Add(field);
+                    else
+                        nonGcStaticFields.Add(field);
+
                     if (NodeFactory.Target.OperatingSystem != TargetOS.Windows)
                     {
-                        if (fieldDesc.IsThreadStatic)
-                            threadStaticStorageFields.Add(field);
-
                         StaticDataFieldDescriptor staticDesc = new StaticDataFieldDescriptor
                         {
                             StaticOffset = (ulong)fieldOffsetEmit
@@ -704,13 +706,6 @@ namespace ILCompiler
                         fieldsDescs.Add(field);
                         staticsDescs.Add(staticDesc);
                     }
-
-                    if (fieldDesc.IsThreadStatic)
-                        threadStaticFields.Add(field);
-                    else if (fieldDesc.HasGCStaticBase)
-                        gcStaticFields.Add(field);
-                    else
-                        nonGcStaticFields.Add(field);
                 }
                 else
                 {
@@ -726,7 +721,7 @@ namespace ILCompiler
             }
             else
             {
-                EmitThreadStaticFieldRegionType(defType, threadStaticStorageFields);
+                EmitThreadStaticFieldRegionType(defType, threadStaticFields);
             }
 
             DataFieldDescriptor[] fields = new DataFieldDescriptor[fieldsDescs.Count];
