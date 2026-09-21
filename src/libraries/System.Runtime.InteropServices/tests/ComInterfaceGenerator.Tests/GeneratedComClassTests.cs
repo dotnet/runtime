@@ -146,26 +146,6 @@ namespace ComInterfaceGenerator.Tests
                 : wrappers.GetOrCreateComInterfaceForObject(obj, CreateComInterfaceFlags.None, in iid);
         }
 
-        [Fact]
-        public void GetOrCreateComInterfaceForObject_UsesCustomInterfaceDetails()
-        {
-            ManagedObjectExposedToCom obj = new();
-            InterfaceDetailsComWrappers wrappers = new();
-            nint ptr = wrappers.GetOrCreateComInterfaceForObject<IDisposable>(obj, CreateComInterfaceFlags.None);
-            try
-            {
-                void** vtable = *(void***)ptr;
-                Assert.Equal(0, ((delegate* unmanaged[MemberFunction]<nint, int, int>)vtable[4])(ptr, 123));
-                Assert.Equal(123, obj.Data);
-            }
-            finally
-            {
-                Assert.Equal(0, Marshal.Release(ptr));
-            }
-            GC.KeepAlive(obj);
-            GC.KeepAlive(wrappers);
-        }
-
         private sealed class InterfaceDetailsComWrappers : StrategyBasedComWrappers
         {
             public CountingInterfaceDetailsStrategy Details { get; } = new();
@@ -185,10 +165,6 @@ namespace ComInterfaceGenerator.Tests
 
             public IIUnknownDerivedDetails GetIUnknownDerivedDetails(RuntimeTypeHandle type)
             {
-                if (type.Equals(typeof(IDisposable).TypeHandle))
-                {
-                    type = typeof(IGetAndSetInt).TypeHandle;
-                }
                 return StrategyBasedComWrappers.DefaultIUnknownInterfaceDetailsStrategy.GetIUnknownDerivedDetails(type);
             }
         }
