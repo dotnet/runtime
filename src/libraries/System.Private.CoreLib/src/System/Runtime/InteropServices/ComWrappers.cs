@@ -851,15 +851,15 @@ namespace System.Runtime.InteropServices
         public IntPtr GetOrCreateComInterfaceForObject(object instance, CreateComInterfaceFlags flags, in Guid interfaceId)
         {
             IntPtr unknown = GetOrCreateComInterfaceForObject(instance, flags);
-            try
+            int hr = Marshal.QueryInterface(unknown, in interfaceId, out IntPtr result);
+            Marshal.Release(unknown);
+
+            if (Marshal.GetExceptionForHR(hr, new IntPtr(-1)) is Exception exception)
             {
-                Marshal.ThrowExceptionForHR(Marshal.QueryInterface(unknown, in interfaceId, out IntPtr result), new IntPtr(-1));
-                return result;
+                throw exception;
             }
-            finally
-            {
-                Marshal.Release(unknown);
-            }
+
+            return result;
         }
 
         private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
