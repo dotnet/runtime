@@ -2298,7 +2298,7 @@ public sealed unsafe partial class SOSDacImpl
     {
         Debug.Assert(IsJumpRel64(pThunk), "Expected a jump thunk");
 
-        // The immediate follows the 3-byte JMPABS opcode or the 2-byte mov rax opcode.
+        // The immediate follows the 3-byte jmpabs opcode or the 2-byte mov rax opcode.
         return IsJumpAbs64(pThunk)
             ? _target.ReadPointer(pThunk + 3)
             : _target.ReadPointer(pThunk + 2);

@@ -357,16 +357,15 @@ bool isBackToBackJump(PCODE pCode)
     LIMITED_METHOD_CONTRACT;
     PTR_BYTE pbCode = PTR_BYTE(pCode);
 
-    // Check for JMPABS encoding (APX): D5 00 A1 [8 bytes] 90
+    // Check for jmpabs encoding (APX)
     if (0xD5 == pbCode[0] &&
         0x00 == pbCode[1] &&
-        0xA1 == pbCode[2] &&
-        0x90 == pbCode[11])
+        0xA1 == pbCode[2])
     {
         return true;
     }
 
-    // Check for legacy encoding: 48 B8 [8 bytes] FF E0
+    // Check for legacy encoding: mov rax, imm64; jmp rax
     return 0x48 == pbCode[0]  &&
            0xB8 == pbCode[1]  &&
            0xFF == pbCode[10] &&
@@ -381,7 +380,7 @@ PCODE decodeBackToBackJump(PCODE pBuffer)
 
     PTR_BYTE pbCode = PTR_BYTE(pBuffer);
 
-    // JMPABS encoding (APX): D5 00 A1 [8 bytes at offset 3-10]
+    // jmpabs encoding (APX): D5 00 A1 [8 bytes at offset 3-10]
     if (0x00 == pbCode[1])
     {
         return *PTR_UINT64(pBuffer + 3);
@@ -429,9 +428,9 @@ void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 
     if (IsJmpAbsAvailable())
     {
-        // JMPABS (11 bytes) + NOP padding = 12 bytes
+        // jmpabs (11 bytes) + nop padding = 12 bytes
         emitJmpAbsJump(pBufferRX, pBufferRW, target);
-        pBufferRW[11] = 0x90;  // NOP padding
+        pBufferRW[11] = 0x90;  // nop padding
     }
     else
     {
@@ -462,7 +461,7 @@ void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
     }
     CONTRACTL_END;
 
-    // JMPABS instruction (APX):    D5 00 A1 xx xx xx xx xx xx xx xx
+    // jmpabs instruction (APX):    D5 00 A1 xx xx xx xx xx xx xx xx
     pBufferRW[0]  = 0xD5;
     pBufferRW[1]  = 0x00;
     pBufferRW[2]  = 0xA1;
