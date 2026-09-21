@@ -484,7 +484,7 @@ inline TADDR GetSecondArgReg(CONTEXT *context)
 
 extern "C" void* GetCurrentSP();
 
-// true when the APX JMPABS instruction is available; set by EEJitManager::SetCpuInfo() at startup. A DAC global.
+// true when the APX jmpabs instruction is available; set by EEJitManager::SetCpuInfo() at startup. A DAC global.
 GVAL_DECL(bool, g_isJmpAbsAvailable);
 
 inline bool IsJmpAbsAvailable()
@@ -499,7 +499,7 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
 
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
-// Emits raw 11-byte JMPABS instruction (D5 00 A1 + 8-byte immediate)
+// Emits raw 11-byte jmpabs instruction (D5 00 A1 + 8-byte immediate)
 // Caller must ensure IsJmpAbsAvailable() == true.
 void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
