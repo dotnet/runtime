@@ -7708,6 +7708,12 @@ protected:
     // Return true if the tree looks profitable to hoist out of "loop"
     bool optIsProfitableToHoistTree(GenTree* tree, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
+    // Return true if "tree" is a field load whose order side effect is about its object being null-checked first
+    bool optIsOrderConstrainedFieldLoad(GenTree* tree, unsigned* pBaseLclNum = nullptr);
+
+    // Return true if the only exception "tree" can throw is a null reference for an object local
+    bool optIsNullCheckOfLocal(GenTree* tree, unsigned* pBaseLclNum);
+
     // Performs the hoisting "tree" into the PreHeader for "loop"
     void optHoistCandidate(GenTree* tree, BasicBlock* treeBb, FlowGraphNaturalLoop* loop, LoopHoistContext* hoistCtxt, bool defExecuted);
 
