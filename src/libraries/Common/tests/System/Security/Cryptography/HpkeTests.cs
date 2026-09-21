@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests
@@ -51,12 +49,11 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentException>(
                 "ikm",
-                () => Hpke.DeriveKey(
-                    suite,
-                    MemoryMarshal.CreateReadOnlySpan(
-                        ref Unsafe.NullRef<byte>(),
-                        HpkeTestData.MaximumInputSizeInBytes + 1)));
+                () => Hpke.DeriveKey(suite, SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1)));
         }
+
+        private static unsafe ReadOnlySpan<byte> SpanOfLength(int length) =>
+            new ReadOnlySpan<byte>((void*)1, length);
 
         [Fact]
         public static void ImportDecapsulationKey_NullSuite()

@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
 
@@ -1428,8 +1427,8 @@ namespace System.Security.Cryptography.Tests
             return buffer;
         }
 
-        private static ReadOnlySpan<byte> SpanOfLength(int length) =>
-            MemoryMarshal.CreateReadOnlySpan(ref Unsafe.NullRef<byte>(), length);
+        private static unsafe ReadOnlySpan<byte> SpanOfLength(int length) =>
+            new ReadOnlySpan<byte>((void*)1, length);
 
         private static void AssertGuardedOutput(byte[] buffer, byte value)
         {

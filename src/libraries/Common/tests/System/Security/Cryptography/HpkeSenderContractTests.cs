@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Sdk;
 
@@ -492,8 +491,8 @@ namespace System.Security.Cryptography.Tests
             yield return () => sender.Export(ReadOnlySpan<byte>.Empty, new byte[1].AsSpan());
         }
 
-        private static ReadOnlySpan<byte> SpanOfLength(int length) =>
-            MemoryMarshal.CreateReadOnlySpan(ref Unsafe.NullRef<byte>(), length);
+        private static unsafe ReadOnlySpan<byte> SpanOfLength(int length) =>
+            new ReadOnlySpan<byte>((void*)1, length);
 
         private static byte[] Data(int length)
         {
