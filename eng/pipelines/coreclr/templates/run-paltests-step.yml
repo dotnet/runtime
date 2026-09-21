@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
   helixQueues: ''                 # required -- Helix queues
   buildConfig: ''                 # required -- build configuration
@@ -9,6 +10,7 @@ parameters:
 steps:
   - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
     parameters:
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
       displayName: 'Send job to Helix'
       helixBuild: $(Build.BuildNumber)
       helixSource: $(_HelixSource)

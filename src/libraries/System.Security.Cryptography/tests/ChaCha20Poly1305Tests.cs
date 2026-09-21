@@ -480,8 +480,9 @@ namespace System.Security.Cryptography.Tests
             }
             else if (PlatformDetection.IsAzureLinux)
             {
-                // Though Azure Linux uses OpenSSL, they build OpenSSL without ChaCha20-Poly1305.
-                expectedIsSupported = false;
+                // Though Azure Linux uses OpenSSL, Azure Linux 3 built OpenSSL with ChaCha20Poly1305 disabled.
+                // It was re-enabled in Azure Linux 4.
+                expectedIsSupported = PlatformDetection.IsAzureLinux4OrHigher;
             }
             else if (PlatformDetection.OpenSslPresentOnSystem && PlatformDetection.IsOpenSslSupported)
             {

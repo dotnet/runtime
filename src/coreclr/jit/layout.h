@@ -44,6 +44,10 @@ public:
     void CopyNameFrom(ClassLayout* layout, const char* prefix);
 #endif
 
+    static bool               IsArrayTooLarge(Compiler*            compiler,
+                                              CORINFO_CLASS_HANDLE arrayHandle,
+                                              unsigned             length,
+                                              unsigned             maxByteSize);
     static ClassLayoutBuilder BuildArray(Compiler* compiler, CORINFO_CLASS_HANDLE arrayType, unsigned length);
 };
 

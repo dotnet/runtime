@@ -3,6 +3,7 @@
 # These are run as part of runtime-extra-platforms by default.
 
 parameters:
+  useHelixMonitor: false
   isExtraPlatformsBuild: ''
 
 jobs:
@@ -32,6 +33,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Libraries_Release_CoreCLR
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
@@ -56,6 +58,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: NET481_$(_BuildConfig)
             extraHelixArguments: /p:BuildTargetFramework=net481
@@ -100,6 +103,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             condition: >-
@@ -142,6 +146,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             llvmAotStepContainer: linux_x64
             testRunNamePrefixSuffix: Mono_Release
@@ -181,6 +186,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
       extraVariablesTemplates:
@@ -218,6 +224,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
       extraVariablesTemplates:

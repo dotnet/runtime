@@ -219,15 +219,9 @@ namespace System.Net
             string val = header.AsSpan(colon + 1).Trim().ToString();
             if (name.Equals("content-length", StringComparison.OrdinalIgnoreCase))
             {
-                // To match Windows behavior:
-                // Content lengths >= 0 and <= long.MaxValue are accepted as is.
-                // Content lengths > long.MaxValue and <= ulong.MaxValue are treated as 0.
-                // Content lengths < 0 cause the requests to fail.
-                // Other input is a failure, too.
-                long parsedContentLength =
-                    ulong.TryParse(val, out ulong parsedUlongContentLength) ? (parsedUlongContentLength <= long.MaxValue ? (long)parsedUlongContentLength : 0) :
-                    long.Parse(val);
-                if (parsedContentLength < 0 || (_clSet && parsedContentLength != _contentLength))
+                // Match the Windows parser shape: strict decimal parsing, and reject on parse failure.
+                bool success = long.TryParse(val, NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out long parsedContentLength);
+                if (!success || (_clSet && parsedContentLength != _contentLength))
                 {
                     _context.ErrorMessage = "Invalid Content-Length.";
                 }

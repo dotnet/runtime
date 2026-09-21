@@ -1,5 +1,6 @@
 # run Wasm.Build.Tests with a single threading runtime
 parameters:
+  useHelixMonitor: false
   alwaysRun: false
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
@@ -45,6 +46,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)_$(_hostedOs)
             extraHelixArguments: /p:BrowserHost=$(_hostedOs)

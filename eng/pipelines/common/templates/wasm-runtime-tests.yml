@@ -1,4 +1,5 @@
 parameters:
+  useHelixMonitor: false
   alwaysRun: false
   isExtraPlatformsBuild: false
   isWasmOnlyBuild: false
@@ -45,6 +46,7 @@ jobs:
       postBuildSteps:
         - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
           parameters:
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
             testBuildArgs: /p:InstallV8ForTests=false
