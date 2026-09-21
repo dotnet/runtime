@@ -300,7 +300,7 @@ extends:
           platforms: ${{ parameters.cdacDumpPlatforms }}
           jobParameters:
             nameSuffix: CdacBuild
-            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0 /p:UseCdacDumpCollectProvider=true
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0 /p:UseCdacDumpCollectProvider=false
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 180
             postBuildSteps:
