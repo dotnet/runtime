@@ -299,12 +299,19 @@ function resolveExport(exportName) {
 
 // calls a [JSExport] returning a Task. "drop" is the fire-and-forget shape reported in
 // dotnet/runtime#132966, "catch" swallows the rejection without keeping the promise,
-// "await" observes it.
+// "await" observes it, "throws" expects the call itself to throw instead of returning a Task.
 export async function invokeExportAsyncNTimes(exportName, count, mode) {
     const fn = resolveExport(exportName);
     const observed = [];
     for (let i = 0; i < count; i++) {
-        const res = fn();
+        let res;
+        try {
+            res = fn();
+        } catch (ex) {
+            if (mode !== "throws") throw ex;
+            // there is no promise to observe, the eagerly created one had to be released
+            continue;
+        }
         const thenable = res && typeof res.then === "function";
         if (mode === "await" && thenable) {
             observed.push(res.then(() => { }, () => { }));

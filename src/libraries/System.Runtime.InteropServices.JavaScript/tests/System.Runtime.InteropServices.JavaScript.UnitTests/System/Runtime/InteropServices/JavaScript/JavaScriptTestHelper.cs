@@ -590,6 +590,13 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             return Task.FromException(new ArgumentException("ReturnFaultedTask"));
         }
 
+        // throws during the invocation itself, so JS never gets the Task it eagerly created for it
+        [JSExport]
+        internal static Task ThrowBeforeTask()
+        {
+            throw new ArgumentException("ThrowBeforeTask");
+        }
+
         [JSExport]
         internal static void ReturnVoidSynchronously()
         {

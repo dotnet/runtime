@@ -597,7 +597,11 @@ namespace System.Runtime.InteropServices.JavaScript
                             holder.State = null;
 #endif
                         }
-                        ((GCHandle)holder.GCHandle).Free();
+                        // a GCVHandle is a synthetic index, not a real GCHandle, so it must not be freed
+                        if (!IsGCVHandle(holder.GCHandle))
+                        {
+                            ((GCHandle)holder.GCHandle).Free();
+                        }
                     }
 
                     ThreadCsOwnedObjects.Clear();

@@ -74,6 +74,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         [InlineData(nameof(JavaScriptTestHelper.ReturnCompletedTaskOfInt), "drop")]
         [InlineData(nameof(JavaScriptTestHelper.ReturnCompletedTaskOfInt), "await")]
         [InlineData(nameof(JavaScriptTestHelper.ReturnFaultedTask), "catch")]
+        [InlineData(nameof(JavaScriptTestHelper.ThrowBeforeTask), "throws")]
         [InlineData(nameof(JavaScriptTestHelper.ReturnGenuinelyAsyncTask), "drop")]
         [InlineData(nameof(JavaScriptTestHelper.ReturnGenuinelyAsyncTask), "await")]
         [InlineData(nameof(JavaScriptTestHelper.ReturnDelayedTaskOfInt), "drop")]
