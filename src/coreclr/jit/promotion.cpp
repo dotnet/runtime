@@ -778,16 +778,7 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            // Small fields can pack many values into each parameter register, so eagerly
-            // extracting rarely used fields can add substantial work and register pressure.
-            // Wider fields naturally limit the number of extractions per register.
-            // Restrict the credit for small fields with few accesses to target these cases.
-            const weight_t MIN_RELATIVE_ACCESS_WEIGHT = 0.10;
-            bool           allowBitwiseExtraction =
-                !varTypeIsSmall(access.AccessType) ||
-                (access.CountWtd + inducedCountWtd) >= MIN_RELATIVE_ACCESS_WEIGHT * comp->fgFirstBB->getBBWeight(comp);
-            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType,
-                                                   allowBitwiseExtraction))
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -1691,6 +1682,7 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
     , m_aggregates(aggregates)
     , m_liveness(liveness)
     , m_dfsTree(dfsTree)
+    , m_postOrderTraits(dfsTree->PostOrderTraits())
 {
     unsigned index = 0;
     for (AggregateInfo* agg : m_aggregates)
@@ -1701,19 +1693,25 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
         }
     }
 
-    m_readBackTraits = new (m_compiler, CMK_Promotion) BitVecTraits(index, m_compiler);
-    m_blockStates    = new (m_compiler, CMK_Promotion) BlockState[m_compiler->fgBBNumMax + 1]{};
+    m_readBackTraits                 = new (m_compiler, CMK_Promotion) BitVecTraits(index, m_compiler);
+    m_pendingReadBacks               = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
+    m_currentStructFields            = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
+    m_processedBlocks                = BitVecOps::MakeEmpty(&m_postOrderTraits);
+    m_requiresAlreadyReadBackOnEntry = BitVecOps::MakeEmpty(&m_postOrderTraits);
 
     for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
     {
         BasicBlock* block = dfsTree->GetPostOrder(i);
-        m_blockStates[block->bbNum].RequiresAlreadyReadBackOnEntry |= m_compiler->bbIsHandlerBeg(block);
+        if (m_compiler->bbIsHandlerBeg(block))
+        {
+            BitVecOps::AddElemD(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum);
+        }
         block->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
             if (succ->bbPostorderNum >= block->bbPostorderNum)
             {
                 // This includes irreducible backedge targets: their incoming state
                 // must be settled before visiting predecessors later in RPO.
-                m_blockStates[succ->bbNum].RequiresAlreadyReadBackOnEntry = true;
+                BitVecOps::AddElemD(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, succ->bbPostorderNum);
             }
             return BasicBlockVisit::Continue;
         });
@@ -1722,7 +1720,7 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
 
 //------------------------------------------------------------------------
 // StartBlock:
-//   Reconcile predecessor states and restore pending readbacks for this block.
+//   Reconcile predecessor states and restore readback/writeback status for this block.
 //
 // Parameters:
 //   block - The block
@@ -1759,15 +1757,18 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
                 continue;
             }
 
-            bool pending = false;
+            bool pending       = false;
+            bool structCurrent = false;
             if (block == m_compiler->fgFirstBB)
             {
-                pending = dsc->lvIsParam || dsc->lvIsOSRLocal;
+                pending       = dsc->lvIsParam || dsc->lvIsOSRLocal;
+                structCurrent = pending;
             }
-            else if (!m_blockStates[block->bbNum].RequiresAlreadyReadBackOnEntry)
+            else if (!BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, block->bbPostorderNum))
             {
-                bool hasPred = false;
-                pending      = true;
+                bool hasPred  = false;
+                pending       = true;
+                structCurrent = true;
                 for (FlowEdge* edge : block->PredEdges())
                 {
                     BasicBlock* pred = edge->getSourceBlock();
@@ -1776,17 +1777,25 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
                         continue;
                     }
 
-                    BlockState& state = m_blockStates[pred->bbNum];
-                    assert(state.Processed);
+                    assert(BitVecOps::IsMember(&m_postOrderTraits, m_processedBlocks, pred->bbPostorderNum));
                     hasPred = true;
-                    pending &= BitVecOps::IsMember(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex);
+                    pending &= BitVecOps::IsMember(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum],
+                                                   rep.ReadBackIndex);
+                    structCurrent &= BitVecOps::IsMember(m_readBackTraits, m_currentStructFields[pred->bbPostorderNum],
+                                                         rep.ReadBackIndex);
                 }
                 pending &= hasPred;
+                structCurrent &= hasPred;
+            }
+
+            if (structCurrent)
+            {
+                ClearNeedsWriteBack(rep);
             }
 
             if (pending)
             {
-                ClearNeedsWriteBack(rep);
+                assert(structCurrent);
                 SetNeedsReadBack(rep);
             }
             else
@@ -1802,12 +1811,13 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
                         continue;
                     }
 
-                    BlockState& state = m_blockStates[pred->bbNum];
-                    if (state.Processed &&
-                        BitVecOps::IsMember(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex))
+                    if (BitVecOps::IsMember(&m_postOrderTraits, m_processedBlocks, pred->bbPostorderNum) &&
+                        BitVecOps::IsMember(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum],
+                                            rep.ReadBackIndex))
                     {
                         InsertReadBackAtEnd(pred, agg->LclNum, rep);
-                        BitVecOps::RemoveElemD(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex);
+                        BitVecOps::RemoveElemD(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum],
+                                               rep.ReadBackIndex);
                     }
                 }
             }
@@ -1838,24 +1848,26 @@ void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNu
 
 //------------------------------------------------------------------------
 // EndBlock:
-//   Save pending readbacks for successors, materializing them at loop/EH boundaries.
+//   Save readback/writeback status for successors, materializing readbacks at loop/EH boundaries.
 //
 // Remarks:
 //   Field descriptors are reset between visits; the saved state determines
-//   which replacements StartBlock can continue to leave in their struct homes.
+//   which replacements and original fields are current on entry to successors.
 //
 void ReplaceVisitor::EndBlock()
 {
     bool materialize = m_currentBlock->HasPotentialEHSuccs(m_compiler) ||
                        m_currentBlock->KindIs(BBJ_CALLFINALLY, BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
     m_currentBlock->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
-        materialize |= m_blockStates[succ->bbNum].RequiresAlreadyReadBackOnEntry;
+        materialize |= BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, succ->bbPostorderNum);
         return BasicBlockVisit::Continue;
     });
 
-    BlockState& state      = m_blockStates[m_currentBlock->bbNum];
-    state.PendingReadBacks = BitVecOps::MakeEmpty(m_readBackTraits);
-    state.Processed        = true;
+    BitVec& pendingReadBacks    = m_pendingReadBacks[m_currentBlock->bbPostorderNum];
+    pendingReadBacks            = BitVecOps::MakeEmpty(m_readBackTraits);
+    BitVec& currentStructFields = m_currentStructFields[m_currentBlock->bbPostorderNum];
+    currentStructFields         = BitVecOps::MakeEmpty(m_readBackTraits);
+    BitVecOps::AddElemD(&m_postOrderTraits, m_processedBlocks, m_currentBlock->bbPostorderNum);
 
     for (AggregateInfo* agg : m_aggregates)
     {
@@ -1873,7 +1885,7 @@ void ReplaceVisitor::EndBlock()
                     }
                     else
                     {
-                        BitVecOps::AddElemD(m_readBackTraits, state.PendingReadBacks, rep.ReadBackIndex);
+                        BitVecOps::AddElemD(m_readBackTraits, pendingReadBacks, rep.ReadBackIndex);
                     }
                 }
                 else
@@ -1900,6 +1912,13 @@ void ReplaceVisitor::EndBlock()
                 }
 
                 ClearNeedsReadBack(rep);
+            }
+
+            if (!rep.NeedsWriteBack)
+            {
+                // A readback leaves the original current too. Preserve that fact
+                // across blocks until a store to the replacement invalidates it.
+                BitVecOps::AddElemD(m_readBackTraits, currentStructFields, rep.ReadBackIndex);
             }
 
             SetNeedsWriteBack(rep);
@@ -3158,17 +3177,15 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   expected to map to a register.
 //
 // Parameters:
-//   comp                   - Compiler instance
-//   lclNum                 - Local being accessed into
-//   offset                 - Offset being accessed at
-//   accessType             - Type of access
-//   allowBitwiseExtraction - Whether to allow mappings requiring extraction or a register-class change
+//   comp       - Compiler instance
+//   lclNum     - Local being accessed into
+//   offset     - Offset being accessed at
+//   accessType - Type of access
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(
-    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool allowBitwiseExtraction)
+bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
 {
     assert(lclNum < comp->info.compArgsCount);
 
@@ -3197,12 +3214,6 @@ bool Promotion::MapsToParameterRegister(
         }
 
         if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
-        {
-            continue;
-        }
-
-        if (!allowBitwiseExtraction && ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size) ||
-                                        (varTypeUsesIntReg(accessType) != genIsValidIntReg(seg.GetRegister()))))
         {
             continue;
         }

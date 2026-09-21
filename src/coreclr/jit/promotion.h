@@ -155,8 +155,7 @@ class Promotion
 
     static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
-    static bool     MapsToParameterRegister(
-            Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType, bool allowBitwiseExtraction = true);
+    static bool     MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
@@ -250,16 +249,13 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Statement*         m_currentStmt         = nullptr;
     BasicBlock*        m_currentBlock        = nullptr;
 
-    struct BlockState
-    {
-        BitVec PendingReadBacks;
-        bool   Processed;
-        bool   RequiresAlreadyReadBackOnEntry;
-    };
-
     FlowGraphDfsTree* m_dfsTree;
     BitVecTraits*     m_readBackTraits;
-    BlockState*       m_blockStates;
+    BitVecTraits      m_postOrderTraits;
+    BitVec*           m_pendingReadBacks;
+    BitVec*           m_currentStructFields;
+    BitVec            m_processedBlocks;
+    BitVec            m_requiresAlreadyReadBackOnEntry;
 
 public:
     enum
