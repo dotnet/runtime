@@ -3921,23 +3921,18 @@ public:
         return gtNewLoadValueNode(type, nullptr, addr, indirFlags);
     }
 
-    GenTree* gtNewStoreValueNode(var_types    type,
-                                 ClassLayout* layout,
-                                 GenTree*     addr,
-                                 GenTree*     value,
-                                 GenTreeFlags indirFlags = GTF_EMPTY,
-                                 bool         reverseOps = false);
+    GenTree* gtNewStoreValueNode(
+        var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY);
 
     GenTree* gtNewStoreValueNode(
-        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY, bool reverseOps = false)
+        ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
     {
-        return gtNewStoreValueNode(layout->GetType(), layout, addr, value, indirFlags, reverseOps);
+        return gtNewStoreValueNode(layout->GetType(), layout, addr, value, indirFlags);
     }
 
-    GenTree* gtNewStoreValueNode(
-        var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY, bool reverseOps = false)
+    GenTree* gtNewStoreValueNode(var_types type, GenTree* addr, GenTree* value, GenTreeFlags indirFlags = GTF_EMPTY)
     {
-        return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags, reverseOps);
+        return gtNewStoreValueNode(type, nullptr, addr, value, indirFlags);
     }
 
     GenTree* gtNewNullCheck(GenTree* addr);

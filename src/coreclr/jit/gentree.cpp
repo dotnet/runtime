@@ -10593,21 +10593,15 @@ GenTreeStoreInd* Compiler::gtNewStoreIndNode(var_types type, GenTree* addr, GenT
 //    addr       - Destination address
 //    value      - Value to store
 //    indirFlags - Indirection flags
-//    reverseOps - Evaluate value before addr
 //
 // Return Value:
 //    A "STORE_BLK/STORE_IND" node, or "STORE_LCL_VAR" if "addr" points to
 //    a compatible local.
 //
 GenTree* Compiler::gtNewStoreValueNode(
-    var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags, bool reverseOps)
+    var_types type, ClassLayout* layout, GenTree* addr, GenTree* value, GenTreeFlags indirFlags)
 {
     assert((type != TYP_STRUCT) || (layout != nullptr));
-
-    if (reverseOps)
-    {
-        gtPrepareOperandsForReordering(&value, &addr);
-    }
 
     if (((indirFlags & GTF_IND_VOLATILE) == 0) && addr->IsLclVarAddr())
     {
@@ -30122,7 +30116,12 @@ GenTree* Compiler::gtNewSimdStoreNode(
     assert(varTypeIsSIMD(op2));
     assert(getSIMDTypeForSize(simdSize) == op2->TypeGet());
 
-    return gtNewStoreValueNode(op2->TypeGet(), op1, op2, GTF_EMPTY, reverseOps);
+    if (reverseOps)
+    {
+        gtPrepareOperandsForReordering(&op2, &op1);
+    }
+
+    return gtNewStoreValueNode(op2->TypeGet(), op1, op2);
 }
 
 //----------------------------------------------------------------------------------------------
