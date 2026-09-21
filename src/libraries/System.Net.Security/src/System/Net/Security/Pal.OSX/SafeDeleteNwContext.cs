@@ -806,16 +806,11 @@ namespace System.Net.Security
         // it, so the caller can stop cleanly at the end of the handshake.
         private async ValueTask<int> ReadSingleTlsRecordAsync(Memory<byte> buffer, CancellationToken cancellationToken)
         {
-            int read = 0;
-            while (read < TlsFrameHelper.HeaderSize)
+            int read = await TransportStream.ReadAtLeastAsync(
+                buffer.Slice(0, TlsFrameHelper.HeaderSize), TlsFrameHelper.HeaderSize, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+            if (read < TlsFrameHelper.HeaderSize)
             {
-                int bytes = await TransportStream.ReadAsync(buffer.Slice(read, TlsFrameHelper.HeaderSize - read), cancellationToken).ConfigureAwait(false);
-                if (bytes == 0)
-                {
-                    return 0;
-                }
-
-                read += bytes;
+                return 0;
             }
 
             TlsFrameHeader header = default;
@@ -826,16 +821,18 @@ namespace System.Net.Security
                 throw new AuthenticationException(SR.net_frame_read_size);
             }
 
-            while (read < header.Length)
+            int remaining = header.Length - read;
+            if (remaining > 0)
             {
-                int bytes = await TransportStream.ReadAsync(buffer.Slice(read, header.Length - read), cancellationToken).ConfigureAwait(false);
-                if (bytes == 0)
+                int body = await TransportStream.ReadAtLeastAsync(
+                    buffer.Slice(read, remaining), remaining, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (body < remaining)
                 {
                     // Truncated record, surface it to the caller as a transport EOF.
                     return 0;
                 }
 
-                read += bytes;
+                read += body;
             }
 
             return read;

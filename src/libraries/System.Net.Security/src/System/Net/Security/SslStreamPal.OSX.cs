@@ -319,7 +319,7 @@ namespace System.Net.Security
             SafeDeleteContext securityContext,
             ref SslConnectionInfo connectionInfo)
         {
-            string? serverName = connectionInfo.UpdateSslConnectionInfo(securityContext);
+            connectionInfo.UpdateSslConnectionInfo(securityContext, out string? serverName);
             if (serverName is not null && securityContext is SafeDeleteNwContext { IsServer: true } nwContext)
             {
                 nwContext.SetServerTargetHost(serverName);
