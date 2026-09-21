@@ -87,7 +87,7 @@ namespace Mono.Linker.Steps
             }
         }
         readonly HashSet<TypeDefinition> _entireTypesMarked;
-        readonly HashSet<IMemberDefinition> _reflectionVisibleMemberDataFlowInProgress;
+        readonly Stack<IMemberDefinition> _reflectionVisibleMemberDataFlowStack = new();
         DynamicallyAccessedMembersTypeHierarchy? _dynamicallyAccessedMembersTypeHierarchy;
 
         internal DynamicallyAccessedMembersTypeHierarchy DynamicallyAccessedMembersTypeHierarchy
@@ -233,7 +233,6 @@ namespace Mono.Linker.Steps
             _unreachableBodies = new List<(MethodBody, MessageOrigin)>();
             _pending_isinst_instr = new List<(TypeDefinition, MethodBody, Instruction)>();
             _entireTypesMarked = new HashSet<TypeDefinition>();
-            _reflectionVisibleMemberDataFlowInProgress = new HashSet<IMemberDefinition>();
             _compilerGeneratedMethodRequiresScanner = new Dictionary<MethodBody, bool>();
             _typeMapHandler = new TypeMapHandler();
         }
@@ -2052,9 +2051,10 @@ namespace Mono.Linker.Steps
 
         void ProcessGenericArgumentDataFlowForReflectionVisibleMethod(MethodDefinition method, bool suppressTrimAnalysisWarnings)
         {
-            if (!_reflectionVisibleMemberDataFlowInProgress.Add(method))
+            if (_reflectionVisibleMemberDataFlowStack.Contains(method))
                 return;
 
+            _reflectionVisibleMemberDataFlowStack.Push(method);
             try
             {
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
@@ -2069,8 +2069,8 @@ namespace Mono.Linker.Steps
             }
             finally
             {
-                bool removed = _reflectionVisibleMemberDataFlowInProgress.Remove(method);
-                Debug.Assert(removed);
+                Debug.Assert(ReferenceEquals(_reflectionVisibleMemberDataFlowStack.Peek(), method));
+                _reflectionVisibleMemberDataFlowStack.Pop();
             }
         }
 
@@ -2106,9 +2106,10 @@ namespace Mono.Linker.Steps
 
         void ProcessGenericArgumentDataFlowForReflectionVisibleField(FieldDefinition field, bool suppressTrimAnalysisWarnings)
         {
-            if (!_reflectionVisibleMemberDataFlowInProgress.Add(field))
+            if (_reflectionVisibleMemberDataFlowStack.Contains(field))
                 return;
 
+            _reflectionVisibleMemberDataFlowStack.Push(field);
             try
             {
                 // On a reflectable field, perform generic data flow for the field's type
@@ -2118,8 +2119,8 @@ namespace Mono.Linker.Steps
             }
             finally
             {
-                bool removed = _reflectionVisibleMemberDataFlowInProgress.Remove(field);
-                Debug.Assert(removed);
+                Debug.Assert(ReferenceEquals(_reflectionVisibleMemberDataFlowStack.Peek(), field));
+                _reflectionVisibleMemberDataFlowStack.Pop();
             }
         }
 
