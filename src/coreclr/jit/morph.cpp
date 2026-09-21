@@ -11160,10 +11160,16 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
         }
 
         // Fix up the COMMA's type if needed.
-        if (genActualType(parent) != genActualType(commaThrow))
+        var_types parentType = genActualType(parent);
+        if (parentType != genActualType(commaThrow))
         {
-            commaThrow->gtGetOp2()->BashToZeroConst(genActualType(parent));
-            commaThrow->ChangeType(genActualType(parent));
+            if (!GenTree::CanBashToZeroConst(parentType))
+            {
+                return nullptr;
+            }
+
+            commaThrow->gtGetOp2()->BashToZeroConst(parentType);
+            commaThrow->ChangeType(parentType);
         }
 
         return commaThrow;
