@@ -167,6 +167,7 @@ export function bindAssemblyExports(assemblyName: string): Promise<void> {
             if (!error || typeof error.status !== "number") {
                 dotnetBrowserUtilsExports.abortPosix(1, error, true);
             }
+            releaseEagerTaskHolder(promise);
             throw error;
         }
         if (isArgsException(args)) {
