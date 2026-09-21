@@ -50,6 +50,7 @@ public:
     virtual PhaseStatus DoPhase() override;
 
 private:
+    bool ShouldRecordParameterUse(GenTree* node);
     void RecordParameterUse(GenTree* node);
     void ForgetParameterUses(const LIR::ReadOnlyRange& range);
     void RewriteParameterUses();

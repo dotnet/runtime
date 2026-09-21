@@ -292,11 +292,6 @@ ICALL_TYPE(ASSEMN, "System.Reflection.AssemblyName", ASSEMN_1)
 NOHANDLES(ICALL(ASSEMN_1, "FreeAssemblyName", ves_icall_System_Reflection_AssemblyName_FreeAssemblyName))
 NOHANDLES(ICALL(ASSEMN_2, "GetNativeName", ves_icall_System_Reflection_AssemblyName_GetNativeName))
 
-ICALL_TYPE(MCATTR, "System.Reflection.CustomAttribute", MCATTR_1)
-HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal, MonoArray, 1, (MonoObject))
-HANDLES(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal, MonoArray, 3, (MonoObject, MonoReflectionType, MonoBoolean))
-HANDLES(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal, MonoBoolean, 2, (MonoObject, MonoReflectionType))
-
 #ifndef DISABLE_REFLECTION_EMIT
 ICALL_TYPE(CATTRB, "System.Reflection.Emit.CustomAttributeBuilder", CATTRB_1)
 HANDLES(CATTRB_1, "GetBlob", ves_icall_CustomAttributeBuilder_GetBlob, MonoArray, 7, (MonoReflectionAssembly, MonoObject, MonoArray, MonoArray, MonoArray, MonoArray, MonoArray))
@@ -367,6 +362,11 @@ HANDLES(MCMETH_1, "GetGenericMethodDefinition_impl", ves_icall_RuntimeMethodInfo
 HANDLES(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke, MonoObject, 4, (MonoReflectionMethod, MonoObject, gpointer_ref, MonoExceptionOut))
 HANDLES(MCMETH_5, "InvokeClassConstructor", ves_icall_InvokeClassConstructor, void, 1, (MonoQCallTypeHandle))
 HANDLES_REUSE_WRAPPER(MCMETH_4, "get_metadata_token", ves_icall_reflection_get_token)
+
+ICALL_TYPE(MCATTR, "System.Reflection.RuntimeCustomAttribute", MCATTR_1)
+HANDLES(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal, MonoArray, 1, (MonoObject))
+HANDLES(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal, MonoArray, 3, (MonoObject, MonoReflectionType, MonoBoolean))
+HANDLES(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal, MonoBoolean, 2, (MonoObject, MonoReflectionType))
 
 ICALL_TYPE(CATTR_DATA, "System.Reflection.RuntimeCustomAttributeData", CATTR_DATA_1)
 HANDLES(CATTR_DATA_1, "ResolveArgumentsInternal", ves_icall_System_Reflection_RuntimeCustomAttributeData_ResolveArgumentsInternal, void, 6, (MonoReflectionMethod, MonoReflectionAssembly, gpointer, guint32, MonoArrayOut, MonoArrayOut))

@@ -8,6 +8,7 @@ using Xunit;
 
 public class Async2PInvoke
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasm))]
     [Fact]
     public static void TestEntryPoint()
     {

@@ -2184,6 +2184,24 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     assert(node == use.Def());
     switch (node->OperGet())
     {
+        case GT_LCL_FLD:
+            if (use.IsDummyUse())
+            {
+                // This read has not been recorded, so remove it without forgetting it.
+                BlockRange().Remove(node);
+                return Compiler::WALK_CONTINUE;
+            }
+            FALLTHROUGH;
+
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+        case GT_LCL_ADDR:
+            if (m_parameterUses != nullptr)
+            {
+                RecordParameterUse(node);
+            }
+            break;
+
         case GT_CALL:
             // In linear order we no longer need to retain the stores in early
             // args as these have now been sequenced.
@@ -2408,10 +2426,6 @@ Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PreOrderVisit(GenTree**
 // Rewrite HIR nodes into LIR nodes.
 Compiler::fgWalkResult Rationalizer::RationalizeVisitor::PostOrderVisit(GenTree** use, GenTree* user)
 {
-    if ((user != nullptr) || !(*use)->OperIsLocalRead())
-    {
-        m_rationalizer.RecordParameterUse(*use);
-    }
     return m_rationalizer.RewriteNode(use, this->m_ancestors);
 }
 
@@ -2502,6 +2516,42 @@ PhaseStatus Rationalizer::DoPhase()
 }
 
 //------------------------------------------------------------------------
+// ShouldRecordParameterUse:
+//   Check whether a local node reads or kills a register-passed parameter we track.
+//
+// Arguments:
+//   node - The node visited by rationalization.
+//
+// Returns:
+//   True if the node should be recorded.
+//
+bool Rationalizer::ShouldRecordParameterUse(GenTree* node)
+{
+    assert(node->OperIs(GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR));
+
+    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
+    unsigned             lclNum = lcl->GetLclNum();
+    if (lclNum >= m_compiler->info.compArgsCount)
+    {
+        return false;
+    }
+
+    LclVarDsc* param = m_compiler->lvaGetDesc(lclNum);
+    if (param->lvPromoted || (!param->TypeIs(TYP_STRUCT) && !param->lvDoNotEnregister) ||
+        !m_compiler->lvaGetParameterABIInfo(lclNum).HasAnyRegisterSegment())
+    {
+        return false;
+    }
+
+    if (node->OperIs(GT_LCL_FLD) && node->TypeIs(TYP_STRUCT))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // RecordParameterUse:
 //   Save a read or kill of a register-passed parameter in execution order.
 //
@@ -2510,31 +2560,16 @@ PhaseStatus Rationalizer::DoPhase()
 //
 void Rationalizer::RecordParameterUse(GenTree* node)
 {
-    if ((m_parameterUses == nullptr) || !node->OperIs(GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR))
+    assert(m_parameterUses != nullptr);
+
+    if (!ShouldRecordParameterUse(node))
     {
         return;
     }
 
     GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
     unsigned             lclNum = lcl->GetLclNum();
-    if (lclNum >= m_compiler->info.compArgsCount)
-    {
-        return;
-    }
-
-    LclVarDsc* param = m_compiler->lvaGetDesc(lclNum);
-    if (param->lvPromoted || (!param->TypeIs(TYP_STRUCT) && !param->lvDoNotEnregister) ||
-        !m_compiler->lvaGetParameterABIInfo(lclNum).HasAnyRegisterSegment())
-    {
-        return;
-    }
-
-    if (node->OperIs(GT_LCL_FLD) && node->TypeIs(TYP_STRUCT))
-    {
-        return;
-    }
-
-    ParameterUses*& uses = m_parameterUses[lclNum];
+    ParameterUses*&      uses   = m_parameterUses[lclNum];
     if (uses == nullptr)
     {
         uses = new (m_compiler, CMK_ABI) ParameterUses(m_compiler->getAllocator(CMK_ABI));
@@ -2561,24 +2596,25 @@ void Rationalizer::ForgetParameterUses(const LIR::ReadOnlyRange& range)
 
     for (GenTree* node : range)
     {
-        if (!node->OperIs(GT_LCL_FLD, GT_LCL_ADDR) ||
-            (node->AsLclVarCommon()->GetLclNum() >= m_compiler->info.compArgsCount))
+        if (!node->OperIs(GT_LCL_FLD, GT_LCL_ADDR) || !ShouldRecordParameterUse(node))
         {
             continue;
         }
 
         ParameterUses* uses = m_parameterUses[node->AsLclVarCommon()->GetLclNum()];
-        if (uses != nullptr)
+        assert(uses != nullptr);
+
+        INDEBUG(bool found = false);
+        for (ParameterUse& use : uses->Uses.TopDownOrder())
         {
-            for (ParameterUse& use : uses->Uses.TopDownOrder())
+            if (use.Node == node)
             {
-                if (use.Node == node)
-                {
-                    use.Node = nullptr;
-                    break;
-                }
+                use.Node = nullptr;
+                INDEBUG(found = true);
+                break;
             }
         }
+        assert(found);
     }
 }
 
@@ -2601,6 +2637,8 @@ void Rationalizer::RewriteParameterUses()
             continue;
         }
 
+        // If this parameter has any kills then compute the set of basic blocks
+        // where the local was killed on entry.
         if (uses->HasKills)
         {
             if (!haveKilledSet)
@@ -2651,11 +2689,14 @@ void Rationalizer::RewriteParameterUses()
             if (use.Block != currentBlock)
             {
                 currentBlock = use.Block;
-                killed       = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
+                // When starting a new block use the "killed" state we computed
+                // by visiting blocks above
+                killed = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
             }
 
             if (!use.Node->OperIs(GT_LCL_FLD))
             {
+                // Once we see a kill consider all subsequent uses killed
                 killed = true;
             }
             else if (!killed)
@@ -2713,14 +2754,6 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
         return;
     }
 
-    LclVarDsc* param       = m_compiler->lvaGetDesc(fld);
-    var_types  segmentType = regSegment->GetRegisterType(param->TypeIs(TYP_STRUCT) ? param->GetLayout() : nullptr);
-    if ((varTypeIsGC(segmentType) || varTypeIsGC(fld)) && (segmentType != fld->TypeGet()))
-    {
-        // The register local must retain the incoming register's GC reporting type.
-        return;
-    }
-
     JITDUMP("LCL_FLD use [%06u] in " FMT_BB " of parameter V%02u is contained in ", Compiler::dspTreeID(fld),
             block->bbNum, fld->GetLclNum());
     DBEXEC(VERBOSE, regSegment->Dump());
@@ -2746,6 +2779,7 @@ void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
     unsigned remappedLclNum = BAD_VAR_NUM;
     if (existingMapping == nullptr)
     {
+        LclVarDsc* param = m_compiler->lvaGetDesc(fld);
         if (!param->lvDoNotEnregister)
         {
             m_compiler->lvaSetVarDoNotEnregister(fld->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));

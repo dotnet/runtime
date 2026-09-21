@@ -13,6 +13,17 @@ namespace IntelHardwareIntrinsicTest._Avx512F
 {
     public partial class Program
     {
+        [ConditionalTheory(typeof(Avx512F), nameof(Avx512F.IsSupported))]
+        [InlineData(0x3FF0000000000001ul)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void NegateEmbeddedRounding_Double(ulong bits)
+        {
+            Vector512<double> value = Vector512.Create(BitConverter.UInt64BitsToDouble(bits));
+
+            Assert.Equal(Vector512.Create(0xBFF8000000000002ul), (-Avx512F.Multiply(value, Vector512.Create(1.5), FloatRoundingMode.ToPositiveInfinity)).AsUInt64());
+            Assert.Equal(Vector512.Create(0xBFC2492492492494ul), (-Avx512F.Divide(value, Vector512.Create(7.0), FloatRoundingMode.ToPositiveInfinity)).AsUInt64());
+        }
+
         [Fact]
         public static unsafe void ConvertToInt32EmbeddedRounding_Double()
         {

@@ -95,6 +95,18 @@ namespace Microsoft.Interop
             return new SyntaxTokenList(strippedTokens);
         }
 
+        /// <summary>
+        /// Wraps a generated method body in an <c>unsafe</c> block.
+        /// </summary>
+        /// <remarks>
+        /// An <c>unsafe</c> modifier on the containing type makes pointer types legal to name, but it does not
+        /// give the code inside an unsafe context under the updated memory safety rules ("unsafe evolution").
+        /// Generated bodies that dereference pointers, take addresses or call a caller-unsafe API therefore
+        /// establish the context themselves, which is valid under both the legacy and the updated rules.
+        /// </remarks>
+        public static BlockSyntax WrapInUnsafeBlock(this BlockSyntax body)
+            => SyntaxFactory.Block(SyntaxFactory.UnsafeStatement(body));
+
         public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
         {
             if (modifiers.IndexOf(modifierToAdd) >= 0)

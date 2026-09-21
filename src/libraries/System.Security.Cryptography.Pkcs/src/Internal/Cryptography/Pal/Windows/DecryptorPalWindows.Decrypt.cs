@@ -19,23 +19,22 @@ namespace Internal.Cryptography.Pal.Windows
         public sealed override unsafe ContentInfo? TryDecrypt(
             RecipientInfo recipientInfo,
             X509Certificate2? cert,
-            AsymmetricAlgorithm? privateKey,
+            EnvelopedCmsKey privateKey,
             X509Certificate2Collection originatorCerts,
             X509Certificate2Collection extraStore,
             out Exception? exception)
         {
-            Debug.Assert((cert != null) ^ (privateKey != null));
-
-            if (privateKey != null)
+#if NET11_0_OR_GREATER
+            if (recipientInfo.Type == RecipientInfoType.KeyEncapsulation)
             {
-                RSA? key = privateKey as RSA;
+                throw new PlatformNotSupportedException();
+            }
+#endif
 
-                if (key == null)
-                {
-                    exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
-                    return null;
-                }
+            Debug.Assert((cert is not null) ^ (privateKey is not EnvelopedCmsKey.None));
 
+            if (privateKey is RSA key)
+            {
                 ContentInfo contentInfo = _hCryptMsg.GetContentInfo();
                 byte[]? cek = AnyOS.ManagedPkcsPal.ManagedKeyTransPal.DecryptCekCore(
                     cert,
@@ -70,6 +69,11 @@ namespace Internal.Cryptography.Pal.Windows
                         }
                     }
                 }
+            }
+
+            if (privateKey is not EnvelopedCmsKey.None)
+            {
+                throw new PlatformNotSupportedException();
             }
 
             Debug.Assert(recipientInfo != null);

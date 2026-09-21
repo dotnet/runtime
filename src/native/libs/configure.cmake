@@ -8,6 +8,7 @@ include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CMakePushCheckState)
 
 if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
@@ -43,15 +44,6 @@ endif()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
-endif()
-
-# Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
-# the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
-# The compiler raises a warning when using an unsupported API, turn that into an error so check_symbol_exists()
-# can correctly identify whether the API is supported on the target.
-check_c_compiler_flag("-Wunguarded-availability" "C_SUPPORTS_WUNGUARDED_AVAILABILITY")
-if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wunguarded-availability")
 endif()
 
 # in_pktinfo: Find whether this struct exists
@@ -206,10 +198,13 @@ check_symbol_exists(
     unistd.h
     HAVE_PIPE)
 
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 check_symbol_exists(
     pipe2
     unistd.h
     HAVE_PIPE2)
+cmake_pop_check_state()
 
 # close_range is available as a function on FreeBSD 12.2+ and Linux (glibc >= 2.34).
 # On Linux with older glibc it is still accessible via the __NR_close_range syscall number.
