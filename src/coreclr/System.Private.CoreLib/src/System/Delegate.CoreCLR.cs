@@ -212,14 +212,6 @@ namespace System
                 // unmanaged
                 if (IsUnmanagedFunctionPtr)
                     return other.IsUnmanagedFunctionPtr && _methodPtrAux == other._methodPtrAux;
-
-                // Under cached interface dispatch we might see the shared CID_VirtualOpenDelegateDispatch stub.
-                // Fallback to desc comparison in such case for correctness.
-#if !FEATURE_CACHED_INTERFACE_DISPATCH
-                // both delegates are open
-                if (_methodPtrAux == other._methodPtrAux)
-                    return true;
-#endif
             }
 
             // It's possible that the method pointer was JITted in one delegate but not the other.
