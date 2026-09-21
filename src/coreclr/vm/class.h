@@ -1455,7 +1455,6 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         #ifndef DACCESS_COMPILE
-        // Publish the GUID and its generation classification together.
         VolatileStore(&m_pGuidInfo, pGuidInfo);
         #endif // DACCESS_COMPILE
     }
