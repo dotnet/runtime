@@ -1373,7 +1373,8 @@ namespace System.Tests
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,   double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,   double.NaN };
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/133311")]
-                if (!(PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm))
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/134268")]
+                if (!((PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm) || PlatformDetection.IsWasmReadyToRun))
                 {
                     yield return new object[] {  PositiveNaNDouble,          -0.0,                      PositiveNaNDouble };
                     yield return new object[] { -0.0,                        NegativeNaNDouble,          NegativeNaNDouble };
@@ -1577,7 +1578,8 @@ namespace System.Tests
                 yield return new object[] {  double.NaN,                 double.PositiveInfinity,    double.NaN };
                 yield return new object[] {  double.NaN,                 double.NegativeInfinity,    double.NaN };
                 // [ActiveIssue("https://github.com/dotnet/runtime/issues/133311")]
-                if (!(PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm))
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/134268")]
+                if (!((PlatformDetection.IsMonoRuntime && PlatformDetection.IsWasm) || PlatformDetection.IsWasmReadyToRun))
                 {
                     yield return new object[] {  PositiveNaNDouble,          -0.0,                       PositiveNaNDouble };
                     yield return new object[] { -0.0,                        NegativeNaNDouble,           NegativeNaNDouble };
