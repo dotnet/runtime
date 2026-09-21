@@ -3603,6 +3603,16 @@ namespace Internal.JitInterface
                 }
                 _precodeFixups = previouslyStashedFixups;
 
+                // Inlining removes the call that would activate the inlinee's module.
+                // Preserve that dependency even if the module acquires an initializer in a later version.
+                EcmaModule inlineeModule = (inlinee.OwningType as MetadataType)?.Module as EcmaModule;
+                if (inlineeModule is not null &&
+                    inlineeModule != _compilation.TypeSystemContext.SystemModule &&
+                    inlineeModule != (MethodBeingCompiled.OwningType as MetadataType)?.Module)
+                {
+                    classMustBeLoadedBeforeCodeIsRun(inlineeModule.GetGlobalModuleType());
+                }
+
                 // If during inlining we found new inlinees, then if the inline was successful, add them to the set of fixups
                 // for the entire method.
                 HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();

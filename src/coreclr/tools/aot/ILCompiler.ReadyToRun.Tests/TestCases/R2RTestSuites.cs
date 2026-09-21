@@ -66,6 +66,59 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CrossModuleInliningPreservesModuleInitialization(bool composite, bool hasInitializer)
+    {
+        string testName = $"{nameof(CrossModuleInliningPreservesModuleInitialization)}_{composite}_{hasInitializer}";
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = hasInitializer
+                ? ["CrossModuleInlining/Dependencies/InlineableLib.cs", "CrossModuleInlining/Dependencies/ModuleInitializer.cs"]
+                : ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var caller = new CompiledAssembly
+        {
+            AssemblyName = testName,
+            SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
+            References = [inlineableLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            testName,
+            [
+                new(testName,
+                [
+                    new CrossgenAssembly(inlineableLib)
+                    {
+                        Kind = composite ? Crossgen2InputKind.InputAssembly : Crossgen2InputKind.Reference,
+                        Options = composite ? [] : [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                    new CrossgenAssembly(caller),
+                ])
+                {
+                    Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasInlinedMethod(reader, "TestGetValue", "GetValue", out string diagnostic), diagnostic);
+            ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                method => method.SignatureString.Contains("BasicInlining.TestGetValue(", StringComparison.Ordinal));
+            Assert.NotNull(method.Fixups);
+            FixupCell fixup = Assert.Single(method.Fixups,
+                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
+            string signature = fixup.Signature.ToString(new SignatureFormattingOptions());
+            Assert.Equal("<Module> (TYPE_HANDLE)", signature);
+        }
+    }
+
     [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
