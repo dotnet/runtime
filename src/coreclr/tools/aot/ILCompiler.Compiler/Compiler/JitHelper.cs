@@ -80,15 +80,7 @@ namespace ILCompiler
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
                     break;
                 case ReadyToRunHelper.BulkWriteBarrierSmall:
-                    if (context.Target.IsWasm)
-                    {
-                        // Adapt the native worker to the Wasm managed calling convention.
-                        methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrierInternal"u8, null);
-                    }
-                    else
-                    {
-                        mangledName = "RhBulkMoveWithWriteBarrier";
-                    }
+                    mangledName = "RhBulkMoveWithWriteBarrier";
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
