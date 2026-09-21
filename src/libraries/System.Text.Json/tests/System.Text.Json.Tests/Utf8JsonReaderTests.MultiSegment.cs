@@ -1915,6 +1915,73 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [InlineData("t", 1, 0, "t")]
+        [InlineData("nul", 3, 0, "nul")]
+        [InlineData("fals", 4, 0, "fals")]
+        [InlineData("[tru", 4, 1, "tru")]
+        [InlineData("tb:", 1, 0, "tb")]
+        [InlineData("f-2.2e-2,-", 1, 0, "f-")]
+        [InlineData("[nulL]", 4, 1, "nulL")]
+        [InlineData("[falsX]", 5, 1, "falsX")]
+        [InlineData("[[n{\"a\":", 3, 2, "n{")]
+        [InlineData("{\"\":tr", 6, 4, "tr")]
+        [InlineData("[      trux]", 10, 7, "trux")]
+        public static void InvalidLiteralVariousSegmentSizes(string input, int expectedBytePositionInLine, int expectedConsumed, string expectedLiteral)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(input);
+
+            var jsonReader = new Utf8JsonReader(utf8);
+            InvalidReadLiteralHelper(ref jsonReader, sequence: null, expectedBytePositionInLine, expectedConsumed, expectedLiteral);
+
+            var sequence = new ReadOnlySequence<byte>(utf8);
+            jsonReader = new Utf8JsonReader(sequence);
+            InvalidReadLiteralHelper(ref jsonReader, sequence, expectedBytePositionInLine, expectedConsumed, expectedLiteral);
+
+            sequence = JsonTestHelper.GetSequence(utf8, 1);
+            jsonReader = new Utf8JsonReader(sequence);
+            InvalidReadLiteralHelper(ref jsonReader, sequence, expectedBytePositionInLine, expectedConsumed, expectedLiteral);
+
+            for (int splitLocation = 0; splitLocation <= utf8.Length; splitLocation++)
+            {
+                sequence = JsonTestHelper.CreateSegments(utf8, splitLocation);
+                jsonReader = new Utf8JsonReader(sequence);
+                InvalidReadLiteralHelper(ref jsonReader, sequence, expectedBytePositionInLine, expectedConsumed, expectedLiteral);
+            }
+
+            for (int firstSplit = 0; firstSplit <= utf8.Length; firstSplit++)
+            {
+                for (int secondSplit = firstSplit; secondSplit <= utf8.Length; secondSplit++)
+                {
+                    sequence = JsonTestHelper.CreateSegments(utf8, firstSplit, secondSplit);
+                    jsonReader = new Utf8JsonReader(sequence);
+                    InvalidReadLiteralHelper(ref jsonReader, sequence, expectedBytePositionInLine, expectedConsumed, expectedLiteral);
+                }
+            }
+        }
+
+        private static void InvalidReadLiteralHelper(ref Utf8JsonReader jsonReader, ReadOnlySequence<byte>? sequence, int expectedBytePositionInLine, int expectedConsumed, string expectedLiteral)
+        {
+            JsonException ex = JsonTestHelper.AssertThrows<JsonException>(ref jsonReader, (ref jsonReader) =>
+            {
+                while (jsonReader.Read())
+                    ;
+            });
+
+            Assert.Equal(0, ex.LineNumber);
+            Assert.Equal(expectedBytePositionInLine, ex.BytePositionInLine);
+            Assert.Equal(expectedConsumed, jsonReader.BytesConsumed);
+            if (sequence is ReadOnlySequence<byte> input)
+            {
+                Assert.Equal(expectedConsumed, input.Slice(0, jsonReader.Position).Length);
+            }
+            else
+            {
+                Assert.Equal(default, jsonReader.Position);
+            }
+            Assert.Contains($"'{expectedLiteral}' ", ex.Message);
+        }
+
+        [Theory]
         [MemberData(nameof(JsonTokenWithExtraValueAndComments))]
         public static void ReadJsonTokenWithExtraValueAndCommentsMultiSegment(string jsonString)
         {
