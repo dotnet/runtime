@@ -346,6 +346,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
+    , m_IsAsyncCall(false)
     , m_ILInstsSet(nullptr)
 #endif
 {
@@ -415,27 +416,33 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
+        const char* asyncness = "";
+        if (compiler->compIsAsync())
+        {
+            asyncness = m_IsAsyncCall ? " ASYNC" : " SYNC";
+        }
+
         IL_OFFSET offs = m_ActualCallOffset;
 
         if (verbose)
         {
             if (offs == BAD_IL_OFFSET)
             {
-                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
+                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s%s] %s\n", indent, "", m_Ordinal,
                        m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
-                       calleeName);
+                       asyncness, calleeName);
             }
             else
             {
-                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
+                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
                        m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
-                       calleeName);
+                       asyncness, calleeName);
             }
         }
         else
         {
-            printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
-                   calleeName);
+            printf("%*s[%s%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
+                   asyncness, calleeName);
         }
     }
 
@@ -633,15 +640,20 @@ void InlineContext::DumpXml(FILE* file, unsigned indent)
 //   call          - the call in question
 //   stmt          - statement containing the call (if known)
 //   description   - string describing the context of the decision
+//   callee        - the actual inline candidate, if different from the call target
 
-InlineResult::InlineResult(
-    Compiler* compiler, GenTreeCall* call, Statement* stmt, const char* description, bool doNotReport)
+InlineResult::InlineResult(Compiler*             compiler,
+                           GenTreeCall*          call,
+                           Statement*            stmt,
+                           const char*           description,
+                           bool                  doNotReport,
+                           CORINFO_METHOD_HANDLE callee)
     : m_RootCompiler(nullptr)
     , m_Policy(nullptr)
     , m_Call(call)
     , m_InlineContext(nullptr)
     , m_Caller(nullptr)
-    , m_Callee(nullptr)
+    , m_Callee(callee)
     , m_ImportedILSize(0)
     , m_Description(description)
     , m_successResult(INLINE_PASS)
@@ -654,6 +666,15 @@ InlineResult::InlineResult(
     // Set the policy
     const bool isPrejitRoot = false;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+
+#ifdef DEBUG
+    if (m_RootCompiler->compAsyncInliningStress() && call->IsAsync() && call->IsInlineCandidate() &&
+        !call->IsGuardedDevirtualizationCandidate())
+    {
+        m_Policy->NoteInt(InlineObservation::CALLSITE_ASYNC_STRESS_INDEX,
+                          call->GetSingleInlineCandidateInfo()->asyncStressIndex);
+    }
+#endif // DEBUG
 
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
@@ -673,7 +694,7 @@ InlineResult::InlineResult(
     m_Caller = compiler->info.compMethodHnd;
 
     // Get method handle for callee, if known
-    if (m_Call->AsCall()->gtCallType == CT_USER_FUNC)
+    if ((m_Callee == nullptr) && (m_Call->AsCall()->gtCallType == CT_USER_FUNC))
     {
         m_Callee = m_Call->AsCall()->gtCallMethHnd;
     }
@@ -1371,6 +1392,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
+    context->m_IsAsyncCall   = call->IsAsync();
     context->m_TreeID        = call->gtTreeID;
 #endif
 

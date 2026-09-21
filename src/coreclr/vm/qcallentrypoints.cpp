@@ -37,7 +37,9 @@
 #include "typestring.h"
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
+#ifdef FEATURE_VARARGS
 #include "varargsnative.h"
+#endif // FEATURE_VARARGS
 #include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP
@@ -90,11 +92,13 @@
 
 static const Entry s_QCall[] =
 {
+#ifdef FEATURE_VARARGS
     DllImportEntry(ArgIterator_Init)
     DllImportEntry(ArgIterator_Init2)
     DllImportEntry(ArgIterator_GetNextArgType)
     DllImportEntry(ArgIterator_GetNextArg)
     DllImportEntry(ArgIterator_GetNextArg2)
+#endif // FEATURE_VARARGS
     DllImportEntry(CustomAttribute_ParseAttributeUsageAttribute)
     DllImportEntry(CustomAttribute_CreateCustomAttributeInstance)
     DllImportEntry(CustomAttribute_CreatePropertyOrFieldData)
@@ -297,6 +301,7 @@ static const Entry s_QCall[] =
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
     DllImportEntry(AppContext_TryGetHostPropertyValue)
+    DllImportEntry(ThreadNative_GetQCallSpecialException)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -307,8 +312,6 @@ static const Entry s_QCall[] =
     DllImportEntry(ThreadNative_GetCurrentOSThreadId)
     DllImportEntry(ThreadNative_Initialize)
     DllImportEntry(ThreadNative_GetThreadState)
-    DllImportEntry(ThreadNative_SetWaitSleepJoinState)
-    DllImportEntry(ThreadNative_ClearWaitSleepJoinState)
     DllImportEntry(ThreadNative_ReentrantWaitAny)
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     DllImportEntry(ThreadNative_GetApartmentState)
@@ -500,8 +503,11 @@ static const Entry s_QCall[] =
     DllImportEntry(StubHelpers_CreateCustomMarshaler)
     DllImportEntry(StubHelpers_CreateLayoutClassMarshalStubs)
     DllImportEntry(StubHelpers_ThrowInteropParamException)
+    DllImportEntry(StubHelpers_ThrowInteropException)
+#ifdef FEATURE_VARARGS
     DllImportEntry(StubHelpers_MarshalToManagedVaList)
     DllImportEntry(StubHelpers_MarshalToUnmanagedVaList)
+#endif // FEATURE_VARARGS
     DllImportEntry(StubHelpers_ValidateObject)
     DllImportEntry(StubHelpers_ValidateByref)
     DllImportEntry(StubHelpers_MulticastDebuggerTraceHelper)

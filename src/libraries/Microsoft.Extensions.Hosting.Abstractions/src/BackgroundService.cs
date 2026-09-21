@@ -41,9 +41,12 @@ namespace Microsoft.Extensions.Hosting
         {
             // Create linked token to allow cancelling executing task from provided token
             _stoppingCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            CancellationToken stoppingToken = _stoppingCts.Token;
 
             // Execute all of ExecuteAsync asynchronously, and store the task we're executing so that we can wait for it later.
-            _executeTask = Task.Run(() => ExecuteAsync(_stoppingCts.Token), _stoppingCts.Token);
+            _executeTask = cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : Task.Run(() => ExecuteAsync(stoppingToken), CancellationToken.None);
 
             // Always return a completed task.  Any result from ExecuteAsync will be handled by the Host.
             return Task.CompletedTask;

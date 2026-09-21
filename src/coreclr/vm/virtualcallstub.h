@@ -1303,7 +1303,7 @@ public:
 #ifdef CHAIN_LOOKUP
         CONSISTENCY_CHECK(m_writeLock.OwnedByCurrentThread());
 #endif
-          cache[idx] = elem;
+          VolatileStore(&cache[idx], elem);
         }
 
 #ifdef CHAIN_LOOKUP
@@ -1508,7 +1508,6 @@ private:
         CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
         } CONTRACTL_END;
 
         _ASSERTE(probe);
@@ -1530,7 +1529,6 @@ private:
         CONTRACTL {
             THROWS;
             GC_TRIGGERS;
-            INJECT_FAULT(COMPlusThrowOM(););
         } CONTRACTL_END;
 
         size_t size = CALL_STUB_MIN_ENTRIES;

@@ -1175,14 +1175,6 @@ void interceptor_ICJI::getAddressOfPInvokeTarget(
     original_ICorJitInfo->getAddressOfPInvokeTarget(method, pLookup);
 }
 
-void* interceptor_ICJI::GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    mcs->AddCall("GetCookieForPInvokeCalliSig");
-    return original_ICorJitInfo->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-}
-
 void* interceptor_ICJI::GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig)
 {

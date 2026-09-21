@@ -167,7 +167,6 @@ void VirtualCallStubManager::StartupLogging()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -175,7 +174,6 @@ void VirtualCallStubManager::StartupLogging()
 
     EX_TRY
     {
-        FAULT_NOT_FATAL(); // We handle filecreation problems locally
         SString str;
         str.Printf("StubLog_%d.log", GetCurrentProcessId());
         if (fopen_lp(&g_hStubLogFile, str.GetUnicode(), W("wb")) != 0)
@@ -198,7 +196,6 @@ void VirtualCallStubManager::LoggingDump()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -408,7 +405,6 @@ void VirtualCallStubManager::ResetCache()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -444,7 +440,6 @@ void VirtualCallStubManager::Init(LoaderAllocator *pLoaderAllocator)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     m_loaderAllocator   = pLoaderAllocator;
@@ -686,7 +681,6 @@ VirtualCallStubManager::~VirtualCallStubManager()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     LogStats();
@@ -695,22 +689,26 @@ VirtualCallStubManager::~VirtualCallStubManager()
     // Go through each cache entry and if the cache element there is in
     // the cache entry heap of the manager being deleted, then we just
     // set the cache entry to empty.
-#ifdef CHAIN_LOOKUP
-    // Serialize cache chain unlinking against concurrent insert/promote writers.
-    CrstHolder lh(g_resolveCache->GetWriteLock());
-#endif
-    DispatchCache::Iterator it(g_resolveCache);
-    while (it.IsValid())
     {
-        // Using UnlinkEntry performs an implicit call to Next (see comment for UnlinkEntry).
-        // Thus, we need to avoid calling Next when we delete an entry so
-        // that we don't accidentally skip entries.
-        while (it.IsValid() && cache_entry_rangeList.IsInRange((TADDR)it.Entry()))
+#ifdef CHAIN_LOOKUP
+        // Serialize cache chain unlinking against concurrent insert/promote writers.
+        CrstHolder lh(g_resolveCache->GetWriteLock());
+#endif
+        DispatchCache::Iterator it(g_resolveCache);
+        while (it.IsValid())
         {
-            it.UnlinkEntry();
+            // Using UnlinkEntry performs an implicit call to Next (see comment for UnlinkEntry).
+            // Thus, we need to avoid calling Next when we delete an entry so
+            // that we don't accidentally skip entries.
+            while (it.IsValid() && cache_entry_rangeList.IsInRange((TADDR)it.Entry()))
+            {
+                it.UnlinkEntry();
+            }
+            it.Next();
         }
-        it.Next();
     }
+    // CrstStubDispatchCache must be released before deleting the loader heaps below, because
+    // freeing their memory takes CrstExecutableAllocatorLock, which is at the same lock level.
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
@@ -807,7 +805,6 @@ void VirtualCallStubManager::LogFinalStats()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -834,7 +831,6 @@ void VirtualCallStubManager::ReclaimAll()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     /* @todo: if/when app domain unloading is supported,
@@ -902,7 +898,6 @@ VirtualCallStubManager *VirtualCallStubManager::FindStubManager(PCODE stubAddres
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     } CONTRACTL_END
 
@@ -942,7 +937,6 @@ BOOL VirtualCallStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
 
     // Forwarded to from RangeSectionStubManager
@@ -977,7 +971,6 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1005,7 +998,6 @@ DispatchToken VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle ownerT
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1030,7 +1022,6 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsInterface() || ownerType.GetMethodTable()->HasSameTypeDefAs(pMD->GetMethodTable()));
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     DispatchToken token = GetTokenFromOwnerAndSlot(ownerType, pMD->GetSlot());
@@ -1045,7 +1036,6 @@ PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
@@ -1090,7 +1080,6 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
@@ -1131,7 +1120,6 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
@@ -1180,7 +1168,6 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(target != NULL);
     } CONTRACTL_END;
 
@@ -1266,7 +1253,6 @@ ResolveCacheElem *VirtualCallStubManager::GetResolveCacheElem(void *pMT,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -1303,7 +1289,6 @@ size_t VirtualCallStubManager::GetTokenFromStub(PCODE stub, T_CONTEXT *pContext)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1342,7 +1327,6 @@ size_t VirtualCallStubManager::GetTokenFromStubQuick(VirtualCallStubManager * pM
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -1399,7 +1383,6 @@ ResolveCacheElem* __fastcall VirtualCallStubManager::PromoteChainEntry(ResolveCa
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(pElem));
     } CONTRACTL_END;
 
@@ -1415,7 +1398,6 @@ PCODE CachedInterfaceDispatchResolveWorker(StubCallSite* pCallSite, OBJECTREF *p
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(protectedObj != NULL);
         PRECONDITION(*protectedObj != NULL);
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
@@ -1450,7 +1432,6 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1536,7 +1517,6 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1635,7 +1615,6 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1759,7 +1738,6 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pTransitionBlock));
         MODE_COOPERATIVE;
     } CONTRACTL_END;
@@ -1849,7 +1827,6 @@ void VirtualCallStubManager::BackPatchWorkerStatic(PCODE returnAddress, TADDR si
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         ENTRY_POINT;
         PRECONDITION(returnAddress != NULL);
     } CONTRACTL_END
@@ -1888,7 +1865,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(protectedObj != NULL);
         PRECONDITION(*protectedObj != NULL);
         PRECONDITION(IsProtectedByGCFrame(protectedObj));
@@ -2640,7 +2616,6 @@ VirtualCallStubManager::GetTarget(
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(CheckPointer(pMT));
     } CONTRACTL_END
 
@@ -2711,7 +2686,6 @@ VirtualCallStubManager::TraceResolver(
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pObj, NULL_OK));
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     // If someone is trying to step into a stub dispatch call on a null object,
@@ -2758,7 +2732,6 @@ void VirtualCallStubManager::BackPatchWorker(StubCallSite* pCallSite)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     PCODE callSiteTarget = pCallSite->GetSiteTarget();
@@ -2797,7 +2770,6 @@ void VirtualCallStubManager::BackPatchSite(StubCallSite* pCallSite, PCODE stub)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(stub != NULL);
         PRECONDITION(CheckPointer(pCallSite));
         PRECONDITION(pCallSite->GetSiteTarget() != NULL);
@@ -2862,7 +2834,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -2947,7 +2918,6 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
@@ -3007,7 +2977,6 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
 #if defined(TARGET_X86)
         PRECONDITION(addrOfPatcher != NULL);
@@ -3093,7 +3062,6 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
     } CONTRACTL_END;
 
@@ -3129,7 +3097,6 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
         PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
     }
@@ -3230,7 +3197,6 @@ void VirtualCallStubManager::LogStats()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // Our Init routine assignes all fields atomically so testing one field should suffice to
     // test whehter the Init succeeded.
@@ -3312,7 +3278,6 @@ void Prober::InitProber(size_t key1, size_t key2, size_t* table)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     _ASSERTE(table);
@@ -3329,7 +3294,6 @@ size_t Prober::Find()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     size_t entry;
@@ -3363,7 +3327,6 @@ size_t Prober::Add(size_t newEntry)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     size_t entry;
@@ -3439,7 +3402,6 @@ size_t FastTable::Add(size_t entry, Prober* probe)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END
 
     size_t result = probe->Add(entry);
@@ -3467,7 +3429,6 @@ BOOL BucketTable::GetMoreSpace(const Prober* p)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     //get ahold of the current bucket
@@ -3561,7 +3522,6 @@ void BucketTable::Reclaim()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -3630,7 +3590,6 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     // The buckets[index] table starts off initialized to all CALL_STUB_EMPTY_ENTRY
@@ -3686,7 +3645,6 @@ size_t BucketTable::Add(size_t entry, Prober* probe)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE; // This is necessary for synchronization with BucketTable::Reclaim
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END
 
     FastTable* table = (FastTable*)(probe->items());
@@ -3723,7 +3681,6 @@ DispatchCache::DispatchCache()
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -3785,7 +3742,6 @@ BOOL DispatchCache::Insert(ResolveCacheElem* elem, InsertKind insertKind)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        FORBID_FAULT;
         PRECONDITION(insertKind != IK_NONE);
     } CONTRACTL_END;
 
@@ -3902,7 +3858,6 @@ void DispatchCache::PromoteChainEntry(ResolveCacheElem* elem)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     } CONTRACTL_END;
 
     CrstHolder lh(&m_writeLock);
@@ -4298,7 +4253,6 @@ MethodDesc *VirtualCallStubManagerManager::Entry2MethodDesc(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
