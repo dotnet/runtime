@@ -198,6 +198,11 @@
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.js" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(LibrariesSharedFrameworkDir)*.dat" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libcoreclr_static.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libcoreclrminipal.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libcoreclrpal.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libgcinfo_unix_wasm.a" />
+      <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(CoreCLRSharedFrameworkDir)libnativeresourcestring.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)libBrowserHost.a" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js" />
       <_MicrosoftNetCoreAppRuntimePackNativeDirFiles Include="$(HostSharedFrameworkDir)dotnet.native.js.symbols" />
@@ -206,6 +211,16 @@
 
     <Copy SourceFiles="@(_MicrosoftNetCoreAppRuntimePackNativeDirFiles)"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
+
+    <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets),
+         installed into the host sharedFramework by the browserhost CMakeLists. Kept in sync with the
+         runtime-pack harvest in eng/liveBuilds.targets. -->
+    <Copy SourceFiles="$(HostSharedFrameworkDir)include\callhelpers.hpp"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include"
+          SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(HostSharedFrameworkDir)include\minipal\entrypoints.h;$(HostSharedFrameworkDir)include\minipal\utils.h"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)include\minipal"
           SkipUnchangedFiles="true" />
   </Target>
 

@@ -237,7 +237,7 @@ namespace System.Diagnostics
 #line 1 "ThrowsSoon.cs"
         public static async Task ThrowsSoon()
         {
-            Task t = ThrowsSoonInner();
+            Task<Guid> t = ThrowsSoonInner();
             Use(t); // Make sure ThrowsSoonInner does not become a real async call
             await t;
         }
@@ -250,7 +250,7 @@ namespace System.Diagnostics
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
         [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(true)]
 #line 1 "ThrowsSoonInner.cs"
-        public static async Task ThrowsSoonInner()
+        public static async Task<Guid> ThrowsSoonInner()
         {
             await Task.Delay(50);
             throw new Exception("Exception from ThrowsSoonInner");
@@ -261,16 +261,16 @@ namespace System.Diagnostics
 #line 1 "ThrowsSoonValueTaskSource.cs"
         public static async Task ThrowsSoonValueTaskSource()
         {
-            ValueTask vt = new ValueTask(new ThrowsSoonValueTaskSourceImpl(), 0);
+            ValueTask<Guid> vt = new ValueTask<Guid>(new ThrowsSoonValueTaskSourceImpl(), 0);
             await vt;
         }
 
-        private class ThrowsSoonValueTaskSourceImpl : IValueTaskSource
+        private class ThrowsSoonValueTaskSourceImpl : IValueTaskSource<Guid>
         {
             private bool _isCompleted;
 
             [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]
-            public void GetResult(short token)
+            public Guid GetResult(short token)
             {
 #line 1 "ThrowsSoonValueTaskSourceImpl.cs"
                 throw new Exception("Exception from ThrowsSoonValueTaskSourceImpl");
@@ -750,9 +750,14 @@ namespace System.Diagnostics.Tests
             yield return new object[] { () => V2Methods.Quuux(), MethodExceptionStrings["Quuux"] };
             yield return new object[] { () => V2Methods.Bux(), MethodExceptionStrings["Bux"] };
             yield return new object[] { () => V2Methods.ThrowsSoon(), MethodExceptionStrings["ThrowsSoon"] };
-            yield return new object[] { () => V2Methods.ThrowsSoonValueTaskSource(), MethodExceptionStrings["ThrowsSoonValueTaskSource"] };
             yield return new object[] { () => V1Methods.EdiOuter(), MethodExceptionStrings["EdiOuter"] };
         }
+
+        // Move test case back into Ctor_Async_TestData once enabled.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131123", typeof(PlatformDetection), nameof(PlatformDetection.IsCoreClrInterpreter))]
+        public Task ToString_Async_ThrowsSoonValueTaskSource() =>
+            ToString_Async(V2Methods.ThrowsSoonValueTaskSource, MethodExceptionStrings["ThrowsSoonValueTaskSource"]);
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsRuntimeAsyncSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser))]
@@ -788,6 +793,8 @@ namespace System.Diagnostics.Tests
             }
             Assert.DoesNotContain("ResumeTaskContinuation", exceptionText);
             Assert.DoesNotContain("ResumeValueTaskSourceContinuation", exceptionText);
+            Assert.DoesNotContain("ValueTaskSourceContinuation.GetResult", exceptionText);
+            Assert.DoesNotContain("RuntimeAsyncTaskContinuation.GetResult", exceptionText);
         }
 
         [MethodImpl(MethodImplOptions.NoOptimization | MethodImplOptions.NoInlining)]

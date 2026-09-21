@@ -38,13 +38,9 @@ public:
 
     void MergeHandler(BasicBlock* block, BasicBlock* firstTryBlock, BasicBlock* lastTryBlock)
     {
-        // A handler can be reached from any point in the try region.
-        // A local is mutated at handler entry if it was mutated at try
-        // entry or mutated anywhere within the try region.
-        for (BasicBlock* tryBlock = firstTryBlock; tryBlock != lastTryBlock->Next(); tryBlock = tryBlock->Next())
+        for (FlowEdge* pred = m_compiler->BlockPredsWithEH(block); pred != nullptr; pred = pred->getNextPredEdge())
         {
-            VarSetOps::UnionD(m_compiler, m_mutatedVarsIn[block->bbNum], m_mutatedVarsIn[tryBlock->bbNum]);
-            VarSetOps::UnionD(m_compiler, m_mutatedVarsIn[block->bbNum], m_mutatedVars[tryBlock->bbNum]);
+            Merge(block, pred->getSourceBlock(), pred->getDupCount());
         }
     }
 
@@ -264,7 +260,7 @@ void DefaultValueAnalysis::ComputePerBlockMutatedVars()
 //   Transfer function: mutatedOut[B] = mutatedIn[B] | mutated[B]
 //   Merge: mutatedIn[B] = union of mutatedOut[pred] for all preds
 //
-//   At entry, only parameters and OSR locals are considered mutated.
+//   At entry, parameters, parameter register targets, and OSR locals are considered mutated.
 //
 void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
 {
@@ -275,13 +271,13 @@ void DefaultValueAnalysis::ComputeInterBlockDefaultValues()
         VarSetOps::AssignNoCopy(m_compiler, m_mutatedVarsIn[i], VarSetOps::MakeEmpty(m_compiler));
     }
 
-    // Parameters and OSR locals are considered mutated at method entry.
+    // Parameters, parameter register targets, and OSR locals are non-default at method entry.
     for (unsigned i = 0; i < m_compiler->lvaTrackedCount; i++)
     {
         unsigned   lclNum = m_compiler->lvaTrackedToVarNum[i];
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-        if (varDsc->lvIsParam || varDsc->lvIsOSRLocal)
+        if (varDsc->lvIsParam || varDsc->lvIsParamRegTarget || varDsc->lvIsOSRLocal)
         {
             VarSetOps::AddElemD(m_compiler, m_mutatedVarsIn[m_compiler->fgFirstBB->bbNum], varDsc->lvVarIndex);
         }

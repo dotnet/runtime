@@ -57,7 +57,7 @@ namespace BINDER_SPACE
         m_pPEImage = pPEImage;
 
         // Now take ownership of assembly name
-        m_pAssemblyName = pAssemblyName.Extract();
+        m_pAssemblyName = pAssemblyName.Detach();
 
     Exit:
         return hr;

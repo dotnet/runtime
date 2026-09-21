@@ -128,12 +128,6 @@ void CryptoNative_X509Destroy(X509* a)
     }
 }
 
-X509* CryptoNative_X509Duplicate(X509* x509)
-{
-    ERR_clear_error();
-    return X509_dup(x509);
-}
-
 X509* CryptoNative_PemReadX509FromBio(BIO* bio)
 {
     ERR_clear_error();

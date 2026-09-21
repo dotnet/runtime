@@ -50,6 +50,44 @@ namespace LibraryImportGenerator.UnitTests
             [CallerFilePath] string? filePath = null)
             => TestUtils.GetFileLineName(lineNumber, filePath);
 
+        [Fact]
+        public Task GeneratedComInterfaceMissingManagedObjectWrapperFails()
+        {
+            // ComObjectWrapper-only interface (no CCW): cannot marshal managed -> unmanaged.
+            // Return value / out are unmanaged -> managed and remain valid; by-value / in / ref are not.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::MyInterfaceType>";
+            return VerifyAnalyzerCS.VerifyAnalyzerAsync(
+                CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ComObjectWrapper"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(1)
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "p"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(2)
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pIn"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(3)
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pRef"));
+        }
+
+        [Fact]
+        public Task GeneratedComInterfaceMissingComObjectWrapperFails()
+        {
+            // ManagedObjectWrapper-only interface (no RCW): cannot marshal unmanaged -> managed.
+            // Return value, out, and ref parameters are invalid; by-value / in remain valid.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::MyInterfaceType>";
+            return VerifyAnalyzerCS.VerifyAnalyzerAsync(
+                CodeSnippets.GeneratedComInterfaceWithOptions("ComInterfaceOptions.ManagedObjectWrapper"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "Method"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(3)
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pRef"),
+                VerifyAnalyzerCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(4)
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "MyInterfaceType")), "pOut"));
+        }
+
         public static IEnumerable<object[]> CodeSnippetsToCompile()
         {
             // Bug: https://github.com/dotnet/runtime/issues/117448
@@ -906,8 +944,8 @@ namespace LibraryImportGenerator.UnitTests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
+            // The analyzer reports SYSLIB1062 once per compilation to recommend enabling AllowUnsafeBlocks.
             test.ExpectedDiagnostics.Add(VerifyAnalyzerCS.Diagnostic("SYSLIB1062"));
-            test.ExpectedDiagnostics.Add(DiagnosticResult.CompilerError("CS0227").WithLocation(0));
 
             await test.RunAsync();
         }

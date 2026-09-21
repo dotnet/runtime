@@ -281,9 +281,28 @@ namespace System.Net.Security
 #if TARGET_APPLE
                 if (SslStreamPal.ShouldUseAsyncSecurityContext(_sslAuthenticationOptions))
                 {
-                    Debug.Assert(_sslAuthenticationOptions.IsClient);
                     byte[]? dummy = null;
-                    AcquireClientCredentials(ref dummy, true);
+                    if (_sslAuthenticationOptions.IsClient)
+                    {
+                        AcquireClientCredentials(ref dummy, true);
+                    }
+                    else if (_sslAuthenticationOptions.ServerCertSelectionDelegate is null &&
+                             _sslAuthenticationOptions.CertSelectionDelegate is { } certSelectionDelegate)
+                    {
+                        // Match legacy SecureTransport PAL: when CertSelectionDelegate is
+                        // configured and returns null, surface NotSupportedException
+                        // instead of timing out the handshake.
+                        var tempCollection = new X509CertificateCollection();
+                        if (_sslAuthenticationOptions.CertificateContext?.TargetCertificate is X509Certificate2 ctx)
+                        {
+                            tempCollection.Add(ctx);
+                        }
+                        X509Certificate? selected = certSelectionDelegate(this, string.Empty, tempCollection, null, Array.Empty<string>());
+                        if (selected is null)
+                        {
+                            throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+                        }
+                    }
 
                     Task<Exception?> handshakeTask = SslStreamPal.AsyncHandshakeAsync(ref _securityContext, this, cancellationToken);
                     await TIOAdapter.WaitAsync(handshakeTask).ConfigureAwait(false);
@@ -299,6 +318,10 @@ namespace System.Net.Security
 
                     CompleteHandshake(_sslAuthenticationOptions);
                     return;
+                }
+                else
+                {
+                    _sslAuthenticationOptions.ForceSyncPal = true;
                 }
 #endif // TARGET_APPLE
 
@@ -842,7 +865,7 @@ namespace System.Net.Security
                 }
 
                 _buffer.Commit(bytesRead);
-                if (frameSize == int.MaxValue && _buffer.EncryptedLength > TlsFrameHelper.HeaderSize)
+                if (frameSize == UnknownTlsFrameLength && _buffer.EncryptedLength >= TlsFrameHelper.HeaderSize)
                 {
                     // recalculate frame size if needed e.g. we could not get it before.
                     frameSize = GetFrameSize(_buffer.EncryptedReadOnlySpan);

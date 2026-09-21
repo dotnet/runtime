@@ -57,7 +57,7 @@ void GCHeap::UpdatePreGCCounters()
 #endif //MULTIPLE_HEAPS
 
     // Publish perf stats
-    g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
+    g_TotalTimeInGC = minipal_hires_ticks();
 
     gc_mechanisms *pSettings = &gc_heap::settings;
 
@@ -189,7 +189,7 @@ void GCHeap::UpdatePostGCCounters()
 #endif // FEATURE_EVENT_TRACE
 
     // Compute Time in GC
-    uint64_t _currentPerfCounterTimer = GCToOSInterface::QueryPerformanceCounter();
+    uint64_t _currentPerfCounterTimer = minipal_hires_ticks();
 
     g_TotalTimeInGC = _currentPerfCounterTimer - g_TotalTimeInGC;
     uint64_t _timeInGCBase = (_currentPerfCounterTimer - g_TotalTimeSinceLastGCEnd);

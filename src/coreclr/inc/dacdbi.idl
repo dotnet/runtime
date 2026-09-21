@@ -195,6 +195,7 @@ interface IDacDbiInterface : IUnknown
 {
     // Initialization
     HRESULT FlushCache();
+    HRESULT Destroy();
     HRESULT DacSetTargetConsistencyChecks([in] BOOL fEnableAsserts);
 
     // Process State
@@ -345,7 +346,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] CORDB_ADDRESS * pObjRef, [out] struct DebuggerIPCE_BasicTypeData * pTypedByRefType);
     HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] UINT * pLength, [out] UINT * pOffsetToStringBase);
     HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidArray, [out] struct DacDbiArrayInfo * pArrayInfo);
-    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [in, out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
 
     // Debugger Control Block
     HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);
@@ -398,13 +399,9 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetGCHeapInformation([out] COR_HEAPINFO * pHeapInfo);
 
     // PE File
-    HRESULT GetPEFileMDInternalRW([in] VMPTR_PEAssembly vmPEAssembly, [out] TADDR * pAddrMDInternalRW);
+    HRESULT HasReadWriteMetadata([in] VMPTR_PEAssembly vmPEAssembly, [out] BOOL * pHasReadWriteMetadata);
 
     HRESULT AreOptimizationsDisabled([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] BOOL * pOptimizationsDisabled);
-
-    // Defines
-    HRESULT GetDefinesBitField([out] ULONG32 * pDefines);
-    HRESULT GetMDStructuresVersion([out] ULONG32 * pMDStructuresVersion);
 
     // Code Versioning (FEATURE_CODE_VERSIONING only)
     HRESULT GetActiveRejitILCodeVersionNode([in] VMPTR_Module vmModule, [in] mdMethodDef methodTk, [out] VMPTR_ILCodeVersionNode * pVmILCodeVersionNode);
@@ -440,4 +437,7 @@ interface IDacDbiInterface : IUnknown
 
     // Generic Arg Token
     HRESULT GetGenericArgTokenIndex([in] VMPTR_MethodDesc vmMethod, [out] UINT32 * pTokenIndex);
+
+    HRESULT GetReadWriteMetadataSize([in] VMPTR_Module vmModule, [out] ULONG32 * pSize);
+    HRESULT FillReadWriteMetadata([in] VMPTR_Module vmModule, [out] BYTE * pBuffer, [in] ULONG32 cbBuffer);
 };

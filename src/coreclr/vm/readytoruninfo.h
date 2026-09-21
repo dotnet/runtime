@@ -29,6 +29,9 @@ class ReadyToRunCoreInfo
 private:
     PTR_ReadyToRunLoadedImage       m_pLayout;
     PTR_READYTORUN_CORE_HEADER      m_pCoreHeader;
+#ifdef TARGET_WASM
+    TADDR                           m_minVirtualIP = 0;
+#endif // TARGET_WASM
     Volatile<bool>                  m_fForbidLoadILBodyFixups;
     friend struct ::cdac_data<ReadyToRunCoreInfo>;
 
@@ -40,6 +43,15 @@ public:
     IMAGE_DATA_DIRECTORY * FindSection(ReadyToRunSectionType type) const;
     void ForbidProcessMoreILBodyFixups() { m_fForbidLoadILBodyFixups = true; }
     bool IsForbidProcessMoreILBodyFixups() { return m_fForbidLoadILBodyFixups; }
+#ifdef TARGET_WASM
+    bool MinVirtualIPSet() const { return m_minVirtualIP != 0; }
+    void SetMinVirtualIP(TADDR minVirtualIP) { m_minVirtualIP = minVirtualIP; }
+    TADDR GetMinVirtualIP() const
+    {
+        _ASSERTE(MinVirtualIPSet());
+        return m_minVirtualIP;
+    }
+#endif // TARGET_WASM
 
     PTR_ReadyToRunLoadedImage GetImage() const
     {
@@ -223,7 +235,17 @@ public:
 
 #ifdef TARGET_WASM
     DWORD GetMinFunctionTableIndex() const { return m_minFunctionTableIndex; }
-    TADDR GetMinVirtualIP() const { return m_minVirtualIP; }
+    TADDR GetMinVirtualIP() const
+    {
+        _ASSERTE(m_minVirtualIP != 0);
+        return m_minVirtualIP;
+    }
+    PCODE R2RRelativeFunctionIndexToVirtualIP(DWORD r2rFunctionIndex) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        _ASSERTE(r2rFunctionIndex < m_nRuntimeFunctions);
+        return (PCODE)(GetMinVirtualIP() + RUNTIME_FUNCTION__BeginAddress(&m_pRuntimeFunctions[r2rFunctionIndex]));
+    }
     void RegisterVirtualIPRange(Module* pModule);
 #endif // TARGET_WASM
 
@@ -247,6 +269,20 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
+    }
+
+    // True when this image was compiled with the GC mode transition verification scaffolding.
+    //
+    // Only WebAssembly emits the scaffolding: the helper call at catch resumption points is
+    // inserted by the WebAssembly-only JIT path in fgwasm.cpp, and only the WebAssembly catch
+    // resumption path consumes this. On any other target the flag is inert even if set, so do not
+    // treat it as a general statement that the image's catch resumption points call
+    // READYTORUN_HELPER_ResumeAfterCatch. See the comment on t_gcModeSwitchPermitted in
+    // vm/threads.h.
+    BOOL VerifiesGCModeTransitions()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS;
     }
 
     BOOL HasStrippedILBodies()
@@ -395,11 +431,13 @@ public:
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
+    bool TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
 
@@ -442,6 +480,9 @@ struct cdac_data<ReadyToRunInfo>
     static constexpr size_t EntryPointToMethodDescMap = offsetof(ReadyToRunInfo, m_entryPointToMethodDescMap);
     static constexpr size_t LoadedImageBase = offsetof(ReadyToRunInfo, m_pLoadedImageBase);
     static constexpr size_t Composite = offsetof(ReadyToRunInfo, m_pComposite);
+#ifdef TARGET_WASM
+    static constexpr size_t MinVirtualIP = offsetof(ReadyToRunInfo, m_minVirtualIP);
+#endif // TARGET_WASM
 };
 
 class DynamicHelpers

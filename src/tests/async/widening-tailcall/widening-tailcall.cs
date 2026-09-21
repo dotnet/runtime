@@ -8,7 +8,7 @@ using Xunit;
 
 public class Async2WideningTailcall
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         uint vr0 = (uint)M29().GetAwaiter().GetResult();

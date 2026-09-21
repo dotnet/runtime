@@ -112,6 +112,7 @@ typedef enum
     PAL_SSL_ERROR_WANT_WRITE = 3,
     PAL_SSL_ERROR_SYSCALL = 5,
     PAL_SSL_ERROR_ZERO_RETURN = 6,
+    PAL_SSL_ERROR_WANT_RETRY_VERIFY = 12,
 } SslErrorCode;
 
 // the function pointer definition for the callback used in SslCtxSetAlpnSelectCb
@@ -315,6 +316,30 @@ Shims the SSL_set_bio method.
 PALEXPORT void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio);
 
 /*
+Shims the SSL_set_fd method. Binds an existing socket file descriptor to the
+SSL object; OpenSSL allocates a socket BIO internally for both read and write.
+Returns 1 on success, 0 on failure.
+*/
+PALEXPORT int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd);
+
+/*
+Sets SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER on the SSL object.
+
+By default OpenSSL remembers the address of the plaintext buffer handed to a
+SSL_write which could not be fully flushed, and fails a subsequent retry that
+supplies a different address with SSL_R_BAD_WRITE_RETRY. Managed callers hand
+over spans of GC-tracked memory which the collector may relocate between the
+WANT_WRITE and the retry, so the address comparison is meaningless for us.
+*/
+PALEXPORT void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl);
+
+/*
+Raw SSL_do_handshake wrapper for fd-bound SSL objects (SSL_set_fd path).
+Returns the SSL_do_handshake return value; errorCode receives SSL_get_error.
+*/
+PALEXPORT int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode);
+
+/*
 Performs SSL_do_handshake with the input/output BIO windows set up
 and torn down in a single P/Invoke. The input BIO window points at inputPtr
 (ciphertext from peer, may be NULL/0). The output BIO window receives outgoing
@@ -487,6 +512,12 @@ Shims the SSL_set_verify method.
 PALEXPORT void CryptoNative_SslSetVerifyPeer(SSL* ssl, int32_t failIfNoPeerCert);
 
 /*
+Shims SSL_set_retry_verify (OpenSSL 3.0+). Returns 1 on success, 0 if the
+symbol is unavailable (e.g. on OpenSSL 1.1.x).
+*/
+PALEXPORT int32_t CryptoNative_SslSetRetryVerify(SSL* ssl);
+
+/*
 Shims SSL_set_ex_data to attach application context.
 */
 PALEXPORT int32_t  CryptoNative_SslSetData(SSL* ssl, void* ptr);
@@ -526,7 +557,6 @@ PALEXPORT void CryptoNative_SslCtxSetDefaultOcspCallback(SSL_CTX* ctx);
 Sets ciphers (< TLS 1.3) and cipher suites (TLS 1.3) on the SSL_CTX
 */
 PALEXPORT int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites);
-PALEXPORT int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites);
 
 /*
 Determines if TLS 1.3 is supported by this OpenSSL implementation

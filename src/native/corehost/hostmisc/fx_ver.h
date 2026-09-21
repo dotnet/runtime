@@ -41,7 +41,7 @@ bool c_fx_ver_is_empty(const c_fx_ver_t* ver);
 // Parse a version string. On success out_ver is populated and the caller is
 // responsible for calling c_fx_ver_cleanup on it. Returns false on failure;
 // out_ver is left in a freshly initialized state (no allocations) in that case.
-bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver, bool parse_only_production);
+bool c_fx_ver_parse(const pal_char_t* ver_str, c_fx_ver_t* out_ver);
 
 // Compare two versions. Returns <0, 0, >0 (semver semantics).
 int c_fx_ver_compare(const c_fx_ver_t* a, const c_fx_ver_t* b);
@@ -87,7 +87,7 @@ struct fx_ver_t
     bool operator <=(const fx_ver_t& b) const;
     bool operator >=(const fx_ver_t& b) const;
 
-    static bool parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production = false);
+    static bool parse(const pal::string_t& ver, fx_ver_t* fx_ver);
 
 private:
     int m_major;

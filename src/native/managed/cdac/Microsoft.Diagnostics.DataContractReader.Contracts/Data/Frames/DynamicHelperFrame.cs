@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.DynamicHelperFrame))]
 internal partial class DynamicHelperFrame : IData<DynamicHelperFrame>
 {
-    [Field] public int DynamicHelperFrameFlags { get; }
+    [Field] public partial int DynamicHelperFrameFlags { get; }
 }

@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Generation))]
 internal sealed partial class Generation : IData<Generation>
 {
-    [Field] public GCAllocContext AllocationContext { get; }
-    [Field] public TargetPointer StartSegment { get; }
+    [Field] public partial GCAllocContext AllocationContext { get; }
+    [Field] public partial TargetPointer StartSegment { get; }
 
     // Fields only exist segment GC builds
-    [Field] public TargetPointer? AllocationStart { get; }
+    [Field] public partial TargetPointer? AllocationStart { get; }
 }

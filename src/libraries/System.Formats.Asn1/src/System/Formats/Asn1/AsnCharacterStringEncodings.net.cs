@@ -1,0 +1,574 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Buffers.Binary;
+using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.InteropServices;
+
+namespace System.Formats.Asn1
+{
+    internal abstract class RestrictedAsciiSetEncoding : RestrictedAsciiStringEncoding
+    {
+        protected RestrictedAsciiSetEncoding(string allowedChars)
+            : base(allowedChars)
+        {
+        }
+
+        protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            if (chars.Length >= Vector<byte>.Count && Vector.IsHardwareAccelerated)
+            {
+                return GetBytesVectorized(chars, bytes, write);
+            }
+
+            return base.GetBytes(chars, bytes, write);
+        }
+
+        protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            if (bytes.Length >= Vector<byte>.Count && Vector.IsHardwareAccelerated)
+            {
+                return GetCharsVectorized(bytes, chars, write);
+            }
+
+            return base.GetChars(bytes, chars, write);
+        }
+
+        // Keep the vectorization out of GetChars and GetBytes to avoid regressing code size
+        // and register allocation for small inputs.
+        private int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            int available = write ? Math.Min(chars.Length, bytes.Length) : chars.Length;
+            int position = 0;
+
+            Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
+
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available);
+            Span<byte> destination = write ? bytes.Slice(0, available) : Span<byte>.Empty;
+
+            while (source.Length >= Vector<byte>.Count)
+            {
+                Vector<ushort> lower = new Vector<ushort>(source);
+                Vector<ushort> upper = new Vector<ushort>(source.Slice(Vector<ushort>.Count));
+
+                if (!IsAllowed(lower) || !IsAllowed(upper))
+                {
+                    // Do not advance the position so the scalar path can determine the exact invalid index.
+                    break;
+                }
+
+                if (write)
+                {
+                    Vector.Narrow(lower, upper).CopyTo(destination);
+                    destination = destination.Slice(Vector<byte>.Count);
+                }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
+            }
+
+            return GetBytesScalar(chars, bytes, write, position);
+        }
+
+        private int GetCharsVectorized(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            int available = write ? Math.Min(bytes.Length, chars.Length) : bytes.Length;
+            int position = 0;
+
+            Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
+
+            ReadOnlySpan<byte> source = bytes.Slice(0, available);
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available) :
+                Span<ushort>.Empty;
+
+            while (source.Length >= Vector<byte>.Count)
+            {
+                Vector<byte> value = new Vector<byte>(source);
+
+                if (!IsAllowed(value))
+                {
+                    // Do not advance the position so the scalar path can determine the exact invalid index.
+                    break;
+                }
+
+                if (write)
+                {
+                    Vector.Widen(value, out Vector<ushort> lower, out Vector<ushort> upper);
+                    lower.CopyTo(destination);
+                    upper.CopyTo(destination.Slice(Vector<ushort>.Count));
+                    destination = destination.Slice(Vector<byte>.Count);
+                }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
+            }
+
+            return GetCharsScalar(bytes, chars, write, position);
+        }
+
+        protected abstract bool IsAllowed(Vector<byte> value);
+        protected abstract bool IsAllowed(Vector<ushort> value);
+    }
+
+    internal sealed partial class NumericStringEncoding
+    {
+        protected override bool IsAllowed(Vector<byte> value)
+        {
+            // Allow ASCII digits.
+            Vector<byte> allowed = Vector.LessThanOrEqual(
+                value - new Vector<byte>((byte)'0'),
+                new Vector<byte>('9' - '0'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<byte>((byte)' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+
+        protected override bool IsAllowed(Vector<ushort> value)
+        {
+            // Allow ASCII digits.
+            Vector<ushort> allowed = Vector.LessThanOrEqual(
+                value - new Vector<ushort>('0'),
+                new Vector<ushort>('9' - '0'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<ushort>(' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+    }
+
+    internal sealed partial class PrintableStringEncoding
+    {
+        private const byte EqualsQuestionMarkMask = (byte)('=' ^ '?');
+
+        protected override bool IsAllowed(Vector<byte> value)
+        {
+            // Allow uppercase and lowercase ASCII letters.
+            Vector<byte> allowed = Vector.LessThanOrEqual(
+                (value | new Vector<byte>(0b100000)) - new Vector<byte>((byte)'a'),
+                new Vector<byte>('z' - 'a'));
+
+            // Allow apostrophe through colon, excluding asterisk.
+            allowed |= Vector.LessThanOrEqual(
+                value - new Vector<byte>((byte)'\''),
+                new Vector<byte>(':' - '\'')) & ~Vector.Equals(value, new Vector<byte>((byte)'*'));
+
+            // Allow equals sign and question mark by setting their only differing bit before comparing with '?'.
+            allowed |= Vector.Equals(value | new Vector<byte>(EqualsQuestionMarkMask), new Vector<byte>((byte)'?'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<byte>((byte)' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+
+        protected override bool IsAllowed(Vector<ushort> value)
+        {
+            // Allow uppercase and lowercase ASCII letters.
+            Vector<ushort> allowed = Vector.LessThanOrEqual(
+                (value | new Vector<ushort>(0b100000)) - new Vector<ushort>('a'),
+                new Vector<ushort>('z' - 'a'));
+
+            // Allow apostrophe through colon, excluding asterisk.
+            allowed |= Vector.LessThanOrEqual(
+                value - new Vector<ushort>('\''),
+                new Vector<ushort>(':' - '\'')) & ~Vector.Equals(value, new Vector<ushort>('*'));
+
+            // Allow equals sign and question mark by setting their only differing bit before comparing with '?'.
+            allowed |= Vector.Equals(value | new Vector<ushort>(EqualsQuestionMarkMask), new Vector<ushort>('?'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<ushort>(' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+    }
+
+    internal abstract class RestrictedAsciiRangeEncoding : SpanBasedEncoding
+    {
+        private readonly byte _minCharAllowed;
+        private readonly byte _range;
+
+        protected RestrictedAsciiRangeEncoding(byte minCharAllowed, byte maxCharAllowed)
+        {
+            Debug.Assert(minCharAllowed <= maxCharAllowed);
+            Debug.Assert(maxCharAllowed <= 0x7F);
+
+            _minCharAllowed = minCharAllowed;
+            _range = (byte)(maxCharAllowed - minCharAllowed);
+        }
+
+        public override int GetMaxByteCount(int charCount)
+        {
+            return charCount;
+        }
+
+        public override int GetMaxCharCount(int byteCount)
+        {
+            return byteCount;
+        }
+
+        protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            int position = 0;
+
+            if (chars.Length >= Vector<byte>.Count && Vector.IsHardwareAccelerated)
+            {
+                position = GetBytesVectorized(chars, bytes, write);
+            }
+
+            for (; position < chars.Length; position++)
+            {
+                char c = chars[position];
+
+                if (!IsAllowed(c))
+                {
+                    EncoderFallback.CreateFallbackBuffer().Fallback(c, position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    bytes[position] = (byte)c;
+                }
+            }
+
+            return chars.Length;
+        }
+
+        protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            int position = 0;
+
+            if (bytes.Length >= Vector<byte>.Count && Vector.IsHardwareAccelerated)
+            {
+                position = GetCharsVectorized(bytes, chars, write);
+            }
+
+            for (; position < bytes.Length; position++)
+            {
+                byte b = bytes[position];
+
+                if (!IsAllowed(b))
+                {
+                    DecoderFallback.CreateFallbackBuffer().Fallback(
+                        new[] { b },
+                        position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    chars[position] = (char)b;
+                }
+            }
+
+            return bytes.Length;
+        }
+
+        // The vectorization is left out of the GetChars and GetBytes directly to not regress the code size
+        // and register allocation for small inputs. Instead they are extracted methods.
+        private int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            int available = write ? Math.Min(chars.Length, bytes.Length) : chars.Length;
+            int position = 0;
+
+            Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
+
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available);
+            Span<byte> destination = write ? bytes.Slice(0, available) : Span<byte>.Empty;
+            Vector<ushort> minCharAllowed = new Vector<ushort>(_minCharAllowed);
+            Vector<ushort> range = new Vector<ushort>(_range);
+
+            while (source.Length >= Vector<byte>.Count)
+            {
+                Vector<ushort> lower = new Vector<ushort>(source);
+                Vector<ushort> upper = new Vector<ushort>(source.Slice(Vector<ushort>.Count));
+
+                if (!IsAllowed(lower, minCharAllowed, range) || !IsAllowed(upper, minCharAllowed, range))
+                {
+                    // If any element in the vector is not allowed, we break out and return the position before the
+                    // current vector's width so that it goes down the scalar path. The scalar path will determine the
+                    // precise location of the invalid element.
+                    break;
+                }
+
+                if (write)
+                {
+                    Vector.Narrow(lower, upper).CopyTo(destination);
+                    destination = destination.Slice(Vector<byte>.Count);
+                }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
+            }
+
+            return position;
+        }
+
+        private int GetCharsVectorized(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            int available = write ? Math.Min(bytes.Length, chars.Length) : bytes.Length;
+            int position = 0;
+
+            Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
+
+            ReadOnlySpan<byte> source = bytes.Slice(0, available);
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available) :
+                Span<ushort>.Empty;
+            Vector<byte> minCharAllowed = new Vector<byte>(_minCharAllowed);
+            Vector<byte> range = new Vector<byte>(_range);
+
+            while (source.Length >= Vector<byte>.Count)
+            {
+                Vector<byte> value = new Vector<byte>(source);
+
+                if (!IsAllowed(value, minCharAllowed, range))
+                {
+                    // If any element in the vector is not allowed, we break out and return the position before the
+                    // current vector's width so that it goes down the scalar path. The scalar path will determine the
+                    // precise location of the invalid element.
+                    break;
+                }
+
+                if (write)
+                {
+                    Vector.Widen(value, out Vector<ushort> lower, out Vector<ushort> upper);
+                    lower.CopyTo(destination);
+                    upper.CopyTo(destination.Slice(Vector<ushort>.Count));
+                    destination = destination.Slice(Vector<byte>.Count);
+                }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
+            }
+
+            return position;
+        }
+
+        private bool IsAllowed(byte value)
+        {
+            return (byte)(value - _minCharAllowed) <= _range;
+        }
+
+        private bool IsAllowed(char value)
+        {
+            return (uint)(value - _minCharAllowed) <= _range;
+        }
+
+        private static bool IsAllowed(Vector<byte> value, Vector<byte> minCharAllowed, Vector<byte> range)
+        {
+            Vector<byte> offset = value - minCharAllowed;
+            return Vector.LessThanOrEqualAll(offset, range);
+        }
+
+        private static bool IsAllowed(Vector<ushort> value, Vector<ushort> minCharAllowed, Vector<ushort> range)
+        {
+            Vector<ushort> offset = value - minCharAllowed;
+            return Vector.LessThanOrEqualAll(offset, range);
+        }
+    }
+
+    internal sealed partial class BMPEncoding
+    {
+        private const ushort SurrogateStart = 0xD800;
+        private const ushort SurrogateRange = 0xDFFF - SurrogateStart;
+
+        protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            if (chars.IsEmpty)
+            {
+                return 0;
+            }
+
+            int position = 0;
+            int writeIdx = 0;
+
+            if (chars.Length >= Vector<ushort>.Count && Vector.IsHardwareAccelerated)
+            {
+                position = GetBytesVectorized(chars, bytes, write);
+                writeIdx = checked(position * sizeof(ushort));
+            }
+
+            for (; position < chars.Length; position++)
+            {
+                char c = chars[position];
+
+                if (char.IsSurrogate(c))
+                {
+                    EncoderFallback.CreateFallbackBuffer().Fallback(c, position);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                ushort val16 = c;
+
+                if (write)
+                {
+                    bytes[writeIdx + 1] = (byte)val16;
+                    bytes[writeIdx] = (byte)(val16 >> 8);
+                }
+
+                writeIdx += sizeof(ushort);
+            }
+
+            return writeIdx;
+        }
+
+        protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            if (bytes.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (bytes.Length % sizeof(ushort) != 0)
+            {
+                DecoderFallback.CreateFallbackBuffer().Fallback(
+                    bytes.Slice(bytes.Length - 1).ToArray(),
+                    bytes.Length - 1);
+
+                Debug.Fail("Fallback should have thrown");
+                throw new InvalidOperationException();
+            }
+
+            int bytePosition = 0;
+            int writeIdx = 0;
+
+            if (bytes.Length >= Vector<ushort>.Count * sizeof(ushort) && Vector.IsHardwareAccelerated)
+            {
+                writeIdx = GetCharsVectorized(bytes, chars, write);
+                bytePosition = checked(writeIdx * sizeof(ushort));
+            }
+
+            for (int i = bytePosition; i < bytes.Length; i += sizeof(ushort))
+            {
+                char c = (char)BinaryPrimitives.ReadInt16BigEndian(bytes.Slice(i));
+
+                if (char.IsSurrogate(c))
+                {
+                    DecoderFallback.CreateFallbackBuffer().Fallback(
+                        bytes.Slice(i, sizeof(ushort)).ToArray(),
+                        i);
+
+                    Debug.Fail("Fallback should have thrown");
+                    throw new InvalidOperationException();
+                }
+
+                if (write)
+                {
+                    chars[writeIdx] = c;
+                }
+
+                writeIdx++;
+            }
+
+            return writeIdx;
+        }
+
+        // Keep the vectorization out of GetChars and GetBytes to avoid regressing code size
+        // and register allocation for small inputs.
+        private static int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            int available = write ? Math.Min(chars.Length, bytes.Length / sizeof(ushort)) : chars.Length;
+            int position = 0;
+
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available);
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<byte, ushort>(bytes).Slice(0, available) :
+                Span<ushort>.Empty;
+            Vector<ushort> surrogateStart = new Vector<ushort>(SurrogateStart);
+            Vector<ushort> surrogateRange = new Vector<ushort>(SurrogateRange);
+
+            while (source.Length >= Vector<ushort>.Count)
+            {
+                Vector<ushort> value = new Vector<ushort>(source);
+
+                if (ContainsSurrogate(value, surrogateStart, surrogateRange))
+                {
+                    // Do not advance the position so the scalar path can determine the exact surrogate index.
+                    break;
+                }
+
+                if (write)
+                {
+                    ToBigEndian(value).CopyTo(destination);
+                    destination = destination.Slice(Vector<ushort>.Count);
+                }
+
+                source = source.Slice(Vector<ushort>.Count);
+                position += Vector<ushort>.Count;
+            }
+
+            return position;
+        }
+
+        private static int GetCharsVectorized(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            int sourceLength = bytes.Length / sizeof(ushort);
+            int available = write ? Math.Min(sourceLength, chars.Length) : sourceLength;
+            int position = 0;
+
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<byte, ushort>(bytes).Slice(0, available);
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available) :
+                Span<ushort>.Empty;
+            Vector<ushort> surrogateStart = new Vector<ushort>(SurrogateStart);
+            Vector<ushort> surrogateRange = new Vector<ushort>(SurrogateRange);
+
+            while (source.Length >= Vector<ushort>.Count)
+            {
+                Vector<ushort> value = FromBigEndian(new Vector<ushort>(source));
+
+                if (ContainsSurrogate(value, surrogateStart, surrogateRange))
+                {
+                    // Do not advance the position so the scalar path can determine the exact surrogate index.
+                    break;
+                }
+
+                if (write)
+                {
+                    value.CopyTo(destination);
+                    destination = destination.Slice(Vector<ushort>.Count);
+                }
+
+                source = source.Slice(Vector<ushort>.Count);
+                position += Vector<ushort>.Count;
+            }
+
+            return position;
+        }
+
+        private static bool ContainsSurrogate(
+            Vector<ushort> value,
+            Vector<ushort> surrogateStart,
+            Vector<ushort> surrogateRange)
+        {
+            Vector<ushort> offset = value - surrogateStart;
+            return Vector.LessThanOrEqualAny(offset, surrogateRange);
+        }
+
+        private static Vector<ushort> FromBigEndian(Vector<ushort> value) =>
+            BitConverter.IsLittleEndian ? ReverseEndianness(value) : value;
+
+        private static Vector<ushort> ToBigEndian(Vector<ushort> value) =>
+            BitConverter.IsLittleEndian ? ReverseEndianness(value) : value;
+
+        private static Vector<ushort> ReverseEndianness(Vector<ushort> value) => (value << 8) | (value >> 8);
+    }
+}

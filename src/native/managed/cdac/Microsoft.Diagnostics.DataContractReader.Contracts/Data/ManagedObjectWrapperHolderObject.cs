@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ManagedObjectWrapperHolderObject))]
 internal sealed partial class ManagedObjectWrapperHolderObject : IData<ManagedObjectWrapperHolderObject>
 {
-    [Field] public TargetPointer WrappedObject { get; }
-    [Field] public TargetPointer Wrapper { get; }
+    [Field] public partial TargetPointer WrappedObject { get; }
+    [Field] public partial TargetPointer Wrapper { get; }
 }

@@ -328,10 +328,10 @@ struct RangeOps
     {
         if (unsignedAdd)
         {
-            bool r1StraddlesZero = r1.IsConstantRange() && (r1.LowerLimit().GetConstant() < 0) &&
-                                   (r1.UpperLimit().GetConstant() >= 0);
-            bool r2StraddlesZero = r2.IsConstantRange() && (r2.LowerLimit().GetConstant() < 0) &&
-                                   (r2.UpperLimit().GetConstant() >= 0);
+            bool r1StraddlesZero =
+                r1.IsConstantRange() && (r1.LowerLimit().GetConstant() < 0) && (r1.UpperLimit().GetConstant() >= 0);
+            bool r2StraddlesZero =
+                r2.IsConstantRange() && (r2.LowerLimit().GetConstant() < 0) && (r2.UpperLimit().GetConstant() >= 0);
             if (r1StraddlesZero || r2StraddlesZero)
             {
                 // Signed intervals that straddle zero are not monotonic when interpreted as unsigned.
@@ -355,7 +355,8 @@ struct RangeOps
                 static_assert(CheckedOps::Unsigned == true);
                 // For unsigned adds, require both unsigned and signed endpoint sums to not overflow.
                 bool requestedAddOverflows = CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), unsignedAdd);
-                bool signedEndpointOverflows = unsignedAdd && CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed);
+                bool signedEndpointOverflows =
+                    unsignedAdd && CheckedOps::AddOverflows(a.GetConstant(), b.GetConstant(), CheckedOps::Signed);
                 if (!requestedAddOverflows && !signedEndpointOverflows)
                 {
                     if (a.IsConstant() && b.IsConstant())
@@ -881,7 +882,7 @@ private:
 
     // Given the local variable, first find the definition of the local and find the range of the rhs.
     // Helper for GetRangeWorker.
-    Range ComputeRangeForLocalDef(BasicBlock* block, GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
+    Range ComputeRangeForLocalDef(GenTreeLclVarCommon* lcl, bool monIncreasing DEBUGARG(int indent));
 
     // Compute the range, rather than retrieve a cached value. Helper for GetRangeWorker.
     Range ComputeRange(BasicBlock* block, GenTree* expr, bool monIncreasing DEBUGARG(int indent));

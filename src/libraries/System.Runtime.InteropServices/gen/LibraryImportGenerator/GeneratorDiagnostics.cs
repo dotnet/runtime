@@ -23,6 +23,7 @@ namespace Microsoft.Interop
 
             public const string RequiresAllowUnsafeBlocks = Prefix + "1062";
             public const string UnnecessaryMarshallingInfo = Prefix + "1063";
+            public const string RequiresExplicitSafetyModifier = Prefix + "1064";
             public const string NotRecommendedGeneratedComInterfaceUsage = Prefix + "1092";
         }
 
@@ -203,6 +204,17 @@ namespace Microsoft.Interop
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescriptionLibraryImport)));
+
+        /// <inheritdoc cref="SR.RequiresExplicitSafetyModifierMessageLibraryImport"/>
+        public static readonly DiagnosticDescriptor RequiresExplicitSafetyModifier =
+            DiagnosticDescriptorHelper.Create(
+                Ids.RequiresExplicitSafetyModifier,
+                GetResourceString(nameof(SR.RequiresExplicitSafetyModifierTitleLibraryImport)),
+                GetResourceString(nameof(SR.RequiresExplicitSafetyModifierMessageLibraryImport)),
+                Category,
+                DiagnosticSeverity.Error,
+                isEnabledByDefault: true,
+                description: GetResourceString(nameof(SR.RequiresExplicitSafetyModifierDescriptionLibraryImport)));
 
         /// <inheritdoc cref="SR.UnnecessaryParameterMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =

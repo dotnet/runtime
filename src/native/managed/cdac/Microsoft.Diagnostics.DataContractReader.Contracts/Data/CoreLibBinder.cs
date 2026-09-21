@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CoreLibBinder))]
 internal sealed partial class CoreLibBinder : IData<CoreLibBinder>
 {
-    [Field] public TargetPointer Classes { get; }
+    [Field] public partial TargetPointer Classes { get; }
 }

@@ -110,19 +110,19 @@ namespace
     bool CheckLookupOption(const ConfigDWORDInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(const ConfigStringInfo & info, LookupOptions option)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((info.options & option) == option);
+        return (info.options & option) == option;
     }
 
     bool CheckLookupOption(LookupOptions infoOptions, LookupOptions optionToCheck)
     {
         LIMITED_METHOD_CONTRACT;
-        return ((infoOptions & optionToCheck) == optionToCheck);
+        return (infoOptions & optionToCheck) == optionToCheck;
     }
 
     //*****************************************************************************
@@ -136,7 +136,6 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             CANNOT_TAKE_LOCK;
         }
         CONTRACTL_END;
@@ -147,7 +146,7 @@ namespace
 
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         bool coreclrFallbackPrefix = CheckLookupOption(options, LookupOptions::CoreclrFallbackPrefix);
-        
+
         if (noPrefix)
         {
             if (namelen >= ARRAY_SIZE(buff))
@@ -179,8 +178,6 @@ namespace
         }
 
         wcscat_s(buff, ARRAY_SIZE(buff), name);
-
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         NewArrayHolder<WCHAR> ret = NULL;
         HRESULT hr = S_OK;
@@ -238,14 +235,12 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
             CANNOT_TAKE_LOCK;
         }
         CONTRACTL_END;
 
         SUPPORTS_DAC_HOST_ONLY;
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         int radix = CheckLookupOption(options, LookupOptions::ParseIntegerAsBase10)
             ? 10
@@ -261,12 +256,12 @@ namespace
             if (fSuccess)
             {
                 *result = configMaybe;
-                return (S_OK);
+                return S_OK;
             }
         }
 
         *result = defValue;
-        return (E_FAIL);
+        return E_FAIL;
     }
 
     LPWSTR GetConfigString(
@@ -277,13 +272,11 @@ namespace
         {
             NOTHROW;
             GC_NOTRIGGER;
-            FORBID_FAULT;
         }
         CONTRACTL_END;
 
         NewArrayHolder<WCHAR> ret(NULL);
 
-        FAULT_NOT_FATAL(); // We don't report OOM errors here, we return a default value.
 
         ret = EnvGetString(name, options);
         if (ret != NULL)
@@ -291,7 +284,7 @@ namespace
             if (*ret != W('\0'))
             {
                 ret.SuppressRelease();
-                return(ret);
+                return ret;
             }
             ret.Clear();
         }
@@ -444,7 +437,6 @@ DWORD CLRConfig::GetConfigValue(const ConfigDWORDInfo & info, /* [Out] */ bool *
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
@@ -513,14 +505,12 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END;
 
     LPWSTR result = NULL;
 
     // TODO: We swallow OOM exception here. Is this OK?
-    FAULT_NOT_FATAL();
 
     // If this fails, result will stay NULL.
     GetConfigValue(info, &result);
@@ -542,12 +532,10 @@ LPWSTR CLRConfig::GetConfigValue(const ConfigStringInfo & info)
 // static
 HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal)
 {
-    CONTRACT(HRESULT) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT (CONTRACT_RETURN E_OUTOFMEMORY);
-        POSTCONDITION(CheckPointer(outVal, NULL_OK)); // TODO: Should this check be *outVal instead of outVal?
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     LPWSTR result = NULL;
 
@@ -568,7 +556,7 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_
     }
 
     *outVal = result;
-    RETURN S_OK;
+    return S_OK;
 }
 
 //

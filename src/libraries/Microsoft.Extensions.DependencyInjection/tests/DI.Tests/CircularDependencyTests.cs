@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Tests.Fakes;
 using Xunit;
 
@@ -241,6 +243,26 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
+        public async Task ReentrantSingletonResolution_DoesNotCreateMultipleInstances()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<ReentrantSingleton>();
+            services.AddSingleton<ReentrantDependency>();
+            services.AddSingleton<ReentrantSingletonConsumer>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var consumer = serviceProvider.GetRequiredService<ReentrantSingletonConsumer>();
+            await consumer.Singleton.Initialization.WaitAsync(TimeSpan.FromSeconds(20));
+            var singleton = serviceProvider.GetRequiredService<ReentrantSingleton>();
+            var dependency = serviceProvider.GetRequiredService<ReentrantDependency>();
+
+            Assert.Same(consumer.Singleton, singleton);
+            Assert.Equal(1, dependency.SingletonInstanceCount);
+            Assert.IsType<InvalidOperationException>(dependency.ResolutionException);
+        }
+
+        [Fact]
         public void FactoryCircularDependency_NotDetectedByValidateOnBuild()
         {
             // This test verifies that ValidateOnBuild does NOT detect factory-based circular
@@ -265,6 +287,62 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             // Verify it's a circular dependency error
             Assert.Contains("circular dependency", exception.Message, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("FactoryCircularDependencyA", exception.Message);
+        }
+
+        private sealed class ReentrantSingleton
+        {
+            public ReentrantSingleton(ReentrantDependency dependency)
+            {
+                dependency.SingletonInstanceCount++;
+                // Start an initialization routine that attempts a re-entrant resolution of this singleton
+                // via the root IServiceProvider while the first instance is still being constructed.
+                Initialization = dependency.InitializeAsync();
+            }
+
+            public Task Initialization { get; }
+        }
+
+        private sealed class ReentrantDependency
+        {
+            private readonly SemaphoreSlim _connectionLock = new(1, 1);
+            private readonly IServiceProvider _serviceProvider;
+
+            public ReentrantDependency(IServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public int SingletonInstanceCount { get; set; }
+
+            public InvalidOperationException? ResolutionException { get; private set; }
+
+            public async Task InitializeAsync()
+            {
+                await _connectionLock.WaitAsync();
+
+                try
+                {
+                    _ = _serviceProvider.GetRequiredService<ReentrantSingleton>();
+                }
+                catch (InvalidOperationException exception)
+                {
+                    ResolutionException = exception;
+                }
+                finally
+                {
+                    _connectionLock.Release();
+                }
+            }
+        }
+
+        private sealed class ReentrantSingletonConsumer
+        {
+            public ReentrantSingletonConsumer(ReentrantSingleton singleton)
+            {
+                Singleton = singleton;
+            }
+
+            public ReentrantSingleton Singleton { get; }
         }
     }
 }

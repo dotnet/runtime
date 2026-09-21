@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.DebuggerRCThread))]
 internal sealed partial class DebuggerRCThread : IData<DebuggerRCThread>
 {
-    [Field] public TargetPointer DCB { get; }
+    [Field] public partial TargetPointer DCB { get; }
 }

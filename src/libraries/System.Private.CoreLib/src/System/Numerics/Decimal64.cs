@@ -6,9 +6,16 @@ using System.Buffers.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
+    /// <summary>
+    /// Represents a decimal floating-point number that uses the IEEE 754 <c>decimal64</c> interchange format, providing 16 decimal digits of precision.
+    /// </summary>
+    /// <remarks>The IEEE 754 standard defines two interchange encodings for decimal floating-point: binary integer decimal (BID) and densely packed decimal (DPD). Which encoding is used is determined by the underlying ABI for the platform and defaults to BID where the ABI does not otherwise specify.</remarks>
+    [Intrinsic]
+    [StructLayout(LayoutKind.Sequential)]
     public readonly struct Decimal64
         : IComparable,
           IComparable<Decimal64>,
@@ -45,19 +52,44 @@ namespace System.Numerics
         private const ulong SignMask = 0x8000_0000_0000_0000;
         private const ulong MostSignificantBitOfSignificandMask = 0x0020_0000_0000_0000;
         private const ulong NaNMask = 0x7C00_0000_0000_0000;
+        private const ulong SNaNMask = 0x7E00_0000_0000_0000;
+        private const ulong NaNPayloadMask = 0x0003_FFFF_FFFF_FFFF;
         private const ulong InfinityMask = 0x7800_0000_0000_0000;
         private const ulong MaxSignificand = 9_999_999_999_999_999;
         private const ulong MaxInternalValue = 0x77FB_86F2_6FC0_FFFF; // 9.999_999_999_999_999 * 10^384; aka 9_999_999_999_999_999 * 10^369
         private const ulong MinInternalValue = 0xF7FB_86F2_6FC0_FFFF; // -9.999_999_999_999_999 * 10^384; aka -9_999_999_999_999_999 * 10^369
 
+        // See `Decimal128` for how these are laid out and why they carry the digits they do.
+        private const ulong DegreesToRadiansHead = 174_532_925_199_432_957;
+        private const ulong DegreesToRadiansTail = 6_923_690_768_488_613;
+        private const int DegreesToRadiansExponent = -35;
+
+        private const ulong RadiansToDegreesHead = 572_957_795_130_823_208;
+        private const ulong RadiansToDegreesTail = 7_679_815_481_410_517;
+        private const int RadiansToDegreesExponent = -32;
+
+        /// <summary>Gets a value that represents positive <c>infinity</c>.</summary>
         public static Decimal64 PositiveInfinity => new Decimal64(PositiveInfinityValue);
+
+        /// <summary>Gets a value that represents negative <c>infinity</c>.</summary>
         public static Decimal64 NegativeInfinity => new Decimal64(NegativeInfinityValue);
+
+        /// <summary>Gets a value that represents <c>NaN</c>.</summary>
         public static Decimal64 NaN => new Decimal64(QuietNaNValue);
+
+        /// <summary>Gets a value that represents negative <c>zero</c>.</summary>
         public static Decimal64 NegativeZero => new Decimal64(NegativeZeroValue);
+
+        /// <summary>Gets the value <c>0</c> for the type.</summary>
         public static Decimal64 Zero => new Decimal64(ZeroValue);
+
+        /// <summary>Gets the minimum value of the current type.</summary>
         public static Decimal64 MinValue => new Decimal64(MinInternalValue);
+
+        /// <summary>Gets the maximum value of the current type.</summary>
         public static Decimal64 MaxValue => new Decimal64(MaxInternalValue);
 
+        /// <summary>Gets the smallest value such that can be added to <c>0</c> that does not result in <c>0</c>.</summary>
         public static Decimal64 Epsilon => new Decimal64(0x0000_0000_0000_0001); // Smallest positive subnormal value, aka 1 * 10^-398
 
         private static ReadOnlySpan<ulong> UInt64Powers10 =>
@@ -233,6 +265,30 @@ namespace System.Numerics
         {
             return Number.GetDecimalIeee754HashCode<Decimal64, ulong>(_value);
         }
+
+        /// <summary>Encodes a value as its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The BID bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static ulong EncodeBinary(Decimal64 x) => x._value;
+
+        /// <summary>Decodes a value from its IEEE 754 binary integer decimal (BID) representation.</summary>
+        /// <param name="x">The BID bit pattern to decode.</param>
+        /// <returns>The value represented by the BID bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal64 DecodeBinary(ulong x) => new Decimal64(x);
+
+        /// <summary>Encodes a value as its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The value to encode.</param>
+        /// <returns>The DPD bit pattern of <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static ulong EncodeDecimal(Decimal64 x) => Number.EncodeDecimalIeee754<Decimal64, ulong>(x._value);
+
+        /// <summary>Decodes a value from its IEEE 754 densely packed decimal (DPD) representation.</summary>
+        /// <param name="x">The DPD bit pattern to decode.</param>
+        /// <returns>The value represented by the DPD bit pattern <paramref name="x" />.</returns>
+        [CLSCompliant(false)]
+        public static Decimal64 DecodeDecimal(ulong x) => new Decimal64(Number.DecodeDecimalIeee754<Decimal64, ulong>(x));
 
         /// <summary>
         /// Returns a string representation of the current value.
@@ -921,6 +977,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
         public static Decimal64 Cosh(Decimal64 x) => new Decimal64(Number.CoshDecimalIeee754<Decimal64, ulong>(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static Decimal64 DegreesToRadians(Decimal64 degrees) => new Decimal64(Number.MultiplyByWideConstantDecimalIeee754<Decimal64, ulong>(degrees._value, DegreesToRadiansHead, DegreesToRadiansTail, DegreesToRadiansExponent));
+
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp(TSelf)" />
         public static Decimal64 Exp(Decimal64 x) => new Decimal64(Number.ExpDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -951,6 +1010,9 @@ namespace System.Numerics
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Decimal64 x) => Number.ILogBDecimalIeee754<Decimal64, ulong>(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static Decimal64 Lerp(Decimal64 value1, Decimal64 value2, Decimal64 amount) => MultiplyAddEstimate(value1, One - amount, value2 * amount);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
         public static Decimal64 Log(Decimal64 x) => new Decimal64(Number.LogDecimalIeee754<Decimal64, ulong>(x._value));
 
@@ -974,6 +1036,15 @@ namespace System.Numerics
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
         public static Decimal64 Pow(Decimal64 x, Decimal64 y) => new Decimal64(Number.PowDecimalIeee754<Decimal64, ulong>(x._value, y._value));
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static Decimal64 RadiansToDegrees(Decimal64 radians) => new Decimal64(Number.MultiplyByWideConstantDecimalIeee754<Decimal64, ulong>(radians._value, RadiansToDegreesHead, RadiansToDegreesTail, RadiansToDegreesExponent));
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
+        public static Decimal64 ReciprocalEstimate(Decimal64 x) => One / x;
+
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalSqrtEstimate(TSelf)" />
+        public static Decimal64 ReciprocalSqrtEstimate(Decimal64 x) => One / Sqrt(x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.RootN(TSelf, int)" />
         public static Decimal64 RootN(Decimal64 x, int n) => new Decimal64(Number.RootNDecimalIeee754<Decimal64, ulong>(x._value, n));
@@ -1025,13 +1096,13 @@ namespace System.Numerics
         /// <summary>Computes the quantum of a value: one unit in the last place sharing its exponent.</summary>
         /// <param name="x">The value whose quantum is returned.</param>
         /// <returns>The quantum of <paramref name="x" />.</returns>
-        public static Decimal64 Quantum(Decimal64 x) => new Decimal64(Number.QuantumDecimalIeee754<Decimal64, ulong>(x._value));
+        public static Decimal64 GetQuantum(Decimal64 x) => new Decimal64(Number.QuantumDecimalIeee754<Decimal64, ulong>(x._value));
 
         /// <summary>Determines whether two values have the same quantum (exponent).</summary>
         /// <param name="x">The first value to compare.</param>
         /// <param name="y">The second value to compare.</param>
         /// <returns><c>true</c> if <paramref name="x" /> and <paramref name="y" /> have the same quantum; otherwise, <c>false</c>.</returns>
-        public static bool SameQuantum(Decimal64 x, Decimal64 y) => Number.SameQuantumDecimalIeee754<Decimal64, ulong>(x._value, y._value);
+        public static bool HaveSameQuantum(Decimal64 x, Decimal64 y) => Number.SameQuantumDecimalIeee754<Decimal64, ulong>(x._value, y._value);
 
         /// <summary>Computes the absolute of a value.</summary>
         /// <param name="value">The value for which to get its absolute.</param>
@@ -1216,7 +1287,7 @@ namespace System.Numerics
         static int INumberBase<Decimal64>.Radix => 10;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
-        static bool INumberBase<Decimal64>.IsCanonical(Decimal64 value) => Number.IsCanonicalDecimalIeee754<Decimal64, ulong>(value._value, nanReservedMask: 0x01FC_0000_0000_0000, nanPayloadMask: 0x0003_FFFF_FFFF_FFFF, maxNaNPayload: 999_999_999_999_999);
+        static bool INumberBase<Decimal64>.IsCanonical(Decimal64 value) => Number.IsCanonicalDecimalIeee754<Decimal64, ulong>(value._value, nanReservedMask: 0x01FC_0000_0000_0000, nanPayloadMask: NaNPayloadMask, maxNaNPayload: 999_999_999_999_999);
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
         static bool INumberBase<Decimal64>.IsComplexNumber(Decimal64 value) => false;
@@ -1672,9 +1743,9 @@ namespace System.Numerics
             return Number.UInt64ToDecStr(significand);
         }
 
-        static unsafe ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NumberToSignificand(ref Number.NumberBuffer number, int digits)
         {
-            return Number.DigitsToUInt64(number.DigitsPtr, digits);
+            return Number.DigitsToUInt64(number.Digits.Slice(0, digits));
         }
 
         static Decimal64 IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.Construct(ulong value) => new Decimal64(value);
@@ -1710,6 +1781,10 @@ namespace System.Numerics
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.MostSignificantBitOfSignificandMask => MostSignificantBitOfSignificandMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaNMask => NaNMask;
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SNaNMask => SNaNMask;
+
+        static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.NaNPayloadMask => NaNPayloadMask;
 
         static ulong IDecimalIeee754ParseAndFormatInfo<Decimal64, ulong>.SignMask => SignMask;
 

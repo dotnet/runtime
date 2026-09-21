@@ -6,6 +6,7 @@
     <CompilerVisibleProperty Include="TargetArchitecture" />
     <CompilerVisibleProperty Include="CLRTestPriorityToBuild" />
     <CompilerVisibleProperty Include="TestBuildMode" />
+    <CompilerVisibleProperty Include="RequiresProcessIsolation" />
     <!-- Properties that influence test harness generation -->
     <CompilerVisibleProperty Include="InMergedTestDirectory" />
     <CompilerVisibleProperty Include="IsMergedTestRunnerAssembly" />
@@ -24,6 +25,27 @@
       <_ResolvedProjectReferenceFiles Include="@(ReferencePath->ClearMetadata())" Condition="'%(ReferencePath.ReferenceSourceTarget)' == 'ProjectReference'" />
       <_ResolvedProjectReferenceFiles SingleTestDisplayName="$([MSBuild]::MakeRelative('$(TestBinDir)', '%(Identity)'))" />
       <AdditionalFiles Include="@(_ResolvedProjectReferenceFiles)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="WriteHasOutOfProcessTestsMarker" AfterTargets="Build">
+    <PropertyGroup>
+      <_HasOutOfProcessTestsMarker>$(OutputPath)$(AssemblyName).HasOutOfProcessTests</_HasOutOfProcessTestsMarker>
+      <!-- allTargets output is reused by target-specific test jobs without rebuilding the merged runner. -->
+      <_ShouldWriteHasOutOfProcessTestsMarker
+        Condition="'$(IsMergedTestRunnerAssembly)' == 'true' and '@(OutOfProcessTests)' != '' and '$(RuntimeFlavor)' == 'coreclr' and ('$(TargetOS)' == 'browser' or '$(CLRTestBuildAllTargets)' == 'allTargets')">true</_ShouldWriteHasOutOfProcessTestsMarker>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(_HasOutOfProcessTestsMarker)"
+      Lines="HasOutOfProcessTests"
+      Overwrite="true"
+      WriteOnlyWhenDifferent="true"
+      Condition="'$(_ShouldWriteHasOutOfProcessTestsMarker)' == 'true'" />
+    <Delete
+      Files="$(_HasOutOfProcessTestsMarker)"
+      Condition="Exists('$(_HasOutOfProcessTestsMarker)') and '$(_ShouldWriteHasOutOfProcessTestsMarker)' != 'true'" />
+    <ItemGroup Condition="'$(_ShouldWriteHasOutOfProcessTestsMarker)' == 'true'">
+      <FileWrites Include="$(_HasOutOfProcessTestsMarker)" />
     </ItemGroup>
   </Target>
 </Project>

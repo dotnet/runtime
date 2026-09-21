@@ -338,6 +338,18 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 // Note: claimantCredHandle can be null
 // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
 
+    // Guard against a malformed channel binding token size. A negative value would be cast to a
+    // huge size_t below and cause gss_init_sec_context to read past the buffer.
+    if (cbtSize < 0)
+    {
+        *minorStatus = 0;
+        outBuffer->length = 0;
+        outBuffer->data = NULL;
+        *retFlags = 0;
+        *isNtlmUsed = 0;
+        return GSS_S_BAD_BINDINGS;
+    }
+
 #if HAVE_GSS_SPNEGO_MECHANISM
     gss_OID krbMech = GSS_KRB5_MECHANISM;
     gss_OID desiredMech;
@@ -405,6 +417,8 @@ uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
 uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
                                             GssCredId* acceptorCredHandle,
                                             GssCtxId** contextHandle,
+                                            void* cbt,
+                                            int32_t cbtSize,
                                             uint8_t* inputBytes,
                                             uint32_t inputLength,
                                             PAL_GssBuffer* outBuffer,
@@ -416,18 +430,40 @@ uint32_t NetSecurityNative_AcceptSecContext(uint32_t* minorStatus,
     assert(contextHandle != NULL);
     assert(inputBytes != NULL || inputLength == 0);
     assert(outBuffer != NULL);
+    assert(retFlags != NULL);
     assert(isNtlmUsed != NULL);
+    assert(cbt != NULL || cbtSize == 0);
     // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
+
+    // Guard against a malformed channel binding token size. A negative value would be cast to a
+    // huge size_t below and cause gss_accept_sec_context to read past the buffer.
+    if (cbtSize < 0)
+    {
+        *minorStatus = 0;
+        outBuffer->length = 0;
+        outBuffer->data = NULL;
+        *retFlags = 0;
+        *isNtlmUsed = 0;
+        return GSS_S_BAD_BINDINGS;
+    }
 
     GssBuffer inputToken = {.length = inputLength, .value = inputBytes};
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
+
+    struct gss_channel_bindings_struct gssCbt;
+    if (cbt != NULL)
+    {
+        memset(&gssCbt, 0, sizeof(struct gss_channel_bindings_struct));
+        gssCbt.application_data.length = (size_t)cbtSize;
+        gssCbt.application_data.value = cbt;
+    }
 
     gss_OID mechType = GSS_C_NO_OID;
     uint32_t majorStatus = gss_accept_sec_context(minorStatus,
                                                   contextHandle,
                                                   acceptorCredHandle,
                                                   &inputToken,
-                                                  GSS_C_NO_CHANNEL_BINDINGS,
+                                                  (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
                                                   NULL,
                                                   &mechType,
                                                   &gssBuffer,

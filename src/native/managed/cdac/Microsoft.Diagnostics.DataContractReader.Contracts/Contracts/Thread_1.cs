@@ -10,7 +10,6 @@ internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
     private readonly TargetPointer _threadStoreAddr;
-    private readonly Target.TypeInfo _threadTypeInfo;
 
     [Flags]
     private enum TLSIndexType
@@ -51,7 +50,6 @@ internal readonly struct Thread_1 : IThread
     {
         _target = target;
         _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
-        _threadTypeInfo = target.GetTypeInfo(DataType.Thread);
     }
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
@@ -195,7 +193,7 @@ internal readonly struct Thread_1 : IThread
 
         stackBase = thread.CachedStackBase;
         stackLimit = thread.CachedStackLimit;
-        frameAddress = threadPointer + (ulong)_threadTypeInfo.Fields[nameof(Data.Thread.Frame)].Offset;
+        frameAddress = threadPointer + (ulong)Data.Thread.GetFrameOffset(_target);
     }
 
     // happens inside critical section
@@ -288,8 +286,7 @@ internal readonly struct Thread_1 : IThread
         if (exceptionInfo is null || exceptionInfo.ThrownObject == TargetPointer.Null)
             return TargetPointer.Null;
 
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.ExceptionInfo);
-        return exceptionTrackerAddr + (ulong)type.Fields[nameof(Data.ExceptionInfo.ThrownObject)].Offset;
+        return exceptionTrackerAddr + (ulong)Data.ExceptionInfo.GetThrownObjectOffset(_target);
     }
 
     TargetPointer IThread.GetCurrentExceptionHandle(TargetPointer threadPointer)

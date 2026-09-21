@@ -2724,7 +2724,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // 'data' goes into REG_T4 (REG_WRITE_BARRIER_SRC)
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else // A normal store, not a WriteBarrier store
     {
@@ -3306,8 +3306,6 @@ int CodeGenInterface::genTotalFrameSize() const
     // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
     // since we don't use "push" instructions to save them, we don't have to do the
     // save of these varargs register arguments as the first thing in the prolog.
-
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -5523,34 +5521,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         params.sigInfo = call->callSig;
     }
-
-    if (call->IsFastTailCall())
-    {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
-
-        // The epilog may use and trash some registers for the GS cookie check.
-        // Make sure we have no non-standard args that may be trash if this is
-        // a tailcall.
-        if (m_compiler->getNeedsGSSecurityCookie())
-        {
-            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
-        }
-
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            for (unsigned i = 0; i < arg.AbiInfo.NumSegments; i++)
-            {
-                const ABIPassingSegment& seg = arg.AbiInfo.Segment(i);
-                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
-                {
-                    JITDUMP("Tail call node:\n");
-                    DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
-                    assert(!"Argument to tailcall may be trashed by epilog");
-                }
-            }
-        }
-    }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
     GenTree* target = getCallTarget(call, &params.methHnd);
 

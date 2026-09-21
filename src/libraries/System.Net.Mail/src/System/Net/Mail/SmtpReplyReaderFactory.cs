@@ -32,6 +32,10 @@ namespace System.Net.Mail
         private byte[]? _byteBuffer;
         private SmtpReplyReader? _currentReader;
         private const int DefaultBufferSize = 256;
+        // RFC 4954 section 4 recommends accepting authentication replies up to 12,288 octets.
+        private const int MaxReplyLineLength = 16 * 1024;
+        // SMTP does not define a maximum size for a multiline reply.
+        private const int MaxReplyLength = 256 * 1024;
         private ReadState _readState = ReadState.Status0;
         private SmtpStatusCode _statusCode;
 
@@ -260,6 +264,8 @@ namespace System.Net.Mail
 
             var builder = new StringBuilder();
             var lines = new List<LineInfo>();
+            int lineLength = 0;
+            int replyLength = 0;
             int statusRead = 0;
 
             int start = 0;
@@ -279,6 +285,14 @@ namespace System.Net.Mail
 
                 int actual = ProcessRead(_byteBuffer!.AsSpan(start, read - start), true);
 
+                if (actual > MaxReplyLineLength - lineLength ||
+                    actual > MaxReplyLength - replyLength)
+                {
+                    throw new FormatException(SR.SmtpInvalidResponse);
+                }
+                lineLength += actual;
+                replyLength += actual;
+
                 if (statusRead < 4)
                 {
                     int left = Math.Min(4 - statusRead, actual);
@@ -296,6 +310,7 @@ namespace System.Net.Mail
 
                 if (_readState == ReadState.Status0)
                 {
+                    lineLength = 0;
                     statusRead = 0;
                     lines.Add(new LineInfo(_statusCode, builder.ToString(0, builder.Length - 2))); // Exclude CRLF
 

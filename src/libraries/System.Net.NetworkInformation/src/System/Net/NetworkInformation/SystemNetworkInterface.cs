@@ -79,11 +79,25 @@ namespace System.Net.NetworkInformation
 
         internal static unsafe NetworkInterface[] GetNetworkInterfaces()
         {
-            AddressFamily family = AddressFamily.Unspecified;
             uint bufferSize = 0;
 
             List<SystemNetworkInterface> interfaceList = new List<SystemNetworkInterface>();
 
+            // GetAdaptersAddresses without GAA_FLAG_INCLUDE_ALL_INTERFACES returns only real
+            // network adapters — roughly the same set shown by ipconfig and ncpa.cpl, and the
+            // same set .NET 8 returned. Starting with .NET 9, GAA_FLAG_INCLUDE_ALL_INTERFACES
+            // was added, which also surfaces NDIS filter modules (WFP, QoS, Hyper-V extension
+            // filters) that have no IP stack and are not shown by any standard Windows tool.
+            // Those extra entries all report OperationalStatus.Up, which causes
+            // GetIsNetworkAvailable() to return true even when no real network is present.
+            //
+            // Collect the adapter GUIDs from the non-IncludeAllInterfaces call (the
+            // "ipconfig-equivalent" set). Any adapter absent from that set but reporting Up
+            // is a filter module; mark it Unknown so callers can restore the original behavior:
+            //   ni.OperationalStatus != OperationalStatus.Unknown
+            HashSet<string> legacyGuids = GetLegacyAdapterGuids();
+
+            // Full list including all NDIS interfaces.
             Interop.IpHlpApi.GetAdaptersAddressesFlags flags =
                 Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeGateways |
                 Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeWins |
@@ -91,17 +105,16 @@ namespace System.Net.NetworkInformation
 
             // Figure out the right buffer size for the adapter information.
             uint result = Interop.IpHlpApi.GetAdaptersAddresses(
-                family, (uint)flags, IntPtr.Zero, IntPtr.Zero, &bufferSize);
+                AddressFamily.Unspecified, (uint)flags, IntPtr.Zero, IntPtr.Zero, &bufferSize);
 
             while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
             {
-
                 // Allocate the buffer and get the adapter info.
                 IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
                 try
                 {
                     result = Interop.IpHlpApi.GetAdaptersAddresses(
-                        family, (uint)flags, IntPtr.Zero, buffer, &bufferSize);
+                        AddressFamily.Unspecified, (uint)flags, IntPtr.Zero, buffer, &bufferSize);
 
                     // If succeeded, we're going to add each new interface.
                     if (result == Interop.IpHlpApi.ERROR_SUCCESS)
@@ -111,7 +124,7 @@ namespace System.Net.NetworkInformation
                         while (adapterAddresses != null)
                         {
                             // Traverse the list, marshal in the native structures, and create new NetworkInterfaces.
-                            interfaceList.Add(new SystemNetworkInterface(in *adapterAddresses));
+                            interfaceList.Add(new SystemNetworkInterface(in *adapterAddresses, legacyGuids));
                             adapterAddresses = adapterAddresses->next;
                         }
                     }
@@ -137,7 +150,47 @@ namespace System.Net.NetworkInformation
             return interfaceList.ToArray();
         }
 
-        internal SystemNetworkInterface(in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses)
+        // Calls GetAdaptersAddresses without GAA_FLAG_INCLUDE_ALL_INTERFACES and returns
+        // the set of adapter GUIDs (AdapterName) it reports — the same adapters visible
+        // in ipconfig and ncpa.cpl.  NDIS filter modules are absent from this set.
+        private static unsafe HashSet<string> GetLegacyAdapterGuids()
+        {
+            Interop.IpHlpApi.GetAdaptersAddressesFlags legacyFlags =
+                Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeGateways |
+                Interop.IpHlpApi.GetAdaptersAddressesFlags.IncludeWins;
+
+            uint bufferSize = 0;
+            uint result = Interop.IpHlpApi.GetAdaptersAddresses(
+                AddressFamily.Unspecified, (uint)legacyFlags, IntPtr.Zero, IntPtr.Zero, &bufferSize);
+
+            HashSet<string> guids = new HashSet<string>();
+            while (result == Interop.IpHlpApi.ERROR_BUFFER_OVERFLOW)
+            {
+                IntPtr buffer = Marshal.AllocHGlobal((int)bufferSize);
+                try
+                {
+                    result = Interop.IpHlpApi.GetAdaptersAddresses(
+                        AddressFamily.Unspecified, (uint)legacyFlags, IntPtr.Zero, buffer, &bufferSize);
+
+                    if (result == Interop.IpHlpApi.ERROR_SUCCESS)
+                    {
+                        Interop.IpHlpApi.IpAdapterAddresses* addr = (Interop.IpHlpApi.IpAdapterAddresses*)buffer;
+                        while (addr != null)
+                        {
+                            guids.Add(addr->AdapterName);
+                            addr = addr->next;
+                        }
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(buffer);
+                }
+            }
+            return guids;
+        }
+
+        internal SystemNetworkInterface(in Interop.IpHlpApi.IpAdapterAddresses ipAdapterAddresses, HashSet<string> legacyGuids)
         {
             // Store the common API information.
             _id = ipAdapterAddresses.AdapterName;
@@ -148,7 +201,10 @@ namespace System.Net.NetworkInformation
             _physicalAddress = ipAdapterAddresses.Address;
 
             _type = ipAdapterAddresses.type;
-            _operStatus = ipAdapterAddresses.operStatus;
+            // Interfaces absent from the ipconfig-equivalent set (see GetLegacyAdapterGuids) are
+            // NDIS filter modules or adapters with no IP stack — mark them Unknown so callers can
+            // restore ipconfig-equivalent behavior: ni.OperationalStatus != OperationalStatus.Unknown.
+            _operStatus = legacyGuids.Contains(_id) ? ipAdapterAddresses.operStatus : OperationalStatus.Unknown;
             _speed = unchecked((long)ipAdapterAddresses.receiveLinkSpeed);
 
             // API specific info.

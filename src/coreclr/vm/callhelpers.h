@@ -104,178 +104,9 @@ private:
     }
 #endif // _DEBUG
 
-    void DefaultInit(OBJECTREF* porProtectedThis)
-    {
-        CONTRACTL
-        {
-            MODE_ANY;
-            GC_TRIGGERS;
-            THROWS;
-        }
-        CONTRACTL_END;
-
-#ifdef _DEBUG
-        //
-        // Make sure we are passing in a 'this' if and only if it is required
-        //
-        if (m_pMD->IsVtableMethod())
-        {
-            CONSISTENCY_CHECK_MSG(NULL != porProtectedThis, "You did not pass in the 'this' object for a vtable method");
-        }
-        else
-        {
-            if (NULL != porProtectedThis)
-            {
-                if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AssertOnUnneededThis))
-                {
-                    CONSISTENCY_CHECK_MSG(NULL == porProtectedThis, "You passed in a 'this' object to a non-vtable method.");
-                }
-                else
-                {
-                    LogWeakAssert();
-                }
-
-            }
-        }
-#endif // _DEBUG
-
-        m_pCallTarget = m_pMD->GetCallTarget(porProtectedThis);
-
-        m_argIt.ForceSigWalk();
-    }
-
-    void DefaultInit(TypeHandle th)
-    {
-        CONTRACTL
-        {
-            MODE_ANY;
-        GC_TRIGGERS;
-        THROWS;
-        }
-        CONTRACTL_END;
-
-        m_pCallTarget = m_pMD->GetCallTarget(NULL, th);
-
-        m_argIt.ForceSigWalk();
-}
-
     void CallTargetWorker(const ARG_SLOT *pArguments, ARG_SLOT *pReturnValue, int cbReturnValue);
 
 public:
-    // Used to avoid touching metadata for CoreLib methods.
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(BinderMethodID id, OBJECTREF* porProtectedThis = NULL) :
-        m_pMD(
-            CoreLibBinder::GetMethod(id)
-            ),
-        m_methodSig(id),
-        m_argIt(&m_methodSig)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-        DefaultInit(porProtectedThis);
-    }
-
-    // Used to avoid touching metadata for CoreLib methods.
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(BinderMethodID id, OBJECTHANDLE hThis) :
-        m_pMD(
-            CoreLibBinder::GetMethod(id)
-            ),
-        m_methodSig(id),
-        m_argIt(&m_methodSig)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        DefaultInit((OBJECTREF*)hThis);
-    }
-
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(MethodDesc* pMD, OBJECTREF* porProtectedThis = NULL) :
-        m_pMD(pMD),
-        m_methodSig(pMD),
-        m_argIt(&m_methodSig)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        if (porProtectedThis == NULL)
-        {
-            // We don't have a "this" pointer - ensure that we have activated the containing module
-            m_pMD->EnsureActive();
-        }
-
-        DefaultInit(porProtectedThis);
-    }
-
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(MethodDesc* pMD, OBJECTHANDLE hThis) :
-        m_pMD(pMD),
-        m_methodSig(pMD),
-        m_argIt(&m_methodSig)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (hThis == NULL)
-        {
-            // We don't have a "this" pointer - ensure that we have activated the containing module
-            m_pMD->EnsureActive();
-        }
-
-        DefaultInit((OBJECTREF*)hThis);
-    }
-
-    // instance methods must pass in the 'this' object
-    // static methods must pass null
-    MethodDescCallSite(MethodDesc* pMD, LPHARDCODEDMETASIG pwzSignature, OBJECTREF* porProtectedThis = NULL) :
-        m_pMD(pMD),
-        m_methodSig(pwzSignature),
-        m_argIt(&m_methodSig)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (porProtectedThis == NULL)
-        {
-            // We don't have a "this" pointer - ensure that we have activated the containing module
-            m_pMD->EnsureActive();
-        }
-
-        DefaultInit(porProtectedThis);
-    }
-
-    MethodDescCallSite(MethodDesc* pMD, TypeHandle th) :
-        m_pMD(pMD),
-        m_methodSig(pMD, th),
-        m_argIt(&m_methodSig)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-            MODE_COOPERATIVE;
-        }
-        CONTRACTL_END;
-
-        // We don't have a "this" pointer - ensure that we have activated the containing module
-        m_pMD->EnsureActive();
-
-        DefaultInit(th);
-    }
-
     //
     // Only use this constructor if you're certain you know where
     // you're going and it cannot be affected by generics/virtual
@@ -285,6 +116,30 @@ public:
         m_pMD(pMD),
         m_pCallTarget(pCallTarget),
         m_methodSig(pMD),
+        m_argIt(&m_methodSig)
+    {
+        CONTRACTL
+        {
+            THROWS;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        m_pMD->EnsureActive();
+
+        m_argIt.ForceSigWalk();
+    }
+
+    //
+    // Only use this constructor if you're certain you know where
+    // you're going and it cannot be affected by generics/virtual
+    // dispatch/etc..
+    //
+    MethodDescCallSite(MethodDesc* pMD, PCODE pCallTarget, TypeHandle th) :
+        m_pMD(pMD),
+        m_pCallTarget(pCallTarget),
+        m_methodSig(pMD, th),
         m_argIt(&m_methodSig)
     {
         CONTRACTL
@@ -665,13 +520,19 @@ public:
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-        GCX_PREEMP();
+        // The callee may be Ex::RhThrowEx/RhThrowHwEx/RhRethrow, which raise the managed exception
+        // that resumes execution by throwing a native WASM exception tag through this frame. The
+        // region form is required so a plain holder destructor does not flip the GC mode as that
+        // tag unwinds past this point.
+        GCX_PREEMP_REGION_BEGIN();
 
         PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
         _ASSERTE(methodEntry != (PCODE)NULL);
 
         auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
         fptr(args...);
+
+        GCX_PREEMP_REGION_END();
     }
 
     template<typename Ret, typename... Args>
@@ -689,13 +550,20 @@ public:
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-        GCX_PREEMP();
+        Ret ret;
+
+        // See the comment in InvokeDirect above for why the region form is required here.
+        GCX_PREEMP_REGION_BEGIN();
 
         PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
         _ASSERTE(methodEntry != (PCODE)NULL);
 
         auto fptr = reinterpret_cast<Ret(*)(Args...)>(methodEntry);
-        return fptr(args...);
+        ret = fptr(args...);
+
+        GCX_PREEMP_REGION_END();
+
+        return ret;
     }
 };
 

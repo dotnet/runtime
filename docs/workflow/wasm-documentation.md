@@ -51,7 +51,7 @@ For debugging instructions including VS Code and Chrome DevTools setup, see the 
 
 ### Running coreclr callhelpers generator
 
-After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/tasks/WasmAppBuilder` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
+After building the runtime, use the `generate-coreclr-helpers` script for your platform (`.cmd` or `.sh`) in `src/coreclr/vm/wasm` to [re]generate the call helpers in `src/coreclr/vm/wasm`.
 
 ## Features and Configuration
 
@@ -63,10 +63,10 @@ After building the runtime, use the `generate-coreclr-helpers` script for your p
 - **[JSInterop in Wasm](https://learn.microsoft.com/en-us/aspnet/core/client-side/dotnet-interop/wasm-browser-app)** - JavaScript interoperability for WebAssembly applications
 
 ### Globalization and ICU
-- **[ICU for WebAssembly](../../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
+- **[ICU for WebAssembly](../design/features/globalization-icu-wasm.md)** - Globalization and ICU database configuration
 
 ### Testing WebAssembly Changes
-For testing WebAssembly implementation changes end-to-end, see the [testing documentation](../testing/mono/testing.md#testing-webassembly).
+For testing WebAssembly implementation changes end-to-end, see the [testing documentation](testing/mono/testing.md#testing-webassembly).
 
 ## Advanced Topics
 

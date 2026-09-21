@@ -20,6 +20,9 @@
          Suppress the NU1511 warning in the whole project as putting it on a P2P doesn't work: https://github.com/NuGet/Home/issues/14121 -->
     <NoWarn>$(NoWarn);NU1511</NoWarn>
     <WasmEnableStreamingResponse>false</WasmEnableStreamingResponse>
+
+    <!-- Remove when PublishReadyToRun becomes default https://github.com/dotnet/runtime/issues/132466 -->
+    <PublishReadyToRun Condition="'$(PublishReadyToRun)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">true</PublishReadyToRun>
   </PropertyGroup>
 
   <!-- Make debugging easier -->

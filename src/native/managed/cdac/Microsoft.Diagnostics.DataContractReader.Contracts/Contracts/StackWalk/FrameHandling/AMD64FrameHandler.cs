@@ -42,7 +42,7 @@ internal class AMD64FrameHandler(Target target, ContextHolder<AMD64Context> cont
         else
         {
             // Non-Windows case, the stack pointer is the address immediately following HijacksArgs
-            uint hijackArgsSize = _target.GetTypeInfo(DataType.HijackArgs).Size ?? throw new InvalidOperationException("HijackArgs size is not set");
+            uint hijackArgsSize = Data.HijackArgs.GetSize(_target);
             _holder.StackPointer = frame.HijackArgsPtr + hijackArgsSize;
         }
 

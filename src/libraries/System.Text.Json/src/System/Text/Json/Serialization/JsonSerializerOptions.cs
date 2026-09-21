@@ -886,9 +886,13 @@ namespace System.Text.Json
         /// <remarks>
         /// By default, it's set to <see langword="false"/>. When set to <see langword="true"/>, types that
         /// declare a closed set of derived types (and that do not specify an explicit
-        /// <see cref="Serialization.JsonDerivedTypeAttribute"/> list) are treated as polymorphic, with one
-        /// derived type registered per member of the closed hierarchy. The simple name of each derived type,
-        /// equivalent to the result of <c>nameof</c>, is used as its type discriminator.
+        /// <see cref="Serialization.JsonDerivedTypeAttribute"/> list) are treated as polymorphic. Closed
+        /// derived types are expanded recursively, and each terminal derived type is registered using its
+        /// simple name, equivalent to the result of <c>nameof</c>, as its type discriminator.
+        /// If a type declares one or more <see cref="Serialization.JsonDerivedTypeAttribute"/> registrations,
+        /// inference is skipped for that type and only the explicitly registered derived types are used.
+        /// Polymorphism configuration declared on derived types applies to their respective contracts and does
+        /// not affect inference for the base type.
         /// </remarks>
         public bool InferClosedTypePolymorphism
         {
@@ -909,7 +913,7 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                Debug.Assert(TypeInfoResolver != null);
+                Debug.Assert(TypeInfoResolver is not null);
                 return _canUseFastPathSerializationLogic ??= TypeInfoResolver.IsCompatibleWithOptions(this);
             }
         }
@@ -1028,7 +1032,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled();
             }
 
-            Debug.Assert(_typeInfoResolver != null);
+            Debug.Assert(_typeInfoResolver is not null);
             // NB preserve write order.
             _isReadOnly = true;
             _isConfiguredForJsonSerializer = true;
@@ -1055,7 +1059,7 @@ namespace System.Text.Json
 
             JsonTypeInfo? info = resolver.GetTypeInfo(type, this);
 
-            if (info != null)
+            if (info is not null)
             {
                 if (info.Type != type)
                 {

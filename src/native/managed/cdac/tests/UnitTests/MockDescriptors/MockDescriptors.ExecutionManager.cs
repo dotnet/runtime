@@ -181,16 +181,29 @@ internal sealed class MockCodeHeapListNode : TypedView
     private const string MapBaseFieldName = "MapBase";
     private const string HeaderMapFieldName = "HeaderMap";
     private const string HeapFieldName = "Heap";
+    private const string CLRPersonalityRoutineFieldName = "CLRPersonalityRoutine";
 
     public static Layout<MockCodeHeapListNode> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("CodeHeapListNode", architecture)
+    {
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("CodeHeapListNode", architecture)
             .AddPointerField(NextFieldName)
             .AddPointerField(StartAddressFieldName)
             .AddPointerField(EndAddressFieldName)
             .AddPointerField(MapBaseFieldName)
             .AddPointerField(HeaderMapFieldName)
-            .AddPointerField(HeapFieldName)
-            .Build<MockCodeHeapListNode>();
+            .AddPointerField(HeapFieldName);
+
+        // The personality routine only exists on 64-bit targets (see HeapList in codeman.h).
+        if (architecture.Is64Bit)
+        {
+            builder.AddPointerField(CLRPersonalityRoutineFieldName);
+        }
+
+        return builder.Build<MockCodeHeapListNode>();
+    }
+
+    public bool HasCLRPersonalityRoutine
+        => Array.Exists(Layout.Fields, static f => f.Name == CLRPersonalityRoutineFieldName);
 
     public ulong Next
     {
@@ -226,6 +239,12 @@ internal sealed class MockCodeHeapListNode : TypedView
     {
         get => ReadPointerField(HeapFieldName);
         set => WritePointerField(HeapFieldName, value);
+    }
+
+    public ulong CLRPersonalityRoutine
+    {
+        get => ReadPointerField(CLRPersonalityRoutineFieldName);
+        set => WritePointerField(CLRPersonalityRoutineFieldName, value);
     }
 }
 
@@ -398,6 +417,7 @@ internal sealed class MockReadyToRunInfo : TypedView
 
     private const string ImportSectionsFieldName = "ImportSections";
     private const string NumImportSectionsFieldName = "NumImportSections";
+    private const string MinVirtualIPFieldName = "MinVirtualIP";
 
     public static Layout<MockReadyToRunInfo> CreateLayout(MockTarget.Architecture architecture, int hashMapStride)
         => new SequentialLayoutBuilder("ReadyToRunInfo", architecture)
@@ -415,6 +435,8 @@ internal sealed class MockReadyToRunInfo : TypedView
             .AddField(EntryPointToMethodDescMapFieldName, hashMapStride)
             .AddPointerField(LoadedImageBaseFieldName)
             .AddPointerField(CompositeFieldName)
+            // WASM-only: base virtual IP for the module's ReadyToRun functions (nullable field).
+            .AddPointerField(MinVirtualIPFieldName)
             .Build<MockReadyToRunInfo>();
 
     public ulong CompositeInfo
@@ -460,6 +482,18 @@ internal sealed class MockReadyToRunInfo : TypedView
     }
 
     public ulong EntryPointToMethodDescMapAddress => GetFieldAddress(EntryPointToMethodDescMapFieldName);
+
+    public ulong LoadedImageBase
+    {
+        get => ReadPointerField(LoadedImageBaseFieldName);
+        set => WritePointerField(LoadedImageBaseFieldName, value);
+    }
+
+    public ulong MinVirtualIP
+    {
+        get => ReadPointerField(MinVirtualIPFieldName);
+        set => WritePointerField(MinVirtualIPFieldName, value);
+    }
 }
 
 internal sealed class MockImageDataDirectory : TypedView
@@ -507,6 +541,30 @@ internal sealed class MockEEJitManager : TypedView
     {
         get => ReadPointerField(AllCodeHeapsFieldName);
         set => WritePointerField(AllCodeHeapsFieldName, value);
+    }
+}
+
+internal sealed class MockDynamicFunctionTable : TypedView
+{
+    private const string MinimumAddressFieldName = "MinimumAddress";
+    private const string ContextFieldName = "Context";
+
+    public static Layout<MockDynamicFunctionTable> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("DynamicFunctionTable", architecture)
+            .AddPointerField(MinimumAddressFieldName)
+            .AddPointerField(ContextFieldName)
+            .Build<MockDynamicFunctionTable>();
+
+    public ulong MinimumAddress
+    {
+        get => ReadPointerField(MinimumAddressFieldName);
+        set => WritePointerField(MinimumAddressFieldName, value);
+    }
+
+    public ulong Context
+    {
+        get => ReadPointerField(ContextFieldName);
+        set => WritePointerField(ContextFieldName, value);
     }
 }
 
@@ -603,6 +661,7 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockInterpreterRealCodeHeader> InterpreterRealCodeHeaderLayout { get; }
     internal Layout<MockReadyToRunInfo> ReadyToRunInfoLayout { get; }
     internal Layout<MockEEJitManager> EEJitManagerLayout { get; }
+    internal Layout<MockDynamicFunctionTable> DynamicFunctionTableLayout { get; }
     internal Layout<MockLoaderModule> ModuleLayout { get; }
     internal Layout<MockCodeRangeMapRangeList> CodeRangeMapRangeListLayout { get; }
     internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
@@ -660,6 +719,7 @@ internal sealed class MockExecutionManagerBuilder
         InterpreterRealCodeHeaderLayout = MockInterpreterRealCodeHeader.CreateLayout(architecture);
         ReadyToRunInfoLayout = MockReadyToRunInfo.CreateLayout(architecture, hashMapStride);
         EEJitManagerLayout = MockEEJitManager.CreateLayout(architecture);
+        DynamicFunctionTableLayout = MockDynamicFunctionTable.CreateLayout(architecture);
         ModuleLayout = MockLoaderModule.CreateLayout(architecture);
         CodeRangeMapRangeListLayout = MockCodeRangeMapRangeList.CreateLayout(architecture);
         ImageDataDirectoryLayout = MockImageDataDirectory.CreateLayout(architecture);
@@ -688,7 +748,6 @@ internal sealed class MockExecutionManagerBuilder
         NibbleMapTestBuilderBase nibBuilder = Version switch
         {
             "c1" => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-            "c2" => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
             _ => throw new InvalidOperationException($"Unknown version '{Version}'"),
         };
 
@@ -772,7 +831,7 @@ internal sealed class MockExecutionManagerBuilder
         return rangeSectionFragment;
     }
 
-    public MockCodeHeapListNode AddCodeHeapListNode(ulong next, ulong startAddress, ulong endAddress, ulong mapBase, ulong headerMap, ulong heap = 0)
+    public MockCodeHeapListNode AddCodeHeapListNode(ulong next, ulong startAddress, ulong endAddress, ulong mapBase, ulong headerMap, ulong heap = 0, ulong clrPersonalityRoutine = 0)
     {
         MockCodeHeapListNode codeHeapListNode = AllocateAndCreate(CodeHeapListNodeLayout, "CodeHeapListNode", _rangeSectionMapAllocator);
         codeHeapListNode.Next = next;
@@ -781,7 +840,19 @@ internal sealed class MockExecutionManagerBuilder
         codeHeapListNode.MapBase = mapBase;
         codeHeapListNode.HeaderMap = headerMap;
         codeHeapListNode.Heap = heap;
+        if (codeHeapListNode.HasCLRPersonalityRoutine)
+        {
+            codeHeapListNode.CLRPersonalityRoutine = clrPersonalityRoutine;
+        }
         return codeHeapListNode;
+    }
+
+    public MockDynamicFunctionTable AddDynamicFunctionTable(ulong minimumAddress, ulong context)
+    {
+        MockDynamicFunctionTable table = AllocateAndCreate(DynamicFunctionTableLayout, "DynamicFunctionTable");
+        table.MinimumAddress = minimumAddress;
+        table.Context = context;
+        return table;
     }
 
     public MockLoaderCodeHeap AddLoaderCodeHeap()
@@ -824,6 +895,57 @@ internal sealed class MockExecutionManagerBuilder
         codeHeader.UnwindInfos = 0;
 
         return jittedMethod;
+    }
+
+    internal readonly struct JittedMethodWithUnwindInfo
+    {
+        public ulong CodeAddress { get; init; }
+        public ulong UnwindInfosAddress { get; init; }
+        public uint NumUnwindInfos { get; init; }
+    }
+
+    // Adds a jitted method whose real code header stores its RUNTIME_FUNCTION entries inline
+    // (mirroring the flexible array member RealCodeHeader::unwindInfos). Used to exercise dynamic
+    // function table enumeration, where entries are addressed as UnwindInfos + i * sizeof(RUNTIME_FUNCTION).
+    public JittedMethodWithUnwindInfo AddJittedMethodWithUnwindInfo(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress, uint[] runtimeFunctionRvas)
+    {
+        MockJittedMethod jittedMethod = AllocateJittedMethod(jittedCodeRange, codeSize);
+
+        uint numUnwindInfos = checked((uint)runtimeFunctionRvas.Length);
+        int unwindInfosOffset = RealCodeHeaderLayout.GetField("UnwindInfos").Offset;
+        int runtimeFunctionSize = RuntimeFunctionLayout.Size;
+
+        // Over-allocate the header so the inline RUNTIME_FUNCTION array fits past the fixed fields.
+        ulong headerSize = checked((ulong)(unwindInfosOffset + (int)numUnwindInfos * runtimeFunctionSize));
+        headerSize = Math.Max(headerSize, (ulong)RealCodeHeaderLayout.Size);
+        MockMemorySpace.HeapFragment headerFragment = _allocator.Allocate(headerSize, "RealCodeHeader");
+        MockRealCodeHeader codeHeader = RealCodeHeaderLayout.Create(
+            headerFragment.Data.AsMemory(0, RealCodeHeaderLayout.Size),
+            headerFragment.Address);
+
+        jittedMethod.CodeHeader = codeHeader.Address;
+        codeHeader.MethodDesc = methodDescAddress;
+        codeHeader.DebugInfo = 0;
+        codeHeader.EHInfo = 0;
+        codeHeader.GCInfo = 0;
+        codeHeader.NumUnwindInfos = numUnwindInfos;
+
+        ulong unwindInfosAddress = headerFragment.Address + (ulong)unwindInfosOffset;
+        for (uint i = 0; i < numUnwindInfos; i++)
+        {
+            int entryOffset = unwindInfosOffset + (int)i * runtimeFunctionSize;
+            MockRuntimeFunction runtimeFunction = RuntimeFunctionLayout.Create(
+                headerFragment.Data.AsMemory(entryOffset, runtimeFunctionSize),
+                headerFragment.Address + (ulong)entryOffset);
+            runtimeFunction.BeginAddress = runtimeFunctionRvas[i];
+        }
+
+        return new JittedMethodWithUnwindInfo
+        {
+            CodeAddress = jittedMethod.CodeAddress,
+            UnwindInfosAddress = unwindInfosAddress,
+            NumUnwindInfos = numUnwindInfos,
+        };
     }
 
     public MockJittedMethod AddInterpretedMethod(JittedCodeRange jittedCodeRange, uint codeSize, ulong methodDescAddress)
@@ -921,7 +1043,7 @@ internal sealed class MockExecutionManagerBuilder
         return jittedMethodLayout.Create(methodFragment);
     }
 
-    private ulong AddPointerGlobal(ulong value, string name)
+    internal ulong AddPointerGlobal(ulong value, string name)
     {
         MockMemorySpace.HeapFragment fragment = _allocator.Allocate((ulong)Builder.TargetTestHelpers.PointerSize, name);
         Builder.TargetTestHelpers.WritePointer(fragment.Data, value);

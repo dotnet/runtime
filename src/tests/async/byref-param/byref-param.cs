@@ -24,7 +24,7 @@ public class Async2ByrefParam
         return Task.FromResult(53);
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static int TestByrefParamWithSuspension()
     {
         return TestWithSuspension().GetAwaiter().GetResult();

@@ -10,7 +10,7 @@ using Xunit;
 
 public class Async2ValueTaskSource
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void AwaitValueTaskDefaultContext()
     {
         SynchronizationContext currentCtx = SynchronizationContext.Current;
@@ -52,7 +52,7 @@ public class Async2ValueTaskSource
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void AwaitValueTaskCustomContext()
     {
         SynchronizationContext currentCtx = SynchronizationContext.Current;
@@ -83,7 +83,7 @@ public class Async2ValueTaskSource
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void AwaitValueTaskCustomContextExtraCall()
     {
         SynchronizationContext currentCtx = SynchronizationContext.Current;

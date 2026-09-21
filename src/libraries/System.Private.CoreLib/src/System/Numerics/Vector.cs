@@ -1180,7 +1180,7 @@ namespace System.Numerics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector<double>, double>(degrees);
+                return VectorMath.DegreesToRadiansDouble<Vector<double>, Vector<ulong>>(degrees);
             }
             else
             {
@@ -1195,7 +1195,7 @@ namespace System.Numerics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector<float>, float>(degrees);
+                return VectorMath.DegreesToRadiansSingle<Vector<float>, Vector<double>>(degrees);
             }
             else
             {
@@ -2848,7 +2848,7 @@ namespace System.Numerics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector<double>, double>(radians);
+                return VectorMath.RadiansToDegreesDouble<Vector<double>, Vector<ulong>>(radians);
             }
             else
             {
@@ -2862,7 +2862,7 @@ namespace System.Numerics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector<float>, float>(radians);
+                return VectorMath.RadiansToDegreesSingle<Vector<float>, Vector<double>>(radians);
             }
             else
             {

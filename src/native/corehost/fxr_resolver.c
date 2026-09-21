@@ -25,7 +25,7 @@ static bool find_max_version_callback(const pal_char_t* entry_name, void* ctx_in
 
     c_fx_ver_t ver;
     c_fx_ver_init(&ver);
-    if (!c_fx_ver_parse(entry_name, &ver, /*parse_only_production*/ false))
+    if (!c_fx_ver_parse(entry_name, &ver))
     {
         c_fx_ver_cleanup(&ver);
         return true;

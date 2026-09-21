@@ -52,8 +52,8 @@ namespace System.Formats.Tar
             _realSize = realSize;
         }
 
-        // Parses the sparse map on first read. Populates _segments, _packedStartOffsets,
-        // and _dataStart. Throws InvalidDataException if the sparse map is malformed.
+        // Parses the sparse map on first read. Populates _segments and _packedStartOffsets.
+        // Throws InvalidDataException if the sparse map is malformed.
         private async ValueTask EnsureInitializedCoreAsync<TAdapter>(CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
@@ -152,8 +152,7 @@ namespace System.Formats.Tar
             }
 
             _virtualPosition = newPosition;
-            // _currentSegmentIndex is not reset here; FindSegmentFromCurrent handles
-            // backward seeks using binary search.
+            // _currentSegmentIndex is not reset here; see the Position setter for why.
             return _virtualPosition;
         }
 
@@ -330,7 +329,7 @@ namespace System.Formats.Tar
         }
 
         // Reads from the packed data at the given packedOffset.
-        // After EnsureInitialized, the raw stream is positioned at _dataStart and
+        // After EnsureInitialized, the raw stream is positioned at the start of the packed data and
         // _nextPackedOffset tracks how far into the packed data we've read.
         // Returns the number of bytes actually read (may be less than destination.Length).
         private async ValueTask<int> ReadFromPackedDataCoreAsync<TAdapter>(Memory<byte> destination, long packedOffset, CancellationToken cancellationToken)

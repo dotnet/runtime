@@ -7,6 +7,7 @@ parameters:
   platforms: []
   shouldContinueOnError: false
   extraBuildArgs: ''
+  useHelixMonitor: false
   # The wasm-tools workload manifest includes the CoreCLR browser-wasm runtime pack, so
   # installing the workload for testing requires that pack in the local feed. Only pipelines
   # that build the CoreCLR browser-wasm runtime (e.g. runtime.yml) can stage it here.
@@ -91,9 +92,10 @@ jobs:
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
-          # Download the CoreCLR runtime pack. The wasm-tools workload manifest now includes
-          # the CoreCLR browser-wasm runtime pack, so installing the workload for testing
-          # requires the pack to be present in the local package feed.
+          # Download the CoreCLR runtime pack and the host crossgen2 pack. The wasm-tools workload
+          # manifest includes both, so installing the workload for testing requires them to be
+          # present in the local package feed. Only pipelines that build the CoreCLR browser-wasm
+          # runtime (e.g. runtime.yml) can stage them here.
           - ${{ if eq(parameters.includeCoreClrRuntimePack, true) }}:
             - task: DownloadPipelineArtifact@2
               displayName: Download built nugets for CoreCLR runtime
@@ -103,10 +105,12 @@ jobs:
                 targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
 
             - task: CopyFiles@2
-              displayName: Copy CoreCLR runtime pack
+              displayName: Copy CoreCLR runtime pack and host crossgen2 pack
               inputs:
                 SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_CoreCLR'
-                Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.*
+                Contents: |
+                  packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.browser-wasm.*
+                  packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Crossgen2.*
                 TargetFolder: '$(Build.SourcesDirectory)/artifacts'
                 CleanTargetFolder: false
 
@@ -157,3 +161,4 @@ jobs:
               extraHelixArguments: /p:BrowserHost=$(_hostedOs) /maxcpucount:8
               scenarios:
               - buildwasmapps
+              useHelixMonitor: ${{ parameters.useHelixMonitor }}

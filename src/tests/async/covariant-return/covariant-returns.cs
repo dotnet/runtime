@@ -20,13 +20,13 @@ public class CovariantReturns
         Test1().Wait();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void Test2EntryPoint()
     {
         Test2().Wait();
     }
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void Test2AEntryPoint()
     {
         Test2A().Wait();
@@ -183,7 +183,7 @@ namespace CovariantReturnWithoutRuntimeAsync
     {
         internal static int Result;
 
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
         public static void TestCovariantReturnWithoutRuntimeAsync()
         {
             Result = 0;
@@ -223,7 +223,7 @@ namespace GenericVirtualMethod
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static async Task CallInstanceValueType(Base b) => await b.InstanceMethod<int>();
 
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
         public static void TestGenericVirtualMethod()
         {
             CallInstance(new Derived()).GetAwaiter().GetResult();
@@ -286,7 +286,7 @@ namespace AsyncInterfaceGenericMethod
             Assert.Equal(typeof(int).FullName.Length, x);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
         public static void TestAsyncInterfaceGenericMethod()
         {
             Run().GetAwaiter().GetResult();

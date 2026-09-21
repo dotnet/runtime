@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.StgPoolSeg))]
 internal sealed partial class StgPoolSeg : IData<StgPoolSeg>
 {
-    [Field] public TargetPointer SegData { get; }
-    [Field] public TargetPointer NextSegment { get; }
-    [Field] public uint DataSize { get; }
+    [Field] public partial TargetPointer SegData { get; }
+    [Field] public partial TargetPointer NextSegment { get; }
+    [Field] public partial uint DataSize { get; }
 }

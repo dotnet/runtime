@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
@@ -105,6 +106,24 @@ public class StackWalkDumpTests : DumpTestBase
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
     [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void StackWalk_FrameAccessorsMatchContext(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        IStackDataFrameHandle frame = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread)
+            .First(frame => stackWalk.GetMethodDescPtr(frame) != TargetPointer.Null);
+        IPlatformAgnosticContext context = IPlatformAgnosticContext.GetContextForPlatform(Target);
+        context.FillFromBuffer(stackWalk.GetRawContext(frame));
+
+        Assert.Equal(context.StackPointer, stackWalk.GetStackPointer(frame));
+        Assert.Equal(context.FramePointer, stackWalk.GetContextFramePointer(frame));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
     public void StackWalk_ContainsExpectedFrames(TestConfiguration config)
     {
         InitializeDumpTest(config);
@@ -117,6 +136,140 @@ public class StackWalkDumpTests : DumpTestBase
             .ExpectAdjacentFrame("MethodA")
             .ExpectAdjacentFrame("Main")
             .Verify();
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public unsafe void MethodInstance_EnumExtents_ReturnsSingleRangeContainingInstructionPointer(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle frame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
+        {
+            TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+            if (methodDescPtr == TargetPointer.Null)
+                continue;
+
+            MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescPtr);
+            if (DumpTestHelpers.GetMethodName(Target, methodDesc) is not "MethodC")
+                continue;
+
+            IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
+                Target, methodDesc, TargetPointer.Null, legacyImpl: null, new());
+            ulong handle = 0;
+            int hr = methodInstance.StartEnumExtents(&handle);
+
+            try
+            {
+                AssertHResult(HResults.S_OK, hr);
+                Assert.NotEqual(0ul, handle);
+
+                ClrDataAddressRange extent;
+                hr = methodInstance.EnumExtent(&handle, &extent);
+                AssertHResult(HResults.S_OK, hr);
+                Assert.True(extent.endAddress.Value > extent.startAddress.Value);
+
+                ClrDataAddress instructionPointer = stackWalk.GetInstructionPointer(frame).ToClrDataAddress(Target);
+                Assert.InRange(instructionPointer.Value, extent.startAddress.Value, extent.endAddress.Value - 1);
+
+                hr = methodInstance.EnumExtent(&handle, &extent);
+                AssertHResult(HResults.S_FALSE, hr);
+            }
+            finally
+            {
+                if (handle != 0)
+                {
+                    hr = methodInstance.EndEnumExtents(handle);
+                    AssertHResult(HResults.S_OK, hr);
+                }
+            }
+
+            return;
+        }
+
+        Assert.Fail("MethodC not found on the crashing thread's stack");
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public unsafe void MethodInstance_GetDefinition_ReturnsMatchingDefinition(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IXCLRDataMethodInstance methodInstance = GetMethodInstanceFromStack("MethodC");
+
+        DacComNullableByRef<IXCLRDataMethodDefinition> definitionOut = new(isNullRef: false);
+        int hr = methodInstance.GetDefinition(definitionOut);
+        AssertHResult(HResults.S_OK, hr);
+
+        IXCLRDataMethodDefinition methodDefinition = Assert.IsAssignableFrom<IXCLRDataMethodDefinition>(definitionOut.Interface);
+        DacComNullableByRef<IXCLRDataModule> nullModule = new(isNullRef: true);
+        uint instanceToken;
+        hr = methodInstance.GetTokenAndScope(&instanceToken, nullModule);
+        AssertHResult(HResults.S_OK, hr);
+
+        uint definitionToken;
+        hr = methodDefinition.GetTokenAndScope(&definitionToken, nullModule);
+        AssertHResult(HResults.S_OK, hr);
+        Assert.Equal(instanceToken, definitionToken);
+
+        uint nameLength;
+        hr = methodDefinition.GetName(0, 0, &nameLength, null);
+        AssertHResult(HResults.S_OK, hr);
+
+        char[] name = new char[nameLength];
+        fixed (char* namePtr = name)
+        {
+            hr = methodDefinition.GetName(0, nameLength, &nameLength, namePtr);
+        }
+        AssertHResult(HResults.S_OK, hr);
+        Assert.Contains("MethodC", new string(name, 0, (int)nameLength - 1));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public unsafe void MethodInstance_GetAddressRangesByILOffset_ReturnsMatchingMapEntries(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IXCLRDataMethodInstance methodInstance = GetMethodInstanceFromStack("MethodC");
+
+        uint mapNeeded;
+        int hr = methodInstance.GetILAddressMap(0, &mapNeeded, null);
+        AssertHResult(HResults.S_OK, hr);
+        Assert.NotEqual(0u, mapNeeded);
+
+        ClrDataILAddressMap[] maps = new ClrDataILAddressMap[mapNeeded];
+        hr = methodInstance.GetILAddressMap(mapNeeded, &mapNeeded, maps);
+        AssertHResult(HResults.S_OK, hr);
+
+        ClrDataILAddressMap selectedMap = maps.First(map => unchecked((int)map.ilOffset) >= 0);
+        ClrDataILAddressMap[] expectedMaps = maps.Where(map => map.ilOffset == selectedMap.ilOffset).ToArray();
+
+        uint rangesNeeded;
+        hr = methodInstance.GetAddressRangesByILOffset(selectedMap.ilOffset, 0, &rangesNeeded, null);
+        AssertHResult(HResults.S_OK, hr);
+        Assert.Equal((uint)expectedMaps.Length, rangesNeeded);
+
+        ClrDataAddressRange[] ranges = new ClrDataAddressRange[rangesNeeded];
+        hr = methodInstance.GetAddressRangesByILOffset(selectedMap.ilOffset, rangesNeeded, &rangesNeeded, ranges);
+        AssertHResult(HResults.S_OK, hr);
+        Assert.Equal((uint)expectedMaps.Length, rangesNeeded);
+
+        for (int i = 0; i < expectedMaps.Length; i++)
+        {
+            Assert.Equal(expectedMaps[i].startAddress, ranges[i].startAddress);
+            Assert.Equal(expectedMaps[i].endAddress, ranges[i].endAddress);
+        }
+
+        rangesNeeded = uint.MaxValue;
+        hr = methodInstance.GetAddressRangesByILOffset(int.MaxValue, 0, &rangesNeeded, null);
+        AssertHResult(HResults.COR_E_INVALIDCAST, hr);
+        Assert.Equal(0u, rangesNeeded);
     }
 
     // ========== PInvokeStub debuggee ==========
@@ -232,7 +385,7 @@ public class StackWalkDumpTests : DumpTestBase
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
         IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
@@ -282,7 +435,7 @@ public class StackWalkDumpTests : DumpTestBase
                 continue;
 
             IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(
-                Target, mdHandle, TargetPointer.Null, legacyImpl: null);
+                Target, mdHandle, TargetPointer.Null, legacyImpl: null, new());
             uint mapNeeded;
             int hr = methodInstance.GetILAddressMap(0, &mapNeeded, null);
             Assert.True(hr < 0, $"Expected failure HRESULT for ILStub GetILAddressMap, got 0x{hr:X8}");
@@ -302,7 +455,7 @@ public class StackWalkDumpTests : DumpTestBase
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
         IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
@@ -351,7 +504,7 @@ public class StackWalkDumpTests : DumpTestBase
         InitializeDumpTest(config, "VarargPInvoke", "full");
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
-        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null);
+        ISOSDacInterface sosDac = new SOSDacImpl(Target, legacyObj: null, new());
 
         ThreadData crashingThread = DumpTestHelpers.FindThreadWithMethod(Target, "Main");
         IEnumerable<IStackDataFrameHandle> frames = DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread);
@@ -409,5 +562,26 @@ public class StackWalkDumpTests : DumpTestBase
         var ctx = Contracts.StackWalkHelpers.IPlatformAgnosticContext.GetContextForPlatform(Target);
         ctx.FillFromBuffer(context);
         Assert.NotEqual(TargetCodePointer.Null, ctx.InstructionPointer);
+    }
+
+    private IXCLRDataMethodInstance GetMethodInstanceFromStack(string methodName)
+    {
+        IStackWalk stackWalk = Target.Contracts.StackWalk;
+        IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+
+        foreach (IStackDataFrameHandle frame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
+        {
+            TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
+            if (methodDescPtr == TargetPointer.Null)
+                continue;
+
+            MethodDescHandle methodDesc = rts.GetMethodDescHandle(methodDescPtr);
+            if (DumpTestHelpers.GetMethodName(Target, methodDesc) == methodName)
+                return new ClrDataMethodInstance(Target, methodDesc, TargetPointer.Null, legacyImpl: null, new());
+        }
+
+        Assert.Fail($"{methodName} not found on the crashing thread's stack");
+        return null!;
     }
 }

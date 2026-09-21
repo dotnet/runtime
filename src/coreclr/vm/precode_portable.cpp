@@ -36,18 +36,18 @@ void* PortableEntryPoint::GetActualCode(PCODE addr)
     return portableEntryPoint->_pActualCode;
 }
 
-void PortableEntryPoint::SetActualCode(PCODE addr, PCODE actualCode)
+void PortableEntryPoint::SetActualCode(PCODE addr, void* actualCode)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE_ALL_BUILDS(actualCode != (PCODE)NULL);
+    _ASSERTE_ALL_BUILDS(actualCode != NULL);
 
     // This is a lock free write. The existing value can either be NULL, already set to the same value,
     // or still be an interpreter-preferred temporary/native placeholder while PrefersInterpreterEntryPoint() is set.
-    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == (void*)PCODEToPINSTR(actualCode) || portableEntryPoint->PrefersInterpreterEntryPoint());
+    _ASSERTE(!portableEntryPoint->HasNativeCode() || portableEntryPoint->_pActualCode == actualCode || portableEntryPoint->PrefersInterpreterEntryPoint());
 
-    portableEntryPoint->_pActualCode = (void*)PCODEToPINSTR(actualCode);
+    portableEntryPoint->_pActualCode = actualCode;
 
     if (portableEntryPoint->PrefersInterpreterEntryPoint())
     {
@@ -75,14 +75,14 @@ void* PortableEntryPoint::GetInterpreterData(PCODE addr)
     return portableEntryPoint->_pInterpreterData;
 }
 
-void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
+void* PortableEntryPoint::SetInterpreterDataInterlocked(PCODE addr, void* interpreterData)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(!portableEntryPoint->HasInterpreterCode());
-    _ASSERTE(interpreterData != (PCODE)NULL);
-    portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
+    _ASSERTE(interpreterData != nullptr);
+    void* publishedData = InterlockedCompareExchangeT(&portableEntryPoint->_pInterpreterData, interpreterData, nullptr);
+    return publishedData != nullptr ? publishedData : interpreterData;
 }
 
 bool PortableEntryPoint::PrefersInterpreterEntryPoint(PCODE addr)

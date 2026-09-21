@@ -361,6 +361,7 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Collections\IEnumerable.Generic.Serialization.Tests.cs" Link="Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs" />
+    <Compile Include="GB18030\StringTests.cs" />
     <EmbeddedResource Include="System\Reflection\EmbeddedImage.png">
       <LogicalName>System.Reflection.Tests.EmbeddedImage.png</LogicalName>
     </EmbeddedResource>
@@ -374,7 +375,7 @@
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 
-    <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" Link="Common\System\TestILAssembly\TestILAssembly.ilproj" />
+    <ProjectReference Include="$(CommonPath)..\tests\System\TestILAssembly\TestILAssembly.ilproj" />
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj" />
     <ProjectReference Include="TestCollectibleAssembly\TestCollectibleAssembly.csproj" />
     <ProjectReference Include="TestEquivalentTypes\System.TestEquivalentTypes.csproj" />
@@ -388,4 +389,5 @@
                       Private="true"
                       SetTargetFramework="TargetFramework=$(NetCoreAppMinimum)" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

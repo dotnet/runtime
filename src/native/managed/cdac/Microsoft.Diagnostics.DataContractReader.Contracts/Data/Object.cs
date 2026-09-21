@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class Object : IData<Object>
 {
     [Field("m_pMethTab", Pointer = true)]
-    public MethodTable MethodTable { get; }
+    public partial MethodTable MethodTable { get; }
 
     [InstanceDataStart]
-    public TargetPointer Data { get; }
+    public partial TargetPointer Data { get; }
 }

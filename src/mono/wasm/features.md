@@ -170,8 +170,6 @@ The following shows the structure for a Release build, but except the name in th
 - `./bin/Release/net8.0/browser-wasm/AppBundle/_framework` - contains all the assets of the runtime and the managed application.
 
 
-Note: You can flatten the `_framework` folder away by putting `<WasmRuntimeAssetsLocation>./</WasmRuntimeAssetsLocation>` in a property group in the project file.
-
 Note: You can replace the location of `AppBundle` directory by  `<WasmAppDir>../my-frontend/wwwroot</WasmAppDir>` in a property group in the project file.
 
 #### `_framework` folder structure

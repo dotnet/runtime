@@ -14,6 +14,7 @@
 #include "gcenv.windows.inl"
 #include "volatile.h"
 #include "gcconfig.h"
+#include <minipal/time.h>
 
 GCSystemInfo g_SystemInfo;
 
@@ -21,6 +22,8 @@ static bool g_SeLockMemoryPrivilegeAcquired = false;
 
 // The cached total number of CPUs that can be used in the OS.
 uint32_t g_totalCpuCount = 0;
+
+static uint32_t g_maxProcessorCount = 0;
 
 static AffinitySet g_processAffinitySet;
 
@@ -503,6 +506,14 @@ void GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uin
 //  true if it has succeeded, false if it has failed
 bool GCToOSInterface::Initialize()
 {
+    uint16_t maximumProcessorGroupCount = GetMaximumProcessorGroupCount();
+    if (maximumProcessorGroupCount == 0)
+    {
+        return false;
+    }
+
+    g_maxProcessorCount = static_cast<uint32_t>(maximumProcessorGroupCount) * 64;
+
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
 
@@ -515,7 +526,7 @@ bool GCToOSInterface::Initialize()
     InitNumaNodeInfo();
     InitCPUGroupInfo();
 
-    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetTotalProcessorCount()))
+    if (!g_processAffinitySet.Initialize(GCToOSInterface::GetMaxProcessorCount()))
     {
         return false;
     }
@@ -663,7 +674,7 @@ void GCToOSInterface::Sleep(uint32_t sleepMSec)
     // to avoid context switches - is that interesting or useful here?
     if (sleepMSec > 0)
     {
-        ::SleepEx(sleepMSec, FALSE);
+        minipal_sleep(sleepMSec);
     }
 }
 
@@ -1066,56 +1077,6 @@ void GCToOSInterface::GetMemoryStatus(uint64_t restricted_limit, uint32_t* memor
     }
 }
 
-// Get a high precision performance counter
-// Return:
-//  The counter value
-int64_t GCToOSInterface::QueryPerformanceCounter()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceCounter(&ts))
-    {
-        assert(false && "Failed to query performance counter");
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a frequency of the high precision performance counter
-// Return:
-//  The counter frequency
-int64_t GCToOSInterface::QueryPerformanceFrequency()
-{
-    LARGE_INTEGER ts;
-    if (!::QueryPerformanceFrequency(&ts))
-    {
-        assert(false && "Failed to query performance counter");
-    }
-
-    return ts.QuadPart;
-}
-
-// Get a time stamp with a low precision
-// Return:
-//  Time stamp in milliseconds
-uint64_t GCToOSInterface::GetLowPrecisionTimeStamp()
-{
-    // GetTickCount64 uses fixed resolution of 10-16ms for backward compatibility. Use
-    // QueryUnbiasedInterruptTime instead which becomes more accurate if the underlying system
-    // resolution is improved. This helps responsiveness in the case an app is trying to opt
-    // into things like multimedia scenarios and additionally does not include "bias" from time
-    // the system is spent asleep or in hibernation.
-
-    const ULONGLONG TicksPerMillisecond = 10000;
-
-    ULONGLONG unbiasedTime;
-    if (!::QueryUnbiasedInterruptTime(&unbiasedTime))
-    {
-        assert(false && "Failed to query unbiased interrupt time");
-    }
-
-    return (uint64_t)(unbiasedTime / TicksPerMillisecond);
-}
-
 // Gets the total number of processors on the machine, not taking
 // into account current process affinity.
 // Return:
@@ -1137,7 +1098,8 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 
 uint32_t GCToOSInterface::GetMaxProcessorCount()
 {
-    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+    assert(g_maxProcessorCount != 0);
+    return g_maxProcessorCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()
@@ -1432,24 +1394,6 @@ uint32_t GCEvent::Wait(uint32_t timeout, bool alertable)
 
 bool GCEvent::CreateAutoEventNoThrow(bool initialState)
 {
-    // [DESKTOP TODO] The difference between events and OS events is
-    // whether or not the hosting API is made aware of them. When (if)
-    // we implement hosting support for Local GC, we will need to be
-    // aware of the host here.
-    return CreateOSAutoEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateManualEventNoThrow(bool initialState)
-{
-    // [DESKTOP TODO] The difference between events and OS events is
-    // whether or not the hosting API is made aware of them. When (if)
-    // we implement hosting support for Local GC, we will need to be
-    // aware of the host here.
-    return CreateOSManualEventNoThrow(initialState);
-}
-
-bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
-{
     assert(m_impl == nullptr);
     std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl());
     if (!event)
@@ -1466,7 +1410,7 @@ bool GCEvent::CreateOSAutoEventNoThrow(bool initialState)
     return true;
 }
 
-bool GCEvent::CreateOSManualEventNoThrow(bool initialState)
+bool GCEvent::CreateManualEventNoThrow(bool initialState)
 {
     assert(m_impl == nullptr);
     std::unique_ptr<GCEvent::Impl> event(new (std::nothrow) GCEvent::Impl());

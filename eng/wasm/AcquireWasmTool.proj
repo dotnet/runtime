@@ -1,0 +1,136 @@
+<!--
+  Acquires a single WebAssembly build or test tool into the shared cache described in
+  eng/wasm/WasmToolCache.props.
+
+  This is a standalone project rather than a shared target because several consumers can be
+  imported into the same project (for example the wasi-sdk and wasmtime targets), and a target
+  runs at most once per project instance. Invoking this project once per tool through the
+  <MSBuild> task gives each acquisition its own instance:
+
+    <MSBuild Projects="$(RepositoryEngineeringDir)wasm\AcquireWasmTool.proj"
+             Targets="AcquireWasmTool"
+             Properties="WasmToolName=%(MyTools.Identity);WasmToolUrl=%(MyTools.Url);..." />
+
+  Properties:
+    WasmToolName            (required) name used in messages
+    WasmToolUrl             (required) archive to download
+    WasmToolKind            (required) zip | targz | tarxz | firefox-installer
+    WasmToolCacheEntryDir   (required) final directory, must live under $(WasmToolCacheDir)
+    WasmToolStampFile       (required) sentinel written once the entry is complete
+    WasmToolInnerDir        optional single directory inside the archive to promote
+    WasmToolSubDir          optional subdirectory of the tool directory to extract or install into
+    WasmToolStripComponents optional leading path components to strip (tar archives only)
+    WasmToolVerify          optional path that must exist once installed
+    WasmToolChmod           optional ';' separated paths to mark executable on Unix
+    WasmToolLauncherSource  optional file copied into the tool directory before it is published
+    WasmToolLauncherName    file name to give WasmToolLauncherSource
+    WasmToolDownloadDir     (required) scratch directory for downloaded archives
+    HostOS                  (required) used to pick between mv and move
+
+  This project intentionally imports nothing, so that invoking it stays cheap and it does not
+  depend on the repository property chain; every input is passed in explicitly.
+
+  The archive is extracted into a unique temporary directory and only moved into its final name
+  once complete, so an interrupted acquisition can never leave a partial entry that a later build
+  would treat as usable.
+-->
+<Project DefaultTargets="AcquireWasmTool">
+
+  <Target Name="AcquireWasmTool" Condition="!Exists('$(WasmToolStampFile)')">
+    <PropertyGroup>
+      <_ToolDir>$([MSBuild]::EnsureTrailingSlash('$(WasmToolCacheEntryDir)'))</_ToolDir>
+      <_FinalDir>$(_ToolDir.TrimEnd('\/'))</_FinalDir>
+      <_ParentDir>$([System.IO.Path]::GetDirectoryName($(_FinalDir)))</_ParentDir>
+      <_TempDir>$([MSBuild]::EnsureTrailingSlash('$(_FinalDir).tmp-$([System.Guid]::NewGuid().ToString('N'))'))</_TempDir>
+      <!-- Per-invocation download directory so concurrent acquisitions of the same tool never
+           share (and delete out from under each other) one archive file. -->
+      <_DownloadDir>$([MSBuild]::NormalizeDirectory('$(WasmToolDownloadDir)', '$([System.Guid]::NewGuid().ToString('N'))'))</_DownloadDir>
+      <_ExtractDir>$(_TempDir)</_ExtractDir>
+      <_ExtractDir Condition="'$(WasmToolSubDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_TempDir)', '$(WasmToolSubDir)'))</_ExtractDir>
+      <_TarStrip Condition="'$(WasmToolStripComponents)' != ''">--strip-components=$(WasmToolStripComponents) </_TarStrip>
+
+      <!-- The tmp -> final move is an atomic same-filesystem rename, so an existing final directory
+           is already a complete tool. Skip the download/extract entirely in that case: the target
+           still runs when the sentinel is missing, and all it needs to do is re-stamp. -->
+      <_NeedsFetch Condition="!Exists('$(_FinalDir)')">true</_NeedsFetch>
+    </PropertyGroup>
+
+    <Message Condition="'$(_NeedsFetch)' == 'true'" Importance="High" Text="Acquiring $(WasmToolName) into '$(_ToolDir)'" />
+
+    <MakeDir Condition="'$(_NeedsFetch)' == 'true'" Directories="$(_DownloadDir);$(_ParentDir);$(_ExtractDir)" />
+
+    <DownloadFile Condition="'$(_NeedsFetch)' == 'true'"
+                  SourceUrl="$(WasmToolUrl)"
+                  DestinationFolder="$(_DownloadDir)"
+                  Retries="3"
+                  SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_Archive" />
+    </DownloadFile>
+
+    <Unzip Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'zip'"
+           SourceFiles="$(_Archive)"
+           DestinationFolder="$(_ExtractDir)" />
+
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'targz'"
+          Command="tar $(_TarStrip)-xzmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir.TrimEnd('\/'))&quot;"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'tarxz'"
+          Command="tar $(_TarStrip)-xJmf &quot;$(_Archive)&quot; -C &quot;$(_ExtractDir.TrimEnd('\/'))&quot;"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <!-- Firefox on Windows ships as an installer rather than an archive. -->
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolKind)' == 'firefox-installer'"
+          Command="&quot;$(_Archive)&quot; /InstallDirectoryPath=&quot;$(_ExtractDir.TrimEnd('\/'))&quot; /TaskbarShortcut=false /DesktopShortcut=false /StartMenuShortcut=false /PrivateBrowsingShortcut=false /MaintenanceService=false /PreventRebootRequired=true"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <Copy Condition="'$(_NeedsFetch)' == 'true' and '$(WasmToolLauncherSource)' != ''"
+          SourceFiles="$(WasmToolLauncherSource)"
+          DestinationFiles="$(_TempDir)$(WasmToolLauncherName)" />
+
+    <PropertyGroup>
+      <_MoveSource>$(_FinalDir)</_MoveSource>
+      <_MoveSource Condition="'$(WasmToolInnerDir)' == ''">$(_TempDir.TrimEnd('\/'))</_MoveSource>
+      <_MoveSource Condition="'$(WasmToolInnerDir)' != ''">$([MSBuild]::NormalizePath('$(_TempDir)', '$(WasmToolInnerDir)'))</_MoveSource>
+
+      <!-- Re-check after the download: a concurrent build may have published the same entry while
+           this one was fetching. We never delete an existing final directory (that would pull the
+           rug out from under a build using it); we only move ours in when the slot is still free,
+           and always (re-)Touch the sentinel below, which self-heals a complete-but-unstamped
+           directory left by a build killed between the move and the Touch. -->
+      <_MoveIntoPlace Condition="'$(_NeedsFetch)' == 'true' and !Exists('$(_FinalDir)')">true</_MoveIntoPlace>
+    </PropertyGroup>
+
+    <Message Condition="'$(_MoveIntoPlace)' != 'true'"
+             Importance="High"
+             Text="$(WasmToolName) is already present at '$(_FinalDir)'; using it." />
+
+    <!-- The existence test lives inside the command rather than in the task Condition because both
+         'mv' and 'move' move the source *into* an existing destination directory instead of
+         failing. Re-testing immediately before the rename keeps the window down to a single shell
+         statement, and a build that loses the race simply discards its copy. -->
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(HostOS)' != 'windows'"
+          Command="if [ -e &quot;$(_FinalDir)&quot; ]; then rm -rf &quot;$(_MoveSource)&quot;; else mv &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;; fi"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Condition="'$(_NeedsFetch)' == 'true' and '$(HostOS)' == 'windows'"
+          Command="if exist &quot;$(_FinalDir)&quot; (rmdir /s /q &quot;$(_MoveSource)&quot;) else (move /Y &quot;$(_MoveSource)&quot; &quot;$(_FinalDir)&quot;)"
+          IgnoreStandardErrorWarningFormat="true" />
+
+    <RemoveDir Directories="$(_TempDir);$(_DownloadDir)" />
+
+    <ItemGroup>
+      <_ToolChmod Include="$(WasmToolChmod)" />
+    </ItemGroup>
+
+    <!-- Unconditional and idempotent: a build that lost the publish race must not stamp the
+         sentinel before the winner has made the payload executable. -->
+    <Exec Condition="'$(HostOS)' != 'windows' and '@(_ToolChmod)' != ''"
+          Command="chmod +x @(_ToolChmod->'&quot;%(Identity)&quot;', ' ')" />
+
+    <Error Condition="'$(WasmToolVerify)' != '' and !Exists('$(WasmToolVerify)')"
+           Text="Acquired $(WasmToolName) from $(WasmToolUrl) but '$(WasmToolVerify)' is missing." />
+
+    <Touch Files="$(WasmToolStampFile)" AlwaysCreate="true" />
+  </Target>
+
+</Project>

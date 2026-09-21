@@ -12,8 +12,10 @@ public static class Constants
         public const string SystemDomain = nameof(SystemDomain);
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
+        public const string FunctionTableIndexRangeList = nameof(FunctionTableIndexRangeList);
         public const string GCThread = nameof(GCThread);
         public const string Debugger = nameof(Debugger);
+        public const string DebuggerPatchTable = nameof(DebuggerPatchTable);
         public const string MaxHijackFunctions = nameof(MaxHijackFunctions);
         public const string CLRJitAttachState = nameof(CLRJitAttachState);
         public const string CORDebuggerControlFlags = nameof(CORDebuggerControlFlags);
@@ -31,6 +33,8 @@ public static class Constants
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
+        public const string CorDBDefaultEnCFunctionVersion = nameof(CorDBDefaultEnCFunctionVersion);
+        public const string RuntimeProductVersionString = nameof(RuntimeProductVersionString);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
         public const string CanonMethodTable = nameof(CanonMethodTable);
@@ -88,6 +92,7 @@ public static class Constants
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        public const string ThePreStub = nameof(ThePreStub);
 
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);

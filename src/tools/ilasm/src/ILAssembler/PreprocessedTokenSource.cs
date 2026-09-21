@@ -3,10 +3,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
@@ -17,14 +14,24 @@ namespace ILAssembler
     {
         private readonly Stack<(ITokenSource Source, int ActiveIfDefBlocks, string? IncludedFromFile, int IncludedFromLine)> _includeSourceStack = new();
         private readonly Func<string, ITokenSource> _loadIncludedDocument;
+        private readonly Func<string, ITokenSource> _createLexer;
 
         private readonly Dictionary<string, string?> _definedVars = new();
         private readonly Stack<(string Var, bool Defined, bool IsElse)> _activeIfDefBlocks = new();
 
-        public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument)
+        public PreprocessedTokenSource(ITokenSource underlyingSource, Func<string, ITokenSource> loadIncludedDocument, Func<string, ITokenSource> createLexer, IReadOnlyDictionary<string, string?>? initialDefinedVars = null)
         {
             _includeSourceStack.Push((underlyingSource, 0, null, 0));
             _loadIncludedDocument = loadIncludedDocument;
+            _createLexer = createLexer;
+
+            if (initialDefinedVars != null)
+            {
+                foreach (var kvp in initialDefinedVars)
+                {
+                    _definedVars[kvp.Key] = kvp.Value;
+                }
+            }
         }
 
         private ITokenSource CurrentTokenSource => _includeSourceStack.Peek().Source;
@@ -35,6 +42,8 @@ namespace ILAssembler
         public int Column => CurrentTokenSource.Column;
 
         public ICharStream InputStream => CurrentTokenSource.InputStream;
+
+        public IReadOnlyDictionary<string, string?> DefinedVariables => _definedVars;
 
         /// <summary>
         /// Returns the source name with include stack information for better error reporting.
@@ -98,9 +107,14 @@ namespace ILAssembler
             return nextToken;
         }
 
+        // Stack of tokens produced by macro expansion re-lexing
+        private readonly Stack<IToken> _macroExpansionStack = new();
+
         public IToken NextToken()
         {
-            IToken nextToken = NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
+            IToken nextToken = _macroExpansionStack.Count > 0
+                ? _macroExpansionStack.Pop()
+                : NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
 
             if (nextToken.Type == CILLexer.PP_INCLUDE)
             {
@@ -175,10 +189,44 @@ namespace ILAssembler
             }
             else if (nextToken.Type == CILLexer.ID && _definedVars.TryGetValue(nextToken.Text, out string? newValue) && newValue is not null)
             {
-                // If token is an ID, we need to check for defined macro values and substitute.
-                IWritableToken writableToken = (IWritableToken)nextToken;
-                writableToken.Type = newValue.Contains('.') ? CILLexer.DOTTEDNAME : CILLexer.ID;
-                writableToken.Text = newValue;
+                // Re-lex the macro value to produce correct tokens.
+                // This handles cases like #define NEG_INF "float32(0xFF800000)" where the
+                // substituted value contains multiple tokens that must be individually lexed.
+                var macroLexer = _createLexer(newValue);
+                var tokens = new List<IToken>();
+                for (var t = macroLexer.NextToken(); t.Type != Antlr4.Runtime.TokenConstants.EOF; t = macroLexer.NextToken())
+                {
+                    tokens.Add(t);
+                }
+
+                if (tokens.Count == 1)
+                {
+                    // Single token: modify in place (preserves source location info)
+                    IWritableToken writableToken = (IWritableToken)nextToken;
+                    writableToken.Type = tokens[0].Type;
+                    writableToken.Text = tokens[0].Text;
+                }
+                else if (tokens.Count > 1)
+                {
+                    // Multiple tokens: return the first, stack the rest.
+                    // Clone stacked tokens to inherit the original macro identifier's source
+                    // location so diagnostics on expanded tokens map to the right file/span.
+                    IWritableToken writableToken = (IWritableToken)nextToken;
+                    writableToken.Type = tokens[0].Type;
+                    writableToken.Text = tokens[0].Text;
+                    for (int i = tokens.Count - 1; i >= 1; i--)
+                    {
+                        var source = new Tuple<ITokenSource, ICharStream>(nextToken.TokenSource!, nextToken.TokenSource?.InputStream!);
+                        var expanded = new CommonToken(source, tokens[i].Type, Lexer.DefaultTokenChannel, nextToken.StartIndex, nextToken.StopIndex)
+                        {
+                            Line = nextToken.Line,
+                            Column = nextToken.Column,
+                            Text = tokens[i].Text,
+                        };
+                        _macroExpansionStack.Push(expanded);
+                    }
+                }
+                // If tokens.Count == 0 (empty macro value), just return the original token as-is
             }
             return nextToken;
         }

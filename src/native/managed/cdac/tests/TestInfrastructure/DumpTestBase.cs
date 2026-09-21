@@ -108,17 +108,14 @@ public abstract class DumpTestBase : IDisposable
         _host = ClrMdDumpHost.Open(dumpPath, GetSymbolPaths(debuggeeName, versionDir));
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
-        bool created = ContractDescriptorTarget.TryCreate(
+        _target = ContractDescriptorTarget.Create(
             contractDescriptor,
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
             setThreadContext: static (_, _) => -1,
             allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
-            [Contracts.CoreCLRContracts.Register],
-            out _target);
-
-        Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+            [Contracts.CoreCLRContracts.Register]);
     }
 
     /// <summary>
@@ -134,17 +131,14 @@ public abstract class DumpTestBase : IDisposable
         _host = ClrMdDumpHost.Open(dumpPath, []);
         ulong contractDescriptor = _host.FindContractDescriptorAddress();
 
-        bool created = ContractDescriptorTarget.TryCreate(
+        _target = ContractDescriptorTarget.Create(
             contractDescriptor,
             _host.ReadFromTarget,
             writeToTarget: static (_, _) => -1,
             _host.GetThreadContext,
             setThreadContext: static (_, _) => -1,
             allocVirtual: static (ulong _, out ulong _) => throw new NotImplementedException("Dump tests do not provide AllocVirtual"),
-            [Contracts.CoreCLRContracts.Register],
-            out _target);
-
-        Assert.True(created, $"Failed to create ContractDescriptorTarget from dump: {dumpPath}");
+            [Contracts.CoreCLRContracts.Register]);
     }
 
     public void Dispose()

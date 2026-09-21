@@ -1,6 +1,6 @@
 {
   "private": true,
   "dependencies": {
-    "@microsoft/vally-cli": "0.7.0"
+    "@microsoft/vally-cli": "0.14.0"
   }
 }

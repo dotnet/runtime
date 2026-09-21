@@ -61,7 +61,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <returns>The process ID of the started process.</returns>
@@ -80,7 +80,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static int StartAndForget(string fileName, IList<string>? arguments = null)
+        public static int StartAndForget(string fileName, IEnumerable<string>? arguments = null)
             => StartAndForget(CreateStartInfo(fileName, arguments));
 
         /// <summary>
@@ -118,7 +118,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="silent">
@@ -137,7 +137,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static ProcessExitStatus Run(string fileName, IList<string>? arguments = null, bool silent = false, TimeSpan? timeout = default)
+        public static ProcessExitStatus Run(string fileName, IEnumerable<string>? arguments = null, bool silent = false, TimeSpan? timeout = default)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
 
@@ -181,7 +181,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="silent">
@@ -199,7 +199,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static async Task<ProcessExitStatus> RunAsync(string fileName, IList<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
+        public static async Task<ProcessExitStatus> RunAsync(string fileName, IEnumerable<string>? arguments = null, bool silent = false, CancellationToken cancellationToken = default)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
 
@@ -275,7 +275,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="timeout">
@@ -289,7 +289,7 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static ProcessTextOutput RunAndCaptureText(string fileName, IList<string>? arguments = null, TimeSpan? timeout = default)
+        public static ProcessTextOutput RunAndCaptureText(string fileName, IEnumerable<string>? arguments = null, TimeSpan? timeout = default)
             => RunAndCaptureText(CreateStartInfoForCapture(fileName, arguments), timeout);
 
         /// <summary>
@@ -342,7 +342,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="fileName">The name of the application or document to start.</param>
         /// <param name="arguments">
-        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty list
+        /// The command-line arguments to pass to the process. Pass <see langword="null"/> or an empty sequence
         /// to start the process without additional arguments.
         /// </param>
         /// <param name="cancellationToken">
@@ -355,26 +355,17 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
-        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IList<string>? arguments = null, CancellationToken cancellationToken = default)
+        public static Task<ProcessTextOutput> RunAndCaptureTextAsync(string fileName, IEnumerable<string>? arguments = null, CancellationToken cancellationToken = default)
             => RunAndCaptureTextAsync(CreateStartInfoForCapture(fileName, arguments), cancellationToken);
 
-        private static ProcessStartInfo CreateStartInfo(string fileName, IList<string>? arguments)
+        private static ProcessStartInfo CreateStartInfo(string fileName, IEnumerable<string>? arguments)
         {
             ArgumentException.ThrowIfNullOrEmpty(fileName);
 
-            ProcessStartInfo startInfo = new(fileName);
-            if (arguments is not null)
-            {
-                foreach (string argument in arguments)
-                {
-                    startInfo.ArgumentList.Add(argument);
-                }
-            }
-
-            return startInfo;
+            return arguments is not null ? new ProcessStartInfo(fileName, arguments) : new ProcessStartInfo(fileName);
         }
 
-        private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IList<string>? arguments)
+        private static ProcessStartInfo CreateStartInfoForCapture(string fileName, IEnumerable<string>? arguments)
         {
             ProcessStartInfo startInfo = CreateStartInfo(fileName, arguments);
             startInfo.RedirectStandardOutput = true;

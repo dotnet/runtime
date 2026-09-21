@@ -186,7 +186,7 @@ namespace System.Net
                 }
 
                 token.SetPayload(_outputBuffer.ActiveSpan);
-                _outputBuffer.Discard(_outputBuffer.ActiveLength);
+                _outputBuffer.DiscardAll();
             }
         }
 

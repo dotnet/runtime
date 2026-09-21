@@ -114,7 +114,7 @@ public class Async2Override
     [MethodImpl(MethodImplOptions.NoInlining)]
     static async Task<T> AwaitBaseM2<T>(Base1 b, T first, T second) => await b.M2(first, second);
 
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Base b = new Derived1();

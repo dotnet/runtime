@@ -95,7 +95,19 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(m_compiler->gsGlobalSecurityCookieAddr || m_compiler->gsGlobalSecurityCookieVal);
 
-    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall);
+    GenTreeCall* tailCallNode = nullptr;
+    if (tailCall)
+    {
+        assert(m_compiler->compCurBB != nullptr);
+        GenTree* lastNode = m_compiler->compCurBB->lastNode();
+        if (lastNode->OperIs(GT_CALL))
+        {
+            tailCallNode = lastNode->AsCall();
+            assert(tailCallNode->IsFastTailCall());
+        }
+    }
+
+    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall, tailCallNode);
     assert(tempRegs != RBM_NONE);
     regNumber regGSCheck = genFirstRegNumFromMask(tempRegs);
 
@@ -1130,6 +1142,47 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 }
 
 //------------------------------------------------------------------------
+// genCodeForBitOp: Generate code for a GT_BIT_SET/GT_BIT_CLEAR/GT_BIT_INVERT operation, i.e. the
+// value-producing `bts`/`btr`/`btc` instructions which set, reset, or complement a single bit of op1
+// selected by op2.
+//
+// Arguments:
+//    treeNode - the node to generate the code for
+//
+void CodeGen::genCodeForBitOp(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_BIT_SET, GT_BIT_CLEAR, GT_BIT_INVERT));
+
+    GenTree* op1 = treeNode->gtGetOp1(); // value (read-modify-write destination)
+    GenTree* op2 = treeNode->gtGetOp2(); // bit index
+
+    genConsumeOperands(treeNode);
+
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = genActualType(treeNode);
+    emitAttr  size       = emitTypeSize(targetType);
+    emitter*  emit       = GetEmitter();
+
+    assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+    assert(op1->isUsedFromReg() && op2->isUsedFromReg());
+
+    instruction ins = treeNode->OperIs(GT_BIT_SET) ? INS_bts : treeNode->OperIs(GT_BIT_CLEAR) ? INS_btr : INS_btc;
+
+    // These are read-modify-write: the `mov` below loads op1 (the value) into the destination and
+    // then `bts`/`btr`/`btc` reads the bit index from op2. LSRA marks op2 as delayFree except when
+    // op2 shares op1's interval and it's their last use -- i.e. `x <op> (1 << x)`, where op1 and op2
+    // are the same value (see AddDelayFreeUses). So the destination can only alias op2 when op1 and
+    // op2 hold the same value, in which case the `mov` writes that same value back into op2's
+    // register and nothing is clobbered before the bit-test reads it. When the operands are distinct
+    // values, delayFree guarantees the destination and op2 use different registers.
+    inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+
+    emit->emitIns_R_R(ins, size, targetReg, op2->GetRegNum());
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genCodeForMul: Generate code for a MUL operation.
 //
 // Arguments:
@@ -1890,6 +1943,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_ADD:
         case GT_SUB:
             genCodeForBinary(treeNode->AsOp());
+            break;
+
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
+            genCodeForBitOp(treeNode->AsOp());
             break;
 
         case GT_MUL:
@@ -5298,7 +5357,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_WRITE_BARRIER_SRC
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else
     {
@@ -5707,8 +5766,6 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
-    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize
@@ -6027,6 +6084,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         params.sigInfo = call->callSig;
     }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);
@@ -6398,11 +6456,6 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         // TYP_INT but the op size is TYP_LONG the instruction itself will
         // ignore the upper part of the register anyway.
         type = genActualType(op1->TypeGet());
-
-        // The emitter's general logic handles op1/op2 for bt reversed. As a
-        // small hack we reverse it in codegen instead of special casing the
-        // emitter throughout.
-        std::swap(op1, op2);
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
@@ -7205,7 +7258,6 @@ int CodeGenInterface::genSPtoFPdelta() const
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -8280,7 +8332,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
         {
             if (temp == ptab)
             {
-                printf("\nMethod info block - ptrtab [%u bytes]:", ptrMapSize);
+                printf("\nMethod info block - ptrtab [%zu bytes]:", ptrMapSize);
                 printf("\n    %04X: %*c", i & ~0xF, 3 * (i & 0xF), ' ');
             }
             else
@@ -8307,7 +8359,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
         InfoHdr     dumpHeader;
 
         printf("GC Info for method %s\n", m_compiler->info.compFullName);
-        printf("GC info size = %3u\n", m_compiler->compInfoBlkSize);
+        printf("GC info size = %3zu\n", m_compiler->compInfoBlkSize);
 
         size = gcInfo.gcInfoBlockHdrDump(base, &dumpHeader, &methodSize);
         // printf("size of header encoding is %3u\n", size);
@@ -8372,6 +8424,13 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)

@@ -4,55 +4,51 @@
     - By default, this target is conditioned on $(TargetsWasi).
     - You can depend on "AcquireWasiSdkUnconditional" instead if this doesn't work for your project.
   - Use $(RuntimeBuildWasiSdkPath) (set by "AcquireWasiSdk") to refer to the SDK root in your target.
+
+  The SDK is downloaded into the shared cache described in eng/wasm/WasmToolCache.props, keyed
+  by version and host RID. $(WasiSdkVersion) is defined there.
 -->
 <Project>
   <PropertyGroup>
-    <_WasiSdkVersion>33.0</_WasiSdkVersion>
-    <_RuntimeLocalWasiSdkPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'wasi-sdk'))</_RuntimeLocalWasiSdkPath>    
+    <_WasiSdkMajorVersion>$(WasiSdkVersion.Split('.')[0])</_WasiSdkMajorVersion>
+    <_WasiSdkOS>linux</_WasiSdkOS>
+    <_WasiSdkOS Condition="'$(HostOS)' == 'osx'">macos</_WasiSdkOS>
+    <_WasiSdkOS Condition="'$(HostOS)' == 'windows'">windows</_WasiSdkOS>
+    <_WasiSdkArch Condition="'$(BuildArchitecture)' == 'arm64'">arm64</_WasiSdkArch>
+    <_WasiSdkArch Condition="'$(_WasiSdkArch)' == ''">x86_64</_WasiSdkArch>
+    <!-- Windows releases are only published for x86_64. -->
+    <_WasiSdkArch Condition="'$(_WasiSdkOS)' == 'windows'">x86_64</_WasiSdkArch>
+    <_WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(_WasiSdkMajorVersion)/wasi-sdk-$(WasiSdkVersion)-$(_WasiSdkArch)-$(_WasiSdkOS).tar.gz</_WasiSdkUrl>
   </PropertyGroup>
 
   <!-- If the user wants us to use an explicit SDK, validate it matches our expectations. -->
   <Target Name="_ValidateWasiSdk">
     <PropertyGroup>
       <_ActualWasiSdkVersion Condition="'$(WASI_SDK_PATH)' != '' and Exists('$(WASI_SDK_PATH)/VERSION')">$([System.IO.File]::ReadAllText('$(WASI_SDK_PATH)/VERSION').Split()[0])</_ActualWasiSdkVersion>
-      <_UseRuntimeLocalWasiSdk Condition="'$(_WasiSdkVersion)' != '$(_ActualWasiSdkVersion)'">true</_UseRuntimeLocalWasiSdk>
+      <_UseRuntimeLocalWasiSdk Condition="'$(WasiSdkVersion)' != '$(_ActualWasiSdkVersion)'">true</_UseRuntimeLocalWasiSdk>
     </PropertyGroup>
   </Target>
 
-  <!-- Otherwise, download our own SDK. Use this file as the input since that's what defines the version. -->
-  <Target Name="_AcquireLocalWasiSdk"
-          Condition="'$(_UseRuntimeLocalWasiSdk)' == 'true'"
-          Inputs="$(MSBuildThisFileFullPath)"
-          Outputs="$(_RuntimeLocalWasiSdkPath)VERSION">
-
-    <Message Text="Downloading a runtime-local WASI SDK $(_WasiSdkVersion) to '$(_RuntimeLocalWasiSdkPath)'" Importance="High" />
-
-    <PropertyGroup>
-      <_WasiSdkMajorVersion>$(_WasiSdkVersion.Split('.')[0])</_WasiSdkMajorVersion>
-      <_WasiSdkUrl>https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(_WasiSdkMajorVersion)/wasi-sdk-$(_WasiSdkVersion)-x86_64-linux.tar.gz</_WasiSdkUrl>
-      <_WasiSdkUrl Condition="'$(HostOS)' == 'osx'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(_WasiSdkMajorVersion)/wasi-sdk-$(_WasiSdkVersion)-x86_64-macos.tar.gz</_WasiSdkUrl>
-      <_WasiSdkUrl Condition="'$(HostOS)' == 'windows'" >https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$(_WasiSdkMajorVersion)/wasi-sdk-$(_WasiSdkVersion)-x86_64-windows.tar.gz</_WasiSdkUrl>
-    </PropertyGroup>
-
-    <RemoveDir Directories="$(_RuntimeLocalWasiSdkPath)" />
-    <MakeDir Directories="$(_RuntimeLocalWasiSdkPath)" />
-
-    <Exec Command="curl --silent --show-error --fail --retry 3 --retry-delay 5 -L -o wasi-sdk-$(_WasiSdkVersion).tar.gz $(_WasiSdkUrl) &amp;&amp; tar --strip-components=1 -xzmf wasi-sdk-$(_WasiSdkVersion).tar.gz -C $(_RuntimeLocalWasiSdkPath)"
-          Condition="'$(HostOS)' != 'windows'"
-          WorkingDirectory="$(ArtifactsObjDir)"
-          IgnoreStandardErrorWarningFormat="true" />
-
-    <Exec Command="powershell -NonInteractive -command &quot;&amp; $(MSBuildThisFileDirectory)\download-wasi-sdk.ps1 -WasiSdkUrl $(_WasiSdkUrl) -WasiSdkVersion $(_WasiSdkVersion) -WasiSdkPath $(_RuntimeLocalWasiSdkPath); Exit $LastExitCode &quot;"
-          Condition="'$(HostOS)' == 'windows'"
-          WorkingDirectory="$(ArtifactsObjDir)"
-          IgnoreStandardErrorWarningFormat="true" />
+  <Target Name="_AcquireWasiSdk"
+          Condition="'$(_UseRuntimeLocalWasiSdk)' == 'true' and !Exists('$(WasiSdkStampFile)')">
+    <MSBuild Projects="$(RepositoryEngineeringDir)wasm\AcquireWasmTool.proj"
+             Targets="AcquireWasmTool"
+             Properties="WasmToolName=wasi-sdk $(WasiSdkVersion);
+                         WasmToolUrl=$(_WasiSdkUrl);
+                         WasmToolKind=targz;
+                         WasmToolStripComponents=1;
+                         WasmToolCacheEntryDir=$(WasiSdkCacheDir);
+                         WasmToolStampFile=$(WasiSdkStampFile);
+                         WasmToolVerify=$(WasiSdkCacheDir)VERSION;
+                         WasmToolDownloadDir=$(WasmToolDownloadDir);
+                         HostOS=$(HostOS)" />
   </Target>
 
   <Target Name="AcquireWasiSdkUnconditional"
-          DependsOnTargets="_ValidateWasiSdk;_AcquireLocalWasiSdk">
+          DependsOnTargets="_ValidateWasiSdk;_AcquireWasiSdk">
     <PropertyGroup>
       <RuntimeBuildWasiSdkPath Condition="'$(_UseRuntimeLocalWasiSdk)' != 'true'">$([MSBuild]::NormalizeDirectory('$(WASI_SDK_PATH)'))</RuntimeBuildWasiSdkPath>
-      <RuntimeBuildWasiSdkPath Condition="'$(_UseRuntimeLocalWasiSdk)' == 'true'">$(_RuntimeLocalWasiSdkPath)</RuntimeBuildWasiSdkPath>
+      <RuntimeBuildWasiSdkPath Condition="'$(_UseRuntimeLocalWasiSdk)' == 'true'">$(WasiSdkCacheDir)</RuntimeBuildWasiSdkPath>
     </PropertyGroup>
   </Target>
 

@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
@@ -486,9 +485,33 @@ namespace System.Diagnostics
             }
         }
 
+        /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
+        /// <remarks>
+        /// The value returned reflects the most recently refreshed memory usage for the process. Call
+        /// <see cref="Refresh"/> first to get an up-to-date value.
+        /// <para>
+        /// On Windows, this corresponds to the Private Bytes performance counter for the process.
+        /// </para>
+        /// <para>
+        /// On Linux, this value is the size of the process's data segment, as reported by the VmData field
+        /// of /proc/[pid]/status - an approximation (roughly heap plus global/static data) rather than a
+        /// precise measurement of memory unshared with other processes.
+        /// </para>
+        /// <para>
+        /// On macOS, this value is the process's physical memory footprint - an accounting-based measurement,
+        /// the same value shown in Activity Monitor's Memory column - rather than a strict count of unshared
+        /// pages. If the footprint can't be retrieved for the specified process - for example, if the caller
+        /// lacks permission to query a process owned by another user, or the process has since exited - this
+        /// property returns 0.
+        /// </para>
+        /// </remarks>
         public long PrivateMemorySize64
             => GetProcessInfo().PrivateBytes;
 
+        /// <summary>Gets the amount of private memory, in bytes, allocated for the associated process.</summary>
+        /// <remarks>See <see cref="PrivateMemorySize64"/> for platform-specific remarks. This property is a lossy,
+        /// unchecked cast of that value to <see cref="int"/> and can be negative when the 64-bit value exceeds
+        /// <see cref="int.MaxValue"/>.</remarks>
         [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
             => unchecked((int)GetProcessInfo().PrivateBytes);
@@ -1756,6 +1779,128 @@ namespace System.Diagnostics
                     await _error.EOF.WaitAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.Signal(PosixSignal)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool Signal(PosixSignal signal)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId);
+
+            return _processHandle?.Signal(signal) ?? SignalCore(signal);
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.WaitForExit()"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public ProcessExitStatus WaitForExitStatus()
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId | State.IsLocal);
+
+            if (TryGetExitStatus(out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+            else if (_processHandle is not null)
+            {
+                return _processHandle.WaitForExit();
+            }
+
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                using (processHandle)
+                {
+                    return processHandle.WaitForExit();
+                }
+            }
+
+            // Check the cached exit status one last time, in case the process exited between the previous check and the handle open attempt.
+            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.TryWaitForExit(TimeSpan, out ProcessExitStatus?)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public bool TryWaitForExitStatus(TimeSpan timeout, [NotNullWhen(true)] out ProcessExitStatus? exitStatus)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId | State.IsLocal);
+            _ = ProcessUtils.ToTimeoutMilliseconds(timeout);
+
+            if (TryGetExitStatus(out exitStatus))
+            {
+                return true;
+            }
+            else if (_processHandle is not null)
+            {
+                return _processHandle.TryWaitForExit(timeout, out exitStatus);
+            }
+
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                using (processHandle)
+                {
+                    return processHandle.TryWaitForExit(timeout, out exitStatus);
+                }
+            }
+
+            return TryGetExitStatus(out exitStatus) ? true : throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
+        }
+
+        /// <inheritdoc cref="SafeProcessHandle.WaitForExitAsync(CancellationToken)"/>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public async Task<ProcessExitStatus> WaitForExitStatusAsync(CancellationToken cancellationToken = default)
+        {
+            if (!ProcessUtils.PlatformSupportsProcessStartAndKill)
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            CheckDisposed();
+            EnsureState(State.HaveId | State.IsLocal);
+
+            if (TryGetExitStatus(out ProcessExitStatus? exitStatus))
+            {
+                return exitStatus;
+            }
+            else if (_processHandle is not null)
+            {
+                return await _processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            if (SafeProcessHandle.TryOpen(_processId, out SafeProcessHandle? processHandle))
+            {
+                using (processHandle)
+                {
+                    return await processHandle.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            // Check the cached exit status one last time, in case the process exited between the previous check and the handle open attempt.
+            return TryGetExitStatus(out exitStatus) ? exitStatus : throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
         }
 
         /// <devdoc>

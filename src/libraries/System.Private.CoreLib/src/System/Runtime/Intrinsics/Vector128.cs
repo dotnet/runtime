@@ -1736,7 +1736,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector128<double>, double>(degrees);
+                return VectorMath.DegreesToRadiansDouble<Vector128<double>, Vector128<ulong>>(degrees);
             }
             else
             {
@@ -1754,7 +1754,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector128<float>, float>(degrees);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector128<float>, Vector256<double>>(degrees);
+                }
+                else
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector128<float>, Vector128<double>>(degrees);
+                }
             }
             else
             {
@@ -3110,7 +3117,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector128<double>, double>(radians);
+                return VectorMath.RadiansToDegreesDouble<Vector128<double>, Vector128<ulong>>(radians);
             }
             else
             {
@@ -3128,7 +3135,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector128<float>, float>(radians);
+                if (Vector256.IsHardwareAccelerated)
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector128<float>, Vector256<double>>(radians);
+                }
+                else
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector128<float>, Vector128<double>>(radians);
+                }
             }
             else
             {

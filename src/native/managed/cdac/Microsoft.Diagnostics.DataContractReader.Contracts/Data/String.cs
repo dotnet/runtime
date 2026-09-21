@@ -7,8 +7,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class String : IData<String>
 {
     [FieldAddress("m_FirstChar")]
-    public TargetPointer FirstChar { get; }
+    public partial TargetPointer FirstChar { get; }
 
     [Field("m_StringLength")]
-    public uint StringLength { get; }
+    public partial uint StringLength { get; }
 }

@@ -3,7 +3,7 @@
 
 include_directories(${INC_PLATFORM_DIR})
 
-add_library(usetls SHARED testtls.cpp)
+add_library(usetls ${TEST_LIB_TYPE} testtls.cpp)
 
 install (TARGETS usetls DESTINATION bin)
 

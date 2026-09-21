@@ -53,19 +53,18 @@ internal static class MethodDescOptionalSlots
         // sizeof(InstantiatedMethodDesc),     mcInstantiated
         // sizeof(CLRToCOMCallMethodDesc),     mcComInterOp
         // sizeof(DynamicMethodDesc)           mcDynamic
-        DataType type = classification switch
+        return classification switch
         {
-            MethodClassification.IL => DataType.MethodDesc,
-            MethodClassification.FCall => DataType.FCallMethodDesc,
-            MethodClassification.PInvoke => DataType.PInvokeMethodDesc,
-            MethodClassification.EEImpl => DataType.EEImplMethodDesc,
-            MethodClassification.Array => DataType.ArrayMethodDesc,
-            MethodClassification.Instantiated => DataType.InstantiatedMethodDesc,
-            MethodClassification.ComInterop => DataType.CLRToCOMCallMethodDesc,
-            MethodClassification.Dynamic => DataType.DynamicMethodDesc,
+            MethodClassification.IL => Data.MethodDesc.GetSize(target),
+            MethodClassification.FCall => Data.FCallMethodDesc.GetSize(target),
+            MethodClassification.PInvoke => Data.PInvokeMethodDesc.GetSize(target),
+            MethodClassification.EEImpl => Data.EEImplMethodDesc.GetSize(target),
+            MethodClassification.Array => Data.ArrayMethodDesc.GetSize(target),
+            MethodClassification.Instantiated => Data.InstantiatedMethodDesc.GetSize(target),
+            MethodClassification.ComInterop => Data.CLRToCOMCallMethodDesc.GetSize(target),
+            MethodClassification.Dynamic => Data.DynamicMethodDesc.GetSize(target),
             _ => throw new InvalidOperationException($"Unexpected method classification 0x{classification:x2} for MethodDesc")
         };
-        return target.GetTypeInfo(type).Size ?? throw new InvalidOperationException($"size of MethodDesc not known");
     }
 
     // Offsets are from the start of optional slots data (so right after the MethodDesc), obtained via StartOffset
@@ -92,10 +91,10 @@ internal static class MethodDescOptionalSlots
 
         uint offset = 0;
         if (HasNonVtableSlot(flags))
-            offset += target.GetTypeInfo(DataType.NonVtableSlot).Size!.Value;
+            offset += Data.NonVtableSlot.GetSize(target);
 
         if (HasMethodImpl(flags))
-            offset += target.GetTypeInfo(DataType.MethodImpl).Size!.Value;
+            offset += Data.MethodImpl.GetSize(target);
 
         return offset;
     }
@@ -107,13 +106,13 @@ internal static class MethodDescOptionalSlots
 
         uint offset = 0;
         if (HasNonVtableSlot(flags))
-            offset += target.GetTypeInfo(DataType.NonVtableSlot).Size!.Value;
+            offset += Data.NonVtableSlot.GetSize(target);
 
         if (HasMethodImpl(flags))
-            offset += target.GetTypeInfo(DataType.MethodImpl).Size!.Value;
+            offset += Data.MethodImpl.GetSize(target);
 
         if (HasNativeCodeSlot(flags))
-            offset += target.GetTypeInfo(DataType.NativeCodeSlot).Size!.Value;
+            offset += Data.NativeCodeSlot.GetSize(target);
 
         return offset;
     }

@@ -395,9 +395,6 @@ bool ExecutableAllocator::AddRWBlock(void* baseRW, void* baseRX, size_t size, Ca
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The new "nothrow" below failure is handled as fail fast since it is not recoverable
-    PERMANENT_CONTRACT_VIOLATION(FaultViolation, ReasonContractInfrastructure);
-
     BlockRW* pBlockRW = new (nothrow) BlockRW();
     if (pBlockRW == NULL)
     {

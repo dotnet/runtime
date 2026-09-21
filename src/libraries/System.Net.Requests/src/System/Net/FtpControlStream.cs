@@ -181,12 +181,14 @@ namespace System.Net
 
             _dataStream = new NetworkStream(_dataSocket, true);
 
+            SslStream? sslStream = null;
+
             if (UsingSecureStream)
             {
                 FtpWebRequest request = (FtpWebRequest)_request!;
 
 #pragma warning disable SYSLIB0014 // ServicePointManager is obsolete
-                SslStream sslStream = new SslStream(_dataStream, false, ServicePointManager.ServerCertificateValidationCallback);
+                sslStream = new SslStream(_dataStream, leaveInnerStreamOpen: true, ServicePointManager.ServerCertificateValidationCallback);
 
                 if (_isAsync)
                 {
@@ -212,7 +214,7 @@ namespace System.Net
 #pragma warning restore SYSLIB0014 // ServicePointManager is obsolete
             }
 
-            stream = new FtpDataStream((Stream?)_sslStream ?? _dataStream, _dataStream, (FtpWebRequest)_request!, IsFtpDataStreamWriteable());
+            stream = new FtpDataStream((Stream?)sslStream ?? _dataStream, _dataStream, (FtpWebRequest)_request!, IsFtpDataStreamWriteable());
             return PipelineInstruction.GiveStream;
         }
 

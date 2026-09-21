@@ -9,7 +9,7 @@ using Xunit;
 
 public class StrengthReductionTest
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         return StrengthReduction(Enumerable.Range(0, 1000).ToArray()).Result - 499400;

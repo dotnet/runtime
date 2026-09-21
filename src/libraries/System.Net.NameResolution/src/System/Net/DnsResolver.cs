@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,6 +21,7 @@ namespace System.Net
     /// and used to issue multiple concurrent resolutions.
     /// </para>
     /// </remarks>
+    [UnsupportedOSPlatform("wasi")]
     public sealed partial class DnsResolver : IAsyncDisposable, IDisposable
     {
         private readonly IPEndPoint[] _servers;
@@ -29,6 +31,8 @@ namespace System.Net
         /// Initializes a new instance of the <see cref="DnsResolver"/> class that uses the
         /// system-configured DNS servers.
         /// </summary>
+        /// <exception cref="PlatformNotSupportedException">The system-configured DNS servers cannot be determined on this platform.</exception>
+        [UnsupportedOSPlatform("android")]
         public DnsResolver() : this(new DnsResolverOptions()) { }
 
         /// <summary>

@@ -101,7 +101,6 @@ namespace ILCompiler.DependencyAnalysis
             ProxyTypeMapObjectNode,
             StackTraceLineNumbersNode,
             StackTraceDocumentsNode,
-            ExternalReferencesTableNode,
             StackTraceEmbeddedMetadataNode,
             StackTraceMethodMappingNode,
             ArrayOfEmbeddedDataNode,
@@ -109,6 +108,7 @@ namespace ILCompiler.DependencyAnalysis
             InterfaceDispatchCellSection,
             GvmDispatchCellInfoSection,
             GvmDispatchCellSection,
+            ExternalReferencesTableNode,
 
             //
             // Wasm type signatures (need to be emitted some time before the unordered phase)

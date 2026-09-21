@@ -16,10 +16,15 @@ DumpWriter::WriteDump()
 
     BuildThreadLoadCommands();
 
+    BuildProcessMetadataNote();
+
     uint64_t fileOffset = 0;
     if (!WriteHeader(&fileOffset)) {
         return false;
     }
+
+    m_processMetadataNote.offset = fileOffset;
+    fileOffset += m_processMetadataNote.size;
 
     TRACE("Writing %zd thread commands to core file\n", m_threadLoadCommands.size());
 
@@ -54,11 +59,19 @@ DumpWriter::WriteDump()
         }
     }
 
+    // Write the process metadata note as the final load command
+    if (!WriteData(&m_processMetadataNote, m_processMetadataNote.cmdsize)) {
+        return false;
+    }
+    if (!WriteData(m_processMetadata.data(), m_processMetadata.size())) {
+        return false;
+    }
+
     // Write any segment alignment required to the core file
     if (alignment > 0)
     {
         if (alignment > sizeof(m_tempBuffer)) {
-            printf_error("Internal error: segment alignment %llu > sizeof(m_tempBuffer)\n", alignment);
+            printf_error("Internal error: segment alignment %" PRIu64 " > sizeof(m_tempBuffer)\n", alignment);
             return false;
         }
         memset(m_tempBuffer, 0, alignment);
@@ -85,6 +98,33 @@ ConvertFlags(uint32_t flags)
         prot |= VM_PROT_EXECUTE;
     }
     return prot;
+}
+
+void
+DumpWriter::BuildProcessMetadataNote()
+{
+    // LLDB specifies the "process metadata" LC_NOTE as compact JSON whose
+    // thread entries correspond by position to the LC_THREAD commands.
+    m_processMetadata = "{\"threads\":[";
+    bool first = true;
+    for (const ThreadInfo* thread : m_crashInfo.Threads())
+    {
+        if (!first)
+        {
+            m_processMetadata.push_back(',');
+        }
+        first = false;
+        m_processMetadata.append("{\"thread_id\":");
+        m_processMetadata.append(std::to_string(thread->Tid()));
+        m_processMetadata.push_back('}');
+    }
+    m_processMetadata.append("]}");
+
+    m_processMetadataNote.cmd = LC_NOTE;
+    m_processMetadataNote.cmdsize = sizeof(note_command);
+    static_assert(sizeof(m_processMetadataNote.data_owner) == sizeof("process metadata") - 1);
+    memcpy(m_processMetadataNote.data_owner, "process metadata", sizeof(m_processMetadataNote.data_owner));
+    m_processMetadataNote.size = m_processMetadata.size();
 }
 
 void
@@ -190,6 +230,9 @@ DumpWriter::WriteHeader(uint64_t* pFileOffset)
         header.sizeofcmds += segment.cmdsize;
     }
 
+    header.ncmds++;
+    header.sizeofcmds += m_processMetadataNote.cmdsize;
+
     *pFileOffset = sizeof(mach_header_64) + header.sizeofcmds;
     
     TRACE("Macho header: magic %08x cputype %08x cpusubtype %08x filetype %08x ncmds %08x sizeofcmds %08x flags %08x reserved %08x\n",
@@ -209,7 +252,7 @@ DumpWriter::WriteHeader(uint64_t* pFileOffset)
 bool
 DumpWriter::WriteSegments()
 {
-    TRACE("Writing %" PRIu64 " memory regions to core file\n", m_segmentLoadCommands.size());
+    TRACE("Writing %zu memory regions to core file\n", m_segmentLoadCommands.size());
 
     // Read from target process and write memory regions to core
     uint64_t total = 0;

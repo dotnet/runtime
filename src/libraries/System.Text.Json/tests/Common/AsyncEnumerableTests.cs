@@ -719,6 +719,182 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(count, i);
         }
 
+        public static IEnumerable<object[]> FlushPointsData()
+        {
+            // topLevelValues, expected stream contents at each flush, expected final output.
+            yield return new object[] { false, new[] { "[0", "[0,1", "[0,1,2", "[0,1,2]" }, "[0,1,2]" };
+            yield return new object[] { true, new[] { "0\n", "0\n1\n", "0\n1\n2\n" }, "0\n1\n2\n" };
+        }
+
+        [Theory]
+        [MemberData(nameof(FlushPointsData))]
+        public async Task SerializeAsyncEnumerable_FlushesStreamAsValuesAreProduced(bool topLevelValues, string[] expectedFlushSnapshots, string expectedOutput)
+        {
+            // Values produced so far must be flushed to the underlying stream before awaiting
+            // the producer, so that consumers can observe them in real time. The producer is only
+            // released once the flush has been observed, making the expected flush points deterministic.
+            using FlushTrackingStream stream = new();
+            GatedAsyncEnumerable source = new(count: 3);
+            stream.OnFlush = source.ReleaseNext;
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+
+            await JsonSerializer.SerializeAsyncEnumerable(
+                stream,
+                source,
+                ResolveJsonTypeInfo<int>(),
+                topLevelValues,
+                cts.Token);
+
+            Assert.Equal(expectedFlushSnapshots, stream.FlushSnapshots);
+            Assert.Equal(expectedOutput, Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public async Task SerializeAsync_NestedAsyncEnumerable_FlushesStreamWhenAwaitingProducer()
+        {
+            // The same guarantee applies to IAsyncEnumerable values nested in a larger payload.
+            using FlushTrackingStream stream = new();
+            GatedAsyncEnumerable source = new(count: 2);
+            stream.OnFlush = source.ReleaseNext;
+            using CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+
+            await JsonSerializer.SerializeAsync(
+                stream,
+                new AsyncEnumerableDto { Values = source },
+                ResolveJsonTypeInfo<AsyncEnumerableDto>(),
+                cts.Token);
+
+            Assert.Equal(new[] { "{\"Values\":[0", "{\"Values\":[0,1", "{\"Values\":[0,1]}" }, stream.FlushSnapshots);
+            Assert.Equal("{\"Values\":[0,1]}", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public async Task SerializeAsync_ValueWithoutAsyncEnumerables_FlushesStreamOnCompletion()
+        {
+            // Non-streaming payloads are written in a single flush at the end of serialization.
+            using FlushTrackingStream stream = new();
+
+            await JsonSerializer.SerializeAsync(stream, new int[] { 1, 2, 3 }, ResolveJsonTypeInfo<int[]>());
+
+            Assert.Equal(new[] { "[1,2,3]" }, stream.FlushSnapshots);
+            Assert.Equal("[1,2,3]", Encoding.UTF8.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public async Task SerializeAsyncEnumerable_TopLevelValues_DestinationFlushFailure_PropagatesAndDisposesEnumerator()
+        {
+            // A failure to flush the destination must surface to the caller and must not prevent
+            // the enumerator from being disposed.
+            using FlushTrackingStream stream = new();
+            stream.OnFlush = () => throw new IOException("flush failed");
+            SlowAsyncEnumerable source = new(count: 3);
+
+            IOException exception = await Assert.ThrowsAsync<IOException>(() =>
+                JsonSerializer.SerializeAsyncEnumerable(
+                    stream,
+                    source,
+                    ResolveJsonTypeInfo<int>(),
+                    topLevelValues: true));
+
+            Assert.Equal("flush failed", exception.Message);
+            Assert.True(source.Disposed);
+        }
+
+        public class AsyncEnumerableDto
+        {
+            public IAsyncEnumerable<int> Values { get; set; }
+        }
+
+        /// <summary>
+        /// An enumerable of increasing integers whose producer suspends after every element
+        /// until it is explicitly released.
+        /// </summary>
+        private sealed class GatedAsyncEnumerable : IAsyncEnumerable<int>
+        {
+            private readonly TaskCompletionSource<bool>[] _gates;
+            private int _released;
+
+            public GatedAsyncEnumerable(int count)
+            {
+                _gates = new TaskCompletionSource<bool>[count];
+                for (int i = 0; i < count; i++)
+                {
+                    _gates[i] = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+            }
+
+            /// <summary>Lets the producer advance past the element it last yielded.</summary>
+            public void ReleaseNext()
+            {
+                int index = _released++;
+                if (index < _gates.Length)
+                {
+                    _gates[index].TrySetResult(true);
+                }
+            }
+
+            public async IAsyncEnumerator<int> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            {
+                for (int i = 0; i < _gates.Length; i++)
+                {
+                    yield return i;
+
+                    // Cancellation ensures the test fails instead of hanging if the value is never flushed.
+                    TaskCompletionSource<bool> gate = _gates[i];
+                    using CancellationTokenRegistration registration = cancellationToken.Register(() => gate.TrySetCanceled(cancellationToken));
+                    await gate.Task;
+                }
+            }
+        }
+
+        /// <summary>An enumerable whose producer always suspends between elements.</summary>
+        private sealed class SlowAsyncEnumerable : IAsyncEnumerable<int>
+        {
+            private readonly int _count;
+
+            public SlowAsyncEnumerable(int count) => _count = count;
+
+            public bool Disposed { get; private set; }
+
+            public async IAsyncEnumerator<int> GetAsyncEnumerator(CancellationToken cancellationToken = default)
+            {
+                try
+                {
+                    for (int i = 0; i < _count; i++)
+                    {
+                        yield return i;
+                        await Task.Delay(10, CancellationToken.None);
+                    }
+                }
+                finally
+                {
+                    Disposed = true;
+                }
+            }
+        }
+
+        private sealed class FlushTrackingStream : MemoryStream
+        {
+            /// <summary>Gets the contents of the stream as observed at the time of every flush.</summary>
+            public List<string> FlushSnapshots { get; } = new();
+
+            /// <summary>Gets or sets a callback invoked after every recorded flush.</summary>
+            public Action OnFlush { get; set; }
+
+            public override void Flush()
+            {
+                FlushSnapshots.Add(Encoding.UTF8.GetString(ToArray()));
+                OnFlush?.Invoke();
+            }
+
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Flush();
+                return Task.CompletedTask;
+            }
+        }
+
         [Fact]
         public async Task SerializeAsyncEnumerable_PipeWriter_TopLevelValues_RoundTripsWithDeserializeAsyncEnumerable()
         {

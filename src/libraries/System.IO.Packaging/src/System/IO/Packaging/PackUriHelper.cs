@@ -602,7 +602,7 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
-#pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
+#pragma warning disable CA1067 // Not overriding Equals(object); changing equality behavior could affect existing case-sensitive comparisons.
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
 #pragma warning restore CA1067
         {
@@ -842,11 +842,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.Compare(
-                    NormalizedPartUriString,
-                    otherPartUri.NormalizedPartUriString,
-                    StringComparison.OrdinalIgnoreCase
-                );
+                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------
@@ -881,9 +877,8 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Compares <see cref="ValidatedPartUri"/> instances for equality using the same
-        /// case-insensitive, normalized comparison as <see cref="ValidatedPartUri.Compare"/>
-        /// via <see cref="IEquatable{ValidatedPartUri}"/>.
+        /// Compares <see cref="ValidatedPartUri"/> instances for equality using the normalized (upper-cased) part URI
+        /// string comparison implemented by <see cref="IEquatable{ValidatedPartUri}.Equals(ValidatedPartUri)"/>.
         /// This is used explicitly by internal collections that need case-insensitive part-name
         /// semantics (e.g. <see cref="ZipPackage"/>'s content-type override dictionary), without
         /// relying on <see cref="ValidatedPartUri"/> overriding <see cref="object.Equals(object?)"/>
@@ -909,7 +904,7 @@ namespace System.IO.Packaging
             }
 
             public int GetHashCode(ValidatedPartUri obj)
-                => StringComparer.OrdinalIgnoreCase.GetHashCode(obj.NormalizedPartUriString);
+                => StringComparer.Ordinal.GetHashCode(obj.NormalizedPartUriString);
         }
 
         #endregion Private Class

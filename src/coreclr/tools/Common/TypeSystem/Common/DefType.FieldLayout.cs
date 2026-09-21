@@ -88,6 +88,12 @@ namespace Internal.TypeSystem
             /// True if the type contains byrefs
             /// </summary>
             public const int ContainsByRefs = 0x4000;
+
+            /// <summary>
+            /// True if the type transitively has a decimal floating-point type
+            /// (Decimal32/Decimal64/Decimal128) in it or is one.
+            /// </summary>
+            public const int IsDecimalFloatingPointOrHasDecimalFloatingPointFields = 0x8000;
         }
 
         private sealed class StaticBlockInfo
@@ -195,6 +201,22 @@ namespace Internal.TypeSystem
                     ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
                 }
                 return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsVectorTOrHasVectorTFields);
+            }
+        }
+
+        /// <summary>
+        /// Is a type a decimal floating-point type (Decimal32/Decimal64/Decimal128) or transitively
+        /// have any fields of such a type.
+        /// </summary>
+        public virtual bool IsDecimalFloatingPointOrHasDecimalFloatingPointFields
+        {
+            get
+            {
+                if (!_fieldLayoutFlags.HasFlags(FieldLayoutFlags.ComputedInstanceTypeLayout))
+                {
+                    ComputeInstanceLayout(InstanceLayoutKind.TypeAndFields);
+                }
+                return _fieldLayoutFlags.HasFlags(FieldLayoutFlags.IsDecimalFloatingPointOrHasDecimalFloatingPointFields);
             }
         }
 
@@ -499,6 +521,10 @@ namespace Internal.TypeSystem
             if (computedLayout.IsVectorTOrHasVectorTFields)
             {
                 _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsVectorTOrHasVectorTFields);
+            }
+            if (computedLayout.IsDecimalFloatingPointOrHasDecimalFloatingPointFields)
+            {
+                _fieldLayoutFlags.AddFlags(FieldLayoutFlags.IsDecimalFloatingPointOrHasDecimalFloatingPointFields);
             }
 
             if (computedLayout.Offsets != null)

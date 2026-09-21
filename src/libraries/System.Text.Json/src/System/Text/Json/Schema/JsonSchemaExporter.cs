@@ -181,7 +181,7 @@ namespace System.Text.Json.Schema
             if (effectiveConverter.NullableElementConverter is { } elementConverter)
             {
                 JsonTypeInfo elementTypeInfo = typeInfo.Options.GetTypeInfo(elementConverter.Type!);
-                schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, cacheResult: false);
+                schema = MapJsonSchemaCore(ref state, elementTypeInfo, customConverter: elementConverter, customNumberHandling: customNumberHandling ?? typeInfo.NumberHandling, cacheResult: false);
 
                 if (elementConverter.IsIeeeFloatingPointConverter &&
                     (effectiveNumberHandling & JsonNumberHandling.AllowNamedFloatingPointLiterals) != 0)
@@ -203,7 +203,7 @@ namespace System.Text.Json.Schema
                         }
                     }
                 }
-                else if (schema.Enum != null)
+                else if (schema.Enum is not null)
                 {
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.
@@ -256,7 +256,7 @@ namespace System.Text.Json.Schema
                         if (property.AssociatedParameter is { HasDefaultValue: true } parameterInfo)
                         {
                             JsonSchema.EnsureMutable(ref propertySchema);
-                            propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.DefaultValue, property.JsonTypeInfo);
+                            propertySchema.DefaultValue = JsonSerializer.SerializeToNode(parameterInfo.EffectiveDefaultValue, property.JsonTypeInfo);
                             propertySchema.HasDefaultValue = true;
                         }
 
@@ -281,7 +281,7 @@ namespace System.Text.Json.Schema
                     });
 
                 case JsonTypeInfoKind.Enumerable:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     if (typeDiscriminator is null)
                     {
@@ -331,7 +331,7 @@ namespace System.Text.Json.Schema
                     }
 
                 case JsonTypeInfoKind.Dictionary:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     List<KeyValuePair<string, JsonSchema>>? dictProps = null;
                     List<string>? dictRequired = null;
@@ -371,7 +371,7 @@ namespace System.Text.Json.Schema
                             JsonTypeInfo caseTypeInfo = typeInfo.Options.GetTypeInfoInternal(caseInfo.CaseType);
 
                             state.PushSchemaNode(unionAnyOf.Count.ToString(CultureInfo.InvariantCulture));
-                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, cacheResult: false);
+                            JsonSchema caseSchema = MapJsonSchemaCore(ref state, caseTypeInfo, customNumberHandling: typeInfo.NumberHandling, cacheResult: false);
                             state.PopSchemaNode();
 
                             if (caseInfo.IsNullable)
@@ -447,7 +447,17 @@ namespace System.Text.Json.Schema
 
                         if (propertyInfo is not null)
                         {
-                            return propertyInfo.IsGetNullable || propertyInfo.IsSetNullable;
+                            if (propertyInfo.Get is not null && propertyInfo.IsGetNullable)
+                            {
+                                return true;
+                            }
+
+                            if (propertyInfo.AssociatedParameter is not null)
+                            {
+                                return propertyInfo.AssociatedParameter.IsNullable;
+                            }
+
+                            return propertyInfo.Set is not null && propertyInfo.IsSetNullable;
                         }
 
                         if (typeInfo.IsNullable)
@@ -459,7 +469,7 @@ namespace System.Text.Json.Schema
                     }
                 }
 
-                if (state.ExporterOptions.TransformSchemaNode != null)
+                if (state.ExporterOptions.TransformSchemaNode is not null)
                 {
                     // Prime the schema for invocation by the JsonNode transformer.
                     schema.ExporterContext = exporterContext;

@@ -48,10 +48,6 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
   locate_toolchain_exec(ranlib CMAKE_RANLIB YES)
   locate_toolchain_exec(strings CMAKE_STRINGS YES)
 
-  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    locate_toolchain_exec(link CMAKE_LINKER YES)
-  endif()
-
   if(NOT CLR_CMAKE_TARGET_APPLE AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP YES)
     locate_toolchain_exec(readelf CMAKE_READELF YES)

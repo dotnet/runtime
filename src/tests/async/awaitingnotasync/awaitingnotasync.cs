@@ -7,7 +7,7 @@ using Xunit;
 
 public class AwaitNotAsync
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         AsyncEntryPoint().Wait();

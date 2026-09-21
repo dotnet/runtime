@@ -568,7 +568,28 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
 }
 
 //------------------------------------------------------------------------
-// HasGCByRef: //   Check if this classlayout has a TYP_BYREF GC pointer in it.
+// GetAlignmentRequirement: Get the alignment required for a layout.
+//
+// Parameters:
+//   comp - The compiler instance.
+//
+// Return value:
+//   Alignment requirement.
+//
+unsigned ClassLayout::GetAlignmentRequirement(Compiler* comp) const
+{
+    if (IsCustomLayout())
+    {
+        return HasGCPtr() ? TARGET_POINTER_SIZE : 1;
+    }
+    else
+    {
+        return comp->info.compCompHnd->getClassAlignmentRequirement(GetClassHandle());
+    }
+}
+
+//------------------------------------------------------------------------
+// HasGCByRef: Check if this classlayout has a TYP_BYREF GC pointer in it.
 //
 // Return value:
 //   True if so.

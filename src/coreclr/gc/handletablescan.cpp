@@ -1438,7 +1438,6 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
     {
         WRAPPER(NOTHROW);
         WRAPPER(GC_TRIGGERS);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -1479,7 +1478,6 @@ PTR_TableSegment CALLBACK FullSegmentIterator(PTR_HandleTable pTable, PTR_TableS
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;

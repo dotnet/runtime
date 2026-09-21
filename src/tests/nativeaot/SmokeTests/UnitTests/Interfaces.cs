@@ -19,6 +19,9 @@ public class Interfaces
         if (TestInterfaceCache() == Fail)
             return Fail;
 
+        if (TestSharedDescriptorCells() == Fail)
+            return Fail;
+
         if (TestAVInInterfaceCache() == Fail)
             return Fail;
 
@@ -162,6 +165,27 @@ public class Interfaces
 
         return 100;
     }
+
+    private static int TestSharedDescriptorCells()
+    {
+        MyInterface instance = new Foo7();
+        return CallSharedDescriptor0(instance) +
+            CallSharedDescriptor1(instance) +
+            CallSharedDescriptor2(instance) +
+            CallSharedDescriptor3(instance) == 28 ? Pass : Fail;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor0(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor1(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor2(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor3(MyInterface instance) => instance.GetAnInt();
 
     private static int TestAVInInterfaceCache()
     {
