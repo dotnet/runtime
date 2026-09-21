@@ -373,6 +373,17 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_STOREIND:
             return LowerStoreIndirCommon(node->AsStoreInd());
 
+        case GT_PRIVATEOBJECT:
+        {
+            GenTree* object = node->AsOp()->gtOp1;
+            assert(object->OperIs(GT_LCL_VAR) && object->TypeIs(TYP_REF));
+            unsigned lclNum = object->AsLclVar()->GetLclNum();
+            BlockRange().Remove(object);
+            node->gtBashToNOP();
+            RecordPrivateObject(lclNum, node);
+            return node->gtNext;
+        }
+
         case GT_ADD:
         {
             GenTree* next = LowerAdd(node->AsOp());
@@ -2797,6 +2808,11 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
 GenTree* Lowering::LowerCall(GenTree* node)
 {
     GenTreeCall* call = node->AsCall();
+
+    if (m_coalesceWriteBarriers && !call->IsHelperCall(CORINFO_HELP_STORED_REFS))
+    {
+        m_privateObjects.Reset();
+    }
 
     JITDUMP("lowering call (before):\n");
     DISPTREERANGE(BlockRange(), call);
@@ -5621,6 +5637,7 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
 GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
 {
     assert(lclStore->OperIs(GT_STORE_LCL_FLD, GT_STORE_LCL_VAR));
+    RecordPrivateObjectDefinition(lclStore);
     JITDUMP("lowering store lcl var/field (before):\n");
     DISPTREERANGE(BlockRange(), lclStore);
     JITDUMP("\n");
@@ -9312,8 +9329,16 @@ void Lowering::LowerBlock(BasicBlock* block)
 
     m_block = block;
 #ifdef TARGET_ARM64
-    m_blockIndirs.Reset();
     m_ffrTrashed = true;
+#endif
+
+    m_blockIndirs.Reset();
+    m_privateObjects.Reset();
+    m_coalesceWriteBarriers = m_compiler->opts.OptimizationEnabled() &&
+                              (JitConfig.JitEnableWriteBarrierBatching() != 0) && !m_compiler->IsReadyToRun() &&
+                              !m_compiler->IsNativeAot();
+#ifdef TARGET_WASM
+    m_coalesceWriteBarriers = false;
 #endif
 
     // NOTE: some of the lowering methods insert calls before the node being
@@ -9330,6 +9355,366 @@ void Lowering::LowerBlock(BasicBlock* block)
     }
 
     assert(CheckBlock(m_compiler, block));
+}
+
+//------------------------------------------------------------------------
+// RecordPrivateObject: Record a non-null, private object at its definition.
+//
+void Lowering::RecordPrivateObject(unsigned lclNum, GenTree* definition)
+{
+    if (!m_coalesceWriteBarriers || m_compiler->lvaGetDesc(lclNum)->IsAddressExposed())
+    {
+        return;
+    }
+
+    for (int i = 0; i < m_privateObjects.Height(); i++)
+    {
+        if (m_privateObjects.BottomRef(i).LclNum == lclNum)
+        {
+            m_privateObjects.BottomRef(i).LclNum = BAD_VAR_NUM;
+        }
+    }
+
+    m_privateObjects.Emplace(lclNum, definition, m_blockIndirs.Height());
+}
+
+//------------------------------------------------------------------------
+// RecordPrivateObjectDefinition: Invalidate redefined locals and recognize
+// allocation results while lowering local stores.
+//
+void Lowering::RecordPrivateObjectDefinition(GenTreeLclVarCommon* store)
+{
+    if (!m_coalesceWriteBarriers)
+    {
+        return;
+    }
+
+    unsigned lclNum = store->GetLclNum();
+    for (int i = 0; i < m_privateObjects.Height(); i++)
+    {
+        if (m_privateObjects.BottomRef(i).LclNum == lclNum)
+        {
+            m_privateObjects.BottomRef(i).LclNum = BAD_VAR_NUM;
+        }
+    }
+
+    if (!store->OperIs(GT_STORE_LCL_VAR) || !store->TypeIs(TYP_REF) || !store->Data()->IsHelperCall())
+    {
+        return;
+    }
+
+    switch (store->Data()->AsCall()->GetHelperNum())
+    {
+        case CORINFO_HELP_NEWFAST:
+        case CORINFO_HELP_NEWSFAST:
+        case CORINFO_HELP_NEWSFAST_ALIGN8:
+        case CORINFO_HELP_NEWSFAST_ALIGN8_VC:
+        case CORINFO_HELP_NEWSFAST_FINALIZE:
+        case CORINFO_HELP_NEWSFAST_ALIGN8_FINALIZE:
+        case CORINFO_HELP_ALLOC_CONTINUATION:
+        case CORINFO_HELP_ALLOC_CONTINUATION_CLASS:
+        case CORINFO_HELP_ALLOC_CONTINUATION_METHOD:
+            RecordPrivateObject(lclNum, store);
+            break;
+
+        default:
+            break;
+    }
+}
+
+//------------------------------------------------------------------------
+// TryCoalesceWriteBarriers: Record a reference store and try to combine it with
+// preceding stores to a private object.
+//
+// Arguments:
+//   current - The store being lowered.
+//
+// Returns:
+//   True if the store and any newly inserted nodes have been lowered.
+//
+bool Lowering::TryCoalesceWriteBarriers(GenTreeStoreInd* current)
+{
+    if (!m_coalesceWriteBarriers || m_privateObjects.Empty() || !current->TypeIs(TYP_REF) ||
+        ((current->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) != 0))
+    {
+        return false;
+    }
+
+    auto getBase = [this](GenTreeIndir* indir, unsigned* offset) -> GenTreeLclVar* {
+        GenTree*       addr = indir->Addr();
+        target_ssize_t offs = 0;
+        m_compiler->gtPeelOffsets(&addr, &offs);
+        if (!addr->OperIs(GT_LCL_VAR) || !addr->TypeIs(TYP_REF) || (offs < TARGET_POINTER_SIZE) ||
+            (offs > INT_MAX - TARGET_POINTER_SIZE))
+        {
+            return nullptr;
+        }
+        *offset = static_cast<unsigned>(offs);
+        return addr->AsLclVar();
+    };
+
+    unsigned       currentOffset;
+    GenTreeLclVar* base = getBase(current, &currentOffset);
+    if ((base == nullptr) || ((currentOffset % TARGET_POINTER_SIZE) != 0))
+    {
+        return false;
+    }
+
+    unsigned       lclNum = base->GetLclNum();
+    PrivateObject* object = nullptr;
+    for (int i = 0; i < m_privateObjects.Height(); i++)
+    {
+        if (m_privateObjects.TopRef(i).LclNum == lclNum)
+        {
+            object = &m_privateObjects.TopRef(i);
+            break;
+        }
+    }
+    if (object == nullptr)
+    {
+        return false;
+    }
+
+    m_blockIndirs.Emplace(current, base, currentOffset);
+
+    const unsigned maxNodes    = 100;
+    const unsigned minBarriers = 3;
+    int            indices[maxNodes];
+    unsigned       candidateCount = 0;
+    unsigned       barrierCount   = object->StoreCount;
+    unsigned       minOffset      = UINT_MAX;
+    unsigned       maxOffset      = 0;
+
+    // Identify candidates from the indirections already encountered in this block.
+    for (int i = object->FirstIndir; i < m_blockIndirs.Height(); i++)
+    {
+        SavedIndir& saved = m_blockIndirs.BottomRef(i);
+        if ((saved.Indir == nullptr) || !saved.Indir->OperIs(GT_STOREIND) || !saved.Indir->TypeIs(TYP_REF) ||
+            (saved.AddrBase->GetLclNum() != lclNum) || ((saved.Indir != current) && (saved.Indir->gtNext == nullptr)))
+        {
+            continue;
+        }
+
+        if (candidateCount == maxNodes)
+        {
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+        unsigned offset = static_cast<unsigned>(saved.Offset);
+        for (unsigned j = 0; j < candidateCount; j++)
+        {
+            if (m_blockIndirs.BottomRef(indices[j]).Offset == saved.Offset)
+            {
+                object->LclNum = BAD_VAR_NUM;
+                return false;
+            }
+        }
+
+        indices[candidateCount++] = i;
+        minOffset                 = min(minOffset, offset);
+        maxOffset                 = max(maxOffset, offset);
+        barrierCount += m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(saved.Indir->AsStoreInd()) ? 1 : 0;
+    }
+
+    if (barrierCount < minBarriers)
+    {
+        return false;
+    }
+    unsigned byteCount = maxOffset - minOffset + TARGET_POINTER_SIZE;
+
+    LIR::ReadOnlyRange previousCall;
+    if (object->Barrier != nullptr)
+    {
+        bool isClosed;
+        previousCall = BlockRange().GetTreeRange(object->Barrier, &isClosed);
+        if (!isClosed)
+        {
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+    }
+
+    JITDUMP("Checking motion for %u recorded reference stores to V%02u\n", candidateCount, lclNum);
+    GenTree*      end      = current->gtNext;
+    unsigned      count    = 0;
+    unsigned      numNodes = 0;
+    SideEffectSet movingStores;
+
+    for (GenTree* node = object->Definition->gtNext; node != end; node = node->gtNext)
+    {
+        if (node == previousCall.FirstNode())
+        {
+            node = object->Barrier;
+            continue;
+        }
+        if ((node == object->StartNonGC) || (node == object->EndNonGC))
+        {
+            continue;
+        }
+        if ((++numNodes > maxNodes) || node->IsCall() ||
+            node->OperIs(GT_MEMORYBARRIER, GT_START_NONGC, GT_END_NONGC, GT_START_PREEMPTGC))
+        {
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+
+        if (node->OperIs(GT_LCL_VAR) && (node->AsLclVar()->GetLclNum() == lclNum))
+        {
+            LIR::Use addrUse;
+            LIR::Use accessUse;
+            unsigned offset;
+            if (!BlockRange().TryGetUse(node, &addrUse) || !addrUse.User()->OperIs(GT_ADD, GT_LEA) ||
+                !BlockRange().TryGetUse(addrUse.User(), &accessUse) || !accessUse.User()->OperIs(GT_IND, GT_STOREIND) ||
+                (accessUse.User()->AsIndir()->Addr() != addrUse.User()) ||
+                (getBase(accessUse.User()->AsIndir(), &offset) == nullptr))
+            {
+                object->LclNum = BAD_VAR_NUM;
+                return false;
+            }
+        }
+
+        if ((count < candidateCount) && (node == m_blockIndirs.BottomRef(indices[count]).Indir))
+        {
+            count++;
+            GenTreeStoreInd* store = node->AsStoreInd();
+            GenTreeFlags     flags = store->gtFlags;
+            store->gtFlags |= GTF_IND_NONFAULTING;
+            store->gtFlags &= ~GTF_EXCEPT;
+            movingStores.AddNode(m_compiler, store);
+            store->gtFlags = flags;
+            continue;
+        }
+
+        if (node->OperIs(GT_STOREIND))
+        {
+            unsigned       offset;
+            GenTreeLclVar* storeBase = getBase(node->AsStoreInd(), &offset);
+            if ((storeBase == nullptr) || (storeBase->GetLclNum() != lclNum) ||
+                ((node->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) != 0))
+            {
+                object->LclNum = BAD_VAR_NUM;
+                return false;
+            }
+        }
+        else if (AliasSet::NodeInfo(m_compiler, node).WritesAddressableLocation())
+        {
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+
+        if (!movingStores.InterferesWith(m_compiler, node, true))
+        {
+            continue;
+        }
+
+        // Like TryMakeIndirsAdjacent, refine conservative memory interference
+        // when both accesses have reference bases and disjoint offset ranges.
+        // Non-volatile indirs may have GTF_ORDER_SIDEEFF solely because they
+        // were proven nonfaulting; that does not prevent this reordering.
+        if (!node->OperIs(GT_IND, GT_STOREIND) || node->AsIndir()->IsVolatile() || ((node->gtFlags & GTF_EXCEPT) != 0))
+        {
+            JITDUMP("Cannot move reference stores past interfering node [%06u]\n", Compiler::dspTreeID(node));
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+
+        GenTreeIndir*  indir = node->AsIndir();
+        GenTree*       addr  = indir->Addr();
+        target_ssize_t offs  = 0;
+        m_compiler->gtPeelOffsets(&addr, &offs);
+        if (!addr->TypeIs(TYP_REF) || (offs < 0) ||
+            (static_cast<uint64_t>(offs) + indir->Size() > static_cast<uint64_t>(INT_MAX)))
+        {
+            JITDUMP("Cannot disambiguate reference stores from [%06u]\n", Compiler::dspTreeID(node));
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+
+        bool overlaps = false;
+        for (unsigned i = 0; i < count; i++)
+        {
+            unsigned offset = static_cast<unsigned>(m_blockIndirs.BottomRef(indices[i]).Offset);
+            overlaps |= (static_cast<unsigned>(offs) < offset + TARGET_POINTER_SIZE) &&
+                        (offset < static_cast<unsigned>(offs) + indir->Size());
+        }
+        if (overlaps)
+        {
+            JITDUMP("Cannot move reference stores past overlapping access [%06u]\n", Compiler::dspTreeID(node));
+            object->LclNum = BAD_VAR_NUM;
+            return false;
+        }
+    }
+
+    assert(count == candidateCount);
+    JITDUMP("Batching %u reference stores to V%02u at offset %u in " FMT_BB "\n", candidateCount, lclNum, minOffset,
+            m_block->bbNum);
+
+    LIR::Range callRange = (object->Barrier != nullptr)
+                               ? BlockRange().Remove(previousCall.FirstNode(), previousCall.LastNode())
+                               : LIR::EmptyRange();
+    bool       reuseCall = (object->Barrier != nullptr) && (object->Offset == minOffset);
+    if (object->Barrier != nullptr)
+    {
+        BlockRange().Remove(object->StartNonGC);
+        BlockRange().Remove(object->EndNonGC);
+    }
+    else
+    {
+        object->StartNonGC = new (m_compiler, GT_START_NONGC) GenTree(GT_START_NONGC, TYP_VOID);
+        object->EndNonGC   = new (m_compiler, GT_END_NONGC) GenTree(GT_END_NONGC, TYP_VOID);
+    }
+
+    for (unsigned i = 0; i < candidateCount; i++)
+    {
+        GenTreeStoreInd* store = m_blockIndirs.BottomRef(indices[i]).Indir->AsStoreInd();
+        bool needsLowering     = (store == current) || m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(store);
+        store->gtFlags |= GTF_IND_TGT_NOT_HEAP | GTF_IND_NONFAULTING;
+        store->gtFlags &= ~(GTF_EXCEPT | GTF_IND_TGT_HEAP);
+        if (store != current)
+        {
+            BlockRange().Remove(store);
+            BlockRange().InsertBefore(current, store);
+        }
+        if (needsLowering)
+        {
+            // Write-barrier stores have not gone through target-specific store lowering yet.
+            LowerStoreIndir(store);
+        }
+        else
+        {
+            ContainCheckStoreIndir(store);
+        }
+    }
+
+    GenTree* firstStore = m_blockIndirs.BottomRef(indices[0]).Indir;
+    BlockRange().InsertBefore(firstStore, object->StartNonGC);
+
+    if (reuseCall)
+    {
+        // Both arguments are still valid: the object local cannot have changed,
+        // and the byte count remains a native-sized constant.
+        object->Size->SetIconValue(byteCount);
+        BlockRange().InsertAfter(current, std::move(callRange));
+        BlockRange().InsertAfter(object->Barrier, object->EndNonGC);
+    }
+    else
+    {
+        GenTree* baseNode = m_compiler->gtNewLclvNode(lclNum, TYP_REF);
+        GenTree* offset   = m_compiler->gtNewIconNode(minOffset, TYP_I_IMPL);
+        GenTree* address  = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, baseNode, offset);
+        object->Size      = m_compiler->gtNewIconNode(byteCount, TYP_I_IMPL);
+        object->Barrier   = m_compiler->gtNewHelperCallNode(CORINFO_HELP_STORED_REFS, TYP_VOID, address, object->Size);
+        m_compiler->fgMorphArgs(object->Barrier);
+        LIR::Range newCallRange = LIR::SeqTree(m_compiler, object->Barrier);
+        GenTree*   first        = newCallRange.FirstNode();
+        BlockRange().InsertAfter(current, std::move(newCallRange));
+        BlockRange().InsertAfter(object->Barrier, object->EndNonGC);
+        LowerRange(first, object->Barrier);
+    }
+
+    object->Offset     = minOffset;
+    object->StoreCount = candidateCount;
+    return true;
 }
 
 #ifndef TARGET_WASM
@@ -11306,6 +11691,14 @@ GenTree* Lowering::LowerStoreIndirCommon(GenTreeStoreInd* ind)
     const bool isContainable = true;
 #endif
     TryCreateAddrMode(ind->Addr(), isContainable, ind);
+
+    GenTree* next = ind->gtNext;
+    if (TryCoalesceWriteBarriers(ind))
+    {
+        // The batch's stores and helper are already lowered, including any
+        // existing helper moved from before this store.
+        return next;
+    }
 
     if (m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(ind))
     {

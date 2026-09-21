@@ -25,9 +25,8 @@ public:
     inline Lowering(Compiler* compiler, RegAllocInterface* regAlloc)
         : Phase(compiler, PHASE_LOWERING)
         , vtableCallTemp(BAD_VAR_NUM)
-#ifdef TARGET_ARM64
         , m_blockIndirs(compiler->getAllocator(CMK_Lower))
-#endif
+        , m_privateObjects(compiler->getAllocator(CMK_Lower))
     {
         m_regAlloc = static_cast<RegAllocImpl*>(regAlloc);
         assert(m_regAlloc != nullptr);
@@ -140,6 +139,9 @@ private:
     void MapParameterRegisterLocals();
 
     void     LowerBlock(BasicBlock* block);
+    void     RecordPrivateObject(unsigned lclNum, GenTree* definition);
+    void     RecordPrivateObjectDefinition(GenTreeLclVarCommon* store);
+    bool     TryCoalesceWriteBarriers(GenTreeStoreInd* store);
     void     AfterLowerBlocks();
     GenTree* LowerNode(GenTree* node);
 
@@ -661,7 +663,6 @@ private:
     unsigned m_outgoingArgSpaceSize = 0;
 #endif
 
-#ifdef TARGET_ARM64
     struct SavedIndir
     {
         GenTreeIndir*  Indir;
@@ -676,7 +677,30 @@ private:
         }
     };
     ArrayStack<SavedIndir> m_blockIndirs;
-    bool                   m_ffrTrashed;
+
+    struct PrivateObject
+    {
+        unsigned       LclNum;
+        GenTree*       Definition;
+        int            FirstIndir;
+        GenTree*       StartNonGC = nullptr;
+        GenTree*       EndNonGC   = nullptr;
+        GenTreeCall*   Barrier    = nullptr;
+        GenTreeIntCon* Size       = nullptr;
+        unsigned       Offset     = 0;
+        unsigned       StoreCount = 0;
+
+        PrivateObject(unsigned lclNum, GenTree* definition, int firstIndir)
+            : LclNum(lclNum)
+            , Definition(definition)
+            , FirstIndir(firstIndir)
+        {
+        }
+    };
+    ArrayStack<PrivateObject> m_privateObjects;
+    bool                      m_coalesceWriteBarriers = false;
+#ifdef TARGET_ARM64
+    bool m_ffrTrashed;
 #endif
 };
 

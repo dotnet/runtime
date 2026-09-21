@@ -431,6 +431,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_CHECKED_ASSIGN_REF,
 
     CORINFO_HELP_BULK_WRITEBARRIER,
+    CORINFO_HELP_STORED_REFS,
 
     /* Accessing fields */
 
