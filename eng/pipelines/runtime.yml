@@ -67,7 +67,7 @@ extends:
     - stage: Build
       variables:
       # The standalone monitor does not inherit the submitter jobs' variable groups.
-      - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - group: DotNet-HelixApi-Access
       jobs:
       - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
@@ -1266,6 +1266,20 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          scenarios:
+            - WasmTestOnChrome
+
+      # WebAssembly CoreCLR with trimmed ReadyToRun library tests
+      - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+          nameSuffix: _R2R
+          readyToRun: true
+          timeoutInMinutes: 480
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:

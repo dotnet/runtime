@@ -168,10 +168,11 @@ namespace Tracing.Tests.RundownValidation
                 bool hasValidCoreClrHelpers =
                     !PlatformDetection.IsCoreCLR ||
                     !RuntimeFeature.IsDynamicCodeCompiled ||
-                    (ValidateHelperEvents(liveStubBlocks) &&
-                        ValidateHelperEvents(rundownStubBlocks) &&
+                    (ValidateHelperEvents(rundownStubBlocks) &&
                         ValidateHelperEvents(rundownWriteBarriers) &&
-                        HaveMatchingStubBlocks(liveStubBlocks, rundownStubBlocks));
+                        (Utilities.IsCoreClrInterpreter ||
+                            (ValidateHelperEvents(liveStubBlocks) &&
+                                HaveMatchingStubBlocks(liveStubBlocks, rundownStubBlocks))));
                 return hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
                 hasLoaderModuleDCStop && hasLoaderDomainModuleDCStop && hasAssemblyModuleDCStop &&
                 hasMethodDCStopVerbose && hasMethodILToNativeMap && hasAppDomainDCStop &&

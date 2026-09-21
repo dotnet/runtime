@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- The transitions this covers only exist on wasm, where R2R code and the interpreter share a
          process. AlwaysUseCrossGen2 forces the crossgen pass on the ordinary browser leg; without it

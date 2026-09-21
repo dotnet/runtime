@@ -115,7 +115,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
 
-        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY));
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY) ||
+               block->hasEHBoundaryOut());
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -142,6 +143,14 @@ PhaseStatus Compiler::fgInsertGCPolls()
             // We don't want to deal with all the outgoing edges of a switch block.
             //
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
+            pollType = GCPOLL_CALL;
+        }
+        else if (block->hasEHBoundaryOut())
+        {
+            // We can't split a block that leaves an EH region: fgCreateGCPoll does not know how to
+            // move its outgoing flow onto the new bottom block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it ends an EH region\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (block->HasFlag(BBF_COLD))
@@ -5800,6 +5809,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
     info->LimitOffset            = 0;
+    info->LimitVar               = BAD_VAR_NUM;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5912,6 +5922,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasInvariantLocalLimit = true;
+        info->LimitVar               = limitOp->AsLclVarCommon()->GetLclNum();
     }
     else if (limitOp->OperIs(GT_ARR_LENGTH))
     {
@@ -5940,6 +5951,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasArrayLengthLimit = true;
+        info->LimitVar            = array->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -6115,11 +6127,24 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, Nat
 bool FlowGraphNaturalLoop::HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info)
 {
     assert(!preheader->KindIs(BBJ_COND));
+    Compiler*   comp     = GetDfsTree()->GetCompiler();
     BasicBlock* curBlock = preheader;
     while (true)
     {
+        for (Statement* stmt : curBlock->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            if (comp->gtTreeHasLocalStore(tree, info->IterVar) ||
+                ((info->LimitVar != BAD_VAR_NUM) && comp->gtTreeHasLocalStore(tree, info->LimitVar)))
+            {
+                JITDUMP("  Iterator or limit modified by [%06u] in " FMT_BB "\n", Compiler::dspTreeID(tree),
+                        curBlock->bbNum);
+                return false;
+            }
+        }
+
         BasicBlock* prevBlock = curBlock;
-        curBlock              = curBlock->GetUniquePred(GetDfsTree()->GetCompiler());
+        curBlock              = curBlock->GetUniquePred(comp);
 
         if (curBlock == nullptr)
         {

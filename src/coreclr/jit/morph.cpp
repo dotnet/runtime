@@ -12477,7 +12477,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             rotateOp             = GT_ROL;
         }
 
-        if (shiftIndexWithAdd != nullptr)
+        if ((shiftIndexWithAdd != nullptr) && !shiftIndexWithAdd->gtOverflow())
         {
             if (shiftIndexWithAdd->gtGetOp2()->IsCnsIntOrI())
             {

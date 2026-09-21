@@ -1827,6 +1827,9 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+#ifdef FEATURE_INTERPRETER
+CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM

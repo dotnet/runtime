@@ -281,6 +281,7 @@ export type JsAsset = Asset & {
 };
 export type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
 };
 export type VfsAsset = Asset & {
     virtualPath: string;

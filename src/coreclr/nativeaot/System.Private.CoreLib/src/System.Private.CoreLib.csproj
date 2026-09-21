@@ -64,7 +64,6 @@
   </ItemGroup>
   <ItemGroup>
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
-    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Reflection\RuntimeCustomAttributeData.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.RuntimeAsyncYielder.cs" />
@@ -224,7 +223,7 @@
     <Compile Include="System\String.NativeAot.cs" />
     <Compile Include="System\String.Intern.cs" />
     <Compile Include="System\Array.NativeAot.cs" />
-    <Compile Include="System\Delegate.cs" />
+    <Compile Include="System\Delegate.NativeAot.cs" />
     <Compile Include="System\StartupHookProvider.NativeAot.cs" />
     <Compile Include="System\RuntimeTypeHandle.cs" />
     <Compile Include="System\Exception.NativeAot.cs" />
