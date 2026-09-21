@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using Microsoft.DotNet.RemoteExecutor;
 using Test.Cryptography;
 using Xunit;
 
@@ -11,6 +12,8 @@ namespace System.Formats.Cbor.Tests
 {
     public partial class CborReaderTests
     {
+        private const string MaxDepthAppContextSwitchName = "System.Formats.Cbor.CborReader.MaxDepth";
+
         [Theory]
         [InlineData((CborConformanceMode)(-1))]
         public static void InvalidConformanceMode_ShouldThrowArgumentOutOfRangeException(CborConformanceMode mode)
@@ -52,6 +55,95 @@ namespace System.Formats.Cbor.Tests
             }
 
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Fact]
+        public static void MaxDepth_DefaultValueIs64()
+        {
+            byte[] encoding = Enumerable.Repeat((byte)0x81, 65).Append((byte)0x01).ToArray();
+            var reader = new CborReader(encoding);
+
+            for (int i = 0; i < 64; i++)
+            {
+                reader.ReadStartArray();
+            }
+
+            int bytesRemaining = reader.BytesRemaining;
+            CborContentException exception = Assert.Throws<CborContentException>(() => reader.ReadStartArray());
+            Assert.Contains("maximum allowed depth of 64", exception.Message);
+            Assert.Equal(bytesRemaining, reader.BytesRemaining);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void MaxDepth_CanBeConfiguredUsingAppContext()
+        {
+            RemoteExecutor.Invoke(static () =>
+            {
+#if NETFRAMEWORK
+                AppDomain.CurrentDomain.SetData(MaxDepthAppContextSwitchName, "2");
+#else
+                AppContext.SetData(MaxDepthAppContextSwitchName, "2");
+#endif
+
+                AssertDepthExceeded(
+                    new byte[] { 0x81, 0x81, 0x81, 0x01 },
+                    static reader =>
+                    {
+                        reader.ReadStartArray();
+                        reader.ReadStartArray();
+                    },
+                    static reader => reader.ReadStartArray());
+
+                AssertDepthExceeded(
+                    new byte[] { 0xA1, 0x00, 0xA1, 0x00, 0xA1, 0x00, 0x01 },
+                    static reader =>
+                    {
+                        reader.ReadStartMap();
+                        reader.ReadInt32();
+                        reader.ReadStartMap();
+                        reader.ReadInt32();
+                    },
+                    static reader => reader.ReadStartMap());
+
+                AssertDepthExceeded(
+                    new byte[] { 0x81, 0x81, 0x5F, 0x41, 0x01, 0xFF },
+                    static reader =>
+                    {
+                        reader.ReadStartArray();
+                        reader.ReadStartArray();
+                    },
+                    static reader => reader.ReadByteString());
+
+                AssertDepthExceeded(
+                    new byte[] { 0x81, 0x81, 0x7F, 0x61, 0x61, 0xFF },
+                    static reader =>
+                    {
+                        reader.ReadStartArray();
+                        reader.ReadStartArray();
+                    },
+                    static reader => reader.ReadTextString());
+
+                AssertDepthExceeded(
+                    new byte[] { 0x81, 0x81, 0x81, 0x01 },
+                    static reader => { },
+                    static reader => reader.SkipValue());
+
+                AssertDepthExceeded(
+                    new byte[] { 0x81, 0x81, 0x81, 0x01 },
+                    static reader => { },
+                    static reader => reader.ReadEncodedValue());
+
+                static void AssertDepthExceeded(byte[] encoding, Action<CborReader> setup, Action<CborReader> action)
+                {
+                    var reader = new CborReader(encoding, CborConformanceMode.Lax);
+                    setup(reader);
+                    int bytesRemaining = reader.BytesRemaining;
+
+                    CborContentException exception = Assert.Throws<CborContentException>(() => action(reader));
+                    Assert.Contains("maximum allowed depth of 2", exception.Message);
+                    Assert.Equal(bytesRemaining, reader.BytesRemaining);
+                }
+            }).Dispose();
         }
 
         [Fact]
