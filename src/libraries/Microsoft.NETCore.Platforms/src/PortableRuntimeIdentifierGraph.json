@@ -64,7 +64,11 @@
         "unix-x64"
       ]
     },
-    "openharmony": {},
+    "openharmony": {
+      "#import": [
+        "any"
+      ]
+    },
     "openharmony-arm": {
       "#import": [
         "openharmony"
