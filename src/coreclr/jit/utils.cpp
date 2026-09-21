@@ -1692,7 +1692,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
             case CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
-                isNoGC = true;
+                isNoGC      = true;
                 mutatesHeap = true;
                 break;
 
