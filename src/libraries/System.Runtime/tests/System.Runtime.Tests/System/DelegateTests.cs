@@ -48,7 +48,6 @@ namespace System.Tests
         public delegate TestStruct StructReturningDelegate();
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/133618", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public static void ClosedStaticDelegate()
         {
             TestClass foo = new TestClass();
