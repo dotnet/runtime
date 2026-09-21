@@ -1,17 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
+using ILCompiler.ObjectWriter;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
+using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCases;
 
@@ -150,6 +154,141 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualDispatch()
+    {
+        var wasmVirtualDispatch = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualDispatch),
+            SourceResourceNames = ["Webcil/WasmVirtualDispatch.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualDispatch),
+            [
+                new(nameof(WasmVirtualDispatch), [new CrossgenAssembly(wasmVirtualDispatch)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            ReadOnlySpan<byte> image = reader.Image;
+            IEnumerable<ReadyToRunImportSection.ImportSectionEntry> importEntries =
+                reader.ImportSections
+                    .Where(section => section.Entries is not null)
+                    .SelectMany(section => section.Entries);
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+
+            // Verify that eligible version-resilient callvirt sites use dispatch imports. This covers
+            // virtual and nonvirtual methods, methods on generic types, runtime-context lookups, and
+            // distinct Wasm calling convention shapes.
+            ReadyToRunImportSection dispatchImports = Assert.Single(
+                reader.ImportSections,
+                section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
+                    section.EntrySize == sizeof(uint) &&
+                    section.Entries.Any(entry => entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("WasmVirtualDispatchBase.Transform", StringComparison.Ordinal) == true));
+            Assert.Equal(7, dispatchImports.Entries.Count);
+
+            List<string> dispatchSignatures = dispatchImports.Entries
+                .Select(entry => entry.Signature.ToString(signatureFormattingOptions))
+                .ToList();
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmVirtualDispatchBase.Transform", StringComparison.Ordinal));
+            Assert.Equal(2, dispatchSignatures.Count(signature =>
+                signature.Contains("WasmGenericVirtualDispatchBase", StringComparison.Ordinal)));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmCallingConventionDispatchBase.TransformPointer", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("WasmCallingConventionDispatchBase.TransformStruct", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("System.Object.ToString", StringComparison.Ordinal));
+            Assert.Contains(dispatchSignatures, signature =>
+                signature.Contains("System.Collections.Generic.List", StringComparison.Ordinal) &&
+                signature.Contains("get_Count", StringComparison.Ordinal));
+            Assert.DoesNotContain(dispatchSignatures, signature =>
+                signature.Contains("WasmGenericMethodDispatchBase.Transform", StringComparison.Ordinal));
+
+            // Verify that dispatch imports reuse delay-load code from a regular method import when
+            // their rich import-thunk signatures are identical.
+            ReadyToRunImportSection methodImports = Assert.Single(
+                reader.ImportSections,
+                section => section.Type == ReadyToRunImportSectionType.StubDispatch &&
+                    section.EntrySize == sizeof(uint) &&
+                    section.Entries.Any(entry => entry.Signature?.ToString(signatureFormattingOptions)
+                        .Contains("WasmVirtualDispatchBase.DirectTransform", StringComparison.Ordinal) == true));
+            ReadyToRunImportSection.ImportSectionEntry methodImport = Assert.Single(
+                methodImports.Entries,
+                entry => entry.Signature?.ToString(signatureFormattingOptions)
+                    .Contains("WasmVirtualDispatchBase.DirectTransform", StringComparison.Ordinal) == true);
+            uint methodImportThunk = GetImportThunkTableIndex(reader, methodImport);
+            Assert.All(
+                dispatchImports.Entries.Where(entry =>
+                {
+                    string? signature = entry.Signature?.ToString(signatureFormattingOptions);
+                    return signature?.Contains(".Transform(", StringComparison.Ordinal) == true ||
+                        signature?.Contains("TransformPointer", StringComparison.Ordinal) == true;
+                }),
+                entry => Assert.Equal(methodImportThunk, GetImportThunkTableIndex(reader, entry)));
+
+            // Verify that virtual dispatch thunks are registered by their canonical Wasm signatures.
+            // ABI-equivalent managed signatures share Viiiii, while ToString requires Viiii.
+            ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
+                importEntries,
+                entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
+
+            int offset = reader.GetOffset((int)injectStringThunks.SignatureRVA);
+            Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
+
+            ReadOnlySpan<byte> thunkKey = "Viiiii"u8;
+            ReadOnlySpan<byte> toStringThunkKey = "Viiii"u8;
+            int matchingThunkKeyCount = 0;
+            int virtualThunkKeyCount = 0;
+            int toStringThunkKeyCount = 0;
+            while (image[offset] != 0)
+            {
+                int terminator = image[offset..].IndexOf((byte)0);
+                Assert.True(terminator >= 0, "Unterminated InjectStringThunks key.");
+                ReadOnlySpan<byte> candidateKey = image.Slice(offset, terminator);
+                if (candidateKey[0] == (byte)'V')
+                {
+                    virtualThunkKeyCount++;
+                    if (candidateKey.SequenceEqual(thunkKey))
+                    {
+                        matchingThunkKeyCount++;
+                    }
+                    else if (candidateKey.SequenceEqual(toStringThunkKey))
+                    {
+                        toStringThunkKeyCount++;
+                    }
+                    else
+                    {
+                        Assert.Fail($"Unexpected virtual dispatch thunk key '{System.Text.Encoding.UTF8.GetString(candidateKey)}'.");
+                    }
+                }
+
+                offset += terminator + 1 + sizeof(uint);
+            }
+
+            Assert.Equal(2, virtualThunkKeyCount);
+            Assert.Equal(1, matchingThunkKeyCount);
+            Assert.Equal(1, toStringThunkKeyCount);
+
+            static uint GetImportThunkTableIndex(
+                ReadyToRunReader reader,
+                ReadyToRunImportSection.ImportSectionEntry entry)
+            {
+                int portableEntrypointOffset = reader.GetOffset(checked((int)entry.Section));
+                return BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(portableEntrypointOffset, sizeof(uint)));
+            }
         }
     }
 
@@ -953,6 +1092,42 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaits(", 1, out diag), diag);
             Assert.True(R2RAssert.HasFixupKindCountOnMethod(reader, ReadyToRunFixupKind.ResumptionStubEntryPoint, ".MultipleAwaitsWithRefs(", 1, out diag), diag);
             Assert.True(R2RAssert.AsyncMethodsWithResumptionStubsAreAdjacent(reader, out diag), diag);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void RuntimeAsyncWasmDiagnosticIPFixups()
+    {
+        var asm = new CompiledAssembly
+        {
+            AssemblyName = nameof(RuntimeAsyncWasmDiagnosticIPFixups),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/AsyncMultipleSuspensionPoints.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(RuntimeAsyncWasmDiagnosticIPFixups),
+            [
+                new(nameof(RuntimeAsyncWasmDiagnosticIPFixups), [new CrossgenAssembly(asm)])
+                {
+                    AdditionalArgs = { "--determinism-stress=2" },
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(
+                WasmR2RAssert.HasExpectedAsyncResumeInfoFixups(reader, out string diagnostic),
+                diagnostic);
+            Assert.True(
+                R2RAssert.WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(reader, out diagnostic),
+                diagnostic);
         }
     }
 
@@ -1880,6 +2055,39 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualMethodGenericsNonGVM()
+    {
+        var nonGvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualMethodGenericsNonGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/NonGVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualMethodGenericsNonGVM),
+            [
+                new(nameof(WasmVirtualMethodGenericsNonGVM), [new CrossgenAssembly(nonGvmLib)])
+                {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "U", out string diag), diag);
+            Assert.True(R2RAssert.HasStringThunkWithPrefix(reader, "UG", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "UGviiii", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "UGvriiii", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS56Tp", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS56Tip", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "MS16Tp", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "IS16Tip", out diag), diag);
+            Assert.True(R2RAssert.HasStringThunk(reader, "IS56Tip", out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsGVM()
     {
@@ -1932,6 +2140,31 @@ public class R2RTestSuites
                     method.InstanceArgs is ["int"] &&
                     method.SignatureString.Contains("[UNBOX]", StringComparison.Ordinal));
             Assert.NotEmpty(unboxingThunk.RuntimeFunctions);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmVirtualMethodGenericsGVM()
+    {
+        var gvmLib = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmVirtualMethodGenericsGVM),
+            SourceResourceNames = ["VirtualMethodGenerics/GVM.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmVirtualMethodGenericsGVM),
+            [
+                new(nameof(WasmVirtualMethodGenericsGVM), [new CrossgenAssembly(gvmLib)])
+                {
+                    Options = [Crossgen2Option.GenerateUnboxingStubs],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasStringThunk(reader, "UMiiii", out string diag), diag);
         }
     }
 
@@ -1992,6 +2225,79 @@ public class R2RTestSuites
         {
             Assert.True(R2RAssert.HasCompiledMethod(reader, "EntryPoints", "CompilableMethod", out string diag), diag);
             Assert.False(R2RAssert.HasCompiledMethod(reader, "IMissingSignature`1<__Canon>", "GetMissingType", out diag), diag);
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WebcilSegmentAlignment()
+    {
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(WebcilSegmentAlignment),
+            SourceResourceNames = ["Webcil/WasmWebcilModule.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WebcilSegmentAlignment),
+            [
+                new(nameof(WebcilSegmentAlignment), [new CrossgenAssembly(input)])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var imageSpan = reader.Image.AsSpan();
+            Assert.True(imageSpan.Slice(0, 8) is [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00], "Expected wasm magic and version at the start of the image");
+            // Skip wasm magic and version
+            long offset = 8;
+            int sectionCount = 0;
+            const int MaxExpectedSectionCount = 64; // sanity check to avoid infinite loops in case of malformed wasm image
+            while (offset < imageSpan.Length && sectionCount < MaxExpectedSectionCount)
+            {
+                sectionCount++;
+                byte sectionKind = imageSpan[(int)offset];
+                long sectionSize = (long)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1)), out int sectionSizeBytes);
+                if (sectionKind != 11 /*Data*/)
+                {
+                    offset += (long)sectionSize + 1 + sectionSizeBytes;
+                    continue;
+                }
+
+                // Data section for webcil:
+                // (byte) 11 // section kind
+                // (ULEB) section size
+                // (ULEB) segment count
+                // Webcil segment 0
+                // | (byte) segment kind (1, passive)
+                // | (ULEB) segment size
+                // | (byte*) content - 2 little endian u32 (payloadsize, tablesize)
+                // Webcil payload
+                // | (segment kind) (1, passive)
+                // | (ULEB) segment size
+                // | (byte*) content - webcil data, aligned
+
+                int segmentCount = (int)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1 + sectionSizeBytes)), out int segmentCountBytes);
+                Assert.True(segmentCount == 2, "Expected 2 segments in the data section");
+
+                int firstSegmentOffset = (int)(offset + 1 + sectionSizeBytes + segmentCountBytes);
+                int firstSegmentKind = imageSpan[firstSegmentOffset];
+                Assert.True(firstSegmentKind == 1, "Expected first segment to be passive (kind 1)");
+                int firstSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(firstSegmentOffset + 1), out int firstSegmentSizeBytes);
+
+                int payloadSegmentOffset = firstSegmentOffset + 1 + firstSegmentSizeBytes + firstSegmentSize;
+                int payloadSegmentKind = imageSpan[payloadSegmentOffset];
+                Assert.True(payloadSegmentKind == 1, "Expected second segment to be passive (kind 1)");
+                int payloadSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentOffset + 1), out int payloadSegmentSizeBytes);
+                int payloadContentOffset = payloadSegmentOffset + 1 + payloadSegmentSizeBytes;
+                Assert.True(payloadContentOffset % WebCilObjectWriter.WebcilSectionAlignment == 0,
+                    $"Expected payload content to be aligned to {WebCilObjectWriter.WebcilSectionAlignment} bytes, but got offset {payloadContentOffset}");
+                Assert.True(payloadContentOffset + payloadSegmentSize == offset + sectionSize + 1 + sectionSizeBytes,
+                    $"Expected payload segment to end at the end of the data section, but got {payloadContentOffset + payloadSegmentSize} vs {offset + sectionSize + 1 + sectionSizeBytes}");
+                return;
+            }
+            Assert.Fail("Data section not found in the wasm image");
         }
     }
 }

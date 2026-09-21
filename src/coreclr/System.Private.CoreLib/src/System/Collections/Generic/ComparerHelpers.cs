@@ -75,10 +75,9 @@ namespace System.Collections.Generic
                 // If T implements IEquatable<T> return a GenericEqualityComparer<T>
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(GenericEqualityComparer<string>), runtimeType);
             }
-            else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            else if (runtimeType.GetNullableUnderlyingType() is RuntimeType embeddedType)
             {
                 // Nullable does not implement IEquatable<T?> directly because that would add an extra interface call per comparison.
-                var embeddedType = (RuntimeType)type.GetGenericArguments()[0];
                 result = CreateInstanceForAnotherGenericParameter((RuntimeType)typeof(NullableEqualityComparer<int>), embeddedType);
             }
             else if (type.IsEnum)

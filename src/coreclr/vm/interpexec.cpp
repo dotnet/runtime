@@ -222,6 +222,9 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+InterpreterCalliCookie GetCookieForManagedMethod(MethodDesc *pMD);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
 // Filter to ignore SEH exceptions representing C++ exceptions.
@@ -327,7 +330,7 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
     {
-        GCX_PREEMP();
+        GCX_PREEMP_REGION_BEGIN();
 #ifdef PROFILING_SUPPORTED
         if (CORProfilerTrackTransitions() && !pFrame->startIp->Method->methodHnd->IsILStub() && !pFrame->startIp->Method->methodHnd->IsPInvoke())
         {
@@ -341,6 +344,7 @@ void InvokeUnmanagedCalliWithTransition(PCODE ftn, InterpreterCalliCookie cookie
             ProfilerUnmanagedToManagedTransitionMD(pFrame->startIp->Method->methodHnd, COR_PRF_TRANSITION_CALL);
         }
 #endif
+        GCX_PREEMP_REGION_END();
     }
     inlinedCallFrame.Pop();
 }
@@ -358,12 +362,14 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
+    CallStubHeader *header;
+
+    GCX_PREEMP_REGION_BEGIN();
 
     CallStubGenerator callStubGenerator;
 
     AllocMemTracker amTracker;
-    CallStubHeader *header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
+    header = callStubGenerator.GenerateCallStub(pMD, &amTracker, true /* interpreterToNative */);
 
     if (target != (PCODE)NULL)
     {
@@ -381,6 +387,8 @@ static CallStubHeader *UpdateCallStubForMethod(MethodDesc *pMD, PCODE target)
         header = pMD->GetCalliCookie();
     }
 
+    GCX_PREEMP_REGION_END();
+
     return header;
 }
 
@@ -394,7 +402,9 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
+    MethodDesc *pResult = NULL;
+
+    GCX_PREEMP_REGION_BEGIN();
 
     RangeSection * pRS = ExecutionManager::FindCodeRange(target, ExecutionManager::GetScanFlags());
     if (pRS != NULL && pRS->_flags & RangeSection::RANGE_SECTION_RANGELIST)
@@ -403,12 +413,14 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
         {
             if (((StubPrecode*)target)->GetType() == PRECODE_PINVOKE_IMPORT)
             {
-                return dac_cast<PTR_MethodDesc>(((PInvokeImportPrecode*)target)->GetMethodDesc());
+                pResult = dac_cast<PTR_MethodDesc>(((PInvokeImportPrecode*)target)->GetMethodDesc());
             }
         }
     }
 
-    return NULL;
+    GCX_PREEMP_REGION_END();
+
+    return pResult;
 }
 
 static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE target)
@@ -421,8 +433,11 @@ static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
-    return UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+    CallStubHeader *pResult;
+    GCX_PREEMP_REGION_BEGIN();
+    pResult = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+    GCX_PREEMP_REGION_END();
+    return pResult;
 }
 
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
@@ -487,8 +502,11 @@ static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMD
     }
     CONTRACTL_END
 
-    GCX_PREEMP();
-    return UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    CallStubHeader *pResult;
+    GCX_PREEMP_REGION_BEGIN();
+    pResult = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+    GCX_PREEMP_REGION_END();
+    return pResult;
 }
 
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
@@ -596,7 +614,7 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     {
         return pHeader;
     }
-    GCX_PREEMP();
+    GCX_PREEMP_REGION_BEGIN();
 
     AllocMemTracker amTracker;
     pHeader = callStubGenerator.GenerateCallStub(pInterpMethod->methodHnd, &amTracker, false /* interpreterToNative */);
@@ -611,6 +629,8 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
         // and let the amTracker release the memory of the one we generated.
         pHeader = VolatileLoadWithoutBarrier(&pInterpMethod->pCallStub);
     }
+
+    GCX_PREEMP_REGION_END();
 
     return pHeader;
 }
@@ -773,8 +793,11 @@ void* GenericHandleCommon(MethodDesc * pMD, MethodTable * pMT, LPVOID signature)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     } CONTRACTL_END;
-    GCX_PREEMP();
-    return GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
+    void *pResult;
+    GCX_PREEMP_REGION_BEGIN();
+    pResult = GenericHandleWorkerCore(pMD, pMT, signature, 0xFFFFFFFF, NULL);
+    GCX_PREEMP_REGION_END();
+    return pResult;
 }
 
 #ifdef DEBUG
@@ -890,6 +913,8 @@ NOINLINE static void InterpThrow(InterpMethodContextFrame* pFrame, const int32_t
 #define INTOP_DISPATCH(op) opcode = (uint32_t)(op); goto SWITCH_OPCODE
 #define INTOP_NEXT break
 #endif // USE_COMPUTED_GOTO
+#define INTOP_EXIT_FRAME_NO_LOCALLOC goto EXIT_FRAME
+#define INTOP_EXIT_FRAME do { pThreadContext->frameDataAllocator.PopInfo(pFrame); INTOP_EXIT_FRAME_NO_LOCALLOC; } while (0)
 
 
 static OBJECTREF CreateMultiDimArray(MethodTable* arrayClass, int8_t* stack, int32_t dimsOffset, int numArgs)
@@ -1283,7 +1308,8 @@ FCIMPL2(ContinuationObject*, AsyncHelpers_ResumeInterpreterContinuation, Continu
 
     TransitionBlock transitionBlock{};
     transitionBlock.m_StackPointer = callersStackPointer;
-    transitionBlock.m_ReturnAddress = (TADDR)&AsyncHelpers_ResumeInterpreterContinuation;
+    // Keep the return address consistent with the managed R2R frame represented by the caller's stack pointer.
+    transitionBlock.m_ReturnAddress = GetWasmVirtualIPFromStackPointer(callersStackPointer);
 
     return AsyncHelpers_ResumeInterpreterContinuationWorker(cont, resultStorage, &transitionBlock);
 }
@@ -1375,7 +1401,7 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     {
-        GCX_PREEMP();
+        GCX_PREEMP_REGION_BEGIN();
         if (targetMethod->ShouldCallPrestub())
         {
             CallWithSEHWrapper(
@@ -1383,6 +1409,7 @@ static InterpByteCodeStart* PrepareInterpreterCode(MethodDesc* targetMethod, Int
                     return targetMethod->DoPrestub(nullptr, CallerGCMode::Coop);
                 });
         }
+        GCX_PREEMP_REGION_END();
     }
     InterpByteCodeStart* targetIp = targetMethod->GetInterpreterCode();
 
@@ -1597,28 +1624,36 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_RET)
                     // Return stack slot sized value
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_RET_I1)
                     // Return int8 value
                     *(int64_t*)pFrame->pRetVal = (int8_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_U1)
                     // Return uint8 value
                     *(int64_t*)pFrame->pRetVal = (uint8_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_I2)
                     // Return int16 value
                     *(int64_t*)pFrame->pRetVal = (int16_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_U2)
                     // Return uint16 value
                     *(int64_t*)pFrame->pRetVal = (uint16_t)LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 INTOP_CASE(INTOP_RET_VT)
                     memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_RET_VOID)
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
+                INTOP_CASE(INTOP_RET_LOCALLOC)
+                    *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int64_t);
+                    INTOP_EXIT_FRAME;
+                INTOP_CASE(INTOP_RET_VOID_LOCALLOC)
+                    INTOP_EXIT_FRAME;
+                INTOP_CASE(INTOP_RET_VT_LOCALLOC)
+                    memmove(pFrame->pRetVal, LOCAL_VAR_ADDR(ip[1], void), ip[2]);
+                    INTOP_EXIT_FRAME;
 
                 INTOP_CASE(INTOP_LDLOCA)
                     LOCAL_VAR(ip[1], void*) = LOCAL_VAR_ADDR(ip[2], void);
@@ -2027,7 +2062,8 @@ SWITCH_OPCODE:
                             });
                         }
                         // Transition into preemptive mode to allow the GC to suspend us
-                        GCX_PREEMP();
+                        GCX_PREEMP_REGION_BEGIN();
+                        GCX_PREEMP_REGION_END();
                     }
                     ip++;
                     INTOP_NEXT;
@@ -3288,8 +3324,11 @@ SWITCH_OPCODE:
                         // miss, resolve the virtual method and cache it
                         targetMethod = CallWithSEHWrapper(
                             [&pMD, &pThisArg, pObjMT]() {
-                                GCX_PREEMP();
-                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
+                                MethodDesc *pTarget;
+                                GCX_PREEMP_REGION_BEGIN();
+                                pTarget = pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
+                                GCX_PREEMP_REGION_END();
+                                return pTarget;
                             });
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
@@ -3358,8 +3397,7 @@ SWITCH_OPCODE:
                         cookie = targetMethod->GetCalliCookie();
                         if (cookie == NULL)
                         {
-                            MetaSig sig(targetMethod);
-                            cookie = GetCookieForCalliSig(sig, NULL);
+                            cookie = GetCookieForManagedMethod(targetMethod);
                             _ASSERTE(cookie != NULL);
                             targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();
@@ -3462,8 +3500,11 @@ SWITCH_OPCODE:
                             targetMethod = CallWithSEHWrapper(
                                 [&targetMethod, &pThisArg]() {
                                     MethodTable* pMT = (*pThisArg)->GetMethodTable();
-                                    GCX_PREEMP();
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
+                                    MethodDesc *pTarget;
+                                    GCX_PREEMP_REGION_BEGIN();
+                                    pTarget = targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
+                                    GCX_PREEMP_REGION_END();
+                                    return pTarget;
                                 });
                         }
                         else
@@ -4472,10 +4513,10 @@ do                                                                      \
                 }
                 INTOP_CASE(INTOP_LEAVE_FILTER)
                     *(int64_t*)pFrame->pRetVal = LOCAL_VAR(ip[1], int32_t);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_LEAVE_CATCH)
                     *(const int32_t**)pFrame->pRetVal = ip + ip[1];
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME_NO_LOCALLOC;
                 INTOP_CASE(INTOP_THROW_PNSE)
                     INTERP_THROW(kPlatformNotSupportedException);
                     INTOP_NEXT;
@@ -4731,7 +4772,7 @@ do                                                                      \
                     _ASSERTE(pAsyncSuspendData->methodStartIP != 0);
                     continuation->SetResumeInfo(&pAsyncSuspendData->resumeInfo);
                     pInterpreterFrame->SetContinuation(continuation);
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 }
 
                 INTOP_CASE(INTOP_RET_EXISTING_CONTINUATION)
@@ -4744,7 +4785,7 @@ do                                                                      \
                     }
 
                     // Otherwise exit without modifying current continuation
-                    goto EXIT_FRAME;
+                    INTOP_EXIT_FRAME;
                 }
 
                 INTOP_CASE(INTOP_HANDLE_CONTINUATION_RESUME)
@@ -4882,12 +4923,9 @@ do                                                                      \
     }
 
 EXIT_FRAME:
-
     // Exit the current frame, MAKE CERTAIN not to trigger any GC between here and the return, since the interpreter
     // async resumption logic depends on not triggering a GC here for correctness.
 
-    // Interpreter-TODO: Don't run PopInfo on the main return path, Add RET_LOCALLOC instead
-    pThreadContext->frameDataAllocator.PopInfo(pFrame);
     if (pFrame->pParent && pFrame->pParent->ip)
     {
         // Return to the main loop after a non-recursive interpreter call

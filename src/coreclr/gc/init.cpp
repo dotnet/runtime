@@ -217,11 +217,11 @@ void gc_heap::hb_log_new_allocation()
 BOOL gc_heap::create_thread_support (int number_of_heaps)
 {
     BOOL ret = FALSE;
-    if (!gc_start_event.CreateOSManualEventNoThrow (FALSE))
+    if (!gc_start_event.CreateManualEventNoThrow (FALSE))
     {
         goto cleanup;
     }
-    if (!ee_suspend_event.CreateOSAutoEventNoThrow (FALSE))
+    if (!ee_suspend_event.CreateAutoEventNoThrow (FALSE))
     {
         goto cleanup;
     }
