@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
@@ -492,5 +493,61 @@ namespace System.Net.Sockets.Tests
     public sealed class AcceptEap : Accept<SocketHelperEap>
     {
         public AcceptEap(ITestOutputHelper output) : base(output) {}
+    }
+
+    public sealed class AcceptDualStackResetTests
+    {
+        public static bool SupportsIPv6DualMode =>
+            Socket.OSSupportsIPv6 && !RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
+
+        [ConditionalTheory(typeof(AcceptDualStackResetTests), nameof(SupportsIPv6DualMode))]
+        [SkipOnPlatform(TestPlatforms.Wasi, "These platforms don't support dual-mode sockets")]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Accept_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy(bool useAsync)
+        {
+            for (int i = 0; i < 200; i++)
+            {
+                using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
+                listener.DualMode = true;
+                listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+                int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+                listener.Listen(2);
+
+                using Socket ipv6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+                using Socket ipv4 = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+
+                await ipv4.ConnectAsync(IPAddress.Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
+                ipv4.LingerState = new LingerOption(true, 0);
+                ipv4.Close();
+
+                await ipv6.ConnectAsync(IPAddress.IPv6Loopback, port).WaitAsync(TimeSpan.FromSeconds(5));
+                byte[] message = [42];
+                Assert.Equal(message.Length, ipv6.Send(message));
+
+                bool receivedMessage = false;
+                for (int acceptCount = 0; acceptCount < 2 && !receivedMessage; acceptCount++)
+                {
+                    try
+                    {
+                        using Socket accepted = useAsync
+                            ? await listener.AcceptAsync().WaitAsync(TimeSpan.FromSeconds(5))
+                            : listener.Accept();
+
+                        byte[] received = new byte[message.Length];
+                        int receivedCount = await accepted.ReceiveAsync(received).WaitAsync(TimeSpan.FromSeconds(5));
+                        receivedMessage = receivedCount == message.Length && received.AsSpan().SequenceEqual(message);
+                    }
+                    catch (SocketException)
+                    {
+                        // Some platforms surface the reset connection from accept() or the following receive,
+                        // while others discard it. Either way the listener must stay healthy, so tolerate the
+                        // reset and try to accept the healthy peer on a subsequent iteration.
+                    }
+                }
+
+                Assert.True(receivedMessage);
+            }
+        }
     }
 }

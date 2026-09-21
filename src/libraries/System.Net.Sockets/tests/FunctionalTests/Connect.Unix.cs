@@ -193,7 +193,7 @@ namespace System.Net.Sockets.Tests
             Assert.False(IsSocketNonBlocking(accepted2));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128141", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/133012")]
         [Fact]
         public async Task ConnectAsync_WithBuffer_Succeeds()
         {

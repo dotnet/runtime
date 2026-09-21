@@ -246,6 +246,9 @@
   <data name="Cryptography_ArgCompositeMLDsaRequiresCompositeMLDsaKey" xml:space="preserve">
     <value>Keys used with the CompositeMLDsaCng algorithm must have an algorithm group of CompositeMLDsa.</value>
   </data>
+  <data name="Cryptography_ArgCompositeMLKemRequiresCompositeMLKemKey" xml:space="preserve">
+    <value>Keys used with the CompositeMLKemCng class must have an algorithm group of CompositeMLKEM.</value>
+  </data>
   <data name="Cryptography_ArgDSARequiresDSAKey" xml:space="preserve">
     <value>Keys used with the DSACng algorithm must have an algorithm group of DSA.</value>
   </data>
@@ -341,6 +344,9 @@
   </data>
   <data name="Cryptography_CipherModeNotSupported" xml:space="preserve">
     <value>The specified CipherMode '{0}' is not supported.</value>
+  </data>
+  <data name="Cryptography_CompositeKemRsaDecapsulationFailed" xml:space="preserve">
+    <value>RSA-OAEP decapsulation failed to produce a shared secret of the expected length.</value>
   </data>
   <data name="Cryptography_CompositeSignDataError" xml:space="preserve">
     <value>Composite signature generation failed due to an error in one or both of the components.</value>

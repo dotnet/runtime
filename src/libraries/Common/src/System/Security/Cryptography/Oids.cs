@@ -55,8 +55,22 @@ namespace System.Security.Cryptography
         internal const string MsPkcs12MachineKeySet = "1.3.6.1.4.1.311.17.2";
 
         // Key wrap algorithms
+        internal const string Aes128Wrap = "2.16.840.1.101.3.4.1.5";
+        internal const string Aes192Wrap = "2.16.840.1.101.3.4.1.25";
+        internal const string Aes256Wrap = "2.16.840.1.101.3.4.1.45";
         internal const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
         internal const string Cms3DesWrap = "1.2.840.113549.1.9.16.3.6";
+
+        // Key derivation algorithms
+        internal const string HkdfWithSha256 = "1.2.840.113549.1.9.16.3.28";
+        internal const string HkdfWithSha384 = "1.2.840.113549.1.9.16.3.29";
+        internal const string HkdfWithSha512 = "1.2.840.113549.1.9.16.3.30";
+        internal const string HkdfWithSha3_256 = "1.2.840.113549.1.9.16.3.33";
+        internal const string HkdfWithSha3_384 = "1.2.840.113549.1.9.16.3.34";
+        internal const string HkdfWithSha3_512 = "1.2.840.113549.1.9.16.3.35";
+
+        // OtherRecipientInfo types
+        internal const string IdSmimeOriKem = "1.2.840.113549.1.9.16.13.3";
 
         // PKCS7 Content Types.
         internal const string Pkcs7Data = "1.2.840.113549.1.7.1";
@@ -153,6 +167,19 @@ namespace System.Security.Cryptography
         internal const string MLDsa87WithRSA3072PssPreHashSha512 = "1.3.6.1.5.5.7.6.52";
         internal const string MLDsa87WithRSA4096PssPreHashSha512 = "1.3.6.1.5.5.7.6.53";
         internal const string MLDsa87WithECDsaP521PreHashSha512 = "1.3.6.1.5.5.7.6.54";
+
+        internal const string MLKem768WithRsaOaep2048Sha3_256 = "1.3.6.1.5.5.7.6.55";
+        internal const string MLKem768WithRsaOaep3072Sha3_256 = "1.3.6.1.5.5.7.6.56";
+        internal const string MLKem768WithRsaOaep4096Sha3_256 = "1.3.6.1.5.5.7.6.57";
+        internal const string MLKem768WithX25519Sha3_256 = "1.3.6.1.5.5.7.6.58";
+        internal const string MLKem768WithECDiffieHellmanP256Sha3_256 = "1.3.6.1.5.5.7.6.59";
+        internal const string MLKem768WithECDiffieHellmanP384Sha3_256 = "1.3.6.1.5.5.7.6.60";
+        internal const string MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 = "1.3.6.1.5.5.7.6.61";
+        internal const string MLKem1024WithRsaOaep3072Sha3_256 = "1.3.6.1.5.5.7.6.62";
+        internal const string MLKem1024WithECDiffieHellmanP384Sha3_256 = "1.3.6.1.5.5.7.6.63";
+        internal const string MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 = "1.3.6.1.5.5.7.6.64";
+        internal const string MLKem1024WithX448Sha3_256 = "1.3.6.1.5.5.7.6.65";
+        internal const string MLKem1024WithECDiffieHellmanP521Sha3_256 = "1.3.6.1.5.5.7.6.66";
 
         // PKCS#7
         internal const string NoSignature = "1.3.6.1.5.5.7.6.2";
