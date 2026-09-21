@@ -246,6 +246,7 @@ namespace ILCompiler.PortableCallHelpers
                 // The current approach has limitations with overloaded methods.
                 extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
                 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
+                extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
 
                 """);
 
@@ -286,6 +287,14 @@ namespace ILCompiler.PortableCallHelpers
                     : string.Empty;
                 string parametersDeclaration = string.Join(", ", parameterCTypes.Select((p, i) => $"{p} arg{i}"));
                 string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
+                // A partial R2R image can compile an UnmanagedCallersOnly callback to native code. That R2R code
+                // is the directly-callable native entrypoint (same ABI as this wrapper's parameters), so dispatch
+                // to it and skip the interpreter/interp->R2R path entirely.
+                string r2rVar = $"r2rCode_{cb.EntrySymbol}";
+                string paramTypesOnly = string.Join(", ", parameterCTypes);
+                string r2rDispatch = cb.IsVoid
+                    ? $"((void(*)({paramTypesOnly})){r2rVar})({arguments});{w.NewLine}        return;"
+                    : $"return (({MapType(cb.ReturnType)}(*)({paramTypesOnly})){r2rVar})({arguments});";
                 string exportFunction = cb.IsExport ?
                     $$"""
 
@@ -301,13 +310,19 @@ namespace ILCompiler.PortableCallHelpers
                     static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;
                     static {{
                     MapType(cb.ReturnType)}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
-                    {{{argsDeclaration}}
+                    {
                         // Lazy lookup of MethodDesc for the function export scenario.
                         if (!MD_{{cb.EntrySymbol}})
                         {
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
-                        }{{
-                        (!cb.IsVoid ? $"{w.NewLine}{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
+                        }
+                        // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+                        void* {{r2rVar}} = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{{cb.EntrySymbol}});
+                        if ({{r2rVar}} != nullptr)
+                        {
+                            {{r2rDispatch}}
+                        }{{argsDeclaration}}{{
+                        (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
                         ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{(cb.IsVoid ? "nullptr" : "(int8_t*)&result")}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
                         (!cb.IsVoid ? $"{w.NewLine}    return result;" : "")}}
                     }{{exportFunction}}

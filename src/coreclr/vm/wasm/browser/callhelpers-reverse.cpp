@@ -13,17 +13,25 @@
 // The current approach has limitations with overloaded methods.
 extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
+extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
 
 static MethodDesc* MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "<RegisterNoGCRegionCallback>g__Callback|72_0", &MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
 }
 
@@ -34,6 +42,13 @@ static void Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJo
     if (!MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.ThreadPool, System.Private.CoreLib", "BackgroundJobHandler", &MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+    }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid != nullptr)
+    {
+        ((void(*)())r2rCode_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid)();
+        return;
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_ThreadPool_BackgroundJobHandler_Void_RetVoid);
 }
@@ -46,13 +61,20 @@ extern "C" void SystemJS_ExecuteBackgroundJobCallback()
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "BindAssemblyExports", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
+    if (r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_BindAssemblyExports_I32_RetVoid);
 }
 
@@ -64,39 +86,60 @@ extern "C" void SystemInteropJS_BindAssemblyExports(void * arg0)
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.CompilerServices.InitHelpers, System.Private.CoreLib", "CallClassConstructor", &MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.CompilerServices.RuntimeHelpers, System.Private.CoreLib", "CallDefaultConstructor", &MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallDelegate", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
+    if (r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallDelegate_I32_RetVoid);
 }
 
@@ -108,26 +151,40 @@ extern "C" void SystemInteropJS_CallDelegate(void * arg0)
 static MethodDesc* MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, int32_t arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Environment, System.Private.CoreLib", "CallEntryPoint", &MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, int32_t, void *))r2rCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid(int32_t arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CallJSExport", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
+    if (r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(int32_t, void *))r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CallJSExport_I32_I32_RetVoid);
 }
 
@@ -139,78 +196,120 @@ extern "C" void SystemInteropJS_CallJSExport(int32_t arg0, void * arg1)
 static MethodDesc* MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StartupHookProvider, System.Private.CoreLib", "CallStartupHook", &MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.CompilerServices.RuntimeHelpers, System.Private.CoreLib", "CallToString", &MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid(void * arg0, int32_t arg1, uint32_t arg2, int64_t arg3, int64_t arg4, void * arg5, void * arg6)
 {
-    int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Diagnostics.Tracing.EventPipeEventProvider, System.Private.CoreLib", "Callback", &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, uint32_t, int64_t, int64_t, void *, void *))r2rCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return;
+    }
+    int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventPipeEventProvider_Callback_I32_I32_I32_I64_I64_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ClearManaged", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ClearNative", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "CompleteTask", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
+    if (r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_CompleteTask_I32_RetVoid);
 }
 
@@ -222,65 +321,98 @@ extern "C" void SystemInteropJS_CompleteTask(void * arg0)
 static MethodDesc* MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid(void * arg0, void * arg1, void * arg2, int32_t arg3, int64_t arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "ConfigCallback", &MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, int32_t, int64_t))r2rCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ConvertContentsToManaged", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "ConvertContentsToNative", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.BSTRMarshaler, System.Private.CoreLib", "ConvertToManaged", &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 = nullptr;
 static void * Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.BSTRMarshaler, System.Private.CoreLib", "ConvertToNative", &MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32 != nullptr)
+    {
+        return ((void *(*)(void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32)(arg0, arg1);
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
 
     void * result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
@@ -290,130 +422,198 @@ static void * Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_Conve
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Reflection.LoaderAllocator, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, int32_t arg3, void * arg4, void * arg5)
 {
-    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.TypeLoadException, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, int32_t, void *, void *))r2rCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4, arg5);
+        return;
+    }
+    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid(int32_t arg0, void * arg1, void * arg2, int32_t arg3, void * arg4, void * arg5, void * arg6)
 {
-    int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.IO.FileLoadException, System.Private.CoreLib", "Create", &MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(int32_t, void *, void *, int32_t, void *, void *, void *))r2rCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return;
+    }
+    int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid(int32_t arg0, void * arg1, void * arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "CreateArgumentException", &MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(int32_t, void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Reflection.AssemblyName, System.Private.CoreLib", "CreateAssemblyName", &MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "CreateRuntimeWrappedException", &MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "CreateTargetInvocationException", &MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "CreateTypeInitializationException", &MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Globalization.CalendarData, System.Private.CoreLib", "EnumCalendarInfoCallback", &MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Environment, System.Private.CoreLib", "ExecuteInDefaultAppDomain", &MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32 != nullptr)
+    {
+        return ((int32_t(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32)(arg0, arg1, arg2);
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
 
     int32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
@@ -423,52 +623,78 @@ static int32_t Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAp
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3, void * arg4, void * arg5)
 {
-    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetCodeInfo", &MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4, arg5);
+        return;
+    }
+    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, int32_t arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.MngdRefCustomMarshaler, System.Private.CoreLib", "GetCustomMarshalerInstance", &MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, void * arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetEHInfo", &MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2, void * arg3, void * arg4, void * arg5)
 {
-    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("Internal.Runtime.InteropServices.ComponentActivator, System.Private.CoreLib", "GetFunctionPointer", &MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32 != nullptr)
+    {
+        return ((int32_t(*)(void *, void *, void *, void *, void *, void *))r2rCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32)(arg0, arg1, arg2, arg3, arg4, arg5);
+    }
+    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
 
     int32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
@@ -478,52 +704,80 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.DynamicInterfaceCastableHelpers, System.Private.CoreLib", "GetInterfaceImplementation", &MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetJitContext", &MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetLocalsSignature", &MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "GetManagedStackTrace", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
+    if (r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_GetManagedStackTrace_I32_RetVoid);
 }
 
@@ -535,169 +789,258 @@ extern "C" void SystemInteropJS_GetManagedStackTrace(void * arg0)
 static MethodDesc* MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Environment, System.Private.CoreLib", "GetResourceString", &MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "GetStringLiteral", &MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, int32_t arg2, int32_t arg3, void * arg4, void * arg5, void * arg6)
 {
-    int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Reflection.TypeNameResolver, System.Private.CoreLib", "GetTypeHelper", &MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, int32_t, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+        return;
+    }
+    int64_t args[7] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5, (int64_t)arg6 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, void * arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Environment, System.Private.CoreLib", "InitializeCommandLineArgs", &MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "InitializeDefaultContext", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Diagnostics.Tracing.EventSource, System.Private.CoreLib", "InitializeDefaultEventSources", &MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, uint32_t arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.Lock, System.Private.CoreLib", "InitializeForMonitor", &MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, uint32_t, void *))r2rCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Exception, System.Private.CoreLib", "InternalPreserveStackTrace", &MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, int32_t arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.StubHelpers, System.Private.CoreLib", "InvokeArrayContentsConverter", &MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, int32_t arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.DynamicInterfaceCastableHelpers, System.Private.CoreLib", "IsInterfaceImplemented", &MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.StubHelpers, System.Private.CoreLib", "LayoutTypeConvertToManaged", &MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StubHelpers.StubHelpers, System.Private.CoreLib", "LayoutTypeConvertToUnmanaged", &MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32 = nullptr;
 static void * Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, int32_t arg2, uint32_t arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.NativeLibrary, System.Private.CoreLib", "LoadLibraryCallbackStub", &MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32 != nullptr)
+    {
+        return ((void *(*)(void *, void *, int32_t, uint32_t, void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32)(arg0, arg1, arg2, arg3, arg4);
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
 
     void * result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
@@ -707,26 +1050,38 @@ static void * Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeL
 static MethodDesc* MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.StartupHookProvider, System.Private.CoreLib", "ManagedStartup", &MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewExternalTypeEntry", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32 != nullptr)
+    {
+        return ((int32_t(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32)(arg0, arg1);
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
 
     int32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
@@ -736,13 +1091,18 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewPrecachedExternalTypeMap", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32 != nullptr)
+    {
+        return ((int32_t(*)(void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32)(arg0);
+    }
+    int64_t args[1] = { (int64_t)arg0 };
 
     int32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
@@ -752,13 +1112,18 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewPrecachedProxyTypeMap", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32 != nullptr)
+    {
+        return ((int32_t(*)(void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32)(arg0);
+    }
+    int64_t args[1] = { (int64_t)arg0 };
 
     int32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
@@ -768,13 +1133,18 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32 = nullptr;
 static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.TypeMapLazyDictionary, System.Private.CoreLib", "NewProxyTypeEntry", &MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32 != nullptr)
+    {
+        return ((int32_t(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32)(arg0, arg1);
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
 
     int32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
@@ -784,130 +1154,200 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnAssemblyLoad", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnAssemblyResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "OnFirstChanceException", &MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "OnProcessExit", &MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnResourceResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.Thread, System.Private.CoreLib", "OnThreadExited", &MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "OnTypeResolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "OnUnhandledException", &MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Reflection.AssemblyName, System.Private.CoreLib", "ParseAsAssemblySpec", &MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid = nullptr;
 static void Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.InteropServices.JavaScript.JavaScriptExports, System.Runtime.InteropServices.JavaScript", "ReleaseJSOwnedObjectByGCHandle", &MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
+    if (r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Runtime_InteropServices_JavaScript_System_Runtime_InteropServices_JavaScript_JavaScriptExports_ReleaseJSOwnedObjectByGCHandle_I32_RetVoid);
 }
 
@@ -919,65 +1359,98 @@ extern "C" void SystemInteropJS_ReleaseJSOwnedObjectByGCHandle(void * arg0)
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "Resolve", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveSatelliteAssembly", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, int32_t arg2, void * arg3, void * arg4)
 {
-    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "ResolveSignature", &MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, int32_t, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4);
+        return;
+    }
+    int64_t args[5] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid(void * arg0, int32_t arg1, void * arg2, void * arg3, void * arg4, void * arg5)
 {
-    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Resolver, System.Private.CoreLib", "ResolveToken", &MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, int32_t, void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3, arg4, arg5);
+        return;
+    }
+    int64_t args[6] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3, (int64_t)arg4, (int64_t)arg5 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32 = nullptr;
 static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveUnmanagedDll", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32 != nullptr)
+    {
+        return ((void *(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32)(arg0, arg1, arg2);
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
 
     void * result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
@@ -987,13 +1460,18 @@ static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadCont
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32 = nullptr;
 static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveUnmanagedDllUsingEvent", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32 != nullptr)
+    {
+        return ((void *(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32)(arg0, arg1, arg2, arg3);
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
 
     void * result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32, (int8_t*)args, sizeof(args), (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
@@ -1003,52 +1481,80 @@ static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadCont
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "ResolveUsingEvent", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.EH, System.Private.CoreLib", "RhRethrow", &MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.EH, System.Private.CoreLib", "RhThrowEx", &MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid(uint32_t arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.EH, System.Private.CoreLib", "RhThrowHwEx", &MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(uint32_t, void *))r2rCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
 }
 
@@ -1060,7 +1566,12 @@ static uint32_t Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32(
     {
         LookupUnmanagedCallersOnlyMethodByName("System.GC, System.Private.CoreLib", "RunFinalizers", &MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
     }
-
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32 = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
+    if (r2rCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32 != nullptr)
+    {
+        return ((uint32_t(*)())r2rCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32)();
+    }
     uint32_t result;
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, nullptr, 0, (int8_t*)&result, (PCODE)&Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
     return result;
@@ -1069,52 +1580,80 @@ static uint32_t Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32(
 static MethodDesc* MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid(void * arg0, void * arg1, int32_t arg2, void * arg3)
 {
-    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.AppContext, System.Private.CoreLib", "Setup", &MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, int32_t, void *))r2rCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid)(arg0, arg1, arg2, arg3);
+        return;
+    }
+    int64_t args[4] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2, (int64_t)arg3 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid(void * arg0, void * arg1, void * arg2)
 {
-    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "StartAssemblyLoad", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid)(arg0, arg1, arg2);
+        return;
+    }
+    int64_t args[3] = { (int64_t)arg0, (int64_t)arg1, (int64_t)arg2 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid(void * arg0)
 {
-    int64_t args[1] = { (int64_t)arg0 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.Thread, System.Private.CoreLib", "StartCallback", &MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *))r2rCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid)(arg0);
+        return;
+    }
+    int64_t args[1] = { (int64_t)arg0 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
 }
 
 static MethodDesc* MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid = nullptr;
 static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid(void * arg0, void * arg1)
 {
-    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
-
     // Lazy lookup of MethodDesc for the function export scenario.
     if (!MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Runtime.Loader.AssemblyLoadContext, System.Private.CoreLib", "StopAssemblyLoad", &MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
     }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid != nullptr)
+    {
+        ((void(*)(void *, void *))r2rCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid)(arg0, arg1);
+        return;
+    }
+    int64_t args[2] = { (int64_t)arg0, (int64_t)arg1 };
+
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, (int8_t*)args, sizeof(args), nullptr, (PCODE)&Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
 }
 
@@ -1125,6 +1664,13 @@ static void Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler
     if (!MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid)
     {
         LookupUnmanagedCallersOnlyMethodByName("System.Threading.TimerQueue, System.Private.CoreLib", "TimerHandler", &MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+    }
+    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
+    void* r2rCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
+    if (r2rCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid != nullptr)
+    {
+        ((void(*)())r2rCode_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid)();
+        return;
     }
     ExecuteInterpretedMethodFromUnmanaged(MD_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid, nullptr, 0, nullptr, (PCODE)&Call_System_Private_CoreLib_System_Threading_TimerQueue_TimerHandler_Void_RetVoid);
 }
