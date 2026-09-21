@@ -12,8 +12,7 @@ namespace System.Formats.Cbor
         /// <returns>An object that represents the current CBOR reader state.</returns>
         /// <exception cref="CborContentException">The underlying data is not a well-formed CBOR encoding.</exception>
         /// <remarks>
-        /// <para>If the reader's current data is not the final block, <see cref="CborReaderState.NeedsMoreData" /> is returned
-        /// when the next token is incomplete in the current buffer, instead of throwing <see cref="CborContentException" />.
+/// <para>If the reader's current data is not the final block, <see cref="CborReaderState.NeedsMoreData" /> is returned when the next token is incomplete in the current buffer, or when <see cref="CborReader.AllowMultipleRootLevelValues" /> is enabled and the buffer ends after a complete root-level value, instead of throwing <see cref="CborContentException" />.</para>
         /// Any other returned token state guarantees that the method reading that single token will not fail
         /// due to an unexpected end of the data, unless the token declares a definite length that can never fit
         /// a single buffer, in which case the reading method throws <see cref="CborContentException" />.</para>
