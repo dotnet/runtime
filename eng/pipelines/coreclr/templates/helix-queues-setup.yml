@@ -30,6 +30,9 @@ jobs:
     pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+
+    # IMPORTANT: Select public/internal queue aliases explicitly. Runtime macros expand too late
+    # for helix.yml to strip the .Open suffix at template expansion time for internal runs.
     helixQueues:
 
     # iOS Simulator/Mac Catalyst arm64
@@ -67,8 +70,8 @@ jobs:
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Ubuntu.2204.Amd64.Android.29
 
-    # Browser wasm
-    - ${{ if eq(parameters.platform, 'browser_wasm') }}:
+    # Browser and WASI wasm
+    - ${{ if in(parameters.platform, 'browser_wasm', 'wasi_wasm') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.2604.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-26.04-helix-webassembly-amd64@sha256:0be8725e08b6d0f58ec0290f3f3b70c449123e78b2b33853e9049df84b912fa8
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
