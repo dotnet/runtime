@@ -15,7 +15,12 @@ namespace System.Runtime.CompilerServices
     /// </para>
     /// </remarks>
     /// <seealso cref="UnionAttribute" />
-    public interface IUnion
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    interface IUnion
     {
         /// <summary>
         /// Gets the value contained in the union, or <see langword="null" /> if the union has no value.
