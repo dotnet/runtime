@@ -303,6 +303,7 @@ type JsAsset = Asset & {
 };
 type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
 };
 type VfsAsset = Asset & {
     virtualPath: string;

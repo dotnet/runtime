@@ -21,13 +21,14 @@ public: // static
     static void SetActualCode(PCODE addr, void* actualCode);
     static MethodDesc* GetMethodDesc(PCODE addr);
     static void* GetInterpreterData(PCODE addr);
-    static void SetInterpreterData(PCODE addr, PCODE interpreterData);
+    // Returns the existing data, or interpreterData if this call installs it.
+    static void* SetInterpreterDataInterlocked(PCODE addr, void* interpreterData);
     static bool PrefersInterpreterEntryPoint(PCODE addr);
 
 private:
     Volatile<void*> _pActualCode;
     MethodDesc* _pMD;
-    void* _pInterpreterData;
+    Volatile<void*> _pInterpreterData;
 
     enum PortableEntryPointFlag
     {

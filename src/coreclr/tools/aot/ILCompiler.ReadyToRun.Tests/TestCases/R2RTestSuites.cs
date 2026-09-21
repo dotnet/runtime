@@ -1125,6 +1125,9 @@ public class R2RTestSuites
             Assert.True(
                 WasmR2RAssert.HasExpectedAsyncResumeInfoFixups(reader, out string diagnostic),
                 diagnostic);
+            Assert.True(
+                R2RAssert.WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(reader, out diagnostic),
+                diagnostic);
         }
     }
 

@@ -8344,7 +8344,7 @@ public:
                                            GenTree*    nullCheckTree,
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
-    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
+    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary);
 
     PhaseStatus optInductionVariables();
 
@@ -10820,7 +10820,11 @@ public:
         // and it works better for small sizes.
         if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
         {
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * (type == UnrollKind::ProfiledMemmove ? 4 : 2);
+#else
             threshold = maxRegSize * 2;
+#endif
         }
 
         return threshold;

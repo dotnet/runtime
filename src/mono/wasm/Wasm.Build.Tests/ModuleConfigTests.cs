@@ -5,8 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -141,7 +145,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [TestCategory("native"), TestCategory("mono")]
+    [TestCategory("native")]
     public void SymbolMapFileEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
 
@@ -151,10 +155,106 @@ public class ModuleConfigTests : WasmTemplateTestsBase
     public void SymbolMapFileNotEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: false, isPublish);
 
+    [Fact]
+    [TestCategory("coreclr")]
+    public void RuntimePackSymbolMapMatchesFinalWasm()
+    {
+        (byte[] wasmBytes, byte[] symbolsBytes) = ReadRuntimePackNativeSymbols();
+        NativeWasmSymbolMapInfo info = NativeWasmSymbolMapValidator.Validate(wasmBytes, symbolsBytes);
+
+        Assert.True(info.ImportedFunctionCount > 0);
+        Assert.Equal(info.DefinedFunctionCount, info.CodeFunctionCount);
+        Assert.Equal(info.ImportedFunctionCount + info.DefinedFunctionCount, info.Symbols.Count);
+        Assert.Equal(
+            "InterpExecMethod(InterpreterFrame*, InterpMethodContextFrame*, InterpThreadContext*, ExceptionClauseArgs*)",
+            Assert.Single(info.Symbols, entry => entry.Value.StartsWith("InterpExecMethod(", StringComparison.Ordinal)).Value);
+        Assert.Contains(info.Symbols, entry => entry.Value == "ExecuteInterpretedMethod");
+        Assert.Contains(
+            info.Symbols,
+            entry => entry.Value.StartsWith("ExecuteInterpretedMethodWithArgs_PortableEntryPoint(", StringComparison.Ordinal));
+        Assert.Contains(info.Symbols, entry => Regex.IsMatch(entry.Value, @"^non-virtual thunk to .+_\d+$"));
+        Assert.DoesNotContain(info.Symbols, entry => entry.Value.Contains("WasmR2RToInterpreterThunk", StringComparison.Ordinal));
+        Assert.DoesNotContain(info.Symbols, entry => entry.Value.Contains("WasmInterpreterToR2RThunk", StringComparison.Ordinal));
+
+        int browserHostIndex = info.FunctionExports["BrowserHost_InitializeDotnet"];
+        Assert.Equal("BrowserHost_InitializeDotnet", info.Symbols[browserHostIndex]);
+
+        int mallocIndex = info.FunctionExports["malloc"];
+        Assert.Equal("emscripten_builtin_malloc", info.Symbols[mallocIndex]);
+    }
+
+    [Fact]
+    [TestCategory("coreclr")]
+    public void RuntimePackSymbolMapRejectsIndexAndIdentityMismatches()
+    {
+        (byte[] wasmBytes, byte[] symbolsBytes) = ReadRuntimePackNativeSymbols();
+        string wasmIntegrity = NativeWasmSymbolMapValidator.ComputeIntegrity(wasmBytes);
+        string symbolsIntegrity = NativeWasmSymbolMapValidator.ComputeIntegrity(symbolsBytes);
+
+        byte[] shiftedSymbols = Encoding.UTF8.GetBytes(
+            string.Join(
+                Environment.NewLine,
+                Encoding.UTF8.GetString(symbolsBytes)
+                    .Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line =>
+                    {
+                        int separator = line.IndexOf(':');
+                        int index = int.Parse(line.AsSpan(0, separator));
+                        return $"{index + 1}:{line[(separator + 1)..].TrimEnd('\r')}";
+                    })) +
+            Environment.NewLine);
+
+        InvalidDataException shiftedException = Assert.Throws<InvalidDataException>(
+            () => NativeWasmSymbolMapValidator.Validate(
+                wasmBytes,
+                shiftedSymbols,
+                wasmIntegrity,
+                NativeWasmSymbolMapValidator.ComputeIntegrity(shiftedSymbols)));
+        Assert.Contains("expected absolute function index 0", shiftedException.Message);
+
+        byte[] staleWasm = (byte[])wasmBytes.Clone();
+        staleWasm[^1] ^= 1;
+        InvalidDataException staleWasmException = Assert.Throws<InvalidDataException>(
+            () => NativeWasmSymbolMapValidator.Validate(staleWasm, symbolsBytes, wasmIntegrity, symbolsIntegrity));
+        Assert.Contains("Wasm SHA-256 mismatch", staleWasmException.Message);
+
+        byte[] staleSymbols = (byte[])symbolsBytes.Clone();
+        staleSymbols[^2] ^= 1;
+        InvalidDataException staleSymbolsException = Assert.Throws<InvalidDataException>(
+            () => NativeWasmSymbolMapValidator.Validate(wasmBytes, staleSymbols, wasmIntegrity, symbolsIntegrity));
+        Assert.Contains("symbol map SHA-256 mismatch", staleSymbolsException.Message);
+    }
+
+    private static (byte[] WasmBytes, byte[] SymbolsBytes) ReadRuntimePackNativeSymbols()
+    {
+        string runtimePackVersion = s_buildEnv.GetRuntimePackVersion(DefaultTargetFramework);
+        string packagePath = Path.Combine(
+            s_buildEnv.BuiltNuGetsPath,
+            $"Microsoft.NETCore.App.Runtime.browser-wasm.{runtimePackVersion}.nupkg");
+
+        using ZipArchive package = ZipFile.OpenRead(packagePath);
+        return (
+            ReadEntry("runtimes/browser-wasm/native/dotnet.native.wasm"),
+            ReadEntry("runtimes/browser-wasm/native/dotnet.native.js.symbols"));
+
+        byte[] ReadEntry(string entryName)
+        {
+            ZipArchiveEntry? entry = package.GetEntry(entryName);
+            Assert.NotNull(entry);
+            using Stream stream = entry.Open();
+            using MemoryStream buffer = new(checked((int)entry.Length));
+            stream.CopyTo(buffer);
+            return buffer.ToArray();
+        }
+    }
+
     private void SymbolMapFileEmittedCore(bool emitSymbolMap, bool isPublish)
     {
         Configuration config = Configuration.Release;
-        string extraProperties = $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>";
+        string extraProperties =
+            $"<WasmEmitSymbolMap>{emitSymbolMap.ToString().ToLowerInvariant()}</WasmEmitSymbolMap>" +
+            "<WasmBuildNative>false</WasmBuildNative>";
+
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.WasmBasicTestApp,
             $"SymbolMapFile_{emitSymbolMap}_{isPublish}", extraProperties: extraProperties);
 
@@ -170,11 +270,11 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         // bin/{config}/{tfm}/publish/wwwroot/_framework/.
         // The file may be fingerprinted (e.g. dotnet.native.<hash>.js.symbols), so use a glob.
         const string symbolsPattern = "dotnet.native*.js.symbols";
-        bool symbolsFileExists;
+        string? symbolsFile;
         if (isPublish)
         {
             string frameworkDir = GetBinFrameworkDir(config, forPublish: true);
-            symbolsFileExists = Directory.EnumerateFiles(frameworkDir, symbolsPattern).Any();
+            symbolsFile = Directory.EnumerateFiles(frameworkDir, symbolsPattern).SingleOrDefault();
         }
         else
         {
@@ -186,10 +286,32 @@ public class ModuleConfigTests : WasmTemplateTestsBase
                     ? Directory.GetDirectories(fxBaseDir).Select(d => Path.Combine(d, "_framework"))
                     : Array.Empty<string>()
             ];
-            symbolsFileExists = searchDirs
+            symbolsFile = searchDirs
                 .Where(Directory.Exists)
-                .Any(d => Directory.EnumerateFiles(d, symbolsPattern).Any());
+                .SelectMany(d => Directory.EnumerateFiles(d, symbolsPattern))
+                .SingleOrDefault();
         }
-        Assert.Equal(emitSymbolMap, symbolsFileExists);
+
+        Assert.Equal(emitSymbolMap, symbolsFile is not null);
+        if (!emitSymbolMap || !isPublish)
+            return;
+
+        string symbolsPath = Assert.IsType<string>(symbolsFile);
+        string frameworkDirectory = GetBinFrameworkDir(config, forPublish: true);
+        WasmSdkBasedProjectProvider provider = GetProvider<WasmSdkBasedProjectProvider>();
+        BootJsonData bootJson = provider.GetBootJson(provider.GetBootConfigPath(frameworkDirectory));
+        AssetsData assets = Assert.IsType<AssetsData>(bootJson.resources);
+        SymbolsAsset symbolAsset = Assert.Single(assets.wasmSymbols);
+        WasmAsset wasmAsset = Assert.Single(assets.wasmNative);
+
+        Assert.Equal(Path.GetFileName(symbolsPath), symbolAsset.name);
+        Assert.StartsWith("sha256-", symbolAsset.hash);
+        Assert.StartsWith("sha256-", wasmAsset.hash);
+        string wasmPath = Path.Combine(frameworkDirectory, wasmAsset.name);
+        NativeWasmSymbolMapValidator.Validate(
+            wasmPath,
+            symbolsPath,
+            expectedWasmIntegrity: wasmAsset.hash,
+            expectedSymbolsIntegrity: symbolAsset.hash);
     }
 }

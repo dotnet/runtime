@@ -1,4 +1,36 @@
 <Project>
+  <Import Project="$(WasmPInvokeModulesPropsPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+
+  <Target Name="_WasiConfigureReadyToRunPInvokes"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasiReadyToRunPInvokeModule Remove="@(_WasiReadyToRunPInvokeModule)" />
+    </ItemGroup>
+    <ComputeWasmPInvokeModules TargetOS="wasi"
+                               InvariantGlobalization="$(InvariantGlobalization)"
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)">
+      <Output TaskParameter="Modules" ItemName="_WasiReadyToRunPInvokeModule" />
+    </ComputeWasmPInvokeModules>
+    <PropertyGroup>
+      <_WasiReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasiReadyToRunPInvokeManifest>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasiReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasiReadyToRunPInvokeManifest)'))" />
+    <WriteLinesToFile File="$(_WasiReadyToRunPInvokeManifest)"
+                      Lines="@(_WasiReadyToRunPInvokeModule)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasiReadyToRunPInvokeManifest)" />
+      <FileWrites Include="$(_WasiReadyToRunPInvokeManifest)" />
+    </ItemGroup>
+  </Target>
+
   <!--
     CoreCLR-WASI app-builder targets. Sibling of Mono's WasiApp.targets, mirroring the
     browser split (BrowserWasmApp.targets vs BrowserWasmApp.CoreCLR.targets).
@@ -153,11 +185,13 @@
          metadata, so narrow the list the same way the browser targets do. -->
     <ItemGroup>
       <_WasiBundledFile Include="$(WasmAppDir)managed\*.dll" />
-
-      <_WasiPInvokeModules Include="libSystem.Native" />
-      <_WasiPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasiPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
+      <_WasiPInvokeModules Remove="@(_WasiPInvokeModules)" />
     </ItemGroup>
+    <ComputeWasmPInvokeModules TargetOS="wasi"
+                               InvariantGlobalization="$(InvariantGlobalization)"
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)">
+      <Output TaskParameter="Modules" ItemName="_WasiPInvokeModules" />
+    </ComputeWasmPInvokeModules>
 
     <FilterManagedAssemblies Assemblies="@(_WasiBundledFile)">
       <Output TaskParameter="ManagedAssemblies" ItemName="_WasiManagedAssemblies" />
