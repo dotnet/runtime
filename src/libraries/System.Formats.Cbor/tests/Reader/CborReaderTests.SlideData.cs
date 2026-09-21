@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -209,7 +210,37 @@ namespace System.Formats.Cbor.Tests
             Assert.Equal(2, reader.BytesRemaining);
 
             reader.SlideData(encoding, isFinalBlock: true);
-            Assert.Equal(encoding, reader.ReadEncodedValue().ToArray());
+            AssertExtensions.Same(encoding.AsSpan(), reader.ReadEncodedValue().Span);
+            Assert.Equal(CborReaderState.Finished, reader.PeekState());
+        }
+
+        [Fact]
+        public static void SlideData_ReusedBuffer_InvalidatesPreviouslyReturnedMemory()
+        {
+            // cautionary tale: values returned as views over the input buffer do not survive
+            // the caller reusing that buffer to supply more data
+            byte[] encoding = "826568656c6c6f65776f726c64".HexToByteArray(); // ["hello", "world"]
+            byte[] buffer = new byte[8];
+            encoding.AsSpan(0, 8).CopyTo(buffer);
+
+            var reader = new CborReader(buffer.AsMemory(0, 8), LaxOptions, isFinalBlock: false);
+            reader.ReadStartArray();
+
+            ReadOnlyMemory<byte> firstValue = reader.ReadDefiniteLengthTextStringBytes();
+            Assert.Equal("hello", Encoding.UTF8.GetString(firstValue.ToArray()));
+            Assert.Equal(CborReaderState.NeedsMoreData, reader.PeekState());
+
+            // refill the buffer in place: move the unread tail to the front and append the remaining bytes
+            int keep = reader.BytesRemaining;
+            buffer.AsSpan(8 - keep, keep).CopyTo(buffer);
+            encoding.AsSpan(8).CopyTo(buffer.AsSpan(keep));
+            reader.SlideData(buffer.AsMemory(0, keep + encoding.Length - 8), isFinalBlock: true);
+
+            // the previously returned view still spans the same memory range, but its contents are gone
+            Assert.NotEqual("hello", Encoding.UTF8.GetString(firstValue.ToArray()));
+
+            Assert.Equal("world", reader.ReadTextString());
+            reader.ReadEndArray();
             Assert.Equal(CborReaderState.Finished, reader.PeekState());
         }
 
@@ -426,6 +457,7 @@ namespace System.Formats.Cbor.Tests
 
                 // semantic tag readers consume multiple tokens, so they throw on truncation
                 // even though the tag token itself passes the PeekState gate
+                Assert.Equal(CborReaderState.Tag, reader.PeekState());
                 Assert.Throws<CborContentException>(() => ReadTaggedValue(reader));
                 Assert.Equal(split, reader.BytesRemaining); // reader state was restored
 

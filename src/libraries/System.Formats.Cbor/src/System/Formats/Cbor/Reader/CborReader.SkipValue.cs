@@ -124,7 +124,7 @@ namespace System.Formats.Cbor
 
             if (state == CborReaderState.NeedsMoreData)
             {
-                // only reachable when the current data is not the final block
+                Debug.Assert(!_isFinalBlock);
                 return false;
             }
 

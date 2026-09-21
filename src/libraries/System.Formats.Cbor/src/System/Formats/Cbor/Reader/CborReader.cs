@@ -116,8 +116,10 @@ namespace System.Formats.Cbor
         /// <exception cref="CborContentException"><para>The data item is not a valid CBOR data item encoding.</para>
         /// <para>-or-</para>
         /// <para>The CBOR encoding is not valid under the current conformance mode.</para></exception>
-        /// <remarks>The returned memory is a view over the buffer supplied to the reader. If the caller reuses that buffer,
-        /// for example when supplying new data with <see cref="SlideData" />, the contents of the returned memory may be overwritten.</remarks>
+        /// <remarks>The returned <see cref="ReadOnlyMemory{T}" /> is a slice over the reader's input buffer. Callers are responsible
+        /// for preserving the integrity of the value for as long as it is persisted. When using <c>CborReader</c> in streaming mode,
+        /// callers are advised to read the value immediately, make a defensive copy, or avoid reusing the same memory
+        /// across calls to <see cref="SlideData" />.</remarks>
         public ReadOnlyMemory<byte> ReadEncodedValue(bool disableConformanceModeChecks = false)
         {
             // keep a snapshot of the current offset
@@ -188,8 +190,10 @@ namespace System.Formats.Cbor
         /// <remarks>
         /// <para>The caller is responsible for preserving all unread bytes, in order, at the beginning of <paramref name="data" />.
         /// Only the length of the new buffer is validated, not its contents.</para>
-        /// <para><see cref="ReadOnlyMemory{T}" /> values previously returned by methods such as <see cref="ReadEncodedValue" /> are views
-        /// over the reader's previous buffer; if the caller reuses that buffer, their contents may be overwritten.</para>
+        /// <para>NOTE: Some members, such as <see cref="ReadEncodedValue" />, return a <see cref="ReadOnlyMemory{T}" /> as a slice
+        /// over the input buffer. Callers are responsible for preserving the integrity of those values for as long as they are persisted.
+        /// When using <c>CborReader</c> in streaming mode, callers are advised to read such values immediately, make defensive copies,
+        /// or avoid reusing the same memory across calls to <c>SlideData</c>.</para>
         /// <para>Calling this method after a complete document has been read does not resume reading; the reader continues to report
         /// <see cref="CborReaderState.Finished" />. Use <see cref="Reset(ReadOnlyMemory{byte}, bool)" /> to begin reading a new document.</para>
         /// </remarks>

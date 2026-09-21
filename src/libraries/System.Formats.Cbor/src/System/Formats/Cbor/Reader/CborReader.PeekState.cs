@@ -189,6 +189,8 @@ namespace System.Formats.Cbor
             switch (initialByte.AdditionalInfo)
             {
                 case CborAdditionalInfo x when (x < CborAdditionalInfo.Additional8BitData):
+                    // Don't just return true, because byte strings and text
+                    // strings have additional validation.
                     argumentWidth = 0;
                     break;
                 case CborAdditionalInfo.Additional8BitData:
@@ -209,7 +211,9 @@ namespace System.Formats.Cbor
                     return true;
             }
 
-            if (remaining.Length < 1 + argumentWidth)
+            int requiredBytes = 1 + argumentWidth;
+
+            if (remaining.Length < requiredBytes)
             {
                 return false;
             }
@@ -228,13 +232,13 @@ namespace System.Formats.Cbor
                         _ => BinaryPrimitives.ReadUInt64BigEndian(remaining.Slice(1)),
                     };
 
-                    if (length > (ulong)(int.MaxValue - (1 + argumentWidth)))
+                    if (length > (ulong)(int.MaxValue - requiredBytes))
                     {
                         // can never fit a single buffer, so this is not a truncation condition
                         return true;
                     }
 
-                    return (ulong)(remaining.Length - (1 + argumentWidth)) >= length;
+                    return (ulong)(remaining.Length - requiredBytes) >= length;
 
                 default:
                     // For all other tokens the argument concludes the token: integers and float or

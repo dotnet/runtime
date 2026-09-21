@@ -311,22 +311,28 @@ namespace System.Formats.Cbor.Tests
         [MemberData(nameof(EncodedValueInputs))]
         public static void TrySkipToParent_NotFinalBlock_AllSplitPoints_SucceedsAfterSlideData(string hexEncoding)
         {
-            byte[] encoding = ("8301" + hexEncoding + "03").HexToByteArray(); // [1, <value>, 3]
+            byte[] encoding = ("818301" + hexEncoding + "03").HexToByteArray(); // [[1, <value>, 3]]
 
-            for (int split = 2; split < encoding.Length; split++)
+            for (int split = 3; split < encoding.Length; split++)
             {
                 var reader = new CborReader(encoding.AsMemory(0, split), LaxOptions, isFinalBlock: false);
+                reader.ReadStartArray();
                 reader.ReadStartArray();
                 Helpers.VerifyValue(reader, 1);
 
                 int bytesRemaining = reader.BytesRemaining;
                 Assert.False(reader.TrySkipToParent());
                 Assert.Equal(bytesRemaining, reader.BytesRemaining); // reader state was restored
-                Assert.Equal(1, reader.CurrentDepth);
+                Assert.Equal(2, reader.CurrentDepth);
 
                 reader.SlideData(encoding.AsMemory(split - reader.BytesRemaining), isFinalBlock: true);
                 Assert.True(reader.TrySkipToParent());
-                Assert.Equal(0, reader.CurrentDepth);
+
+                // the skip stops at the parent context instead of consuming the enclosing document
+                Assert.Equal(1, reader.CurrentDepth);
+                Assert.Equal(CborReaderState.EndArray, reader.PeekState());
+
+                reader.ReadEndArray();
                 Assert.Equal(CborReaderState.Finished, reader.PeekState());
             }
         }
@@ -409,6 +415,8 @@ namespace System.Formats.Cbor.Tests
             var reader = new CborReader(encoding.AsMemory(0, 3), LaxOptions, isFinalBlock: false);
 
             Assert.Equal((CborTag)1, reader.ReadTag());
+            Assert.Equal(2, reader.BytesRemaining);
+            Assert.Equal(CborReaderState.StartArray, reader.PeekState());
 
             // the failed skip enters the truncated array before restoring,
             // which exercises checkpoint restoration of the pending tag context
