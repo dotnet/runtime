@@ -5068,6 +5068,11 @@ BasicBlock* AsyncTransformation::CreateOSRJumpBB(GenTree* osrAddress)
     jmpOSR->clearTryIndex();
     jmpOSR->clearHndIndex();
 
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        jmpOSR->SetFlags(BBF_PROF_WEIGHT);
+    }
+
     JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
     GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
@@ -5220,7 +5225,6 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         checkOSRAddressOffsetBB->SetCond(toJmpOSRBB, toOnContinuationBB);
         toJmpOSRBB->setLikelihood(0);
         toOnContinuationBB->setLikelihood(1);
-        jmpOSR->inheritWeightPercentage(checkOSRAddressOffsetBB, 0);
 
         // We need to dispatch to the OSR version if the OSR address is non-zero.
         continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);

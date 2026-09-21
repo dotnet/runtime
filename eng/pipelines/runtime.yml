@@ -1271,15 +1271,15 @@ extends:
           scenarios:
             - WasmTestOnChrome
 
-      # WebAssembly CoreCLR with trimmed ReadyToRun library tests
+      # WebAssembly CoreCLR with trimmed ReadyToRun smoke tests
       - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
         parameters:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
-          nameSuffix: _R2R
+          nameSuffix: _Smoke_R2R
           readyToRun: true
-          timeoutInMinutes: 480
+          shouldRunSmokeOnly: true
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
