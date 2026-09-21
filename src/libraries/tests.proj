@@ -664,6 +664,8 @@
 
   <!-- Focus ISA stress on vector APIs and algorithms without building the full test suite. -->
   <ItemGroup Condition="'$(RunVectorTestsOnly)' == 'true'">
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Linq\tests\System.Linq.Tests.csproj" />
+    <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Memory\tests\System.Memory.Tests.csproj" />
     <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Tensors\tests\System.Numerics.Tensors.Tests.csproj" />
     <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Numerics.Vectors\tests\System.Numerics.Vectors.Tests.csproj" />
     <VectorTestProject Include="$(MSBuildThisFileDirectory)System.Runtime.Intrinsics\tests\System.Runtime.Intrinsics.Tests.csproj" />
