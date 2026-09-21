@@ -1580,7 +1580,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                    eeGetMethodFullName(fncHandle));
         }
 #endif // DEBUG
-        inlineResult->NoteFatal(InlineObservation::CALLEE_LACKS_RETURN);
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_LACKS_RETURN);
         return;
     }
 

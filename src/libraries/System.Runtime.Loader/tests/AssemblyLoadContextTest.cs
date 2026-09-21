@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -97,6 +98,44 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(asm);
             Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(asm));
             Assert.Contains(asm.DefinedTypes, t => t.Name == "TestClass");
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [DynamicDependency(nameof(MissingDependency.Root.RootClass.GetMiddleTypeName), typeof(MissingDependency.Root.RootClass))]
+        public static void AssemblyLoadEvent_ReentrantMethodCompilation()
+        {
+            var loadContext = new ResourceAssemblyLoadContext { LoadBy = LoadBy.Stream };
+            Assembly assembly = loadContext.LoadFromAssemblyName(new AssemblyName("MissingDependency.Root"));
+            Assert.Same(loadContext, AssemblyLoadContext.GetLoadContext(assembly));
+            MethodInfo method = assembly.GetType("MissingDependency.Root.RootClass").GetMethod(nameof(MissingDependency.Root.RootClass.GetMiddleTypeName));
+            Assert.NotNull(method);
+
+            object nestedResult = null;
+            int nestedCalls = 0;
+            AssemblyLoadEventHandler handler = (_, args) =>
+            {
+                if (AssemblyLoadContext.GetLoadContext(args.LoadedAssembly) == loadContext &&
+                    args.LoadedAssembly.GetName().Name == "MissingDependency.Mid")
+                {
+                    nestedCalls++;
+                    nestedResult = method.Invoke(null, null);
+                }
+            };
+
+            AppDomain.CurrentDomain.AssemblyLoad += handler;
+            try
+            {
+                // Resolving MidClass during compilation raises AssemblyLoad, whose handler
+                // invokes this method again before the outer compilation finishes.
+                Assert.Equal("MissingDependency.Mid.MidClass", method.Invoke(null, null));
+                Assert.Equal(1, nestedCalls);
+                Assert.Equal("MissingDependency.Mid.MidClass", nestedResult);
+                Assert.Equal("MissingDependency.Mid.MidClass", method.Invoke(null, null));
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.AssemblyLoad -= handler;
+            }
         }
 
         [Fact]
