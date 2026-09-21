@@ -43,9 +43,7 @@ extern "C" INTERP_API void jitStartup(ICorJitHost* jitHost)
 
     if (InterpConfig.InterpPGO() != 0)
     {
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
         InterpCompiler::s_interpPgoEnabled = true;
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
     }
 
     g_interpInitialized = true;

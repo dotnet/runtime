@@ -51,9 +51,7 @@ bool InterpCompiler::s_samplingProfilerEnabled = false;
 bool InterpCompiler::s_browserProfilerEnabled = false;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
 bool InterpCompiler::s_interpPgoEnabled = false;
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
 
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
@@ -2249,11 +2247,9 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
     m_emitInterpPGO = s_interpPgoEnabled
         && (InterpConfig.InterpPGOMethods().isEmpty()
             || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args));
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
 
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
@@ -2357,10 +2353,8 @@ bool InterpCompiler::CompileMethod()
     }
 #endif
 
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
     if (m_emitInterpPGO)
         InstrumentBlockCounts();
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
 
     AllocOffsets();
     PatchInitLocals(m_methodInfo);
@@ -8690,7 +8684,6 @@ void InterpCompiler::CreateSynchronizedRetValVar()
     INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
 }
 
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
 // Instrument the method entry and loop heads with block-count PGO probes. The counters are allocated by
 // allocPgoInstrumentationBySchema (native PgoManager memory), so they persist independently of
 // EventPipe session lifetime; the accumulated profile is flushed to the trace as
@@ -8748,7 +8741,6 @@ void InterpCompiler::InstrumentBlockCounts()
         ins->data[0] = GetDataItemIndex((void*)pCounter);
     }
 }
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
 
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {

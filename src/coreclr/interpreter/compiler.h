@@ -645,9 +645,7 @@ private:
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
     bool m_emitInterpPGO;
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
 
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
@@ -776,9 +774,7 @@ private:
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
 
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
     void InstrumentBlockCounts();
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
     InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -1162,9 +1158,7 @@ public:
     static bool s_browserProfilerEnabled;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
-#if (defined(TARGET_BROWSER) || defined(TARGET_WASI)) && defined(PERFTRACING_DISABLE_THREADS)
     static bool s_interpPgoEnabled;
-#endif // (TARGET_BROWSER || TARGET_WASI) && PERFTRACING_DISABLE_THREADS
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.
