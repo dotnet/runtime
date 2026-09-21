@@ -100,8 +100,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public ReadyToRunFlags Flags => _flags;
         private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipTypeValidationFlag;
+        private readonly Task<(bool canSkipValidation, string[] reasons)> _shouldAddSkipAccessValidationFlag;
 
-        public ReadyToRunHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation)
+        public ReadyToRunHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipTypeValidation, EcmaModule moduleToCheckForSkipAccessValidation = null)
         {
 
             if (moduleToCheckForSkipTypeValidation != null)
@@ -111,6 +112,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             else
             {
                 _shouldAddSkipTypeValidationFlag = Task.FromResult((false, new string[0]));
+            }
+
+            if (moduleToCheckForSkipAccessValidation != null)
+            {
+                _shouldAddSkipAccessValidationFlag = AccessValidationChecker.CanSkipValidation(moduleToCheckForSkipAccessValidation);
+            }
+            else
+            {
+                _shouldAddSkipAccessValidationFlag = Task.FromResult((false, new string[0]));
             }
             _flags = flags;
         }
@@ -173,6 +183,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                             System.Console.WriteLine(reason);
                     }
                 }
+
+                if (_shouldAddSkipAccessValidationFlag.Result.canSkipValidation)
+                {
+                    flagsInt |= (int)ReadyToRunFlags.READYTORUN_FLAG_SkipAccessValidation;
+                }
+                else
+                {
+                    if (factory.OptimizationFlags.TypeValidation == TypeValidationRule.AutomaticWithLogging)
+                    {
+                        // If we are in automatic with logging mode, we reach here when we are unable to enable
+                        // skip validation. When logging is enabled, write out the reasons we found for
+                        // not doing so.
+                        foreach (string reason in _shouldAddSkipAccessValidationFlag.Result.reasons)
+                            System.Console.WriteLine(reason);
+                    }
+                }
             }
             builder.EmitInt(flagsInt);
 
@@ -213,8 +239,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
     public class GlobalHeaderNode : ReadyToRunHeaderNode
     {
-        public GlobalHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipValidation)
-            : base(flags, moduleToCheckForSkipValidation)
+        public GlobalHeaderNode(ReadyToRunFlags flags, EcmaModule moduleToCheckForSkipValidation, EcmaModule moduleToCheckForSkipAccessValidation = null)
+            : base(flags, moduleToCheckForSkipValidation, moduleToCheckForSkipAccessValidation)
         {
         }
 

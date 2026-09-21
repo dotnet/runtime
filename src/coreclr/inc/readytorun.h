@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MINOR_VERSION 0x0003
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -76,6 +76,9 @@
 // compiled with the GC mode transition verification scaffolding (and therefore emits
 // READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
+// R2R Version 29.3 adds the READYTORUN_FLAG_SKIP_ACCESS_VALIDATION flag, set when crossgen2 has proven that every
+//                  typeref/memberref/methodspec/typespec referenced from every method body in the module is
+//                  accessible to its caller, allowing the runtime to skip the equivalent JIT-time access checks.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -117,6 +120,9 @@ enum ReadyToRunFlag
     READYTORUN_FLAG_STRIPPED_INLINING_INFO      = 0x00000400,   // Inlining info has been stripped from the image
     READYTORUN_FLAG_STRIPPED_DEBUG_INFO         = 0x00000800,   // Debug info has been stripped from the image
     READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS  = 0x00001000,   // Code in this image verifies that GC mode transitions are legal. WebAssembly only; its catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
+    READYTORUN_FLAG_SKIP_ACCESS_VALIDATION      = 0x00002000,   // Runtime should trust that every typeref/memberref/methodspec/typespec referenced
+                                                                 // from a method body in this module is accessible to its caller, and skip the
+                                                                 // corresponding JIT-time access checks
 };
 
 enum class ReadyToRunSectionType : uint32_t

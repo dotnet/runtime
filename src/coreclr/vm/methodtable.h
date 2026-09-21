@@ -2386,7 +2386,7 @@ public:
 
         bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
-        inline bool HasSameTypeDefAs(MethodTable* pMT)
+        inline bool HasSameTypeDefAs(MethodTable* pMT) const
         {
             CONTRACTL
             {

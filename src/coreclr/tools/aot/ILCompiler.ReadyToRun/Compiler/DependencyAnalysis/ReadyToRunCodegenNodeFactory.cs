@@ -346,7 +346,8 @@ namespace ILCompiler.DependencyAnalysis
             ReadyToRunContainerFormat format,
             ulong imageBase,
             EcmaModule associatedModule,
-            int genericCycleDepthCutoff, int genericCycleBreadthCutoff)
+            int genericCycleDepthCutoff, int genericCycleBreadthCutoff,
+            EcmaModule associatedModuleForAccessValidation = null)
         {
             OptimizationFlags = nodeFactoryOptimizationFlags;
             TypeSystemContext = context;
@@ -360,7 +361,7 @@ namespace ILCompiler.DependencyAnalysis
             Resolver = compilationModuleGroup.Resolver;
             Format = format;
 
-            Header = new GlobalHeaderNode(flags, associatedModule);
+            Header = new GlobalHeaderNode(flags, associatedModule, associatedModuleForAccessValidation);
             ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);

@@ -273,6 +273,10 @@ namespace ILCompiler
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipTypeValidation;
             }
+            if (_nodeFactoryOptimizationFlags.TypeValidation == TypeValidationRule.SkipTypeValidation)
+            {
+                flags |= ReadyToRunFlags.READYTORUN_FLAG_SkipAccessValidation;
+            }
             if (_verifyGCModeTransitions)
             {
                 flags |= ReadyToRunFlags.READYTORUN_FLAG_VerifyGCModeTransitions;
@@ -293,7 +297,8 @@ namespace ILCompiler
                 _imageBase,
                 automaticTypeValidation ? singleModule : null,
                 genericCycleDepthCutoff: _genericCycleDetectionDepthCutoff,
-                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff
+                genericCycleBreadthCutoff: _genericCycleDetectionBreadthCutoff,
+                associatedModuleForAccessValidation: automaticTypeValidation ? singleModule : null
                 );
 
             factory.CompositeImageSettings = _compositeImageSettings;
