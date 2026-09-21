@@ -11449,6 +11449,28 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         assert(newType != TYP_UNDEF);
 
+        // Validate the constants before removing the previous store or widening the current one.
+        uint64_t lowerCns = 0;
+        uint64_t upperCns = 0;
+#if defined(TARGET_AMD64) && defined(FEATURE_HW_INTRINSICS)
+        // Only on x64 since ARM64 has no options above SIMD16.
+        if (varTypeIsSIMD(oldType))
+        {
+            if (!prevData.value->OperIs(GT_CNS_VEC) || !currData.value->OperIs(GT_CNS_VEC))
+            {
+                return;
+            }
+        }
+        else
+#endif // TARGET_AMD64 && FEATURE_HW_INTRINSICS
+        {
+            if (!TryGetStoreCoalescingConstantBits(prevData.value, &lowerCns) ||
+                !TryGetStoreCoalescingConstantBits(currData.value, &upperCns))
+            {
+                return;
+            }
+        }
+
         if (node->OperIs(GT_STOREIND, GT_STORE_BLK))
         {
             auto* ind     = node->AsStoreInd();
@@ -11502,11 +11524,6 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
         // Only on x64 since ARM64 has no options above SIMD16.
         if (varTypeIsSIMD(oldType))
         {
-            if (!prevData.value->OperIs(GT_CNS_VEC) || !currData.value->OperIs(GT_CNS_VEC))
-            {
-                return;
-            }
-
             int8_t* lowerCns = prevData.value->AsVecCon()->gtSimdVal.i8;
             int8_t* upperCns = currData.value->AsVecCon()->gtSimdVal.i8;
 
@@ -11527,14 +11544,6 @@ void Lowering::LowerStoreCoalescing(GenTree* node)
 
         // The integer path below places each constant according to its byte offset, so it doesn't need to swap the
         // values first. Only the SIMD packing paths above need to normalize lower/upper order explicitly.
-        uint64_t lowerCns = 0;
-        uint64_t upperCns = 0;
-        if (!TryGetStoreCoalescingConstantBits(prevData.value, &lowerCns) ||
-            !TryGetStoreCoalescingConstantBits(currData.value, &upperCns))
-        {
-            return;
-        }
-
 #if defined(TARGET_64BIT) && defined(FEATURE_HW_INTRINSICS)
         if (varTypeIsSIMD(newType))
         {
