@@ -661,10 +661,10 @@ if (CLR_CMAKE_HOST_UNIX OR CLR_CMAKE_HOST_WASI)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qunused-arguments")
     set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -Qunused-arguments")
     # The arm64 asm helpers access t_ThreadStatics/t_runtime_thread_locals via TLS
-    # descriptors; the C++ definitions must use native (non-emulated) TLS with the
-    # global-dynamic model to match.
+    # descriptors; the C++ definitions must use native (non-emulated) TLS to match.
+    # (-fno-emulated-tls already makes the OHOS NDK clang use the global-dynamic
+    # model, so an explicit -ftls-model flag is redundant.)
     add_compile_options(-fno-emulated-tls)
-    add_compile_options(-ftls-model=global-dynamic)
   endif()
 
   # Suppress warnings-as-errors in release branches to reduce servicing churn
