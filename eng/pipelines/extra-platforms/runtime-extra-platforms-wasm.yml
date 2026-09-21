@@ -32,6 +32,8 @@ jobs:
       readyToRun: true
       timeoutInMinutes: 480
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: true
       useHelixMonitor: ${{ parameters.useHelixMonitor }}
       scenarios:
