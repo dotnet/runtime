@@ -332,5 +332,93 @@ namespace System.Reflection.Context.Tests
             Type[] constraints = typeParams[0].GetGenericParameterConstraints();
             Assert.Empty(constraints);
         }
+
+        [Theory]
+        [InlineData(typeof(Span<int>), true)]
+        [InlineData(typeof(ReadOnlySpan<char>), true)]
+        [InlineData(typeof(int), false)]
+        [InlineData(typeof(int?), false)]
+        [InlineData(typeof(List<int>), false)]
+        [InlineData(typeof(TestEnum), false)]
+        public void IsByRefLike_ReturnsUnderlyingValue(Type type, bool expected)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Assert.Equal(expected, customType.IsByRefLike);
+        }
+
+        [Fact]
+        public void GetEnumValuesAsUnderlyingType_ReturnsValues()
+        {
+            TypeInfo customEnumType = _customReflectionContext.MapType(typeof(TestEnum).GetTypeInfo());
+
+            Array values = customEnumType.GetEnumValuesAsUnderlyingType();
+            Assert.Equal(new int[] { 1, 2 }, Assert.IsType<int[]>(values));
+        }
+
+        [Fact]
+        public void GetEnumValuesAsUnderlyingType_ThrowsForNonEnum()
+        {
+            Assert.Throws<ArgumentException>(() => _customTypeInfo.GetEnumValuesAsUnderlyingType());
+        }
+
+        [Fact]
+        public void GetNullableUnderlyingType_ForNullable_ReturnsProjectedType()
+        {
+            TypeInfo customNullableType = _customReflectionContext.MapType(typeof(int?).GetTypeInfo());
+
+            Type underlyingType = customNullableType.GetNullableUnderlyingType();
+            Assert.Equal(ProjectionConstants.CustomType, underlyingType.GetType().FullName);
+            Assert.Equal(typeof(int), underlyingType.UnderlyingSystemType);
+        }
+
+        [Fact]
+        public void GetNullableUnderlyingType_ForNullableDefinition_ReturnsProjectedGenericParameter()
+        {
+            TypeInfo customNullableDef = _customReflectionContext.MapType(typeof(Nullable<>).GetTypeInfo());
+
+            Type underlyingType = customNullableDef.GetNullableUnderlyingType();
+            Assert.Equal(ProjectionConstants.CustomType, underlyingType.GetType().FullName);
+            Assert.True(underlyingType.IsGenericParameter);
+        }
+
+        [Theory]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(TestEnum))]
+        [InlineData(typeof(List<int>))]
+        public void GetNullableUnderlyingType_ForNonNullable_ReturnsNull(Type type)
+        {
+            TypeInfo customType = _customReflectionContext.MapType(type.GetTypeInfo());
+            Assert.Null(customType.GetNullableUnderlyingType());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_ReturnsProjectedType(bool isUnmanaged)
+        {
+            TypeInfo customReturnType = _customReflectionContext.MapType(typeof(int).GetTypeInfo());
+            TypeInfo customParameterType = _customReflectionContext.MapType(typeof(string).GetTypeInfo());
+
+            Type functionPointerType = customReturnType.MakeFunctionPointerType([customParameterType], isUnmanaged);
+            Assert.Equal(ProjectionConstants.CustomType, functionPointerType.GetType().FullName);
+            Assert.Equal(typeof(int).MakeFunctionPointerType([typeof(string)], isUnmanaged), functionPointerType.UnderlyingSystemType);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124149", TestRuntimes.Mono)]
+        public void MakeFunctionPointerType_NullOrMixedParameterTypes_ReturnsProjectedType()
+        {
+            TypeInfo customReturnType = _customReflectionContext.MapType(typeof(int).GetTypeInfo());
+            TypeInfo customParameterType = _customReflectionContext.MapType(typeof(string).GetTypeInfo());
+
+            Type noParameters = customReturnType.MakeFunctionPointerType(null);
+            Assert.Equal(ProjectionConstants.CustomType, noParameters.GetType().FullName);
+            Assert.Equal(typeof(int).MakeFunctionPointerType(null), noParameters.UnderlyingSystemType);
+
+            Type mixedParameters = customReturnType.MakeFunctionPointerType([customParameterType, typeof(long)]);
+            Assert.Equal(ProjectionConstants.CustomType, mixedParameters.GetType().FullName);
+            Assert.Equal(typeof(int).MakeFunctionPointerType([typeof(string), typeof(long)]), mixedParameters.UnderlyingSystemType);
+        }
     }
 }

@@ -74,6 +74,11 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.GUID; }
         }
 
+        public override bool IsByRefLike
+        {
+            get { return _typeInfo.IsByRefLike; }
+        }
+
         public override bool IsEnum
         {
             get { return _typeInfo.IsEnum; }
@@ -192,10 +197,24 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetEnumValues();
         }
 
+#if NET
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            return _typeInfo.GetEnumValuesAsUnderlyingType();
+        }
+#endif
+
         public override Type GetEnumUnderlyingType()
         {
             return _typeInfo.GetEnumUnderlyingType();
         }
+
+#if NET11_0_OR_GREATER
+        public override Type? GetNullableUnderlyingType()
+        {
+            return _typeInfo.GetNullableUnderlyingType();
+        }
+#endif
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
@@ -457,6 +476,13 @@ namespace System.Reflection.Context.Delegation
         {
             return _typeInfo.MakePointerType();
         }
+
+#if NET11_0_OR_GREATER
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            return _typeInfo.MakeFunctionPointerType(parameterTypes, isUnmanaged);
+        }
+#endif
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
