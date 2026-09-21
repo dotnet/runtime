@@ -48,6 +48,7 @@
     <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Roundtrip.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.LargeFiles.Tests.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.Base.cs" />
+    <Compile Include="TarWriter\TarWriter.WriteEntry.Entry.Posix.Base.cs" />
     <Compile Include="TarWriter\TarWriter.WriteEntry.File.Tests.cs" />
     <Compile Include="TarExtractOptions.Tests.cs" />
     <Compile Include="TarWriterOptions.Tests.cs" />

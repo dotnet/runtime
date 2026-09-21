@@ -70,12 +70,12 @@ namespace System.Formats.Tar.Tests
             archive.Position = 0;
             using TarReader reader = new TarReader(archive);
 
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal(format, entry.Format);
             Assert.Equal(fileName, entry.Name);
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(await GetNextEntry(reader, async));
         }
 
         [Theory]

@@ -405,48 +405,50 @@ namespace System.Formats.Tar.Tests
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void WriteLongName(TarEntryFormat format)
+        [MemberData(nameof(GetPaxAndGnuFormatBooleanData))]
+        public async Task WriteLongName(TarEntryFormat format, bool async)
         {
             string maxPathComponent = new string('a', 255);
-            WriteLongNameCore(format, maxPathComponent);
+            await WriteLongNameCore(format, maxPathComponent, async);
 
             maxPathComponent = new string('a', 90) + new string('b', 165);
-            WriteLongNameCore(format, maxPathComponent);
+            await WriteLongNameCore(format, maxPathComponent, async);
 
             maxPathComponent = new string('a', 165) + new string('b', 90);
-            WriteLongNameCore(format, maxPathComponent);
+            await WriteLongNameCore(format, maxPathComponent, async);
         }
 
-        private void WriteLongNameCore(TarEntryFormat format, string maxPathComponent)
+        private async Task WriteLongNameCore(TarEntryFormat format, string maxPathComponent, bool async)
         {
             Assert.Equal(255, maxPathComponent.Length);
 
             TarEntry entry;
             MemoryStream ms = new();
-            using (TarWriter writer = new(ms, true))
             {
+                await using TarWriterHolder writerHolder = CreateTarWriter(ms, async, leaveOpen: true);
+                TarWriter writer = writerHolder;
+
                 TarEntryType entryType = GetRegularFileEntryTypeForFormat(format);
                 entry = InvokeTarEntryCreationConstructor(format, entryType, maxPathComponent);
-                writer.WriteEntry(entry);
+                await WriteEntry(writer, entry, async);
 
                 entry = InvokeTarEntryCreationConstructor(format, entryType, Path.Join(maxPathComponent, maxPathComponent));
-                writer.WriteEntry(entry);
+                await WriteEntry(writer, entry, async);
             }
 
             ms.Position = 0;
-            using TarReader reader = new(ms);
+            await using TarReaderHolder readerHolder = CreateTarReader(ms, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
-            entry = reader.GetNextEntry();
+            entry = await GetNextEntry(reader, async);
             string expectedName = GetExpectedNameForFormat(format, maxPathComponent);
             Assert.Equal(expectedName, entry.Name);
 
-            entry = reader.GetNextEntry();
+            entry = await GetNextEntry(reader, async);
             expectedName = GetExpectedNameForFormat(format, Path.Join(maxPathComponent, maxPathComponent));
             Assert.Equal(expectedName, entry.Name);
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(await GetNextEntry(reader, async));
 
             string GetExpectedNameForFormat(TarEntryFormat format, string expectedName)
             {

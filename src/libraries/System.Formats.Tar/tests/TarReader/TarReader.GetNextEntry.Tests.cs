@@ -36,14 +36,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(malformed, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<EndOfStreamException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<EndOfStreamException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<EndOfStreamException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -59,14 +52,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(malformed, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -763,14 +749,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<InvalidOperationException>(() => GetNextEntry(reader, async: async));
         }
 
         private static async Task WriteMetadataEntry(bool async, MemoryStream archive, string metadataType, int size)

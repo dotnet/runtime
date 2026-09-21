@@ -299,7 +299,7 @@ namespace System.Formats.Tar.Tests
             int bufferLength = 1024;
             byte[] fileContent = new byte[bufferLength];
             byte[] dataStreamContent = new byte[bufferLength];
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry = await GetNextEntry(reader, async);
             do
             {
                 Assert.NotNull(entry);
@@ -337,7 +337,7 @@ namespace System.Formats.Tar.Tests
                     AssertExtensions.SequenceEqual(fileContent, dataStreamContent);
                 }
             }
-            while ((entry = reader.GetNextEntry()) != null);
+            while ((entry = await GetNextEntry(reader, async)) != null);
         }
 
         [Theory]

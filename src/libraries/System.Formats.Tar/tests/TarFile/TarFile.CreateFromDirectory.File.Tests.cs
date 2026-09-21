@@ -91,7 +91,7 @@ namespace System.Formats.Tar.Tests
 
             List<TarEntry> entries = new List<TarEntry>();
             TarEntry entry;
-            while ((entry = reader.GetNextEntry()) != null)
+            while ((entry = await GetNextEntry(reader, async)) != null)
             {
                 entries.Add(entry);
             }
@@ -143,12 +143,12 @@ namespace System.Formats.Tar.Tests
             using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
             using TarReader reader = new TarReader(fileStream);
 
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal(TarEntryType.Directory, entry.EntryType);
             Assert.Equal(Path.GetFileName(source.Path) + '/', entry.Name);
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(await GetNextEntry(reader, async));
         }
 
         [Theory]
@@ -177,28 +177,28 @@ namespace System.Formats.Tar.Tests
 
             if (includeBaseDirectory)
             {
-                entry = reader.GetNextEntry();
+                entry = await GetNextEntry(reader, async);
                 Assert.NotNull(entry);
                 Assert.Equal(TarEntryType.Directory, entry.EntryType);
                 Assert.Equal(prefix, entry.Name);
             }
 
-            entry = reader.GetNextEntry();
+            entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal(TarEntryType.Directory, entry.EntryType);
             Assert.Equal(prefix + "segment1/", entry.Name);
 
-            entry = reader.GetNextEntry();
+            entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal(TarEntryType.Directory, entry.EntryType);
             Assert.Equal(prefix + "segment1/segment2/", entry.Name);
 
-            entry = reader.GetNextEntry();
+            entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal(TarEntryType.RegularFile, entry.EntryType);
             Assert.Equal(prefix + "segment1/segment2/file.txt", entry.Name);
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(await GetNextEntry(reader, async));
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -225,12 +225,12 @@ namespace System.Formats.Tar.Tests
             using FileStream archiveStream = File.OpenRead(destinationArchive);
             using TarReader reader = new TarReader(archiveStream, leaveOpen: false);
 
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal("subDirectory", entry.Name);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
-            Assert.Null(reader.GetNextEntry()); // file.txt should not be found
+            Assert.Null(await GetNextEntry(reader, async)); // file.txt should not be found
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -255,12 +255,12 @@ namespace System.Formats.Tar.Tests
             using FileStream archiveStream = File.OpenRead(destinationArchive);
             using TarReader reader = new TarReader(archiveStream, leaveOpen: false);
 
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal("baseDirectory/", entry.Name);
             Assert.Equal(TarEntryType.SymbolicLink, entry.EntryType);
 
-            Assert.Null(reader.GetNextEntry()); // subDirectory should not be found
+            Assert.Null(await GetNextEntry(reader, async)); // subDirectory should not be found
         }
 
         [Theory]
@@ -279,12 +279,12 @@ namespace System.Formats.Tar.Tests
             using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
             using TarReader reader = new TarReader(fileStream);
 
-            TarEntry entry = reader.GetNextEntry();
+            TarEntry entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
             Assert.Equal(format, entry.Format);
             Assert.Equal(fileName, entry.Name);
 
-            Assert.Null(reader.GetNextEntry());
+            Assert.Null(await GetNextEntry(reader, async));
         }
 
         [Theory]

@@ -229,14 +229,7 @@ namespace System.Formats.Tar.Tests
             Assert.NotNull(await GetNextEntry(reader, async: async));
             Assert.NotNull(await GetNextEntry(reader, async: async));
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -247,14 +240,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<EndOfStreamException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<EndOfStreamException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<EndOfStreamException>(() => GetNextEntry(reader, async: async));
         }
 
         // Sparse entries were created for the GNU format, so they are very rare entry types which are excluded from this test method:
@@ -290,14 +276,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -310,14 +289,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -340,14 +312,7 @@ namespace System.Formats.Tar.Tests
             TarReader reader = readerHolder;
 
             await GetNextEntry(reader, async: async); // first entry is okay
-            if (async)
-            {
-                await Assert.ThrowsAsync<InvalidDataException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<InvalidDataException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<InvalidDataException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -361,14 +326,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<NotSupportedException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<NotSupportedException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<NotSupportedException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -415,14 +373,7 @@ namespace System.Formats.Tar.Tests
 
             Assert.NotNull(await GetNextEntry(reader, async: async));
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<NotSupportedException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<NotSupportedException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<NotSupportedException>(() => GetNextEntry(reader, async: async));
         }
 
         [Theory]
@@ -435,14 +386,7 @@ namespace System.Formats.Tar.Tests
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
-            if (async)
-            {
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await GetNextEntry(reader, async: async));
-            }
-            else
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async).GetAwaiter().GetResult());
-            }
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => GetNextEntry(reader, async: async));
         }
 
         private static async Task VerifyDataStreamOfTarUncompressedInternal(string testFolderName, string testCaseName, bool copyData, bool async)
