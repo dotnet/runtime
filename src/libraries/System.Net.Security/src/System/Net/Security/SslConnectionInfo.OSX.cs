@@ -10,15 +10,17 @@ namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo
     {
-        public string? UpdateSslConnectionInfo(SafeDeleteContext context)
+        public void UpdateSslConnectionInfo(SafeDeleteContext context, out string? negotiatedServerName)
         {
             switch (context)
             {
                 case SafeDeleteNwContext nwContext:
-                    return UpdateSslConnectionInfoNetworkFramework(nwContext);
+                    negotiatedServerName = UpdateSslConnectionInfoNetworkFramework(nwContext);
+                    break;
                 case SafeDeleteSslContext sslContext:
                     UpdateSslConnectionInfoAppleCrypto(sslContext);
-                    return null;
+                    negotiatedServerName = null;
+                    break;
                 default:
                     throw new NotSupportedException("Unsupported context type.");
             }
@@ -56,7 +58,7 @@ namespace System.Net.Security
             TlsCipherSuite = cipherSuite;
             MapCipherSuite(cipherSuite);
 
-            return TlsFrameHelper.DecodeSni(serverName.Slice(0, serverNameLength));
+            return TlsFrameHelper.DecodeString(serverName.Slice(0, serverNameLength));
         }
 
         private void UpdateSslConnectionInfoAppleCrypto(SafeDeleteSslContext context)

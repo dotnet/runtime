@@ -432,16 +432,10 @@ namespace System.Net.Security.Tests
                 if (_packetBytes == 0)
                 {
                     byte[] header = new byte[HeaderLength];
-                    int headerRead = 0;
-                    while (headerRead < HeaderLength)
+                    int headerRead = await _inner.ReadAtLeastAsync(header.AsMemory(0, HeaderLength), HeaderLength, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                    if (headerRead < HeaderLength)
                     {
-                        int bytes = await _inner.ReadAsync(header.AsMemory(headerRead), cancellationToken).ConfigureAwait(false);
-                        if (bytes == 0)
-                        {
-                            return 0;
-                        }
-
-                        headerRead += bytes;
+                        return 0;
                     }
 
                     ProcessHeader(header);

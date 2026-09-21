@@ -21,45 +21,23 @@ namespace System.Net.Security.Tests
 
     public class SslStreamSniTest
     {
+        // Network.framework parses the ClientHello internally, so the server cannot recover SNI
+        // from the transport the way the other PALs do. Run the standard SNI expectations against
+        // that PAL by re-invoking the test below in a process with the switch enabled.
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.OSX)]
-        [InlineData("server.example")]
-        [InlineData("")]
-        [InlineData("räksmörgås.josefsson.org")]
-        public async Task NetworkFramework_ServerReceivesSni(string targetHost)
+        [MemberData(nameof(HostNameData))]
+        public async Task NetworkFramework_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             var psi = new ProcessStartInfo
             {
                 Environment = { { "DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1" } }
             };
 
-            await RemoteExecutor.Invoke(static async targetHost =>
-            {
-                (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
-                using (clientStream)
-                using (serverStream)
-                using (var client = new SslStream(clientStream))
-                using (var server = new SslStream(serverStream))
-                using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
-                {
-                    var clientOptions = new SslClientAuthenticationOptions
-                    {
-                        TargetHost = targetHost,
-                        RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
-                    };
-                    var serverOptions = new SslServerAuthenticationOptions
-                    {
-                        ServerCertificate = certificate,
-                    };
-
-                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
-                        client.AuthenticateAsClientAsync(clientOptions),
-                        server.AuthenticateAsServerAsync(serverOptions));
-
-                    Assert.Equal(targetHost, server.TargetHostName);
-                    Assert.Equal(targetHost, client.TargetHostName);
-                }
-            }, targetHost, new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
+            await RemoteExecutor.Invoke(
+                static hostName => new SslStreamSniTest().SslStream_ClientSendsSNIServerReceives_Ok(hostName),
+                hostName,
+                new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
         }
 
         [Theory]
