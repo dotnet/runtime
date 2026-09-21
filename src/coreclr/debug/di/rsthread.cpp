@@ -510,7 +510,7 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
         return E_NOTIMPL;
     }
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
     HRESULT hr = S_OK;
     EX_TRY
     {
@@ -519,7 +519,7 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
         *phThreadHandle = hThread;
     }
     EX_CATCH_HRESULT(hr);
-#else  // FEATURE_DBGIPC_TRANSPORT_DI
+#else  // HOST_UNIX
     // In the old SL implementation of Mac debugging, we return a thread handle faked up by the PAL on the Mac.
     // The returned handle is meaningless.  Here we explicitly return E_NOTIMPL.  We plan to deprecate this
     // function in Dev10 anyway.
@@ -527,7 +527,7 @@ HRESULT CordbThread::GetHandle(HANDLE * phThreadHandle)
     // @dbgtodo  Mac - Check with VS to see if they need the thread handle, e.g. for waiting on thread
     // termination.
     HRESULT hr = E_NOTIMPL;
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
+#endif // !HOST_UNIX
 
     return hr;
 }
@@ -4280,7 +4280,7 @@ BOOL CordbUnmanagedThread::IsExceptionFromLastRaiseException(const EXCEPTION_REC
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 {
     ULONG32 patch = CORDbg_BREAK_INSTRUCTION;
-    HRESULT hr = pProcess->SafeWriteOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), patch);
+    HRESULT hr = pProcess->SafeWriteBreakpointInstruction(PTR_TO_CORDB_ADDRESS(pRemoteAddress), patch);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
     return S_OK;
 }
@@ -4289,7 +4289,7 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress)
 // Get the opcode that we're replacing.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode)
 {
-    HRESULT hr = pProcess->SafeReadOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), pOpcode);
+    HRESULT hr = pProcess->SafeReadBreakpointInstruction(PTR_TO_CORDB_ADDRESS(pRemoteAddress), pOpcode);
     if (FAILED(hr))
     {
         return hr;
@@ -4304,7 +4304,7 @@ HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, U
 //-----------------------------------------------------------------------------
 HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode)
 {
-    pProcess->SafeWriteOpcode(PTR_TO_CORDB_ADDRESS(pRemoteAddress), opcode);
+    pProcess->SafeWriteBreakpointInstruction(PTR_TO_CORDB_ADDRESS(pRemoteAddress), opcode);
 
     // This may fail because the module has been unloaded.  In which case, the patch is also
     // gone so it makes sense to return success.

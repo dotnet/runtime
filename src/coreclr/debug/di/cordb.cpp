@@ -13,10 +13,10 @@
 #include "classfactory.h"
 #include "corsym.h"
 #include "contract.h"
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 #include "dbgtransportsession.h"
 #include "dbgtransportmanager.h"
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 //-----------------------------------------------------------------------------
 // SxS Versioning story for Mscordbi (ICorDebug + friends)
@@ -257,10 +257,10 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
             }
 #endif
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
             if (FAILED(g_DbgTransportTarget.Init()))
                 return FALSE;
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
         }
         break;
 
@@ -283,9 +283,9 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 
         case DLL_PROCESS_DETACH:
         {
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
             g_DbgTransportTarget.Shutdown();
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
         }
         break;
     }
@@ -297,7 +297,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
 // The obsolete v1 CLSID - see comment above for details.
 static const GUID CLSID_CorDebug_V1 = {0x6fef44d0,0x39e7,0x4c77, { 0xbe,0x8e,0xc9,0xf8,0xcf,0x98,0x86,0x30}};
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 
 // GUID for pipe-based debugging (Unix platforms)
 const GUID CLSID_CorDebug_Telesto = {0x8bd1daae, 0x188e, 0x42f4, {0xb0, 0x09, 0x08, 0xfa, 0xfd, 0x17, 0x81, 0x3b}};
@@ -308,7 +308,7 @@ const GUID CLSID_CorDebug_Telesto = {0x8bd1daae, 0x188e, 0x42f4, {0xb0, 0x09, 0x
 // hard code the IID and interface definition because VS does not export it, but it's not much of an issue
 // since COM interfaces are completely immutable).
 const GUID IID_IDebugRemoteCorDebug = {0x83C91210, 0xA34F, 0x427c, {0xB3, 0x5F, 0x79, 0xC3, 0x99, 0x5B, 0x3C, 0x14}};
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 //*****************************************************************************
 // Called by COM to get a class factory for a given CLSID.  If it is one we
@@ -323,12 +323,12 @@ STDAPI DLLEXPORT DllGetClassObjectInternal(               // Return code.
     CClassFactory   *pClassFactory;         // To create class factory object.
     PFN_CREATE_OBJ  pfnCreateObject = NULL;
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
     if (rclsid == CLSID_CorDebug_Telesto)
     {
         pfnCreateObject = Cordb::CreateObjectTelesto;
     }
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
     if (pfnCreateObject == NULL)
         return (CLASS_E_CLASSNOTAVAILABLE);
@@ -348,7 +348,7 @@ STDAPI DLLEXPORT DllGetClassObjectInternal(               // Return code.
     return hr;
 }
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 // In V2 we started hiding DllGetClassObject because activation was no longer performed through COM directly
 // (we went through the shim). CoreCLR doesn't have a shim and we go back to the COM model so we re-expose
 // DllGetClassObject to make that work.
@@ -360,7 +360,7 @@ STDAPI DLLEXPORT DllGetClassObject(               // Return code.
 {
     return DllGetClassObjectInternal(rclsid, riid, ppv);
 }
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 
 //*****************************************************************************
@@ -463,7 +463,7 @@ DbiGetThreadContext(HANDLE hThread,
     DT_CONTEXT *lpContext)
 {
     // if we aren't local debugging this isn't going to work
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || defined(__ANDROID__)
+#if !defined(HOST_ARM) || defined(HOST_UNIX) || defined(__ANDROID__)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
@@ -502,7 +502,7 @@ BOOL
 DbiSetThreadContext(HANDLE hThread,
     const DT_CONTEXT *lpContext)
 {
-#if !defined(HOST_ARM) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || defined(__ANDROID__)
+#if !defined(HOST_ARM) || defined(HOST_UNIX) || defined(__ANDROID__)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else

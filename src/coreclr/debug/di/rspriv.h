@@ -168,10 +168,10 @@ class NeuterList;
 
 struct IDacDbiInterface;
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 class DbgTransportTarget;
 class DbgTransportSession;
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 // @dbgtodo  private shim hook - the RS has private hooks into the shim to help bridge the V2/V3 gap.
 // This helps provide a working dogfooding story throughout our transition.
@@ -803,13 +803,13 @@ public:
         // between RCET, W32ET, and user threads.
         LL_PROCESS_LOCK = 2,
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
         LL_DBG_TRANSPORT_MANAGER_LOCK = 1,
 
         LL_DBG_TRANSPORT_TARGET_LOCK = 0,
 
         LL_DD_MARSHAL_LOCK = 0,
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
         // These are all leaf locks (they don't take any other lock once they're held).
         LL_PROCESS_LIST_LOCK = 0,
@@ -2241,9 +2241,9 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
     static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR lpwstrDacModulePath, REFIID id, void** object);
 
     //-----------------------------------------------------------
@@ -3282,10 +3282,10 @@ public:
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
     // Reads the breakpoint opcode from the target, using the target's instruction width.
-    HRESULT SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
+    HRESULT SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
 
     // Writes an opcode to the target, using the target's instruction width.
-    HRESULT SafeWriteOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
+    HRESULT SafeWriteBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
 
 #if defined(FEATURE_INTEROP_DEBUGGING)
     void DuplicateHandleToLocalProcess(CLREventBase * pLocalEvent, RemoteHANDLE * pRemoteHandle);
@@ -10166,7 +10166,7 @@ private:
         {
             MachineInfo machineInfo;
             ProcessDescriptor processDescriptor;
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
             bool fWin32Attach;
 #endif
             CordbProcess *pProcess;
@@ -10174,7 +10174,7 @@ private:
             // Wrapper to determine if we're interop-debugging.
             bool IsInteropDebugging()
             {
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
                 return fWin32Attach;
 #else
                 return false;

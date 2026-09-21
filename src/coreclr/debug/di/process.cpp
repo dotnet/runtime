@@ -1076,7 +1076,7 @@ HRESULT ShimProcess::DebugActiveProcess(
 
         _ASSERTE(SUCCEEDED(hr));
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
         // Don't do this when we are remote debugging since we won't be getting the loader breakpoint.
         // We don't support JIT attach in remote debugging scenarios anyway.
         //
@@ -1109,7 +1109,7 @@ HRESULT ShimProcess::DebugActiveProcess(
                 ARRAY_SIZE(waitSet),
                 WaitHandle::Infinite);
         }
-#endif //!FEATURE_DBGIPC_TRANSPORT_DI
+#endif //!HOST_UNIX
     }
     EX_CATCH_HRESULT(hr);
 
@@ -6661,7 +6661,7 @@ HRESULT CordbProcess::FindPatchByAddress(CORDB_ADDRESS address, bool *pfPatchFou
     {
         // Read one instruction from the faulting address...
         ULONG32 TrapCheck = 0;
-        HRESULT hr2 = SafeReadOpcode(address, &TrapCheck);
+        HRESULT hr2 = SafeReadBreakpointInstruction(address, &TrapCheck);
         if (SUCCEEDED(hr2) && (TrapCheck != (ULONG32) CORDbg_BREAK_INSTRUCTION))
         {
             LOG((LF_CORDB, LL_INFO1000, "CP::FPBA: patchFound=true based on odd missing int 3 case.\n"));
@@ -8246,7 +8246,7 @@ HRESULT CordbProcess::GetTargetOpcodeSize(ULONG32 * pcbSize)
 // Reads the breakpoint opcode from the target using the target's instruction
 // width. The value is zero-extended into pOpcode.
 //-----------------------------------------------------------------------------
-HRESULT CordbProcess::SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode)
+HRESULT CordbProcess::SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode)
 {
     ULONG32 cbSize = 0;
     HRESULT hr = GetTargetOpcodeSize(&cbSize);
@@ -8268,7 +8268,7 @@ HRESULT CordbProcess::SafeReadOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode
 //-----------------------------------------------------------------------------
 // Writes an opcode to the target using the target's instruction width.
 //-----------------------------------------------------------------------------
-HRESULT CordbProcess::SafeWriteOpcode(CORDB_ADDRESS pRemotePtr, ULONG32 opcode)
+HRESULT CordbProcess::SafeWriteBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 opcode)
 {
     ULONG32 cbSize = 0;
     HRESULT hr = GetTargetOpcodeSize(&cbSize);
@@ -8492,7 +8492,7 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
     // we should be able to safely read it out.
     ULONG32 opcodeTest = 0;
 
-    HRESULT hr = SafeReadOpcode(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
+    HRESULT hr = SafeReadBreakpointInstruction(PTR_TO_CORDB_ADDRESS(address), &opcodeTest);
     SIMPLIFYING_ASSUMPTION_SUCCEEDED(hr);
 
     return (opcodeTest == (ULONG32) CORDbg_BREAK_INSTRUCTION);
@@ -9145,7 +9145,7 @@ bool CordbProcess::CopyManagedEventFromTarget(
     // described in the comment for code:IEventChannel.  In this case, we are just transferring the IPC
     // event from the native pipeline to the event channel, and the event channel will read it directly from
     // the send buffer on the LS.  See code:CordbRCEventThread::WaitForIPCEventFromProcess.
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
     hr = SafeReadStruct(ptrRemoteManagedEvent, pLocalManagedEvent);
 #else
     // For Mac remote debugging the address returned above is actually a local address.
@@ -13569,7 +13569,7 @@ HRESULT CordbWin32EventThread::SendDebugActiveProcessEvent(
 
     m_actionData.attachData.machineInfo = machineInfo;
     m_actionData.attachData.processDescriptor = *pProcessDescriptor;
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
     m_actionData.attachData.fWin32Attach = fWin32Attach;
 #endif
     m_actionData.attachData.pProcess = pProcess;
@@ -14205,7 +14205,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
 
     // For the Mac remote debugging transport, DebugActiveProcessStop() is a nop.  The transport will be
     // shut down later when we neuter the CordbProcess.
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
     // @dbgtodo shim: this is a primitive workaround for interop-detach
     // Eventually, the Debugger owns the detach pipeline, so this won't be necessary.
     if (fDetach && (m_pProcess != NULL))
@@ -14222,7 +14222,7 @@ void CordbWin32EventThread::ExitProcess(bool fDetach)
             return;
         }
     }
-#endif // !FEATURE_DBGIPC_TRANSPORT_DI
+#endif // !HOST_UNIX
 
 
     // We don't really care if we're on the Win32 thread or not here. We just want to be sure that
