@@ -174,21 +174,6 @@ void ClearPendingThunkResolutionUnderLock(DynamicMethodDesc* pMD)
     pMD->SetPendingThunkResolution(false);
 }
 
-void PortableEntrypointThunkProcessingReady()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // This is called once the EE is ready to process thunks (i.e. after the first R2R module is loaded and ProcessInjectStringThunksFixup can be called).
-    // At this point we can resolve any pending thunks that were added before we were ready.
-    ResolvePendingPortableEntryPointThunksGlobal();
-}
-
 void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator* pLoaderAllocator, MethodDesc* pMD)
 {
     CONTRACTL
@@ -322,13 +307,7 @@ typedef bool (*PendingEntryResolver)(void* pEntry);
 // scan/compact algorithm only needs to be written and maintained once.
 static void ResolvePendingEntries(SArray<void*>& pending, PendingEntryResolver resolveEntry)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     COUNT_T count = pending.GetCount();
     COUNT_T nullCount = 0;
@@ -365,13 +344,7 @@ static void ResolvePendingEntries(SArray<void*>& pending, PendingEntryResolver r
 
 static bool ResolvePendingPortableEntryPointThunk(void* pEntry)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     MethodDesc* pMD = (MethodDesc*)pEntry;
     if (!pMD->IsPendingThunkResolution())
@@ -398,26 +371,14 @@ static bool ResolvePendingPortableEntryPointThunk(void* pEntry)
 
 static bool ResolvePendingClosedStaticRetBufThunk(void* pEntry)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     return TryResolveClosedStaticRetBufThunk((ClosedStaticRetBufPortableEntryPoint*)pEntry);
 }
 
 void ResolvePendingPortableEntryPointThunksGlobal()
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CrstHolder holder(&s_pendingThunkResolutionLock);
 

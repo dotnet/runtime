@@ -51,7 +51,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return sb.ToString();
         }
 
-        public override int ClassCode => -933114702;
+        // Keep closed-static return-buffer thunks after the existing Wasm transition and virtual thunks.
+        public override int ClassCode => 948271452;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) =>
             _signature.FuncType.CompareTo(((WasmClosedStaticRetBufThunkNode)other)._signature.FuncType);
