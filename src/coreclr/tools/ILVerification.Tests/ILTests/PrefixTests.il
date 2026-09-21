@@ -14,6 +14,11 @@
     .method public hidebysig newslot abstract virtual static void StaticAbstractMethod() cil managed
     {
     }
+
+    .method public hidebysig newslot virtual static void StaticVirtualMethod() cil managed
+    {
+        ret
+    }
 }
 
 .class public sequential ansi sealed beforefieldinit ImplStruct
@@ -116,6 +121,42 @@
     {
         constrained. !!T
         ldftn  void PrefixTestsType::StaticMethod()
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticAbstractDelegateOnTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        ldnull
+        constrained. !!T
+        ldftn   void IStaticInterface::StaticAbstractMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void ConstrainedLdftn.StaticVirtualDelegateOnTypeParam_Valid<(IStaticInterface) T>() cil managed
+    {
+        ldnull
+        constrained. !!T
+        ldftn   void IStaticInterface::StaticVirtualMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Ldftn.StaticVirtualDelegateWithoutConstrained_Valid() cil managed
+    {
+        ldnull
+        ldftn   void IStaticInterface::StaticVirtualMethod()
+        newobj  instance void [System.Runtime]System.Action::.ctor(object, native int)
+        pop
+        ret
+    }
+
+    .method static public hidebysig void Ldftn.StaticAbstractWithoutConstrained_Invalid_CallAbstract() cil managed
+    {
+        ldftn   void IStaticInterface::StaticAbstractMethod()
         pop
         ret
     }

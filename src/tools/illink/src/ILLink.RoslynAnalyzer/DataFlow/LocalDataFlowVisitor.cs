@@ -114,9 +114,9 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
             // If not, the BranchValue represents a return or throw value associated with the FallThroughSuccessor of this block.
             // (ConditionalSuccessor == null iff ConditionKind == None).
-            // If we get here, we should be analyzing code in a method or field/property initializer,
+            // If we get here, we should be analyzing code in a method or field/property/event initializer,
             // not an attribute instance, since attributes can't have throws or return statements
-            Debug.Assert(OwningSymbol is IMethodSymbol or IFieldSymbol or IPropertySymbol,
+            Debug.Assert(OwningSymbol is IMethodSymbol or IFieldSymbol or IPropertySymbol or IEventSymbol,
                 $"{OwningSymbol.GetType()}: {branchValueOperation.Syntax.GetLocation().GetLineSpan()}");
 
             // The BranchValue for a thrown value is not involved in dataflow tracking.

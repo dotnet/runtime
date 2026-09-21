@@ -14,6 +14,7 @@ using Xunit;
 //
 // These tests pin down that the caller still observes its own context after a suspension
 // that happened inside such an inlined frame.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2AsyncVersionInline
 {
     private sealed class NamedContext : SynchronizationContext

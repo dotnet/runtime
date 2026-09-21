@@ -421,6 +421,10 @@ public sealed partial class WebcilReader : IDisposable
 
     public void Dispose()
     {
+        // The provider owns a memory-mapped section over _stream; leaving it to the finalizer keeps the file
+        // mapped inside long-lived MSBuild task hosts and later writers fail with "user-mapped section open".
+        _metadataReaderProvider?.Dispose();
+        _metadataReaderProvider = null;
         _stream.Dispose();
     }
 

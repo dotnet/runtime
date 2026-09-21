@@ -8237,9 +8237,9 @@ unsigned GenTree::GetScaleIndexShf()
 
 /*****************************************************************************
  *
- *  If the given tree is a scaled index (i.e. "op * 4" or "op << 2"), returns
- *  the multiplier: 2, 4, or 8; otherwise returns 0. Note that "1" is never
- *  returned.
+ *  If the given tree is a scaled index (i.e. "op * 4" or "op << 2") that does
+ *  not require an overflow check, returns the multiplier: 2, 4, or 8; otherwise
+ *  returns 0. Note that "1" is never returned.
  */
 
 unsigned GenTree::GetScaledIndex()
@@ -8252,7 +8252,7 @@ unsigned GenTree::GetScaledIndex()
     switch (gtOper)
     {
         case GT_MUL:
-            return AsOp()->gtOp2->GetScaleIndexMul();
+            return gtOverflow() ? 0 : AsOp()->gtOp2->GetScaleIndexMul();
 
 #ifdef TARGET_RISCV64
         case GT_SLLI_UW:
@@ -19683,6 +19683,48 @@ GenTree* Compiler::gtWrapWithSideEffects(GenTree*     tree,
 }
 
 //------------------------------------------------------------------------
+// gtExtractSideEffectsFromUnusedNode: Converts an unused node to a null check
+//    when only its faulting behavior is needed.
+//
+// Arguments:
+//    node - the node whose value is unused
+//
+// Return Value:
+//    The converted node, the original node if no conversion applies, or
+//    nullptr if only the original node's operands need to be evaluated.
+//
+GenTree* Compiler::gtExtractSideEffectsFromUnusedNode(GenTree* node)
+{
+    if (node->OperIsBlk() && !node->OperIsStoreBlk())
+    {
+        JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
+        gtChangeOperToNullCheck(node);
+        return node;
+    }
+
+    if (node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_System_Object_GetType))
+    {
+        GenTree* obj = node->gtGetOp1();
+        if (!fgAddrCouldBeNull(obj))
+        {
+            return nullptr;
+        }
+
+        JITDUMP("Replace an unused GetType node [%06d] with a NULLCHECK\n", dspTreeID(node));
+        ValueNumPair vnPair = node->gtVNPair;
+        node                = gtNewNullCheck(obj);
+        if ((vnStore != nullptr) && vnPair.BothDefined())
+        {
+            node->gtVNPair = vnStore->VNPWithExc(vnStore->VNPForVoid(), vnStore->VNPExceptionSet(vnPair));
+        }
+        node->SetMorphed(this);
+        return node;
+    }
+
+    return node;
+}
+
+//------------------------------------------------------------------------
 // gtExtractSideEffList: Extracts side effects from the given expression.
 //
 // Arguments:
@@ -19736,13 +19778,13 @@ void Compiler::gtExtractSideEffList(GenTree*     expr,
 
             if (m_compiler->gtNodeHasSideEffects(node, m_flags))
             {
-                if (node->OperIsBlk() && !node->OperIsStoreBlk())
+                GenTree* sideEffect = m_compiler->gtExtractSideEffectsFromUnusedNode(node);
+                if (sideEffect == nullptr)
                 {
-                    JITDUMP("Replace an unused BLK node [%06d] with a NULLCHECK\n", dspTreeID(node));
-                    m_compiler->gtChangeOperToNullCheck(node);
+                    return Compiler::WALK_CONTINUE;
                 }
 
-                Append(node);
+                Append(sideEffect);
                 return Compiler::WALK_SKIP_SUBTREES;
             }
 
@@ -23048,7 +23090,7 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
                 {
                     assert(broadcastOpIndex != nullptr);
 
-                    // If the contained broadcast is 4 bytes, we can change it to 8 bytes
+                    // A 4-byte broadcast may be widened if its scalar is constant (checked below).
                     supportsMaskBaseSize2Or4 = true;
                     *broadcastOpIndex        = 2;
                 }
@@ -23070,7 +23112,7 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
                 {
                     assert(broadcastOpIndex != nullptr);
 
-                    // If the contained broadcast is 4 bytes, we can change it to 8 bytes
+                    // A 4-byte broadcast may be widened if its scalar is constant (checked below).
                     supportsMaskBaseSize2Or4 = true;
                     *broadcastOpIndex        = 3;
                 }
@@ -23116,6 +23158,18 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
 
         if (supportsMaskBaseSize2Or4)
         {
+            if ((broadcastOpIndex != nullptr) && (*broadcastOpIndex != 0))
+            {
+                const GenTreeHWIntrinsic* broadcastNode = node->Op(*broadcastOpIndex)->AsHWIntrinsic();
+
+                // Only a constant can be duplicated into a wider broadcast without changing
+                // the original memory access or the bits broadcast into each element.
+                if (broadcastNode->OperIsMemoryLoad() || !broadcastNode->Op(1)->OperIsConst())
+                {
+                    return false;
+                }
+            }
+
             if (tgtMaskBaseSize == 2)
             {
                 if (varTypeIsFloating(simdBaseType))
@@ -33492,11 +33546,11 @@ NamedIntrinsic GenTreeHWIntrinsic::GetHWIntrinsicIdForCmpOp(Compiler*  comp,
 
 #ifdef DEBUG
     // Once in LIR, lowering may feed a size-changing SIMD reinterpret operand directly -- e.g. an
-    // elided GetLower or ToVectorXXXUnsafe. It still occupies a full SIMD register and is consumed
-    // at the node's width, so treat any SIMD-typed operand as a full-vector operand rather than
-    // requiring an exact size match. In HIR the operand size must still be exact.
+    // elided GetLower or ToVectorXXXUnsafe -- or a scalar FP operand from CreateScalarUnsafe.
+    // These occupy SIMD registers and are consumed at the node's width; containment separately
+    // checks the memory-access size. In HIR the operand size must still be exact.
     auto isFullVectorOp = [=](GenTree* op) -> bool {
-        return op->TypeIs(simdType) || ((comp->fgNodeThreading == NodeThreading::LIR) && varTypeIsSIMD(op));
+        return op->TypeIs(simdType) || ((comp->fgNodeThreading == NodeThreading::LIR) && varTypeUsesFloatReg(op));
     };
 #endif // DEBUG
 
@@ -35436,25 +35490,22 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
         assert(opCount == (size_t)HWIntrinsicInfo::lookupNumArgs(maskVariant));
 
-        // Check all operands are valid
-        bool canFold = true;
+        size_t firstVectorOperand = 1;
         if (ni == NI_Sve_ConditionalSelect)
         {
             assert(varTypeIsMask(op1));
-
-            // ConditionalSelect has a mask condition and two vector values.
-            // If both values are mask-shaped, fold to the predicate "sel"
-            // variant rather than materializing vectors and converting back.
-            canFold = op2->IsSveMaskOperand() && op3->IsSveMaskOperand();
+            firstVectorOperand = 2;
         }
-        else
+
+        // Predicate bits are spaced according to element size. Reinterpreting the
+        // expanded vector does not reinterpret the predicate at the new granularity.
+        bool canFold = true;
+        for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
-            for (size_t i = 1; i <= opCount && canFold; i++)
-            {
-                // Fold SVE intrinsics such as And/Or/Xor/ZipLow to their
-                // all-mask variants when every operand is mask-shaped.
-                canFold &= tree->Op(i)->IsSveMaskOperand();
-            }
+            GenTree* operand = tree->Op(i);
+            canFold          = operand->IsSveMaskOperand() &&
+                      (!operand->OperIsConvertMaskToVector() ||
+                       (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
 
         if (canFold)
