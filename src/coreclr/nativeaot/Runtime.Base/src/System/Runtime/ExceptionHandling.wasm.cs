@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 
 using Internal.Runtime;
 
@@ -17,21 +16,18 @@ namespace System.Runtime
         }
 
         [RuntimeExport("RhpThrowEx")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void RhpThrowEx(object exception)
         {
             FallbackFailFast(RhFailFastReason.InternalError, exception);
         }
 
         [RuntimeExport("RhpThrowExact")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void RhpThrowExact(object exception)
         {
             FallbackFailFast(RhFailFastReason.InternalError, exception);
         }
 
         [RuntimeExport("RhpRethrow")]
-        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void RhpRethrow()
         {
             FallbackFailFast(RhFailFastReason.InternalError, null);

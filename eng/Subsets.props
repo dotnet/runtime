@@ -602,7 +602,7 @@
   <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(NativeAotSupported)' == 'true'">
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\**\src\*.csproj" Category="clr" />
   </ItemGroup>
-  <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(TargetsBrowser)' == 'true' and '$(TargetsWasm)' == 'true'">
+  <ItemGroup Condition="$(_subset.Contains('+clr.nativeaotlibs+')) and '$(TargetsWasm)' == 'true'">
     <!-- Test.CoreLib fails to build with the stubbed out nativeaot corelib -->
     <ProjectToBuild Remove="$(CoreClrProjectRoot)nativeaot\Test.CoreLib\src\Test.CoreLib.csproj" />
   </ItemGroup>
