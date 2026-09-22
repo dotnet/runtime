@@ -8,7 +8,7 @@ using Xunit;
 
 public class Async2ParallelContinuations
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestParallelContinuations()
     {
         TaskCompletionSource tcs = new TaskCompletionSource();

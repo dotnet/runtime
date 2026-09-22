@@ -92,14 +92,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
-            bool hasParamType = methodRequiresInstArg && !isUnboxingStub;
-
-            // On X86 the Array address method doesn't use IL stubs, and instead has a custom calling convention
-            if ((context.Target.Architecture == TargetArchitecture.X86) &&
-                methodIsArrayAddressMethod)
-            {
-                hasParamType = true;
-            }
+            bool hasParamType = (methodRequiresInstArg && !isUnboxingStub) || methodIsArrayAddressMethod;
 
             bool hasAsyncContinuation = methodIsAsyncCall;
             // We shouldn't be compiling unboxing stubs for async methods yet.

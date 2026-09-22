@@ -93,8 +93,16 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="name">The name to include in the formatted string.</param>
         /// <returns>A localized string to describe the maximum acceptable length.</returns>
         public override string FormatErrorMessage(string name) =>
-            // An error occurred, so we know the value is greater than the maximum if it was specified
-            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
+            FormatMessage(ErrorMessageString, name);
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" /> and <c>{1}</c> is replaced with <see cref="Length" />.
+        /// </remarks>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(CultureInfo.CurrentCulture, format, name, Length);
+        }
 
         /// <summary>
         ///     Checks that Length has a legal value.

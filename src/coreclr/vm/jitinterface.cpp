@@ -467,14 +467,14 @@ static void ConvToJitSig(
         uint32_t data;
         IfFailThrow(sig.GetCallingConvInfo(&data));
 
-#if defined(TARGET_UNIX) || defined(TARGET_ARM)
+#ifndef FEATURE_VARARGS
         if ((isCallConv(data, IMAGE_CEE_CS_CALLCONV_VARARG)) ||
             (isCallConv(data, IMAGE_CEE_CS_CALLCONV_NATIVEVARARG)))
         {
             // This signature corresponds to a method that uses varargs, which are not supported.
              COMPlusThrow(kInvalidProgramException, IDS_EE_VARARG_NOT_SUPPORTED);
         }
-#endif // defined(TARGET_UNIX) || defined(TARGET_ARM)
+#endif // !FEATURE_VARARGS
 
         // We have an internal calling convention for async used for signatures
         // in IL stubs. Translate that to the flag representation in
@@ -1084,9 +1084,7 @@ void CEEInfo::resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken
                 // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
                 // we cannot resolve to an Async variant in such case.
                 // return NULL, so that caller would re-resolve as a regular method call
-                // For COM-import interface calls we do not have an async variant of the COM interop stub, and
-                // in any case there would be no benefit of creating one.
-                pMD = pMD->ReturnsTaskOrValueTask() && !pMD->GetClass()->IsComImport() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
+                pMD = pMD->ReturnsTaskOrValueTask() ? pMD->GetAsyncVariant(/*allowInstParam*/FALSE) : NULL;
             }
             break;
 
@@ -4088,7 +4086,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getBuiltinClass(CorInfoClassId classId)
         result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__METHOD_HANDLE));
         break;
     case CLASSID_ARGUMENT_HANDLE:
+#ifdef FEATURE_VARARGS
         result = CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__ARGUMENT_HANDLE));
+#else // !FEATURE_VARARGS
+        _ASSERTE(!"CLASSID_ARGUMENT_HANDLE is unsupported when varargs is unsupported.");
+#endif // FEATURE_VARARGS
         break;
     case CLASSID_STRING:
         result = CORINFO_CLASS_HANDLE(g_pStringClass);
@@ -6257,6 +6259,7 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
 
     JIT_TO_EE_TRANSITION();
 
+#ifdef FEATURE_VARARGS
     Module* module = GetModule(sig->scope);
 
     Instantiation classInst = Instantiation((TypeHandle*) sig->sigInst.classInst, sig->sigInst.classInstCount);
@@ -6264,6 +6267,9 @@ CORINFO_VARARGS_HANDLE CEEInfo::getVarArgsHandle(CORINFO_SIG_INFO *sig,
     SigTypeContext typeContext = SigTypeContext(classInst, methodInst);
 
     result = CORINFO_VARARGS_HANDLE(module->GetVASigCookie(Signature(sig->pSig, sig->cbSig), &typeContext));
+#else // !FEATURE_VARARGS
+    _ASSERTE(!"getVarArgsHandle is unreachable without FEATURE_VARARGS");
+#endif // FEATURE_VARARGS
 
     EE_TO_JIT_TRANSITION();
 
@@ -6711,22 +6717,21 @@ void CEEInfo::setMethodAttribs (
 
     if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
-        PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
-        if (config != nullptr)
+        PrepareCodeConfig *config = m_pPrepareCodeConfig;
+        _ASSERTE(config != nullptr);
+
+        if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
         {
-            if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
-            {
-                _ASSERTE(!ftn->IsJitOptimizationDisabled());
-                config->SetJitSwitchedToMinOpt();
-            }
-#ifdef FEATURE_TIERED_COMPILATION
-            else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
-            {
-                _ASSERTE(ftn->IsEligibleForTieredCompilation());
-                config->SetJitSwitchedToOptimized();
-            }
-#endif
+            _ASSERTE(!ftn->IsJitOptimizationDisabled());
+            config->SetJitSwitchedToMinOpt();
         }
+#ifdef FEATURE_TIERED_COMPILATION
+        else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
+        {
+            _ASSERTE(ftn->IsEligibleForTieredCompilation());
+            config->SetJitSwitchedToOptimized();
+        }
+#endif
     }
 
     EE_TO_JIT_TRANSITION();
@@ -9081,7 +9086,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAsyncOtherVariant(
     MethodDesc* pMD = GetMethod(ftn);
     MethodDesc* pAsyncOtherVariant = NULL;
 
-    if (pMD->ReturnsTaskOrValueTask() && !pMD->GetClass()->IsComImport())
+    if (pMD->ReturnsTaskOrValueTask())
     {
          pAsyncOtherVariant = pMD->GetAsyncVariant();
     }
@@ -10225,8 +10230,10 @@ bool CEEInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method, CORINFO_SI
 #endif
     }
 
-    PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
-    if (config != nullptr && config->IsForMulticoreJit())
+    PrepareCodeConfig *config = m_pPrepareCodeConfig;
+    _ASSERTE(config != nullptr);
+
+    if (config->IsForMulticoreJit())
     {
         bool suppressGCTransition = false;
         CorInfoCallConvExtension unmanagedCallConv = getUnmanagedCallConv(method, callSiteSig, &suppressGCTransition);
@@ -11127,9 +11134,9 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 #endif
 
 #ifdef PROFILING_SUPPORTED
-    // P/Invokes are surfaced to profilers via ManagedToUnmanaged/UnmanagedToManaged
+    // P/Invokes and CLR->COM calls are surfaced to profilers via ManagedToUnmanaged/UnmanagedToManaged
     // transition callbacks, not Enter/Leave, so exclude them from ELT.
-    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata() && !ftn->IsPInvoke())
+    if (CORProfilerTrackEnterLeave() && !ftn->IsNoMetadata() && !ftn->IsPInvoke() && !ftn->IsCLRToCOMCall())
         flags.Set(CORJIT_FLAGS::CORJIT_FLAG_PROF_ENTERLEAVE);
 
     if (CORProfilerTrackTransitions())
@@ -11202,7 +11209,7 @@ static CORJIT_FLAGS GetCompileFlags(PrepareCodeConfig* prepareConfig, MethodDesc
 }
 
 CEECodeGenInfo::CEECodeGenInfo(PrepareCodeConfig* config, MethodDesc* fd, COR_ILMETHOD_DECODER* header, EECodeGenManager* jm)
-    : CEEInfo(fd)
+    : CEEInfo(fd, config)
     , m_jitManager(jm)
     , m_CodeHeader(NULL)
     , m_CodeHeaderRW(NULL)
@@ -11273,7 +11280,13 @@ void CEECodeGenInfo::getHelperFtn(CorInfoHelpFunc    ftnNum,               /* IN
         helperMD = GetMethodDescForILBasedDynamicJitHelper(dynamicFtnNum);
         _ASSERTE(PortableEntryPoint::GetMethodDesc((PCODE)targetAddr) == helperMD);
 #ifdef FEATURE_READYTORUN
-        _ASSERTE(PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
+        // Even with ReadyToRun enabled an IL-based dynamic helper can legitimately run interpreted
+        // (not present in the R2R image / interpreter-preferred entry point), in which case it has no
+        // native code. Only assert the published-native-code invariant when the entry point actually
+        // has native code -- calling GetActualCode otherwise asserts on !HasNativeCode().
+        _ASSERTE(!g_pConfig->ReadyToRun()
+            || !PortableEntryPoint::HasNativeEntryPoint((PCODE)targetAddr)
+            || PortableEntryPoint::GetActualCode((PCODE)targetAddr) != NULL);
 #endif
     }
 
@@ -11892,7 +11905,7 @@ void CInterpreterJitInfo::allocMem(AllocMemArgs *pArgs)
             codeSize, 0, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, &m_CodeHeader, &m_CodeHeaderRW,
+    m_jitManager->AllocCode<InterpreterCodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), 0, codeAlign, false, &m_CodeHeader, &m_CodeHeaderRW,
         &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, 0);
 
     BYTE* current = (BYTE *)((InterpreterCodeHeader*)m_CodeHeader)->GetCodeStartAddress();
@@ -13226,7 +13239,23 @@ void CEEJitInfo::allocMem (AllocMemArgs *pArgs)
             codeSize, roDataSize, totalSize.Value(), 0, GetClrInstanceId());
     }
 
-    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, &m_CodeHeader,
+    bool isTier1Code = false;
+#ifdef FEATURE_TIERED_COMPILATION
+    PrepareCodeConfig* config = m_pPrepareCodeConfig;
+    _ASSERTE(config != nullptr);
+
+    // The JIT may change the requested optimization level before allocMem, but
+    // the VM updates the NativeCodeVersion's tier only after the JIT completes.
+    // Use the requested tier here and account for a switch to MinOpt separately.
+    NativeCodeVersion::OptimizationTier optimizationTier =
+        config->GetCodeVersion().GetOptimizationTier();
+    isTier1Code =
+        !config->JitSwitchedToMinOpt() &&
+        (optimizationTier == NativeCodeVersion::OptimizationTier1 ||
+         optimizationTier == NativeCodeVersion::OptimizationTier1OSR);
+#endif // FEATURE_TIERED_COMPILATION
+
+    m_jitManager->AllocCode<CodeHeader>(m_pMethodBeingCompiled, totalSize.Value(), GetReserveForJumpStubs(), alignment, isTier1Code, &m_CodeHeader,
         &m_CodeHeaderRW, &m_codeWriteBufferSize, &m_pCodeHeap, &m_pRealCodeHeader, m_totalUnwindInfos);
 
     m_moduleBase = m_pCodeHeap->GetModuleBase();
@@ -13986,7 +14015,9 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             PCODE portableEntryPoint = ftn->GetPortableEntryPoint();
             _ASSERTE(portableEntryPoint != NULL);
-            PortableEntryPoint::SetInterpreterData(portableEntryPoint, ret);
+            // The deadlock-aware lock may allow multiple compilations of this method.
+            // The first compilation to publish interpreter data must win.
+            PortableEntryPoint::SetInterpreterDataInterlocked(portableEntryPoint, reinterpret_cast<void*>(PCODEToPINSTR(ret)));
             ret = portableEntryPoint;
 
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -15447,7 +15478,7 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
     // Resumption stubs are uniquely coupled to the code version (since the
     // continuation is), so we need to make sure we always keep calling the
     // same version here.
-    PrepareCodeConfig* config = GetThread()->GetCurrentPrepareCodeConfig();
+    PrepareCodeConfig* config = m_pPrepareCodeConfig;
     NativeCodeVersion ncv = config->GetCodeVersion();
     if (ncv.GetOptimizationTier() == NativeCodeVersion::OptimizationTier1OSR)
     {

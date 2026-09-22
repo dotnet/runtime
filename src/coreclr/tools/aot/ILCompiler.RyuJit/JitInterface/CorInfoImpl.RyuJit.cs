@@ -533,6 +533,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
@@ -802,14 +805,8 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_INTERFACELOOKUP_FOR_SLOT:
                     return _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("RhpResolveInterfaceMethodFast"u8));
 
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL:
-                    id = ReadyToRunHelper.TypeHandleToRuntimeType;
-                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_GETREFANY:
                     id = ReadyToRunHelper.GetRefAny;
-                    break;
-                case CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL:
-                    id = ReadyToRunHelper.TypeHandleToRuntimeTypeHandle;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID:
@@ -2506,11 +2503,6 @@ namespace Internal.JitInterface
             pInfo->tlsRootObject = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             pInfo->threadStaticBaseSlow = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.GetInlinedThreadStaticBaseSlow));
             pInfo->tlsGetAddrFtnPtr = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternFunctionSymbol(new Utf8String("__tls_get_addr"u8)));
-        }
-
-        private CORINFO_WASM_TYPE_SYMBOL_STRUCT_* getWasmTypeSymbol(CorInfoWasmType* types, nuint typesSize)
-        {
-            throw new NotImplementedException();
         }
 
 #pragma warning disable CA1822 // Mark members as static

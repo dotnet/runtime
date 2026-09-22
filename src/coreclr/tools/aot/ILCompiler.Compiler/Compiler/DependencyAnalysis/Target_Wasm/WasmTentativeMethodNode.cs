@@ -1,9 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 using ILCompiler.DependencyAnalysis.Wasm;
+using ILCompiler.ObjectWriter.WasmInstructions;
+
+using Internal.JitInterface;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -11,7 +12,16 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            WasmFuncType signature = WasmLowering.GetSignature(Method).FuncType;
+            ISymbolNode target = GetTarget(factory);
+
+            encoder.FunctionBody = new WasmFunctionBody(
+                signature,
+                [
+                    Local.Get(0),
+                    ControlFlow.Call(target),
+                    ControlFlow.Unreachable,
+                ]);
         }
     }
 }
