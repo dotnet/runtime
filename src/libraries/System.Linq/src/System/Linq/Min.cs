@@ -102,24 +102,20 @@ namespace System.Linq
                 if (~Vector128.Equals(best, best) == Vector128<T>.Zero)
                 {
                     ReadOnlySpan<T> remaining = span.Slice(Vector128<T>.Count);
-                    bool sawNaN = false;
+                    Vector128<T> nanFound = Vector128<T>.Zero;
 
+                    // Accumulating the NaN lanes and testing once keeps the loop branchless.
                     while (remaining.Length >= Vector128<T>.Count)
                     {
                         Vector128<T> current = Vector128.Create(remaining);
-                        if (~Vector128.Equals(current, current) != Vector128<T>.Zero)
-                        {
-                            sawNaN = true;
-                            break;
-                        }
-
+                        nanFound |= ~Vector128.Equals(current, current);
                         best = Vector128.Min(best, current);
                         remaining = remaining.Slice(Vector128<T>.Count);
                     }
 
                     int index = span.Length - remaining.Length;
 
-                    if (!sawNaN)
+                    if (nanFound == Vector128<T>.Zero)
                     {
                         value = best.GetElement(0);
                         for (int lane = 1; lane < Vector128<T>.Count; lane++)
