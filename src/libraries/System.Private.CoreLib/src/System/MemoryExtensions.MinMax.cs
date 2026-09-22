@@ -260,6 +260,28 @@ namespace System
                 Vector128<T> best = Vector128.Create(data);
                 data = data.Slice(Vector128<T>.Count);
 
+                // Compare four vectors per iteration against independent accumulators, so that one
+                // iteration's compare doesn't have to complete before the next one starts.
+                if (data.Length > 4 * Vector128<T>.Count)
+                {
+                    Vector128<T> best1 = best;
+                    Vector128<T> best2 = best;
+                    Vector128<T> best3 = best;
+
+                    do
+                    {
+                        best = TMinMax.Compare(best, Vector128.Create(data));
+                        best1 = TMinMax.Compare(best1, Vector128.Create(data.Slice(Vector128<T>.Count)));
+                        best2 = TMinMax.Compare(best2, Vector128.Create(data.Slice(2 * Vector128<T>.Count)));
+                        best3 = TMinMax.Compare(best3, Vector128.Create(data.Slice(3 * Vector128<T>.Count)));
+
+                        data = data.Slice(4 * Vector128<T>.Count);
+                    }
+                    while (data.Length > 4 * Vector128<T>.Count);
+
+                    best = TMinMax.Compare(TMinMax.Compare(best, best1), TMinMax.Compare(best2, best3));
+                }
+
                 while (data.Length > Vector128<T>.Count)
                 {
                     best = TMinMax.Compare(best, Vector128.Create(data));
@@ -272,6 +294,28 @@ namespace System
                 ReadOnlySpan<T> data = span;
                 Vector256<T> best = Vector256.Create(data);
                 data = data.Slice(Vector256<T>.Count);
+
+                // Compare four vectors per iteration against independent accumulators, so that one
+                // iteration's compare doesn't have to complete before the next one starts.
+                if (data.Length > 4 * Vector256<T>.Count)
+                {
+                    Vector256<T> best1 = best;
+                    Vector256<T> best2 = best;
+                    Vector256<T> best3 = best;
+
+                    do
+                    {
+                        best = TMinMax.Compare(best, Vector256.Create(data));
+                        best1 = TMinMax.Compare(best1, Vector256.Create(data.Slice(Vector256<T>.Count)));
+                        best2 = TMinMax.Compare(best2, Vector256.Create(data.Slice(2 * Vector256<T>.Count)));
+                        best3 = TMinMax.Compare(best3, Vector256.Create(data.Slice(3 * Vector256<T>.Count)));
+
+                        data = data.Slice(4 * Vector256<T>.Count);
+                    }
+                    while (data.Length > 4 * Vector256<T>.Count);
+
+                    best = TMinMax.Compare(TMinMax.Compare(best, best1), TMinMax.Compare(best2, best3));
+                }
 
                 while (data.Length > Vector256<T>.Count)
                 {
@@ -288,6 +332,28 @@ namespace System
                 ReadOnlySpan<T> data = span;
                 Vector512<T> best = Vector512.Create(data);
                 data = data.Slice(Vector512<T>.Count);
+
+                // Compare four vectors per iteration against independent accumulators, so that one
+                // iteration's compare doesn't have to complete before the next one starts.
+                if (data.Length > 4 * Vector512<T>.Count)
+                {
+                    Vector512<T> best1 = best;
+                    Vector512<T> best2 = best;
+                    Vector512<T> best3 = best;
+
+                    do
+                    {
+                        best = TMinMax.Compare(best, Vector512.Create(data));
+                        best1 = TMinMax.Compare(best1, Vector512.Create(data.Slice(Vector512<T>.Count)));
+                        best2 = TMinMax.Compare(best2, Vector512.Create(data.Slice(2 * Vector512<T>.Count)));
+                        best3 = TMinMax.Compare(best3, Vector512.Create(data.Slice(3 * Vector512<T>.Count)));
+
+                        data = data.Slice(4 * Vector512<T>.Count);
+                    }
+                    while (data.Length > 4 * Vector512<T>.Count);
+
+                    best = TMinMax.Compare(TMinMax.Compare(best, best1), TMinMax.Compare(best2, best3));
+                }
 
                 while (data.Length > Vector512<T>.Count)
                 {
