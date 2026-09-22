@@ -2070,6 +2070,7 @@ struct CORINFO_FPSTRUCT_LOWERING
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
 #define CORINFO_String_MaxLength                          0x3FFFFFDF
 
+#define OFFSETOF__CORINFO_Object__data                    SIZEOF__CORINFO_Object
 #define OFFSETOF__CORINFO_Array__length                   SIZEOF__CORINFO_Object
 #ifdef TARGET_64BIT
 #define OFFSETOF__CORINFO_Array__data                     (OFFSETOF__CORINFO_Array__length + sizeof(uint32_t) /* length */ + sizeof(uint32_t) /* alignpad */)

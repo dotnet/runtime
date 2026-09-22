@@ -397,10 +397,10 @@ namespace System.Runtime.CompilerServices
         }
 #endif
 
+        [Intrinsic]
         [DebuggerHidden]
         [DebuggerStepThrough]
-        internal static ref byte GetRawData(this object obj) =>
-            ref Unsafe.As<RawData>(obj).Data;
+        internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
 
         [DebuggerHidden]
         [DebuggerStepThrough]

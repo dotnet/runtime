@@ -2590,6 +2590,7 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetRawData:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation:
