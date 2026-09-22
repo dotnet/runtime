@@ -17,7 +17,8 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandlerTest_Http1(ITestOutputHelper output) : base(output) { }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+[ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi))]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
