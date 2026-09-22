@@ -2788,7 +2788,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
-                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    // generate blendvp*, which requires XMM0 specifically for the mask register.
                     buildInternalFloatRegisterDefForNode(intrinsicTree,
                                                          m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                                              ? lowSIMDRegs()
