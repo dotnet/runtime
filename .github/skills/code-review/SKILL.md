@@ -35,7 +35,7 @@ Before analyzing anything, collect as much relevant **code** context as you can.
 6. **Git history**: Check recent commits to the changed files (`git log --oneline -20 -- <file>`). Look for related recent changes, reverts, or prior attempts to fix the same problem. This reveals whether the area is actively churning, whether a similar fix was tried and reverted, or whether the current change conflicts with recent work.
 7. **Detect new public API surface**: Check whether the PR introduces new public API surface. Look for:
    - Changes to `ref/` assembly source files (the strongest signal — these define the public API contract)
-   - New `public` members (methods, properties, types, enum values) in `src/` files
+   - New `public` members (methods, properties, types, enum values) in `src/` files under src/libraries directory. In particular files under various `tools/` subdirectories are tools, and their APIs are not public APIs even if they may be `public` in C# source code.
    - Note whether new public API was detected. If it was, you **MUST** load and execute the API approval verification procedure during Step 4. Read the file `.github/skills/code-review/api-approval-check.md` (relative to the repository root) and follow its instructions. Do not skip this step — it is blocking.
 
 ### Step 2: Discover Area-Specific Agents

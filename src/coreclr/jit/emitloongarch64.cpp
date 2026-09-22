@@ -15,6 +15,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #pragma hdrstop
 #endif
 
+#include <inttypes.h>
+
 #if defined(TARGET_LOONGARCH64)
 
 /*****************************************************************************/
@@ -2092,6 +2094,11 @@ void emitter::emitIns_R_AI(instruction  ins,
         id->idOpSize(EA_PTRSIZE);
     }
 
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idMemCookie = targetHandle;
+    id->idDebugOnlyInfo()->idFlags     = gtFlags;
+#endif
+
     id->idAddr()->iiaAddr = (BYTE*)addr;
     id->idCodeSize(8);
 
@@ -3031,7 +3038,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of fwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of fwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3119,7 +3126,7 @@ AGAIN:
             }
             if (EMITVERBOSE)
             {
-                printf("Estimate of bwd jump [%08X/%03u]: %04X -> %04X = %04X\n", dspPtr(jmp),
+                printf("Estimate of bwd jump [%p/%03u]: %04X -> %04X = %04X\n", (void*)dspPtr(jmp),
                        jmp->idDebugOnlyInfo()->idNum, srcInstrOffs, dstOffs, jmpDist);
             }
 #endif // DEBUG_EMIT
@@ -3879,6 +3886,12 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     // for stores, but we ignore those cases here.)
     if (emitInsMayWriteToGCReg(ins)) // True if "id->idIns()" writes to a register than can hold GC ref.
     {
+        if (INS_OPTS_RELOC == id->idInsOpt())
+        {
+            // For relocation case (pcalau12i + addi.d/ld.d), the GCReg should update after calculation completed.
+            dstRW2 += 4;
+        }
+
         // We assume that "idReg1" is the primary destination register for all instructions
         if (id->idGCref() != GCT_NONE)
         {
@@ -4044,7 +4057,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
 #ifdef DEBUG
     if (m_compiler->opts.disAddr)
     {
-        printf("  0x%llx", insAdr);
+        printf("  %p", (void*)insAdr);
     }
 
     printf("  ");
@@ -4118,7 +4131,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else if (ins == INS_jirl)
             {
-                printf("%s, %s, 0x%lx\n", RegNames[regd], RegNames[regj], offs16);
+                printf("%s, %s, 0x%x\n", RegNames[regd], RegNames[regj], offs16);
             }
             // only for prolog
             else if (emitPrologEndPos.Valid() && ((unsigned)(addr - emitCodeBlock) < emitPrologEndPos.CodeOffset(this)))
@@ -4134,7 +4147,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, %s, 0x%llx\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
+                printf("%s, %s, 0x%" PRIx64 "\n", RegNames[regj], RegNames[regd], (int64_t)insAdr + offs16);
             }
             return;
         }
@@ -4157,7 +4170,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("%s, 0x%llx\n", RegNames[regj], (int64_t)insAdr + tmp);
+                printf("%s, 0x%" PRIx64 "\n", RegNames[regj], (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4187,7 +4200,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
             }
             else
             {
-                printf("0x%llx\n", (int64_t)insAdr + tmp);
+                printf("0x%" PRIx64 "\n", (int64_t)insAdr + tmp);
             }
             return;
         }
@@ -4265,7 +4278,7 @@ void emitter::emitDisInsName(code_t code, const BYTE* addr, instrDesc* id)
         {
             int offs21 = (((code >> 10) & 0xffff) | ((code & 0x1f) << 16)) << 11;
             offs21 >>= 9;
-            printf("fcc%d, 0x%llx\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
+            printf("fcc%d, 0x%" PRIx64 "\n", (code >> 5) & 0x7, (int64_t)insAdr + offs21);
             return;
         }
         case DF_F_GR:

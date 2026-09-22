@@ -95,7 +95,19 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(m_compiler->gsGlobalSecurityCookieAddr || m_compiler->gsGlobalSecurityCookieVal);
 
-    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall);
+    GenTreeCall* tailCallNode = nullptr;
+    if (tailCall)
+    {
+        assert(m_compiler->compCurBB != nullptr);
+        GenTree* lastNode = m_compiler->compCurBB->lastNode();
+        if (lastNode->OperIs(GT_CALL))
+        {
+            tailCallNode = lastNode->AsCall();
+            assert(tailCallNode->IsFastTailCall());
+        }
+    }
+
+    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall, tailCallNode);
     assert(tempRegs != RBM_NONE);
     regNumber regGSCheck = genFirstRegNumFromMask(tempRegs);
 
@@ -5345,7 +5357,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_WRITE_BARRIER_SRC
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else
     {
@@ -5754,8 +5766,6 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
-    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize
@@ -6074,6 +6084,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         params.sigInfo = call->callSig;
     }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);
@@ -7247,7 +7258,6 @@ int CodeGenInterface::genSPtoFPdelta() const
 
 int CodeGenInterface::genTotalFrameSize() const
 {
-    assert(!IsUninitialized(m_compiler->compCalleeRegsPushed));
 
     int totalFrameSize = m_compiler->compCalleeRegsPushed * REGSIZE_BYTES + m_compiler->compLclFrameSize;
 
@@ -8322,7 +8332,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
         {
             if (temp == ptab)
             {
-                printf("\nMethod info block - ptrtab [%u bytes]:", ptrMapSize);
+                printf("\nMethod info block - ptrtab [%zu bytes]:", ptrMapSize);
                 printf("\n    %04X: %*c", i & ~0xF, 3 * (i & 0xF), ' ');
             }
             else
@@ -8349,7 +8359,7 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned            codeSize,
         InfoHdr     dumpHeader;
 
         printf("GC Info for method %s\n", m_compiler->info.compFullName);
-        printf("GC info size = %3u\n", m_compiler->compInfoBlkSize);
+        printf("GC info size = %3zu\n", m_compiler->compInfoBlkSize);
 
         size = gcInfo.gcInfoBlockHdrDump(base, &dumpHeader, &methodSize);
         // printf("size of header encoding is %3u\n", size);

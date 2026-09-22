@@ -237,7 +237,6 @@ public:
         {
             WRAPPER(THROWS);
             WRAPPER(GC_NOTRIGGER);
-            INJECT_FAULT(return NULL;);
         }
         CONTRACTL_END
 
@@ -297,7 +296,6 @@ public:
         {
             WRAPPER(THROWS);
             WRAPPER(GC_NOTRIGGER);
-            INJECT_FAULT(return NULL;);
         }
         CONTRACTL_END
 
@@ -435,7 +433,6 @@ public:
         {
             WRAPPER(THROWS);
             WRAPPER(GC_NOTRIGGER);
-            INJECT_FAULT(return FALSE;);
         }
         CONTRACTL_END
 

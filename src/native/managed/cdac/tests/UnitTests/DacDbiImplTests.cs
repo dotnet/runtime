@@ -38,7 +38,7 @@ public unsafe class DacDbiImplTests
             builder.AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion));
             configure(loader, builder);
         });
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
         return (dacDbi, target);
     }
 
@@ -50,7 +50,7 @@ public unsafe class DacDbiImplTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(mockThread)
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         int hr = dacDbi.IsThreadSuspendedOrHijacked(0, null);
 
@@ -70,7 +70,7 @@ public unsafe class DacDbiImplTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(mockThread)
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         Interop.BOOL result = Interop.BOOL.TRUE;
 
         int hr = dacDbi.IsThreadSuspendedOrHijacked(ThreadAddress, &result);
@@ -84,7 +84,7 @@ public unsafe class DacDbiImplTests
     {
         MockTarget.Architecture architecture = new() { IsLittleEndian = true, Is64Bit = true };
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture).Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.TRUE));
         Assert.Equal(System.HResults.S_OK, dacDbi.DacSetTargetConsistencyChecks(Interop.BOOL.FALSE));
@@ -327,7 +327,7 @@ public unsafe class DacDbiImplTests
             .AddGlobals((Constants.Globals.CorDBDefaultEnCFunctionVersion, CorDBDefaultEnCFunctionVersion))
             .AddMockContract(mockLoader)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     private static (DacDbiImpl DacDbi, TestPlaceholderTarget Target) CreateDacDbiWithExceptionMT(
@@ -340,7 +340,7 @@ public unsafe class DacDbiImplTests
         builder.AddMockContract(mockObject);
         builder.AddMockContract(mockRts);
         var target = builder.Build();
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
         return (dacDbi, target);
     }
 
@@ -706,7 +706,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(loader)
             .AddMockContract(ecma)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -888,7 +888,7 @@ public unsafe class DacDbiImplTests
             .AddGlobalStrings((Constants.Globals.Architecture, targetArch))
             .AddContract<IRuntimeInfo>(version: "c1")
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
 
         IPlatformAgnosticContext destinationContext = IPlatformAgnosticContext.GetContextForPlatform(target);
         IPlatformAgnosticContext sourceContext = IPlatformAgnosticContext.GetContextForPlatform(target);
@@ -1014,7 +1014,7 @@ public unsafe class DacDbiImplTests
             .AddContract<IRuntimeInfo>(version: "c1")
             .AddMockContract(mockThread)
             .Build();
-        var dacDbi = new DacDbiImpl(target, legacyObj: null);
+        var dacDbi = new DacDbiImpl(target, legacyObj: null, new());
 
         IPlatformAgnosticContext ctx = IPlatformAgnosticContext.GetContextForPlatform(target);
         ctx.RawContextFlags = 0;
@@ -1052,7 +1052,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockThread)
             .Build();
 
-        return (new DacDbiImpl(target, legacyObj: null), target);
+        return (new DacDbiImpl(target, legacyObj: null, new()), target);
     }
 
     private delegate void GetStackLimitDataCallback(TargetPointer threadPointer, out TargetPointer stackBase, out TargetPointer stackLimit, out TargetPointer frameAddress);
@@ -1083,7 +1083,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(codeVersions)
             .AddMockContract(new Mock<IPlatformMetadata>())
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -1337,7 +1337,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockCodeVersions)
             .AddMockContract(mockReJIT)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     private static Mock<ILoader> SetupMockLoader(TargetPointer modulePtr, uint methodTk, TargetPointer methodDesc)
@@ -1508,7 +1508,7 @@ public unsafe class DacDbiImplTests
             builder.AddMockContract(mockThread);
         }
 
-        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null);
+        var dacDbi = new DacDbiImpl(builder.Build(), legacyObj: null, new());
 
         DacDbiMonitorLockInfo result;
         int hr = dacDbi.GetThreadOwningMonitorLock(ObjectAddr, &result);
@@ -1569,7 +1569,7 @@ public unsafe class DacDbiImplTests
             .AddContract<IThread>(version: "c1")
             .AddContract<IStackWalk>(version: "c1");
         TestPlaceholderTarget target = targetBuilder.Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         return (dacDbi, thread, frameBuilder);
     }
 
@@ -1693,7 +1693,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(gcInfo)
             .AddMockContract(new Mock<ILoader>())
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         StackWalkHandleData handleData = new(stackWalk.Object, default);
         handleData.Reset([], isFirst: true);
         nuint stackWalkHandle = handleData.GetHandle();
@@ -1931,7 +1931,7 @@ public unsafe class DacDbiImplTests
             .AddMockContract(mockLoader)
             .AddMockContract(mockEcmaMetadata)
             .Build();
-        return new DacDbiImpl(target, legacyObj: null);
+        return new DacDbiImpl(target, legacyObj: null, new());
     }
 
     [Theory]
@@ -2018,7 +2018,7 @@ public unsafe class DacDbiImplTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void HasReadWriteMetadata_NullOutput_ReturnsError(MockTarget.Architecture arch)
     {
-        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null);
+        DacDbiImpl dacDbi = new(new TestPlaceholderTarget.Builder(arch).Build(), legacyObj: null, new());
 
         int hr = dacDbi.HasReadWriteMetadata(0x1000, null);
 
@@ -2057,7 +2057,7 @@ public unsafe class DacDbiImplTests
             .AddTypes(types)
             .AddContract<IEcmaMetadata>(version: "c1")
             .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
         Interop.BOOL result = Interop.BOOL.TRUE;
 
         int hr = dacDbi.HasReadWriteMetadata(readOnlyPEAssembly.Address, &result);

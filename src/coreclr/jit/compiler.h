@@ -21,6 +21,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #define _COMPILER_H_
 /*****************************************************************************/
 
+#include <minipal/types.h>
 #include "jit.h"
 #include "opcode.h"
 #include "varset.h"
@@ -1516,8 +1517,10 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
-    CHECK_LINKED_LOCALS = 1 << 8, // check linked list of locals
-    CHECK_FG_INIT_BLOCK = 1 << 9, // flow graph has an init block
+    CHECK_LINKED_LOCALS    = 1 << 8,  // check linked list of locals
+    CHECK_FG_INIT_BLOCK    = 1 << 9,  // flow graph has an init block
+    CHECK_LIR_UNUSED_VALUES = 1 << 10, // LIR values with no user are marked as unused
+    CHECK_IR_RELAXED       = 1 << 11, // allow and count extra IR flags
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -2015,6 +2018,9 @@ struct NaturalLoopIterInfo
 {
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
+
+    // The local that the limit depends on, or BAD_VAR_NUM for a constant limit.
+    unsigned LimitVar = BAD_VAR_NUM;
 
 #ifdef DEBUG
     // Tree that initializes induction variable outside the loop.
@@ -2840,6 +2846,9 @@ struct HWIntrinsicInfo;
 
 class Compiler
 {
+#ifdef DEBUG
+    friend class FindNonInlineCandidateVisitor;
+#endif
     friend class emitter;
     friend class UnwindInfo;
     friend class UnwindFragmentInfo;
@@ -4056,6 +4065,8 @@ public:
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
     bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
 
+    GenTree* gtExtractSideEffectsFromUnusedNode(GenTree* node);
+
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
@@ -4240,13 +4251,6 @@ public:
         WALK_SKIP_SUBTREES,
         WALK_ABORT
     };
-    struct fgWalkData;
-    typedef fgWalkResult(fgWalkPreFn)(GenTree** pTree, fgWalkData* data);
-    typedef fgWalkResult(fgWalkPostFn)(GenTree** pTree, fgWalkData* data);
-
-    static fgWalkPreFn gtMarkColonCond;
-    static fgWalkPreFn gtClearColonCond;
-
     struct FindLinkData
     {
         GenTree*  nodeToFind;
@@ -4255,7 +4259,6 @@ public:
     };
 
     FindLinkData gtFindLink(Statement* stmt, GenTree* node);
-    bool gtHasCatchArg(GenTree* tree);
 
     typedef ArrayStack<GenTree*> GenTreeStack;
 
@@ -4450,6 +4453,7 @@ public:
     // mechanism passes the address of the return address to a runtime helper
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar = BAD_VAR_NUM;
+    unsigned lvaSecretStubArg = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg = BAD_VAR_NUM;
@@ -4873,14 +4877,8 @@ public:
     void lvaAllocOutgoingArgSpaceVar(); // Set up lvaOutgoingArgSpaceVar
 
 #ifdef DEBUG
-    struct lvaStressLclFldArgs
-    {
-        Compiler* m_compiler;
-        bool      m_bFirstPass;
-    };
-
-    static fgWalkPreFn lvaStressLclFldCB;
-    void               lvaStressLclFld();
+    fgWalkResult lvaStressLclFldNode(GenTree** pTree, bool bFirstPass);
+    void         lvaStressLclFld();
     unsigned lvaStressLclFldPadding(unsigned lclNum);
 
     void lvaDispVarSet(VARSET_VALARG_TP set, VARSET_VALARG_TP allVars);
@@ -5526,6 +5524,8 @@ protected:
 #endif // TARGET_ARM64
 
 #endif // FEATURE_HW_INTRINSICS
+    GenTree* evalVectorCount(CORINFO_CLASS_HANDLE vectorHandle, var_types simdBaseType);
+
     GenTree* impArrayAccessIntrinsic(CORINFO_CLASS_HANDLE clsHnd,
                                      CORINFO_SIG_INFO*    sig,
                                      int                  memberRef,
@@ -5552,6 +5552,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6123,6 +6124,12 @@ public:
                         // since fgMorphTree can be called from several places
 
     bool fgGlobalMorphDone = false;
+
+#ifdef DEBUG
+    // Retyping implicit byref parameters temporarily leaves existing local field
+    // accesses described using their pre-retyping struct types.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -6906,6 +6913,8 @@ public:
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
 
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
+
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
     bool fgOptimizeBranch(BasicBlock* bJump);
@@ -6983,9 +6992,6 @@ public:
 #endif // DEBUG
 #endif // TARGET_WASM
 
-    // method that returns if you should split here
-    typedef bool(fgSplitPredicate)(GenTree* tree, GenTree* parent, fgWalkData* data);
-
     PhaseStatus fgSetBlockOrder();
     bool fgHasCycleWithoutGCSafePoint();
 
@@ -7042,24 +7048,23 @@ public:
     void fgDumpBlockMemorySsaIn(BasicBlock* block);
     void fgDumpBlockMemorySsaOut(BasicBlock* block);
 
-    static fgWalkPreFn fgStress64RsltMulCB;
-    void               fgStress64RsltMul();
-    void               fgDebugCheckUpdate();
+    void fgStress64RsltMul();
+    void fgDebugCheckUpdate();
 
     void fgDebugCheckBBNumIncreasing();
     void fgDebugCheckBBlist(bool checkBBNum = false, bool checkBBRefs = true);
     void fgDebugCheckBlockLinks();
     void fgDebugCheckInitBB();
-    void fgDebugCheckLinks(bool morphTrees = false);
-    void fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees);
+    void fgDebugCheckLinks();
+    void fgDebugCheckStmtsList(BasicBlock* block);
     void fgDebugCheckNodeLinks(BasicBlock* block, Statement* stmt);
     void fgDebugCheckLinkedLocals();
     void fgDebugCheckNodesUniqueness();
     void fgDebugCheckLoops();
     void fgDebugCheckSsa();
 
-    void fgDebugCheckTypes(GenTree* tree);
-    void fgDebugCheckFlags(GenTree* tree, BasicBlock* block);
+    void fgDebugCheckType(GenTree* node);
+    void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
     void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
@@ -7077,41 +7082,6 @@ public:
     static bool fgProfileWeightsConsistentOrSmall(weight_t weight1, weight_t weight2, weight_t epsilon = 1e-4);
 
     static GenTree* fgGetFirstNode(GenTree* tree);
-
-    //--------------------- Walking the trees in the IR -----------------------
-
-    struct fgWalkData
-    {
-        Compiler*     m_compiler;
-        fgWalkPreFn*  wtprVisitorFn;
-        fgWalkPostFn* wtpoVisitorFn;
-        void*         pCallbackData; // user-provided data
-        GenTree*      parent;        // parent of current node, provided to callback
-        bool          wtprLclsOnly;  // whether to only visit lclvar nodes
-#ifdef DEBUG
-        bool printModified; // callback can use this
-#endif
-    };
-
-    fgWalkResult fgWalkTreePre(GenTree**    pTree,
-                               fgWalkPreFn* visitor,
-                               void*        pCallBackData = nullptr,
-                               bool         lclVarsOnly   = false,
-                               bool         computeStack  = false);
-
-    fgWalkResult fgWalkTree(GenTree**     pTree,
-                            fgWalkPreFn*  preVisitor,
-                            fgWalkPostFn* postVisitor,
-                            void*         pCallBackData = nullptr);
-
-    void fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData);
-
-    //----- Postorder
-
-    fgWalkResult fgWalkTreePost(GenTree**     pTree,
-                                fgWalkPostFn* visitor,
-                                void*         pCallBackData = nullptr,
-                                bool          computeStack  = false);
 
 #ifdef DEBUG
     void fgInvalidateBBLookup();
@@ -7376,7 +7346,6 @@ private:
     void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
 #if DEBUG
     void fgNoteNonInlineCandidate(Statement* stmt, GenTreeCall* call);
-    static fgWalkPreFn fgFindNonInlineCandidate;
 #endif
     GenTree* fgOptimizeDelegateConstructor(GenTreeCall*            call,
                                            CORINFO_CONTEXT_HANDLE* ExactContextHnd,
@@ -7598,10 +7567,7 @@ private:
     GenTree* gtNewContinuationMemberIndir(const struct ContinuationMember& member, var_types type);
 
 #ifdef DEBUG
-    static fgWalkPreFn fgDebugCheckInlineCandidates;
-
-    void               CheckNoTransformableIndirectCallsRemain();
-    static fgWalkPreFn fgDebugCheckForTransformableIndirectCalls;
+    void CheckNoTransformableIndirectCallsRemain();
 #endif
 
     PhaseStatus fgPromoteStructs();
@@ -7649,6 +7615,7 @@ private:
     GenTree* gtFindNodeInTree(GenTree* tree, Predicate predicate);
 
     bool gtTreeContainsOper(GenTree* tree, genTreeOps op);
+    bool gtHasCatchArg(GenTree* tree);
     ExceptionSetFlags gtCollectExceptions(GenTree* tree);
 
 public:
@@ -8286,6 +8253,8 @@ public:
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
+    bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
@@ -8375,7 +8344,7 @@ public:
                                            GenTree*    nullCheckTree,
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
-    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
+    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary);
 
     PhaseStatus optInductionVariables();
 
@@ -8422,7 +8391,11 @@ public:
     bool                  optRedundantRelop(BasicBlock* const block);
     bool                  optRedundantDominatingBranch(BasicBlock* const block);
     bool                  optRedundantBranch(BasicBlock* const block);
-    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadDom(BasicBlock* const block,
+                                           BasicBlock* const domBlock,
+                                           bool              domIsSameRelop,
+                                           ValueNum          domCmpExcVN,
+                                           ValueNum          treeExcVN);
     bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
@@ -8757,7 +8730,10 @@ public:
 
         bool IsConstantInt32Assertion() const
         {
-            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
+            // Note the O2K_CONST_INT payload is an ssize_t, so it may hold a TYP_LONG constant that
+            // does not fit into an int32. Callers assume an int32-sized constant, so require that here.
+            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) &&
+                   FitsIn<int>(GetOp2().GetIntConstant());
         }
 
         bool CanPropLclVar() const
@@ -9216,8 +9192,12 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(const Compiler* comp,
+                                                      VNFunc          relop,
+                                                      ValueNum        op1VN,
+                                                      ValueNum        checkedBndVN,
+                                                      int             cns,
+                                                      bool            isVNNeverNegative = false)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
@@ -9229,7 +9209,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal    = cns;
-            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
+            dsc.m_op2.m_isVNNeverNegative = isVNNeverNegative || comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -9274,8 +9254,6 @@ public:
     };
 
 protected:
-    static fgWalkPreFn optVNAssertionPropCurStmtVisitor;
-
     bool optLocalAssertionProp;  // indicates that we are performing local assertion prop
     bool optAssertionPropagated; // set to true if we modified the trees
     bool optAssertionPropagatedCurrentStmt;
@@ -9452,19 +9430,18 @@ public:
         }
     };
 
-    bool optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
-    bool optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
-    bool optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
-    bool optExtractSpanIndex(GenTree* tree, SpanIndex* result);
-    bool optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
-    bool optReconstructArrIndex(GenTree* tree, ArrIndex* result);
-    bool optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
-    static fgWalkPreFn optCanOptimizeByLoopCloningVisitor;
-    fgWalkResult       optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
-    bool               optObtainLoopCloningOpts(LoopCloneContext* context);
-    bool               optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
-    bool               optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
-    bool               optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
+    bool         optIsStackLocalInvariant(FlowGraphNaturalLoop* loop, unsigned lclNum);
+    bool         optCloningHeuristic(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    bool         optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool         optExtractSpanIndex(GenTree* tree, SpanIndex* result);
+    bool         optReconstructArrIndexHelp(GenTree* tree, ArrIndex* result, unsigned lhsNum, bool* topLevelIsFinal);
+    bool         optReconstructArrIndex(GenTree* tree, ArrIndex* result);
+    bool         optIdentifyLoopOptInfo(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    fgWalkResult optCanOptimizeByLoopCloning(GenTree* tree, LoopCloneVisitorInfo* info);
+    bool         optObtainLoopCloningOpts(LoopCloneContext* context);
+    bool         optIsLoopClonable(FlowGraphNaturalLoop* loop, LoopCloneContext* context);
+    bool         optCheckLoopCloningGDVTestProfitable(GenTreeOp* guard, LoopCloneVisitorInfo* info);
+    bool         optIsHandleOrIndirOfHandle(GenTree* tree, GenTreeFlags handleType);
 
     static bool optLoopCloningEnabled();
 
@@ -9677,8 +9654,6 @@ public:
     // Get the offset of a MDArray's lower bound for a given dimension.
     static unsigned eeGetMDArrayLowerBoundOffset(unsigned rank, unsigned dimension);
 
-    CORINFO_CONST_LOOKUP eeConvertToLookup(void* value, void* pValue);
-
     // Returns the page size for the target machine as reported by the EE.
     target_size_t eeGetPageSize()
     {
@@ -9880,6 +9855,47 @@ public:
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
+
+    template <typename Functor>
+    bool eeRunFunctorWithErrorTrap(Functor f)
+    {
+        return eeRunWithErrorTrap<Functor>(
+            [](Functor* pf) {
+            (*pf)();
+        },
+            &f);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // eeRunExtraSuperPmiQueries: make JIT-EE queries whose only purpose is to enrich
+    //    the recorded SuperPMI method context (see JitConfig.EnableExtraSuperPmiQueries).
+    //
+    // Type parameters:
+    //    Functor - callable that makes the queries
+    //
+    // Arguments:
+    //    f - the functor
+    //
+    // Notes:
+    //    Extra queries must be observationally inert: enabling them must not change what
+    //    the JIT compiles. That is not automatic, because the EE may fail a query that the
+    //    JIT would never have made on its own. An AOT compiler in particular throws for a
+    //    handle it cannot embed, such as a type outside the current version bubble, and an
+    //    escaping exception would abort the enclosing inline or method. The collection
+    //    would then import less IL than a later replay does, and the context it recorded
+    //    would be missing the data that replay goes on to ask for.
+    //
+    //    Wrap only EE queries. JIT work must stay outside, because the trap does not
+    //    discriminate by origin: a noway_assert, NOMEM or assert raised inside the functor
+    //    would be quietly absorbed instead of failing the method.
+    //
+    template <typename Functor>
+    void eeRunExtraSuperPmiQueries(Functor f)
+    {
+        eeRunFunctorWithErrorTrap(f);
+    }
+#endif // DEBUG
 
     // Utility functions
 
@@ -10329,9 +10345,20 @@ public:
     // Get the number of elements of baseType of SIMD vector given by its size and baseType
     static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
 
-    // Get the number of bytes in a System.Numeric.Vector<T> for the current compilation.
+    // ---------------------------------------------------------------------------------------
+    // getCompileTimeVectorTByteLength: Get the number of bytes in a System.Numeric.Vector<T>
+    //                                  for the current compilation, compatible with available
+    //                                  InstructionSet flags.
+    //
     // Note - cannot be used for System.Runtime.Intrinsic
-    uint32_t getVectorTByteLength()
+    //
+    // Returns:
+    //   The size in bytes of Vector<T>.
+    //   Arm64: This function may return the sentinel value SIZE_UNKNOWN to indicate that the
+    //          size of Vector<T> is not known at compile time. A compilation in JIT mode may
+    //          call getRuntimeVectorTByteLength to determine the actual size instead.
+    //
+    uint32_t getCompileTimeVectorTByteLength()
     {
         // We need to report the ISA dependency to the VM so that scenarios
         // such as R2R work correctly for larger vector sizes, so we always
@@ -10383,9 +10410,32 @@ public:
         // TODO-WASM: Verify if we need a more complicated condition here
         return FP_REGSIZE_BYTES;
 #else
-        assert(!"getVectorTByteLength() unimplemented on target arch");
+        assert(!"getCompileTimeVectorTByteLength() unimplemented on target arch");
         unreached();
 #endif
+    }
+
+    //-------------------------------------------------------------------------------------
+    // getRuntimeVectorTByteLength: Get the size of Vector<T> that will be used at runtime
+    //
+    // Returns:
+    //   The size of Vector<T> as resolved in EE metadata.
+    //
+    uint32_t getRuntimeVectorTByteLength()
+    {
+        uint32_t compileTimeLength = getCompileTimeVectorTByteLength();
+
+        if (compileTimeLength == SIZE_UNKNOWN)
+        {
+            assert(!IsAot());
+            CORINFO_CLASS_HANDLE vectorT = info.compCompHnd->getBuiltinClass(CLASSID_NUMERICS_VECTORT);
+            assert(vectorT != NULL);
+            uint32_t size = info.compCompHnd->getClassSize(vectorT);
+            assert(size > 0);
+            return size;
+        }
+
+        return compileTimeLength;
     }
 
     // The minimum and maximum possible number of bytes in a SIMD vector.
@@ -10774,7 +10824,11 @@ public:
         // and it works better for small sizes.
         if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
         {
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * (type == UnrollKind::ProfiledMemmove ? 4 : 2);
+#else
             threshold = maxRegSize * 2;
+#endif
         }
 
         return threshold;
@@ -11676,7 +11730,7 @@ public:
 
     const char* devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DETAIL detail);
 
-    const char* printfAlloc(const char* format, ...);
+    const char* printfAlloc(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
 
     void convertUtf16ToUtf8ForPrinting(const char16_t* utf16Src, size_t utf16SrcLen, char* utf8Dst, size_t utf8DstLen);
 
@@ -11713,6 +11767,7 @@ public:
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(RANDOM_INLINE)                                                              \
+        STRESS_MODE(ASYNC_INLINE) /* Randomly inline async callees that may suspend */          \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
@@ -11783,10 +11838,10 @@ public:
 
     // Is general runtime async inlining being stressed, i.e. are async callees inlined
     // with a decaying random probability? See AsyncStressPolicy.
-    static bool compAsyncInliningStress()
-    {
-        return JitConfig.JitStressAsyncInlining() != 0;
-    }
+    bool compAsyncInliningStress();
+
+    // External seed for the random decisions made when stressing general async inlining.
+    static int compAsyncInliningStressSeed();
 
     bool compPromoteFewerStructs(unsigned lclNum);
 
@@ -12308,9 +12363,6 @@ public:
     bool compDonotInline();
 
 #ifdef DEBUG
-    // Get the default fill char value we randomize this value when JitStress is enabled.
-    static unsigned char compGetJitDefaultFill(Compiler* comp);
-
     const char* compLocalVarName(unsigned varNum, unsigned offs);
     VarName     compVarName(regNumber reg, bool isFloatReg = false);
 #endif // DEBUG
@@ -12485,7 +12537,7 @@ public:
     // more log information
 
     // levels are currently unused: #define JITDUMP(level,...)                     ();
-    void JitLogEE(unsigned level, const char* fmt, ...);
+    void JitLogEE(unsigned level, const char* fmt, ...) MINIPAL_ATTR_FORMAT_PRINTF(3, 4);
 
     bool compDebugBreak;
 
@@ -13240,42 +13292,51 @@ public:
     }
 };
 
-template <bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
-class GenericTreeWalker final
-    : public GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+class MarkColonCondVisitor final : public GenTreeVisitor<MarkColonCondVisitor>
 {
 public:
     enum
     {
-        ComputeStack      = false,
-        DoPreOrder        = doPreOrder,
-        DoPostOrder       = doPostOrder,
-        DoLclVarsOnly     = doLclVarsOnly,
-        UseExecutionOrder = useExecutionOrder,
+        DoPreOrder = true,
     };
 
-private:
-    Compiler::fgWalkData* m_walkData;
+    MarkColonCondVisitor(Compiler* compiler)
+        : GenTreeVisitor<MarkColonCondVisitor>(compiler)
+    {
+    }
 
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        (*use)->gtFlags |= GTF_COLON_COND;
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
+
+class ClearColonCondVisitor final : public GenTreeVisitor<ClearColonCondVisitor>
+{
 public:
-    GenericTreeWalker(Compiler::fgWalkData* walkData)
-        : GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
-              walkData->m_compiler)
-        , m_walkData(walkData)
+    enum
     {
-        assert(walkData != nullptr);
+        DoPreOrder = true,
+    };
+
+    ClearColonCondVisitor(Compiler* compiler)
+        : GenTreeVisitor<ClearColonCondVisitor>(compiler)
+    {
     }
 
-    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
-        m_walkData->parent = user;
-        return m_walkData->wtprVisitorFn(use, m_walkData);
-    }
+        GenTree* tree = *use;
 
-    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
-    {
-        m_walkData->parent = user;
-        return m_walkData->wtpoVisitorFn(use, m_walkData);
+        if (tree->OperIs(GT_COLON))
+        {
+            // Nodes below this will be conditionally executed.
+            return fgWalkResult::WALK_SKIP_SUBTREES;
+        }
+
+        tree->gtFlags &= ~GTF_COLON_COND;
+        return fgWalkResult::WALK_CONTINUE;
     }
 };
 

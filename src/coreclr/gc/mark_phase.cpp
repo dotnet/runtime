@@ -1156,7 +1156,8 @@ void gc_heap::equalize_promoted_bytes(int condemned_gen_number)
                     }
                 }
                 assert (start_region);
-                dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %zx", start_region));
+                dprintf (3, ("making sure heap %d gen %d has at least one region by adding region %p",
+                    hp->heap_number, gen_idx, start_region));
                 heap_segment_next (start_region) = nullptr;
 
                 assert (heap_segment_heap (start_region) == nullptr && hp != nullptr);

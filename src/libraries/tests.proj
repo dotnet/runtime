@@ -87,6 +87,14 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134200 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Dynamic.Runtime.Tests\System.Dynamic.Runtime.Tests.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134261 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
@@ -394,9 +402,6 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TestNativeAot)' == 'true' and '$(RunDisabledNativeAotTests)' != 'true'">
-    <!-- https://github.com/dotnet/runtime/issues/129832 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/FunctionalTests/Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
-
     <!-- https://github.com/dotnet/runtime/issues/119380 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.SourceGeneration.Tests\System.Text.Json.SourceGeneration.Roslyn4.4.Tests.csproj"
                       Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'" />
@@ -663,9 +668,6 @@
   <ItemGroup Condition="'$(TestReadyToRun)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/95928 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions/tests/FunctionalTests/System.Text.RegularExpressions.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/129832 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting/tests/FunctionalTests/Microsoft.Extensions.Hosting.Functional.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

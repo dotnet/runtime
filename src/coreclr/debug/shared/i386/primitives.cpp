@@ -38,8 +38,8 @@ void CORDbgCopyThreadContext(BYTE* pDstBuffer, ULONG32 cbDst, const BYTE* pSrcBu
                            ? sizeof(DT_CONTEXT) : offsetof(DT_CONTEXT, ExtendedRegisters)));
 
     LOG((LF_CORDB, LL_INFO1000000,
-         "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
-         pDst, dstFlags, pSrc, srcFlags));
+         "CP::CTC: pDst=%p dstFlags=0x%x, pSrc=%p srcFlags=0x%x\n",
+         (void*)pDst, dstFlags, (void*)pSrc, srcFlags));
 
     if ((dstFlags & srcFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
         CopyContextChunk(&(pDst->Ebp), &(pSrc->Ebp), pDst->ExtendedRegisters,

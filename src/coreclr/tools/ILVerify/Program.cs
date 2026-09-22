@@ -5,11 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using static System.Console;
@@ -239,30 +242,136 @@ namespace ILVerify
             int methodCounter = 0;
             int verifiedTypeCounter = 0;
             int typeCounter = 0;
+            bool metadataReferencesOnly = Get(_command.MetadataReferencesOnly);
 
-            VerifyMethods(peReader, module, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
-            VerifyTypes(peReader, module, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
+            List<VerificationResult> metadataErrors = new(_verifier.VerifyMetadataReferences(peReader));
+            VerifyMetadataReferences(
+                metadataErrors,
+                path,
+                ref numErrors);
+
+            if (!metadataReferencesOnly)
+            {
+                VerifyMethods(peReader, module, metadataErrors, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
+                VerifyTypes(peReader, module, metadataErrors, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
+            }
 
             if (numErrors > 0)
                 WriteLine(numErrors + " Error(s) Verifying " + path);
+            else if (metadataReferencesOnly)
+                WriteLine("All metadata references in " + path + " resolved.");
             else
-                WriteLine("All Classes and Methods in " + path + " Verified.");
+                WriteLine("All types and methods in " + path + " verified.");
 
             if (Get(_command.Statistics))
             {
-                WriteLine($"Types found: {typeCounter}");
-                WriteLine($"Types verified: {verifiedTypeCounter}");
+                if (!metadataReferencesOnly)
+                {
+                    WriteLine($"Types found: {typeCounter}");
+                    WriteLine($"Types verified: {verifiedTypeCounter}");
 
-                WriteLine($"Methods found: {methodCounter}");
-                WriteLine($"Methods verified: {verifiedMethodCounter}");
+                    WriteLine($"Methods found: {methodCounter}");
+                    WriteLine($"Methods verified: {verifiedMethodCounter}");
+                }
             }
 
             return numErrors;
         }
 
-        private void VerifyMethods(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedMethodCounter, ref int methodCounter)
+        private void VerifyMetadataReferences(
+            IEnumerable<VerificationResult> metadataErrors,
+            string path,
+            ref int numErrors)
         {
-            numErrors = 0;
+            var reportedMetadataResolutionErrors = new Dictionary<ExceptionStringID, List<string[]>>();
+
+            foreach (VerificationResult result in metadataErrors)
+            {
+                if (IsDuplicateMetadataResolutionError(result, reportedMetadataResolutionErrors))
+                {
+                    continue;
+                }
+
+                if (ShouldIgnoreVerificationResult(result))
+                {
+                    if (_verbose)
+                    {
+                        Write("Ignoring ");
+                        PrintVerifyMetadataReferencesResult(result, path);
+                    }
+                }
+                else
+                {
+                    PrintVerifyMetadataReferencesResult(result, path);
+                    numErrors++;
+                }
+            }
+        }
+
+        private static bool IsDuplicateMetadataResolutionError(
+            VerificationResult result,
+            Dictionary<ExceptionStringID, List<string[]>> reportedErrors)
+        {
+            if (result.ExceptionID is not ExceptionStringID exceptionID ||
+                !Verifier.CanDeduplicateMetadataResolutionException(exceptionID) ||
+                !result.TryGetArgumentValue(nameof(TypeSystemException.Arguments), out string[] arguments))
+            {
+                return false;
+            }
+
+            if (!reportedErrors.TryGetValue(exceptionID, out List<string[]> reportedArguments))
+            {
+                reportedArguments = new List<string[]>();
+                reportedErrors.Add(exceptionID, reportedArguments);
+            }
+
+            foreach (string[] previousArguments in reportedArguments)
+            {
+                if (arguments.SequenceEqual(previousArguments))
+                {
+                    return true;
+                }
+            }
+
+            reportedArguments.Add(arguments);
+            return false;
+        }
+
+        private void PrintVerifyMetadataReferencesResult(VerificationResult result, string path)
+        {
+            Write("[MD]: Error [");
+            if (result.Code != VerifierError.None)
+            {
+                Write(result.Code);
+            }
+            else
+            {
+                Write(result.ExceptionID);
+            }
+            Write("]: [");
+            Write(path);
+            Write("]");
+
+            if (Get(_command.Tokens))
+            {
+                Write("[token 0x");
+                Write(MetadataTokens.GetToken(result.MetadataHandle).ToString("X8"));
+                Write("]");
+            }
+
+            Write(" ");
+            WriteLine(result.Message);
+        }
+
+        private void VerifyMethods(
+            PEReader peReader,
+            EcmaModule module,
+            IReadOnlyCollection<VerificationResult> metadataErrors,
+            string path,
+            ref int numErrors,
+            ref int verifiedMethodCounter,
+            ref int methodCounter)
+        {
             verifiedMethodCounter = 0;
             methodCounter = 0;
 
@@ -281,7 +390,7 @@ namespace ILVerify
 
                 if (verifying)
                 {
-                    var results = _verifier.Verify(peReader, methodHandle);
+                    var results = _verifier.Verify(peReader, methodHandle, metadataErrors);
                     foreach (var result in results)
                     {
                         if (ShouldIgnoreVerificationResult(result))
@@ -306,7 +415,14 @@ namespace ILVerify
             }
         }
 
-        private void VerifyTypes(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedTypeCounter, ref int typeCounter)
+        private void VerifyTypes(
+            PEReader peReader,
+            EcmaModule module,
+            IReadOnlyCollection<VerificationResult> metadataErrors,
+            string path,
+            ref int numErrors,
+            ref int verifiedTypeCounter,
+            ref int typeCounter)
         {
             MetadataReader metadataReader = peReader.GetMetadataReader();
 
@@ -322,7 +438,7 @@ namespace ILVerify
                 }
                 if (verifying)
                 {
-                    var results = _verifier.Verify(peReader, typeHandle);
+                    var results = _verifier.Verify(peReader, typeHandle, false, metadataErrors);
                     foreach (VerificationResult result in results)
                     {
                         if (ShouldIgnoreVerificationResult(result))

@@ -26,29 +26,29 @@ void CORDbgCopyThreadContext(BYTE* pDstBuffer, ULONG32 cbDst, const BYTE* pSrcBu
     DWORD dstFlags = pDst->ContextFlags;
     DWORD srcFlags = pSrc->ContextFlags;
     LOG((LF_CORDB, LL_INFO1000000,
-         "CP::CTC: pDst=0x%08x dstFlags=0x%x, pSrc=0x%08x srcFlags=0x%x\n",
-         pDst, dstFlags, pSrc, srcFlags));
+         "CP::CTC: pDst=%p dstFlags=0x%x, pSrc=%p srcFlags=0x%x\n",
+         (void*)pDst, dstFlags, (void*)pSrc, srcFlags));
 
     if ((dstFlags & srcFlags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: RA: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Ra, pSrc->Ra, CONTEXT_CONTROL));
+             pDst->Ra, pSrc->Ra, static_cast<unsigned int>(CONTEXT_CONTROL)));
         pDst->Ra = pSrc->Ra;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: SP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Sp, pSrc->Sp, CONTEXT_CONTROL));
+             pDst->Sp, pSrc->Sp, static_cast<unsigned int>(CONTEXT_CONTROL)));
         pDst->Sp = pSrc->Sp;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: FP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Fp, pSrc->Fp, CONTEXT_CONTROL));
+             pDst->Fp, pSrc->Fp, static_cast<unsigned int>(CONTEXT_CONTROL)));
         pDst->Fp = pSrc->Fp;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: PC: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Pc, pSrc->Pc, CONTEXT_CONTROL));
+             pDst->Pc, pSrc->Pc, static_cast<unsigned int>(CONTEXT_CONTROL)));
         pDst->Pc = pSrc->Pc;
     }
 
@@ -60,7 +60,7 @@ void CORDbgCopyThreadContext(BYTE* pDstBuffer, ULONG32 cbDst, const BYTE* pSrcBu
                          CONTEXT_INTEGER);
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: T0: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->R0, pSrc->R0, CONTEXT_INTEGER));
+             pDst->R0, pSrc->R0, static_cast<unsigned int>(CONTEXT_INTEGER)));
         pDst->R0 = pSrc->R0;
     }
 

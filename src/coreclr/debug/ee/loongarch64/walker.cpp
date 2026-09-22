@@ -96,7 +96,8 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         }
 
         walk = WALK_BRANCH; //B
-        LOG((LF_CORDB, LL_INFO100000, "LoongArch64Walker::Decoded opcode: %x to B %x \n", opcode, offset));
+        LOG((LF_CORDB, LL_INFO100000, "LoongArch64Walker::Decoded opcode: %x to B %zx \n",
+             opcode, static_cast<size_t>(offset)));
 
         return TRUE;
     }
@@ -116,7 +117,8 @@ BOOL  NativeWalker::DecodePCRelativeBranchInst(PT_CONTEXT context, const PRD_TYP
         }
 
         walk = WALK_CALL;
-        LOG((LF_CORDB, LL_INFO100000, "LoongArch64Walker::Decoded opcode: %x to BL %x \n", opcode, offset));
+        LOG((LF_CORDB, LL_INFO100000, "LoongArch64Walker::Decoded opcode: %x to BL %zx \n",
+             opcode, static_cast<size_t>(offset)));
 
         return TRUE;
     }

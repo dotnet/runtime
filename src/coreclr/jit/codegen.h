@@ -220,6 +220,8 @@ protected:
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
+    void                       genEmitLocalGet(regNumber reg, var_types expectedType);
     void                       genEmitNullCheck(regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
@@ -246,7 +248,7 @@ public:
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
-    void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
@@ -1011,6 +1013,7 @@ protected:
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void ClearUnusedMaskBits(regNumber maskReg, uint32_t count);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
@@ -1174,6 +1177,9 @@ protected:
     void genConsumeOperands(GenTreeOp* tree);
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
+#endif
+#ifdef DEBUG
+    void genCheckTailCallEpilogRegisters(GenTreeCall* call);
 #endif
     void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);

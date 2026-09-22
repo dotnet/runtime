@@ -316,12 +316,6 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     return is_read_write_able_directory(extraction_dir);
 }
 
-bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
-{
-    // No support for global directories in Unix.
-    return false;
-}
-
 pal::string_t pal::get_dotnet_self_registered_config_location(pal::architecture arch)
 {
     pal::string_t config_location = _X("/etc/dotnet");

@@ -835,6 +835,8 @@ mono_test_init_symbols (void)
 
 }
 
+typedef void (*VoidVoidCallback) (void);
+
 #ifndef TARGET_WASM
 
 static jmp_buf test_jmp_buf;
@@ -846,8 +848,6 @@ mono_test_longjmp_callback (uint32_t gchandle)
 	test_gchandle = gchandle;
 	longjmp (test_jmp_buf, 1);
 }
-
-typedef void (*VoidVoidCallback) (void);
 
 LIBTEST_API void STDCALL
 mono_test_setjmp_and_call (VoidVoidCallback managedCallback, intptr_t *out_handle)

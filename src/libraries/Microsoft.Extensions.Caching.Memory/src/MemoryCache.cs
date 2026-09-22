@@ -122,6 +122,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal void SetEntry(CacheEntry entry)
         {
+            // Size accounting adds entry.Size here and subtracts it again on removal, so the entry must
+            // already be frozen against further size changes by the time it gets here. CacheEntry.Dispose
+            // sets _isDisposed before calling in, which is what makes those two reads agree.
+            Debug.Assert(entry.IsDisposed, "Entry must be disposed before it is committed to the cache.");
+
             if (_disposed)
             {
                 // No-op instead of throwing since this is called during CacheEntry.Dispose
@@ -930,8 +935,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? []
                         : new Measurement<long>[]
                         {
-                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.type", "hit")),
-                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.type", "miss")),
+                            new(stats.TotalHits, cacheNameTag, new("dotnet.cache.request.result", "hit")),
+                            new(stats.TotalMisses, cacheNameTag, new("dotnet.cache.request.result", "miss")),
                         };
                 },
                 unit: "{request}",
@@ -982,8 +987,8 @@ namespace Microsoft.Extensions.Caching.Memory
                         ? [new Measurement<long>(size, cacheNameTag)]
                         : [];
                 },
-                unit: "By",
-                description: "Estimated size of the cache.");
+                unit: "1",
+                description: "Estimated size of the cache in application-defined units.");
         }
 
         private sealed class SharedMeter : Meter

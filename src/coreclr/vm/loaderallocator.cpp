@@ -78,6 +78,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
+    m_pLastUsedOptimizedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
@@ -757,7 +758,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
     return FALSE;
 } // LoaderAllocator::Destroy
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1072,7 +1073,6 @@ void LoaderAllocator::ActivateManagedTracking()
     {
         NOTHROW;
         GC_TRIGGERS;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1581,7 +1581,6 @@ DispatchToken LoaderAllocator::GetDispatchToken(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
 #ifdef FAT_DISPATCH_TOKENS
@@ -1684,7 +1683,6 @@ EEMarshalingData *LoaderAllocator::GetMarshalingData()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1802,7 +1800,6 @@ STRINGREF *LoaderAllocator::GetStringObjRefPtrFromUnicodeString(EEStringData *pS
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStringData));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1821,7 +1818,6 @@ void LoaderAllocator::LazyInitStringLiteralMap()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1860,7 +1856,6 @@ STRINGREF *LoaderAllocator::IsStringInterned(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1879,7 +1874,6 @@ STRINGREF *LoaderAllocator::GetOrInternString(STRINGREF *pString)
         THROWS;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pString));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
     if (m_pStringLiteralMap == NULL)
@@ -1899,7 +1893,6 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanup(OBJECTHANDLE objHandle)
         MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -1919,7 +1912,6 @@ void AssemblyLoaderAllocator::RegisterHandleForCleanupLocked(OBJECTHANDLE objHan
         MODE_COOPERATIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(objHandle));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2056,7 +2048,6 @@ void LoaderAllocator::RegisterFailedTypeInitForCleanup(ListLockEntry *pListLockE
         MODE_ANY;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pListLockEntry));
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2129,7 +2120,6 @@ ComCallWrapperCache * LoaderAllocator::GetComCallWrapperCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2154,7 +2144,6 @@ UMEntryThunkCache *LoaderAllocator::GetUMEntryThunkCache()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2267,7 +2256,6 @@ PTR_OnStackReplacementManager LoaderAllocator::GetOnStackReplacementManager()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2295,7 +2283,6 @@ PTR_AsyncContinuationsManager LoaderAllocator::GetAsyncContinuationsManager()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -2319,7 +2306,6 @@ void LoaderAllocator::AllocateBytesForStaticVariables(DynamicStaticsInfo* pStati
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2393,7 +2379,6 @@ void LoaderAllocator::AllocateGCHandlesBytesForStaticVariables(DynamicStaticsInf
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2455,7 +2440,6 @@ bool LoaderAllocator::InsertObjectIntoFieldWithLifetimeOfCollectibleLoaderAlloca
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         //REENTRANT
     }
     CONTRACTL_END;

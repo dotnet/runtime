@@ -88,7 +88,7 @@ public unsafe class FunctionTableAccessTests
     public void QueryInterfaceFromIXCLRDataProcess_ReturnsProcess3(MockTarget.Architecture arch)
     {
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).Build();
-        SOSDacImpl impl = new(target, legacyObj: null);
+        SOSDacImpl impl = new(target, legacyObj: null, new());
         void* process = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
 
         try
@@ -147,10 +147,32 @@ public unsafe class FunctionTableAccessTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void QueryInterfaceFromIXCLRDataProcess_ForMemoryRegionEnumeration_ReturnsNoInterface(MockTarget.Architecture arch)
+    {
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).Build();
+        SOSDacImpl impl = new(target, legacyObj: null, new());
+        void* process = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
+
+        try
+        {
+            Guid iid = typeof(ICLRDataEnumMemoryRegions).GUID;
+            int hr = Marshal.QueryInterface((nint)process, in iid, out nint memoryRegions);
+
+            Assert.Equal(HResults.COR_E_INVALIDCAST, hr);
+            Assert.Equal(nint.Zero, memoryRegions);
+        }
+        finally
+        {
+            ComInterfaceMarshaller<IXCLRDataProcess>.Free(process);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void GetFunctionTable_NullOutParameters_ReturnsEPointer(MockTarget.Architecture arch)
     {
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch).Build();
-        IXCLRDataProcess3 process3 = new SOSDacImpl(target, legacyObj: null);
+        IXCLRDataProcess3 process3 = new SOSDacImpl(target, legacyObj: null, new());
 
         uint bytesNeeded = uint.MaxValue;
         uint entries = uint.MaxValue;
@@ -170,7 +192,7 @@ public unsafe class FunctionTableAccessTests
     public void GetFunctionTable_SizeQuery_ReturnsRequiredSize(string version, MockTarget.Architecture arch)
     {
         FunctionTableScenario scenario = BuildScenario(version, arch);
-        IXCLRDataProcess3 process3 = new SOSDacImpl(scenario.Target, legacyObj: null);
+        IXCLRDataProcess3 process3 = new SOSDacImpl(scenario.Target, legacyObj: null, new());
 
         uint bytesNeeded = 0;
         uint entries = 0;
@@ -186,7 +208,7 @@ public unsafe class FunctionTableAccessTests
     public void GetFunctionTable_BufferTooSmall_ReturnsSFalseAndWritesNothing(string version, MockTarget.Architecture arch)
     {
         FunctionTableScenario scenario = BuildScenario(version, arch);
-        IXCLRDataProcess3 process3 = new SOSDacImpl(scenario.Target, legacyObj: null);
+        IXCLRDataProcess3 process3 = new SOSDacImpl(scenario.Target, legacyObj: null, new());
 
         uint bytesNeeded = 0;
         uint entries = 0;
@@ -210,7 +232,7 @@ public unsafe class FunctionTableAccessTests
     public void GetFunctionTable_SufficientBuffer_WritesEntries(string version, MockTarget.Architecture arch)
     {
         FunctionTableScenario scenario = BuildScenario(version, arch);
-        IXCLRDataProcess3 process3 = new SOSDacImpl(scenario.Target, legacyObj: null);
+        IXCLRDataProcess3 process3 = new SOSDacImpl(scenario.Target, legacyObj: null, new());
 
         uint bytesNeeded = 0;
         uint entries = 0;
@@ -266,7 +288,7 @@ public unsafe class FunctionTableAccessTests
         MockDynamicFunctionTable table = emBuilder.AddDynamicFunctionTable(0xbaad_0000, emBuilder.EEJitManagerAddress);
         Target target = ExecutionManagerTests.CreateTarget(emBuilder);
 
-        IXCLRDataProcess3 process3 = new SOSDacImpl(target, legacyObj: null);
+        IXCLRDataProcess3 process3 = new SOSDacImpl(target, legacyObj: null, new());
 
         uint bytesNeeded = uint.MaxValue;
         uint entries = uint.MaxValue;
