@@ -4975,6 +4975,8 @@ namespace System
         public static bool IsMacCatalystVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
         public static bool IsMacOS() { throw null; }
         public static bool IsMacOSVersionAtLeast(int major, int minor = 0, int build = 0) { throw null; }
+        public static bool IsOpenBSD() { throw null; }
+        public static bool IsOpenBSDVersionAtLeast(int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsOSPlatform(string platform) { throw null; }
         public static bool IsOSPlatformVersionAtLeast(string platform, int major, int minor = 0, int build = 0, int revision = 0) { throw null; }
         public static bool IsTvOS() { throw null; }
@@ -18057,7 +18059,7 @@ namespace System
     {
         public NewsStyleUriParser() { }
     }
-    public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
+    public partial class Uri : System.IEquatable<System.Uri>, System.IFormattable, System.IParsable<System.Uri>, System.ISpanFormattable, System.Runtime.Serialization.ISerializable
     {
         public static readonly string SchemeDelimiter;
         public static readonly string UriSchemeData;
@@ -18154,6 +18156,8 @@ namespace System
         [System.ObsoleteAttribute("Uri.Parse has been deprecated and is not supported.")]
         protected virtual void Parse() { }
         string System.IFormattable.ToString(string? format, System.IFormatProvider? formatProvider) { throw null; }
+        static System.Uri System.IParsable<System.Uri>.Parse(string s, System.IFormatProvider? provider) { throw null; }
+        static bool System.IParsable<System.Uri>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         bool System.ISpanFormattable.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
@@ -18222,6 +18226,7 @@ namespace System
     public partial struct UriCreationOptions
     {
         private int _dummyPrimitive;
+        public bool AllowImplicitFilePaths { readonly get { throw null; } set { } }
         public bool DangerousDisablePathAndQueryCanonicalization { readonly get { throw null; } set { } }
     }
     public enum UriFormat

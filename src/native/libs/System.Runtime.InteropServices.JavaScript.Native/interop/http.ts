@@ -94,6 +94,12 @@ export function httpAbort(controller: HttpController): void {
     }
 }
 
+// Never resolves; rejects as soon as the fetch does. A failed fetch abandons the readable end of the
+// TransformStream, which leaves an in-flight write() pending forever, so writes race against this.
+function rejectWhenFetchFails(controller: HttpController): Promise<never> {
+    return controller.responsePromise!.then(() => new Promise<never>(() => { }), (err) => { throw err; });
+}
+
 export function httpTransformStreamWrite(controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
     commonAsserts(controller);
     dotnetAssert.check(bufferLength > 0, "expected bufferLength > 0");
@@ -105,7 +111,7 @@ export function httpTransformStreamWrite(controller: HttpController, bufferPtr: 
         dotnetAssert.check(controller.responsePromise, "expected fetch promise");
         try {
             await controller.streamWriter.ready;
-            await controller.streamWriter.write(copy);
+            await Promise.race([controller.streamWriter.write(copy), rejectWhenFetchFails(controller)]);
         } catch (ex) {
             throw new Error("BrowserHttpWriteStream.Rejected");
         }
@@ -119,7 +125,7 @@ export function httpTransformStreamClose(controller: HttpController): Controllab
         dotnetAssert.check(controller.responsePromise, "expected fetch promise");
         try {
             await controller.streamWriter.ready;
-            await controller.streamWriter.close();
+            await Promise.race([controller.streamWriter.close(), rejectWhenFetchFails(controller)]);
         } catch (ex) {
             throw new Error("BrowserHttpWriteStream.Rejected");
         }

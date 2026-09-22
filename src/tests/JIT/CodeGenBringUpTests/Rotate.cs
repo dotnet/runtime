@@ -209,6 +209,73 @@ public class Test_Rotate
         return (value << amount) | (value >> ((32 - amount) & 31));
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static uint rol32_checked(uint value, int amount)
+    {
+        return (value << (amount & 31)) | (value >> (checked(unchecked(-amount) + 32) & 31));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static uint ror32_checked(uint value, int amount)
+    {
+        return (value << checked(unchecked(-amount) + 32)) | (value >> amount);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static ulong rol64_checked(ulong value, int amount)
+    {
+        return (value >> (checked(unchecked(-amount) + 64) & 63)) | (value << (amount & 63));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static ulong ror64_checked(ulong value, int amount)
+    {
+        return (value >> amount) | (value << checked(unchecked(-amount) + 64));
+    }
+
+    [Theory]
+    [InlineData(int.MinValue, false, false)]
+    [InlineData(int.MinValue + 1, true, true)]
+    [InlineData(int.MinValue + 32, true, true)]
+    [InlineData(int.MinValue + 33, false, true)]
+    [InlineData(int.MinValue + 64, false, true)]
+    [InlineData(int.MinValue + 65, false, false)]
+    [InlineData(-1, false, false)]
+    [InlineData(0, false, false)]
+    [InlineData(1, false, false)]
+    [InlineData(31, false, false)]
+    [InlineData(32, false, false)]
+    [InlineData(63, false, false)]
+    [InlineData(64, false, false)]
+    [InlineData(int.MaxValue, false, false)]
+    public static void CheckedRotation(int amount, bool overflow32, bool overflow64)
+    {
+        const uint Value32 = 0x12345678;
+        const ulong Value64 = 0x123456789abcdef;
+
+        if (overflow32)
+        {
+            Assert.Throws<OverflowException>(() => rol32_checked(Value32, amount));
+            Assert.Throws<OverflowException>(() => ror32_checked(Value32, amount));
+        }
+        else
+        {
+            Assert.Equal(rol32(Value32, amount), rol32_checked(Value32, amount));
+            Assert.Equal(ror32(Value32, amount), ror32_checked(Value32, amount));
+        }
+
+        if (overflow64)
+        {
+            Assert.Throws<OverflowException>(() => rol64_checked(Value64, amount));
+            Assert.Throws<OverflowException>(() => ror64_checked(Value64, amount));
+        }
+        else
+        {
+            Assert.Equal(rol64(Value64, amount), rol64_checked(Value64, amount));
+            Assert.Equal(ror64(Value64, amount), ror64_checked(Value64, amount));
+        }
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static uint two_left_shifts(uint value, int amount)
     {

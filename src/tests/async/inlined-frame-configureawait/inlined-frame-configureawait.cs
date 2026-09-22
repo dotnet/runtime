@@ -10,6 +10,7 @@ using Xunit;
 // A frame that awaited with ConfigureAwait(false) does not want to be brought back onto
 // the SynchronizationContext that was current when it suspended. That has to hold for the
 // logical return of an inlined async frame too.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameConfigureAwait
 {
     private sealed class TrackingContext : SynchronizationContext

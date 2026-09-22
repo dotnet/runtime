@@ -14,6 +14,7 @@ using Xunit;
 // await has to take the enclosing frame's contexts, so that a suspension records that the
 // frame resumed. Getting that wrong leaves the enclosing frame believing it never resumed
 // and running its context handling again on stale state.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedAsyncVersionFrames
 {
     // Completes synchronously for even values and asynchronously for odd ones, so a loop

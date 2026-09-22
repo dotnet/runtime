@@ -1517,9 +1517,10 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
-    CHECK_LINKED_LOCALS = 1 << 8,  // check linked list of locals
-    CHECK_FG_INIT_BLOCK = 1 << 9,  // flow graph has an init block
+    CHECK_LINKED_LOCALS    = 1 << 8,  // check linked list of locals
+    CHECK_FG_INIT_BLOCK    = 1 << 9,  // flow graph has an init block
     CHECK_LIR_UNUSED_VALUES = 1 << 10, // LIR values with no user are marked as unused
+    CHECK_IR_RELAXED       = 1 << 11, // allow and count extra IR flags
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -2017,6 +2018,9 @@ struct NaturalLoopIterInfo
 {
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
+
+    // The local that the limit depends on, or BAD_VAR_NUM for a constant limit.
+    unsigned LimitVar = BAD_VAR_NUM;
 
 #ifdef DEBUG
     // Tree that initializes induction variable outside the loop.
@@ -4061,6 +4065,8 @@ public:
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
     bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
 
+    GenTree* gtExtractSideEffectsFromUnusedNode(GenTree* node);
+
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
                               GenTreeFlags GenTreeFlags = GTF_SIDE_EFFECT,
@@ -5546,6 +5552,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6117,6 +6124,12 @@ public:
                         // since fgMorphTree can be called from several places
 
     bool fgGlobalMorphDone = false;
+
+#ifdef DEBUG
+    // Retyping implicit byref parameters temporarily leaves existing local field
+    // accesses described using their pre-retyping struct types.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -6899,6 +6912,8 @@ public:
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
+
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
@@ -8238,6 +8253,8 @@ public:
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
+    bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
@@ -8327,7 +8344,7 @@ public:
                                            GenTree*    nullCheckTree,
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
-    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
+    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary);
 
     PhaseStatus optInductionVariables();
 
@@ -8374,7 +8391,11 @@ public:
     bool                  optRedundantRelop(BasicBlock* const block);
     bool                  optRedundantDominatingBranch(BasicBlock* const block);
     bool                  optRedundantBranch(BasicBlock* const block);
-    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadDom(BasicBlock* const block,
+                                           BasicBlock* const domBlock,
+                                           bool              domIsSameRelop,
+                                           ValueNum          domCmpExcVN,
+                                           ValueNum          treeExcVN);
     bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
@@ -8709,7 +8730,10 @@ public:
 
         bool IsConstantInt32Assertion() const
         {
-            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
+            // Note the O2K_CONST_INT payload is an ssize_t, so it may hold a TYP_LONG constant that
+            // does not fit into an int32. Callers assume an int32-sized constant, so require that here.
+            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) &&
+                   FitsIn<int>(GetOp2().GetIntConstant());
         }
 
         bool CanPropLclVar() const
@@ -9168,8 +9192,12 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(const Compiler* comp,
+                                                      VNFunc          relop,
+                                                      ValueNum        op1VN,
+                                                      ValueNum        checkedBndVN,
+                                                      int             cns,
+                                                      bool            isVNNeverNegative = false)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
@@ -9181,7 +9209,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal    = cns;
-            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
+            dsc.m_op2.m_isVNNeverNegative = isVNNeverNegative || comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -9827,6 +9855,47 @@ public:
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
+
+    template <typename Functor>
+    bool eeRunFunctorWithErrorTrap(Functor f)
+    {
+        return eeRunWithErrorTrap<Functor>(
+            [](Functor* pf) {
+            (*pf)();
+        },
+            &f);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // eeRunExtraSuperPmiQueries: make JIT-EE queries whose only purpose is to enrich
+    //    the recorded SuperPMI method context (see JitConfig.EnableExtraSuperPmiQueries).
+    //
+    // Type parameters:
+    //    Functor - callable that makes the queries
+    //
+    // Arguments:
+    //    f - the functor
+    //
+    // Notes:
+    //    Extra queries must be observationally inert: enabling them must not change what
+    //    the JIT compiles. That is not automatic, because the EE may fail a query that the
+    //    JIT would never have made on its own. An AOT compiler in particular throws for a
+    //    handle it cannot embed, such as a type outside the current version bubble, and an
+    //    escaping exception would abort the enclosing inline or method. The collection
+    //    would then import less IL than a later replay does, and the context it recorded
+    //    would be missing the data that replay goes on to ask for.
+    //
+    //    Wrap only EE queries. JIT work must stay outside, because the trap does not
+    //    discriminate by origin: a noway_assert, NOMEM or assert raised inside the functor
+    //    would be quietly absorbed instead of failing the method.
+    //
+    template <typename Functor>
+    void eeRunExtraSuperPmiQueries(Functor f)
+    {
+        eeRunFunctorWithErrorTrap(f);
+    }
+#endif // DEBUG
 
     // Utility functions
 
@@ -10755,7 +10824,11 @@ public:
         // and it works better for small sizes.
         if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
         {
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * (type == UnrollKind::ProfiledMemmove ? 4 : 2);
+#else
             threshold = maxRegSize * 2;
+#endif
         }
 
         return threshold;
@@ -11694,6 +11767,7 @@ public:
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(RANDOM_INLINE)                                                              \
+        STRESS_MODE(ASYNC_INLINE) /* Randomly inline async callees that may suspend */          \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
@@ -11764,10 +11838,10 @@ public:
 
     // Is general runtime async inlining being stressed, i.e. are async callees inlined
     // with a decaying random probability? See AsyncStressPolicy.
-    static bool compAsyncInliningStress()
-    {
-        return JitConfig.JitStressAsyncInlining() != 0;
-    }
+    bool compAsyncInliningStress();
+
+    // External seed for the random decisions made when stressing general async inlining.
+    static int compAsyncInliningStressSeed();
 
     bool compPromoteFewerStructs(unsigned lclNum);
 

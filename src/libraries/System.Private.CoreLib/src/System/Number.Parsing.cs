@@ -1065,29 +1065,17 @@ namespace System
                     return ParsingStatus.Failed;
                 }
 
-                ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+                int negativeSignLength = GetMatchingNegativeSignLength(valueTrim, info.NegativeSignTChar<TChar>(), info);
 
-                if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+                if (negativeSignLength != 0)
                 {
-                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSign.Length);
+                    ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSignLength);
                     elementsConsumed = value.Length - afterSign.Length;
 
                     if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                     {
                         result = TDecimal.Construct(TDecimal.NaN);
                         return ParsingStatus.OK;
-                    }
-
-                    if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')))
-                    {
-                        ReadOnlySpan<TChar> afterHyphen = valueTrim.Slice(1);
-                        elementsConsumed = value.Length - afterHyphen.Length;
-
-                        if (TryMatchSpecialValueSymbol(afterHyphen, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
-                        {
-                            result = TDecimal.Construct(TDecimal.NaN);
-                            return ParsingStatus.OK;
-                        }
                     }
                 }
 
@@ -1105,6 +1093,17 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             return !span.IsEmpty && (span[0] == c);
+        }
+
+        private static int GetMatchingNegativeSignLength<TChar>(ReadOnlySpan<TChar> value, ReadOnlySpan<TChar> negativeSign, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (SpanStartsWith(value, negativeSign, StringComparison.OrdinalIgnoreCase))
+            {
+                return negativeSign.Length;
+            }
+
+            return info.AllowHyphenDuringParsing() && SpanStartsWith(value, TChar.CastFrom('-')) ? 1 : 0;
         }
 
         internal static bool SpanStartsWith<TChar>(ReadOnlySpan<TChar> span, ReadOnlySpan<TChar> value, StringComparison comparisonType)
@@ -1233,7 +1232,7 @@ namespace System
             if ((styles & NumberStyles.AllowLeadingSign) != 0)
             {
                 ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
-                if (!negativeSign.IsEmpty && value.Slice(index).StartsWith(negativeSign))
+                if (!negativeSign.IsEmpty && value[index..].StartsWith(negativeSign))
                 {
                     isNegative = true;
                     index += negativeSign.Length;
@@ -1246,7 +1245,7 @@ namespace System
                 else
                 {
                     ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
-                    if (!positiveSign.IsEmpty && value.Slice(index).StartsWith(positiveSign))
+                    if (!positiveSign.IsEmpty && value[index..].StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
                     }
@@ -1324,9 +1323,13 @@ namespace System
             if ((styles & NumberStyles.AllowDecimalPoint) != 0 && index < value.Length)
             {
                 ReadOnlySpan<TChar> decimalSeparator = info.NumberDecimalSeparatorTChar<TChar>();
-                if (value.Slice(index).StartsWith(decimalSeparator))
+                ReadOnlySpan<TChar> remaining = value[index..];
+                int separatorLength = !decimalSeparator.IsEmpty && remaining.StartsWith(decimalSeparator)
+                    ? decimalSeparator.Length
+                    : MatchChars(remaining, 0, decimalSeparator);
+                if (separatorLength > 0)
                 {
-                    index += decimalSeparator.Length;
+                    index += separatorLength;
 
                     int fractionalPartStart = index;
                     while (index < value.Length)
@@ -1387,7 +1390,7 @@ namespace System
                 bool exponentIsNegative = false;
                 ReadOnlySpan<TChar> negSign = info.NegativeSignTChar<TChar>();
                 ReadOnlySpan<TChar> posSign = info.PositiveSignTChar<TChar>();
-                if (!negSign.IsEmpty && value.Slice(index).StartsWith(negSign))
+                if (!negSign.IsEmpty && value[index..].StartsWith(negSign))
                 {
                     exponentIsNegative = true;
                     index += negSign.Length;
@@ -1397,7 +1400,7 @@ namespace System
                     exponentIsNegative = true;
                     index++;
                 }
-                else if (!posSign.IsEmpty && value.Slice(index).StartsWith(posSign))
+                else if (!posSign.IsEmpty && value[index..].StartsWith(posSign))
                 {
                     index += posSign.Length;
                 }
@@ -1664,29 +1667,17 @@ namespace System
                 return false;
             }
 
-            ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
+            int negativeSignLength = GetMatchingNegativeSignLength(valueTrim, info.NegativeSignTChar<TChar>(), info);
 
-            if (SpanStartsWith(valueTrim, negativeSign, StringComparison.OrdinalIgnoreCase))
+            if (negativeSignLength != 0)
             {
-                ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSign.Length);
+                ReadOnlySpan<TChar> afterSign = valueTrim.Slice(negativeSignLength);
                 elementsConsumed = value.Length - afterSign.Length;
 
                 if (TryMatchSpecialValueSymbol(afterSign, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
                 {
                     result = TFloat.NaN;
                     return true;
-                }
-
-                if (info.AllowHyphenDuringParsing() && SpanStartsWith(valueTrim, TChar.CastFrom('-')))
-                {
-                    ReadOnlySpan<TChar> afterHyphen = valueTrim.Slice(1);
-                    elementsConsumed = value.Length - afterHyphen.Length;
-
-                    if (TryMatchSpecialValueSymbol(afterHyphen, nanSymbol, allowTrailingInvalid, ref elementsConsumed))
-                    {
-                        result = TFloat.NaN;
-                        return true;
-                    }
                 }
             }
 

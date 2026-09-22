@@ -178,9 +178,24 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
         public override string FormatErrorMessage(string name)
         {
+            // Preserve range validation before resolving ErrorMessageString.
+            // FormatMessage also initializes conversion for direct callers.
             SetupConversion();
 
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Minimum, Maximum);
+            return FormatMessage(ErrorMessageString, name);
+        }
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" />, <c>{1}</c> is replaced with <see cref="Minimum" />,
+        /// and <c>{2}</c> is replaced with <see cref="Maximum" />.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">The attribute is not configured with a valid range.</exception>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            SetupConversion();
+
+            return string.Format(CultureInfo.CurrentCulture, format, name, Minimum, Maximum);
         }
 
         /// <summary>

@@ -4495,6 +4495,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     bool v4 = gcDacVars->minor_version_number >= 4;
     bool v6 = gcDacVars->minor_version_number >= 6;
     bool v8 = gcDacVars->minor_version_number >= 8;
+    bool v9 = gcDacVars->minor_version_number >= 9;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -4526,7 +4527,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     // work differently than .Net SOS.  When making breaking changes here you may need to
     // find NativeAOT's equivalent of SOS_BREAKING_CHANGE_VERSION and increment it.
     gcDacVars->major_version_number = 2;
-    gcDacVars->minor_version_number = 8;
+    gcDacVars->minor_version_number = 9;
     if (v2)
     {
         gcDacVars->total_bookkeeping_elements = total_bookkeeping_elements;
@@ -4646,6 +4647,12 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     {
 #ifdef MULTIPLE_HEAPS
         gcDacVars->g_totalCpuCount = &::g_totalCpuCount;
+#endif // MULTIPLE_HEAPS
+    }
+    if (v9)
+    {
+#ifndef MULTIPLE_HEAPS
+        gcDacVars->card_table = &gc_heap::card_table;
 #endif // MULTIPLE_HEAPS
     }
 }
