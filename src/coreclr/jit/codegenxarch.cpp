@@ -381,7 +381,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val32.IsZero())
             {
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+                // VEX/EVEX 128-bit zeroing also clears the upper bits without dirtying upper vector state.
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
             {
@@ -400,13 +401,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val64.IsZero())
             {
-                // Use VEX version because it's smaller (for zmm0-zmm15) than EVEX to zero a zmm register and still
-                // zeros the entire register:
-                //
-                //   xorps zmm0, zmm0, zmm0 (6 bytes)
-                //   xorps ymm0, ymm0, ymm0 (4 bytes)
-                //
-                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_32BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
             {
@@ -3235,8 +3230,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
         unsigned  regSize   = m_compiler->roundDownSIMDSize(size);
-        // Use a 128-bit zeroing instruction to avoid dirtying upper vector state.
-        var_types loadType = src->IsIntegralConst(0) ? TYP_SIMD16 : m_compiler->getSIMDTypeForSize(regSize);
+        var_types loadType  = m_compiler->getSIMDTypeForSize(regSize);
         simd_t    vecCon;
         memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
         genSetRegToConst(srcXmmReg, loadType, &vecCon);
