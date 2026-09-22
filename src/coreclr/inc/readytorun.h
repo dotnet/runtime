@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MINOR_VERSION 0x0003
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -76,6 +76,7 @@
 // compiled with the GC mode transition verification scaffolding (and therefore emits
 // READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
+// R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
 
 struct READYTORUN_CORE_HEADER
 {
@@ -387,6 +388,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_CheckedWriteBarrier       = 0x31,
     READYTORUN_HELPER_ByRefWriteBarrier         = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
     READYTORUN_HELPER_BulkWriteBarrier          = 0x33,
+    READYTORUN_HELPER_BulkWriteBarrierSmall     = 0x34,
 
     // Array helpers
     READYTORUN_HELPER_Stelem_Ref                = 0x38,

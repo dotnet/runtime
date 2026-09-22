@@ -1038,6 +1038,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
@@ -2354,6 +2357,11 @@ namespace Internal.JitInterface
                 (_compilation.NodeFactory.Target.IsWasm &&
                     targetMethod.OwningType.IsInterface))
             {
+                if (!targetMethod.HasInstantiation)
+                {
+                    // If it is also a default interface method call, it should go through instantiating stub.
+                    useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
+                }
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
             }

@@ -91,6 +91,14 @@ export function http_wasm_abort (controller: HttpController): void {
     }
 }
 
+// Never resolves; rejects as soon as the fetch does. A failed fetch abandons the readable end of the
+// TransformStream, which leaves an in-flight write() pending forever, so writes race against this.
+function reject_when_fetch_fails (controller: HttpController): Promise<never> {
+    return controller.responsePromise!.then(() => new Promise<never>(() => { }), (err) => {
+        throw err;
+    });
+}
+
 export function http_wasm_transform_stream_write (controller: HttpController, bufferPtr: VoidPtr, bufferLength: number): ControllablePromise<void> {
     if (BuildConfiguration === "Debug") commonAsserts(controller);
     mono_assert(bufferLength > 0, "expected bufferLength > 0");
@@ -102,7 +110,7 @@ export function http_wasm_transform_stream_write (controller: HttpController, bu
         mono_assert(controller.responsePromise, "expected fetch promise");
         try {
             await controller.streamWriter.ready;
-            await controller.streamWriter.write(copy);
+            await Promise.race([controller.streamWriter.write(copy), reject_when_fetch_fails(controller)]);
         } catch (ex) {
             throw new Error("BrowserHttpWriteStream.Rejected");
         }
@@ -116,7 +124,7 @@ export function http_wasm_transform_stream_close (controller: HttpController): C
         mono_assert(controller.responsePromise, "expected fetch promise");
         try {
             await controller.streamWriter.ready;
-            await controller.streamWriter.close();
+            await Promise.race([controller.streamWriter.close(), reject_when_fetch_fails(controller)]);
         } catch (ex) {
             throw new Error("BrowserHttpWriteStream.Rejected");
         }
