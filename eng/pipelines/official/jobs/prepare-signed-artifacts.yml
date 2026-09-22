@@ -55,6 +55,10 @@ jobs:
     displayName: Download IntermediateArtifacts
     inputs:
       artifactName: IntermediateArtifacts
+      itemPattern: |
+        IntermediateArtifacts/*/Shipping/**
+        IntermediateArtifacts/*/NonShipping/**
+        IntermediateArtifacts/*/Insertion/**
       downloadPath: $(Build.SourcesDirectory)\artifacts\PackageDownload
       checkDownloadedFiles: true
 
