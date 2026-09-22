@@ -79,8 +79,11 @@ namespace System.Security.Cryptography
                     case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                         return X25519DiffieHellman.IsSupported;
                     case HpkeKem.MLKEM_512:
+                        return MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem512);
                     case HpkeKem.MLKEM_768:
+                        return MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem768);
                     case HpkeKem.MLKEM_1024:
+                        return MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem1024);
                     case HpkeKem.MLKEM768_P256:
                     case HpkeKem.MLKEM1024_P384:
                         return false;

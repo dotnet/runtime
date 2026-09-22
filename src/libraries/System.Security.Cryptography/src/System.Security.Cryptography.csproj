@@ -2129,6 +2129,7 @@
     <Compile Include="System\Security\Cryptography\HpkeManagedChaCha20Poly1305AeadAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeManagedKdfAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeManagedKemAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeMLKemAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeX25519DiffieHellmanKemAdapter.cs" />
   </ItemGroup>
 

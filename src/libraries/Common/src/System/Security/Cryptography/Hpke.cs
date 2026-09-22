@@ -112,12 +112,14 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
-            if (ikm.Length > HpkeKemMetadata.MaximumInputKeyingMaterialLength)
+            int maximumIkmLength = suite.KemMetadata.MaximumInputKeyingMaterialLength;
+
+            if (ikm.Length > maximumIkmLength)
             {
                 throw new ArgumentException(
                     SR.Format(
                         SR.Argument_HpkeIkmTooLong,
-                        HpkeKemMetadata.MaximumInputKeyingMaterialLength),
+                        maximumIkmLength),
                     nameof(ikm));
             }
 

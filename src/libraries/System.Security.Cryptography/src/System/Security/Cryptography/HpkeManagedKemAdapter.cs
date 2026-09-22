@@ -37,12 +37,16 @@ namespace System.Security.Cryptography
                     return new HpkeECDiffieHellmanKemAdapter(suite);
                 case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                     return new HpkeX25519DiffieHellmanKemAdapter(suite);
+                case HpkeKem.MLKEM_512:
+                case HpkeKem.MLKEM_768:
+                case HpkeKem.MLKEM_1024:
+                    return new HpkeMLKemAdapter(suite);
                 default:
                     throw new PlatformNotSupportedException();
             }
         }
 
-        internal void Generate()
+        internal virtual void Generate()
         {
             const int MaxStackIkmSize = 128;
             Span<byte> ikmStack = stackalloc byte[MaxStackIkmSize];

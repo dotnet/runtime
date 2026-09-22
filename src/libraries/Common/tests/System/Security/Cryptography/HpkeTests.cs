@@ -52,6 +52,16 @@ namespace System.Security.Cryptography.Tests
                 () => Hpke.DeriveKey(suite, SpanOfLength(HpkeTestData.MaximumInputSizeInBytes + 1)));
         }
 
+        [Fact]
+        public static void DeriveKey_OneStageIkmTooLong()
+        {
+            HpkeSuite suite = new(HpkeKem.MLKEM_768, HpkeKdf.SHAKE256, HpkeAead.AES_128_GCM);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "ikm",
+                () => Hpke.DeriveKey(suite, SpanOfLength(ushort.MaxValue + 1)));
+        }
+
         private static unsafe ReadOnlySpan<byte> SpanOfLength(int length) =>
             new ReadOnlySpan<byte>((void*)1, length);
 
