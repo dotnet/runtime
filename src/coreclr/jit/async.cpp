@@ -2807,6 +2807,11 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
         suspendBB = suspendTailBB;
     }
 
+    GenTree* privateObject =
+        m_compiler->gtNewOperNode(GT_PRIVATEOBJECT, TYP_VOID, m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF));
+    privateObject->gtFlags |= GTF_ORDER_SIDEEFF;
+    LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, privateObject));
+
     // Fill in 'ResumeInfo'
     GenTree* newContinuation  = m_compiler->gtNewLclvNode(newContinuationVar, TYP_REF);
     unsigned resumeInfoOffset = m_compiler->info.compCompHnd->getFieldOffset(m_asyncInfo->continuationResumeInfoFldHnd);

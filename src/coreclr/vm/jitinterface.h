@@ -100,6 +100,7 @@ EXTERN_C FCDECL1(PCODE, JIT_PatchpointForced, int ilOffset);
 //
 
 EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C FCDECL2_RAW(void, JIT_StoredRefs, Object** start, size_t len);
 
 #ifndef JIT_GetGCStaticBaseNoCtor
 #define JIT_GetGCStaticBaseNoCtor JIT_GetGCStaticBaseNoCtor_Portable

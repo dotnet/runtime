@@ -241,7 +241,7 @@ GCInfo::WriteBarrierForm GCInfo::gcIsWriteBarrierCandidate(GenTreeStoreInd* stor
 
     if ((store->gtFlags & GTF_IND_TGT_NOT_HEAP) != 0)
     {
-        // This indirection is known to not store to the heap.
+        // The destination or value needs no barrier, or lowering has arranged a bulk barrier.
         return WBF_NoBarrier;
     }
 

@@ -1225,6 +1225,18 @@ static void SetCardBundleByte(BYTE* addr)
 }
 #endif
 
+extern "C" HCIMPL2_RAW(void, JIT_StoredRefs, Object** start, size_t len)
+{
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    // The caller remains non-interruptible through this update. The range may
+    // include gaps between the reference slots that were written.
+    InlinedSetCardsAfterBulkCopyHelper(start, len);
+}
+HCIMPLEND_RAW
+
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
 // implemented in assembly
