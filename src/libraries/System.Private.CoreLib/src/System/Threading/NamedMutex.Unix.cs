@@ -98,11 +98,10 @@ namespace System.Threading
 
         protected abstract void SetLockOwnerToCurrentThread();
 
-        public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds, ref WaitSubsystem.LockHolder holder)
+        public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool keepCreationDeletionProcessLockHeld, ref WaitSubsystem.LockHolder holder)
         {
             SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-            bool keepCreationDeletionProcessLock = timeoutMilliseconds == 0;
-            if (!keepCreationDeletionProcessLock)
+            if (!keepCreationDeletionProcessLockHeld)
             {
                 holder.Dispose();
             }
@@ -120,7 +119,7 @@ namespace System.Threading
                 return result;
             }
 
-            if (!keepCreationDeletionProcessLock)
+            if (!keepCreationDeletionProcessLockHeld)
             {
                 holder = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
             }
@@ -257,7 +256,7 @@ namespace System.Threading
 
                         if (created && acquireLockIfCreated)
                         {
-                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0, ref creationDeletionProcessLock);
+                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0, keepCreationDeletionProcessLockHeld: true, ref creationDeletionProcessLock);
                             if (acquireResult != MutexTryAcquireLockResult.AcquiredLock)
                             {
                                 throw new InvalidOperationException();
@@ -665,7 +664,7 @@ namespace System.Threading
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
-                    MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, ref scope);
+                    MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, keepCreationDeletionProcessLockHeld: false, ref scope);
                     return result switch
                     {
                         MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,
