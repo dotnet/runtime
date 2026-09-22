@@ -24,6 +24,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestExtensionMethodRequires();
             TestExtensionMethodWithParams();
             TestExtensionMethodWithParamsMismatch();
+            TestExtensionDeconstructMismatch();
+            TestExtensionDeconstructDoesNotReturnIf();
             TestExtensionStaticMethodRequires();
             TestExtensionMethodAnnotation();
             TestExtensionStaticMethodAnnotation();
@@ -64,6 +66,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestExtensionMethodWithParamsMismatch()
         {
             GetWithMethods().ExtensionMembersMethodWithParamsMismatch(GetWithFields());
+        }
+
+        [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.Deconstruct), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
+        static void TestExtensionDeconstructMismatch()
+        {
+            var (first, second) = GetWithMethods();
+        }
+
+        [UnexpectedWarning("IL3050", nameof(RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "Analyzer and NativeAOT don't model DoesNotReturnIf on Deconstruct methods")]
+        static void TestExtensionDeconstructDoesNotReturnIf()
+        {
+            (_, _) = !RuntimeFeature.IsDynamicCodeSupported;
+            RequiresDynamicCode();
         }
 
         [ExpectedWarning("IL2026", nameof(ExtensionMembers.ExtensionMembersStaticMethodRequires))]
@@ -157,6 +172,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public static Type GetWithMethods() => null;
+
+        [RequiresDynamicCode(nameof(RequiresDynamicCode))]
+        static void RequiresDynamicCode() { }
     }
 
     [ExpectedNoWarnings]
@@ -184,6 +202,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 type.RequiresPublicMethods();
                 typeParam.RequiresPublicFields();
+            }
+
+            public void Deconstruct(out object first, out object second)
+            {
+                first = null;
+                second = null;
             }
 
             [RequiresUnreferencedCode(nameof(ExtensionMembersStaticMethodRequires))]
@@ -283,6 +307,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 left.RequiresPublicMethods();
                 right.RequiresPublicMethods();
                 return ExtensionMembersDataFlow.GetWithMethods();
+            }
+        }
+
+        extension([DoesNotReturnIf(true)] bool value)
+        {
+            public void Deconstruct(out object first, out object second)
+            {
+                first = null;
+                second = null;
             }
         }
     }
