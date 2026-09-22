@@ -1207,7 +1207,7 @@ public class Test
 
 public unsafe class PointerArrayFieldTests
 {
-    private const int ArrayLength = 4;
+    private const int ArrayLength = 5;
 
     [StructLayout(LayoutKind.Sequential, Size = 16)]
     private struct Pointee
@@ -1222,6 +1222,8 @@ public unsafe class PointerArrayFieldTests
         public byte*[] Bytes;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
         public long*[] Longs;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
+        public float*[] Floats;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
         public bool*[] Booleans;
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = ArrayLength)]
@@ -1254,6 +1256,7 @@ public unsafe class PointerArrayFieldTests
             Before = sentinel,
             Bytes = new byte*[ArrayLength],
             Longs = new long*[ArrayLength],
+            Floats = new float*[ArrayLength],
             Booleans = new bool*[ArrayLength],
             Characters = new char*[ArrayLength],
             Voids = new void*[ArrayLength],
@@ -1279,6 +1282,8 @@ public unsafe class PointerArrayFieldTests
                     _ => sentinel + (nuint)(i * ArrayLength + j)
                 };
             }
+
+            contents[ArrayLength - 1] = 21;
         }
 
         if (nullFields)
@@ -1341,7 +1346,7 @@ public unsafe class PointerArrayFieldTests
     private static Array[] GetArrays(PointerFields value)
         => new Array[]
         {
-            value.Bytes, value.Longs, value.Booleans, value.Characters, value.Voids,
+            value.Bytes, value.Longs, value.Floats, value.Booleans, value.Characters, value.Voids,
             value.Structures, value.Pointers, value.Integers, value.UnsignedIntegers,
             value.UnmanagedFunctions, value.ManagedFunctions
         };

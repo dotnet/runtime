@@ -659,12 +659,14 @@ public class ArrayMarshal
 public unsafe class PointerArrayTests
 {
     private const string NativeLibraryName = "MarshalArrayLPArrayNative";
+    private const int ArrayLength = 5;
 
     public enum ElementKind
     {
         Byte,
         Int32,
         Int64,
+        Single,
         Boolean,
         Char,
         UnicodeChar,
@@ -688,7 +690,7 @@ public unsafe class PointerArrayTests
     {
         foreach (ElementKind kind in Enum.GetValues<ElementKind>())
         {
-            foreach (int length in new[] { -1, 0, 1, 4 })
+            foreach (int length in new[] { -1, 0, 1, 4, ArrayLength, 21 })
             {
                 yield return new object[] { kind, length };
             }
@@ -766,7 +768,7 @@ public unsafe class PointerArrayTests
     [MemberData(nameof(ElementKinds))]
     public static void PinArrayAcrossCollection(ElementKind kind)
     {
-        Array values = CreateArray(kind, 4);
+        Array values = CreateArray(kind, ArrayLength);
         nuint[] expected = CreateValues(kind, values.Length);
         Initialize(values, expected);
         GCHandle handle = GCHandle.Alloc(values);
@@ -810,7 +812,7 @@ public unsafe class PointerArrayTests
     public static void CopyInOnlyArrayByRef(bool functionPointers)
     {
         ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;
-        Array values = CreateArray(kind, 4);
+        Array values = CreateArray(kind, ArrayLength);
         Array original = values;
         nuint[] expected = CreateValues(kind, values.Length);
         Initialize(values, expected);
@@ -879,7 +881,7 @@ public unsafe class PointerArrayTests
     [InlineData(3)]
     public static void PinArrayDirectionAttributes(int direction)
     {
-        byte*[] values = new byte*[4];
+        byte*[] values = new byte*[ArrayLength];
         nuint[] expected = CreateValues(ElementKind.Byte, values.Length);
         Initialize(values, expected);
 
@@ -905,10 +907,14 @@ public unsafe class PointerArrayTests
     [InlineData(false, 0)]
     [InlineData(false, 1)]
     [InlineData(false, 4)]
+    [InlineData(false, ArrayLength)]
+    [InlineData(false, 21)]
     [InlineData(true, -1)]
     [InlineData(true, 0)]
     [InlineData(true, 1)]
     [InlineData(true, 4)]
+    [InlineData(true, ArrayLength)]
+    [InlineData(true, 21)]
     public static void CopyArrayInReversePInvoke(bool functionPointers, int length)
     {
         ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;
@@ -939,6 +945,7 @@ public unsafe class PointerArrayTests
             ElementKind.Byte => new byte*[length],
             ElementKind.Int32 => new int*[length],
             ElementKind.Int64 => new long*[length],
+            ElementKind.Single => new float*[length],
             ElementKind.Boolean => new bool*[length],
             ElementKind.Char or ElementKind.UnicodeChar => new char*[length],
             ElementKind.Void => new void*[length],
@@ -967,6 +974,11 @@ public unsafe class PointerArrayTests
                     : (nuint)(delegate*<nint, nint>)&ManagedNegate,
                 _ => (IntPtr.Size == 8 ? unchecked((nuint)0x1234567810203040UL) : 0x10203040u) + (nuint)(i * 0x01010101)
             };
+        }
+
+        if (values.Length >= ArrayLength)
+        {
+            values[ArrayLength - 1] = 21;
         }
 
         return values;
@@ -1007,6 +1019,7 @@ public unsafe class PointerArrayTests
             ElementKind.Byte => GetPointerArrayAddress((byte*[])values, callback, context),
             ElementKind.Int32 => GetPointerArrayAddress((int*[])values, callback, context),
             ElementKind.Int64 => GetPointerArrayAddress((long*[])values, callback, context),
+            ElementKind.Single => GetPointerArrayAddress((float*[])values, callback, context),
             ElementKind.Boolean => GetPointerArrayAddress((bool*[])values, callback, context),
             ElementKind.Char => GetPointerArrayAddress((char*[])values, callback, context),
             ElementKind.UnicodeChar => GetPointerArrayAddressUnicode((char*[])values, callback, context),
@@ -1037,6 +1050,7 @@ public unsafe class PointerArrayTests
             ElementKind.Byte => CallByRef<byte*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
             ElementKind.Int32 => CallByRef<int*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
             ElementKind.Int64 => CallByRef<long*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
+            ElementKind.Single => CallByRef<float*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
             ElementKind.Boolean => CallByRef<bool*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
             ElementKind.Char => CallByRef<char*[]>(ReversePointerArrayByRef, ref values, count, expected, original),
             ElementKind.UnicodeChar => CallByRef<char*[]>(ReversePointerArrayByRefUnicode, ref values, count, expected, original),
@@ -1116,6 +1130,8 @@ public unsafe class PointerArrayTests
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern nint GetPointerArrayAddress(long*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetPointerArrayAddress(float*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern nint GetPointerArrayAddress(bool*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern nint GetPointerArrayAddress(char*[] values, delegate* unmanaged[Cdecl]<nuint*, nint, nuint*> callback, nint context);
@@ -1142,6 +1158,8 @@ public unsafe class PointerArrayTests
     private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref int*[] values, int count, nuint* expected, nuint* original);
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref long*[] values, int count, nuint* expected, nuint* original);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref float*[] values, int count, nuint* expected, nuint* original);
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern int ReversePointerArrayByRef([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] ref bool*[] values, int count, nuint* expected, nuint* original);
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
