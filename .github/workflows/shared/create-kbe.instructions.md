@@ -168,14 +168,21 @@ search misses, also search recently closed KBEs with the same pair:
 Apply the closed-candidate timing and full candidate-verification rules below
 to any pair match.
 
-If a candidate's body or comments identify it as a duplicate, read the linked
-original through the same permitted tools and apply the full candidate
-verification to it. Reuse a matching open KBE rather than filing a recurrence
-against its closed duplicate. A duplicate closure does not establish that the
-failure was fixed.
+If a candidate is identified as a duplicate, follow the linked issues through
+the same permitted tools until reaching an original that is not itself a
+duplicate. Track visited issues. If a link is missing or ambiguous, the chain
+is cyclic, or any read is inconclusive, report the incomplete lookup and do
+not file.
 
-On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
-it from the build metadata, not the queue time) against the issue's `closed_at`:
+Apply the full candidate verification to the original. Use only its issue
+number, state, and `closed_at` for the timing and recurring-signature rules
+below, counting each original once. Reuse a matching open KBE rather than
+filing a recurrence against its closed duplicate. A duplicate closure does
+not establish that the failure was fixed.
+
+On a verified closed-original hit, compare the failing AzDO build's `finishTime`
+(read it from the build metadata, not the queue time) against that original's
+`closed_at`:
 
 - Closed **after** the failing build finished, or closed within the last 7 days:
   the failure is already handled or under active triage. Record
