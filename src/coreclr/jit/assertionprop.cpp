@@ -90,7 +90,7 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 //
 static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
 {
-    // This relies on value numbers, which don't exist during local assertion prop.
+    // Only valid during global assertion prop, this relies on value numbers.
     assert(comp->vnStore != nullptr);
 
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
