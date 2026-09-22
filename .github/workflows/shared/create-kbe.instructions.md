@@ -40,12 +40,54 @@ responsible for:
 ## Search for an existing KBE
 
 Search open `dotnet/runtime` issues with the `Known Build Error` label. Try
-these variations in order, scanning the first ~10 results of each. GitHub
-best-match ranking can place noisier hits above the correct one.
+these variations in order and inspect every returned candidate. Narrow overly
+broad queries instead of truncating results. GitHub best-match ranking can
+place noisier hits above the correct one.
 
-For every `search_issues` call in this flow, include `user` in the requested
+For every `search_issues` or `search_pull_requests` call, include `user` in the requested
 `fields`, even when the author is not otherwise needed. The integrity gateway
 uses `user.login` to recognize trusted bots before filtering search results.
+
+### Preserve lookup results
+
+When using the workflow's `github` CLI proxy, run the checked-in helper for
+every issue or PR search in this file, including open, recently closed, and
+merged searches. Run it from the repository root, using a separate evidence
+directory for each query:
+
+```bash
+bash .github/workflows/shared/search-kbe.sh issues \
+    'is:issue is:open label:"Known Build Error" "distinctive assertion text"' \
+    /tmp/gh-aw/agent/kbe-search/signature-1-open
+```
+
+Use `pull-requests` instead of `issues` for open or merged fix-PR queries.
+The two MCP search tools enforce different issue-type qualifiers.
+
+The helper supplies the author and label fields, preserves `request.json` and
+the complete `response.json`, and emits `summary.json`. It continues to use the
+integrity-gated proxy, not `gh` or a direct GitHub API request.
+
+- `candidates` means inspect the returned issues with the full candidate
+  verification below. A search hit alone does not prove a duplicate.
+- `no_match` means only this query returned a complete, valid empty result.
+  Continue the remaining required search variations before deciding to file.
+- `blocked` or any nonzero exit means this lookup is inconclusive, not empty.
+  Do not emit a KBE for that signature. Narrow an overbroad query and rerun;
+  otherwise record `skipped: integrity-filtered candidate, needs human review`
+  for a filtered response or `skipped: lookup incomplete, needs human review`
+  for a failed, malformed, or incomplete response.
+
+Never pipe lookup output through `grep`, `head`, or a projection that discards
+filtered markers, errors, author metadata, or result counts. Never replace a
+failed lookup with an empty array or bypass integrity filtering.
+
+Callers using native MCP tools instead of the CLI proxy must request
+`fields: ["number", "title", "state", "user", "labels", "html_url"]` and apply
+the same result checks before interpreting the response. A filtered candidate
+body or comments read is also inconclusive, not evidence of a different failure.
+
+### Search variations
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -112,14 +154,13 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If a KBE-labeled search returns a `[Filtered]` marker, treat it as a likely
+If any lookup returns a `[Filtered]` marker, treat it as a possible
 existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
-If variation 5 returns a `[Filtered]` marker, record
-`linked-tracker: integrity-filtered, needs human review` for cross-linking, but
-do not treat it as a KBE substitute.
+This includes variation 5 and searches without a KBE label filter. A hidden
+result does not establish whether the issue is an unlabeled tracker or a KBE.
 
 On any visible hit whose title or body references the same test class on any
 platform, record `existing-kbe #<n>` (or `linked-tracker #<n>` for variation 5
