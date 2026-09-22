@@ -44,48 +44,44 @@ these variations in order and inspect every returned candidate. Narrow overly
 broad queries instead of truncating results. GitHub best-match ranking can
 place noisier hits above the correct one.
 
-For every `search_issues` or `search_pull_requests` call, include `user` in the requested
-`fields`, even when the author is not otherwise needed. The integrity gateway
-uses `user.login` to recognize trusted bots before filtering search results.
+Use `search_issues` for issues and `search_pull_requests` for open or merged
+fix PRs. For every call, specify `owner: "dotnet"`, `repo: "runtime"`, and
+`fields: ["number", "title", "state", "user", "labels", "html_url"]`.
+Never omit `user`, even when the author is not otherwise needed. The integrity
+gateway uses `user.login` to recognize trusted bots before filtering results.
 
 ### Preserve lookup results
 
-When using the workflow's `github` CLI proxy, run the checked-in helper for
-every issue or PR search in this file, including open, recently closed, and
-merged searches. Run it from the repository root, using a separate evidence
-directory for each query:
-
-```bash
-bash .github/workflows/shared/search-kbe.sh issues \
-    'is:issue is:open label:"Known Build Error" "distinctive assertion text"' \
-    /tmp/gh-aw/agent/kbe-search/signature-1-open
-```
-
-Use `pull-requests` instead of `issues` for open or merged fix-PR queries.
-The two MCP search tools enforce different issue-type qualifiers.
-
-The helper supplies the author and label fields, preserves `request.json` and
-the complete `response.json`, and emits `summary.json`. It continues to use the
-integrity-gated proxy, not `gh` or a direct GitHub API request.
-
-- `candidates` means inspect the returned issues with the full candidate
-  verification below. A search hit alone does not prove a duplicate.
-- `no_match` means only this query returned a complete, valid empty result.
-  Continue the remaining required search variations before deciding to file.
-- `blocked` or any nonzero exit means this lookup is inconclusive, not empty.
-  Do not emit a KBE for that signature. Narrow an overbroad query and rerun;
-  otherwise record `skipped: integrity-filtered candidate, needs human review`
-  for a filtered response or `skipped: lookup incomplete, needs human review`
-  for a failed, malformed, or incomplete response.
+Apply these rules to every issue and PR search below, including open,
+recently closed, merged, and unlabeled-tracker searches. Use the available
+integrity-gated GitHub tools and preserve each query and its complete response.
 
 Never pipe lookup output through `grep`, `head`, or a projection that discards
 filtered markers, errors, author metadata, or result counts. Never replace a
-failed lookup with an empty array or bypass integrity filtering.
+failed lookup with an empty array, or bypass integrity filtering with `gh`
+or direct GitHub API reads.
 
-Callers using native MCP tools instead of the CLI proxy must request
-`fields: ["number", "title", "state", "user", "labels", "html_url"]` and apply
-the same result checks before interpreting the response. A filtered candidate
-body or comments read is also inconclusive, not evidence of a different failure.
+Before recording that a query has no match, verify that the tool succeeded,
+the response is valid, and `incomplete_results` is `false`. If `total_count`
+exceeds the returned candidate count, fetch the remaining pages or narrow an
+overbroad query and rerun it. Do not treat an uninspected page as empty.
+Missing or inconsistent counts make the response inconclusive.
+
+- A successful, complete response with zero candidates means only this query
+  has no match. Continue all remaining search variations before deciding to file.
+- For a nonempty response, inspect every returned candidate using the full
+  candidate verification below. A search hit alone does not prove a duplicate.
+- A failed, malformed, or incomplete response, or a candidate missing requested
+  metadata, is inconclusive. Do not emit a KBE for that signature unless the
+  lookup succeeds on retry. Otherwise record
+  `skipped: lookup incomplete, needs human review`.
+
+Any `[Filtered]` or `[DIFC-FILTERED]` marker makes the lookup inconclusive, even
+when visible candidates do not match. Record
+`skipped: integrity-filtered candidate, needs human review` and do not file.
+Failed or filtered candidate body and comments reads also stop filing.
+Record the corresponding incomplete or filtered skip reason. An unreadable
+candidate is not evidence of a different failure.
 
 ### Search variations
 
@@ -154,8 +150,8 @@ If two candidate KBEs share more than 70% of their `ErrorMessage` /
 `ErrorPattern` tokens, do **not** guess: record
 `skipped: ambiguous dup #<a>/#<b>, needs human review` and stop.
 
-If any lookup returns a `[Filtered]` marker, treat it as a possible
-existing-KBE hit and record
+If any lookup returns a `[Filtered]` or `[DIFC-FILTERED]` marker, treat it as
+a possible existing-KBE hit and record
 `skipped: integrity-filtered candidate, needs human review` instead of creating
 a fresh KBE.
 
@@ -296,10 +292,10 @@ hit, record `existing-PR #<n>`.
 
 ### Integrity-filtered PR candidate
 
-If any PR search above returns a `[Filtered]` marker for a candidate whose
-title, source symbol, or assertion slice overlaps the failing signature, do
-**not** assume no fix exists and file a fresh KBE. The filter hides a real PR
-you are not permitted to read, and it may already handle this failure. Record
+If any PR search above returns a `[Filtered]` or `[DIFC-FILTERED]` marker, do
+**not** assume no fix exists and file a fresh KBE. Do not require visible
+title, source-symbol, or assertion overlap before stopping, since filtering
+may hide those fields. The hidden PR may already handle this failure. Record
 `skipped: integrity-filtered candidate, needs human review` and stop for this
 signature. A human can confirm whether the hidden PR fixes the failure; filing a
 duplicate KBE that is immediately closed as "fixed by" the hidden PR is a

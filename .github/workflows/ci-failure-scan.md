@@ -40,7 +40,6 @@ concurrency:
   cancel-in-progress: true
 
 tools:
-  cli-proxy: true
   github:
     toolsets: [pull_requests, repos, issues, search]
     min-integrity: approved
@@ -91,10 +90,6 @@ The agent runs read-only. All writes go through `safe-outputs`.
 10. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
 11. **AzDO API: anonymous only.** Stay on `_apis/build/...`. Never call `_apis/test/...` or `vstmr.dev.azure.com` (both redirect to sign-in).
 12. **Don't add `area-*` references to issue titles.** Multi-area titles produce multi-label assignments from the labeler bot.
-13. **An inconclusive lookup must never create an issue.** Use
-    `.github/workflows/shared/search-kbe.sh` for all duplicate and fix-PR
-    searches. Preserve its evidence and inspect the complete summary. A filtered,
-    failed, malformed, or incomplete lookup is not "no existing KBE".
 
 ## What this run must accomplish
 
@@ -289,12 +284,6 @@ printf '%s\t%s\t%s\n' "$xkey" "aw_<id>" "<req|opt>" >> /tmp/gh-aw/agent/filed.ts
 
 #### Step 4.2 through Step 4.6 — Run the shared KBE lookup flow
 
-Run every search through `.github/workflows/shared/search-kbe.sh` as described
-in the shared instructions. Do not substitute an ad-hoc `github search_issues`
-pipeline. Only complete `no_match` results and fully verified nonmatching
-candidates can support filing; a `blocked` result stops emission for that
-signature until the lookup succeeds.
-
 Follow exactly these sections from `.github/workflows/shared/create-kbe.instructions.md`, in this order:
 
 1. `<a id="search-existing-kbe"></a>` / `## Search for an existing KBE`
@@ -320,7 +309,6 @@ Record the same lookup outcomes described there, retaining any
 - `existing-PR #<n>`
 - `skipped: recently-closed dup #<n>, needs human review`
 - `skipped: integrity-filtered candidate, needs human review`
-- `skipped: lookup incomplete, needs human review`
 
 #### Step 4.7 — Verify the candidate KBE actually matches
 
@@ -377,7 +365,7 @@ Per signature, append one outcome line to `/tmp/gh-aw/agent/coverage/<pipeline>.
 
 `<outcome>` is one of: `filed-issue #aw_<id>`, `existing-kbe #<n>`, `existing-PR #<n>`, `skipped: <reason>`.
 
-A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `cross-def dup of filed-issue #aw_<id> earlier in this run`, `representative KBE filed as #aw_<id>`, `leg-level failure filed as #aw_<id>`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `lookup incomplete, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
+A skipped signature MUST have a reason. Recognized values: `build canceled`, `< 2 occurrences and not blocking`, `cap reached`, `infra noise — no stable signature`, `signature absent from follow-up build #<id>`, `stale build window (>14d)`, `no follow-up build yet — defer to next run`, `fix already merged after source build`, `fix recently merged in #<n>`, `dup of filed-issue #aw_<id> earlier in this run`, `cross-def dup of filed-issue #aw_<id> earlier in this run`, `representative KBE filed as #aw_<id>`, `leg-level failure filed as #aw_<id>`, `ambiguous dup #<a>/#<b>, needs human review`, `integrity-filtered candidate, needs human review`, `suspected infra outage`, `weak signature`, `signature did not match failure.log (N=<count>)`, `native assert not in xunit log`. The list is non-exhaustive but additions SHOULD reuse one of these phrasings to keep the feedback workflow's tally aggregation stable.
 
 At end of run, print this table to the agent log:
 

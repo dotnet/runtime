@@ -80,15 +80,6 @@ is failing at eval time.
 
 ## Run locally
 
-The deterministic scanner lookup tests need Python 3, Bash, and jq, but no
-credentials or network access. They exercise author metadata, complete empty
-results, filtered candidates, CLI-proxy arrays and MCP text envelopes,
-issue and pull-request routing, incomplete responses, and tool failures:
-
-```bash
-python3 .github/workflows/evals/test_ci_failure_scan_search.py
-```
-
 The deterministic fixer tests need Python 3, Bash, jq, and Node with the eval
 dependencies installed (`npm ci --prefix .github/workflows/evals`), but no
 credentials or network access during testing. They exercise the shared intake
