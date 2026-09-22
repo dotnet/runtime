@@ -31,16 +31,36 @@ namespace System.Linq
 
                 if (Vector.IsHardwareAccelerated && span.Length >= Vector<int>.Count)
                 {
-                    Vector<long> sums = default;
-                    do
+                    // Keep the halves of each widened vector, and two vectors per iteration, in
+                    // separate accumulators: summing them into one makes every add wait for the
+                    // previous one. Widened Int32 values sum exactly in Int64, in any order.
+                    Vector<long> sums0 = default;
+                    Vector<long> sums1 = default;
+                    Vector<long> sums2 = default;
+                    Vector<long> sums3 = default;
+
+                    while (i <= span.Length - (2 * Vector<int>.Count))
                     {
                         Vector.Widen(new Vector<int>(span.Slice(i)), out Vector<long> low, out Vector<long> high);
-                        sums += low;
-                        sums += high;
+                        Vector.Widen(new Vector<int>(span.Slice(i + Vector<int>.Count)), out Vector<long> nextLow, out Vector<long> nextHigh);
+
+                        sums0 += low;
+                        sums1 += high;
+                        sums2 += nextLow;
+                        sums3 += nextHigh;
+
+                        i += 2 * Vector<int>.Count;
+                    }
+
+                    while (i <= span.Length - Vector<int>.Count)
+                    {
+                        Vector.Widen(new Vector<int>(span.Slice(i)), out Vector<long> low, out Vector<long> high);
+                        sums0 += low;
+                        sums1 += high;
                         i += Vector<int>.Count;
                     }
-                    while (i <= span.Length - Vector<int>.Count);
-                    sum += Vector.Sum(sums);
+
+                    sum += Vector.Sum((sums0 + sums1) + (sums2 + sums3));
                 }
 
                 for (; (uint)i < (uint)span.Length; i++)
