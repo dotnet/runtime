@@ -170,6 +170,11 @@ static bool StubNeedsSecretArgument(DWORD dwStubFlags)
 {
     WRAPPER_NO_CONTRACT;
 
+    if (SF_IsFieldGetterStub(dwStubFlags) || SF_IsFieldSetterStub(dwStubFlags))
+    {
+        return false;
+    }
+
     if (SF_IsForwardStub(dwStubFlags))
     {
         return SF_IsVarArgStub(dwStubFlags);

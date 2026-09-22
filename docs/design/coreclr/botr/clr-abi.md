@@ -151,7 +151,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 *Secret stub argument* - An explicit `native int` parameter with a required `System.Runtime.CompilerServices.SecretStubArgument` modifier tells the JIT to bind the parameter to (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` / (LoongArch64, RISC-V) `T2` (in the JIT: `REG_SECRET_STUB_PARAM`). Interop IL stubs use this parameter for the following values:
 - Unmanaged CALLI stubs pass the unmanaged target address.
 - Shared vararg PInvoke stubs pass the MethodDesc for the exact PInvoke.
-- Native-to-managed stubs pass the `UMEntryThunkData` used to recover the managed target or delegate.
+- Native-to-managed method and delegate stubs pass the `UMEntryThunkData` used to recover the managed target or delegate.
 
 ## Small primitive returns
 
