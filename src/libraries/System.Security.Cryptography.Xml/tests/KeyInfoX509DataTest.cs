@@ -12,6 +12,10 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Xunit;
+#if NET
+using Microsoft.DotNet.RemoteExecutor;
+using System.Security.Cryptography.Pkcs;
+#endif
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -84,51 +88,84 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Constructor_X509CertificateByteArray_Null()
         {
-#if NETFRAMEWORK
             KeyInfoX509Data data = new KeyInfoX509Data((byte[])null);
-#else
-            Assert.Throws<ArgumentException>("rawData", () => new KeyInfoX509Data((byte[])null));
-#endif
         }
 
-#if !NETFRAMEWORK
-        [Fact]
-        public void Constructor_X509CertificateByteArray_Empty()
+#if NET
+        private const string AllowNonCertificateX509DataSwitch = "System.Security.Cryptography.Xml.AllowNonCertificateX509Data";
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("", "")]
+        [InlineData("", "false")]
+        [InlineData("", "true")]
+        [InlineData(" \t\r\n", "")]
+        [InlineData(" \t\r\n", "false")]
+        [InlineData(" \t\r\n", "true")]
+        public void LoadXml_EmptyCertificate(string value, string switchValue)
         {
-            Assert.Throws<ArgumentException>("rawData", () => new KeyInfoX509Data(Array.Empty<byte>()));
+            RemoteExecutor.Invoke(static (text, setting) =>
+            {
+                bool allowNonCertificate = ConfigureAllowNonCertificateX509Data(setting);
+                XmlDocument document = new XmlDocument();
+                document.LoadXml($"<X509Data xmlns='{SignedXml.XmlDsigNamespaceUrl}'><X509Certificate>{text}</X509Certificate></X509Data>");
+                KeyInfoX509Data data = new KeyInfoX509Data();
+
+                if (allowNonCertificate)
+                {
+                    data.LoadXml(document.DocumentElement);
+                    Assert.Equal(IntPtr.Zero, ((X509Certificate2)Assert.Single(data.Certificates)).Handle);
+                }
+                else
+                {
+                    Assert.Throws<ArgumentException>("rawData", () => data.LoadXml(document.DocumentElement));
+                }
+            }, value, switchValue).Dispose();
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" \t\r\n")]
-        public void LoadXml_EmptyCertificate(string value)
-        {
-            XmlDocument document = new XmlDocument();
-            document.LoadXml($"<X509Data xmlns='{SignedXml.XmlDsigNamespaceUrl}'><X509Certificate>{value}</X509Certificate></X509Data>");
-
-            Assert.Throws<ArgumentException>("rawData", () => new KeyInfoX509Data().LoadXml(document.DocumentElement));
-        }
-
-        [Theory]
-        [InlineData(X509ContentType.Cert)]
-        [InlineData(X509ContentType.Pfx)]
-        [InlineData(X509ContentType.Pkcs7)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(X509ContentType.Cert, "")]
+        [InlineData(X509ContentType.Cert, "false")]
+        [InlineData(X509ContentType.Cert, "true")]
+        [InlineData(X509ContentType.Pfx, "")]
+        [InlineData(X509ContentType.Pfx, "false")]
+        [InlineData(X509ContentType.Pfx, "true")]
+        [InlineData(X509ContentType.Pkcs7, "")]
+        [InlineData(X509ContentType.Pkcs7, "false")]
+        [InlineData(X509ContentType.Pkcs7, "true")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
-        public void CertificateContentType(X509ContentType contentType)
+        public void CertificateContentType(X509ContentType contentType, string switchValue)
         {
-            AssertCertificateContentType(contentType);
+            AssertCertificateContentTypeInRemoteProcess(contentType, switchValue);
         }
 
-        [Theory]
-        [InlineData(X509ContentType.SerializedCert)]
-        [InlineData(X509ContentType.SerializedStore)]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(X509ContentType.SerializedCert, "")]
+        [InlineData(X509ContentType.SerializedCert, "false")]
+        [InlineData(X509ContentType.SerializedCert, "true")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void CertificateContentType_Windows(X509ContentType contentType)
+        public void CertificateContentType_Windows(X509ContentType contentType, string switchValue)
         {
-            AssertCertificateContentType(contentType);
+            AssertCertificateContentTypeInRemoteProcess(contentType, switchValue);
         }
 
-        private static void AssertCertificateContentType(X509ContentType contentType)
+        private static bool ConfigureAllowNonCertificateX509Data(string switchValue)
+        {
+            if (switchValue.Length != 0)
+                AppContext.SetSwitch(AllowNonCertificateX509DataSwitch, bool.Parse(switchValue));
+
+            return switchValue == "true";
+        }
+
+        private static void AssertCertificateContentTypeInRemoteProcess(X509ContentType contentType, string switchValue)
+        {
+            RemoteExecutor.Invoke(static (type, setting) =>
+            {
+                bool allowNonCertificate = ConfigureAllowNonCertificateX509Data(setting);
+                AssertCertificateContentType(Enum.Parse<X509ContentType>(type), allowNonCertificate);
+            }, contentType.ToString(), switchValue).Dispose();
+        }
+
+        private static void AssertCertificateContentType(X509ContentType contentType, bool allowNonCertificate)
         {
             using (RSA rsa = RSA.Create(2048))
             {
@@ -140,6 +177,14 @@ namespace System.Security.Cryptography.Xml.Tests
                 {
                     // Export only the public certificate, with no private key or store access.
                     byte[] rawData = new X509Certificate2Collection(certificate).Export(contentType);
+                    if (contentType == X509ContentType.Pkcs7)
+                    {
+                        // Certificate import from PKCS#7 requires a signer on some platforms.
+                        SignedCms cms = new SignedCms(new ContentInfo(new byte[] { 1, 2, 3 }));
+                        CmsSigner cmsSigner = new CmsSigner(signingCertificate) { IncludeOption = X509IncludeOption.EndCertOnly };
+                        cms.ComputeSignature(cmsSigner);
+                        rawData = cms.Encode();
+                    }
                     Assert.Equal(contentType, X509Certificate2.GetCertContentType(rawData));
 
                     XmlDocument document = new XmlDocument();
@@ -165,10 +210,8 @@ namespace System.Security.Cryptography.Xml.Tests
                     KeyInfoX509Data loadedData = new KeyInfoX509Data();
                     SignedXml loadedSignature = new SignedXml(document);
 
-                    if (contentType == X509ContentType.Cert)
+                    if (contentType == X509ContentType.Cert || allowNonCertificate)
                     {
-                        KeyInfoX509Data constructedData = new KeyInfoX509Data(rawData);
-                        Assert.Equal(certificate.RawData, ((X509Certificate2)Assert.Single(constructedData.Certificates)).RawData);
                         loadedData.LoadXml(x509Data);
                         Assert.Equal(certificate.RawData, ((X509Certificate2)Assert.Single(loadedData.Certificates)).RawData);
                         loadedSignature.LoadXml(signature);
@@ -176,7 +219,6 @@ namespace System.Security.Cryptography.Xml.Tests
                     }
                     else
                     {
-                        Assert.Throws<CryptographicException>(() => new KeyInfoX509Data(rawData));
                         Assert.Throws<CryptographicException>(() => loadedData.LoadXml(x509Data));
                         Assert.Throws<CryptographicException>(() => loadedSignature.LoadXml(signature));
                     }

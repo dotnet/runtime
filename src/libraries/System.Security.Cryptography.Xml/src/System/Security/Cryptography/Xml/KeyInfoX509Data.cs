@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoX509Data(byte[] rgbCert)
         {
-            X509Certificate2 certificate = LoadCertificate(rgbCert);
+            X509Certificate2 certificate = new X509Certificate2(rgbCert);
             AddCertificate(certificate);
         }
 
@@ -181,16 +181,6 @@ namespace System.Security.Cryptography.Xml
         // private methods
         //
 
-        private static X509Certificate2 LoadCertificate(byte[] rawData)
-        {
-            // XML Signature Syntax and Processing, Second Edition, section 4.4.4 defines
-            // X509Certificate as a base64-encoded X.509 v3 certificate.
-            if (X509Certificate2.GetCertContentType(rawData) != X509ContentType.Cert)
-                throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "X509Certificate");
-
-            return new X509Certificate2(rawData);
-        }
-
         private void Clear()
         {
             _CRL = null;
@@ -317,7 +307,17 @@ namespace System.Security.Cryptography.Xml
 
             foreach (XmlNode node in x509CertificateNodes)
             {
-                AddCertificate(LoadCertificate(Convert.FromBase64String(Utils.DiscardWhiteSpaces(node.InnerText))));
+                byte[] rawData = Convert.FromBase64String(Utils.DiscardWhiteSpaces(node.InnerText));
+
+                // XML Signature Syntax and Processing, Second Edition, section 4.4.4 defines
+                // X509Certificate as a base64-encoded X.509 v3 certificate.
+                if (!LocalAppContextSwitches.AllowNonCertificateX509Data &&
+                    X509Certificate2.GetCertContentType(rawData) != X509ContentType.Cert)
+                {
+                    throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "X509Certificate");
+                }
+
+                AddCertificate(new X509Certificate2(rawData));
             }
         }
     }

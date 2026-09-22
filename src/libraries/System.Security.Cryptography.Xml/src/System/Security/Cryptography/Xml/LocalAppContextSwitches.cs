@@ -15,6 +15,7 @@ namespace System
         internal const string AllowDangerousEncryptedXmlTransformsAppContextSwitch = "System.Security.Cryptography.Xml.AllowDangerousEncryptedXmlTransforms";
         internal const string CryptoXmlMaxInputDocumentDepthAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlMaxInputDocumentDepth";
         internal const string CryptoXmlAllowDtdProcessingAppContextSwitch = "System.Security.Cryptography.Xml.CryptoXmlAllowDtdProcessing";
+        internal const string AllowNonCertificateX509DataAppContextSwitch = "System.Security.Cryptography.Xml.AllowNonCertificateX509Data";
         internal const string MaxTransformsPerChainAppContextSwitch = "System.Security.Cryptography.Xml.MaxTransformsPerChain";
         internal const string MaxDecryptedDataElementsAppContextSwitch = "System.Security.Cryptography.Xml.MaxDecryptedDataElements";
         internal const string DangerousMaxDecryptionCountAppContextSwitch = "System.Security.Cryptography.Xml.DangerousMaxDecryptionCount";
@@ -80,6 +81,14 @@ namespace System
         /// </summary>
         internal static bool CryptoXmlAllowDtdProcessing { get; } =
             GetBooleanConfig(CryptoXmlAllowDtdProcessingAppContextSwitch, defaultValue: false);
+
+        /// <summary>
+        /// Gets whether X509Certificate XML elements allow legacy non-certificate formats.
+        /// Configurable via AppContext switch "System.Security.Cryptography.Xml.AllowNonCertificateX509Data".
+        /// Default value is false. Configure before first use of XML cryptography; the value is cached.
+        /// </summary>
+        internal static bool AllowNonCertificateX509Data { get; } =
+            GetBooleanConfig(AllowNonCertificateX509DataAppContextSwitch, defaultValue: false);
 
         /// <summary>
         /// Gets the maximum number of transforms allowed in a deserialized transform chain.
