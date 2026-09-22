@@ -101,13 +101,12 @@ namespace System.Linq
 
                 if (~Vector128.Equals(best, best) == Vector128<T>.Zero)
                 {
-                    int lastVector = span.Length - Vector128<T>.Count;
-                    int index = Vector128<T>.Count;
+                    ReadOnlySpan<T> remaining = span.Slice(Vector128<T>.Count);
                     bool sawNaN = false;
 
-                    while (index <= lastVector)
+                    while (remaining.Length >= Vector128<T>.Count)
                     {
-                        Vector128<T> current = Vector128.Create(span.Slice(index));
+                        Vector128<T> current = Vector128.Create(remaining);
                         if (~Vector128.Equals(current, current) != Vector128<T>.Zero)
                         {
                             sawNaN = true;
@@ -115,8 +114,10 @@ namespace System.Linq
                         }
 
                         best = Vector128.Min(best, current);
-                        index += Vector128<T>.Count;
+                        remaining = remaining.Slice(Vector128<T>.Count);
                     }
+
+                    int index = span.Length - remaining.Length;
 
                     if (!sawNaN)
                     {

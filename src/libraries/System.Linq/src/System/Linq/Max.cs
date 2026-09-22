@@ -140,15 +140,17 @@ namespace System.Linq
                 {
                     Vector128<T> negativeInfinity = Vector128.Create(T.NegativeInfinity);
                     Vector128<T> best = Vector128.Create(value);
-                    int lastVector = span.Length - Vector128<T>.Count;
+                    ReadOnlySpan<T> remaining = span.Slice(i);
 
-                    while (i <= lastVector)
+                    while (remaining.Length >= Vector128<T>.Count)
                     {
                         // A NaN is never the maximum here, and Vector128.Max would propagate it.
-                        Vector128<T> current = Vector128.Create(span.Slice(i));
+                        Vector128<T> current = Vector128.Create(remaining);
                         best = Vector128.Max(best, Vector128.ConditionalSelect(Vector128.Equals(current, current), current, negativeInfinity));
-                        i += Vector128<T>.Count;
+                        remaining = remaining.Slice(Vector128<T>.Count);
                     }
+
+                    i = span.Length - remaining.Length;
 
                     for (int lane = 0; lane < Vector128<T>.Count; lane++)
                     {
