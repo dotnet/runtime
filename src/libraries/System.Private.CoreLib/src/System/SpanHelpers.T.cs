@@ -4174,10 +4174,29 @@ namespace System
                 {
                     Vector512<T> targetVector = Vector512.Create(value);
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector512<T>.Count);
-                    while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+
+                    // For 32-bit and wider elements, subtracting the comparison mask accumulates the
+                    // matches in the vector itself, which avoids extracting a bitmask per iteration.
+                    // A lane cannot overflow: a span holds fewer than int.MaxValue elements.
+                    if (sizeof(T) >= sizeof(int))
                     {
-                        count += BitOperations.PopCount(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
-                        current = ref Unsafe.Add(ref current, Vector512<T>.Count);
+                        Vector512<T> counts = Vector512<T>.Zero;
+                        while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+                        {
+                            counts -= Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector);
+                            current = ref Unsafe.Add(ref current, Vector512<T>.Count);
+                        }
+
+                        T lanes = Vector512.Sum(counts);
+                        count += sizeof(T) == sizeof(int) ? Unsafe.BitCast<T, int>(lanes) : (int)Unsafe.BitCast<T, long>(lanes);
+                    }
+                    else
+                    {
+                        while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+                        {
+                            count += BitOperations.PopCount(Vector512.Equals(Vector512.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                            current = ref Unsafe.Add(ref current, Vector512<T>.Count);
+                        }
                     }
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
@@ -4189,10 +4208,29 @@ namespace System
                 {
                     Vector256<T> targetVector = Vector256.Create(value);
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector256<T>.Count);
-                    while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+
+                    // For 32-bit and wider elements, subtracting the comparison mask accumulates the
+                    // matches in the vector itself, which avoids extracting a bitmask per iteration.
+                    // A lane cannot overflow: a span holds fewer than int.MaxValue elements.
+                    if (sizeof(T) >= sizeof(int))
                     {
-                        count += BitOperations.PopCount(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
-                        current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                        Vector256<T> counts = Vector256<T>.Zero;
+                        while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+                        {
+                            counts -= Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector);
+                            current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                        }
+
+                        T lanes = Vector256.Sum(counts);
+                        count += sizeof(T) == sizeof(int) ? Unsafe.BitCast<T, int>(lanes) : (int)Unsafe.BitCast<T, long>(lanes);
+                    }
+                    else
+                    {
+                        while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+                        {
+                            count += BitOperations.PopCount(Vector256.Equals(Vector256.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                            current = ref Unsafe.Add(ref current, Vector256<T>.Count);
+                        }
                     }
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
@@ -4204,10 +4242,29 @@ namespace System
                 {
                     Vector128<T> targetVector = Vector128.Create(value);
                     ref T oneVectorAwayFromEnd = ref Unsafe.Subtract(ref end, Vector128<T>.Count);
-                    while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+
+                    // For 32-bit and wider elements, subtracting the comparison mask accumulates the
+                    // matches in the vector itself, which avoids extracting a bitmask per iteration.
+                    // A lane cannot overflow: a span holds fewer than int.MaxValue elements.
+                    if (sizeof(T) >= sizeof(int))
                     {
-                        count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
-                        current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                        Vector128<T> counts = Vector128<T>.Zero;
+                        while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+                        {
+                            counts -= Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector);
+                            current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                        }
+
+                        T lanes = Vector128.Sum(counts);
+                        count += sizeof(T) == sizeof(int) ? Unsafe.BitCast<T, int>(lanes) : (int)Unsafe.BitCast<T, long>(lanes);
+                    }
+                    else
+                    {
+                        while (Unsafe.IsAddressLessThan(ref current, ref oneVectorAwayFromEnd))
+                        {
+                            count += BitOperations.PopCount(Vector128.Equals(Vector128.LoadUnsafe(ref current), targetVector).ExtractMostSignificantBits());
+                            current = ref Unsafe.Add(ref current, Vector128<T>.Count);
+                        }
                     }
 
                     // Count the last vector and mask off the elements that were already counted (number of elements between oneVectorAwayFromEnd and current).
