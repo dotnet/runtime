@@ -160,6 +160,46 @@ namespace System.Numerics.Tensors
                 int oneVectorFromEnd = x.Length - Vector512<T>.Count;
                 int i = Vector512<T>.Count;
 
+                // Aggregate four vectors at a time into independent accumulators, so that the min/max
+                // latency of one iteration doesn't serialize the next.
+                if (oneVectorFromEnd - i >= 3 * Vector512<T>.Count)
+                {
+                    Vector512<T> result1 = result;
+                    Vector512<T> result2 = result;
+                    Vector512<T> result3 = result;
+
+                    do
+                    {
+                        Vector512<T> current0 = Vector512.LoadUnsafe(ref xRef, (uint)i);
+                        Vector512<T> current1 = Vector512.LoadUnsafe(ref xRef, (uint)(i + Vector512<T>.Count));
+                        Vector512<T> current2 = Vector512.LoadUnsafe(ref xRef, (uint)(i + (2 * Vector512<T>.Count)));
+                        Vector512<T> current3 = Vector512.LoadUnsafe(ref xRef, (uint)(i + (3 * Vector512<T>.Count)));
+
+                        if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                        {
+                            // Check the whole block for NaNs, and only then locate the first one.
+                            nanMask = ~(Vector512.Equals(current0, current0) &
+                                        Vector512.Equals(current1, current1) &
+                                        Vector512.Equals(current2, current2) &
+                                        Vector512.Equals(current3, current3));
+                            if (nanMask != Vector512<T>.Zero)
+                            {
+                                return FirstNaN(current0, current1, current2, current3);
+                            }
+                        }
+
+                        result = TMinMaxOperator.Invoke(result, current0);
+                        result1 = TMinMaxOperator.Invoke(result1, current1);
+                        result2 = TMinMaxOperator.Invoke(result2, current2);
+                        result3 = TMinMaxOperator.Invoke(result3, current3);
+
+                        i += 4 * Vector512<T>.Count;
+                    }
+                    while (oneVectorFromEnd - i >= 3 * Vector512<T>.Count);
+
+                    result = TMinMaxOperator.Invoke(TMinMaxOperator.Invoke(result, result1), TMinMaxOperator.Invoke(result2, result3));
+                }
+
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
@@ -224,6 +264,46 @@ namespace System.Numerics.Tensors
 
                 int oneVectorFromEnd = x.Length - Vector256<T>.Count;
                 int i = Vector256<T>.Count;
+
+                // Aggregate four vectors at a time into independent accumulators, so that the min/max
+                // latency of one iteration doesn't serialize the next.
+                if (oneVectorFromEnd - i >= 3 * Vector256<T>.Count)
+                {
+                    Vector256<T> result1 = result;
+                    Vector256<T> result2 = result;
+                    Vector256<T> result3 = result;
+
+                    do
+                    {
+                        Vector256<T> current0 = Vector256.LoadUnsafe(ref xRef, (uint)i);
+                        Vector256<T> current1 = Vector256.LoadUnsafe(ref xRef, (uint)(i + Vector256<T>.Count));
+                        Vector256<T> current2 = Vector256.LoadUnsafe(ref xRef, (uint)(i + (2 * Vector256<T>.Count)));
+                        Vector256<T> current3 = Vector256.LoadUnsafe(ref xRef, (uint)(i + (3 * Vector256<T>.Count)));
+
+                        if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                        {
+                            // Check the whole block for NaNs, and only then locate the first one.
+                            nanMask = ~(Vector256.Equals(current0, current0) &
+                                        Vector256.Equals(current1, current1) &
+                                        Vector256.Equals(current2, current2) &
+                                        Vector256.Equals(current3, current3));
+                            if (nanMask != Vector256<T>.Zero)
+                            {
+                                return FirstNaN(current0, current1, current2, current3);
+                            }
+                        }
+
+                        result = TMinMaxOperator.Invoke(result, current0);
+                        result1 = TMinMaxOperator.Invoke(result1, current1);
+                        result2 = TMinMaxOperator.Invoke(result2, current2);
+                        result3 = TMinMaxOperator.Invoke(result3, current3);
+
+                        i += 4 * Vector256<T>.Count;
+                    }
+                    while (oneVectorFromEnd - i >= 3 * Vector256<T>.Count);
+
+                    result = TMinMaxOperator.Invoke(TMinMaxOperator.Invoke(result, result1), TMinMaxOperator.Invoke(result2, result3));
+                }
 
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
                 while (i <= oneVectorFromEnd)
@@ -291,6 +371,46 @@ namespace System.Numerics.Tensors
                 int oneVectorFromEnd = x.Length - Vector128<T>.Count;
                 int i = Vector128<T>.Count;
 
+                // Aggregate four vectors at a time into independent accumulators, so that the min/max
+                // latency of one iteration doesn't serialize the next.
+                if (oneVectorFromEnd - i >= 3 * Vector128<T>.Count)
+                {
+                    Vector128<T> result1 = result;
+                    Vector128<T> result2 = result;
+                    Vector128<T> result3 = result;
+
+                    do
+                    {
+                        Vector128<T> current0 = Vector128.LoadUnsafe(ref xRef, (uint)i);
+                        Vector128<T> current1 = Vector128.LoadUnsafe(ref xRef, (uint)(i + Vector128<T>.Count));
+                        Vector128<T> current2 = Vector128.LoadUnsafe(ref xRef, (uint)(i + (2 * Vector128<T>.Count)));
+                        Vector128<T> current3 = Vector128.LoadUnsafe(ref xRef, (uint)(i + (3 * Vector128<T>.Count)));
+
+                        if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
+                        {
+                            // Check the whole block for NaNs, and only then locate the first one.
+                            nanMask = ~(Vector128.Equals(current0, current0) &
+                                        Vector128.Equals(current1, current1) &
+                                        Vector128.Equals(current2, current2) &
+                                        Vector128.Equals(current3, current3));
+                            if (nanMask != Vector128<T>.Zero)
+                            {
+                                return FirstNaN(current0, current1, current2, current3);
+                            }
+                        }
+
+                        result = TMinMaxOperator.Invoke(result, current0);
+                        result1 = TMinMaxOperator.Invoke(result1, current1);
+                        result2 = TMinMaxOperator.Invoke(result2, current2);
+                        result3 = TMinMaxOperator.Invoke(result3, current3);
+
+                        i += 4 * Vector128<T>.Count;
+                    }
+                    while (oneVectorFromEnd - i >= 3 * Vector128<T>.Count);
+
+                    result = TMinMaxOperator.Invoke(TMinMaxOperator.Invoke(result, result1), TMinMaxOperator.Invoke(result2, result3));
+                }
+
                 // Aggregate additional vectors into the result as long as there's at least one full vector left to process.
                 while (i <= oneVectorFromEnd)
                 {
@@ -352,6 +472,78 @@ namespace System.Numerics.Tensors
             }
 
             return curResult;
+        }
+
+        /// <summary>Gets the first NaN in <paramref name="v0"/>, <paramref name="v1"/>, <paramref name="v2"/>, and <paramref name="v3"/>, in that order.</summary>
+        private static T FirstNaN<T>(Vector128<T> v0, Vector128<T> v1, Vector128<T> v2, Vector128<T> v3)
+        {
+            Vector128<T> nanMask = ~Vector128.Equals(v0, v0);
+            if (nanMask != Vector128<T>.Zero)
+            {
+                return v0.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            nanMask = ~Vector128.Equals(v1, v1);
+            if (nanMask != Vector128<T>.Zero)
+            {
+                return v1.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            nanMask = ~Vector128.Equals(v2, v2);
+            if (nanMask != Vector128<T>.Zero)
+            {
+                return v2.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            return v3.GetElement(IndexOfFirstMatch(~Vector128.Equals(v3, v3)));
+        }
+
+        /// <inheritdoc cref="FirstNaN{T}(Vector128{T}, Vector128{T}, Vector128{T}, Vector128{T})"/>
+        private static T FirstNaN<T>(Vector256<T> v0, Vector256<T> v1, Vector256<T> v2, Vector256<T> v3)
+        {
+            Vector256<T> nanMask = ~Vector256.Equals(v0, v0);
+            if (nanMask != Vector256<T>.Zero)
+            {
+                return v0.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            nanMask = ~Vector256.Equals(v1, v1);
+            if (nanMask != Vector256<T>.Zero)
+            {
+                return v1.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            nanMask = ~Vector256.Equals(v2, v2);
+            if (nanMask != Vector256<T>.Zero)
+            {
+                return v2.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            return v3.GetElement(IndexOfFirstMatch(~Vector256.Equals(v3, v3)));
+        }
+
+        /// <inheritdoc cref="FirstNaN{T}(Vector128{T}, Vector128{T}, Vector128{T}, Vector128{T})"/>
+        private static T FirstNaN<T>(Vector512<T> v0, Vector512<T> v1, Vector512<T> v2, Vector512<T> v3)
+        {
+            Vector512<T> nanMask = ~Vector512.Equals(v0, v0);
+            if (nanMask != Vector512<T>.Zero)
+            {
+                return v0.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            nanMask = ~Vector512.Equals(v1, v1);
+            if (nanMask != Vector512<T>.Zero)
+            {
+                return v1.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            nanMask = ~Vector512.Equals(v2, v2);
+            if (nanMask != Vector512<T>.Zero)
+            {
+                return v2.GetElement(IndexOfFirstMatch(nanMask));
+            }
+
+            return v3.GetElement(IndexOfFirstMatch(~Vector512.Equals(v3, v3)));
         }
     }
 }
