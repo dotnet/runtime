@@ -114,7 +114,6 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
         VTableFixupSupport.GetEffectiveMachine(machine) is
             Machine.I386 or
             Machine.Amd64 or
-            Machine.ArmThumb2 or
             Machine.Arm64;
 
     protected override ImmutableArray<Section> CreateSections()
@@ -215,7 +214,6 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
             {
                 Machine.I386 => (2, sizeof(uint), 16),
                 Machine.Amd64 => (2, sizeof(ulong), 4),
-                Machine.ArmThumb2 => (8, sizeof(uint), 4),
                 Machine.Arm64 => (16, sizeof(ulong), 8),
                 _ => throw new UnreachableException(),
             };
@@ -242,15 +240,6 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
                     addressFixup = builder.ReserveBytes(addressSize);
                     builder.WriteByte(0xFF);
                     builder.WriteByte(0xE0);
-                    break;
-
-                case Machine.ArmThumb2:
-                    // ldr.w r12, [pc, #4]; ldr.w pc, [r12]; .word vtableSlotAddress
-                    builder.WriteUInt16(0xF8DF);
-                    builder.WriteUInt16(0xC004);
-                    builder.WriteUInt16(0xF8DC);
-                    builder.WriteUInt16(0xF000);
-                    addressFixup = builder.ReserveBytes(addressSize);
                     break;
 
                 case Machine.Arm64:

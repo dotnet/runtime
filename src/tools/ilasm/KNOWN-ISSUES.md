@@ -24,3 +24,7 @@ Currently managed ilasm does not do any optimizations of the IL written by the u
 ## -FOLD is a no-op
 
 Currently managed ilasm does not fold identical IL bodies from different methods into the same blob.
+
+## VTable Exports don't support ARM32
+
+VTable exports are Windows-only and Windows ARM32 is unsupported, so managed ILASM doesn't support them.
