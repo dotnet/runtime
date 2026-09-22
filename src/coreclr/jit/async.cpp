@@ -1599,10 +1599,10 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
     // by the call appears live when its result is used. Its previous value is
     // overwritten on normal flow and only needs to be preserved if it is live
     // into an EH successor.
-    auto visitDef = [&](const LocalDef& def) {
-        if (def.IsEntire)
+    auto visitDef = [&](const auto& def) {
+        if (def.IsEntire(m_compiler))
         {
-            unsigned lclNum = def.Def->GetLclNum();
+            unsigned lclNum = def.GetLclNum();
             if (IsCallDefLiveInEHSucc(block, lclNum))
             {
                 JITDUMP("  V%02u is fully defined but live into an EH successor\n", lclNum);
@@ -1616,7 +1616,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         return GenTree::VisitResult::Continue;
     };
 
-    call->VisitLocalDefs(m_compiler, visitDef);
+    call->VisitLogicalLocalDefs(m_compiler, visitDef);
 
 #ifdef TARGET_WASM
     // The Wasm shadow stack pointer is a Wasm local set by the caller, not
@@ -5068,6 +5068,11 @@ BasicBlock* AsyncTransformation::CreateOSRJumpBB(GenTree* osrAddress)
     jmpOSR->clearTryIndex();
     jmpOSR->clearHndIndex();
 
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        jmpOSR->SetFlags(BBF_PROF_WEIGHT);
+    }
+
     JITDUMP("    Created " FMT_BB " for transitions back into OSR method\n", jmpOSR->bbNum);
 
     GenTree* jmpOsr = m_compiler->gtNewOperNode(GT_NONLOCAL_JMP, TYP_VOID, osrAddress);
@@ -5220,7 +5225,6 @@ void AsyncTransformation::CreateResumptionSwitch(GenTreeLclVarCommon* commonAsyn
         checkOSRAddressOffsetBB->SetCond(toJmpOSRBB, toOnContinuationBB);
         toJmpOSRBB->setLikelihood(0);
         toOnContinuationBB->setLikelihood(1);
-        jmpOSR->inheritWeightPercentage(checkOSRAddressOffsetBB, 0);
 
         // We need to dispatch to the OSR version if the OSR address is non-zero.
         continuationArg                   = m_compiler->gtNewLclvNode(m_compiler->lvaAsyncContinuationArg, TYP_REF);

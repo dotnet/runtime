@@ -381,7 +381,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val32.IsZero())
             {
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+                // VEX/EVEX 128-bit zeroing also clears the upper bits without dirtying upper vector state.
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
             {
@@ -400,13 +401,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val64.IsZero())
             {
-                // Use VEX version because it's smaller (for zmm0-zmm15) than EVEX to zero a zmm register and still
-                // zeros the entire register:
-                //
-                //   xorps zmm0, zmm0, zmm0 (6 bytes)
-                //   xorps ymm0, ymm0, ymm0 (4 bytes)
-                //
-                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_32BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+                // VEX/EVEX 128-bit zeroing also clears the upper bits without dirtying upper vector state.
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
             {

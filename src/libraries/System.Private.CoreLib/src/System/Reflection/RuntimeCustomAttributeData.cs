@@ -913,11 +913,7 @@ namespace System.Reflection
         public Type? EnumType { get; }
     }
 
-#if NATIVEAOT
     internal static partial class RuntimeCustomAttribute
-#else
-    internal static unsafe partial class CustomAttribute
-#endif
     {
         internal static bool IsDefined(RuntimeType type, RuntimeType? caType, bool inherit)
         {
