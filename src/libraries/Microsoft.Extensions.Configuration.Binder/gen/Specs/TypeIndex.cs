@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             _ => throw new InvalidOperationException(),
         };
 
-        public bool HasPropertyTypeConverter(TypeSpec typeSpec, MethodsToGen overload)
+        public bool RequiresReflectionForTypeConverters(TypeSpec typeSpec, MethodsToGen overload)
         {
             PropertyBindingContext context = (overload & MethodsToGen.ConfigBinder_Get) is not 0
                 ? PropertyBindingContext.CreateInstance
@@ -68,6 +68,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 bool bindExistingInstance = (currentContext & PropertyBindingContext.ExistingInstance) is not 0;
                 bool createInstance = (currentContext & PropertyBindingContext.CreateInstance) is not 0 && CanInstantiate(objectSpec);
 
+                if (createInstance && objectSpec.RequiresConstructorAccessor && objectSpec.ConstructorAccessor is null)
+                {
+                    return true;
+                }
+
                 if ((!bindExistingInstance && !createInstance) || objectSpec.Properties is not { } properties)
                 {
                     return false;
@@ -75,22 +80,30 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (PropertySpec property in properties)
                 {
-                    bool isConstructorBound = objectSpec.InstantiationStrategy is ObjectInstantiationStrategy.ParameterizedConstructor &&
-                        property.MatchingCtorParam is not null;
-
-                    if (bindExistingInstance && property.HasTypeConverterOnBindableProperty)
-                    {
-                        return true;
-                    }
-
-                    if (createInstance && !isConstructorBound && property.HasTypeConverterOnBindableProperty)
-                    {
-                        return true;
-                    }
-
                     if (property.IsIgnored)
                     {
                         continue;
+                    }
+
+                    bool isConstructorBound = objectSpec.InstantiationStrategy is ObjectInstantiationStrategy.ParameterizedConstructor &&
+                        property.MatchingCtorParam is not null;
+
+                    if (property.CanGet && property.IsInitOnly && property.InitOnlySetter is null &&
+                        (bindExistingInstance || createInstance))
+                    {
+                        return true;
+                    }
+
+                    if (bindExistingInstance && property.HasTypeConverterOnBindableProperty &&
+                        (property.TypeConverter is null || property.HasUnresolvedTypeConverterFallback))
+                    {
+                        return true;
+                    }
+
+                    if (createInstance && !isConstructorBound && property.HasTypeConverterOnBindableProperty &&
+                        (property.TypeConverter is null || property.HasUnresolvedTypeConverterFallback))
+                    {
+                        return true;
                     }
 
                     if (bindExistingInstance && ContainsPropertyTypeConverterForNormalBinding(property))
@@ -105,8 +118,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (isConstructorBound)
                     {
-                        if ((property.HasTypeConverter &&
-                                (property.MatchingCtorParameterTypeMatches || (property.SetOnInit && property.CanGet))) ||
+                        if ((property.AccessDeclaringType is null && property.HasTypeConverter &&
+                                property.MatchingCtorParameterTypeMatches &&
+                                (property.MatchingCtorParam!.TypeConverter is null || property.MatchingCtorParam.HasUnresolvedTypeConverterFallback)) ||
                             ContainsPropertyTypeConverter(property.MatchingCtorParam!.TypeRef, PropertyBindingContext.CreateInstance))
                         {
                             return true;
@@ -179,6 +193,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             if (property.IsIgnored || !IsAccessible())
             {
                 return false;
+            }
+
+            if (property.TypeConverter is not null)
+            {
+                return true;
             }
 
             if (!_index.TryGetValue(property.TypeRef, out TypeSpec? propertyTypeSpec))

@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        public async Task PropertyTypeConverterUsesReflectionFallbackForReachableGraphs()
+        public async Task PropertyTypeConverterGeneratesDirectCallsForReachableGraphs()
         {
             string source = """
                 using System;
@@ -274,13 +274,14 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
                 source,
-                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)));
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
 
-            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
             Assert.NotNull(result.GeneratedSource);
-            Assert.Equal(8, result.Diagnostics.Length);
-            AssertPropertyTypeConverterDiagnostics(result.Diagnostics);
-            await VerifySuppressedCallsMatchInterceptedCalls(result, expectUnsuppressedDiagnostics: true);
+            Assert.Empty(result.Diagnostics);
+            Assert.DoesNotContain("TypeDescriptor", result.GeneratedSource.Value.SourceText.ToString());
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
 
             var values = (object[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
             Assert.Equal(new object[] { 42, 42, 42, 42, 42, 42, 42, 41, 42 }, values);
@@ -389,7 +390,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
                 source,
-                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)));
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
 
             result.ValidateDiagnostics(ExpectedDiagnostics.None);
             Assert.NotNull(result.GeneratedSource);
@@ -568,13 +570,13 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
                 source,
-                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)));
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
 
-            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
             Assert.NotNull(result.GeneratedSource);
-            Assert.Equal(12, result.Diagnostics.Length);
-            AssertPropertyTypeConverterDiagnostics(result.Diagnostics);
-            await VerifySuppressedCallsMatchInterceptedCalls(result, expectUnsuppressedDiagnostics: true);
+            Assert.Empty(result.Diagnostics);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
 
             var values = (object[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
             Assert.Equal(
@@ -725,14 +727,350 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
                 source,
-                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)));
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
+
+#if NET
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.Empty(result.Diagnostics);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+#else
+            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            Assert.Single(result.Diagnostics);
+            AssertPropertyTypeConverterDiagnostics(result.Diagnostics);
+            await VerifySuppressedCallsMatchInterceptedCalls(result, expectUnsuppressedDiagnostics: true);
+#endif
+            Assert.NotNull(result.GeneratedSource);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("typeof(Program.Converter)")]
+        [InlineData("\"Program+Converter\"")]
+        [InlineData("\"Program+Converter, test.dll\"")]
+        [InlineData("\"Program+Converter, test.dll, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null\"")]
+        [InlineData("typeof(Program.GenericConverter<int>)")]
+        [InlineData("typeof(Program.ByRefConverter)")]
+        public async Task PropertyTypeConverterResolvesStaticTypesAndPrefersTypeConstructor(string converterArgument)
+        {
+            string source = $$"""
+                using System;
+                using System.Collections.Generic;
+                using System.ComponentModel;
+                using System.Globalization;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static int Result;
+                    public static void Main()
+                    {
+                        IConfiguration configuration = new ConfigurationBuilder()
+                            .AddInMemoryCollection(new Dictionary<string, string?> { ["Value"] = "41" }).Build();
+                        Result = configuration.Get<Options>()!.Value;
+                    }
+
+                    public class Options
+                    {
+                        [TypeConverter({{converterArgument}})]
+                        public int Value { get; set; }
+                    }
+
+                    public sealed class Converter : TypeConverter
+                    {
+                        public Converter() => throw new InvalidOperationException("Wrong constructor.");
+                        public Converter(Type target)
+                        {
+                            if (target != typeof(int))
+                            {
+                                throw new InvalidOperationException("Wrong target type.");
+                            }
+                        }
+                        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+                        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                            int.Parse((string)value, CultureInfo.InvariantCulture) + 1;
+                    }
+
+                    public sealed class GenericConverter<T> : TypeConverter
+                    {
+                        public GenericConverter(Type target)
+                        {
+                            if (target != typeof(T))
+                            {
+                                throw new InvalidOperationException("Wrong target type.");
+                            }
+                        }
+                        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+                        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                            int.Parse((string)value, CultureInfo.InvariantCulture) + 1;
+                    }
+
+                    public sealed class ByRefConverter : TypeConverter
+                    {
+                        public ByRefConverter() { }
+                        public ByRefConverter(ref Type target) => throw new InvalidOperationException("Wrong constructor.");
+                        public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+                        public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                            int.Parse((string)value, CultureInfo.InvariantCulture) + 1;
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
+
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.Empty(result.Diagnostics);
+            Assert.NotNull(result.GeneratedSource);
+            Assert.DoesNotContain("TypeDescriptor", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.Equal(42, LoadAndInvokeMain(result.OutputCompilation, "Result"));
+        }
+
+        [Theory]
+        [InlineData("MissingConverter, MissingAssembly")]
+        [InlineData("System.ComponentModel.Int32Converter, MissingAssembly")]
+        [InlineData("System.ComponentModel.Int32Converter, System.ComponentModel.TypeConverter, Version=99.0.0.0")]
+        [InlineData("System.ComponentModel.Int32Converter, System.ComponentModel.TypeConverter, PublicKeyToken=invalid")]
+        public async Task PropertyTypeConverterUnresolvedNamesUseExplicitFallback(string converterName)
+        {
+            string source = $$"""
+                using System.ComponentModel;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfiguration configuration = new ConfigurationBuilder().Build();
+                        configuration.Get<Options>();
+                    }
+                    public class Options
+                    {
+                        [TypeConverter({{SymbolDisplay.FormatLiteral(converterName, quote: true)}})]
+                        public int Value { get; set; }
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
 
             result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            Assert.False(result.GeneratedSource.HasValue);
+            Assert.Equal("SYSLIB1105", Assert.Single(result.Diagnostics).Id);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task PropertyTypeConverterInstancesAreScopedToEachProperty()
+        {
+            string source = """
+                using System;
+                using System.Collections.Generic;
+                using System.ComponentModel;
+                using System.Globalization;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static int[] Result = null!;
+                    public static void Main()
+                    {
+                        IConfiguration configuration = new ConfigurationBuilder()
+                            .AddInMemoryCollection(new Dictionary<string, string?>
+                            {
+                                ["C"] = "value", ["B_C"] = "value"
+                            }).Build();
+                        Result = new[] { configuration.Get<A_B>()!.C, configuration.Get<A>()!.B_C };
+                    }
+                }
+                public class A_B
+                {
+                    [TypeConverter(typeof(CountingConverter))]
+                    public int C { get; set; }
+                }
+                public class A
+                {
+                    [TypeConverter(typeof(CountingConverter))]
+                    public int B_C { get; set; }
+                }
+                public sealed class CountingConverter : TypeConverter
+                {
+                    private int _calls;
+                    public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+                    public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) => ++_calls;
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true);
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.Equal(new[] { 1, 1 }, (int[])LoadAndInvokeMain(result.OutputCompilation, "Result")!);
+        }
+
+        [Theory]
+        [InlineData("[ConfigurationIgnore] public int Value { get; init; }")]
+        [InlineData("public int Value { private get; init; }")]
+        public async Task PropertyTypeConverterIgnoresUnreachableHiddenInitProperties(string baseProperty)
+        {
+            string source = $$"""
+                using System;
+                using System.ComponentModel;
+                using System.Globalization;
+                using Microsoft.Extensions.Configuration;
+
+                public class Base
+                {
+                    {{baseProperty}}
+                }
+                public class Options : Base
+                {
+                    [TypeConverter(typeof(Converter))]
+                    public new int Value { get; set; }
+                }
+                public sealed class Converter : TypeConverter
+                {
+                    public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+                    public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) => 42;
+                }
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfiguration configuration = new ConfigurationBuilder().Build();
+                        configuration.Get<Options>();
+                        configuration.Bind(new Options());
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true,
+                publishAot: true);
+
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.Empty(result.Diagnostics);
             Assert.NotNull(result.GeneratedSource);
-            Assert.Equal(6, result.Diagnostics.Length);
-            AssertPropertyTypeConverterDiagnostics(result.Diagnostics);
-            AssertCanCreateAssemblyImage(result.OutputCompilation);
-            await VerifySuppressedCallsMatchInterceptedCalls(result, expectUnsuppressedDiagnostics: true);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task PropertyTypeConverterInitAndFallbackBindingRemainReflectionFree()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests;
+
+                public class Program
+                {
+                    public static object[] Result = null!;
+                    public static void Main()
+                    {
+                        IConfiguration configuration = new ConfigurationBuilder().AddInMemoryCollection(
+                            new Dictionary<string, string?> { ["Value"] = "41", ["Direct"] = "new", ["Fallback"] = "new" }).Build();
+                        var required = configuration.Get<ConfigurationBinderTests.PropertyTypeConverterRequiredInit>()!;
+                        var generic = configuration.Get<ConfigurationBinderTests.PropertyTypeConverterGenericRequiredInit<int>>()!;
+                        var nested = new ConfigurationBinderTests.PropertyTypeConverterGenericOuter<object>.Inner<int>();
+                        configuration.Bind(nested);
+                        ConfigurationBinderTests.IPropertyTypeConverterInit contract = new ConfigurationBinderTests.PropertyTypeConverterInterfaceInit();
+                        configuration.Bind(contract);
+                        var shadowed = configuration.Get<ConfigurationBinderTests.PropertyTypeConverterShadowedOuter<long>.Inner<int>>()!;
+                        var leaf = configuration.Get<ConfigurationBinderTests.PropertyTypeConverterLeafOptions>()!;
+                        Result = new object[] { required.Value, generic.Value, nested.Value, contract.Value, shadowed.Value, leaf.Direct.Text, leaf.Fallback.Text };
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute), typeof(ConfigurationBinderTests)),
+                enableTypeConverters: true,
+                publishAot: true);
+
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.Empty(result.Diagnostics);
+            string generated = result.GeneratedSource.Value.SourceText.ToString();
+            Assert.Contains("UnsafeAccessorKind.Method", generated);
+            Assert.Contains("UnsafeAccessorKind.Constructor", generated);
+            Assert.DoesNotContain("TypeDescriptor", generated);
+            Assert.Equal(new object[] { 42, 42, 42, 42, 42, "new", "new" }, (object[])LoadAndInvokeMain(result.OutputCompilation, "Result")!);
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task PropertyTypeConverterInterfaceBindingRetainsGetConstructorDiagnostic()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                public interface IOptions
+                {
+                    int Value { get; init; }
+                }
+                public class Options : IOptions
+                {
+                    public int Value { get; init; }
+                }
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfiguration configuration = new ConfigurationBuilder().Build();
+                        IOptions options = new Options();
+                        configuration.Bind(options);
+                        configuration.Get<IOptions>();
+                    }
+                }
+                """;
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, enableTypeConverters: true);
+            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1100", diagnostic.Id);
+            Assert.Equal("configuration.Get<IOptions>()",
+                diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan));
+        }
+
+        [Theory]
+        [InlineData(false, DiagnosticSeverity.Warning)]
+        [InlineData(true, DiagnosticSeverity.Error)]
+        public async Task PropertyTypeConverterInaccessibleTypeFallbackIsDiagnosed(bool publishAot, DiagnosticSeverity expectedSeverity)
+        {
+            string source = """
+                using System.ComponentModel;
+                using Microsoft.Extensions.Configuration;
+                public class Options
+                {
+                    [TypeConverter(typeof(TypeConverter))]
+                    public Leaf Value { get; set; } = null!;
+                }
+                [TypeConverter(typeof(Leaf.Converter))]
+                public class Leaf
+                {
+                    private class Converter : TypeConverter { }
+                }
+                public class Program
+                {
+                    public static void Main() => new ConfigurationBuilder().Build().Get<Options>();
+                }
+                """;
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(typeof(TypeConverter), typeof(TypeConverterAttribute)),
+                enableTypeConverters: true,
+                publishAot: publishAot);
+
+            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1105", diagnostic.Id);
+            Assert.Equal(expectedSeverity, diagnostic.Severity);
+            Assert.False(result.GeneratedSource.HasValue);
         }
 
         private static void AssertPropertyTypeConverterDiagnostics(IEnumerable<Diagnostic> diagnostics)

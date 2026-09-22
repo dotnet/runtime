@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator : IIncrementalGenerator
     {
-        internal sealed partial class Parser(CompilationData compilationData)
+        internal sealed partial class Parser(CompilationData compilationData, GeneratorOptions options)
         {
             private readonly KnownTypeSymbols _typeSymbols = compilationData.TypeSymbols!;
             private readonly bool _langVersionIsSupported = compilationData.LanguageVersionIsSupported;
@@ -127,11 +127,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     TypeSpec typeSpec = _createdTypeSpecs[typeParseInfo.TypeSymbol];
                     MethodsToGen overload = typeParseInfo.BindingOverload;
 
-                    if (typeIndex.HasPropertyTypeConverter(typeSpec, overload))
+                    if (options.EnableTypeConverters && typeIndex.RequiresReflectionForTypeConverters(typeSpec, overload))
                     {
-                        RecordDiagnostic(
+                        Diagnostics ??= new List<Diagnostic>();
+                        Diagnostics.Add(Diagnostic.Create(
                             DiagnosticDescriptors.PropertyTypeConverterRequiresReflection,
-                            typeParseInfo.BinderInvocation.Location);
+                            typeParseInfo.BinderInvocation.Location,
+                            options.RequireAotCompatibleBinding ? DiagnosticSeverity.Error : DiagnosticSeverity.Warning,
+                            additionalLocations: null,
+                            properties: null));
                         continue;
                     }
 
@@ -672,16 +676,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             continue;
                         }
 
-                        ImmutableArray<AttributeData> attributes = property.GetAttributes();
-                        if (attributes.Any(attribute =>
-                            SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute)))
+                        IPropertySymbol converterProperty = mostDerivedOverrides.TryGetValue(property, out IPropertySymbol? mostDerivedOverride)
+                            ? mostDerivedOverride
+                            : property;
+                        if (IsIgnoredProperty(converterProperty))
                         {
                             continue;
                         }
 
-                        IPropertySymbol converterProperty = mostDerivedOverrides.TryGetValue(property, out IPropertySymbol? mostDerivedOverride)
-                            ? mostDerivedOverride
-                            : property;
                         return SymbolEqualityComparer.Default.Equals(property.Type, parameter.Type) &&
                             HasTypeConverterAttribute(converterProperty);
                     }
@@ -697,17 +699,168 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private bool HasTypeConverterAttribute(IPropertySymbol property)
+                => options.EnableTypeConverters &&
+                    !SymbolEqualityComparer.Default.Equals(property.Type, _typeSymbols.IConfigurationSection) &&
+                    GetTypeConverterAttribute(property) is { ConstructorArguments.Length: > 0 } attribute &&
+                    attribute.ConstructorArguments[0].Value is not null and not "";
+
+            private bool IsIgnoredProperty(IPropertySymbol property)
             {
                 for (IPropertySymbol? current = property; current is not null; current = current.OverriddenProperty)
                 {
                     if (current.GetAttributes().Any(attribute =>
-                        SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.TypeConverterAttribute)))
+                        SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute)))
                     {
                         return true;
                     }
                 }
 
                 return false;
+            }
+
+            private AttributeData? GetTypeConverterAttribute(IPropertySymbol property)
+            {
+                for (IPropertySymbol? current = property; current is not null; current = current.OverriddenProperty)
+                {
+                    foreach (AttributeData attribute in current.GetAttributes())
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.TypeConverterAttribute))
+                        {
+                            return attribute;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            private TypeConverterSpec? GetTypeConverterSpec(IPropertySymbol property) =>
+                GetTypeConverterSpec(GetTypeConverterAttribute(property), property.ContainingAssembly, property.Type,
+                    $"{property.ContainingType.GetFullyQualifiedName()}::{property.Name}");
+
+            private TypeConverterSpec? GetFallbackTypeConverterSpec(IPropertySymbol property, out bool unresolved)
+            {
+                unresolved = false;
+                ITypeSymbol targetType = IsNullable(property.Type, out ITypeSymbol? underlyingType) ? underlyingType : property.Type;
+                for (INamedTypeSymbol? current = targetType as INamedTypeSymbol; current is not null; current = current.BaseType)
+                {
+                    AttributeData? attribute = current.GetAttributes().FirstOrDefault(attribute =>
+                        SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, _typeSymbols.TypeConverterAttribute));
+                    if (attribute is null)
+                    {
+                        continue;
+                    }
+
+                    if (attribute is not { ConstructorArguments.Length: 1 } || attribute.ConstructorArguments[0].Value is null or "")
+                    {
+                        return null;
+                    }
+
+                    TypeConverterSpec? converter = GetTypeConverterSpec(attribute, current.ContainingAssembly, targetType,
+                        $"{property.ContainingType.GetFullyQualifiedName()}::{property.Name}::fallback");
+                    unresolved = converter is null;
+                    return converter;
+                }
+
+                return null;
+            }
+
+            private TypeConverterSpec? GetTypeConverterSpec(
+                AttributeData? attribute, IAssemblySymbol declaringAssembly, ITypeSymbol targetType, string identifier)
+            {
+                if (attribute is not { ConstructorArguments.Length: 1 })
+                {
+                    return null;
+                }
+
+                INamedTypeSymbol? converterType = attribute.ConstructorArguments[0].Value switch
+                {
+                    INamedTypeSymbol type => type,
+                    string typeName => ResolveConverterTypeName(typeName, declaringAssembly),
+                    _ => null,
+                };
+
+                if (converterType is null || converterType.IsAbstract || ContainsGenericParameters(converterType) ||
+                    !_typeSymbols.Compilation.IsSymbolAccessibleWithin(converterType, _typeSymbols.Compilation.Assembly) ||
+                    !_typeSymbols.Compilation.IsSymbolAccessibleWithin(targetType, _typeSymbols.Compilation.Assembly) ||
+                    targetType.IsRefLikeType || targetType.TypeKind is TypeKind.Pointer or TypeKind.FunctionPointer)
+                {
+                    return null;
+                }
+
+                INamedTypeSymbol? typeConverter = _typeSymbols.Compilation.GetTypeByMetadataName("System.ComponentModel.TypeConverter");
+                if (typeConverter is null ||
+                    (!SymbolEqualityComparer.Default.Equals(converterType, typeConverter) && !IsAssignableTo(converterType, typeConverter)))
+                {
+                    return null;
+                }
+
+                INamedTypeSymbol? systemType = _typeSymbols.Compilation.GetTypeByMetadataName("System.Type");
+                IMethodSymbol? typeConstructor = converterType.InstanceConstructors.FirstOrDefault(ctor =>
+                    ctor.DeclaredAccessibility is Accessibility.Public &&
+                    ctor.Parameters.Length is 1 &&
+                    ctor.Parameters[0].RefKind is RefKind.None &&
+                    SymbolEqualityComparer.Default.Equals(ctor.Parameters[0].Type, systemType));
+                IMethodSymbol? constructor = typeConstructor ?? converterType.InstanceConstructors.FirstOrDefault(ctor =>
+                    ctor.DeclaredAccessibility is Accessibility.Public && ctor.Parameters.Length is 0);
+                if (constructor is null)
+                {
+                    return null;
+                }
+
+                if (HasRequiredMembers(converterType) && !constructor.GetAttributes().Any(attribute =>
+                    attribute.AttributeClass?.ToDisplayString() == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute"))
+                {
+                    return null;
+                }
+
+                return new TypeConverterSpec(
+                    new TypeRef(converterType),
+                    new TypeRef(targetType),
+                    identifier,
+                    typeConstructor is not null);
+            }
+
+            private INamedTypeSymbol? ResolveConverterTypeName(string typeName, IAssemblySymbol declaringAssembly)
+            {
+                int separator = typeName.IndexOf(',');
+                string metadataName = (separator < 0 ? typeName : typeName.Substring(0, separator)).Trim();
+                if (metadataName.Length is 0 || metadataName.IndexOf('[') >= 0)
+                {
+                    return null;
+                }
+
+                if (separator < 0)
+                {
+                    return declaringAssembly.GetTypeByMetadataName(metadataName) ??
+                        _typeSymbols.Compilation.GetTypeByMetadataName(metadataName);
+                }
+
+                if (!AssemblyIdentity.TryParseDisplayName(typeName.Substring(separator + 1).Trim(), out AssemblyIdentity? assemblyName, out AssemblyIdentityParts parts))
+                {
+                    return null;
+                }
+
+                if (MatchesAssembly(declaringAssembly))
+                {
+                    return declaringAssembly.GetTypeByMetadataName(metadataName);
+                }
+
+                foreach (IAssemblySymbol assembly in _typeSymbols.Compilation.SourceModule.ReferencedAssemblySymbols)
+                {
+                    if (MatchesAssembly(assembly))
+                    {
+                        return assembly.GetTypeByMetadataName(metadataName);
+                    }
+                }
+
+                return null;
+
+                bool MatchesAssembly(IAssemblySymbol assembly) =>
+                    string.Equals(assembly.Identity.Name, assemblyName.Name, StringComparison.OrdinalIgnoreCase) &&
+                    ((parts & AssemblyIdentityParts.Version) is 0 || assembly.Identity.Version == assemblyName.Version) &&
+                    ((parts & AssemblyIdentityParts.Culture) is 0 || string.Equals(assembly.Identity.CultureName, assemblyName.CultureName, StringComparison.OrdinalIgnoreCase)) &&
+                    ((parts & (AssemblyIdentityParts.PublicKey | AssemblyIdentityParts.PublicKeyToken)) is 0 || assemblyName.PublicKeyToken.SequenceEqual(assembly.Identity.PublicKeyToken));
             }
 
             private static Dictionary<IPropertySymbol, IPropertySymbol> GetMostDerivedOverrides(INamedTypeSymbol typeSymbol)
@@ -718,7 +871,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     foreach (IPropertySymbol property in current.GetMembers().OfType<IPropertySymbol>())
                     {
-                        if (!property.IsOverride || property.GetMethod is null)
+                        if (!property.IsOverride)
                         {
                             continue;
                         }
@@ -737,6 +890,101 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return overrides;
+            }
+
+            private InitOnlySetterSpec? GetInitOnlySetter(IPropertySymbol property)
+            {
+                if (!options.EnableTypeConverters ||
+                    property.SetMethod is not { IsInitOnly: true, DeclaredAccessibility: Accessibility.Public } ||
+                    GetUnsafeAccessorType(property.ContainingType, out Dictionary<ITypeParameterSymbol, string>? substitutions) is not UnsafeAccessorTypeSpec declaringType)
+                {
+                    return null;
+                }
+
+                return new InitOnlySetterSpec(declaringType, new TypeRef(property.Type), property.Name,
+                    GetAccessorDisplayString(property.OriginalDefinition.Type, substitutions));
+            }
+
+            private UnsafeAccessorTypeSpec? GetUnsafeAccessorType(
+                INamedTypeSymbol type, out Dictionary<ITypeParameterSymbol, string>? substitutions)
+            {
+                substitutions = null;
+                if (_typeSymbols.Compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.UnsafeAccessorAttribute") is null)
+                {
+                    return null;
+                }
+
+                if (!type.IsGenericType)
+                {
+                    return new(new TypeRef(type), type.GetFullyQualifiedName(), null, null, null);
+                }
+
+                // Generic unsafe accessors require .NET 9, which also introduced this attribute.
+                if (_typeSymbols.Compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute") is null)
+                {
+                    return null;
+                }
+
+                List<INamedTypeSymbol> containingTypes = new();
+                for (INamedTypeSymbol? current = type; current is not null; current = current.ContainingType)
+                {
+                    containingTypes.Add(current);
+                }
+                containingTypes.Reverse();
+
+                List<string> parameters = new();
+                List<string> arguments = new();
+                List<string> constraints = new();
+                substitutions = new(SymbolEqualityComparer.Default);
+                foreach (INamedTypeSymbol current in containingTypes)
+                {
+                    foreach (ITypeParameterSymbol parameter in current.OriginalDefinition.TypeParameters)
+                    {
+                        string name = $"T{substitutions.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+                        substitutions.Add(parameter, name);
+                        parameters.Add(name);
+                    }
+                }
+                SymbolDisplayFormat constraintFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(
+                    SymbolDisplayGenericsOptions.IncludeTypeParameters | SymbolDisplayGenericsOptions.IncludeTypeConstraints);
+                foreach (INamedTypeSymbol current in containingTypes)
+                {
+                    arguments.AddRange(current.TypeArguments.Select(argument => argument.GetFullyQualifiedName()));
+                    string display = GetAccessorDisplayString(current.OriginalDefinition, substitutions, constraintFormat);
+                    int whereIndex = display.IndexOf(" where ", StringComparison.Ordinal);
+                    if (whereIndex >= 0)
+                    {
+                        constraints.Add(display.Substring(whereIndex + 1));
+                    }
+                }
+
+                return new(new TypeRef(type), GetAccessorDisplayString(type.OriginalDefinition, substitutions),
+                    string.Join(", ", parameters), string.Join(", ", arguments), string.Join(" ", constraints));
+            }
+
+            private static string GetAccessorDisplayString(
+                ITypeSymbol type, Dictionary<ITypeParameterSymbol, string>? substitutions, SymbolDisplayFormat? format = null)
+            {
+                format ??= SymbolDisplayFormat.FullyQualifiedFormat;
+                return substitutions is null
+                    ? type.ToDisplayString(format)
+                    : string.Concat(type.ToDisplayParts(format).Select(part =>
+                        part.Symbol is ITypeParameterSymbol parameter && substitutions.TryGetValue(parameter, out string? name)
+                            ? name
+                            : part.ToString()));
+            }
+
+            private static bool HasRequiredMembers(INamedTypeSymbol type)
+            {
+                for (INamedTypeSymbol? current = type; current is not null; current = current.BaseType)
+                {
+                    if (current.GetMembers().Any(member => member is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true }))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
 
             private ObjectSpec CreateObjectSpec(TypeParseInfo typeParseInfo)
@@ -806,10 +1054,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (initDiagDescriptor is not null)
                 {
                     Debug.Assert(initExceptionMessage is not null);
-                    RecordTypeDiagnostic(typeParseInfo, initDiagDescriptor);
+                    if (options.EnableTypeConverters && typeParseInfo.ContainingTypeDiagnosticInfo is null &&
+                        (typeParseInfo.BindingOverload & MethodsToGen.ConfigBinder_Bind) is not 0)
+                    {
+                        // Bind uses the supplied instance; constructor diagnostics belong to Get.
+                        foreach (TypeParseInfo invocation in _invocationTypeParseInfo)
+                        {
+                            if ((invocation.BindingOverload & MethodsToGen.ConfigBinder_Get) is not 0 &&
+                                SymbolEqualityComparer.Default.Equals(invocation.TypeSymbol, typeSymbol))
+                            {
+                                RecordTypeDiagnostic(invocation, initDiagDescriptor);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        RecordTypeDiagnostic(typeParseInfo, initDiagDescriptor);
+                    }
                 }
 
                 Dictionary<string, PropertySpec>? properties = null;
+                Dictionary<string, List<PropertySpec>>? hiddenProperties = null;
                 HashSet<string>? reportedUnsupportedProperties = null;
 
                 INamedTypeSymbol? current = typeSymbol;
@@ -830,25 +1095,42 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             ImmutableArray<AttributeData> attributes = property.GetAttributes();
                             AttributeData? attributeData = attributes.FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationKeyNameAttribute));
                             string configKeyName = attributeData?.ConstructorArguments.FirstOrDefault().Value as string ?? propertyName;
-                            bool isIgnored = attributes.Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.ConfigurationIgnoreAttribute));
                             IPropertySymbol converterProperty = mostDerivedOverrides.TryGetValue(property, out IPropertySymbol? mostDerivedOverride)
                                 ? mostDerivedOverride
                                 : property;
+                            bool isIgnored = IsIgnoredProperty(converterProperty);
                             bool hasTypeConverter = HasTypeConverterAttribute(converterProperty);
+                            TypeConverterSpec? typeConverter = hasTypeConverter ? GetTypeConverterSpec(converterProperty) : null;
+                            bool unresolvedFallback = false;
+                            TypeConverterSpec? fallbackConverter = hasTypeConverter
+                                ? GetFallbackTypeConverterSpec(converterProperty, out unresolvedFallback)
+                                : null;
 
-                            PropertySpec spec = new(property, new TypeRef(property.Type))
+                            PropertySpec spec = new(property, new TypeRef(property.Type), GetInitOnlySetter(converterProperty))
                             {
                                 ConfigurationKeyName = configKeyName,
                                 IsIgnored = isIgnored,
                                 HasTypeConverter = hasTypeConverter,
                                 HasTypeConverterOnBindableProperty = !isIgnored && property.GetMethod?.DeclaredAccessibility is Accessibility.Public && hasTypeConverter,
+                                TypeConverter = typeConverter,
+                                FallbackTypeConverter = fallbackConverter,
+                                HasUnresolvedTypeConverterFallback = unresolvedFallback,
                             };
 
                             if (properties?.TryGetValue(propertyName, out PropertySpec? existingProperty) is true)
                             {
-                                if (spec.HasTypeConverterOnBindableProperty && !existingProperty.HasTypeConverterOnBindableProperty)
+                                if (options.EnableTypeConverters)
                                 {
-                                    properties[propertyName] = existingProperty with { HasTypeConverterOnBindableProperty = true };
+                                    hiddenProperties ??= new(StringComparer.OrdinalIgnoreCase);
+                                    if (!hiddenProperties.TryGetValue(propertyName, out List<PropertySpec>? hidden))
+                                    {
+                                        hiddenProperties[propertyName] = hidden = new();
+                                    }
+                                    hidden.Add(spec with { AccessDeclaringType = new TypeRef(property.ContainingType) });
+                                    if (!spec.IsIgnored && spec.CanGet && !IsUnsupportedType(property.Type))
+                                    {
+                                        EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName, spec.TypeRef);
+                                    }
                                 }
 
                                 continue;
@@ -923,10 +1205,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             ParameterSpec paramSpec = new ParameterSpec(parameter, parameterTypeRef)
                             {
                                 ConfigurationKeyName = propertySpec.ConfigurationKeyName,
+                                TypeConverter = parameterTypeRef.Equals(propertySpec.TypeRef) ? propertySpec.TypeConverter : null,
+                                FallbackTypeConverter = parameterTypeRef.Equals(propertySpec.TypeRef) ? propertySpec.FallbackTypeConverter : null,
+                                HasUnresolvedTypeConverterFallback = parameterTypeRef.Equals(propertySpec.TypeRef) && propertySpec.HasUnresolvedTypeConverterFallback,
                             };
 
                             propertySpec.MatchingCtorParam = paramSpec;
                             propertySpec.MatchingCtorParameterTypeMatches = parameterTypeRef.Equals(propertySpec.TypeRef);
+                            if (hiddenProperties?.TryGetValue(parameterName, out List<PropertySpec>? hidden) is true)
+                            {
+                                foreach (PropertySpec hiddenProperty in hidden)
+                                {
+                                    hiddenProperty.MatchingCtorParam = paramSpec;
+                                }
+                            }
                             (ctorParams ??= new()).Add(paramSpec);
                         }
                     }
@@ -950,12 +1242,44 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     static string FormatParams(List<string> names) => string.Join(",", names);
                 }
 
+                List<PropertySpec>? allProperties = properties?.Values.ToList();
+                if (hiddenProperties is not null)
+                {
+                    foreach (KeyValuePair<string, List<PropertySpec>> pair in hiddenProperties)
+                    {
+                        if (properties![pair.Key].HasTypeConverterOnBindableProperty ||
+                            pair.Value.Any(property => property.HasTypeConverterOnBindableProperty))
+                        {
+                            allProperties!.AddRange(pair.Value);
+                        }
+                    }
+                }
+
+                bool requiresConstructorAccessor = options.EnableTypeConverters &&
+                    ctor is not null && initExceptionMessage is null &&
+                    HasRequiredMembers(typeSymbol) &&
+                    ctor?.GetAttributes().Any(attribute =>
+                        attribute.AttributeClass?.ToDisplayString() == "System.Diagnostics.CodeAnalysis.SetsRequiredMembersAttribute") is not true;
+                ConstructorAccessorSpec? constructorAccessor = null;
+                if (requiresConstructorAccessor &&
+                    GetUnsafeAccessorType(typeSymbol, out Dictionary<ITypeParameterSymbol, string>? substitutions) is UnsafeAccessorTypeSpec declaringType)
+                {
+                    constructorAccessor = new(declaringType,
+                        ctor!.Parameters.Select(parameter => new TypeRef(parameter.Type)).ToImmutableEquatableArray(),
+                        ctor.OriginalDefinition.Parameters.Select(parameter => GetAccessorDisplayString(parameter.Type, substitutions)).ToImmutableEquatableArray());
+                }
+
                 return new ObjectSpec(
                     typeSymbol,
                     initializationStrategy,
-                    properties: properties?.Values.ToImmutableEquatableArray(),
+                    properties: allProperties?.ToImmutableEquatableArray(),
                     constructorParameters: ctorParams?.ToImmutableEquatableArray(),
-                    initExceptionMessage);
+                    initExceptionMessage)
+                {
+                    RequiresConstructorAccessor = requiresConstructorAccessor,
+                    ConstructorAccessor = constructorAccessor,
+                    BindInitPropertiesAfterConstruction = options.EnableTypeConverters && (!requiresConstructorAccessor || constructorAccessor is not null),
+                };
             }
 
             private static UnsupportedTypeSpec CreateUnsupportedCollectionSpec(TypeParseInfo typeParseInfo)

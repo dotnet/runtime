@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         private const string TrimmingWarningMessage = "In case the type is non-primitive, the trimmer cannot statically analyze the object's type so its members may be trimmed.";
         private const string InstanceGetTypeTrimmingWarningMessage = "Cannot statically analyze the type of instance so its members may be trimmed";
         private const string PropertyTrimmingWarningMessage = "Cannot statically analyze property.PropertyType so its members may be trimmed.";
-        private static readonly ConditionalWeakTable<Type, Dictionary<MethodInfo, (PropertyInfo Property, bool HasTypeConverter)>> s_typeConverterOverrides = new();
+        private static readonly ConditionalWeakTable<Type, Dictionary<MethodInfo, (PropertyInfo Property, bool HasTypeConverter, bool IsIgnored)>> s_propertyOverrides = new();
 
         /// <summary>
         /// Attempts to bind the configuration instance to a new instance of type T.
@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (PropertyInfo property in modelProperties)
             {
-                if (IsIgnoredProperty(property))
+                if (IsIgnoredProperty(property, instance.GetType()))
                 {
                     continue;
                 }
@@ -365,7 +365,7 @@ namespace Microsoft.Extensions.Configuration
                 isConfigurationExist = configValue != null;
             }
 
-            TypeConverter? typeConverter = isConfigurationExist && configValue is not null && converterProperty is not null
+            TypeConverter? typeConverter = isConfigurationExist && converterProperty is not null
                 ? GetPropertyTypeConverter(converterProperty, instance)
                 : null;
 
@@ -606,6 +606,7 @@ namespace Microsoft.Extensions.Configuration
                 if (!DoAllParametersHaveEquivalentProperties(
                     parameters,
                     properties,
+                    type,
                     out string nameOfInvalidParameters,
                     out PropertyInfo?[] parameterProperties))
                 {
@@ -639,16 +640,18 @@ namespace Microsoft.Extensions.Configuration
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static bool DoAllParametersHaveEquivalentProperties(
             ParameterInfo[] parameters,
             List<PropertyInfo> properties,
+            Type type,
             out string missing,
             out PropertyInfo?[] parameterProperties)
         {
             Dictionary<string, PropertyInfo> propertyMap = new(properties.Count, StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo property in properties)
             {
-                if (!IsIgnoredProperty(property) && !propertyMap.ContainsKey(property.Name))
+                if (!IsIgnoredProperty(property, type) && !propertyMap.ContainsKey(property.Name))
                 {
                     propertyMap.Add(property.Name, property);
                 }
@@ -1165,9 +1168,9 @@ namespace Microsoft.Extensions.Configuration
                 {
                     // if the property is virtual, only add the base-most definition so
                     // overridden properties aren't duplicated in the list.
-                    MethodInfo? setMethod = property.GetSetMethod(true);
+                    MethodInfo? accessor = property.GetMethod ?? property.SetMethod;
 
-                    if (setMethod is null || !setMethod.IsVirtual || setMethod == setMethod.GetBaseDefinition())
+                    if (accessor is null || !accessor.IsVirtual || accessor == accessor.GetBaseDefinition())
                     {
                         allProperties.Add(property);
                     }
@@ -1227,7 +1230,17 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
-        private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
+        [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
+        private static bool IsIgnoredProperty(PropertyInfo property, Type type)
+        {
+            if ((property.GetMethod ?? property.SetMethod) is MethodInfo { IsVirtual: true } accessor &&
+                s_propertyOverrides.GetValue(type, GetPropertyOverrides).TryGetValue(accessor.GetBaseDefinition(), out var metadata))
+            {
+                return metadata.IsIgnored;
+            }
+
+            return property.IsDefined(typeof(ConfigurationIgnoreAttribute));
+        }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static TypeConverter? GetPropertyTypeConverter(PropertyInfo property, object? instance)
@@ -1276,14 +1289,14 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static PropertyInfo GetTypeConverterProperty(PropertyInfo property, Type type, ref bool hasTypeConverter)
         {
-            MethodInfo? getter = property.GetMethod;
-            if (getter is null || !getter.IsVirtual || type == property.DeclaringType)
+            MethodInfo? accessor = property.GetMethod ?? property.SetMethod;
+            if (accessor is null || !accessor.IsVirtual)
             {
                 return property;
             }
 
-            if (s_typeConverterOverrides.GetValue(type, GetTypeConverterOverrides)
-                .TryGetValue(getter.GetBaseDefinition(), out var metadata))
+            if (s_propertyOverrides.GetValue(type, GetPropertyOverrides)
+                .TryGetValue(accessor.GetBaseDefinition(), out var metadata))
             {
                 hasTypeConverter = metadata.HasTypeConverter;
                 return metadata.Property;
@@ -1293,20 +1306,22 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static Dictionary<MethodInfo, (PropertyInfo Property, bool HasTypeConverter)> GetTypeConverterOverrides(Type type)
+        private static Dictionary<MethodInfo, (PropertyInfo Property, bool HasTypeConverter, bool IsIgnored)> GetPropertyOverrides(Type type)
         {
             // Cache immutable reflection metadata, not converter instances or mutable TypeDescriptor metadata.
-            Dictionary<MethodInfo, (PropertyInfo, bool)> overrides = new();
+            Dictionary<MethodInfo, (PropertyInfo, bool, bool)> overrides = new();
             for (Type? current = type; current is not null && current != typeof(object); current = current.BaseType)
             {
                 foreach (PropertyInfo candidate in current.GetProperties(DeclaredOnlyLookup))
                 {
-                    if (candidate.GetMethod is MethodInfo { IsVirtual: true } candidateGetter)
+                    if ((candidate.GetMethod ?? candidate.SetMethod) is MethodInfo { IsVirtual: true } candidateAccessor)
                     {
-                        MethodInfo baseGetter = candidateGetter.GetBaseDefinition();
-                        if (baseGetter != candidateGetter && !overrides.ContainsKey(baseGetter))
+                        MethodInfo baseAccessor = candidateAccessor.GetBaseDefinition();
+                        if (baseAccessor != candidateAccessor && !overrides.ContainsKey(baseAccessor))
                         {
-                            overrides.Add(baseGetter, (candidate, Attribute.IsDefined(candidate, typeof(TypeConverterAttribute), inherit: true)));
+                            overrides.Add(baseAccessor, (candidate,
+                                Attribute.IsDefined(candidate, typeof(TypeConverterAttribute), inherit: true),
+                                Attribute.IsDefined(candidate, typeof(ConfigurationIgnoreAttribute), inherit: true)));
                         }
                     }
                 }

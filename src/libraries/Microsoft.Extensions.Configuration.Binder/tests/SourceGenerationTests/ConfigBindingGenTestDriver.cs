@@ -35,7 +35,10 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             public ConfigBindingGenTestDriver(
                 LanguageVersion langVersion = LanguageVersion.LatestMajor,
                 IEnumerable<Assembly>? assemblyReferences = null,
-                IEnumerable<MetadataReference>? metadataReferences = null)
+                IEnumerable<MetadataReference>? metadataReferences = null,
+                bool? enableTypeConverters = null,
+                bool publishAot = false,
+                bool publishTrimmed = false)
             {
                 _langVersion = langVersion;
 
@@ -53,6 +56,22 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     driverOptions: new GeneratorDriverOptions(
                         disabledOutputs: IncrementalGeneratorOutputKind.None,
                         trackIncrementalGeneratorSteps: true));
+
+                UpdateOptions(enableTypeConverters, publishAot, publishTrimmed);
+            }
+
+            public void UpdateOptions(bool? enableTypeConverters = null, bool publishAot = false, bool publishTrimmed = false)
+            {
+                ImmutableDictionary<string, string>.Builder options = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
+                if (enableTypeConverters is bool enableTypeConvertersValue)
+                {
+                    options["build_property.EnableConfigurationBindingGeneratorTypeConverters"] = enableTypeConvertersValue ? "true" : "false";
+                }
+                options["build_property.PublishAot"] = publishAot ? "true" : "false";
+                options["build_property.PublishTrimmed"] = publishTrimmed ? "true" : "false";
+
+                _generatorDriver = _generatorDriver.WithUpdatedAnalyzerConfigOptions(
+                    new GlobalOptionsOnlyProvider(new DictionaryAnalyzerConfigOptions(options.ToImmutable())));
             }
 
             public async Task<ConfigBindingGenRunResult> RunGeneratorAndUpdateCompilation(string? source = null)

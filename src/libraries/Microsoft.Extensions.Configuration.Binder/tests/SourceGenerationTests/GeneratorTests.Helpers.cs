@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             public static (string Id, string Title) PropertyNotSupported = ("SYSLIB1101", "Did not generate binding logic for a property on a type");
             public static (string Id, string Title) ValueTypesInvalidForBind = ("SYSLIB1103", "Value types are invalid inputs to configuration 'Bind' methods");
             public static (string Id, string Title) CouldNotDetermineTypeInfo = ("SYSLIB1104", "The target type for a binder call could not be determined");
-            public static (string Id, string Title) PropertyTypeConverterRequiresReflection = ("SYSLIB1105", "Property type converters require reflection-based configuration binding");
+            public static (string Id, string Title) PropertyTypeConverterRequiresReflection = ("SYSLIB1105", "Configuration binding requires reflection");
         }
 
         private static readonly Assembly[] s_compilationAssemblyRefs = new[] {
@@ -188,9 +188,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             string source,
             LanguageVersion langVersion = LanguageVersion.CSharp12,
             IEnumerable<Assembly>? assemblyReferences = null,
-            IEnumerable<MetadataReference>? metadataReferences = null)
+            IEnumerable<MetadataReference>? metadataReferences = null,
+            bool? enableTypeConverters = null,
+            bool publishAot = false,
+            bool publishTrimmed = false)
         {
-            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences, metadataReferences);
+            ConfigBindingGenTestDriver driver = new ConfigBindingGenTestDriver(langVersion, assemblyReferences, metadataReferences, enableTypeConverters, publishAot, publishTrimmed);
             return await driver.RunGeneratorAndUpdateCompilation(source);
         }
 

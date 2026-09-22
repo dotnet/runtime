@@ -76,6 +76,232 @@ namespace Microsoft.Extensions
             public int Value { get; set; }
         }
 
+        public abstract class PropertyTypeConverterGetterBase
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public abstract int Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterGetterOverride : PropertyTypeConverterGetterBase
+        {
+            public PropertyTypeConverterGetterOverride(int value) => Value = value;
+            public override int Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterSectionOptions
+        {
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public IConfigurationSection Value { get; set; }
+
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public IConfigurationSection ReadOnly { get; } = new ConfigurationBuilder().Build().GetSection("initial");
+        }
+
+        public sealed class PropertyTypeConverterSectionConstructorOptions
+        {
+            public PropertyTypeConverterSectionConstructorOptions(IConfigurationSection value) => Value = value;
+
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public IConfigurationSection Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterInitOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; init; } = 7;
+
+            [TypeConverter(typeof(CommaSeparatedIntegersTypeConverter))]
+            public List<int> Values { get; init; } = [7];
+        }
+
+        public class PropertyTypeConverterVirtualInitBase
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public virtual int Value { get; init; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterVirtualInitOverride : PropertyTypeConverterVirtualInitBase
+        {
+            public override int Value { get; init; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterRequiredInit
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public required int Value { get; init; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterOtherConstructorInit
+        {
+            public PropertyTypeConverterOtherConstructorInit(int other) => Other = other;
+            public int Other { get; }
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; init; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterNormalizedConstructorInit
+        {
+            private int _value;
+            public PropertyTypeConverterNormalizedConstructorInit(int value) => _value = value + 10;
+            public int SetCount { get; private set; }
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public required int Value
+            {
+                get => _value;
+                init
+                {
+                    _value = value;
+                    SetCount++;
+                }
+            }
+        }
+
+        public sealed class PropertyTypeConverterGenericConstructorInit<T> where T : struct
+        {
+            public PropertyTypeConverterGenericConstructorInit(T value) => Value = value;
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public required T Value { get; init; }
+        }
+
+        public struct PropertyTypeConverterInitStruct
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; init; }
+        }
+
+        public class PropertyTypeConverterGenericInit<T> where T : struct
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public T Value { get; init; }
+        }
+
+        public class PropertyTypeConverterGenericRequiredInit<T> where T : struct
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public required T Value { get; init; }
+        }
+
+        public class PropertyTypeConverterGenericOuter<T> where T : class
+        {
+            public class Inner<U> where U : struct
+            {
+                [TypeConverter(typeof(AddOneTypeConverter))]
+                public U Value { get; init; }
+            }
+        }
+
+        public class PropertyTypeConverterShadowedOuter<T>
+        {
+#pragma warning disable CS0693 // Exercise shadowed type parameters.
+            public class Inner<T> where T : struct
+#pragma warning restore CS0693
+            {
+                public Inner(T value) => Value = value;
+                [TypeConverter(typeof(AddOneTypeConverter))]
+                public required T Value { get; init; }
+            }
+        }
+
+        public interface IPropertyTypeConverterInit
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            int Value { get; init; }
+        }
+
+        public sealed class PropertyTypeConverterInterfaceInit : IPropertyTypeConverterInit
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; init; }
+        }
+
+        public sealed class PropertyTypeConverterIgnoredOverride : PropertyTypeConverterVirtualBaseOptions
+        {
+            [ConfigurationIgnore]
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public override int Value { get; set; } = 7;
+        }
+
+        public abstract class PropertyTypeConverterIgnoredGetterBase
+        {
+            public abstract int Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterIgnoredGetterOverride : PropertyTypeConverterIgnoredGetterBase
+        {
+            public PropertyTypeConverterIgnoredGetterOverride(int value) => Value = value;
+
+            [ConfigurationIgnore]
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public override int Value { get; }
+        }
+
+        public class PropertyTypeConverterSetterBase
+        {
+            private int _value;
+            public virtual int Value { set => _value = value; }
+            public int GetValue() => _value;
+        }
+
+        public sealed class PropertyTypeConverterSetterOverride : PropertyTypeConverterSetterBase
+        {
+            public PropertyTypeConverterSetterOverride(int value) => Value = value;
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public override int Value { set => base.Value = value; }
+        }
+
+        public sealed class PropertyTypeConverterIgnoredSetterOverride : PropertyTypeConverterSetterBase
+        {
+            public PropertyTypeConverterIgnoredSetterOverride(int value) => Value = value;
+            [ConfigurationIgnore]
+            [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
+            public override int Value { set => base.Value = value; }
+        }
+
+        public class PropertyTypeConverterIgnoredInitBase
+        {
+            [ConfigurationIgnore]
+            public int Value { get; init; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterHiddenIgnoredInit : PropertyTypeConverterIgnoredInitBase
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public new int Value { get; set; }
+        }
+
+        public class PropertyTypeConverterLeaf
+        {
+            public string Text { get; set; }
+        }
+
+        [TypeConverter(typeof(PropertyTypeConverterDerivedLeafConverter))]
+        public sealed class PropertyTypeConverterDerivedLeaf : PropertyTypeConverterLeaf
+        {
+        }
+
+        public sealed class PropertyTypeConverterLeafOptions
+        {
+            [TypeConverter(typeof(PropertyTypeConverterLeafConverter))]
+            public PropertyTypeConverterLeaf Direct { get; set; } = new() { Text = "initial" };
+
+            [TypeConverter(typeof(TypeConverter))]
+            public PropertyTypeConverterDerivedLeaf Fallback { get; set; } = new() { Text = "initial" };
+        }
+
+        public sealed class PropertyTypeConverterLeafConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+            public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                new PropertyTypeConverterLeaf { Text = (string)value };
+        }
+
+        public sealed class PropertyTypeConverterDerivedLeafConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+            public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                new PropertyTypeConverterDerivedLeaf { Text = (string)value };
+        }
+
         public sealed class NonPublicPropertyTypeConverterOptions
         {
             [TypeConverter(typeof(AddOneTypeConverter))]
@@ -109,6 +335,14 @@ namespace Microsoft.Extensions
 
             [TypeConverter(typeof(AddOneTypeConverter))]
             public int Value { get; }
+        }
+
+        public sealed class PropertyTypeConverterMismatchedInitConstructorOptions
+        {
+            public PropertyTypeConverterMismatchedInitConstructorOptions(string value) => Text = value;
+            public string Text { get; }
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; init; } = 7;
         }
 
         public class PropertyTypeConverterVirtualBaseOptions
@@ -183,6 +417,43 @@ namespace Microsoft.Extensions
         {
             [TypeConverter(typeof(ThrowingConstructorTypeConverter))]
             public GenericOptions<int> Nested { get; set; }
+        }
+
+        public sealed class PropertyTypeConverterNullInputOptions
+        {
+            [TypeConverter(typeof(AddOneTypeConverter))]
+            public int Value { get; set; } = 7;
+        }
+
+        public sealed class PropertyTypeConverterByteArrayOptions
+        {
+            [TypeConverter(typeof(Base64TypeConverter))]
+            public byte[] Converted { get; set; } = [9];
+
+            [TypeConverter(typeof(ExpandableObjectConverter))]
+            public byte[] Fallback { get; set; } = [9];
+        }
+
+        public sealed class Base64TypeConverter : TypeConverter
+        {
+            public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) => sourceType == typeof(string);
+
+            public override object ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                Convert.FromBase64String((string)value);
+        }
+
+        public sealed class PropertyTypeConverterRejectingOptions
+        {
+            [TypeConverter(typeof(TypeConverter))]
+            public CustomPoint? Point { get; set; } = new CustomPoint { X = 7 };
+
+            [TypeConverter(typeof(TypeConverter))]
+            public HashSet<int> Values { get; set; } = [7];
+        }
+
+        public struct CustomPoint
+        {
+            public int X { get; set; }
         }
 
         public sealed class ThrowingConstructorTypeConverter : TypeConverter
