@@ -3235,7 +3235,8 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* node)
     {
         regNumber srcXmmReg = internalRegisters.GetSingle(node, RBM_ALLFLOAT);
         unsigned  regSize   = m_compiler->roundDownSIMDSize(size);
-        var_types loadType  = m_compiler->getSIMDTypeForSize(regSize);
+        // Use a 128-bit zeroing instruction to avoid dirtying upper vector state.
+        var_types loadType = src->IsIntegralConst(0) ? TYP_SIMD16 : m_compiler->getSIMDTypeForSize(regSize);
         simd_t    vecCon;
         memset(&vecCon, (uint8_t)src->AsIntCon()->IconValue(), sizeof(simd_t));
         genSetRegToConst(srcXmmReg, loadType, &vecCon);
