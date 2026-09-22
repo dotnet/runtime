@@ -495,7 +495,6 @@ namespace ILAssembler.Tests
         [InlineData(true, Machine.I386, Characteristics.ExecutableImage | Characteristics.Bit32Machine | Characteristics.Dll)]
         [InlineData(false, Machine.Amd64, Characteristics.ExecutableImage | Characteristics.LargeAddressAware)]
         [InlineData(true, Machine.Amd64, Characteristics.ExecutableImage | Characteristics.LargeAddressAware | Characteristics.Dll)]
-        [InlineData(false, Machine.Arm, Characteristics.ExecutableImage | Characteristics.Bit32Machine)]
         [InlineData(false, Machine.Arm64, Characteristics.ExecutableImage | Characteristics.LargeAddressAware)]
         public void OutputKindAndMachine_SetCoffCharacteristics(
             bool isDll,

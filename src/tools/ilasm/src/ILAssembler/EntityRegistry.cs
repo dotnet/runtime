@@ -423,6 +423,7 @@ namespace ILAssembler
                         // Exception handler regions have invalid ranges (e.g., from parse
                         // errors that produced malformed control flow). Emit the IL in a
                         // minimal valid method body and omit exception regions in fallback.
+                        // TODO-COMPAT: Emit the invalid exception regions manually
                         var fallbackBody = bodyStreamEncoder.AddMethodBody(
                             methodDef.MethodBody.CodeBuilder.Count,
                             methodDef.MaxStack,
@@ -812,7 +813,7 @@ namespace ILAssembler
 
         private static bool IsCoreLibAssemblyName(string name)
         {
-            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib";
+            return name is "mscorlib" or "System.Runtime" or "System.Private.CoreLib" or "netstandard";
         }
 
         public interface IHasHandle

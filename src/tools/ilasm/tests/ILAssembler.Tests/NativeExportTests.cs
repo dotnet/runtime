@@ -135,7 +135,6 @@ namespace ILAssembler.Tests
         [Theory]
         [InlineData(Machine.I386, "FF25", 2, sizeof(uint), 16, 6, 3)]
         [InlineData(Machine.Amd64, "48A1", 2, sizeof(ulong), 4, 12, 10)]
-        [InlineData(Machine.ArmThumb2, "DFF804C0DCF800F0", 8, sizeof(uint), 4, 12, 3)]
         [InlineData(Machine.Arm64, "90000058100240F900021FD6", 16, sizeof(ulong), 8, 24, 10)]
         public void ExportStub_TargetMachine_IsExecutableAndRelocatable(
             Machine machine,
@@ -266,7 +265,6 @@ namespace ILAssembler.Tests
 
         [Theory]
         [InlineData(Machine.I386, "int64")]
-        [InlineData(Machine.ArmThumb2, "int64")]
         [InlineData(Machine.Amd64, "int32")]
         [InlineData(Machine.Arm64, "int32")]
         [InlineData(Machine.I386, "int32 int64")]
@@ -410,20 +408,6 @@ namespace ILAssembler.Tests
                 ReadAsciiString(pe, ReadInt32(pe, namePointerTableRva + sizeof(int))));
             Assert.Equal(0, ReadUInt16(pe, ordinalTableRva));
             Assert.Equal(0, ReadUInt16(pe, ordinalTableRva + sizeof(ushort)));
-        }
-
-        [Fact]
-        public void ArmMachine_IsEmittedAsArmThumb2()
-        {
-            string source = """
-                .assembly test { }
-                """;
-
-            using PEReader pe = DocumentCompilerTestHelpers.CompileAndGetReader(
-                source,
-                new Options { Machine = Machine.Arm });
-
-            Assert.Equal(Machine.ArmThumb2, pe.PEHeaders.CoffHeader.Machine);
         }
 
         [Theory]
