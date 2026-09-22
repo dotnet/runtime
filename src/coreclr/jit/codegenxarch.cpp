@@ -401,6 +401,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val64.IsZero())
             {
+                // A 128-bit xor clears the entire ZMM register and allows the shorter VEX encoding for zmm0-zmm15.
+                // It avoids dirtying upper vector state, so zero-only block initialization needs no vzeroupper.
                 emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
