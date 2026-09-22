@@ -8323,7 +8323,8 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             return true;
         }
 
-        if (!m_compiler->opts.OptimizationEnabled() || !varTypeIsSmall(memoryOp) || !varTypeIsIntegral(otherOp))
+        if (!cmp->OperIsCmpCompare() || !m_compiler->opts.OptimizationEnabled() || !varTypeIsSmall(memoryOp) ||
+            !varTypeIsIntegral(otherOp))
         {
             return false;
         }
@@ -8334,8 +8335,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             return range.Contains(otherOp->AsIntConCommon()->IntegralValue());
         }
 
-        return cmp->OperIs(GT_EQ, GT_NE, GT_LT, GT_LE, GT_GT, GT_GE) &&
-               range.Contains(IntegralRange::ForNode(otherOp, m_compiler));
+        return range.Contains(IntegralRange::ForNode(otherOp, m_compiler));
     };
 
     if (CheckImmedAndMakeContained(cmp, op2))
@@ -8397,7 +8397,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     // A contained memory operand bounds both values; otherwise small compares
     // have matching operand types.
     GenTree* rangeSource = (op2->isContained() && !op2->IsCnsIntOrI()) ? op2 : op1;
-    if ((cmp->GetCompareSize() < genTypeSize(TYP_INT)) && varTypeIsUnsigned(rangeSource))
+    if (cmp->OperIsCompare() && (cmp->GetCompareSize() < genTypeSize(TYP_INT)) && varTypeIsUnsigned(rangeSource))
     {
         // A small compare uses a lower-numbered sign bit. Use unsigned conditions
         // when zero extension would have made the wider sign bit zero.
