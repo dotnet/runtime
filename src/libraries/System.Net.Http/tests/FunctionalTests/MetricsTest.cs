@@ -5,6 +5,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Net.Http.Metrics;
 using System.Net.Sockets;
@@ -912,15 +913,36 @@ namespace System.Net.Http.Functional.Tests
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<double> timeInQueueRecorder = SetupInstrumentRecorder<double>(InstrumentNames.TimeInQueue);
 
-                for (int i = 0; i < RequestCount; i++)
+                if (UseVersion.Major == 2)
                 {
-                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                    using HttpResponseMessage response = await SendAsync(client, request);
+                    // Completing the first response does not guarantee that the HTTP/2 connection
+                    // has been published to the pool for subsequent requests.
+                    await WaitForHttp2ConnectionToBePooledAsync(uri, async () =>
+                    {
+                        await SendRequestAsync();
+                        Measurement<double> measurement = Assert.Single(timeInQueueRecorder.GetMeasurements());
+                        VerifyTimeInQueue(InstrumentNames.TimeInQueue, measurement.Value, measurement.Tags.ToArray(), uri, UseVersion);
+                    });
+                }
+                else
+                {
+                    await SendRequestAsync();
+                }
+
+                for (int i = 1; i < RequestCount; i++)
+                {
+                    await SendRequestAsync();
                 }
 
                 // Only the first request is supposed to record time_in_queue.
                 // For follow up requests, the connection should be immediately available.
                 Assert.Equal(1, timeInQueueRecorder.MeasurementCount);
+
+                async Task SendRequestAsync()
+                {
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                    using HttpResponseMessage response = await SendAsync(client, request);
+                }
 
             }, async server =>
             {
@@ -933,6 +955,54 @@ namespace System.Net.Http.Functional.Tests
                         conn.CompleteRequestProcessing();
                     }
                 });
+            });
+        }
+
+        private static async Task WaitForHttp2ConnectionToBePooledAsync(Uri uri, Func<Task> sendRequest)
+        {
+            using var listener = new System.Diagnostics.Tracing.TestEventListener("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose);
+            var pooled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            var publishedConnections = new HashSet<(int PoolId, int ConnectionId)>();
+            (int PoolId, int ConnectionId)? requestConnection = null;
+            string requestUri = $"RequestUri: '{uri}'";
+
+            await listener.RunWithCallbackAsync(e =>
+            {
+                if (e.EventName != "HandlerMessage")
+                {
+                    return;
+                }
+
+                var connection = ((int)e.Payload[0], (int)e.Payload[1]);
+                string message = (string)e.Payload[4];
+                lock (publishedConnections)
+                {
+                    if (pooled.Task.IsCompleted)
+                    {
+                        return;
+                    }
+
+                    if (message.StartsWith("Sending request:", StringComparison.Ordinal) &&
+                        message.Contains(requestUri, StringComparison.Ordinal))
+                    {
+                        requestConnection = connection;
+                    }
+                    else if (message == "Put HTTP2 connection in pool." &&
+                        (requestConnection is null || requestConnection == connection))
+                    {
+                        publishedConnections.Add(connection);
+                    }
+
+                    // Publication can precede the first request's SendAsync trace.
+                    if (requestConnection is { } target && publishedConnections.Contains(target))
+                    {
+                        pooled.TrySetResult();
+                    }
+                }
+            }, async () =>
+            {
+                await sendRequest();
+                await pooled.Task.WaitAsync(TestHelper.PassingTestTimeout);
             });
         }
 
