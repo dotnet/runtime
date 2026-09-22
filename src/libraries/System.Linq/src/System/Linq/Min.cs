@@ -3,6 +3,8 @@
 
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
@@ -87,6 +89,97 @@ namespace System.Linq
 
         public static double? Min(this IEnumerable<double?> source) => MinFloat(source);
 
+        private static T MinFloat<T>(ReadOnlySpan<T> span) where T : struct, IFloatingPointIeee754<T>
+        {
+            T value;
+            int i = 1;
+
+            // A vector's worth at a time, bailing out to the sequential walk as soon as a NaN
+            // appears, since the first NaN is the result and the walk already reports it.
+            if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && span.Length >= Vector128<T>.Count * 2)
+            {
+                ref T first = ref MemoryMarshal.GetReference(span);
+                Vector128<T> best = Vector128.LoadUnsafe(ref first, 0);
+
+                if (~Vector128.Equals(best, best) == Vector128<T>.Zero)
+                {
+                    int lastVector = span.Length - Vector128<T>.Count;
+                    int index = Vector128<T>.Count;
+                    bool sawNaN = false;
+
+                    while (index <= lastVector)
+                    {
+                        Vector128<T> current = Vector128.LoadUnsafe(ref first, (uint)index);
+                        if (~Vector128.Equals(current, current) != Vector128<T>.Zero)
+                        {
+                            sawNaN = true;
+                            break;
+                        }
+
+                        best = Vector128.Min(best, current);
+                        index += Vector128<T>.Count;
+                    }
+
+                    if (!sawNaN)
+                    {
+                        value = best.GetElement(0);
+                        for (int lane = 1; lane < Vector128<T>.Count; lane++)
+                        {
+                            T candidate = best.GetElement(lane);
+                            if (candidate < value)
+                            {
+                                value = candidate;
+                            }
+                        }
+
+                        for (i = index; (uint)i < (uint)span.Length; i++)
+                        {
+                            T current = span[i];
+                            if (current < value)
+                            {
+                                value = current;
+                            }
+                            else if (T.IsNaN(current))
+                            {
+                                return current;
+                            }
+                        }
+
+                        // Negative and positive zero compare equal, so the reduction may have kept
+                        // either one, while the sequential walk keeps the first of two equal values.
+                        if (value == T.Zero)
+                        {
+                            foreach (T element in span)
+                            {
+                                if (element == T.Zero)
+                                {
+                                    return element;
+                                }
+                            }
+                        }
+
+                        return value;
+                    }
+                }
+            }
+
+            value = span[0];
+            for (; (uint)i < (uint)span.Length; i++)
+            {
+                T current = span[i];
+                if (current < value)
+                {
+                    value = current;
+                }
+                else if (T.IsNaN(current))
+                {
+                    return current;
+                }
+            }
+
+            return value;
+        }
+
         private static T MinFloat<T>(this IEnumerable<T> source) where T : struct, IFloatingPointIeee754<T>
         {
             T value;
@@ -103,21 +196,7 @@ namespace System.Linq
                     ThrowHelper.ThrowNoElementsException();
                 }
 
-                value = span[0];
-                for (int i = 1; (uint)i < (uint)span.Length; i++)
-                {
-                    T current = span[i];
-                    if (current < value)
-                    {
-                        value = current;
-                    }
-                    else if (T.IsNaN(current))
-                    {
-                        return current;
-                    }
-                }
-
-                return value;
+                return MinFloat(span);
             }
 
             using IEnumerator<T> e = source.GetEnumerator();
