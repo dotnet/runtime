@@ -1626,7 +1626,7 @@ public:
     bool isEmbeddedMaskingCompatible(Compiler*  comp,
                                      unsigned   tgtMaskSize,
                                      var_types& tgtSimdBaseType,
-                                     size_t*    broadcastOpIndex = nullptr) const;
+                                     size_t*    broadcastOpIndex = nullptr);
 #endif // TARGET_XARCH
     bool isEmbeddedMaskingCompatible() const;
 #else
