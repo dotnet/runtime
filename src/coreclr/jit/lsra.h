@@ -1147,6 +1147,7 @@ private:
     void applyCalleeSaveHeuristics(RefPosition* rp);
 
     void checkConflictingDefUse(RefPosition* rp);
+    void addFixedRefsForPropagatedDefs();
 
     void associateRefPosWithInterval(RefPosition* rp);
 
@@ -1602,6 +1603,8 @@ private:
 
     IntervalList intervals;
 
+    bool m_hasCarryArithmetic = false;
+
     RegRecord physRegs[REG_COUNT];
 
     // Map from tracked variable index to Interval*.
@@ -1672,6 +1675,7 @@ private:
 
     // Ordered list of RefPositions
     RefPositionList refPositions;
+    bool            m_hasUnmodeledFixedDefs = false;
 
     // Head of linked list of RefTypeKill ref positions
     RefPosition* killHead;

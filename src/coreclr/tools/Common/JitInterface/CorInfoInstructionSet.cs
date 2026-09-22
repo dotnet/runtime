@@ -112,6 +112,7 @@ namespace Internal.JitInterface
         X64_SHA_X64 = InstructionSet_X64.SHA_X64,
         X64_WAITPKG_X64 = InstructionSet_X64.WAITPKG_X64,
         X64_X86Serialize_X64 = InstructionSet_X64.X86Serialize_X64,
+        X64_ADX = InstructionSet_X64.ADX,
         X86_X86Base = InstructionSet_X86.X86Base,
         X86_AVX = InstructionSet_X86.AVX,
         X86_AVX2 = InstructionSet_X86.AVX2,
@@ -158,6 +159,7 @@ namespace Internal.JitInterface
         X86_SHA_X64 = InstructionSet_X86.SHA_X64,
         X86_WAITPKG_X64 = InstructionSet_X86.WAITPKG_X64,
         X86_X86Serialize_X64 = InstructionSet_X86.X86Serialize_X64,
+        X86_ADX = InstructionSet_X86.ADX,
     }
     public enum InstructionSet_ARM64
     {
@@ -276,6 +278,7 @@ namespace Internal.JitInterface
         SHA_X64 = 44,
         WAITPKG_X64 = 45,
         X86Serialize_X64 = 46,
+        ADX = 47,
     }
 
     public enum InstructionSet_X86
@@ -328,6 +331,7 @@ namespace Internal.JitInterface
         SHA_X64 = 44,
         WAITPKG_X64 = 45,
         X86Serialize_X64 = 46,
+        ADX = 47,
     }
 
     public unsafe struct InstructionSetFlags : IEnumerable<InstructionSet>
@@ -1268,6 +1272,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt8_V512", InstructionSet.X64_AVXVNNIINT_V512, true);
                     yield return new InstructionSetInfo("avxvnniint", "AvxVnniInt16", InstructionSet.X64_AVXVNNIINT, true);
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt16_V512", InstructionSet.X64_AVXVNNIINT_V512, true);
+                    yield return new InstructionSetInfo("adx", "", InstructionSet.X64_ADX, true);
                     break;
 
                 case TargetArchitecture.X86:
@@ -1342,6 +1347,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt8_V512", InstructionSet.X86_AVXVNNIINT_V512, true);
                     yield return new InstructionSetInfo("avxvnniint", "AvxVnniInt16", InstructionSet.X86_AVXVNNIINT, true);
                     yield return new InstructionSetInfo("avxvnniint_v512", "AvxVnniInt16_V512", InstructionSet.X86_AVXVNNIINT_V512, true);
+                    yield return new InstructionSetInfo("adx", "", InstructionSet.X86_ADX, true);
                     break;
             }
         }

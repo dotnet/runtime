@@ -1187,6 +1187,65 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     }
 
     bool checkProfitability = !compStressCompile(STRESS_DOWNWARDS_COUNTED_LOOPS, 50);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    bool preferCarryCountdown = false;
+    // A countdown can keep carry or borrow flags live across arithmetic loops,
+    // even when their addressing IV remains useful after the loop.
+    // Leave trip-count legality to SCEV below and the carry proof to lowering.
+    if (checkProfitability && removableLocals.Height() == 0 && compHndBBtabCount == 0 && loop->GetHeader() == exiting &&
+        exiting->GetTrueTarget() == exiting)
+    {
+        unsigned products    = 0;
+        unsigned carries     = 0;
+        unsigned nodes       = 0;
+        unsigned differences = 0;
+        for (Statement* stmt : exiting->Statements())
+        {
+            for (GenTree* node : stmt->TreeList())
+            {
+                if (++nodes > 512)
+                {
+                    break;
+                }
+                if (node->OperIs(GT_HWINTRINSIC) &&
+                    node->AsHWIntrinsic()->GetHWIntrinsicId() ==
+#ifdef TARGET_AMD64
+                        NI_X86Base_X64_BigMul &&
+#else
+                        NI_ArmBase_Arm64_MultiplyHigh &&
+#endif
+                    node->AsHWIntrinsic()->GetSimdBaseType() == TYP_ULONG)
+                {
+                    products++;
+                }
+                if (node->OperIs(GT_LT, GT_GT, GT_GE, GT_LE) && (node->gtFlags & GTF_UNSIGNED) != 0)
+                {
+                    carries++;
+                }
+                if (node->OperIs(GT_SUB) && !node->gtOverflow() && node->TypeIs(TYP_INT, TYP_LONG))
+                {
+                    differences++;
+                }
+            }
+            if (nodes > 512)
+            {
+                break;
+            }
+        }
+        bool multiply = products >= 2 && products <= 4 && carries == 2 * products;
+#ifdef TARGET_AMD64
+        multiply = multiply && compOpportunisticallyDependsOn(InstructionSet_ADX) &&
+                   compOpportunisticallyDependsOn(InstructionSet_AVX2);
+#endif
+        bool subtract = products == 0 && differences == 2 && carries == 2;
+        if (nodes <= 512 && (multiply || subtract))
+        {
+            JITDUMP("  Keeping a countdown for a potential carry/borrow loop\n");
+            checkProfitability   = false;
+            preferCarryCountdown = true;
+        }
+    }
+#endif
     if (checkProfitability && (removableLocals.Height() <= 0))
     {
         JITDUMP("  Found no potentially removable locals when making this loop downwards counted\n");
@@ -1199,8 +1258,65 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
         return false;
     }
 
-    Scev* backedgeCount = scevContext.ComputeExitNotTakenCount(exiting);
-    if (backedgeCount == nullptr)
+    Scev*    backedgeCount = scevContext.ComputeExitNotTakenCount(exiting);
+    GenTree* tripCountNode = nullptr;
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    // SCEV's general trip-count materialization currently handles only unit
+    // strides. Recognize the bounded four-lane case: i starts at zero, steps
+    // by four, and continues while i < length - 3 for a nonnegative length.
+    // Its trip count is length / 4; the induction variable cannot overflow.
+    if (backedgeCount == nullptr && preferCarryCountdown && cond->OperIs(GT_LT) && !cond->IsUnsigned() &&
+        cond->gtGetOp1()->TypeIs(TYP_INT) && cond->gtGetOp2()->TypeIs(TYP_INT))
+    {
+        Scev* iv = scevContext.Analyze(exiting, cond->gtGetOp1());
+        if (iv != nullptr)
+        {
+            iv = scevContext.Simplify(iv);
+        }
+        Scev*   bound = scevContext.Analyze(exiting, cond->gtGetOp2());
+        int64_t start, step;
+        if (iv != nullptr && iv->OperIs(ScevOper::AddRec) && bound != nullptr && bound->IsInvariant() &&
+            ((ScevAddRec*)iv)->Start->GetConstantValue(this, &start) && start == 4 &&
+            ((ScevAddRec*)iv)->Step->GetConstantValue(this, &step) && step == 4)
+        {
+            auto resolve = [this](GenTree* node) {
+                for (unsigned depth = 0; depth < 8 && node->OperIs(GT_LCL_VAR); depth++)
+                {
+                    GenTreeLclVar* local = node->AsLclVar();
+                    if (!local->HasSsaName())
+                    {
+                        break;
+                    }
+                    GenTreeLclVarCommon* def = lvaGetDesc(local)->GetPerSsaData(local->GetSsaNum())->GetDefNode();
+                    if (def == nullptr || def->GetLclNum() != local->GetLclNum())
+                    {
+                        break;
+                    }
+                    node = def->Data();
+                }
+                return node;
+            };
+            GenTree* limit = resolve(cond->gtGetOp2());
+            if (limit->OperIs(GT_ADD) && limit->gtGetOp2()->IsIntegralConst(-3) &&
+                IntegralRange::ForNode(resolve(limit->gtGetOp1()), this).IsNonNegative())
+            {
+                ValueNum limitVN  = vnStore->VNLiberalNormalValue(cond->gtGetOp2()->gtVNPair);
+                ValueNum positive = vnStore->VNForFunc(TYP_INT, VNF_GT, limitVN, vnStore->VNForIntCon(0));
+                if (scevContext.EvaluateRelop(positive) == RelopEvaluationResult::True)
+                {
+                    GenTree* limitNode = scevContext.Materialize(bound);
+                    if (limitNode != nullptr)
+                    {
+                        GenTree* length = gtNewOperNode(GT_ADD, TYP_INT, limitNode, gtNewIconNode(3));
+                        tripCountNode   = gtNewOperNode(GT_RSZ, TYP_INT, length, gtNewIconNode(2));
+                        optFoldFourLimbOffsets(scevContext, exiting);
+                    }
+                }
+            }
+        }
+    }
+#endif
+    if (backedgeCount == nullptr && tripCountNode == nullptr)
     {
         JITDUMP("  Could not compute backedge count -- not a counted loop\n");
         return false;
@@ -1213,9 +1329,12 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     // to add one to the computed backedge count, giving us the trip count of
     // the loop. We do not need to worry about overflow here (even with
     // wraparound we have the right behavior).
-    Scev* tripCount = scevContext.Simplify(
-        scevContext.NewBinop(ScevOper::Add, backedgeCount, scevContext.NewConstant(backedgeCount->Type, 1)));
-    GenTree* tripCountNode = scevContext.Materialize(tripCount);
+    if (tripCountNode == nullptr)
+    {
+        Scev* tripCount = scevContext.Simplify(
+            scevContext.NewBinop(ScevOper::Add, backedgeCount, scevContext.NewConstant(backedgeCount->Type, 1)));
+        tripCountNode = scevContext.Materialize(tripCount);
+    }
     if (tripCountNode == nullptr)
     {
         JITDUMP("  Could not materialize trip count into IR\n");
@@ -1239,9 +1358,9 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
         exitOp = GT_NE;
     }
 
-    GenTree* negOne = tripCount->TypeIs(TYP_LONG) ? gtNewLconNode(-1) : gtNewIconNode(-1, tripCount->Type);
-    GenTree* decremented =
-        gtNewOperNode(GT_ADD, tripCount->Type, gtNewLclVarNode(tripCountLcl, tripCount->Type), negOne);
+    var_types countType   = tripCountNode->TypeGet();
+    GenTree*  negOne      = countType == TYP_LONG ? gtNewLconNode(-1) : gtNewIconNode(-1, countType);
+    GenTree*  decremented = gtNewOperNode(GT_ADD, countType, gtNewLclVarNode(tripCountLcl, countType), negOne);
 
     store = gtNewTempStore(tripCountLcl, decremented);
 
@@ -1253,8 +1372,8 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
 
     // Update the test.
     cond->SetOper(exitOp);
-    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, tripCount->Type);
-    cond->AsOp()->gtOp2 = gtNewZeroConNode(tripCount->Type);
+    cond->AsOp()->gtOp1 = gtNewLclVarNode(tripCountLcl, countType);
+    cond->AsOp()->gtOp2 = gtNewZeroConNode(countType);
 
     gtSetStmtInfo(jtrueStmt);
     fgSetStmtSeq(jtrueStmt);
@@ -1266,6 +1385,171 @@ bool Compiler::optMakeExitTestDownwardsCounted(ScalarEvolutionContext& scevConte
     loopInfo->Invalidate(loop);
     return true;
 }
+
+//------------------------------------------------------------------------
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+// optFoldFourLimbOffsets: Share a widened integer index among the lane addresses
+// of a proven four-limb loop. The caller proves i starts at zero, steps by four,
+// and executes only while i < length - 3, for a nonnegative signed int length.
+// Thus i + k cannot wrap for k in [0, 3]. Managed bases remain unchanged.
+void Compiler::optFoldFourLimbOffsets(ScalarEvolutionContext& scevContext, BasicBlock* block)
+{
+    auto resolve = [this](GenTree* node) {
+        for (unsigned depth = 0; depth < 8; depth++)
+        {
+            if (node->OperIs(GT_COMMA))
+            {
+                node = node->gtGetOp2();
+                continue;
+            }
+            if (!node->OperIs(GT_LCL_VAR))
+            {
+                break;
+            }
+            GenTreeLclVar* local = node->AsLclVar();
+            if (!local->HasSsaName())
+            {
+                break;
+            }
+            GenTreeLclVarCommon* def = lvaGetDesc(local)->GetPerSsaData(local->GetSsaNum())->GetDefNode();
+            if ((def == nullptr) || (def->GetLclNum() != local->GetLclNum()) || def->Data()->OperIs(GT_PHI))
+            {
+                break;
+            }
+            node = def->Data();
+        }
+        return node;
+    };
+
+    struct Address
+    {
+        GenTreeOp* Node;
+        Statement* Stmt;
+        unsigned   Offset;
+    };
+    jitstd::vector<Address>  addresses(getAllocator(CMK_LoopOpt));
+    jitstd::vector<unsigned> stores(getAllocator(CMK_LoopOpt));
+    GenTreeLclVar*           index     = nullptr;
+    Statement*               firstStmt = nullptr;
+    for (Statement* stmt : block->Statements())
+    {
+        if (stmt->IsPhiDefnStmt())
+        {
+            continue;
+        }
+        if (firstStmt == nullptr)
+        {
+            firstStmt = stmt;
+        }
+        for (GenTree* node : stmt->TreeList())
+        {
+            if (node->OperIsLocalStore())
+            {
+                stores.push_back(node->AsLclVarCommon()->GetLclNum());
+            }
+            if (!node->OperIs(GT_ADD) || !node->TypeIs(TYP_BYREF) || !node->gtGetOp1()->TypeIs(TYP_BYREF))
+            {
+                continue;
+            }
+            GenTree* scaled = resolve(node->gtGetOp2());
+            if (!scaled->OperIs(GT_LSH) || !scaled->TypeIs(TYP_LONG) || !scaled->gtGetOp2()->IsIntegralConst(3))
+            {
+                continue;
+            }
+            GenTree* widened = resolve(scaled->gtGetOp1());
+            if (!widened->OperIs(GT_CAST) || !widened->TypeIs(TYP_LONG) || !widened->IsUnsigned() ||
+                widened->gtOverflow())
+            {
+                continue;
+            }
+            GenTree* base   = resolve(widened->AsCast()->CastOp());
+            unsigned offset = 0;
+            if (base->OperIs(GT_ADD) && base->TypeIs(TYP_INT) && !base->gtOverflow() && base->gtGetOp2()->IsCnsIntOrI())
+            {
+                ssize_t value = base->gtGetOp2()->AsIntCon()->IconValue();
+                if ((value < 0) || (value > 3))
+                {
+                    continue;
+                }
+                offset = (unsigned)value;
+                base   = base->gtGetOp1();
+            }
+            if (!base->OperIs(GT_LCL_VAR) || !base->TypeIs(TYP_INT) || !base->AsLclVar()->HasSsaName())
+            {
+                continue;
+            }
+            GenTreeLclVar* local = base->AsLclVar();
+            if (lvaGetDesc(local)->IsAddressExposed() || lvaGetDesc(local)->lvIsStructField)
+            {
+                continue;
+            }
+            bool overwritten = false;
+            for (unsigned store : stores)
+            {
+                overwritten |= store == local->GetLclNum();
+            }
+            if (overwritten || ((index != nullptr) && ((index->GetLclNum() != local->GetLclNum()) ||
+                                                       (index->GetSsaNum() != local->GetSsaNum()))))
+            {
+                continue;
+            }
+            Scev*   recurrence = scevContext.Analyze(block, local);
+            int64_t start, step;
+            if ((recurrence == nullptr) || !recurrence->OperIs(ScevOper::AddRec) ||
+                !((ScevAddRec*)recurrence)->Start->GetConstantValue(this, &start) || (start != 0) ||
+                !((ScevAddRec*)recurrence)->Step->GetConstantValue(this, &step) || (step != 4))
+            {
+                continue;
+            }
+            index = local;
+            addresses.push_back({node->AsOp(), stmt, offset});
+        }
+    }
+    if (addresses.size() < 4)
+    {
+        return;
+    }
+
+    unsigned   temp           = lvaGrabTemp(false DEBUGARG("Shared four-limb integer index"));
+    GenTree*   widened        = gtNewCastNode(TYP_LONG, gtCloneExpr(index), true, TYP_LONG);
+    Statement* initialization = fgNewStmtFromTree(gtNewTempStore(temp, widened));
+    fgInsertStmtBefore(block, firstStmt, initialization);
+    gtSetStmtInfo(initialization);
+    fgSetStmtSeq(initialization);
+#ifdef TARGET_ARM64
+    // A64 has no base+index+displacement addressing mode. Share native-sized
+    // lane indices instead, avoiding a separate zero extension after each i+k.
+    unsigned laneTemps[4] = {temp, BAD_VAR_NUM, BAD_VAR_NUM, BAD_VAR_NUM};
+    for (unsigned lane = 1; lane < 4; lane++)
+    {
+        laneTemps[lane]  = lvaGrabTemp(false DEBUGARG("Four-limb lane index"));
+        GenTree*   value = gtNewOperNode(GT_ADD, TYP_LONG, gtNewLclvNode(temp, TYP_LONG), gtNewLconNode(lane));
+        Statement* init  = fgNewStmtFromTree(gtNewTempStore(laneTemps[lane], value));
+        fgInsertStmtBefore(block, firstStmt, init);
+        gtSetStmtInfo(init);
+        fgSetStmtSeq(init);
+    }
+#endif
+    for (const Address& address : addresses)
+    {
+#ifdef TARGET_ARM64
+        GenTree* offset =
+            gtNewOperNode(GT_LSH, TYP_LONG, gtNewLclvNode(laneTemps[address.Offset], TYP_LONG), gtNewIconNode(3));
+#else
+        GenTree* scaled = gtNewOperNode(GT_LSH, TYP_LONG, gtNewLclvNode(temp, TYP_LONG), gtNewIconNode(3));
+        GenTree* offset = gtNewOperNode(GT_ADD, TYP_LONG, scaled, gtNewLconNode(address.Offset * 8));
+#endif
+        // Preserve embedded CSE definitions and any other effects of the original offset.
+        GenTree* effects = nullptr;
+        gtExtractSideEffList(address.Node->gtOp2, &effects);
+        address.Node->gtOp2 = effects == nullptr ? offset : gtNewOperNode(GT_COMMA, TYP_LONG, effects, offset);
+        gtSetStmtInfo(address.Stmt);
+        fgSetStmtSeq(address.Stmt);
+    }
+    JITDUMP("Shared widened index V%02u for %u four-limb addresses in " FMT_BB "\n", temp, (unsigned)addresses.size(),
+            block->bbNum);
+}
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
 //------------------------------------------------------------------------
 // optCanAndShouldChangeExitTest:

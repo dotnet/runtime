@@ -2446,6 +2446,48 @@ namespace System
                 return;
             }
 
+            if (typeof(TValue) == typeof(UInt128))
+            {
+                UInt128 a = UInt128.CreateTruncating(left);
+                UInt128 b = UInt128.CreateTruncating(right);
+                ulong p00High = Math.BigMul(a.Lower, b.Lower, out ulong p00Low);
+
+                // Preserve the common small-coefficient path: its full product
+                // needs only one widening multiply.
+                if ((a.Upper | b.Upper) == 0)
+                {
+                    high = TValue.Zero;
+                    low = TValue.CreateTruncating(new UInt128(p00High, p00Low));
+                    return;
+                }
+
+                ulong p01High = Math.BigMul(a.Lower, b.Upper, out ulong p01Low);
+                ulong p10High = Math.BigMul(a.Upper, b.Lower, out ulong p10Low);
+                ulong p11High = Math.BigMul(a.Upper, b.Upper, out ulong p11Low);
+
+                // Accumulate the four exact partial products in base 2^64.
+                // Each comparison produces a one-bit carry; the two carries
+                // from the second word can sum to two in the third word.
+                ulong word1 = p00High + p01Low;
+                ulong carry1 = (word1 < p00High) ? 1UL : 0UL;
+                ulong previous = word1;
+                word1 += p10Low;
+                carry1 += (word1 < previous) ? 1UL : 0UL;
+
+                ulong word2 = p01High + p10High;
+                ulong carry2 = (word2 < p01High) ? 1UL : 0UL;
+                previous = word2;
+                word2 += p11Low;
+                carry2 += (word2 < previous) ? 1UL : 0UL;
+                previous = word2;
+                word2 += carry1;
+                carry2 += (word2 < previous) ? 1UL : 0UL;
+
+                high = TValue.CreateTruncating(new UInt128(p11High + carry2, word2));
+                low = TValue.CreateTruncating(new UInt128(word1, p00Low));
+                return;
+            }
+
             int bits = TValue.Zero.GetByteCount() * 8;
             int half = bits / 2;
             TValue lowMask = (TValue.One << half) - TValue.One;
@@ -2570,13 +2612,30 @@ namespace System
         private static void WideAdd<TValue>(TValue leftHigh, TValue leftLow, TValue rightHigh, TValue rightLow, out TValue high, out TValue low)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            low = leftLow + rightLow;
-            high = leftHigh + rightHigh;
-
-            if (low < leftLow)
+#if TARGET_64BIT
+            if (typeof(TValue) == typeof(UInt128))
             {
-                high += TValue.One;
+                UInt128 a0 = UInt128.CreateTruncating(leftLow);
+                UInt128 a1 = UInt128.CreateTruncating(leftHigh);
+                UInt128 b0 = UInt128.CreateTruncating(rightLow);
+                UInt128 b1 = UInt128.CreateTruncating(rightHigh);
+                // Feed each one-bit carry directly into the next native limb.
+                nuint w0 = BigIntegerCalculator.AddWithCarry((nuint)a0.Lower, (nuint)b0.Lower, 0, out nuint c);
+                nuint w1 = BigIntegerCalculator.AddWithCarry((nuint)a0.Upper, (nuint)b0.Upper, c, out c);
+                nuint w2 = BigIntegerCalculator.AddWithCarry((nuint)a1.Lower, (nuint)b1.Lower, c, out c);
+                nuint w3 = (nuint)a1.Upper + (nuint)b1.Upper + c;
+                high = TValue.CreateTruncating(new UInt128(w3, w2));
+                low = TValue.CreateTruncating(new UInt128(w1, w0));
+                return;
             }
+#endif
+
+            // Keep the low result and one-bit carry in locals so the JIT can
+            // consume the addition flags before writing the output limbs.
+            TValue sum = leftLow + rightLow;
+            TValue carry = sum < leftLow ? TValue.One : TValue.Zero;
+            high = (leftHigh + rightHigh) + carry;
+            low = sum;
         }
 
         /// <summary>
@@ -2597,14 +2656,30 @@ namespace System
         private static void WideSubtract<TValue>(TValue leftHigh, TValue leftLow, TValue rightHigh, TValue rightLow, out TValue high, out TValue low)
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            high = leftHigh - rightHigh;
-
-            if (leftLow < rightLow)
+#if TARGET_64BIT
+            if (typeof(TValue) == typeof(UInt128))
             {
-                high -= TValue.One;
+                UInt128 a0 = UInt128.CreateTruncating(leftLow);
+                UInt128 a1 = UInt128.CreateTruncating(leftHigh);
+                UInt128 b0 = UInt128.CreateTruncating(rightLow);
+                UInt128 b1 = UInt128.CreateTruncating(rightHigh);
+                // As with addition, the borrow remains a bit across all four limbs.
+                nuint w0 = BigIntegerCalculator.SubWithBorrow((nuint)a0.Lower, (nuint)b0.Lower, 0, out nuint b);
+                nuint w1 = BigIntegerCalculator.SubWithBorrow((nuint)a0.Upper, (nuint)b0.Upper, b, out b);
+                nuint w2 = BigIntegerCalculator.SubWithBorrow((nuint)a1.Lower, (nuint)b1.Lower, b, out b);
+                nuint w3 = (nuint)a1.Upper - (nuint)b1.Upper - b;
+                high = TValue.CreateTruncating(new UInt128(w3, w2));
+                low = TValue.CreateTruncating(new UInt128(w1, w0));
+                return;
             }
+#endif
 
-            low = leftLow - rightLow;
+            // Compute the low subtraction before consuming its borrow in the
+            // high limb. Delay output stores until both results are available.
+            TValue difference = leftLow - rightLow;
+            TValue borrow = leftLow < rightLow ? TValue.One : TValue.Zero;
+            high = (leftHigh - rightHigh) - borrow;
+            low = difference;
         }
 
         /// <summary>
@@ -2673,6 +2748,47 @@ namespace System
                 (TValue quotient, TValue remainder) = TValue.DivRem(low, divisor);
                 low = quotient;
                 return remainder;
+            }
+
+#if TARGET_64BIT
+            if (typeof(TValue) == typeof(uint))
+            {
+                ulong value = ((ulong)uint.CreateTruncating(high) << 32) | uint.CreateTruncating(low);
+                (ulong quotient, ulong remainder) = Math.DivRem(value, uint.CreateTruncating(divisor));
+                high = TValue.CreateTruncating(quotient >> 32);
+                low = TValue.CreateTruncating(quotient);
+                return TValue.CreateTruncating(remainder);
+            }
+#endif
+
+            // A native widening divide consumes an entire limb and returns its
+            // remainder. Start with ordinary division; each following high
+            // input is then a remainder strictly below the divisor.
+            if (typeof(TValue) == typeof(ulong) && Runtime.Intrinsics.X86.X86Base.X64.IsSupported)
+            {
+                ulong d = ulong.CreateTruncating(divisor);
+                (ulong upper, ulong remainder) = Math.DivRem(ulong.CreateTruncating(high), d);
+                ulong lower = (ulong)BigIntegerCalculator.DivRem((nuint)remainder, (nuint)ulong.CreateTruncating(low), (nuint)d, out nuint nativeRemainder);
+                high = TValue.CreateTruncating(upper);
+                low = TValue.CreateTruncating(lower);
+                return TValue.CreateTruncating(nativeRemainder);
+            }
+
+            if (typeof(TValue) == typeof(UInt128) && Runtime.Intrinsics.X86.X86Base.X64.IsSupported)
+            {
+                // SinglePassPow10 bounds this divisor by 10^19, so it fits in
+                // one ulong even though the dividend occupies four ulongs.
+                UInt128 h = UInt128.CreateTruncating(high);
+                UInt128 l = UInt128.CreateTruncating(low);
+                UInt128 d = UInt128.CreateTruncating(divisor);
+                Debug.Assert(d.Upper == 0);
+                (ulong digit3, ulong remainder) = Math.DivRem(h.Upper, d.Lower);
+                nuint digit2 = BigIntegerCalculator.DivRem((nuint)remainder, (nuint)h.Lower, (nuint)d.Lower, out nuint nativeRemainder);
+                nuint digit1 = BigIntegerCalculator.DivRem(nativeRemainder, (nuint)l.Upper, (nuint)d.Lower, out nativeRemainder);
+                nuint digit0 = BigIntegerCalculator.DivRem(nativeRemainder, (nuint)l.Lower, (nuint)d.Lower, out nativeRemainder);
+                high = TValue.CreateTruncating(new UInt128(digit3, digit2));
+                low = TValue.CreateTruncating(new UInt128(digit1, digit0));
+                return TValue.CreateTruncating(nativeRemainder);
             }
 
             int bits = TValue.Zero.GetByteCount() * 8;

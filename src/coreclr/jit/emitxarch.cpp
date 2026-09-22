@@ -2697,7 +2697,7 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
     // so we never need it
     if ((ins != INS_push) && (ins != INS_pop) && (ins != INS_movq) && (ins != INS_movzx) && (ins != INS_push_hide) &&
         (ins != INS_pop_hide) && (ins != INS_ret) && (ins != INS_call) && (ins != INS_tail_i_jmp) &&
-        !((ins >= INS_i_jmp) && (ins <= INS_l_jg)))
+        (ins != INS_jrcxz) && !((ins >= INS_i_jmp) && (ins <= INS_l_jg)))
     {
         return true;
     }
@@ -3918,9 +3918,9 @@ unsigned emitter::emitGetAdjustedSize(instrDesc* id, code_t code) const
 #endif // TARGET_AMD64
     else
     {
-        if (ins == INS_crc32)
+        if (IsLegacyMap38Instruction(ins))
         {
-            // Adjust code size for CRC32 that has 4-byte opcode but does not use SSE38 or EES3A encoding.
+            // Account for the mandatory prefix of legacy map-38 instructions.
             adjustedSize++;
         }
 
@@ -5275,7 +5275,10 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instrDesc* id)
 
     if ((code & 0xFF00) != 0)
     {
-        sz += (IsSimdInstruction(ins) || TakesEvexPrefix(id)) ? emitInsSize(id, code, includeRexPrefixSize) : 5;
+        // Legacy map-38 instructions have their mandatory prefix counted above.
+        sz += (IsSimdInstruction(ins) || IsLegacyMap38Instruction(ins) || TakesEvexPrefix(id))
+                  ? emitInsSize(id, code, includeRexPrefixSize)
+                  : 5;
     }
     else
     {
@@ -10852,6 +10855,12 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, bool keepShort, bool i
 #endif
     }
 
+    if (ins == INS_jrcxz)
+    {
+        // Only used to skip one unconditional jump to a nearby temporary label.
+        noway_assert(keepShort && !id->idjKeepLong);
+        sz = JCC_SIZE_SMALL;
+    }
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -14215,7 +14224,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Special case emitting AVX instructions
-    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+    if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
     {
         if ((ins == INS_crc32) && (size > EA_1BYTE))
         {
@@ -14257,7 +14266,7 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
-        if (UseSimdEncoding() && (ins != INS_crc32))
+        if (UseSimdEncoding() && !IsLegacyMap38Instruction(ins))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -14472,7 +14481,7 @@ GOT_DSP:
                     // The address is of the form "[disp]"
                     // On x86 - disp is relative to zero
                     // On Amd64 - disp is relative to RIP
-                    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                    if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                     {
                         dst += emitOutputByte(dst, code | 0x05);
                     }
@@ -14535,7 +14544,7 @@ GOT_DSP:
                 else
                 {
 #ifdef TARGET_X86
-                    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                    if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                     {
                         dst += emitOutputByte(dst, code | 0x05);
                     }
@@ -14552,7 +14561,7 @@ GOT_DSP:
                     noway_assert((int)dsp == dsp);
 
                     // This requires, specifying a SIB byte after ModRM byte.
-                    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                    if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                     {
                         dst += emitOutputByte(dst, code | 0x04);
                     }
@@ -14569,7 +14578,7 @@ GOT_DSP:
 
             case REG_EBP:
             {
-                if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                 {
                     if (dspInByte)
                     {
@@ -14611,7 +14620,7 @@ GOT_DSP:
 
             case REG_ESP:
             {
-                if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                 {
                     if (dspIsZero)
                     {
@@ -14669,7 +14678,7 @@ GOT_DSP:
 
             default:
             {
-                if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                 {
                     // Put the register in the opcode
                     code |= insEncodeReg012(id, reg, EA_PTRSIZE, nullptr);
@@ -14748,7 +14757,7 @@ GOT_DSP:
                 regByte = insEncodeReg012(id, reg, EA_PTRSIZE, nullptr) |
                           insEncodeReg345(id, rgx, EA_PTRSIZE, nullptr) | insSSval(mul);
 
-                if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                 {
                     if (dspIsZero && (reg != REG_EBP))
                     {
@@ -14808,7 +14817,7 @@ GOT_DSP:
                 regByte = insEncodeReg012(id, REG_EBP, EA_PTRSIZE, nullptr) |
                           insEncodeReg345(id, rgx, EA_PTRSIZE, nullptr) | insSSval(mul);
 
-                if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+                if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
                 {
                     dst += emitOutputByte(dst, code | 0x04);
                 }
@@ -14837,7 +14846,7 @@ GOT_DSP:
             // The address is "[reg+rgx+dsp]"
             regByte = insEncodeReg012(id, reg, EA_PTRSIZE, nullptr) | insEncodeReg345(id, rgx, EA_PTRSIZE, nullptr);
 
-            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+            if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
             {
                 if (dspIsZero && (reg != REG_EBP))
                 {
@@ -15107,7 +15116,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     }
 
     // Special case emitting AVX instructions
-    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+    if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
     {
         if ((ins == INS_crc32) && (size > EA_1BYTE))
         {
@@ -15136,7 +15145,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
-        if (UseSimdEncoding() && (ins != INS_crc32))
+        if (UseSimdEncoding() && !IsLegacyMap38Instruction(ins))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -15339,7 +15348,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     if (EBPbased)
     {
         // EBP-based variable: does the offset fit in a byte?
-        if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+        if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
         {
             if (dspInByte)
             {
@@ -15390,7 +15399,7 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #endif // !FEATURE_FIXED_OUT_ARGS
 
         // Does the offset fit in a byte?
-        if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+        if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
         {
             if (dspIsZero)
             {
@@ -15679,7 +15688,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 #endif // TARGET_X86
 
     // Special case emitting AVX instructions
-    if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+    if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
     {
         if ((ins == INS_crc32) && (size > EA_1BYTE))
         {
@@ -15708,7 +15717,7 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
 
         dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
 
-        if (UseVEXEncoding() && (ins != INS_crc32))
+        if (UseVEXEncoding() && !IsLegacyMap38Instruction(ins))
         {
             // Emit last opcode byte
             // TODO-XArch-CQ: Right now support 4-byte opcode instructions only
@@ -16469,8 +16478,8 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
 #endif // TARGET_AMD64
     }
 #ifdef FEATURE_HW_INTRINSICS
-    else if ((ins == INS_bsf) || (ins == INS_bsr) || (ins == INS_crc32) || (ins == INS_lzcnt) || (ins == INS_popcnt) ||
-             (ins == INS_tzcnt)
+    else if ((ins == INS_bsf) || (ins == INS_bsr) || IsLegacyMap38Instruction(ins) || (ins == INS_lzcnt) ||
+             (ins == INS_popcnt) || (ins == INS_tzcnt)
 #ifdef TARGET_AMD64
              || (ins == INS_lzcnt_apx) || (ins == INS_tzcnt_apx) || (ins == INS_popcnt_apx) || (ins == INS_crc32_apx)
 #endif // TARGET_AMD64
@@ -17407,6 +17416,12 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             ssz = JCC_SIZE_SMALL;
             lsz = JCC_SIZE_LARGE;
             jmp = true;
+            break;
+
+        case INS_jrcxz:
+            noway_assert(id->idjShort && !id->idjKeepLong);
+            ssz = lsz = JCC_SIZE_SMALL;
+            jmp       = true;
             break;
 
         case INS_jmp:
@@ -18947,7 +18962,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
                 break;
             }
 
-            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+            if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
             {
                 // Special case 4-byte AVX instructions as the
                 // regcode position conflicts with the opcode byte
@@ -19186,7 +19201,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeRM(ins);
 
-            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+            if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
             {
                 // Special case 4-byte AVX instructions as the
                 // regcode position conflicts with the opcode byte
@@ -19442,7 +19457,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             code = insCodeRM(ins);
 
-            if (EncodedBySSE38orSSE3A(ins) || (ins == INS_crc32))
+            if (EncodedBySSE38orSSE3A(ins) || IsLegacyMap38Instruction(ins))
             {
                 // Special case 4-byte AVX instructions as the
                 // regcode position conflicts with the opcode byte

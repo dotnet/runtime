@@ -184,6 +184,7 @@ namespace System
         /// <param name="right">The integer to multiply with <paramref name="left" />.</param>
         /// <param name="lower">The lower half of the full product.</param>
         /// <returns>The upper half of the full product.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint BigMul(nuint left, nuint right, out nuint lower)
         {
 #if TARGET_64BIT

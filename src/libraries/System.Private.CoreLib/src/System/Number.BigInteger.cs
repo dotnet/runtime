@@ -686,13 +686,13 @@ namespace System
                     dividend._length = divisorLength;
                 }
 
-                // If the dividend is still larger than the divisor, we overshot our estimate quotient. To correct,
-                // we increment the quotient and subtract one more divisor from the dividend (Because we guaranteed the error range).
+                // If the remainder is still at least the divisor, the estimated quotient was too small.
+                // Increment the quotient and subtract one more divisor; the estimate is at most one below the true quotient.
                 if (Compare(ref dividend, in divisor) >= 0)
                 {
                     quotient++;
 
-                    // dividend -= divisor. This is the cold correction path (only on overshoot), so it
+                    // dividend -= divisor. This is the cold correction path (only on an underestimate), so it
                     // reuses the shared SubWithBorrow leaf, which inlines into this local loop.
                     nuint borrow = 0;
                     for (int i = 0; i < divisorLength; i++)

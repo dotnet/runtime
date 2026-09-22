@@ -1,7 +1,9 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -77,7 +79,15 @@ namespace System.Numerics.Tensors
         /// <summary>Math.DivRem(x, y)</summary>
         private readonly struct DivRemOperator<T> : IBinaryInputBinaryOutput<T> where T : IBinaryInteger<T>
         {
-            public static bool Vectorizable => true;
+            // On x64, 64-bit integer vector division is scalarized. Calling
+            // DivRem per element preserves each divide's hardware remainder
+            // instead of reconstructing it with a vector multiply/subtract.
+            public static bool Vectorizable
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => !X86Base.X64.IsSupported ||
+                    (typeof(T) != typeof(long) && typeof(T) != typeof(ulong));
+            }
 
             public static (T, T) Invoke(T x, T y) => T.DivRem(x, y);
 

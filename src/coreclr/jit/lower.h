@@ -163,6 +163,32 @@ private:
 #endif
     GenTree* OptimizeConstCompare(GenTree* cmp);
     GenTree* LowerCompare(GenTree* cmp);
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    BasicBlock* FindCarryLoopEntry(BasicBlock* block);
+    GenTree*    FindDeadCarryConstantStore(GenTree* constant);
+    GenTree*    FindCarryLocalStore(GenTree* read);
+    bool        IsCarryLocalDeadOnExit(unsigned local, BasicBlock* block);
+    bool        TryLowerCarryCompare(GenTreeOp* cmp);
+    bool        TryLowerAddCarry(GenTreeOp* add);
+    bool        LowerFullAdders();
+    void        LowerCarryChains();
+#ifdef TARGET_AMD64
+    void     ReplaceCarryAddressAdd(GenTree* add);
+    GenTree* FindMultiplyCarryStore(GenTree* read, bool loopCarry = false);
+    void     LowerMultiplyCarryLoops();
+    bool     TryLowerMultiplyCarryLoop();
+    bool     TryLowerMultiplyCarryChain();
+    void     TryLowerMultiplyCarryBackedge();
+    void     LowerMultiplyCarryMultiplier();
+    void     LowerMultiplyCarryLoads();
+#else
+    void LowerArm64MultiplyCarryLoops();
+    void TryLowerArm64MultiplyCarryLoop();
+#endif
+    void TryLowerCarryLoop(
+        GenTree* sum, GenTree* restore, GenTree* cc, GenTree* cast, GenTree* store, unsigned carryLocal);
+    bool IsCarryOperandAvailable(GenTree* operand, GenTree* producer, GenTree** moveStart);
+#endif
     GenTree* LowerJTrue(GenTreeOp* jtrue);
 #ifdef TARGET_RISCV64
     GenTree* LowerSavedIntegerCompare(GenTree* cmp);
@@ -423,6 +449,7 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
+    void     TryLowerDivRem(GenTreeOp* div);
     void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
@@ -484,6 +511,7 @@ private:
     void     LowerShift(GenTreeOp* shift);
     void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
+    bool     TryContainFunnelShift(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIntrinsicId, GenCondition condition);
@@ -656,6 +684,15 @@ private:
     unsigned              vtableCallTemp;       // local variable we use as a temp for vtable calls
     mutable SideEffectSet m_scratchSideEffects; // SideEffectSet used for IsSafeToContainMem and isRMWIndirCandidate
     BasicBlock*           m_block;
+
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    // Conservative during partial/post-lowering walks; reset for each full block walk.
+    bool        m_blockMayHaveSetCC    = true;
+    bool        m_hasAddCarry          = false;
+    BasicBlock* m_lastSubtractionBlock = nullptr;
+    unsigned    m_carryLocalScanBudget = 65536; // Node/block budget for current-IR dead-on-exit proofs.
+    unsigned    m_carryUseScanBudget   = 4096;  // Extra node visits beyond the bounded local carry-use scans.
+#endif
 
 #ifdef FEATURE_FIXED_OUT_ARGS
     unsigned m_outgoingArgSpaceSize = 0;
