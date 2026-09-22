@@ -171,7 +171,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "The nested switch expression is materialized as a ValueTuple.")]
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructTupleLiteralWithSwitchTupleElement(string value)
             {
                 ((string methodName, Type type), object instance) = (
@@ -228,7 +227,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructConditionalTuple(bool condition)
             {
                 string methodName;
@@ -240,7 +238,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2070", nameof(Type.GetMethod), Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
-            [UnexpectedWarning("IL2080", ".input", Tool.Analyzer, "Analyzer reports the named tuple element field source.")]
             static void DeconstructConditionalTupleUnannotated(bool condition, Type input)
             {
                 string methodName;
@@ -264,7 +261,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "The ref conditional uses ValueTuple fields.")]
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer, "Ref conditional produces one warning for each possible tuple reference.")]
             [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
             static void DeconstructRefConditionalTuple(bool condition)
@@ -282,7 +278,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             [ExpectedWarning("IL2069", "input1", nameof(annotatedfield), Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
             [ExpectedWarning("IL2069", "input2", nameof(annotatedfield), Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
-            [UnexpectedWarning("IL2079", ".Item1", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructConditionalTupleToAnnotatedFieldUnannotated(
                 bool condition,
                 Type input1,
@@ -294,7 +289,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     : (input2, new object());
             }
 
-            [UnexpectedWarning("IL2079", ".Item1", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructConditionalTupleToAnnotatedFieldAnnotated(
                 bool condition,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type input1,
@@ -307,7 +301,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "The tuple local uses ValueTuple fields.")]
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructConditionalTupleLocal(bool condition)
             {
                 var tuple = condition
@@ -326,7 +319,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 Validate();
 
                 [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
-                [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
                 void Validate()
                 {
                     var (methodName, type) = tuple;
@@ -334,7 +326,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
             }
 
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructNestedConditionalTuple(bool condition)
             {
                 object instance;
@@ -345,7 +336,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "The nested tuple local uses ValueTuple fields.")]
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructNestedConditionalTupleLocal(bool condition)
             {
                 var tuple = condition
@@ -356,7 +346,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructSwitchTuple(string value)
             {
                 (string methodName, Type type) = value switch
@@ -372,7 +361,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
-            [UnexpectedWarning("IL2080", ".input", Tool.Analyzer, "Analyzer reports the named tuple element field source.")]
             static void DeconstructSwitchTupleUnannotated(string value, Type input)
             {
                 string methodName;
@@ -403,7 +391,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
-            [UnexpectedWarning("IL2080", ".Item2", Tool.Analyzer, "Analyzer reports the tuple element field source.")]
             static void DeconstructSwitchOfMixedTupleSources(string value)
             {
                 var objectTuple = (nameof(object.ToString), typeof(object));
