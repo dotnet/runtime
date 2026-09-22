@@ -2150,9 +2150,11 @@ bool RangeCheck::DoesVarDefOverflow(BasicBlock* block, GenTreeLclVarCommon* lcl,
 
     // But only if the range from the assertion is more strict than the global
     // range computed; otherwise we might still have used the def's value to
-    // tighten the range of the global range.
+    // tighten the range of the global range. A dependent limit doesn't qualify:
+    // Widen resolves it later assuming the defs don't overflow.
     Range merged = RangeOps::Merge(range, assertionRange, false);
-    if (merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
+    if (!range.LowerLimit().IsDependent() && !range.UpperLimit().IsDependent() &&
+        merged.LowerLimit().Equals(range.LowerLimit()) && merged.UpperLimit().Equals(range.UpperLimit()))
     {
         return false;
     }
