@@ -161,9 +161,10 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
         byte[] contextBuffer = new byte[contextSize];
         nuint stackWalkHandle = 0;
 
-        fixed (byte* context = contextBuffer)
+        fixed (byte* pContext = contextBuffer)
         {
-            int hr = dbi.CreateStackWalk(crashingThread.ThreadAddress, context, &stackWalkHandle);
+            ContextBuffer buffer = new() { pContextBytes = pContext, contextSize = contextSize };
+            int hr = dbi.CreateStackWalk(crashingThread.ThreadAddress, buffer, &stackWalkHandle);
             Assert.Equal(System.HResults.S_OK, hr);
         }
 
@@ -173,9 +174,9 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
             {
                 Debugger_STRData data = default;
                 FrameType frameType;
-                fixed (byte* context = contextBuffer)
+                fixed (byte* pContext = contextBuffer)
                 {
-                    data.ctx = (nuint)context;
+                    data.ctx = new ContextBuffer { pContextBytes = pContext, contextSize = contextSize };
                     int hr = dbi.GetStackWalkCurrentFrameInfo(stackWalkHandle, (nint)(&data), &frameType);
                     Assert.Equal(System.HResults.S_OK, hr);
                 }
