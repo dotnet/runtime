@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Linq
@@ -98,8 +97,7 @@ namespace System.Linq
             // appears, since the first NaN is the result and the walk already reports it.
             if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported && span.Length >= Vector128<T>.Count * 2)
             {
-                ref T first = ref MemoryMarshal.GetReference(span);
-                Vector128<T> best = Vector128.LoadUnsafe(ref first, 0);
+                Vector128<T> best = Vector128.Create(span);
 
                 if (~Vector128.Equals(best, best) == Vector128<T>.Zero)
                 {
@@ -109,7 +107,7 @@ namespace System.Linq
 
                     while (index <= lastVector)
                     {
-                        Vector128<T> current = Vector128.LoadUnsafe(ref first, (uint)index);
+                        Vector128<T> current = Vector128.Create(span.Slice(index));
                         if (~Vector128.Equals(current, current) != Vector128<T>.Zero)
                         {
                             sawNaN = true;
