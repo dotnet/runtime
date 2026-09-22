@@ -47,6 +47,41 @@ public class WebcilInWasmSizesTests
     }
 
     [Fact]
+    public void R2R_WithActivePayload_ReadsPayloadAndTableSize()
+    {
+        byte[] wasm = BuildWebcilInWasm(payloadSize: 0x00ABCDEF, tableSize: 0x42, activePayload: true);
+
+        using var stream = new MemoryStream(wasm);
+        bool ok = WebcilReader.TryReadWebcilInWasmSizes(stream, out int payloadSize, out int tableSize, out string? failureReason);
+
+        Assert.True(ok, failureReason);
+        Assert.Equal(0x00ABCDEF, payloadSize);
+        Assert.Equal(0x42, tableSize);
+    }
+
+    [Fact]
+    public void R2R_WithActivePayload_WebcilReaderReadsMetadata()
+    {
+        using var directory = new TempDirectory();
+        string assemblyPath = typeof(object).Assembly.Location;
+        string webcilPath = Path.Combine(directory.Path, "System.Private.CoreLib.webcil");
+        WebcilConverter converter = WebcilConverter.FromPortableExecutable(assemblyPath, webcilPath, webcilVersion: 1);
+        converter.WrapInWebAssembly = false;
+        converter.ConvertToWebcil();
+
+        byte[] payload = File.ReadAllBytes(webcilPath);
+        byte[] wasm = BuildWebcilInWasm(payload, tableSize: 1, activePayload: true);
+
+        using var stream = new MemoryStream(wasm);
+        using var reader = new WebcilReader(stream);
+        MetadataReader metadataReader = reader.GetMetadataReader();
+
+        Assert.Equal(
+            typeof(object).Assembly.GetName().Name,
+            metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name));
+    }
+
+    [Fact]
     public void NotAWasmModule_Fails()
     {
         byte[] notWasm = { 0x7f, 0x45, 0x4c, 0x46, 0x00, 0x00, 0x00, 0x00 };
@@ -242,10 +277,13 @@ public class WebcilInWasmSizesTests
 
     // Builds a minimal webcil-in-wasm module: a data section with segment 0 holding payloadSize
     // (and, for R2R, tableSize) followed by a payload segment, mirroring the real layout.
-    private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize)
+    private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize, bool activePayload = false)
+        => BuildWebcilInWasm(new byte[] { 0xde, 0xad, 0xbe, 0xef }, tableSize, activePayload, payloadSize);
+
+    private static byte[] BuildWebcilInWasm(byte[] payload, int? tableSize, bool activePayload = false, int? payloadSize = null)
     {
         var sizes = new List<byte>();
-        WriteUInt32LE(sizes, (uint)payloadSize);
+        WriteUInt32LE(sizes, (uint)(payloadSize ?? payload.Length));
         if (tableSize is int ts)
             WriteUInt32LE(sizes, (uint)ts);
 
@@ -256,8 +294,17 @@ public class WebcilInWasmSizesTests
         WriteULEB(body, (uint)sizes.Count);
         body.AddRange(sizes);
 
-        byte[] payload = { 0xde, 0xad, 0xbe, 0xef };
-        body.Add(0x01); // passive
+        if (activePayload)
+        {
+            body.Add(0x00); // active
+            body.Add(0x23); // global.get
+            WriteULEB(body, 1); // __memory_base
+            body.Add(0x0B); // end
+        }
+        else
+        {
+            body.Add(0x01); // passive
+        }
         WriteULEB(body, (uint)payload.Length);
         body.AddRange(payload);
 

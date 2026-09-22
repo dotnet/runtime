@@ -66,6 +66,11 @@ internal class WasmModuleReader : IDisposable
     }
 
     private const uint WASM_MAGIC = 0x6d736100u; // "\0asm"
+    private const byte DataSegmentModeActive = 0x00;
+    private const byte DataSegmentModePassive = 0x01;
+    private const byte WasmOpcodeGlobalGet = 0x23;
+    private const byte WasmOpcodeI32Const = 0x41;
+    private const byte WasmOpcodeEnd = 0x0B;
 
     private bool GetIsWasmModule()
     {
@@ -135,16 +140,48 @@ internal class WasmModuleReader : IDisposable
     }
 
     protected bool TryReadPassiveDataSegment (out long segmentLength, out long segmentStart)
+        => TryReadDataSegment(allowActive: false, out segmentLength, out segmentStart);
+
+    protected bool TryReadDataSegment(bool allowActive, out long segmentLength, out long segmentStart)
     {
         segmentLength = 0;
         segmentStart = 0;
         byte code = _reader.ReadByte();
-        if (code != 1)
-            return false; // not passive
+        switch (code)
+        {
+            case DataSegmentModeActive:
+                if (!allowActive || !TryReadActiveDataSegmentOffsetExpression())
+                    return false;
+                break;
+
+            case DataSegmentModePassive:
+                break;
+
+            default:
+                return false;
+        }
+
         segmentLength = ReadULEB128();
         segmentStart = _reader.BaseStream.Position;
         // skip over the data
         _reader.BaseStream.Seek (segmentLength, SeekOrigin.Current);
         return true;
+    }
+
+    private bool TryReadActiveDataSegmentOffsetExpression()
+    {
+        byte opcode = _reader.ReadByte();
+        switch (opcode)
+        {
+            case WasmOpcodeGlobalGet:
+            case WasmOpcodeI32Const:
+                ReadULEB128();
+                break;
+
+            default:
+                return false;
+        }
+
+        return _reader.ReadByte() == WasmOpcodeEnd;
     }
 }
