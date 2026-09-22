@@ -34,6 +34,7 @@
 #endif
 
 // pfnHelper is set to NULL if it is an unused helper.
+// Changes to the set of JIT helpers should update ReadyToRunJitHelperRootProvider.cs.
 
     JITHELPER(CORINFO_HELP_UNDEF,               NULL,               METHOD__NIL)
 
@@ -171,6 +172,7 @@
     DYNAMICJITHELPER(CORINFO_HELP_CHECKED_ASSIGN_REF, RhpCheckedAssignRef,METHOD__NIL)
 
     DYNAMICJITHELPER(CORINFO_HELP_BULK_WRITEBARRIER, NULL, METHOD__BUFFER__MEMCOPYGC)
+    DYNAMICJITHELPER_NOINDIRECT(CORINFO_HELP_BULK_WRITEBARRIER_SMALL, NULL, METHOD__BUFFER__MEMCOPYGC_SMALL)
 
     // Accessing fields
 

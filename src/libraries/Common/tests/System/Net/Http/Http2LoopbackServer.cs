@@ -85,21 +85,36 @@ namespace System.Net.Test.Common
 
         public async Task<Http2LoopbackConnection> AcceptConnectionAsync(TimeSpan? timeout)
         {
-            RemoveInvalidConnections();
-
-            if (!AllowMultipleConnections && _connections.Count != 0)
+            Socket listenSocket;
+            lock (_connections)
             {
-                throw new InvalidOperationException("Connection already established. Set `AllowMultipleConnections = true` to bypass.");
+                listenSocket = _listenSocket ?? throw new ObjectDisposedException(nameof(Http2LoopbackServer));
+                RemoveInvalidConnections();
+
+                if (!AllowMultipleConnections && _connections.Exists(c => !c.IsCloseDeferred))
+                {
+                    throw new InvalidOperationException("Connection already established. Set `AllowMultipleConnections = true` to bypass.");
+                }
             }
 
-            Socket connectionSocket = await _listenSocket.AcceptAsync().ConfigureAwait(false);
+            Socket connectionSocket = await listenSocket.AcceptAsync().ConfigureAwait(false);
 
             var stream = new NetworkStream(connectionSocket, ownsSocket: true);
             var wrapper = new SocketWrapper(connectionSocket);
             Http2LoopbackConnection connection =
                 timeout != null ? await Http2LoopbackConnection.CreateAsync(wrapper, stream, _options, timeout.Value).ConfigureAwait(false) :
                 await Http2LoopbackConnection.CreateAsync(wrapper, stream, _options).ConfigureAwait(false);
-            _connections.Add(connection);
+            lock (_connections)
+            {
+                if (_listenSocket is null)
+                {
+                    connection.Close();
+                    throw new ObjectDisposedException(nameof(Http2LoopbackServer));
+                }
+
+                connection.DeferClose = _options.DeferConnectionClose;
+                _connections.Add(connection);
+            }
 
             return connection;
         }
@@ -135,10 +150,22 @@ namespace System.Net.Test.Common
 
         public override void Dispose()
         {
-            if (_listenSocket != null)
+            lock (_connections)
             {
-                _listenSocket.Dispose();
-                _listenSocket = null;
+                if (_listenSocket != null)
+                {
+                    _listenSocket.Dispose();
+                    _listenSocket = null;
+                }
+
+                if (_options.DeferConnectionClose)
+                {
+                    foreach (Http2LoopbackConnection connection in _connections)
+                    {
+                        connection.Close();
+                    }
+                    _connections.Clear();
+                }
             }
         }
 
@@ -186,6 +213,16 @@ namespace System.Net.Test.Common
 
         public bool EnableTransparentPingResponse { get; set; } = true;
         public bool EnsureThreadSafeIO { get; set; }
+
+        // Transfer disposed connections to the server until its scope ends, after the client has consumed
+        // its responses. WinHTTP can discard buffered data when the server sends FIN too early.
+        // Tests requiring immediate closure can opt out or use explicit connection shutdown methods.
+        public bool DeferConnectionClose { get; set; } =
+#if WINHTTPHANDLER_TEST
+            true;
+#else
+            false;
+#endif
 
         public Http2Options()
         {

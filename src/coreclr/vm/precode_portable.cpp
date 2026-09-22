@@ -75,14 +75,14 @@ void* PortableEntryPoint::GetInterpreterData(PCODE addr)
     return portableEntryPoint->_pInterpreterData;
 }
 
-void PortableEntryPoint::SetInterpreterData(PCODE addr, PCODE interpreterData)
+void* PortableEntryPoint::SetInterpreterDataInterlocked(PCODE addr, void* interpreterData)
 {
     STANDARD_VM_CONTRACT;
 
     PortableEntryPoint* portableEntryPoint = ToPortableEntryPoint(addr);
-    _ASSERTE(!portableEntryPoint->HasInterpreterCode());
-    _ASSERTE(interpreterData != (PCODE)NULL);
-    portableEntryPoint->_pInterpreterData = (void*)PCODEToPINSTR(interpreterData);
+    _ASSERTE(interpreterData != nullptr);
+    void* publishedData = InterlockedCompareExchangeT(&portableEntryPoint->_pInterpreterData, interpreterData, nullptr);
+    return publishedData != nullptr ? publishedData : interpreterData;
 }
 
 bool PortableEntryPoint::PrefersInterpreterEntryPoint(PCODE addr)

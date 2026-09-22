@@ -957,8 +957,6 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, COR_ILMETHOD_
 
     EX_TRY
     {
-        Thread::CurrentPrepareCodeConfigHolder threadPrepareCodeConfigHolder(GetThread(), pConfig);
-
         pCode = UnsafeJitFunction(pConfig, pilHeader, &isTier0, pIsInterpreterCode, pSizeOfCode);
     }
     EX_CATCH
@@ -1161,11 +1159,10 @@ PrepareCodeConfig::PrepareCodeConfig(NativeCodeVersion codeVersion, BOOL needsMu
 #ifdef FEATURE_TIERED_COMPILATION
     m_shouldCountCalls(false),
 #endif
-    m_jitSwitchedToMinOpt(false),
+    m_jitSwitchedToMinOpt(false)
 #ifdef FEATURE_TIERED_COMPILATION
-    m_jitSwitchedToOptimized(false),
+    , m_jitSwitchedToOptimized(false)
 #endif
-    m_nextInSameThread(nullptr)
 {}
 
 PCODE PrepareCodeConfig::IsJitCancellationRequested()
@@ -2606,8 +2603,8 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
             if (ilStubInterpData != NULL)
             {
                 // The managed implementation runs in the interpreter.
-                SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
-                PortableEntryPoint::SetInterpreterData(entryPoint, (PCODE)(TADDR)ilStubInterpData);
+                ilStubInterpData = PortableEntryPoint::SetInterpreterDataInterlocked(entryPoint, ilStubInterpData);
+                SetInterpreterCode(static_cast<InterpByteCodeStart*>(ilStubInterpData));
             }
             else
             {
@@ -2674,12 +2671,12 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
-        SetInterpreterCode((InterpByteCodeStart*)ilStubInterpData);
 
         // Use this method's own PortableEntryPoint rather than the stub's.
         // It is required to maintain 1:1 mapping between MethodDesc and its entrypoint.
         pCode = GetPortableEntryPoint();
-        PortableEntryPoint::SetInterpreterData(pCode, (PCODE)(TADDR)ilStubInterpData);
+        ilStubInterpData = PortableEntryPoint::SetInterpreterDataInterlocked(pCode, ilStubInterpData);
+        SetInterpreterCode(static_cast<InterpByteCodeStart*>(ilStubInterpData));
         SetCodeEntryPoint(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
         GetOrCreatePrecode()->SetTargetInterlocked(pStub);

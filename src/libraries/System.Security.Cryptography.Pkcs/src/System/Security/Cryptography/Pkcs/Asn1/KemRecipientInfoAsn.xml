@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="KemRecipientInfoAsn"
+  namespace="System.Security.Cryptography.Pkcs.Asn1">
+
+  <!--
+    https://www.rfc-editor.org/rfc/rfc9629.html#section-3
+
+    KEMRecipientInfo ::= SEQUENCE {
+        version CMSVersion,  always set to 0
+        rid RecipientIdentifier,
+        kem KEMAlgorithmIdentifier,
+        kemct OCTET STRING,
+        kdf KeyDerivationAlgorithmIdentifier,
+        kekLength INTEGER (1..65535),
+        ukm [0] EXPLICIT UserKeyingMaterial OPTIONAL,
+        wrap KeyEncryptionAlgorithmIdentifier,
+        encryptedKey EncryptedKey
+    }
+  -->
+  <asn:Integer name="Version" backingType="int" />
+  <asn:AsnType name="Rid" typeName="System.Security.Cryptography.Pkcs.Asn1.RecipientIdentifierAsn" />
+  <asn:AsnType name="Kem" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:OctetString name="Kemct" />
+  <asn:AsnType name="Kdf" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:Integer name="KekLength" backingType="int" />
+  <asn:OctetString name="Ukm" explicitTag="0" optional="true" />
+  <asn:AsnType name="Wrap" typeName="System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn" />
+  <asn:OctetString name="EncryptedKey" />
+</asn:Sequence>
