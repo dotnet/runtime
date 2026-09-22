@@ -15,11 +15,22 @@ namespace Profiler.Tests
         private const byte FailProfilerInitialization = 1;
 
         [DllImport("Profiler")]
+        private static extern void BeginAllocationByClassCacheTest();
+
+        [DllImport("Profiler")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool IsNotificationProfilerWaitingForAllocationCallback();
 
+        [DllImport("Profiler")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool IsAllocationByClassCacheTestComplete();
+
         public static int RunTest()
         {
+            object[] baselineObjects = CreateBaselineObjects();
+            BeginAllocationByClassCacheTest();
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+
             Task attachTask = Task.Run(() =>
             {
                 ProfilerControlHelpers.AttachProfilerToSelfExpectFailure(
@@ -33,16 +44,68 @@ namespace Profiler.Tests
                 throw new Exception("Timed out waiting for notification profiler initialization.");
             }
 
+            object[] objectsDuringAttach = AllocateObjects();
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+            attachTask.GetAwaiter().GetResult();
+
+            object[] objectsAfterTeardown = AllocateObjects();
+            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
+
+            if (!IsAllocationByClassCacheTestComplete())
+            {
+                throw new Exception("Allocation-by-class cache validation did not complete.");
+            }
+
+            GC.KeepAlive(baselineObjects);
+            GC.KeepAlive(objectsDuringAttach);
+            GC.KeepAlive(objectsAfterTeardown);
+            return 100;
+        }
+
+        private static object[] CreateBaselineObjects()
+        {
+            Type[] typeArguments =
+            {
+                typeof(byte),
+                typeof(short),
+                typeof(int),
+                typeof(long),
+                typeof(float),
+                typeof(double),
+                typeof(decimal),
+                typeof(Guid),
+                typeof(DateTime),
+                typeof(TimeSpan),
+            };
+
+            object[] objects = new object[typeArguments.Length * typeArguments.Length * typeArguments.Length];
+            Type genericType = typeof(Allocation<,,>);
+            int index = 0;
+
+            foreach (Type first in typeArguments)
+            {
+                foreach (Type second in typeArguments)
+                {
+                    foreach (Type third in typeArguments)
+                    {
+                        Type allocationType = genericType.MakeGenericType(first, second, third);
+                        objects[index++] = Array.CreateInstance(allocationType, 1);
+                    }
+                }
+            }
+
+            return objects;
+        }
+
+        private static object[] AllocateObjects()
+        {
             object[] objects = new object[100_000];
             for (int i = 0; i < objects.Length; i++)
             {
                 objects[i] = new object();
             }
 
-            GC.Collect(0, GCCollectionMode.Forced, blocking: true);
-            attachTask.GetAwaiter().GetResult();
-            GC.KeepAlive(objects);
-            return 100;
+            return objects;
         }
 
         public static int Main(string[] args)
@@ -56,6 +119,10 @@ namespace Profiler.Tests
                 profileePath: System.Reflection.Assembly.GetExecutingAssembly().Location,
                 testName: nameof(GCNotificationProfilerTeardown),
                 profilerClsid: GCProfilerGuid);
+        }
+
+        private sealed class Allocation<TFirst, TSecond, TThird>
+        {
         }
     }
 }

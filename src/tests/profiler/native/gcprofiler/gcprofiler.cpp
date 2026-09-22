@@ -4,8 +4,10 @@
 #include "gcprofiler.h"
 #include "../multiple/multiple.h"
 
-#include <chrono>
-#include <thread>
+std::atomic<GCProfiler::AllocationByClassCacheTestState> GCProfiler::_allocationByClassCacheTestState(
+    GCProfiler::AllocationByClassCacheTestState::Inactive);
+ClassID* GCProfiler::_expectedClassIds = nullptr;
+ULONG* GCProfiler::_expectedObjectCounts = nullptr;
 
 GUID GCProfiler::GetClsid()
 {
@@ -33,7 +35,18 @@ HRESULT GCProfiler::Shutdown()
 {
     Profiler::Shutdown();
 
-    if (_gcStarts == 0)
+    if (_allocationByClassCacheTestState != AllocationByClassCacheTestState::Inactive)
+    {
+        if (_allocationByClassCacheTestState != AllocationByClassCacheTestState::Complete)
+        {
+            printf("GCProfiler::Shutdown: FAIL: Allocation-by-class cache test did not complete\n");
+        }
+        else if (_failures == 0)
+        {
+            printf("PROFILER TEST PASSES\n");
+        }
+    }
+    else if (_gcStarts == 0)
     {
         printf("GCProfiler::Shutdown: FAIL: Expected GarbageCollectionStarted to be called\n");
     }
@@ -101,12 +114,6 @@ HRESULT GCProfiler::ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[
 {
     SHUTDOWNGUARD();
 
-    if (MultiplyLoaded::IsWaitingForAllocationCallback())
-    {
-        MultiplyLoaded::SignalAllocationCallbackStarted();
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    }
-
     _allocatedByClassCalls++;
     if (_gcStarts != _allocatedByClassCalls)
     {
@@ -114,17 +121,65 @@ HRESULT GCProfiler::ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[
         printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Expected ObjectsAllocatedByClass Calls == GCStart. AllocatedByClassCalls=%d, GCStart=%d\n", (int)_allocatedByClassCalls, (int)_gcStarts);
     }
 
-    for (ULONG i = 0; i < cClassCount; i++)
-    {
-        if (classIds[i] == 0 || cObjects[i] == 0)
-        {
-            _failures++;
-            printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Invalid allocation data at index %u\n", i);
-            break;
-        }
-    }
+    ValidateAllocationByClassCache(classIds, cObjects);
 
     return S_OK;
+}
+
+void GCProfiler::BeginAllocationByClassCacheTest()
+{
+    _expectedClassIds = nullptr;
+    _expectedObjectCounts = nullptr;
+    _allocationByClassCacheTestState = AllocationByClassCacheTestState::CaptureBaseline;
+}
+
+bool GCProfiler::IsAllocationByClassCacheTestComplete()
+{
+    return _allocationByClassCacheTestState == AllocationByClassCacheTestState::Complete;
+}
+
+void GCProfiler::ValidateAllocationByClassCache(ClassID classIds[], ULONG cObjects[])
+{
+    AllocationByClassCacheTestState state = _allocationByClassCacheTestState.load();
+    if (state == AllocationByClassCacheTestState::Inactive ||
+        state == AllocationByClassCacheTestState::Complete)
+    {
+        return;
+    }
+
+    if (state == AllocationByClassCacheTestState::CaptureBaseline)
+    {
+        _expectedClassIds = classIds;
+        _expectedObjectCounts = cObjects;
+        _allocationByClassCacheTestState = AllocationByClassCacheTestState::VerifyDuringAttach;
+        return;
+    }
+
+    if (classIds != _expectedClassIds || cObjects != _expectedObjectCounts)
+    {
+        _failures++;
+        printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Allocation-by-class cache changed ownership\n");
+    }
+
+    if (state == AllocationByClassCacheTestState::VerifyDuringAttach)
+    {
+        _allocationByClassCacheTestState = AllocationByClassCacheTestState::VerifyAfterTeardown;
+        MultiplyLoaded::SignalAllocationCallbackStarted();
+    }
+    else
+    {
+        _allocationByClassCacheTestState = AllocationByClassCacheTestState::Complete;
+    }
+}
+
+extern "C" EXPORT void STDMETHODCALLTYPE BeginAllocationByClassCacheTest()
+{
+    GCProfiler::BeginAllocationByClassCacheTest();
+}
+
+extern "C" EXPORT BOOL STDMETHODCALLTYPE IsAllocationByClassCacheTestComplete()
+{
+    return GCProfiler::IsAllocationByClassCacheTestComplete() ? TRUE : FALSE;
 }
 
 HRESULT GCProfiler::ObjectReferences(ObjectID objectId, ClassID classId, ULONG cObjectRefs, ObjectID objectRefIds[])
