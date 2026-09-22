@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "gcprofiler.h"
+#include "../multiple/multiple.h"
+
+#include <chrono>
+#include <thread>
 
 GUID GCProfiler::GetClsid()
 {
@@ -97,11 +101,27 @@ HRESULT GCProfiler::ObjectsAllocatedByClass(ULONG cClassCount, ClassID classIds[
 {
     SHUTDOWNGUARD();
 
+    if (MultiplyLoaded::IsWaitingForAllocationCallback())
+    {
+        MultiplyLoaded::SignalAllocationCallbackStarted();
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
     _allocatedByClassCalls++;
     if (_gcStarts != _allocatedByClassCalls)
     {
         _failures++;
         printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Expected ObjectsAllocatedByClass Calls == GCStart. AllocatedByClassCalls=%d, GCStart=%d\n", (int)_allocatedByClassCalls, (int)_gcStarts);
+    }
+
+    for (ULONG i = 0; i < cClassCount; i++)
+    {
+        if (classIds[i] == 0 || cObjects[i] == 0)
+        {
+            _failures++;
+            printf("GCProfiler::ObjectsAllocatedByClass: FAIL: Invalid allocation data at index %u\n", i);
+            break;
+        }
     }
 
     return S_OK;

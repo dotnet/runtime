@@ -5,12 +5,15 @@
 #include <thread>
 
 #define MAX_PROFILERS 3
+#define FAIL_PROFILER_INITIALIZATION 1
 
 using std::thread;
 
 std::atomic<int> MultiplyLoaded::_exceptionThrownSeenCount(0);
 std::atomic<int> MultiplyLoaded::_detachCount(0);
 std::atomic<int> MultiplyLoaded::_failures(0);
+std::atomic<bool> MultiplyLoaded::_waitingForAllocationCallback(false);
+AutoEvent MultiplyLoaded::_allocationCallbackStarted;
 
 GUID MultiplyLoaded::GetClsid()
 {
@@ -43,7 +46,34 @@ HRESULT MultiplyLoaded::Initialize(IUnknown* pICorProfilerInfoUnk)
 HRESULT MultiplyLoaded::InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData)
 {
     printf("MultiplyLoaded::InitializeForAttach\n");
+
+    if (pvClientData != nullptr &&
+        cbClientData == 1 &&
+        *static_cast<BYTE*>(pvClientData) == FAIL_PROFILER_INITIALIZATION)
+    {
+        Profiler::Initialize(pICorProfilerInfoUnk);
+        _waitingForAllocationCallback = true;
+        _allocationCallbackStarted.Wait();
+        _waitingForAllocationCallback = false;
+        return E_FAIL;
+    }
+
     return InitializeCommon(pICorProfilerInfoUnk);
+}
+
+bool MultiplyLoaded::IsWaitingForAllocationCallback()
+{
+    return _waitingForAllocationCallback.load();
+}
+
+void MultiplyLoaded::SignalAllocationCallbackStarted()
+{
+    _allocationCallbackStarted.Signal();
+}
+
+extern "C" EXPORT BOOL STDMETHODCALLTYPE IsNotificationProfilerWaitingForAllocationCallback()
+{
+    return MultiplyLoaded::IsWaitingForAllocationCallback() ? TRUE : FALSE;
 }
 
 HRESULT MultiplyLoaded::LoadAsNotificationOnly(BOOL *pbNotificationOnly)

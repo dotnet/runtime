@@ -9,4 +9,4 @@ EXPORTS
             SwitchJitOptimization   PRIVATE
             SwitchInlining  PRIVATE
             GetInlineCount          PRIVATE
-
+            IsNotificationProfilerWaitingForAllocationCallback PRIVATE

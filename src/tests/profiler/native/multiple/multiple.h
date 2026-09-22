@@ -12,6 +12,8 @@ public:
     {}
 
     static GUID GetClsid();
+    static bool IsWaitingForAllocationCallback();
+    static void SignalAllocationCallbackStarted();
     virtual HRESULT STDMETHODCALLTYPE Initialize(IUnknown* pICorProfilerInfoUnk);
     virtual HRESULT STDMETHODCALLTYPE InitializeForAttach(IUnknown* pICorProfilerInfoUnk, void* pvClientData, UINT cbClientData);
     virtual HRESULT STDMETHODCALLTYPE Shutdown();
@@ -24,6 +26,8 @@ private:
     static std::atomic<int> _exceptionThrownSeenCount;
     static std::atomic<int> _detachCount;
     static std::atomic<int> _failures;
+    static std::atomic<bool> _waitingForAllocationCallback;
+    static AutoEvent _allocationCallbackStarted;
 
     HRESULT InitializeCommon(IUnknown* pCorProfilerInfoUnk);
 };
