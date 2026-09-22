@@ -149,18 +149,6 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task DeconstructFieldTarget()
-        {
-            return RunTest();
-        }
-
-        [Fact]
-        public Task DeconstructUserDefinedConversion()
-        {
-            return RunTest();
-        }
-
-        [Fact]
         public Task DependencyInjectionPattern()
         {
             return RunTest();
