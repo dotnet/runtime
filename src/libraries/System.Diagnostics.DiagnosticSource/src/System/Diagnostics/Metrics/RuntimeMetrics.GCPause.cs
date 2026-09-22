@@ -16,57 +16,36 @@ internal static partial class RuntimeMetrics
         private readonly object _lock = new();
         private readonly Histogram<double> _histogram;
         private Subscription? _subscription;
-        private long _epoch;
-        private bool _updating;
+        private long _epoch = -1;
 
         internal GCPauseMetrics(Meter meter)
         {
             _histogram = meter.CreateHistogram<double>(
                 "dotnet.gc.pause.duration",
                 unit: "s",
-                description: "The duration of each GC-accounted pause contribution. Measurements are delivered asynchronously through EventPipe while listeners are enabled. No measurements are emitted when the runtime does not provide these events. Buffer overflow and session reconfiguration can drop measurements; loss counts are unavailable.");
+                description: "The duration of each GC-accounted pause contribution. Collection starts asynchronously after listeners are enabled, and measurements are delivered asynchronously through EventPipe. No measurements are emitted when the runtime does not provide these events. Buffer overflow and session reconfiguration can drop measurements; loss counts are unavailable.");
             _histogram.SetMeasurementStateCallback(SubscriptionsChanged);
         }
 
-        private void SubscriptionsChanged()
+        private void SubscriptionsChanged(Instrument instrument, bool enabled, long epoch) =>
+            ThreadPool.UnsafeQueueUserWorkItem(
+                static state => state.Producer.UpdateSubscription(state.Instrument, state.Enabled, state.Epoch),
+                (Producer: this, Instrument: instrument, Enabled: enabled, Epoch: epoch), preferLocal: false);
+
+        private void UpdateSubscription(Instrument instrument, bool enabled, long epoch)
         {
+            Exception? failure = null;
             lock (_lock)
             {
-                if (_updating)
+                if (epoch <= _epoch || epoch != instrument.MeasurementEpoch)
                 {
                     return;
                 }
 
-                _updating = true;
-            }
-
-            // EventListener operations can call user code. Serialize updates without holding our lock
-            // across construction, enabling, or disposal, and reconcile any reentrant state changes.
-            bool completed = false;
-            try
-            {
-                while (true)
+                // Only workers take this lock. EventListener callbacks can enqueue more work,
+                // but never synchronously wait for it or construct another listener.
+                try
                 {
-                    bool enabled;
-                    long epoch;
-                    lock (_lock)
-                    {
-                        lock (Instrument.SyncObject)
-                        {
-                            enabled = _histogram.Enabled && !_histogram.Meter.Disposed;
-                            epoch = _histogram.MeasurementEpoch;
-                        }
-
-                        if (_epoch == epoch && (_subscription is not null) == enabled)
-                        {
-                            _updating = false;
-                            completed = true;
-                            return;
-                        }
-
-                        _epoch = epoch;
-                    }
-
                     _subscription?.Dispose();
                     _subscription = null;
                     if (enabled)
@@ -74,25 +53,20 @@ internal static partial class RuntimeMetrics
                         _subscription = new Subscription(_histogram, epoch);
                         _subscription.Start();
                     }
+
+                    _epoch = epoch;
+                }
+                catch (Exception e) when (e is EventSourceException or InvalidOperationException)
+                {
+                    _subscription?.Dispose();
+                    _subscription = null;
+                    failure = e;
                 }
             }
-            finally
+
+            if (failure is not null)
             {
-                if (!completed)
-                {
-                    try
-                    {
-                        _subscription?.Dispose();
-                    }
-                    finally
-                    {
-                        _subscription = null;
-                        lock (_lock)
-                        {
-                            _updating = false;
-                        }
-                    }
-                }
+                MetricsEventSource.Log.Message(failure.ToString());
             }
         }
 
@@ -126,18 +100,18 @@ internal static partial class RuntimeMetrics
 
             protected override void OnEventWritten(EventWrittenEventArgs eventData)
             {
-                if (eventData.EventId != GCPauseEventId || eventData.Version != 1 ||
+                if (eventData.EventId != GCPauseEventId || eventData.Version != 0 ||
                     !Volatile.Read(ref _active) || histogram.MeasurementEpoch != epoch)
                 {
                     return;
                 }
 
-                if (eventData.Payload is [ulong, ulong durationMicroseconds, uint generation, uint kind, ushort] &&
-                    generation <= GC.MaxGeneration && kind <= 1 && (kind == 0 || generation == 2))
+                if (eventData.Payload is [uint, ulong durationMicroseconds, uint generation, uint type, ushort] &&
+                    generation <= GC.MaxGeneration && type <= 2 && (type != 1 || generation == 2))
                 {
                     histogram.Record(durationMicroseconds / 1_000_000d,
                         new KeyValuePair<string, object?>("gc.heap.generation", s_genNames[generation]),
-                        new KeyValuePair<string, object?>("gc.pause.type", kind == 0 ? "blocking" : "background"));
+                        new KeyValuePair<string, object?>("gc.pause.type", type == 1 ? "background" : "blocking"));
                 }
                 else
                 {

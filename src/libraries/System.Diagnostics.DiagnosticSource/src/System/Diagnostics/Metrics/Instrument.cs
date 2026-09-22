@@ -4,9 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-#if NET11_0_OR_GREATER
 using System.Threading;
-#endif
 
 namespace System.Diagnostics.Metrics
 {
@@ -19,6 +17,7 @@ namespace System.Diagnostics.Metrics
 
         // The SyncObject is used to synchronize the following operations:
         //  - Instrument.Publish()
+        //  - Instrument.SetMeasurementStateCallback
         //  - Meter constructor
         //  - Meter.Dispose
         //  - MeterListener.EnableMeasurementEvents
@@ -31,27 +30,38 @@ namespace System.Diagnostics.Metrics
         // DiagLinkedList is thread safe for Add and Remove operations.
         internal readonly DiagLinkedList<ListenerSubscription> _subscriptions = new DiagLinkedList<ListenerSubscription>();
 
-#if NET11_0_OR_GREATER
-        private Action? _measurementStateChanged;
+        private Action<Instrument, bool, long>? _measurementStateChanged;
         private long _measurementEpoch;
 
         // Subscription epochs distinguish a re-enabled producer from an in-flight previous delivery.
         internal long MeasurementEpoch => Volatile.Read(ref _measurementEpoch);
 
-        internal void SetMeasurementStateCallback(Action callback)
+        internal void SetMeasurementStateCallback(Action<Instrument, bool, long> callback)
         {
-            lock (SyncObject)
+            MeasurementState state;
+            lock (Instrument.SyncObject)
             {
                 Debug.Assert(_measurementStateChanged is null);
-                Volatile.Write(ref _measurementStateChanged, callback);
+                _measurementStateChanged = callback;
+                state = GetMeasurementState();
             }
 
             // Publication can synchronously enable listeners before the hook is installed.
-            NotifyMeasurementStateChanged();
+            state.Notify(this);
         }
 
-        internal void NotifyMeasurementStateChanged() => Volatile.Read(ref _measurementStateChanged)?.Invoke();
-#endif
+        internal MeasurementState GetMeasurementState()
+        {
+            Debug.Assert(Monitor.IsEntered(Instrument.SyncObject));
+            return _measurementStateChanged is null ? default :
+                new MeasurementState(_measurementStateChanged, Enabled && !Meter.Disposed, _measurementEpoch);
+        }
+
+        internal readonly struct MeasurementState(Action<Instrument, bool, long> callback, bool enabled, long epoch)
+        {
+            internal bool HasCallback => callback is not null;
+            internal void Notify(Instrument instrument) => callback?.Invoke(instrument, enabled, epoch);
+        }
 
         /// <summary>
         /// Constructs a new instance of <see cref="Instrument"/>.
@@ -196,9 +206,8 @@ namespace System.Diagnostics.Metrics
         internal object? EnableMeasurement(ListenerSubscription subscription, out bool oldStateStored)
         {
             oldStateStored = false;
-#if NET11_0_OR_GREATER
-            bool wasEnabled = Enabled;
-#endif
+            bool trackState = _measurementStateChanged is not null;
+            bool wasEnabled = trackState && Enabled;
 
             if (!_subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)))
             {
@@ -208,28 +217,22 @@ namespace System.Diagnostics.Metrics
                 return oldSubscription.State;
             }
 
-#if NET11_0_OR_GREATER
-            if (!wasEnabled)
+            if (trackState && !wasEnabled)
             {
                 Volatile.Write(ref _measurementEpoch, _measurementEpoch + 1);
             }
-#endif
             return false;
         }
 
         // Called from MeterListener.DisableMeasurementEvents
         internal object? DisableMeasurements(MeterListener listener)
         {
-#if NET11_0_OR_GREATER
-            bool wasEnabled = Enabled;
-#endif
+            bool wasEnabled = _measurementStateChanged is not null && Enabled;
             object? state = _subscriptions.Remove(new ListenerSubscription(listener), (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)).State;
-#if NET11_0_OR_GREATER
             if (wasEnabled && !Enabled)
             {
                 Volatile.Write(ref _measurementEpoch, _measurementEpoch + 1);
             }
-#endif
             return state;
         }
 

@@ -70,6 +70,7 @@ namespace System.Diagnostics.Metrics
             bool oldStateStored = false;
             bool enabled = false;
             object? oldState = null;
+            Instrument.MeasurementState measurementState = default;
 
             lock (Instrument.SyncObject)
             {
@@ -77,15 +78,14 @@ namespace System.Diagnostics.Metrics
                 {
                     _enabledMeasurementInstruments.AddIfNotExist(instrument, object.ReferenceEquals);
                     oldState = instrument.EnableMeasurement(new ListenerSubscription(this, state), out oldStateStored);
+                    measurementState = instrument.GetMeasurementState();
                     enabled = true;
                 }
             }
 
             if (enabled)
             {
-#if NET11_0_OR_GREATER
-                instrument!.NotifyMeasurementStateChanged();
-#endif
+                measurementState.Notify(instrument!);
                 if (oldStateStored && MeasurementsCompleted is not null)
                 {
                     MeasurementsCompleted?.Invoke(instrument!, oldState);
@@ -112,6 +112,7 @@ namespace System.Diagnostics.Metrics
             }
 
             object? state = null;
+            Instrument.MeasurementState measurementState;
             lock (Instrument.SyncObject)
             {
                 if (instrument is null || _enabledMeasurementInstruments.Remove(instrument, object.ReferenceEquals) == default)
@@ -120,11 +121,10 @@ namespace System.Diagnostics.Metrics
                 }
 
                 state = instrument.DisableMeasurements(this);
+                measurementState = instrument.GetMeasurementState();
             }
 
-#if NET11_0_OR_GREATER
-            instrument.NotifyMeasurementStateChanged();
-#endif
+            measurementState.Notify(instrument);
             MeasurementsCompleted?.Invoke(instrument, state);
             return state;
         }
@@ -259,9 +259,7 @@ namespace System.Diagnostics.Metrics
 
             Dictionary<Instrument, object?>? callbacksArguments = null;
             Action<Instrument, object?>? measurementsCompleted = MeasurementsCompleted;
-#if NET11_0_OR_GREATER
-            DiagNode<Instrument>? changedInstruments = null;
-#endif
+            List<KeyValuePair<Instrument, Instrument.MeasurementState>>? changedInstruments = null;
 
             lock (Instrument.SyncObject)
             {
@@ -273,9 +271,6 @@ namespace System.Diagnostics.Metrics
                 s_allStartedListeners.Remove(this);
 
                 DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
-#if NET11_0_OR_GREATER
-                changedInstruments = current;
-#endif
                 if (current is not null)
                 {
                     if (measurementsCompleted is not null)
@@ -287,6 +282,12 @@ namespace System.Diagnostics.Metrics
                     {
                         object? state = current.Value.DisableMeasurements(this);
                         callbacksArguments?.Add(current.Value, state);
+                        Instrument.MeasurementState measurementState = current.Value.GetMeasurementState();
+                        if (measurementState.HasCallback)
+                        {
+                            changedInstruments ??= new();
+                            changedInstruments.Add(new KeyValuePair<Instrument, Instrument.MeasurementState>(current.Value, measurementState));
+                        }
                         current = current.Next;
                     } while (current is not null);
 
@@ -294,13 +295,13 @@ namespace System.Diagnostics.Metrics
                 }
             }
 
-#if NET11_0_OR_GREATER
-            while (changedInstruments is not null)
+            if (changedInstruments is not null)
             {
-                changedInstruments.Value.NotifyMeasurementStateChanged();
-                changedInstruments = changedInstruments.Next;
+                foreach (KeyValuePair<Instrument, Instrument.MeasurementState> change in changedInstruments)
+                {
+                    change.Value.Notify(change.Key);
+                }
             }
-#endif
 
             if (callbacksArguments is not null)
             {

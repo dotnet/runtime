@@ -687,6 +687,21 @@ public:
     void first_init(); // for the life of the EE
 
     void record (gc_history_global* history);
+
+    gc_etw_type get_etw_type() const
+    {
+        if (concurrent)
+        {
+            return gc_etw_type_bgc;
+        }
+#ifdef BACKGROUND_GC
+        if (condemned_generation < max_generation && background_p)
+        {
+            return gc_etw_type_fgc;
+        }
+#endif // BACKGROUND_GC
+        return gc_etw_type_ngc;
+    }
 };
 
 // This is a compact version of gc_mechanism that we use to save in the history.

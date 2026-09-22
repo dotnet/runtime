@@ -6,7 +6,7 @@
 #define FireEtwGCStart_V2(Count, Depth, Reason, Type, ClrInstanceID, ClientSequenceNumber) 0
 #define FireEtwGCEnd(Count, Depth) 0
 #define FireEtwGCEnd_V1(Count, Depth, ClrInstanceID) 0
-#define FireEtwGCPause_V1(CollectionIndex, DurationMicroseconds, Generation, Kind, ClrInstanceID) 0
+#define FireEtwGCPause(Count, DurationMicroseconds, Depth, Type, ClrInstanceID) 0
 #define FireEtwGCRestartEEEnd() 0
 #define FireEtwGCRestartEEEnd_V1(ClrInstanceID) 0
 #define FireEtwGCHeapStats(GenerationSize0, TotalPromotedSize0, GenerationSize1, TotalPromotedSize1, GenerationSize2, TotalPromotedSize2, GenerationSize3, TotalPromotedSize3, FinalizationPromotedSize, FinalizationPromotedCount, PinnedObjectCount, SinkBlockCount, GCHandleCount) 0

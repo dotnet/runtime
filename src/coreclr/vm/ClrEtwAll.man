@@ -1539,10 +1539,10 @@
                     </template>
 
                     <template tid="GCPause">
-                        <data name="CollectionIndex" inType="win:UInt64" />
+                        <data name="Count" inType="win:UInt32" />
                         <data name="DurationMicroseconds" inType="win:UInt64" />
-                        <data name="Generation" inType="win:UInt32" />
-                        <data name="Kind" inType="win:UInt32" />
+                        <data name="Depth" inType="win:UInt32" />
+                        <data name="Type" inType="win:UInt32" map="GCTypeMap" />
                         <data name="ClrInstanceID" inType="win:UInt16" />
                     </template>
 
@@ -4341,8 +4341,8 @@
                            keywords="AllocationSamplingKeyword"
                            task="AllocationSampling"
                            symbol="AllocationSampled" message="$(string.RuntimePublisher.AllocationSampledEventMessage)"/>
-                    <event value="304" version="1" level="win:Informational" template="GCPause"
-                           keywords="GCPauseKeyword" task="GarbageCollection" symbol="GCPause_V1"/>
+                    <event value="304" version="0" level="win:Informational" template="GCPause"
+                           keywords="GCPauseKeyword" task="GarbageCollection" symbol="GCPause"/>
                 </events>
             </provider>
 
