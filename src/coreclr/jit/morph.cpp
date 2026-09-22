@@ -170,15 +170,25 @@ public:
 //   tree       - The node that is changed. This must be a large node.
 //   helper     - The helper.
 //   morphArgs  - Whether to call fgMorphArgs after adding the args.
-//   arg1, arg2 - Optional arguments to add to the call.
+//   arg1, arg2 - Optional arguments to add to the call, in physical operand order.
 //
 // Return value:
-//   The call (which is the same as `tree`).
+//   The call, optionally preceded by a comma evaluating the second operand.
 //
 GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphArgs, GenTree* arg1, GenTree* arg2)
 {
+    GenTree* arg2Defn = nullptr;
+    if ((arg2 != nullptr) && tree->IsReverseOp() && !arg2->IsInvariant())
+    {
+        // Helper arguments keep their physical positions, but arg2 must execute before arg1.
+        TempInfo temp = fgMakeTemp(arg2);
+        arg2Defn      = temp.store;
+        arg2          = temp.load;
+    }
+
     // The helper call ought to be semantically equivalent to the original node, so preserve its VN.
     tree->ChangeOper(GT_CALL, GenTree::PRESERVE_VN);
+    tree->ClearReverseOp();
 
     GenTreeCall* call = tree->AsCall();
     // Args are cleared by ChangeOper above
@@ -245,10 +255,21 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
     if (morphArgs)
     {
         SharedTempsScope scope(this);
+        if (arg2Defn != nullptr)
+        {
+            arg2Defn = fgMorphTree(arg2Defn);
+        }
         tree = fgMorphArgs(call);
     }
 
     tree->SetMorphed(this);
+
+    if (arg2Defn != nullptr)
+    {
+        tree = gtNewOperNode(GT_COMMA, tree->TypeGet(), arg2Defn, tree);
+        tree->SetVNsFromNode(call);
+        tree->SetMorphed(this);
+    }
 
     return tree;
 }
@@ -2043,16 +2064,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
     call->gtArgs.AddFinalArgsAndDetermineABIInfo(this, call);
     JITDUMP("%sMorphing args for %d.%s:\n", (reMorphing) ? "Re" : "", call->gtTreeID, GenTree::OpName(call->gtOper));
 
-    // If we are remorphing, process the late arguments (which were determined by a previous caller).
-    if (reMorphing)
-    {
-        for (CallArg& arg : call->gtArgs.LateArgs())
-        {
-            arg.SetLateNode(fgMorphTree(arg.GetLateNode()));
-            flagsSummary |= arg.GetLateNode()->gtFlags;
-        }
-    }
-
     // First we morph the argument subtrees ('this' pointer, arguments, etc.).
     // During the first call to fgMorphArgs we also record the
     // information about late arguments in CallArgs.
@@ -2123,7 +2134,16 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     } // end foreach argument loop
 
-    if (!reMorphing)
+    // Late arguments execute after the early arguments, including on remorph.
+    if (reMorphing)
+    {
+        for (CallArg& arg : call->gtArgs.LateArgs())
+        {
+            arg.SetLateNode(fgMorphTree(arg.GetLateNode()));
+            flagsSummary |= arg.GetLateNode()->gtFlags;
+        }
+    }
+    else
     {
         call->gtArgs.ArgsComplete(this, call);
     }
@@ -2925,6 +2945,19 @@ GenTree* Compiler::fgMorphIndexAddr(GenTreeIndexAddr* indexAddr)
     CORINFO_CLASS_HANDLE elemStructType = indexAddr->gtStructElemClass;
 
     noway_assert(!varTypeIsStruct(elemTyp) || (elemStructType != NO_CLASS_HANDLE));
+
+    if (indexAddr->IsReverseOp())
+    {
+        indexAddr->ClearReverseOp();
+        GenTree* index = indexAddr->Index();
+        if (!index->IsInvariant())
+        {
+            // Capture the index before the array so both the retained and expanded forms use normal operand order.
+            TempInfo temp      = fgMakeTemp(index);
+            indexAddr->Index() = temp.load;
+            return fgMorphTree(gtNewOperNode(GT_COMMA, indexAddr->TypeGet(), temp.store, indexAddr));
+        }
+    }
 
     // In minopts, we will not be expanding GT_INDEX_ADDR in order to minimize the size of the IR. As minopts
     // compilation time is roughly proportional to the size of the IR, this helps keep compilation times down.
@@ -6975,7 +7008,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
 
     /* The steps in this function are :
        o Perform required preorder processing
-       o Process the first, then second operand, if any
+       o Process the operands in execution order, if any
        o Perform required postorder morphing
        o Perform optional postorder morphing if optimizing
      */
@@ -6989,6 +7022,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
     var_types  typ  = tree->TypeGet();
     GenTree*   op1  = tree->AsOp()->gtOp1;
     GenTree*   op2  = tree->gtGetOp2IfPresent();
+
+    GenTree** firstUse  = nullptr;
+    GenTree** secondUse = nullptr;
 
     /*-------------------------------------------------------------------------
      * First do any PRE-ORDER processing
@@ -7584,11 +7620,19 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             return fgMorphTree(morphed);
     }
 
+    firstUse  = (op1 != nullptr) ? &tree->AsOp()->gtOp1 : nullptr;
+    secondUse = (op2 != nullptr) ? &tree->AsOp()->gtOp2 : nullptr;
+
+    if (tree->IsReverseOp())
+    {
+        std::swap(firstUse, secondUse);
+    }
+
     /*-------------------------------------------------------------------------
      * Process the first operand, if any
      */
 
-    if (op1 != nullptr)
+    if (firstUse != nullptr)
     {
         // If we are entering the "then" part of a Qmark-Colon we must
         // save the state of the current assertions table so that we can
@@ -7606,7 +7650,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             fgMarkAddrModeForFieldAddr(tree->AsIndir());
         }
 
-        tree->AsOp()->gtOp1 = op1 = fgMorphTree(op1);
+        *firstUse = fgMorphTree(*firstUse);
 
         // If we are exiting the "then" part of a Qmark-Colon we must
         // save the state of the current assertions table so that we
@@ -7622,7 +7666,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
      * Process the second operand, if any
      */
 
-    if (op2 != nullptr)
+    if (secondUse != nullptr)
     {
         // If we are entering the "else" part of a Qmark-Colon we must
         // reset the state of the current assertions table
@@ -7632,7 +7676,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             BitVecOps::Assign(apTraits, apLocal, origAssertions);
         }
 
-        tree->AsOp()->gtOp2 = op2 = fgMorphTree(op2);
+        *secondUse = fgMorphTree(*secondUse);
 
         // If we are exiting the "else" part of a Qmark-Colon we must
         // merge the state of the current assertions table with that
@@ -7646,6 +7690,17 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, bool* optAssertionPropDone)
             //
             BitVecOps::IntersectionD(apTraits, apLocal, thenAssertions);
         }
+    }
+
+    // Preorder processing and the operand walk may replace operands. Postorder
+    // transforms use their physical positions, not their execution order.
+    if (op1 != nullptr)
+    {
+        op1 = tree->AsOp()->gtOp1;
+    }
+    if (op2 != nullptr)
+    {
+        op2 = tree->gtGetOp2IfPresent();
     }
 
 #if !defined(TARGET_64BIT) && !defined(TARGET_WASM)
@@ -7889,6 +7944,7 @@ DONE_MORPHING_CHILDREN:
                     if (op1->IsIntegralConst(0))
                     {
                         tree->ChangeOper(GT_NEG, GenTree::PRESERVE_VN);
+                        tree->ClearReverseOp();
                         tree->gtType = genActualType(op2->TypeGet());
 
                         tree->AsOp()->gtOp1 = op2;
@@ -7920,7 +7976,7 @@ DONE_MORPHING_CHILDREN:
                     break;
                 }
 
-                if (op1->OperIs(GT_NEG) && gtCanSwapOrder(op1, op2))
+                if (op1->OperIs(GT_NEG) && (tree->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2)))
                 {
                     // -a - -b = > b - a
                     // SUB(NEG(a), NEG(b)) => SUB(b, a)
@@ -8347,6 +8403,11 @@ DONE_MORPHING_CHILDREN:
                 // codegen won't like it if op1 is a RELOP of longs, floats or doubles.
                 // So we change it into a GT_COMMA as well.
                 JITDUMP("Also bashing [%06d] (a relop) into a GT_COMMA.\n", dspTreeID(op1));
+                if (op1->IsReverseOp())
+                {
+                    std::swap(op1->AsOp()->gtOp1, op1->AsOp()->gtOp2);
+                    op1->ClearReverseOp();
+                }
                 op1->ChangeOper(GT_COMMA);
                 op1->ClearUnsigned(); // Clear the unsigned flag if it was set on the relop
                 op1->gtType = op1->AsOp()->gtOp1->gtType;
@@ -8407,18 +8468,26 @@ DONE_MORPHING_CHILDREN:
     if (fgGlobalMorph && (oper != GT_COLON) &&
         /* TODO-ASG-Cleanup: delete this zero-diff quirk */ !GenTree::OperIsStore(oper))
     {
-        if ((op1 != nullptr) && fgIsCommaThrow(op1, true))
+        GenTree* firstOp  = op1;
+        GenTree* secondOp = op2;
+
+        if (tree->IsReverseOp())
         {
-            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op1->AsOp(), GTF_EMPTY);
+            std::swap(firstOp, secondOp);
+        }
+
+        if ((firstOp != nullptr) && fgIsCommaThrow(firstOp, true))
+        {
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, firstOp->AsOp(), GTF_EMPTY);
             if (propagatedThrow != nullptr)
             {
                 return propagatedThrow;
             }
         }
 
-        if ((op2 != nullptr) && fgIsCommaThrow(op2, true))
+        if ((secondOp != nullptr) && fgIsCommaThrow(secondOp, true))
         {
-            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, op2->AsOp(), op1->gtFlags & GTF_ALL_EFFECT);
+            GenTree* propagatedThrow = fgPropagateCommaThrow(tree, secondOp->AsOp(), firstOp->gtFlags & GTF_ALL_EFFECT);
             if (propagatedThrow != nullptr)
             {
                 return propagatedThrow;
@@ -9013,6 +9082,9 @@ GenTree* Compiler::fgOptimizeEqualityComparisonWithConst(GenTreeOp* cmp)
                 rshiftOp->gtOp1 = andOp->gtGetOp2();
                 andOp->gtOp2    = rshiftOp;
 
+                // The AND now controls the execution order between x and y.
+                andOp->gtFlags = (andOp->gtFlags & ~GTF_REVERSE_OPS) | (rshiftOp->gtFlags & GTF_REVERSE_OPS);
+                rshiftOp->ClearReverseOp();
                 rshiftOp->SetOper(GT_LSH);
                 gtUpdateNodeSideEffects(rshiftOp);
             }
@@ -9637,7 +9709,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                         break;
                     }
 
-                    if (!gtCanSwapOrder(op1, op2))
+                    bool canSwap = node->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2);
+                    if (!canSwap)
                     {
                         break;
                     }
@@ -10258,7 +10331,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 var_types  op1SimdBaseType = op1Intrin->GetSimdBaseType();
 
                 if ((op1Oper == GT_NEG) && !op1IsScalar &&
-                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)))
+                    (varTypeToSigned(simdBaseType) == varTypeToSigned(op1SimdBaseType)) &&
+                    (node->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2)))
                 {
                     op1 = ExtractEffectiveOp(GT_NEG, op1Intrin, /* destroyNodes */ true);
 
@@ -10558,6 +10632,9 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         // addOne is now "x + y"
         addOne->gtOp2 = addTwo->gtGetOp1();
         addOne->SetAllEffectsFlags(addOne->gtGetOp1(), addOne->gtGetOp2());
+        // The inner add now controls the execution order between x and y.
+        addOne->gtFlags = (addOne->gtFlags & ~GTF_REVERSE_OPS) | (add->gtFlags & GTF_REVERSE_OPS);
+        add->ClearReverseOp();
 
         // addTwo is now "icon1 + icon2" so we can fold it using gtFoldExprConst
         addTwo->gtOp1 = constOne;
@@ -10652,7 +10729,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
             // - a + b => b - a
             // ADD(NEG(a), b) => SUB(b, a)
             // Do not do this if "op2" is constant for canonicalization purposes.
-            if (!op2->IsIntegralConst() && gtCanSwapOrder(op1, op2))
+            if (!op2->IsIntegralConst() && (add->IsReverseOp() ? gtCanSwapOrder(op2, op1) : gtCanSwapOrder(op1, op2)))
             {
                 add->SetOper(GT_SUB);
                 add->gtOp1 = op2;
@@ -10754,6 +10831,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
             else
             {
                 mul->ChangeOper(GT_NEG, GenTree::PRESERVE_VN);
+                mul->ClearReverseOp();
                 mul->AsOp()->gtOp2 = nullptr;
                 return mul;
             }
@@ -10823,6 +10901,7 @@ GenTree* Compiler::fgOptimizeMultiply(GenTreeOp* mul)
 
             // We need to keep op1 for the side-effects. Hang it off a GT_COMMA node.
             mul->ChangeOper(GT_COMMA, GenTree::PRESERVE_VN);
+            mul->ClearReverseOp();
             return mul;
         }
 
@@ -11084,6 +11163,7 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
     {
         /* "x ^ -1" is "~x" */
         xorOp->ChangeOper(GT_NOT, GenTree::PRESERVE_VN);
+        xorOp->ClearReverseOp();
         xorOp->gtOp2 = nullptr;
         DEBUG_DESTROY_NODE(op2);
 
@@ -11103,6 +11183,7 @@ GenTree* Compiler::fgOptimizeBitwiseXor(GenTreeOp* xorOp)
         // "x ^ -0.0" is "-x"
 
         xorOp->ChangeOper(GT_NEG, GenTree::PRESERVE_VN);
+        xorOp->ClearReverseOp();
         xorOp->gtOp2 = nullptr;
 
         DEBUG_DESTROY_NODE(op2);
@@ -11506,7 +11587,7 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     // It is important that this follows the general flow of fgMorphSmpOp
     // * Perform required preorder processing
-    // * Process the operands, in order, if any
+    // * Process the operands, in execution order, if any
     // * Perform required postorder morphing
     // * Perform optional postorder morphing if optimizing
     //
@@ -11539,7 +11620,8 @@ GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
     // Process the operands, if any
     //
 
-    for (GenTree** use : tree->UseEdges())
+    // GenTreeMultiOp::UseEdges ignores GTF_REVERSE_OPS; use the execution-order iterator.
+    for (GenTree** use : tree->GenTree::UseEdges())
     {
         *use             = fgMorphTree(*use);
         GenTree* operand = *use;
@@ -12528,6 +12610,9 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
+            // Preserve the first-executed shift's operand order. The parent's flag only orders the two shifts.
+            GenTreeFlags operandOrder = (tree->IsReverseOp() ? op2 : op1)->gtFlags & GTF_REVERSE_OPS;
+
             // Explicitly mask the rotate amount to the range [0, bitsize-1]. Otherwise, a later
             // transform can stick an out of range constant here and trip up lowering.  If the
             // target's rotate or shift instructions mask their operand implicitly, those targets
@@ -12573,6 +12658,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
                 noway_assert(inputTreeEffects == (tree->gtFlags & GTF_ALL_EFFECT));
             }
 
+            tree->gtFlags = (tree->gtFlags & ~GTF_REVERSE_OPS) | operandOrder;
             return tree;
         }
     }
@@ -12649,14 +12735,15 @@ GenTreeOp* Compiler::fgMorphLongMul(GenTreeOp* mul)
     GenTree* op1 = mul->gtGetOp1();
     GenTree* op2 = mul->gtGetOp2();
 
-    // Morph the operands. We cannot allow the casts to go away, so we morph their operands directly.
-    op1->AsCast()->CastOp() = fgMorphTree(op1->AsCast()->CastOp());
-    op1->SetAllEffectsFlags(op1->AsCast()->CastOp());
-
-    if (op2->OperIs(GT_CAST))
+    // Morph in execution order. We cannot allow the casts to go away,
+    // so we morph their operands directly.
+    for (GenTree* operand : mul->Operands())
     {
-        op2->AsCast()->CastOp() = fgMorphTree(op2->AsCast()->CastOp());
-        op2->SetAllEffectsFlags(op2->AsCast()->CastOp());
+        if (operand->OperIs(GT_CAST))
+        {
+            operand->AsCast()->CastOp() = fgMorphTree(operand->AsCast()->CastOp());
+            operand->SetAllEffectsFlags(operand->AsCast()->CastOp());
+        }
     }
 
     mul->SetAllEffectsFlags(op1, op2);
