@@ -599,6 +599,12 @@ Range RangeCheck::GetRangeFromAssertionsWorker(
 #endif
     }
 
+    if (varTypeIsFloating(vnType))
+    {
+        // Integer ranges don't describe floating point values (e.g. int->float casts may round).
+        return Limit(Limit::keUnknown);
+    }
+
     //
     // First, let's see if we can tighten the range based on VN information.
     //
