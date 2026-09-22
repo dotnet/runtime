@@ -48,6 +48,7 @@ namespace ILAssembler
                 ValidateDataLabelFixups();
             ImmutableArray<ValidatedExport> validatedExports =
                 ValidateExports(validatedVTableAssociations, machine);
+            PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
 
             // Return early if there are structural errors that prevent building valid metadata.
             // However, allow errors in method bodies (ILA0016-0019) to pass through so we can
