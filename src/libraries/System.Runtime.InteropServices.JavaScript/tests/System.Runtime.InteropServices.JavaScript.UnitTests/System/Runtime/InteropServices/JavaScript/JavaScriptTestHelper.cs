@@ -1306,8 +1306,8 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         internal static partial void ForceDisposeProxies(bool disposeMethods, bool verbose);
 
         // [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
-        [JSImport("INTERNAL.getProxyCensus")]
-        internal static partial int[] GetProxyCensus();
+        [JSImport("INTERNAL.getProxyCounts")]
+        internal static partial int[] GetProxyCounts();
 
         [JSImport("forceJsGc", "JavaScriptTestHelper")]
         internal static partial void ForceJsGc();

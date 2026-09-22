@@ -47,10 +47,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             await run(1);
             await Quiesce();
 
-            int[] before = JavaScriptTestHelper.GetProxyCensus();
+            int[] before = JavaScriptTestHelper.GetProxyCounts();
             await run(Iterations);
             await Quiesce();
-            int[] after = JavaScriptTestHelper.GetProxyCensus();
+            int[] after = JavaScriptTestHelper.GetProxyCounts();
 
             // Only the JSHandle tables are asserted on. They are maintained by explicit release
             // calls, which is precisely where a missed release shows up, and they move only in

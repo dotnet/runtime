@@ -196,9 +196,9 @@ function _jsOwnedObjectFinalized(gcHandle: GCHandle): void {
     teardownManagedProxy(null, gcHandle);
 }
 
-// Counts of live proxies, for leak diagnostics and tests. Exposed as INTERNAL.getProxyCensus.
+// Counts of live proxies, for leak diagnostics and tests. Exposed as INTERNAL.getProxyCounts.
 // Order: [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
-export function getProxyCensus(): number[] {
+export function getProxyCounts(): number[] {
     // index 0 of each list is always a dummy
     const countLive = (list: any[]): number => {
         let live = 0;
