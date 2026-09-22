@@ -13,6 +13,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
+using Antlr4.Runtime;
 using Internal.IL;
 using Xunit;
 using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
@@ -37,6 +38,25 @@ namespace ILAssembler.Tests
             Assert.Equal(expected, result);
         }
 
+        [Fact]
+        public void StringCharStream_SeekPastEnd_ClampsToEnd()
+        {
+            Type streamType = typeof(DocumentCompiler).Assembly.GetType(
+                "ILAssembler.StringCharStream",
+                throwOnError: true)!;
+            var stream = (ICharStream)Activator.CreateInstance(
+                streamType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args: ["abc", "test.il"],
+                culture: null)!;
+
+            stream.Seek(10);
+
+            Assert.Equal(stream.Size, stream.Index);
+            Assert.Equal(TokenConstants.EOF, stream.LA(1));
+        }
+
 
         [Fact]
         public void Diagnostic_LiteralOutOfRange()
@@ -53,6 +73,93 @@ namespace ILAssembler.Tests
             var error = Assert.Single(diagnostics);
             Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
+        }
+
+        [Theory]
+        [InlineData("not-a-number", double.MaxValue)]
+        [InlineData("-not-a-number", double.MinValue)]
+        public void InvalidFloatingLiteral_SaturatesWithOriginalSign(string text, double expected)
+        {
+            object actions = CreateGrammarActions();
+            Type grammarActionsType = actions.GetType();
+            MethodInfo parseFloatingLiteral = grammarActionsType.GetMethod(
+                "ParseFloatingLiteral",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var token = new CommonToken(CILLexer.FLOAT64, text);
+
+            Assert.Equal(expected, (double)parseFloatingLiteral.Invoke(actions, [token])!);
+        }
+
+        [Theory]
+        [InlineData("ParseBoolean", 0)]
+        [InlineData("ParseFileAttribute", 1)]
+        [InlineData("ParseSecurityAction", 1)]
+        [InlineData("ParseVTableFixupAttribute", 0)]
+        [InlineData("ParseManifestResourceAttribute", 0)]
+        public void InvalidSingleTokenConversion_ReturnsSafeFallback(
+            string methodName,
+            int expected)
+        {
+            object actions = CreateGrammarActions();
+            MethodInfo conversion = actions.GetType().GetMethod(
+                methodName,
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var token = new CommonToken(CILLexer.ID, "invalid");
+
+            object result = conversion.Invoke(actions, [token])!;
+
+            Assert.Equal(expected, Convert.ToInt32(result));
+        }
+
+        [Fact]
+        public void InvalidContextSingleTokenConversions_ReturnSafeFallback()
+        {
+            object actions = CreateGrammarActions();
+            Type actionsType = actions.GetType();
+            var token = new CommonToken(CILLexer.ID, "invalid");
+            var parent = new ParserRuleContext();
+            var assemblyContext = new CILParser.AsmAttrAnyContext(parent, invokingState: 0)
+            {
+                Start = token,
+                Stop = token,
+            };
+            var exportedTypeContext = new CILParser.ExptAttrContext(parent, invokingState: 0)
+            {
+                Start = token,
+                Stop = token,
+            };
+
+            actionsType.GetMethod(
+                "SetAssemblyAttribute",
+                BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(actions, [assemblyContext]);
+            actionsType.GetMethod(
+                "SetExportedTypeAttribute",
+                BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(actions, [exportedTypeContext]);
+
+            Assert.Equal(0, (int)assemblyContext.Value);
+            Assert.Equal(0, (int)assemblyContext.Mask);
+            Assert.Equal(0, (int)exportedTypeContext.Value);
+            Assert.Equal(0, (int)exportedTypeContext.Mask);
+        }
+
+        [Fact]
+        public void SyntheticToken_SourceSpanIsClamped()
+        {
+            var token = new CommonToken(CILLexer.Eof)
+            {
+                StartIndex = -1,
+                StopIndex = -1,
+            };
+            MethodInfo getSourceSpan = typeof(Location).GetMethod(
+                "GetSourceSpan",
+                BindingFlags.Static | BindingFlags.NonPublic)!;
+
+            SourceSpan span = (SourceSpan)getSourceSpan.Invoke(obj: null, [token])!;
+
+            Assert.Equal(0, span.Start);
+            Assert.Equal(0, span.Length);
         }
 
 
@@ -308,6 +415,7 @@ namespace ILAssembler.Tests
             }
             """)]
         [InlineData(".permission demand class X (Name = )")]
+        [InlineData(".class public auto ansi Test { .field public static literal bool F = bool(invalid true) }")]
         [InlineData(".class extern { }")]
         [InlineData(".class public auto ansi Test { .export public { } }")]
         [InlineData(".assembly extern Name { .ver : }")]
@@ -318,6 +426,24 @@ namespace ILAssembler.Tests
                 new Options { ErrorTolerant = true });
 
             Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+        }
+
+        private static object CreateGrammarActions()
+        {
+            Type grammarActionsType = typeof(DocumentCompiler).Assembly.GetType(
+                "ILAssembler.GrammarActions",
+                throwOnError: true)!;
+            return Activator.CreateInstance(
+                grammarActionsType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                args:
+                [
+                    new Dictionary<string, SourceText>(),
+                    new Options(),
+                    (Func<string, byte[]?>)(_ => throw new InvalidOperationException("Unexpected resource")),
+                ],
+                culture: null)!;
         }
 
         public static TheoryData<string, bool> TruncatedDirectiveMutations

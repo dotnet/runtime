@@ -568,7 +568,7 @@ namespace ILAssembler
                 builder.AddEvent(
                     evt.Attributes,
                     builder.GetOrAddString(evt.Name),
-                    evt.Type?.Handle ?? (EntityHandle)default(TypeDefinitionHandle));
+                    evt.Type?.Handle ?? default(TypeDefinitionHandle));
 
                 foreach (var accessor in evt.Accessors)
                 {
@@ -2231,6 +2231,7 @@ namespace ILAssembler
         public sealed class MethodDebugInfo
         {
             public string? DocumentPath { get; set; }
+            public Guid LanguageGuid { get; set; }
             public List<SequencePoint> SequencePoints { get; } = new();
         }
 
