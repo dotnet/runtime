@@ -24,10 +24,65 @@ namespace System.Numerics.Tensors
                 ThrowHelper.ThrowArgument_SpansMustHaveSameLength();
             }
 
+            // Single-byte elements benefit from counting bits a vector at a time: the scalar loop
+            // pays one population count per byte, where the vectorized path covers a whole vector.
+            // Wider elements already amortize the population count over 2, 4 or 8 bytes, and
+            // measured slower when vectorized this way, so they keep the scalar loop.
+            if ((typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte)) &&
+                Vector128.IsHardwareAccelerated &&
+                x.Length >= Vector128<byte>.Count)
+            {
+                return HammingBitDistanceCore(
+                    MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(x)), x.Length),
+                    MemoryMarshal.CreateReadOnlySpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(y)), y.Length));
+            }
+
             long count = 0;
             for (int i = 0; i < x.Length; i++)
             {
                 count += long.CreateTruncating(T.PopCount(x[i] ^ y[i]));
+            }
+
+            return count;
+        }
+
+        /// <summary>Counts the bits that differ between two equal-length byte spans.</summary>
+        private static long HammingBitDistanceCore(ReadOnlySpan<byte> x, ReadOnlySpan<byte> y)
+        {
+            Vector128<byte> nibbleCounts = Vector128.Create((byte)0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4);
+            Vector128<byte> lowMask = Vector128.Create((byte)0x0F);
+
+            long count = 0;
+            int i = 0;
+
+            while (x.Length - i >= Vector128<byte>.Count)
+            {
+                // A byte lane holds at most 8 per vector, so it can absorb 31 vectors before overflowing.
+                int block = Math.Min(31, (x.Length - i) / Vector128<byte>.Count);
+                Vector128<byte> counts = Vector128<byte>.Zero;
+
+                for (int step = 0; step < block; step++)
+                {
+                    Vector128<byte> difference =
+                        Vector128.Create(x.Slice(i, Vector128<byte>.Count)) ^
+                        Vector128.Create(y.Slice(i, Vector128<byte>.Count));
+
+                    counts += Vector128.Shuffle(nibbleCounts, difference & lowMask) +
+                              Vector128.Shuffle(nibbleCounts, (difference >>> 4) & lowMask);
+
+                    i += Vector128<byte>.Count;
+                }
+
+                Vector128<ushort> lower = Vector128.WidenLower(counts);
+                Vector128<ushort> upper = Vector128.WidenUpper(counts);
+                count += Vector128.Sum(
+                    Vector128.WidenLower(lower) + Vector128.WidenUpper(lower) +
+                    Vector128.WidenLower(upper) + Vector128.WidenUpper(upper));
+            }
+
+            for (; i < x.Length; i++)
+            {
+                count += BitOperations.PopCount((uint)(byte)(x[i] ^ y[i]));
             }
 
             return count;
