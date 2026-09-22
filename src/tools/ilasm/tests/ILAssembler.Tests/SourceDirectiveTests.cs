@@ -30,7 +30,7 @@ namespace ILAssembler.Tests
         {
             string source = $$"""
                 .assembly test { }
-                .language "{{CSharpLanguageGuid}}", "{{CSharpVendorGuid}}"
+                .language '{{CSharpLanguageGuid}}', '{{CSharpVendorGuid}}'
                 .class public auto ansi beforefieldinit Test
                 {
                 }
@@ -45,7 +45,7 @@ namespace ILAssembler.Tests
         {
             string source = $$"""
                 .assembly test { }
-                .language "{{CSharpLanguageGuid}}", "{{CSharpVendorGuid}}", "{{DocumentTypeGuid}}"
+                .language '{{CSharpLanguageGuid}}', '{{CSharpVendorGuid}}', '{{DocumentTypeGuid}}'
                 .class public auto ansi beforefieldinit Test
                 {
                 }
@@ -60,7 +60,7 @@ namespace ILAssembler.Tests
         {
             string source = """
                 .assembly test { }
-                .language "C#", "Microsoft", "Not-a-guid"
+                .language 'C#', 'Microsoft', 'Not-a-guid'
                 .class public auto ansi beforefieldinit Test
                 {
                 }
@@ -100,7 +100,7 @@ namespace ILAssembler.Tests
                 {
                     .method public static void TestMethod() cil managed
                     {
-                        .line 10 : 5 "test.cs"
+                        .line 10 : 5 'test.cs'
                         nop
                         ret
                     }
@@ -319,7 +319,7 @@ namespace ILAssembler.Tests
                 {
                     .method public static void TestMethod() cil managed
                     {
-                        .line 10, 10 : 5, 6 "test.cs"
+                        .line 10, 10 : 5, 6 'test.cs'
                         nop
                         ret
                     }
@@ -357,10 +357,6 @@ namespace ILAssembler.Tests
         [InlineData(".line 20, 21 : 10, 11 'single.cs'", "single.cs")]
         [InlineData(".line 22, 23 : 12, 13", "default.cs")]
         [InlineData(".line 24 \"double.cs\"", "double.cs")]
-        [InlineData(".line 25 : 14 \"double.cs\"", "double.cs")]
-        [InlineData(".line 26 : 15, 16 \"double.cs\"", "double.cs")]
-        [InlineData(".line 27, 28 : 17 \"double.cs\"", "double.cs")]
-        [InlineData(".line 29, 30 : 18, 19 \"double.cs\"", "double.cs")]
         public void LineDirective_SyntaxVariant_EmitsPortablePdbMethodDebugInformation(
             string directive,
             string expectedDocument)
@@ -368,7 +364,7 @@ namespace ILAssembler.Tests
             string initialDirective =
                 directive.Contains('\'') || directive.Contains('"')
                     ? string.Empty
-                    : ".line 1, 1 : 1, 2 \"default.cs\"";
+                    : ".line 1, 1 : 1, 2 'default.cs'";
             string source = $$"""
                 .assembly test { }
                 .class public auto ansi Test
@@ -407,8 +403,6 @@ namespace ILAssembler.Tests
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1', '994b45c4-e6e9-11d2-903f-00c04fa302a1'")]
         [InlineData(".language '3f5162f8-07c6-11d3-9053-00c04fa302a1', '994b45c4-e6e9-11d2-903f-00c04fa302a1', '5a869d0b-6611-11d3-bd2a-0000f80849bd'")]
-        [InlineData(".language \"3f5162f8-07c6-11d3-9053-00c04fa302a1\", \"994b45c4-e6e9-11d2-903f-00c04fa302a1\"")]
-        [InlineData(".language \"3f5162f8-07c6-11d3-9053-00c04fa302a1\", \"994b45c4-e6e9-11d2-903f-00c04fa302a1\", \"5a869d0b-6611-11d3-bd2a-0000f80849bd\"")]
         public void LanguageDirective_SyntaxVariant_EmitsDocumentLanguage(string languageDirective)
         {
             string source = $$"""

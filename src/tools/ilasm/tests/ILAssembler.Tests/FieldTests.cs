@@ -702,18 +702,18 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi beforefieldinit MyClass extends [mscorlib]System.Object
                 {
-                    .field public int32 value
+                    .field public int32 'value'
                     .method public instance int32 GetValue() cil managed
                     {
                         ldarg.0
-                        ldfld int32 MyClass::value
+                        ldfld int32 MyClass::'value'
                         ret
                     }
                     .method public instance void SetValue(int32 v) cil managed
                     {
                         ldarg.0
                         ldarg.1
-                        stfld int32 MyClass::value
+                        stfld int32 MyClass::'value'
                         ret
                     }
                 }

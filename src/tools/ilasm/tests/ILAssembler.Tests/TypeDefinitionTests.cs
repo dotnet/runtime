@@ -105,7 +105,7 @@ namespace ILAssembler.Tests
                 .class public sequential ansi beforefieldinit MyStruct
                     extends [System.Runtime]System.ValueType
                 {
-                    .field public int32 value
+                    .field public int32 'value'
                 }
                 """;
 

@@ -468,6 +468,27 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void Define_EscapedQuotedString_ReportsSyntaxError()
+        {
+            string source = """
+                #define STRING "\"value\""
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new PreprocessedTokenSource(lexer, NoIncludeDirectivesCallback, CreateDefaultLexer());
+            bool reportedSyntaxError = false;
+            preprocessor.OnPreprocessorSyntaxError += (_, _, _, _) => reportedSyntaxError = true;
+            BufferedTokenStream stream = new(preprocessor);
+
+            stream.Fill();
+
+            Assert.True(reportedSyntaxError);
+            Assert.Collection(
+                stream.GetTokens(),
+                token => Assert.Equal(CILLexer.Eof, token.Type));
+        }
+
+        [Fact]
         public void Define_SingleTokenValue_SubstitutedCorrectly()
         {
             string source = """

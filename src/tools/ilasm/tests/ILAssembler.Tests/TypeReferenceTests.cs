@@ -353,7 +353,7 @@ namespace ILAssembler.Tests
                 .class public auto ansi Base extends [mscorlib]System.Object { }
                 .class public auto ansi Outer extends Base
                 {
-                    .method public static void UseThisAndBase(object value) cil managed
+                    .method public static void UseThisAndBase(object 'value') cil managed
                     {
                         ldarg.0
                         box .this
@@ -369,7 +369,7 @@ namespace ILAssembler.Tests
 
                     .class nested public auto ansi Inner extends [mscorlib]System.Object
                     {
-                        .method public static void UseNester(object value) cil managed
+                        .method public static void UseNester(object 'value') cil managed
                         {
                             ldarg.0
                             box .nester

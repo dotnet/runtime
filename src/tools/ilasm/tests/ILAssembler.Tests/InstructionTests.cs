@@ -1164,7 +1164,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
-                    .method public static int32 M(int32 value) cil managed
+                    .method public static int32 M(int32 'value') cil managed
                     {
                         ldarg.0
                         switch (3, 6)
@@ -1256,7 +1256,7 @@ namespace ILAssembler.Tests
                         ret
                     }
 
-                    .method public static void Exercise(object value) cil managed
+                    .method public static void Exercise(object 'value') cil managed
                     {
                         br 0
                         ldsfld mdtoken(0x04000001)

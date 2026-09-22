@@ -405,11 +405,10 @@ id:
 	| 'aggressiveoptimization'
 	| 'async'
 	| 'extended'
-	| VALUE
 	| INSTANCE
 	| SQSTRING;
 dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
-dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
+dottedNamePart: ID | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -467,7 +466,7 @@ languageDecl:
 	| '.language' languageString ',' languageString
 	| '.language' languageString ',' languageString ',' languageString;
 
-languageString: SQSTRING | QSTRING;
+languageString: SQSTRING;
 
 typelist: '.typelist' '{' (className)* '}';
 
@@ -620,11 +619,7 @@ extSourceSpec:
 	| esHead int32 ',' int32 ':' int32
 	| esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING
 	| esHead int32 ',' int32 ':' int32 ',' int32
-	| esHead int32 QSTRING
-	| esHead int32 ':' int32 QSTRING
-	| esHead int32 ':' int32 ',' int32 QSTRING
-	| esHead int32 ',' int32 ':' int32 QSTRING
-	| esHead int32 ',' int32 ':' int32 ',' int32 QSTRING;
+	| esHead int32 QSTRING;
 
 /*  Manifest declarations  */
 fileDecl:
@@ -1386,7 +1381,7 @@ customAttrDecl:
 
 /* Assembly References */
 asmOrRefDecl:
-	('.publickey' | '.publicKey') '=' '(' bytes ')'
+	'.publickey' '=' '(' bytes ')'
 	| '.ver' intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard
 	| '.locale' compQstring
 	| '.locale' '=' '(' bytes ')'

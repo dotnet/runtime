@@ -210,7 +210,7 @@ namespace ILAssembler.Tests
                 .line 1 "global.cs"
                 .method public static int32 Global() cil managed
                 {
-                    .locals init (int32 value)
+                    .locals init (int32 'value')
                     .line 10
                     ldc.i4.s 42
                     stloc.0

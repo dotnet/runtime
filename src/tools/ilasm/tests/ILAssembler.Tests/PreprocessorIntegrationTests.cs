@@ -6,7 +6,6 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using Xunit;
 using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
@@ -16,7 +15,7 @@ namespace ILAssembler.Tests
     public class PreprocessorIntegrationTests
     {
         [Fact]
-        public void NestedIncludes_EmitExpectedTypesAndUserString()
+        public void NestedIncludes_EmitExpectedTypes()
         {
             string source = """
                 .assembly extern System.Runtime { }
@@ -24,18 +23,12 @@ namespace ILAssembler.Tests
                 #include "level1.il"
                 .class public auto ansi beforefieldinit AfterInclude extends [System.Runtime]System.Object
                 {
-                    .method public static string GetIncludedLiteral() cil managed
-                    {
-                        ldstr INCLUDED_LITERAL
-                        ret
-                    }
                 }
                 """;
 
             using var pe = CompileWithIncludesAndGetReader(source, new Dictionary<string, string>
             {
                 ["level1.il"] = """
-                    #define INCLUDED_LITERAL "\"double-quoted-from-include\""
                     #include "level2.il"
                     .class public auto ansi beforefieldinit Included.Namespace.IncludedType extends [System.Runtime]System.Object
                     {
@@ -60,7 +53,6 @@ namespace ILAssembler.Tests
             Assert.Contains(("Included.Namespace", "IncludedType"), typeNames);
             Assert.Contains(("Nested", "DeepType"), typeNames);
             Assert.Contains((string.Empty, "AfterInclude"), typeNames);
-            Assert.Equal("double-quoted-from-include", GetLdstrUserString(pe, reader, "GetIncludedLiteral"));
         }
 
         [Fact]
@@ -162,16 +154,6 @@ namespace ILAssembler.Tests
                     return new SourceText(includedSource!, path);
                 },
                 new Options());
-        }
-
-        private static string GetLdstrUserString(PEReader pe, MetadataReader reader, string methodName)
-        {
-            int token = DocumentCompilerTestHelpers.GetFirstTokenOperand(
-                pe,
-                reader,
-                methodName,
-                Internal.IL.ILOpcode.ldstr);
-            return reader.GetUserString(MetadataTokens.UserStringHandle(token & 0x00FFFFFF));
         }
 
         private static byte[] GetMethodBody(PEReader pe, MetadataReader reader, string methodName)

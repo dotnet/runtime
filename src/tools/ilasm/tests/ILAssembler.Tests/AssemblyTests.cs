@@ -135,28 +135,6 @@ namespace ILAssembler.Tests
             Assert.Equal("volatile", reader.GetString(reader.GetAssemblyReference(assemblyReference).Name));
         }
 
-        [Theory]
-        [InlineData(".publickey")]
-        [InlineData(".publicKey")]
-        public void AssemblyReference_PublicKeySpellings_AreAccepted(string directive)
-        {
-            string source = $$"""
-                .assembly extern mscorlib
-                {
-                    {{directive}} = (01 02 03 04)
-                    .ver 2:0:0:0
-                }
-                .assembly test { }
-                """;
-
-            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
-            var reader = pe.GetMetadataReader();
-            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
-
-            Assert.True(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
-            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
-        }
-
         [Fact]
         public void AssemblyDefinition_PublicKeySetsFlag()
         {
@@ -960,7 +938,7 @@ namespace ILAssembler.Tests
                 .assembly extern mscorlib { }
                 .assembly extern Original.Dependency as Alias
                 {
-                    .publicKey = (01 02 03 04)
+                    .publickey = (01 02 03 04)
                     .ver *:2:*:4
                     .locale = (65 00 6E 00)
                     .hash = (AA BB)
@@ -970,7 +948,7 @@ namespace ILAssembler.Tests
                 }
                 .assembly test
                 {
-                    .publicKey = (10 20 30 40)
+                    .publickey = (10 20 30 40)
                     .ver *:5:*:7
                     .locale = (66 00 72 00)
                     .custom instance void [mscorlib]System.CLSCompliantAttribute::.ctor(bool) = (01 00 01 00 00)

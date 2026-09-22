@@ -75,7 +75,7 @@ namespace ILAssembler.Tests
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
                     .method public specialname instance int32 get_Value() cil managed { ldc.i4.0 ret }
-                    .method public specialname instance void set_Value(int32 value) cil managed { ret }
+                    .method public specialname instance void set_Value(int32 'value') cil managed { ret }
                     .method public specialname instance void other_Value() cil managed { ret }
 
                     .property specialname rtspecialname instance int32 Value()
@@ -278,7 +278,7 @@ namespace ILAssembler.Tests
                         ret
                     }
 
-                    .method public hidebysig specialname instance void set_Item(int32 index, int32 value) cil managed
+                    .method public hidebysig specialname instance void set_Item(int32 index, int32 'value') cil managed
                     {
                         ret
                     }

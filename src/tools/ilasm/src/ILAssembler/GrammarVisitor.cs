@@ -980,7 +980,7 @@ namespace ILAssembler
             }
 
             string decl = context.GetChild(0).GetText();
-            if (decl is ".publickey" or ".publicKey")
+            if (decl == ".publickey")
             {
                 BlobBuilder blob = new();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
@@ -4690,11 +4690,7 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitLanguageString(CILParser.LanguageStringContext context) => VisitLanguageString(context);
         public GrammarResult.String VisitLanguageString(CILParser.LanguageStringContext context)
         {
-            if (context.SQSTRING() is not null)
-            {
-                return new(StringHelpers.ParseQuotedString(context.SQSTRING().GetText()));
-            }
-            return new(StringHelpers.ParseQuotedString(context.QSTRING().GetText()));
+            return new(StringHelpers.ParseQuotedString(context.SQSTRING().GetText()));
         }
 
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);

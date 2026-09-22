@@ -86,11 +86,11 @@ namespace ILAssembler.Tests
                 }
                 .class public auto ansi MyClass extends [mscorlib]System.Object
                 {
-                    .method public hidebysig specialname instance void add_MyEvent(class MyDelegate value) cil managed
+                    .method public hidebysig specialname instance void add_MyEvent(class MyDelegate 'value') cil managed
                     {
                         ret
                     }
-                    .method public hidebysig specialname instance void remove_MyEvent(class MyDelegate value) cil managed
+                    .method public hidebysig specialname instance void remove_MyEvent(class MyDelegate 'value') cil managed
                     {
                         ret
                     }
@@ -141,8 +141,8 @@ namespace ILAssembler.Tests
                 }
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
-                    .method public specialname instance void add_Changed(class MyDelegate value) cil managed { ret }
-                    .method public specialname instance void remove_Changed(class MyDelegate value) cil managed { ret }
+                    .method public specialname instance void add_Changed(class MyDelegate 'value') cil managed { ret }
+                    .method public specialname instance void remove_Changed(class MyDelegate 'value') cil managed { ret }
                     .method public specialname instance void raise_Changed() cil managed { ret }
                     .method public specialname instance void other_Changed() cil managed { ret }
 

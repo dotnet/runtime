@@ -337,7 +337,7 @@ namespace ILAssembler.Tests
                         .field public marshal(int32) int32 F = int32(1)
                         .event specialname [mscorlib]System.EventHandler E { }
                         .property specialname int32 P() { }
-                        .method public static void M(int32 value) cil managed
+                        .method public static void M(int32 'value') cil managed
                         {
                             .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
                             ret
@@ -379,6 +379,51 @@ namespace ILAssembler.Tests
                 DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
                     source,
                     new Options { ErrorTolerant = errorTolerant });
+
+            Assert.Contains(
+                diagnostics,
+                diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        }
+
+        [Theory]
+        [InlineData("""
+            .assembly extern Dependency
+            {
+                .publicKey = (01 02 03 04)
+            }
+            .assembly test { }
+            """)]
+        [InlineData("""
+            .assembly test { }
+            .language "3f5162f8-07c6-11d3-9053-00c04fa302a1"
+            """)]
+        [InlineData("""
+            .assembly test { }
+            .class Test
+            {
+                .method static void M() cil managed
+                {
+                    .line 1, 1 : 1, 2 "test.cs"
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .assembly test { }
+            .class Test
+            {
+                .method static void M(int32 value) cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        public void NativeIlasmUnsupportedSyntax_ReportsError(string source)
+        {
+            ImmutableArray<Diagnostic> diagnostics =
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                    source,
+                    new Options { ErrorTolerant = true });
 
             Assert.Contains(
                 diagnostics,

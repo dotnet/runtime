@@ -144,7 +144,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi Test
                 {
-                    .method privatescope explicit instance vararg void 'Helper$PST06000001'(int32 value) cil managed
+                    .method privatescope explicit instance vararg void 'Helper$PST06000001'(int32 'value') cil managed
                     {
                         ret
                     }

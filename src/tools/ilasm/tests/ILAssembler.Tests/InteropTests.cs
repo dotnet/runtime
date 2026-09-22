@@ -746,7 +746,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
                 {
-                    .method public static void M(object marshal({{nativeType}}) value) cil managed
+                    .method public static void M(object marshal({{nativeType}}) 'value') cil managed
                     {
                         ret
                     }

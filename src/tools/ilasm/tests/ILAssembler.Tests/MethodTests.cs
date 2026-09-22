@@ -345,7 +345,7 @@ namespace ILAssembler.Tests
                 .class public auto ansi beforefieldinit Bar extends [mscorlib]System.Object implements [External]IFoo
                 {
                     {{overrideDirective}}
-                    .method public hidebysig newslot virtual final instance int32 Impl(string value) cil managed
+                    .method public hidebysig newslot virtual final instance int32 Impl(string 'value') cil managed
                     {
                         ldc.i4.s 42
                         ret
@@ -406,13 +406,13 @@ namespace ILAssembler.Tests
                     .override [External]IFoo::M with instance int32 Outer::Impl(string)
                     .class nested public auto ansi Inner extends [mscorlib]System.Object
                     {
-                        .method public instance int32 Impl(string value) cil managed
+                        .method public instance int32 Impl(string 'value') cil managed
                         {
                             ldc.i4.0
                             ret
                         }
                     }
-                    .method public instance int32 Impl(string value) cil managed
+                    .method public instance int32 Impl(string 'value') cil managed
                     {
                         ldc.i4.1
                         ret
@@ -446,7 +446,7 @@ namespace ILAssembler.Tests
                 {
                     .class nested public auto ansi Inner extends [mscorlib]System.Object
                     {
-                        .method public static void Broken(int32 value
+                        .method public static void Broken(int32 'value'
                 """;
             string validSource = """
                 .assembly extern mscorlib { }

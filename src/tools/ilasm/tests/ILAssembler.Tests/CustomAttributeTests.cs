@@ -186,7 +186,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi sealed beforefieldinit LocalAttribute extends [mscorlib]System.Attribute
                 {
-                    .method public hidebysig specialname rtspecialname instance void .ctor(int32 value) cil managed
+                    .method public hidebysig specialname rtspecialname instance void .ctor(int32 'value') cil managed
                     {
                         ldarg.0
                         call instance void [mscorlib]System.Attribute::.ctor()
@@ -475,7 +475,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi sealed TypeAttribute extends [mscorlib]System.Attribute
                 {
-                    .method public specialname rtspecialname instance void .ctor(class [mscorlib]System.Type value) cil managed
+                    .method public specialname rtspecialname instance void .ctor(class [mscorlib]System.Type 'value') cil managed
                     {
                         ldarg.0
                         call instance void [mscorlib]System.Attribute::.ctor()
@@ -616,7 +616,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi sealed ValueAttribute extends [mscorlib]System.Attribute
                 {
-                    .method public specialname rtspecialname instance void .ctor(int32 value) cil managed
+                    .method public specialname rtspecialname instance void .ctor(int32 'value') cil managed
                     {
                         ldarg.0
                         call instance void [mscorlib]System.Attribute::.ctor()
@@ -886,7 +886,7 @@ namespace ILAssembler.Tests
             .assembly test { }
             .class public auto ansi Test extends [mscorlib]System.Object
             {
-                .method public static void M(float32 value) cil managed
+                .method public static void M(float32 'value') cil managed
                 {
                     .param [1] = float32('a')
                     ret
@@ -957,7 +957,7 @@ namespace ILAssembler.Tests
                 .assembly test { }
                 .class public auto ansi Test extends [mscorlib]System.Object
                 {
-                    .method public static void M<T>(int32 value) cil managed
+                    .method public static void M<T>(int32 'value') cil managed
                     {
                         .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
                         .custom instance void [mscorlib]System.Diagnostics.DebuggerHiddenAttribute::.ctor() = (01 00 00 00)

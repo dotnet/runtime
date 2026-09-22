@@ -146,6 +146,12 @@ namespace ILAssembler
                 IToken valueMaybe = NextTokenWithoutNestedEof(errorOnEof: ActiveIfDefBlocksInCurrentSource != 0);
                 if (valueMaybe.Type == CILLexer.QSTRING)
                 {
+                    if (valueMaybe.Text.Contains("\\\"", StringComparison.Ordinal))
+                    {
+                        ReportPreprocessorSyntaxError(valueMaybe);
+                        return NextToken();
+                    }
+
                     _definedVars.Add(identifier.Text, StringHelpers.ParseQuotedString(valueMaybe.Text));
                     return NextToken();
                 }

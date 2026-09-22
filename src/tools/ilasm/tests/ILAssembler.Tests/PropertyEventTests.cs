@@ -37,7 +37,7 @@ namespace ILAssembler.Tests
                         ret
                     }
 
-                    .method public hidebysig specialname instance void set_Value(int32 value) cil managed
+                    .method public hidebysig specialname instance void set_Value(int32 'value') cil managed
                     {
                         ldarg.0
                         ldarg.1
@@ -45,12 +45,12 @@ namespace ILAssembler.Tests
                         ret
                     }
 
-                    .method public hidebysig specialname instance void add_Changed(class MyDelegate value) cil managed
+                    .method public hidebysig specialname instance void add_Changed(class MyDelegate 'value') cil managed
                     {
                         ret
                     }
 
-                    .method public hidebysig specialname instance void remove_Changed(class MyDelegate value) cil managed
+                    .method public hidebysig specialname instance void remove_Changed(class MyDelegate 'value') cil managed
                     {
                         ret
                     }
