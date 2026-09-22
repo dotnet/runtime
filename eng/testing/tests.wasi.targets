@@ -151,7 +151,7 @@
               Condition="'%(WasmFilesToIncludeFromPublishDir.Identity)' != ''" />
     </ItemGroup>
 
-    <ForceMSBuildGC />
+    <ForceMSBuildGC Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
   </Target>
 
   <Target Name="_PrepareForAOTOnHelix">

@@ -599,40 +599,53 @@ namespace System.Net.WebSockets
 
         private async ValueTask SendFrameFallbackAsync(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlyMemory<byte> payloadBuffer, Task lockTask, CancellationToken cancellationToken)
         {
-            await lockTask.ConfigureAwait(false);
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_sendMutex);
-
-            try
+            // Register for cancellation before waiting on the lock so that if cancellation races with
+            // acquiring the mutex, we still abort the connection, just as we would if cancellation raced
+            // with the write itself. Without this, a cancellation that fires while we're waiting to enter
+            // the mutex would propagate out without transitioning the WebSocket to the Aborted state.
+            using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
             {
-                int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
-                using (cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this))
+                try
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
-                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    await lockTask.ConfigureAwait(false);
                 }
-            }
-            catch (Exception exc)
-            {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
-
-                if (exc is OperationCanceledException)
+                catch (Exception exc)
                 {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
                     throw;
                 }
 
-                throw _state == WebSocketState.Aborted ?
-                    CreateOperationCanceledException(exc, cancellationToken) :
-                    new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
-            }
-            finally
-            {
-                ReleaseSendBuffer();
-                _sendMutex.Exit();
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.MutexEntered(_sendMutex);
 
-                if (NetEventSource.Log.IsEnabled())
+                try
                 {
-                    NetEventSource.MutexExited(_sendMutex);
-                    NetEventSource.SendFrameAsyncCompleted(this);
+                    int sendBytes = WriteFrameToSendBuffer(opcode, endOfMessage, disableCompression, payloadBuffer.Span);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(_sendBuffer, 0, sendBytes), cancellationToken).ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch (Exception exc)
+                {
+                    if (NetEventSource.Log.IsEnabled()) NetEventSource.TraceException(this, exc);
+
+                    if (exc is OperationCanceledException)
+                    {
+                        throw;
+                    }
+
+                    throw _state == WebSocketState.Aborted ?
+                        CreateOperationCanceledException(exc, cancellationToken) :
+                        new WebSocketException(WebSocketError.ConnectionClosedPrematurely, exc);
+                }
+                finally
+                {
+                    ReleaseSendBuffer();
+                    _sendMutex.Exit();
+
+                    if (NetEventSource.Log.IsEnabled())
+                    {
+                        NetEventSource.MutexExited(_sendMutex);
+                        NetEventSource.SendFrameAsyncCompleted(this);
+                    }
                 }
             }
         }

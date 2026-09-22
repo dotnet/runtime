@@ -12,7 +12,7 @@ public class Async2TaskAdapters
 {
     // Wrapping a runtime-async Task in a ValueTask (ValueTask(Task) constructor) and
     // awaiting the resulting ValueTask should suspend and resume correctly.
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestTaskToValueTask()
     {
         SynchronizationContext prevContext = SynchronizationContext.Current;
@@ -83,7 +83,7 @@ public class Async2TaskAdapters
     //     to the ValueTask<TResult>(TResult result) constructor, wrapping the Task<int> as a value.
     //   - return new ValueTask<Task<int>>(TaskOfTaskOfIntReturningFunction()) passes a Task<Task<int>>,
     //     which binds to the ValueTask<TResult>(Task<TResult> task) constructor, an actual async call.
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestValueTaskOfTaskValueVersusAsync()
     {
         WrapValueVersusAsync().GetAwaiter().GetResult();

@@ -432,6 +432,11 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_BULK_WRITEBARRIER,
 
+    // Same as CORINFO_HELP_BULK_WRITEBARRIER, but it is the raw worker: it does not split the copy
+    // into chunks and does not poll for GC afterwards. The JIT is only allowed to use it when the
+    // size is a small compile-time constant, so that the copy cannot starve the GC.
+    CORINFO_HELP_BULK_WRITEBARRIER_SMALL,
+
     /* Accessing fields */
 
     CORINFO_HELP_GETFIELDADDR,
@@ -553,6 +558,7 @@ enum CorInfoHelpFunc
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
+    CORINFO_HELP_JIT_RESUME_AFTER_CATCH, // Re-permit GC mode transitions before resuming managed code after a catch
 
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
     CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.
@@ -916,6 +922,7 @@ enum class CorInfoReloc
     WASM_MEMORY_ADDR_REL_LEB,            // Wasm: a relative linear memory index encoded as a 5-byte varuint32. Used as the immediate argument of a load or store instruction,
                                            // e.g. in R2R scenarios as an offset from __image_base
     WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB, // Wasm: an exception tag index encoded as a 5-byte varuint32. Used to refer to the CoreCLR restore context exception tag.
+    WASM_METHOD_RELATIVE_VIRTUAL_IP_I32, // Wasm: the current method's virtual IP relative to the image virtual IP base, stored as a 4-byte uint32.
 };
 
 enum CorInfoGCType

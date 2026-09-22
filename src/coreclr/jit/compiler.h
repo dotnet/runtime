@@ -2019,6 +2019,9 @@ struct NaturalLoopIterInfo
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
 
+    // The local that the limit depends on, or BAD_VAR_NUM for a constant limit.
+    unsigned LimitVar = BAD_VAR_NUM;
+
 #ifdef DEBUG
     // Tree that initializes induction variable outside the loop.
     // Only valid if HasConstInit is true.
@@ -5549,6 +5552,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6505,12 +6509,9 @@ public:
     // tree node).
     PhaseStatus fgValueNumber();
 
-    void fgValueNumberLocalStore(GenTree*             storeNode,
-                                 GenTreeLclVarCommon* lclDefNode,
-                                 ssize_t              offset,
-                                 ValueSize            storeSize,
-                                 ValueNumPair         value,
-                                 bool                 normalize = true);
+    template <typename TDef>
+    void fgValueNumberLocalStore(
+        GenTree* storeNode, const TDef& def, ValueNumPair value, bool normalize = true);
 
     void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
@@ -6908,6 +6909,8 @@ public:
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
+
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
@@ -8064,7 +8067,10 @@ public:
                      LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
+    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+                            unsigned             lclNum,
+                            unsigned             ssaNum,
+                            LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
@@ -8338,7 +8344,7 @@ public:
                                            GenTree*    nullCheckTree,
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
-    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
+    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary);
 
     PhaseStatus optInductionVariables();
 
@@ -8385,7 +8391,11 @@ public:
     bool                  optRedundantRelop(BasicBlock* const block);
     bool                  optRedundantDominatingBranch(BasicBlock* const block);
     bool                  optRedundantBranch(BasicBlock* const block);
-    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadDom(BasicBlock* const block,
+                                           BasicBlock* const domBlock,
+                                           bool              domIsSameRelop,
+                                           ValueNum          domCmpExcVN,
+                                           ValueNum          treeExcVN);
     bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
@@ -10814,7 +10824,11 @@ public:
         // and it works better for small sizes.
         if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
         {
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * (type == UnrollKind::ProfiledMemmove ? 4 : 2);
+#else
             threshold = maxRegSize * 2;
+#endif
         }
 
         return threshold;
@@ -11753,6 +11767,7 @@ public:
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(RANDOM_INLINE)                                                              \
+        STRESS_MODE(ASYNC_INLINE) /* Randomly inline async callees that may suspend */          \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
@@ -11823,10 +11838,10 @@ public:
 
     // Is general runtime async inlining being stressed, i.e. are async callees inlined
     // with a decaying random probability? See AsyncStressPolicy.
-    static bool compAsyncInliningStress()
-    {
-        return JitConfig.JitStressAsyncInlining() != 0;
-    }
+    bool compAsyncInliningStress();
+
+    // External seed for the random decisions made when stressing general async inlining.
+    static int compAsyncInliningStressSeed();
 
     bool compPromoteFewerStructs(unsigned lclNum);
 
