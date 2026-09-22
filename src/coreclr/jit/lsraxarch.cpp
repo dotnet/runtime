@@ -1432,18 +1432,24 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
             case GenTreeBlk::BlkOpKindUnroll:
             {
                 bool willUseSimdMov = (size >= XMM_REGSIZE_BYTES);
+
+                // Has to match the register size genCodeForInitBlkUnroll ends up using.
+                unsigned simdSize = m_compiler->roundDownSIMDSize(size);
+
                 if (willUseSimdMov && blkNode->IsOnHeapAndContainsReferences())
                 {
                     ClassLayout* layout = blkNode->GetLayout();
 
-                    unsigned xmmCandidates   = 0;
-                    unsigned continuousNonGc = 0;
+                    unsigned xmmCandidates      = 0;
+                    unsigned continuousNonGc    = 0;
+                    unsigned maxContinuousNonGc = 0;
                     for (unsigned slot = 0; slot < layout->GetSlotCount(); slot++)
                     {
                         if (layout->IsGCPtr(slot))
                         {
                             xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
-                            continuousNonGc = 0;
+                            maxContinuousNonGc = max(maxContinuousNonGc, continuousNonGc);
+                            continuousNonGc    = 0;
                         }
                         else
                         {
@@ -1451,15 +1457,19 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         }
                     }
                     xmmCandidates += ((continuousNonGc * TARGET_POINTER_SIZE) / XMM_REGSIZE_BYTES);
+                    maxContinuousNonGc = max(maxContinuousNonGc, continuousNonGc);
 
                     // Just one XMM candidate is not profitable
                     willUseSimdMov = xmmCandidates > 1;
+
+                    // Only continuous non-GC parts are stored with SIMD in this case.
+                    simdSize = m_compiler->roundDownSIMDSize(maxContinuousNonGc * TARGET_POINTER_SIZE);
                 }
 
                 if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags();
+                    SetContainsAVXFlags(simdSize);
                 }
 
 #ifdef TARGET_X86
@@ -1564,7 +1574,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     }
-                    SetContainsAVXFlags();
+                    SetContainsAVXFlags(simdSize);
                 }
                 else if (isPow2(size))
                 {
