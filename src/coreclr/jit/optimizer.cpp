@@ -3636,13 +3636,16 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     // The copy keeps GTF_ORDER_SIDEEFF: if the preheader is inside an enclosing loop, that loop must hoist it
     // under the same rule (HoistVisitor::CanHoistOrderingLoad) rather than as an ordinary faulting load. Its
     // value number gets the null reference exception the original did not have, so that CSE sees the copy for
-    // what it is.
+    // what it is. This is done unconditionally: fgValueNumberAddExceptionSetForIndirection would skip a load
+    // whose value is a constant, but a method table load of an object with a known exact type has a constant
+    // value and can still fault when the object is null.
     if (optIsOrderConstrainedFieldLoad(origExpr))
     {
         hoistExpr->gtFlags &= ~GTF_IND_NONFAULTING;
         gtUpdateNodeSideEffects(hoistExpr);
         assert((hoistExpr->gtFlags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) == (GTF_EXCEPT | GTF_ORDER_SIDEEFF));
-        fgValueNumberAddExceptionSetForIndirection(hoistExpr, hoistExpr->AsIndir()->Addr());
+        hoistExpr->gtVNPair = vnStore->VNPWithExc(hoistExpr->gtVNPair,
+                                                  fgValueNumberIndirNullCheckExceptions(hoistExpr->AsIndir()->Addr()));
     }
 
     // At this point we should have a cloned expression
