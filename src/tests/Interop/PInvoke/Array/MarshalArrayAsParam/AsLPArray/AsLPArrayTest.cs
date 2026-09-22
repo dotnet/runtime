@@ -771,15 +771,10 @@ public unsafe class PointerArrayTests
         Array values = CreateArray(kind, ArrayLength);
         nuint[] expected = CreateValues(kind, values.Length);
         Initialize(values, expected);
-        GCHandle handle = GCHandle.Alloc(values);
-        try
+        using (GCHandle<Array> handle = new(values))
         {
-            Assert.NotEqual(nint.Zero, GetAddress(kind, values, &GetAddressAfterCollection, GCHandle.ToIntPtr(handle)));
+            Assert.NotEqual(nint.Zero, GetAddress(kind, values, &GetAddressAfterCollection, GCHandle<Array>.ToIntPtr(handle)));
             Assert.True(Contents(values).SequenceEqual(expected));
-        }
-        finally
-        {
-            handle.Free();
         }
     }
 
@@ -1070,7 +1065,7 @@ public unsafe class PointerArrayTests
     [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
     private static nuint* GetAddressAfterCollection(nuint* values, nint context)
     {
-        Array array = (Array)GCHandle.FromIntPtr(context).Target;
+        Array array = GCHandle<Array>.FromIntPtr(context).Target;
         GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true, compacting: true);
         fixed (byte* address = &MemoryMarshal.GetArrayDataReference(array))
         {
