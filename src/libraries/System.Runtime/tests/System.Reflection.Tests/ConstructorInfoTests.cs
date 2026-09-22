@@ -57,7 +57,7 @@ namespace System.Reflection.Tests
             public MutableConstructorTarget(int value) => Value = value;
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         [InlineData(false)]
         [InlineData(true)]
         public void Invoke_SpecialAllocatingConstructorsWithExistingInstance(bool useString)
