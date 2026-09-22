@@ -32,7 +32,12 @@ steps:
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:TargetOS=${{ parameters.osGroup }}
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        HelixAccessToken: $(HelixApiAccessToken)
+        ${{ if eq(variables['helixUseEntraAuthentication'], true) }}:
+          HelixUseEntraAuthentication: true
+          HelixAzureSubscription: ${{ variables.helixAzureSubscription }}
+          HelixBaseUri: ${{ variables.helixBaseUri }}
+        ${{ else }}:
+          HelixAccessToken: $(HelixApiAccessToken)
         HelixTargetQueues: ${{ replace(lower(join('+', parameters.helixQueues)), '.open', '') }}
         Creator: ''
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
