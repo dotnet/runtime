@@ -50,6 +50,61 @@ safe-outputs:
             }
           }
           fs.writeFileSync(outputPath, JSON.stringify(output));
+    - name: Prepare retry-safe command outputs
+      if: github.event_name == 'issue_comment' && steps.download-agent-output.outcome == 'success'
+      uses: actions/github-script@v9.0.0
+      env:
+        GH_AW_AGENT_OUTPUT: ${{ steps.setup-agent-output-env.outputs.GH_AW_AGENT_OUTPUT }}
+        EXPECTED_HEAD: ${{ needs.fetch-binlog.outputs.pr-head-sha }}
+      with:
+        script: |
+          const fs = require("node:fs");
+          const { createHash } = require("node:crypto");
+          const request = context.payload.comment.id;
+          const pullNumber = context.payload.issue.number;
+          const head = process.env.EXPECTED_HEAD;
+          if (!Number.isSafeInteger(request) || !/^[a-f0-9]{40}$/.test(head)) {
+            throw new Error("Missing verified command or revision identity.");
+          }
+          const outputPath = process.env.GH_AW_AGENT_OUTPUT;
+          const output = JSON.parse(fs.readFileSync(outputPath, "utf8"));
+          if (!Array.isArray(output.items)) throw new Error("Expected an output items array.");
+          const comments = await github.paginate(github.rest.issues.listComments, {
+            ...context.repo, issue_number: pullNumber, per_page: 100,
+          });
+          const reviews = await github.paginate(github.rest.pulls.listReviews, {
+            ...context.repo, pull_number: pullNumber, per_page: 100,
+          });
+          const inline = await github.paginate(github.rest.pulls.listReviewComments, {
+            ...context.repo, pull_number: pullNumber, per_page: 100,
+          });
+          const isBot = item => item.user?.login === "github-actions[bot]" && item.user?.type === "Bot";
+          const submitted = reviews.filter(review => isBot(review) && review.state !== "PENDING" && review.submitted_at);
+          const reviewIds = new Set(submitted.map(review => review.id));
+          // Include review bodies: gh-aw moves unanchorable findings there.
+          const published = [...comments.filter(isBot), ...submitted,
+            ...inline.filter(item => isBot(item) && reviewIds.has(item.pull_request_review_id))];
+          const markers = new Set(published.flatMap(item =>
+            [...(item.body || "").matchAll(/^Build-analysis output: `(\d+:[a-f0-9]{64})`$/gm)].map(match => match[1])));
+          output.items = output.items.filter(item => {
+            if (item.type !== "add_comment" && item.type !== "create_pull_request_review_comment") return true;
+            if (typeof item.body !== "string") throw new Error("Expected a comment body.");
+            const body = item.body.replace(/^Build-analysis output: `\d+:[a-f0-9]{64}`\n\n/, "").replace(/\r\n/g, "\n").trim();
+            // There is one summary per request/revision. Inline identity also
+            // includes the full finding and anchor, so distinct findings survive.
+            const identity = item.type === "add_comment" ? [request, head, item.type] :
+              [request, head, item.type, item.path, Number(item.line), item.side || "RIGHT",
+                item.start_line ? Number(item.start_line) : null, body];
+            const key = `${request}:${createHash("sha256").update(JSON.stringify(identity)).digest("hex")}`;
+            if (markers.has(key)) {
+              core.info(`Skipping previously published ${item.type} (${key}).`);
+              return false;
+            }
+            markers.add(key);
+            item.body = `Build-analysis output: \`${key}\`\n\n${body}`;
+            return true;
+          });
+          fs.writeFileSync(outputPath, JSON.stringify(output));
     - name: Revalidate PR revision before applying queued outputs
       shell: bash
       env:

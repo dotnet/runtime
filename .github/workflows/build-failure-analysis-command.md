@@ -1,5 +1,6 @@
 ---
 name: "Build Failure Analysis (command)"
+run-name: "Build failure analysis command ${{ github.event.comment.id }}"
 description: >-
   Rerun the build-failure analysis on a pull request when a maintainer comments
   `/analyze-build-failure`. Same body as `build-failure-analysis.md` — it does
@@ -50,7 +51,7 @@ concurrency:
   # Keep command analyses separate from automatic analyses. This group is
   # acquired before command/permission validation: queue every pending run so
   # even an unauthorized or near-miss comment cannot evict a valid request.
-  # Completed requests are deduplicated by their command-comment URL below;
+  # Completed requests are deduplicated by successful safe-output jobs below;
   # post a new command comment to request another analysis.
   group: ${{ (github.event_name == 'issue_comment' && !startsWith(github.event.comment.body, '/analyze-build-failure') && format('build-failure-analysis-cmd-run-{0}', github.run_id)) || format('build-failure-analysis-cmd-{0}', github.event.issue.number || github.event.pull_request.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number || github.run_id) }}
   cancel-in-progress: false
@@ -196,6 +197,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
+      actions: read
       contents: read
       pull-requests: read
     outputs:
@@ -284,9 +286,50 @@ jobs:
           fi
           echo "authorized=${authorized}" >> "$GITHUB_OUTPUT"
 
+      - name: Check for completed command publication
+        id: command
+        if: github.event_name != 'issue_comment' || steps.perm.outputs.authorized == 'true'
+        uses: actions/github-script@v9.0.0
+        env:
+          WORKFLOW_FILE: build-failure-analysis-command.lock.yml
+        with:
+          script: |
+            if (context.eventName !== "issue_comment") {
+              core.setOutput("completed", "false");
+              return;
+            }
+            const comment = context.payload.comment;
+            const title = `Build failure analysis command ${comment.id}`;
+            for (let page = 1; ; page++) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                ...context.repo, workflow_id: process.env.WORKFLOW_FILE,
+                event: "issue_comment", status: "completed",
+                created: `>=${comment.created_at}`, per_page: 100, page,
+              });
+              // GitHub caps filtered run searches at 1,000 results. Do not
+              // silently treat an incomplete history as permission to publish.
+              if (data.total_count > 1000) {
+                throw new Error("Command history exceeds the GitHub search limit; post a new command.");
+              }
+              for (const run of data.workflow_runs) {
+                if (run.display_title !== title) continue;
+                const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+                  ...context.repo, run_id: run.id, attempt_number: run.run_attempt, per_page: 100,
+                });
+                if (jobs.some(job => job.name === "safe_outputs" && job.conclusion === "success" &&
+                    job.steps?.some(step => step.name === "Process Safe Outputs" && step.conclusion === "success"))) {
+                  core.notice("This command completed publication; post a new command to rerun.");
+                  core.setOutput("completed", "true");
+                  return;
+                }
+              }
+              if (data.workflow_runs.length < 100 || page * 100 >= data.total_count) break;
+            }
+            core.setOutput("completed", "false");
+
       - name: Download binlogs from the PR's latest failed Azure Pipelines build
         id: fetch
-        if: github.event_name != 'issue_comment' || steps.perm.outputs.authorized == 'true'
+        if: steps.command.outputs.completed == 'false'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -296,7 +339,6 @@ jobs:
           # runtime pipeline definition id in dnceng-public/public.
           ADO_BUILD_DEFINITION_ID: "129"
           PR_NUMBER: ${{ github.event.issue.number || fromJSON(github.event.inputs.aw_context || github.event.client_payload.aw_context || '{}').item_number }}
-          COMMAND_URL: ${{ github.event.comment.html_url }}
         run: |
           # Advisory + fail-closed. On any validation gap keep the agent inert.
           set +e
@@ -364,33 +406,6 @@ jobs:
           # payload can't reach those URLs with unexpected content.
           if [[ ! "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
             echo "::warning::Resolved PR number is not numeric; refusing."; emit_none
-          fi
-
-          # A delivered/edited command that already received a summary must not
-          # produce another batch of inline reviews. Require both structured
-          # analysis data and the request footer: activation/error status comments
-          # also carry the footer, but must not suppress a retry after a failure.
-          # Old summaries without a request URL remain eligible for reruns.
-          if [ -n "${COMMAND_URL}" ]; then
-            if ! comments=$(gh api "repos/${GH_AW_REPO}/issues/${PR_NUMBER}/comments?per_page=100" --paginate --slurp); then
-              echo "::warning::Could not check whether this command was already answered; skipping."
-              emit_none
-            fi
-            if ! answered=$(printf '%s' "${comments}" | jq -r --arg marker "[Request](${COMMAND_URL})" '
-                def analysis_summary:
-                  [scan("Structured data:\\s*```json\\s*([^`]+)```") | .[0] | fromjson? |
-                    select(.workflow_artifact == "build-failure-analysis" and .artifact_kind == "analysis")] |
-                  length > 0;
-                any(.[][]; .user.login == "github-actions[bot]" and
-                  ((.body // "") | contains($marker) and analysis_summary))
-              '); then
-              echo "::warning::Could not parse previous command responses; skipping."
-              emit_none
-            fi
-            if [ "${answered}" = "true" ]; then
-              echo "::notice::This command already has a build-analysis response; post a new command to rerun."
-              emit_none
-            fi
           fi
 
           # --- Scope check: only analyse PRs targeting main / release/* ---

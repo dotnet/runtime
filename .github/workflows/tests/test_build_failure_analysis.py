@@ -123,35 +123,26 @@ class BuildFailureAnalysisTests(unittest.TestCase):
                 )
                 self.assertIn("authorized=" + str(allowed).lower(), outputs)
 
-    def test_command_queue_and_request_idempotency(self):
+    def test_command_queue_and_request_identity(self):
         workflow = self.workflows[NAMES[1]]
         self.assertIs(workflow["concurrency"]["cancel-in-progress"], False)
         self.assertEqual(workflow["concurrency"].get("queue"), "max")
         self.assertIn("[Request](${{ github.event.comment.html_url }})", workflow["safe-outputs"]["messages"]["footer"])
-        script = step(workflow["jobs"]["fetch-binlog"]["steps"], "fetch")["run"].split("# --- Scope check:")[0]
+        self.assertEqual(workflow["run-name"], "Build failure analysis command ${{ github.event.comment.id }}")
+
+    def test_partial_publication_summary_does_not_complete_command(self):
+        script = step(self.workflows[NAMES[1]]["jobs"]["fetch-binlog"]["steps"], "fetch")["run"].split("# --- Scope check:")[0]
         url = "https://github.com/dotnet/runtime/pull/42#issuecomment-123"
-        summary = 'Structured data:\n```json\n{"workflow_artifact":"build-failure-analysis","artifact_kind":"analysis"}\n```\n'
-        for author, body, api_status, duplicate in (
-            ("github-actions[bot]", summary + "[Request](" + url + ")", "0", True),
-            ("contributor", summary + "[Request](" + url + ")", "0", False),
-            ("github-actions[bot]", summary + "[Request](" + url + "4)", "0", False),
-            ("github-actions[bot]", "Activation failed\n[Request](" + url + ")", "0", False),
-            ("github-actions[bot]", 'Structured data:\n```json\ninvalid\n```\n[Request](' + url + ")", "0", False),
-            ("github-actions[bot]", "Legacy analysis without a request identifier", "0", False),
-            ("github-actions[bot]", "", "1", True),
-        ):
-            with self.subTest(author=author, body=body, api_status=api_status):
-                result, outputs, _ = self.run_script(
-                    'gh() { printf \'%s\' "$COMMENTS"; return "$API_STATUS"; }\n' + script + "\necho proceed=true\n",
-                    {
-                        "PR_NUMBER": "42", "COMMAND_URL": url, "API_STATUS": api_status,
-                        "COMMENTS": json.dumps([[{"user": {"login": author}, "body": body}]]),
-                    },
-                )
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual("proceed=true" not in result.stdout, duplicate)
-                if duplicate:
-                    self.assertIn("analysis-ready=false", outputs)
+        body = 'Structured data:\n```json\n{"workflow_artifact":"build-failure-analysis","artifact_kind":"analysis"}\n```\n[Request](' + url + ")"
+        result, _, _ = self.run_script(
+            'gh() { printf \'%s\' "$COMMENTS"; }\n' + script + "\necho proceed=true\n",
+            {
+                "PR_NUMBER": "42", "COMMAND_URL": url,
+                "COMMENTS": json.dumps([[{"user": {"login": "github-actions[bot]"}, "body": body}]]),
+            },
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("proceed=true", result.stdout)
 
     def test_fork_resolution_and_revision_guards(self):
         script = step(self.workflows[NAMES[0]]["jobs"]["fetch-binlog"]["steps"], "fetch")["run"]
