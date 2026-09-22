@@ -168,20 +168,14 @@ namespace Internal.Cryptography.Pal.AnyOS
                     Oids.MLKem768WithRsaOaep3072Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithRsaOaep3072,
                     Oids.MLKem768WithRsaOaep4096Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithRsaOaep4096,
                     Oids.MLKem768WithX25519Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithX25519,
-                    Oids.MLKem768WithECDiffieHellmanP256Sha3_256 =>
-                        CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256,
-                    Oids.MLKem768WithECDiffieHellmanP384Sha3_256 =>
-                        CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP384,
-                    Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 =>
-                        CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanBrainpoolP256r1,
+                    Oids.MLKem768WithECDiffieHellmanP256Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256,
+                    Oids.MLKem768WithECDiffieHellmanP384Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP384,
+                    Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanBrainpoolP256r1,
                     Oids.MLKem1024WithRsaOaep3072Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithRsaOaep3072,
-                    Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 =>
-                        CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP384,
-                    Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 =>
-                        CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanBrainpoolP384r1,
+                    Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP384,
+                    Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanBrainpoolP384r1,
                     Oids.MLKem1024WithX448Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithX448,
-                    Oids.MLKem1024WithECDiffieHellmanP521Sha3_256 =>
-                        CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP521,
+                    Oids.MLKem1024WithECDiffieHellmanP521Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP521,
                     _ => null,
                 };
 

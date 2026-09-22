@@ -173,8 +173,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 cms.Decode(encoded);
 
                 Assert.Equal(2, cms.RecipientInfos.Count);
-                KemRecipientInfo? kemRecipientInfo = null;
-                KeyTransRecipientInfo? keyTransRecipientInfo = null;
+                KemRecipientInfo kemRecipientInfo = null;
+                KeyTransRecipientInfo keyTransRecipientInfo = null;
 
                 foreach (RecipientInfo recipientInfo in cms.RecipientInfos)
                 {
@@ -272,7 +272,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             CompositeMLKemTestVector vector,
             CmsRecipient recipient,
             SubjectIdentifierType expectedRecipientIdentifierType,
-            byte[]? expectedUkm,
+            byte[] expectedUkm,
             string contentEncryptionAlgorithm,
             int contentEncryptionKeyLength)
         {

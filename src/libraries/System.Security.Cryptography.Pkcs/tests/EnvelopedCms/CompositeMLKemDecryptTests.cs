@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             { TestOids.Aes256Wrap, 32 },
         };
 
-        public static TheoryData<byte[]?> UserKeyingMaterial { get; } = new()
+        public static TheoryData<byte[]> UserKeyingMaterial { get; } = new()
         {
             (byte[])null,
             Array.Empty<byte>(),
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 
         [ConditionalTheory(typeof(CompositeMLKemDecryptTests), nameof(IsMLKem768WithECDHP256Supported))]
         [MemberData(nameof(UserKeyingMaterial))]
-        public static void DecryptUserKeyingMaterial(byte[]? userKeyingMaterial)
+        public static void DecryptUserKeyingMaterial(byte[] userKeyingMaterial)
         {
             CompositeMLKemTestVector vector = CompositeMLKemCmsTestData.P256Vector;
             EnvelopedCms cms = Decrypt(
@@ -245,9 +245,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
             EnvelopedCms cms = DecodeRfcExample();
             KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+            CompositeMLKemAlgorithm wrongAlgorithm = CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256;
 
-            using (CompositeMLKem wrongKey =
-                CompositeMLKem.GenerateKey(CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256))
+            using (CompositeMLKem wrongKey = CompositeMLKem.GenerateKey(wrongAlgorithm))
             {
                 Assert.ThrowsAny<CryptographicException>(() => cms.Decrypt(recipientInfo, wrongKey));
             }
@@ -265,9 +265,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
             EnvelopedCms cms = DecodeRfcExample();
             KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
+            CompositeMLKemAlgorithm algorithm = CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256;
 
-            using (CompositeMLKem privateKey =
-                CompositeMLKem.GenerateKey(CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256))
+            using (CompositeMLKem privateKey = CompositeMLKem.GenerateKey(algorithm))
             {
                 Assert.ThrowsAny<CryptographicException>(() => cms.Decrypt(recipientInfo, privateKey));
             }
