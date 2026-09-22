@@ -98,46 +98,17 @@ namespace System.Threading
 
         protected abstract void SetLockOwnerToCurrentThread();
 
-        public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool keepCreationDeletionProcessLockHeld, ref WaitSubsystem.LockHolder holder)
+        public UnrecordedMutexAcquisition TryAcquireLock(int timeoutMilliseconds)
         {
-            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-            if (!keepCreationDeletionProcessLockHeld)
+            if (timeoutMilliseconds != 0)
             {
-                holder.Dispose();
+                // We can't have the creation/deletion process lock held while trying to acquire a lock with a non-zero timeout
+                // as this can lead to a deadlock or livelock situation between multiple different cross-process mutexes
+                // used across multiple threads within the same process and across processes.
+                SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsNotLocked();
             }
 
-            MutexTryAcquireLockResult result = AcquireLockCore(timeoutMilliseconds);
-
-            if (result == MutexTryAcquireLockResult.AcquiredLockRecursively)
-            {
-                return MutexTryAcquireLockResult.AcquiredLock;
-            }
-
-            if (result == MutexTryAcquireLockResult.TimedOut)
-            {
-                // If the lock was not acquired, we don't have any more work to do.
-                return result;
-            }
-
-            if (!keepCreationDeletionProcessLockHeld)
-            {
-                holder = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
-            }
-
-            SetLockOwnerToCurrentThread();
-            _lockCount = 1;
-            _lockOwnerThread = waitInfo.Thread;
-            // Add the ref count for the thread's wait info.
-            _processDataHeader.IncrementRefCount();
-            waitInfo.NamedMutexOwnershipChain.Add(this);
-
-            if (IsAbandoned)
-            {
-                IsAbandoned = false;
-                result = MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
-            }
-
-            return result;
+            return new UnrecordedMutexAcquisition(this, AcquireLockCore(timeoutMilliseconds));
         }
 
         public void ReleaseLock()
@@ -256,10 +227,12 @@ namespace System.Threading
 
                         if (created && acquireLockIfCreated)
                         {
-                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0, keepCreationDeletionProcessLockHeld: true, ref creationDeletionProcessLock);
+                            NamedMutexProcessDataBase processData = processDataHeader._processData;
+                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(timeoutMilliseconds: 0).RecordMutexAcquisition(Thread.CurrentThread.WaitInfo);
                             if (acquireResult != MutexTryAcquireLockResult.AcquiredLock)
                             {
-                                throw new InvalidOperationException();
+                                // We created the mutex so we should be able to acquire it immediately.
+                                throw new ApplicationException();
                             }
                         }
                     }
@@ -298,6 +271,39 @@ namespace System.Threading
             if (IsLockOwnedByCurrentThread)
             {
                 Thread.CurrentThread.WaitInfo.NamedMutexOwnershipChain.Remove(this);
+            }
+        }
+
+        public struct UnrecordedMutexAcquisition(NamedMutexProcessDataBase mutexData, MutexTryAcquireLockResult rawAcquireResult)
+        {
+            public MutexTryAcquireLockResult RecordMutexAcquisition(WaitSubsystem.ThreadWaitInfo waitInfo)
+            {
+                if (rawAcquireResult == MutexTryAcquireLockResult.AcquiredLockRecursively)
+                {
+                    return MutexTryAcquireLockResult.AcquiredLock;
+                }
+
+                if (rawAcquireResult == MutexTryAcquireLockResult.TimedOut)
+                {
+                    return MutexTryAcquireLockResult.TimedOut;
+                }
+
+                SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+
+                mutexData.SetLockOwnerToCurrentThread();
+                mutexData._lockCount = 1;
+                mutexData._lockOwnerThread = waitInfo.Thread;
+                // Add the ref count for the thread's wait info.
+                mutexData._processDataHeader.IncrementRefCount();
+                waitInfo.NamedMutexOwnershipChain.Add(mutexData);
+
+                if (mutexData.IsAbandoned)
+                {
+                    mutexData.IsAbandoned = false;
+                    return MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
+                }
+
+                return MutexTryAcquireLockResult.AcquiredLock;
             }
         }
     }
@@ -661,10 +667,13 @@ namespace System.Threading
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
+                NamedMutexProcessDataBase processData = _processDataHeader._processData!;
+                NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = processData.TryAcquireLock(timeoutMilliseconds);
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
-                    MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, keepCreationDeletionProcessLockHeld: false, ref scope);
+                    MutexTryAcquireLockResult result = acquisition.RecordMutexAcquisition(waitInfo);
+
                     return result switch
                     {
                         MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,
