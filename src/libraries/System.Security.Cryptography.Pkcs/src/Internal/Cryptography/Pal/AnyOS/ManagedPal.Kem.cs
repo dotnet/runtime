@@ -215,7 +215,19 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (PkcsHelpers.IsCompositeMLKemAlgorithm(kemAlgorithm))
                 {
-                    using (CompositeMLKem? certificatePrivateKey = cert.GetCompositeMLKemPrivateKey())
+                    CompositeMLKem? certificatePrivateKey;
+
+                    try
+                    {
+                        certificatePrivateKey = cert.GetCompositeMLKemPrivateKey();
+                    }
+                    catch (PlatformNotSupportedException e)
+                    {
+                        exception = e;
+                        return null;
+                    }
+
+                    using (certificatePrivateKey)
                     {
                         if (certificatePrivateKey is null)
                         {

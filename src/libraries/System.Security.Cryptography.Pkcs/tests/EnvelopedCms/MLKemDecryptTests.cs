@@ -99,20 +99,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         }
 
         [Fact]
-        public static void DecryptCompositeMLKemAlgorithmDoesNotMatch()
-        {
-            EnvelopedCms cms = new EnvelopedCms();
-            cms.Decode(KemTestDocuments.MlKem768);
-
-            KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
-
-            using (TestCompositeMLKem key = new TestCompositeMLKem(CompositeMLKemAlgorithm.MLKem768WithRsaOaep2048))
-            {
-                Assert.Throws<CryptographicException>(() => cms.Decrypt(recipientInfo, key));
-            }
-        }
-
-        [Fact]
         public static void DecryptNullArguments()
         {
             EnvelopedCms cms = new EnvelopedCms();
@@ -121,13 +107,9 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             KemRecipientInfo recipientInfo = Assert.IsType<KemRecipientInfo>(Assert.Single(cms.RecipientInfos));
 
             using (MLKem mlKem = MLKem.ImportPkcs8PrivateKey(MLKemTestData.IetfMlKem768PrivateKeySeed))
-            using (TestCompositeMLKem compositeMLKem = new TestCompositeMLKem(
-                CompositeMLKemAlgorithm.MLKem768WithRsaOaep2048))
             {
                 Assert.Throws<ArgumentNullException>(() => cms.Decrypt(null, mlKem));
                 Assert.Throws<ArgumentNullException>(() => cms.Decrypt(recipientInfo, (MLKem)null));
-                Assert.Throws<ArgumentNullException>(() => cms.Decrypt(null, compositeMLKem));
-                Assert.Throws<ArgumentNullException>(() => cms.Decrypt(recipientInfo, (CompositeMLKem)null));
             }
         }
 
@@ -255,6 +237,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptTamperedEncryptedKey()
         {
+            // Derived from KemTestDocuments.MlKem768 by replacing encryptedKey with 40 zero bytes.
             const string Document = """
                 MIIFRgYJKoZIhvcNAQcDoIIFNzCCBTMCAQMxggTupIIE6gYLKoZIhvcNAQkQDQMwggTZAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -288,6 +271,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptInvalidVersion()
         {
+            // Derived from KemTestDocuments.MlKem768 by changing KEMRecipientInfo.version from 0 to 1.
             const string Document = """
                 MIIFRgYJKoZIhvcNAQcDoIIFNzCCBTMCAQMxggTupIIE6gYLKoZIhvcNAQkQDQMwggTZAgEBMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -314,6 +298,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptInvalidKemCiphertextLength()
         {
+            // Derived from KemTestDocuments.MlKem768 by changing kem from ML-KEM-768 to ML-KEM-1024
+            // without changing the ML-KEM-768 kemct.
             const string Document = """
                 MIIFRgYJKoZIhvcNAQcDoIIFNzCCBTMCAQMxggTupIIE6gYLKoZIhvcNAQkQDQMwggTZAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAwSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -339,6 +325,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptInvalidAesKeyWrapLength()
         {
+            // Derived from KemTestDocuments.MlKem768 by replacing encryptedKey with 23 zero bytes.
             const string Document = """
                 MIIFNQYJKoZIhvcNAQcDoIIFJjCCBSICAQMxggTdpIIE2QYLKoZIhvcNAQkQDQMwggTIAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -364,6 +351,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptAesKeyWrapLengthTooShort()
         {
+            // Derived from KemTestDocuments.MlKem768 by replacing encryptedKey with 16 zero bytes.
             const string Document = """
                 MIIFLgYJKoZIhvcNAQcDoIIFHzCCBRsCAQMxggTWpIIE0gYLKoZIhvcNAQkQDQMwggTBAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -389,6 +377,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptAesKeyWrapLengthNotAligned()
         {
+            // Derived from KemTestDocuments.MlKem768 by replacing encryptedKey with 25 zero bytes.
             const string Document = """
                 MIIFNwYJKoZIhvcNAQcDoIIFKDCCBSQCAQMxggTfpIIE2wYLKoZIhvcNAQkQDQMwggTKAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -414,6 +403,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptAesKeyWrapOidDoesNotMatchKekLength()
         {
+            // Derived from KemTestDocuments.MlKem768 by changing wrap from AES-256-KW to AES-128-KW
+            // without changing kekLength from 32.
             const string Document = """
                 MIIFRgYJKoZIhvcNAQcDoIIFNzCCBTMCAQMxggTupIIE6gYLKoZIhvcNAQkQDQMwggTZAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -439,6 +430,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptUnknownKdf()
         {
+            // Derived from KemTestDocuments.MlKem768 by changing kdf from HKDF-SHA-384 to 1.2.3.4.
             const string Document = """
                 MIIFPgYJKoZIhvcNAQcDoIIFLzCCBSsCAQMxggTmpIIE4gYLKoZIhvcNAQkQDQMwggTRAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -464,6 +456,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptUnknownKem()
         {
+            // Derived from KemTestDocuments.MlKem768 by changing kem from ML-KEM-768 to 1.2.3.5.
             const string Document = """
                 MIIFQAYJKoZIhvcNAQcDoIIFMTCCBS0CAQMxggTopIIE5AYLKoZIhvcNAQkQDQMwggTTAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAUGAyoDBQSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ1hOmItZ4
@@ -489,6 +482,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptKemAlgorithmParameters()
         {
+            // Derived from KemTestDocuments.MlKem768 by adding NULL parameters to kem.
             const string Document = """
                 MIIFSAYJKoZIhvcNAQcDoIIFOTCCBTUCAQMxggTwpIIE7AYLKoZIhvcNAQkQDQMwggTbAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMA0GCWCGSAFlAwQEAgUABIIEQPwlsWLBJ5hc9nmSoo0id+KiF8wGPJQubX6GUiNM32orh2C8ilD6MB2s
@@ -515,6 +509,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptKdfAlgorithmParameters()
         {
+            // Derived from KemTestDocuments.MlKem768 by adding NULL parameters to kdf.
             const string Document = """
                 MIIFSAYJKoZIhvcNAQcDoIIFOTCCBTUCAQMxggTwpIIE7AYLKoZIhvcNAQkQDQMwggTbAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -541,6 +536,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptAesKeyWrapAlgorithmParameters()
         {
+            // Derived from KemTestDocuments.MlKem768 by adding NULL parameters to wrap.
             const string Document = """
                 MIIFSAYJKoZIhvcNAQcDoIIFOTCCBTUCAQMxggTwpIIE7AYLKoZIhvcNAQkQDQMwggTbAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -567,6 +563,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         [Fact]
         public static void DecryptUnknownAesKeyWrap()
         {
+            // Derived from KemTestDocuments.MlKem768 by changing wrap from AES-256-KW to 1.2.3.6.
             const string Document = """
                 MIIFQAYJKoZIhvcNAQcDoIIFMTCCBS0CAQMxggTopIIE5AYLKoZIhvcNAQkQDQMwggTTAgEAMDowIjENMAsGA1UEChMESUVURjERMA8GA1UEAxMITEFN
                 UFMgV0cCFBWf/m8i/VzELFJN9v1eKNDeOPNPMAsGCWCGSAFlAwQEAgSCBED8JbFiwSeYXPZ5kqKNInfiohfMBjyULm1+hlIjTN9qK4dgvIpQ+jAdrHdJ
@@ -659,32 +656,6 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
                 throw new NotSupportedException();
         }
 
-        private sealed class TestCompositeMLKem : CompositeMLKem
-        {
-            internal TestCompositeMLKem(CompositeMLKemAlgorithm algorithm)
-                : base(algorithm)
-            {
-            }
-
-            protected override void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) =>
-                throw new NotSupportedException();
-
-            protected override void Dispose(bool disposing)
-            {
-            }
-
-            protected override void EncapsulateCore(Span<byte> ciphertext, Span<byte> sharedSecret) =>
-                throw new NotSupportedException();
-
-            protected override int ExportDecapsulationKeyCore(Span<byte> destination) =>
-                throw new NotSupportedException();
-
-            protected override int ExportEncapsulationKeyCore(Span<byte> destination) =>
-                throw new NotSupportedException();
-
-            protected override bool TryExportPkcs8PrivateKeyCore(Span<byte> destination, out int bytesWritten) =>
-                throw new NotSupportedException();
-        }
     }
 
     [PlatformSpecific(~TestPlatforms.Windows)]

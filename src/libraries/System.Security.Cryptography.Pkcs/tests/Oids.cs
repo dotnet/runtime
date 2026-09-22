@@ -60,6 +60,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
 
         // Key wrap algorithms
+        public const string Aes128Wrap = "2.16.840.1.101.3.4.1.5";
+        public const string Aes192Wrap = "2.16.840.1.101.3.4.1.25";
         public const string Aes256Wrap = "2.16.840.1.101.3.4.1.45";
         public const string CmsRc2Wrap = "1.2.840.113549.1.9.16.3.7";
         public const string Cms3DesWrap = "1.2.840.113549.1.9.16.3.6";
@@ -67,6 +69,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
         // Key derivation algorithms
         public const string HkdfSha256 = "1.2.840.113549.1.9.16.3.28";
         public const string HkdfSha384 = "1.2.840.113549.1.9.16.3.29";
+        public const string HkdfSha512 = "1.2.840.113549.1.9.16.3.30";
+        public const string HkdfSha3_256 = "1.2.840.113549.1.9.16.3.33";
+        public const string HkdfSha3_384 = "1.2.840.113549.1.9.16.3.34";
+        public const string HkdfSha3_512 = "1.2.840.113549.1.9.16.3.35";
 
         // PKCS7 Content Types.
         public const string Pkcs7Data = "1.2.840.113549.1.7.1";

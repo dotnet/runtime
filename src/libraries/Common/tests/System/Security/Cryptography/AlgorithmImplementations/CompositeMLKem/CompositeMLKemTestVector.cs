@@ -8,6 +8,7 @@ namespace System.Security.Cryptography.Tests
     public sealed class CompositeMLKemTestVector
     {
         private readonly byte[] _encapsulationKey;
+        private readonly byte[] _certificate;
         private readonly byte[] _decapsulationKey;
         private readonly byte[] _pkcs8;
         private readonly byte[] _ciphertext;
@@ -16,6 +17,7 @@ namespace System.Security.Cryptography.Tests
 
         internal string Id { get; }
         internal CompositeMLKemAlgorithm Algorithm { get; }
+        internal ReadOnlySpan<byte> Certificate => _certificate;
         internal ReadOnlySpan<byte> EncapsulationKey => _encapsulationKey;
         internal ReadOnlySpan<byte> DecapsulationKey => _decapsulationKey;
         internal ReadOnlySpan<byte> Pkcs8 => _pkcs8;
@@ -40,8 +42,9 @@ namespace System.Security.Cryptography.Tests
             _pkcs8 = Convert.FromBase64String(pkcs8);
             _ciphertext = Convert.FromBase64String(ciphertext);
             _sharedSecret = Convert.FromBase64String(sharedSecret);
+            _certificate = Convert.FromBase64String(certificate);
 
-            AsnReader reader = new AsnReader(Convert.FromBase64String(certificate), AsnEncodingRules.DER);
+            AsnReader reader = new AsnReader(_certificate, AsnEncodingRules.DER);
             AsnReader certificateReader = reader.ReadSequence();
             AsnReader tbsCertificate = certificateReader.ReadSequence();
             tbsCertificate.ReadEncodedValue(); // Version
