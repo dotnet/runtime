@@ -409,10 +409,33 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 [Kept]
+                class MixedMethodReference
+                {
+                    [Kept]
+                    public static RequiresPublicFields<MixedFieldReference> GetValue() => null;
+
+                    [Kept]
+                    public static void RequiredMethod()
+                    {
+                    }
+                }
+
+                [Kept]
+                class MixedFieldReference
+                {
+                    [Kept]
+                    public static RequiresPublicMethods<MixedMethodReference> Value;
+
+                    [Kept]
+                    public static int RequiredField;
+                }
+
+                [Kept]
                 public static void Test()
                 {
                     _ = typeof(MethodSelfReference).GetMethods();
                     _ = typeof(FieldSelfReference).GetFields();
+                    _ = typeof(MixedMethodReference).GetMethods();
                 }
             }
 
