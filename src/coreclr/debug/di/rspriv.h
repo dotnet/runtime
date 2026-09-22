@@ -11405,7 +11405,7 @@ inline void ValidateOrThrow(const void * p)
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
     BOOL align = FALSE;
-    IfFailThrow(pArgType->RequiresAlign8(&align));
+    pArgType->RequiresAlign8(&align);
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
