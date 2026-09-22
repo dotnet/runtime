@@ -1216,7 +1216,7 @@ internal sealed class OletxVolatileEnlistment : OletxBaseEnlistment, IPromotedEn
                     }
 
                     // There is a small race where Rollback could be called when the enlistment is already
-                    // aborting the transaciton, so just ignore that call.  When the app enlistment
+                    // aborting the transaction, so just ignore that call.  When the app enlistment
                     // finishes responding to its Rollback notification with EnlistmentDone, things will get
                     // cleaned up.
                     break;

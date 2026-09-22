@@ -61,6 +61,7 @@
   <ItemGroup Condition="'$(WasmEnableThreads)' != 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\SecondRuntimeTest.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpRequestMessageTest.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\HttpCancellationLeakTest.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\JavaScript\TimerTests.cs" />
   </ItemGroup>
 
