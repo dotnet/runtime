@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Linq
@@ -139,7 +138,6 @@ namespace System.Linq
                 if (Vector128.IsHardwareAccelerated && Vector128<T>.IsSupported &&
                     Vector128<T>.Count >= 4 && span.Length - i >= Vector128<T>.Count * 2)
                 {
-                    ref T first = ref MemoryMarshal.GetReference(span);
                     Vector128<T> negativeInfinity = Vector128.Create(T.NegativeInfinity);
                     Vector128<T> best = Vector128.Create(value);
                     int lastVector = span.Length - Vector128<T>.Count;
@@ -147,7 +145,7 @@ namespace System.Linq
                     while (i <= lastVector)
                     {
                         // A NaN is never the maximum here, and Vector128.Max would propagate it.
-                        Vector128<T> current = Vector128.LoadUnsafe(ref first, (uint)i);
+                        Vector128<T> current = Vector128.Create(span.Slice(i));
                         best = Vector128.Max(best, Vector128.ConditionalSelect(Vector128.Equals(current, current), current, negativeInfinity));
                         i += Vector128<T>.Count;
                     }
