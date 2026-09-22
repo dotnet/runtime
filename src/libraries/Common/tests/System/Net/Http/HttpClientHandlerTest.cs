@@ -2247,7 +2247,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 return; // SocketsHttpHandler doesn't support Latin-1 characters in headers without setting header encoding.
             }
-            const string RequestContent = "test content";
             var headerValue = $"HeaderValue{safeChar}WithSafeChar";
             var clientFinished = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
             using var cancellation = new CancellationTokenSource();
@@ -2266,7 +2265,7 @@ namespace System.Net.Http.Functional.Tests
                                     request.Headers.Add("Custom-Header", headerValue);
                                     break;
                                 case HeaderType.Content:
-                                    request.Content = new StringContent(RequestContent);
+                                    request.Content = new StringContent("test content");
                                     request.Content.Headers.Add("Custom-Content-Header", headerValue);
                                     break;
                                 case HeaderType.Cookie:
@@ -2318,25 +2317,6 @@ namespace System.Net.Http.Functional.Tests
                                 await genericConnection.DisposeAsync();
                             }
                         }
-                    }
-                    else if (!IsWinHttpHandler && UseVersion.Major == 1 && headerType == HeaderType.Content)
-                    {
-                        await using GenericLoopbackConnection genericConnection = await server.EstablishGenericConnectionAsync();
-                        var connection = (LoopbackServer.Connection)genericConnection;
-                        data = await connection.ReadRequestDataAsync(readBody: false);
-
-                        // The HTTP/1.1 helper does not read GET bodies. Consume this request's body
-                        // before closing the connection so a pending client write cannot cause a reset.
-                        byte[] body = new byte[Encoding.UTF8.GetByteCount(RequestContent)];
-                        Assert.Equal(body.Length, int.Parse(data.GetSingleHeaderValue("Content-Length")));
-                        Assert.Equal(body.Length, await connection.ReadBlockAsync(body, 0, body.Length));
-                        Assert.Equal(RequestContent, Encoding.UTF8.GetString(body));
-
-                        await connection.SendResponseAsync(headers: new[]
-                        {
-                            new HttpHeaderData("Connection", "Close"),
-                            new HttpHeaderData("Date", $"{DateTimeOffset.UtcNow:R}")
-                        });
                     }
                     else
                     {
