@@ -569,6 +569,12 @@ void WasmRegAlloc::CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode
 //
 void WasmRegAlloc::CollectReferencesForCall(GenTreeCall* callNode)
 {
+    if (callNode->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint) != nullptr)
+    {
+        // The control expression is evaluated after the arguments, so release its temporary first.
+        ConsumeTemporaryRegForOperand(callNode->gtControlExpr DEBUGARG("PEP control expression"));
+    }
+
     CallArg* thisArg = callNode->gtArgs.GetThisArg();
 
     if (thisArg != nullptr)

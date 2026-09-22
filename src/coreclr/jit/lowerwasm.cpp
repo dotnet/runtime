@@ -49,10 +49,8 @@ bool Lowering::IsCallTargetInRange(void* addr)
 // this function lowers the call to appropriately dispatch through the portable entrypoint using the Portable
 // entrypoint calling convention.
 // To do this, it:
-//      1. Introduces a new local variable to hold the PEP address
-//      2. Adds a new well-known argument to the call passing this local
-//      3. Rewrites the control expression to indirect through the new local, since for PEP's, the actual call target
-//         must be loaded from the portable entry point address.
+//      1. Adds a new well-known argument for the PEP address
+//      2. Leaves the PEP in the control expression and marks it for reuse by codegen
 //
 // Arguments:
 //    call         -  The call node to lower. It is expected that the call node has gtControlExpr set to the original
@@ -68,20 +66,16 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
 
     // PEP call must always have a control expression
     assert(call->gtControlExpr != nullptr);
-    LIR::Use callTargetUse(BlockRange(), &call->gtControlExpr, call);
-
-    JITDUMP("Creating new local variable for PEP");
-    unsigned int   callTargetLclNum    = callTargetUse.ReplaceWithLclVar(m_compiler);
-    GenTreeLclVar* callTargetLclForArg = m_compiler->gtNewLclvNode(callTargetLclNum, TYP_I_IMPL);
-    DISPTREE(call);
+    // Codegen supplies the real argument by teeing the control expression. This contained placeholder records
+    // the argument in the call ABI without evaluating the control expression twice.
+    GenTree* pepArgNode = m_compiler->gtNewZeroConNode(TYP_I_IMPL);
 
     JITDUMP("Add new arg to call arg list corresponding to PEP target");
-    NewCallArg pepTargetArg =
-        NewCallArg::Primitive(callTargetLclForArg).WellKnown(WellKnownArg::WasmPortableEntryPoint);
-    CallArg* pepArg = call->gtArgs.PushBack(m_compiler, pepTargetArg);
+    NewCallArg pepTargetArg = NewCallArg::Primitive(pepArgNode).WellKnown(WellKnownArg::WasmPortableEntryPoint);
+    CallArg*   pepArg       = call->gtArgs.PushBack(m_compiler, pepTargetArg);
 
     pepArg->SetEarlyNode(nullptr);
-    pepArg->SetLateNode(callTargetLclForArg);
+    pepArg->SetLateNode(pepArgNode);
     call->gtArgs.PushLateBack(pepArg);
 
     // Set up ABI information for this arg; PEP's should be passed as the last param to a wasm function
@@ -90,27 +84,14 @@ void Lowering::LowerPEPCall(GenTreeCall* call)
     pepArg->AbiInfo =
         ABIPassingInformation::FromSegmentByValue(m_compiler,
                                                   ABIPassingSegment::InRegister(pepReg, 0, TARGET_POINTER_SIZE));
-    BlockRange().InsertBefore(call, callTargetLclForArg);
+    BlockRange().InsertBefore(call, pepArgNode);
 
-    // Lower the new PEP arg now that the call abi info is updated and lcl var is inserted
+    // Lower the new PEP arg now that the call ABI information is updated and its node is inserted.
     LowerArg(call, pepArg);
     DISPTREE(call);
 
-    JITDUMP("Rewrite PEP call's control expression to indirect through the new local variable\n");
-
-    // Rewrite the call's control expression to have an additional load from the PEP local
-    // This must happen just before the call.
-    //
-    GenTree* controlExpr = call->gtControlExpr;
-    assert(controlExpr->OperIs(GT_LCL_VAR));
-
-    BlockRange().Remove(controlExpr);
-    BlockRange().InsertBefore(call, controlExpr);
-    // The PEP local holds a function pointer that is never null.
-    GenTree* target = m_compiler->gtNewIndir(TYP_I_IMPL, controlExpr, GTF_IND_NONFAULTING);
-    BlockRange().InsertBefore(call, target);
-
-    call->gtControlExpr = target;
+    MakeSrcContained(call, pepArg->GetLateNode());
+    SetMultiplyUsed(call->gtControlExpr DEBUGARG("LowerPEPCall control expression"));
 
     JITDUMP("Finished lowering PEP call\n");
     DISPTREERANGE(BlockRange(), call);
