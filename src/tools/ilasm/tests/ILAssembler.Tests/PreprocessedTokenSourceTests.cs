@@ -351,6 +351,30 @@ namespace ILAssembler.Tests
                 token => Assert.Equal(CILLexer.Eof, token.Type));
         }
 
+        [Fact]
+        public void UnterminatedIfDef_EofDiagnosticHasNonNegativeSpan()
+        {
+            string source = """
+                #define X
+                #ifdef X
+                A
+                """;
+
+            ITokenSource lexer = CreateLexerForSource(source);
+            PreprocessedTokenSource preprocessor = new(
+                lexer,
+                NoIncludeDirectivesCallback,
+                CreateDefaultLexer());
+            (int Start, int Length)? diagnosticSpan = null;
+            preprocessor.OnPreprocessorSyntaxError += (_, start, length, _) =>
+                diagnosticSpan = (start, length);
+            BufferedTokenStream stream = new(preprocessor);
+
+            stream.Fill();
+
+            Assert.Equal((source.Length, 0), diagnosticSpan);
+        }
+
         private void NoLexerDiagnosticsCallback(string arg1, int arg2, int arg3, string arg4)
         {
             Assert.Fail($"A lexer diagnostic was encountered at {arg2}:{arg3}. '{arg4}'");
