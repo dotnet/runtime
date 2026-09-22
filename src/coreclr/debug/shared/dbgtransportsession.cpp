@@ -2429,6 +2429,10 @@ DWORD DbgTransportSession::GetEventSize(DebuggerIPCEvent *pEvent)
         cbAdditionalSize = sizeof(pEvent->DisposeHandle);
         break;
 
+    case DB_IPCE_DISPOSE_EXTERNAL_MEMORY_OWNER:
+        cbAdditionalSize = sizeof(pEvent->DisposeExternalMemoryOwner);
+        break;
+
     case DB_IPCE_INTERCEPT_EXCEPTION:
         cbAdditionalSize = sizeof(pEvent->InterceptException);
         break;
