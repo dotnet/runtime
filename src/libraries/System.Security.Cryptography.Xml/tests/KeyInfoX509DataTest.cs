@@ -84,8 +84,106 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void Constructor_X509CertificateByteArray_Null()
         {
+#if NETFRAMEWORK
             KeyInfoX509Data data = new KeyInfoX509Data((byte[])null);
+#else
+            Assert.Throws<ArgumentException>("rawData", () => new KeyInfoX509Data((byte[])null));
+#endif
         }
+
+#if !NETFRAMEWORK
+        [Fact]
+        public void Constructor_X509CertificateByteArray_Empty()
+        {
+            Assert.Throws<ArgumentException>("rawData", () => new KeyInfoX509Data(Array.Empty<byte>()));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" \t\r\n")]
+        public void LoadXml_EmptyCertificate(string value)
+        {
+            XmlDocument document = new XmlDocument();
+            document.LoadXml($"<X509Data xmlns='{SignedXml.XmlDsigNamespaceUrl}'><X509Certificate>{value}</X509Certificate></X509Data>");
+
+            Assert.Throws<ArgumentException>("rawData", () => new KeyInfoX509Data().LoadXml(document.DocumentElement));
+        }
+
+        [Theory]
+        [InlineData(X509ContentType.Cert)]
+        [InlineData(X509ContentType.Pfx)]
+        [InlineData(X509ContentType.Pkcs7)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void CertificateContentType(X509ContentType contentType)
+        {
+            AssertCertificateContentType(contentType);
+        }
+
+        [Theory]
+        [InlineData(X509ContentType.SerializedCert)]
+        [InlineData(X509ContentType.SerializedStore)]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CertificateContentType_Windows(X509ContentType contentType)
+        {
+            AssertCertificateContentType(contentType);
+        }
+
+        private static void AssertCertificateContentType(X509ContentType contentType)
+        {
+            using (RSA rsa = RSA.Create(2048))
+            {
+                CertificateRequest request = new CertificateRequest(
+                    "CN=KeyInfoX509Data test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                using (X509Certificate2 signingCertificate = request.CreateSelfSigned(
+                    DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1)))
+                using (X509Certificate2 certificate = new X509Certificate2(signingCertificate.RawData))
+                {
+                    // Export only the public certificate, with no private key or store access.
+                    byte[] rawData = new X509Certificate2Collection(certificate).Export(contentType);
+                    Assert.Equal(contentType, X509Certificate2.GetCertContentType(rawData));
+
+                    XmlDocument document = new XmlDocument();
+                    document.LoadXml("<root>Certificate content type test</root>");
+                    SignedXml signer = new SignedXml(document);
+                    signer.SigningKey = rsa;
+                    signer.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
+                    Reference reference = new Reference("");
+                    reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+                    signer.AddReference(reference);
+                    signer.ComputeSignature();
+
+                    XmlElement signature = signer.GetXml();
+                    XmlNamespaceManager namespaces = new XmlNamespaceManager(document.NameTable);
+                    namespaces.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
+                    XmlElement x509Data = (XmlElement)signature.SelectSingleNode("ds:KeyInfo/ds:X509Data", namespaces);
+
+                    SignedXml validSignature = new SignedXml(document);
+                    validSignature.LoadXml(signature);
+                    Assert.True(validSignature.CheckSignature(certificate, true));
+
+                    x509Data["X509Certificate", SignedXml.XmlDsigNamespaceUrl].InnerText = Convert.ToBase64String(rawData);
+                    KeyInfoX509Data loadedData = new KeyInfoX509Data();
+                    SignedXml loadedSignature = new SignedXml(document);
+
+                    if (contentType == X509ContentType.Cert)
+                    {
+                        KeyInfoX509Data constructedData = new KeyInfoX509Data(rawData);
+                        Assert.Equal(certificate.RawData, ((X509Certificate2)Assert.Single(constructedData.Certificates)).RawData);
+                        loadedData.LoadXml(x509Data);
+                        Assert.Equal(certificate.RawData, ((X509Certificate2)Assert.Single(loadedData.Certificates)).RawData);
+                        loadedSignature.LoadXml(signature);
+                        Assert.True(loadedSignature.CheckSignature(certificate, true));
+                    }
+                    else
+                    {
+                        Assert.Throws<CryptographicException>(() => new KeyInfoX509Data(rawData));
+                        Assert.Throws<CryptographicException>(() => loadedData.LoadXml(x509Data));
+                        Assert.Throws<CryptographicException>(() => loadedSignature.LoadXml(signature));
+                    }
+                }
+            }
+        }
+#endif
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
