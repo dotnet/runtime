@@ -57,29 +57,25 @@ namespace System.Reflection.Tests
             public MutableConstructorTarget(int value) => Value = value;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void Invoke_SpecialAllocatingConstructorsWithExistingInstance(bool useString)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_StringConstructorWithExistingInstance()
         {
-            ConstructorInfo constructor;
-            object target;
-            object?[] arguments;
-
-            if (useString)
-            {
-                constructor = typeof(string).GetConstructor(new[] { typeof(char[]) })!;
-                target = "existing";
-                arguments = new object?[] { new[] { 'n', 'e', 'w' } };
-            }
-            else
-            {
-                constructor = typeof(object[]).GetConstructor(new[] { typeof(int) })!;
-                target = new object[1];
-                arguments = new object?[] { 3 };
-            }
+            ConstructorInfo constructor = typeof(string).GetConstructor(new[] { typeof(char[]) })!;
+            object target = "existing";
+            object?[] arguments = new object?[] { new[] { 'n', 'e', 'w' } };
 
             Assert.Null(constructor.Invoke(target, arguments));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ArrayConstructorWithExistingInstance()
+        {
+            ConstructorInfo constructor = typeof(object[]).GetConstructor(new[] { typeof(int) })!;
+            object target = new object[1];
+            object?[] arguments = new object?[] { 3 };
+
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(target, arguments));
+            Assert.IsType<InvalidProgramException>(exception.InnerException);
         }
 
         public static IEnumerable<object[]> Invoke_ReferenceConstructors_SharedThunk_TestData()
