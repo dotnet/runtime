@@ -3817,7 +3817,7 @@ HRESULT CordbUnmanagedThread::SetupGenericHijack(DWORD eventCode, const EXCEPTIO
     HRESULT hr = GetProcess()->GetTargetInfo(&targetInfo);
     if (FAILED(hr))
         return hr;
-    if (targetInfo.arch != IDacDbiInterface::kArchX86)
+    if (targetInfo.arch == IDacDbiInterface::kArchAMD64 || targetInfo.arch == IDacDbiInterface::kArchArm64)
     {
         // On X86 Debugger::GenericHijackFunc() ensures the stack is walkable
         // by simply using the EBP chain, therefore we can execute the hijack
