@@ -60,14 +60,20 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 string keyAlgorithm = recipient.Certificate.GetKeyAlgorithm();
 
-                if (PkcsHelpers.IsCompositeMLKemAlgorithm(keyAlgorithm))
-                {
-                    throw new PlatformNotSupportedException(
-                        SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
-                }
-
                 switch (keyAlgorithm)
                 {
+                    case string alg when PkcsHelpers.IsCompositeMLKemAlgorithm(alg) && algorithmParameters is null:
+                        using (CompositeMLKem? key = recipient.Certificate.GetCompositeMLKemPublicKey())
+                        {
+                            Debug.Assert(key is not null);
+                            byte[] ciphertext = new byte[key.Algorithm.CiphertextSizeInBytes];
+                            Debug.Assert(key.Algorithm.SharedSecretSizeInBytes == SharedSecretSize);
+
+                            key.Encapsulate(ciphertext, sharedSecret);
+                            kemri.Kemct = ciphertext;
+                            kemri.Kem.Algorithm = alg;
+                        }
+                        break;
                     case Oids.MlKem512 or Oids.MlKem768 or Oids.MlKem1024 when algorithmParameters is null:
                         using (MLKem? key = recipient.Certificate.GetMLKemPublicKey())
                         {
@@ -152,13 +158,55 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             public override int Version => _asn.Version;
 
-#pragma warning disable CA1822 // Instance member can be made static
             internal byte[]? DecryptCek(CompositeMLKem privateKey, out Exception? exception)
-#pragma warning restore CA1822
             {
-                _ = privateKey;
-                exception = new PlatformNotSupportedException();
-                return null;
+                exception = null;
+
+                CompositeMLKemAlgorithm? encodedAlgorithm = KeyEncapsulationAlgorithm.Oid.Value switch
+                {
+                    Oids.MLKem768WithRsaOaep2048Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithRsaOaep2048,
+                    Oids.MLKem768WithRsaOaep3072Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithRsaOaep3072,
+                    Oids.MLKem768WithRsaOaep4096Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithRsaOaep4096,
+                    Oids.MLKem768WithX25519Sha3_256 => CompositeMLKemAlgorithm.MLKem768WithX25519,
+                    Oids.MLKem768WithECDiffieHellmanP256Sha3_256 =>
+                        CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256,
+                    Oids.MLKem768WithECDiffieHellmanP384Sha3_256 =>
+                        CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP384,
+                    Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 =>
+                        CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanBrainpoolP256r1,
+                    Oids.MLKem1024WithRsaOaep3072Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithRsaOaep3072,
+                    Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 =>
+                        CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP384,
+                    Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 =>
+                        CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanBrainpoolP384r1,
+                    Oids.MLKem1024WithX448Sha3_256 => CompositeMLKemAlgorithm.MLKem1024WithX448,
+                    Oids.MLKem1024WithECDiffieHellmanP521Sha3_256 =>
+                        CompositeMLKemAlgorithm.MLKem1024WithECDiffieHellmanP521,
+                    _ => null,
+                };
+
+                // https://datatracker.ietf.org/doc/html/draft-ietf-lamps-cms-composite-kem-03#section-2.1
+                // requires the parameters to be absent.
+                if (encodedAlgorithm is null ||
+                    encodedAlgorithm != privateKey.Algorithm ||
+                    KeyEncapsulationAlgorithm.Parameters is not [])
+                {
+                    exception = new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm);
+                    return null;
+                }
+
+                if (KeyEncapsulationCiphertext.Length != encodedAlgorithm.CiphertextSizeInBytes)
+                {
+                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    return null;
+                }
+
+                Debug.Assert(encodedAlgorithm.SharedSecretSizeInBytes == SharedSecretSizeInBytes);
+
+                return DecryptCek(
+                    privateKey,
+                    static (privateKey, ciphertext, destination) => privateKey.Decapsulate(ciphertext, destination),
+                    out exception);
             }
 
             internal byte[]? DecryptCek(X509Certificate2 cert, out Exception? exception)
@@ -167,10 +215,16 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (PkcsHelpers.IsCompositeMLKemAlgorithm(kemAlgorithm))
                 {
-                    exception = new PlatformNotSupportedException(
-                        SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLKem)));
+                    using (CompositeMLKem? certificatePrivateKey = cert.GetCompositeMLKemPrivateKey())
+                    {
+                        if (certificatePrivateKey is null)
+                        {
+                            exception = new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
+                            return null;
+                        }
 
-                    return null;
+                        return DecryptCek(certificatePrivateKey, out exception);
+                    }
                 }
 
                 if (PkcsHelpers.IsMLKemAlgorithm(kemAlgorithm))
