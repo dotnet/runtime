@@ -6584,6 +6584,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
     public int GetTargetInfo(TargetInfo* pTargetInfo)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
