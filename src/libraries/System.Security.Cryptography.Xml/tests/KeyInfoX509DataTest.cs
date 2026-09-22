@@ -12,6 +12,10 @@
 using System.Security.Cryptography.X509Certificates;
 using System.Xml;
 using Xunit;
+#if NET
+using Microsoft.DotNet.RemoteExecutor;
+using System.Security.Cryptography.Pkcs;
+#endif
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -86,6 +90,142 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             KeyInfoX509Data data = new KeyInfoX509Data((byte[])null);
         }
+
+#if NET
+        private const string AllowNonCertificateX509DataSwitch = "System.Security.Cryptography.Xml.AllowNonCertificateX509Data";
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("", "")]
+        [InlineData("", "false")]
+        [InlineData("", "true")]
+        [InlineData(" \t\r\n", "")]
+        [InlineData(" \t\r\n", "false")]
+        [InlineData(" \t\r\n", "true")]
+        public void LoadXml_EmptyCertificate(string value, string switchValue)
+        {
+            RemoteExecutor.Invoke(static (text, setting) =>
+            {
+                bool allowNonCertificate = ConfigureAllowNonCertificateX509Data(setting);
+                XmlDocument document = new XmlDocument();
+                document.LoadXml($"<X509Data xmlns='{SignedXml.XmlDsigNamespaceUrl}'><X509Certificate>{text}</X509Certificate></X509Data>");
+                KeyInfoX509Data data = new KeyInfoX509Data();
+
+                if (allowNonCertificate)
+                {
+                    data.LoadXml(document.DocumentElement);
+                    Assert.Equal(IntPtr.Zero, ((X509Certificate2)Assert.Single(data.Certificates)).Handle);
+                }
+                else
+                {
+                    Assert.Throws<ArgumentException>("rawData", () => data.LoadXml(document.DocumentElement));
+                }
+            }, value, switchValue).Dispose();
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(X509ContentType.Cert, "")]
+        [InlineData(X509ContentType.Cert, "false")]
+        [InlineData(X509ContentType.Cert, "true")]
+        [InlineData(X509ContentType.Pfx, "")]
+        [InlineData(X509ContentType.Pfx, "false")]
+        [InlineData(X509ContentType.Pfx, "true")]
+        [InlineData(X509ContentType.Pkcs7, "")]
+        [InlineData(X509ContentType.Pkcs7, "false")]
+        [InlineData(X509ContentType.Pkcs7, "true")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        public void CertificateContentType(X509ContentType contentType, string switchValue)
+        {
+            AssertCertificateContentTypeInRemoteProcess(contentType, switchValue);
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(X509ContentType.SerializedCert, "")]
+        [InlineData(X509ContentType.SerializedCert, "false")]
+        [InlineData(X509ContentType.SerializedCert, "true")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void CertificateContentType_Windows(X509ContentType contentType, string switchValue)
+        {
+            AssertCertificateContentTypeInRemoteProcess(contentType, switchValue);
+        }
+
+        private static bool ConfigureAllowNonCertificateX509Data(string switchValue)
+        {
+            if (switchValue.Length != 0)
+                AppContext.SetSwitch(AllowNonCertificateX509DataSwitch, bool.Parse(switchValue));
+
+            return switchValue == "true";
+        }
+
+        private static void AssertCertificateContentTypeInRemoteProcess(X509ContentType contentType, string switchValue)
+        {
+            RemoteExecutor.Invoke(static (type, setting) =>
+            {
+                bool allowNonCertificate = ConfigureAllowNonCertificateX509Data(setting);
+                AssertCertificateContentType(Enum.Parse<X509ContentType>(type), allowNonCertificate);
+            }, contentType.ToString(), switchValue).Dispose();
+        }
+
+        private static void AssertCertificateContentType(X509ContentType contentType, bool allowNonCertificate)
+        {
+            using (RSA rsa = RSA.Create(2048))
+            {
+                CertificateRequest request = new CertificateRequest(
+                    "CN=KeyInfoX509Data test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                using (X509Certificate2 signingCertificate = request.CreateSelfSigned(
+                    DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(1)))
+                using (X509Certificate2 certificate = new X509Certificate2(signingCertificate.RawData))
+                {
+                    // Export only the public certificate, with no private key or store access.
+                    byte[] rawData = new X509Certificate2Collection(certificate).Export(contentType);
+                    if (contentType == X509ContentType.Pkcs7)
+                    {
+                        // The single-certificate importer requires signer information to select a certificate from PKCS#7.
+                        SignedCms cms = new SignedCms(new ContentInfo(new byte[] { 1, 2, 3 }));
+                        CmsSigner cmsSigner = new CmsSigner(signingCertificate) { IncludeOption = X509IncludeOption.EndCertOnly };
+                        cms.ComputeSignature(cmsSigner);
+                        rawData = cms.Encode();
+                    }
+                    Assert.Equal(contentType, X509Certificate2.GetCertContentType(rawData));
+
+                    XmlDocument document = new XmlDocument();
+                    document.LoadXml("<root>Certificate content type test</root>");
+                    SignedXml signer = new SignedXml(document);
+                    signer.SigningKey = rsa;
+                    signer.KeyInfo.AddClause(new KeyInfoX509Data(certificate));
+                    Reference reference = new Reference("");
+                    reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
+                    signer.AddReference(reference);
+                    signer.ComputeSignature();
+
+                    XmlElement signature = signer.GetXml();
+                    XmlNamespaceManager namespaces = new XmlNamespaceManager(document.NameTable);
+                    namespaces.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
+                    XmlElement x509Data = (XmlElement)signature.SelectSingleNode("ds:KeyInfo/ds:X509Data", namespaces);
+
+                    SignedXml validSignature = new SignedXml(document);
+                    validSignature.LoadXml(signature);
+                    Assert.True(validSignature.CheckSignature(certificate, true));
+
+                    x509Data["X509Certificate", SignedXml.XmlDsigNamespaceUrl].InnerText = Convert.ToBase64String(rawData);
+                    KeyInfoX509Data loadedData = new KeyInfoX509Data();
+                    SignedXml loadedSignature = new SignedXml(document);
+
+                    if (contentType == X509ContentType.Cert || allowNonCertificate)
+                    {
+                        loadedData.LoadXml(x509Data);
+                        Assert.Equal(certificate.RawData, ((X509Certificate2)Assert.Single(loadedData.Certificates)).RawData);
+                        loadedSignature.LoadXml(signature);
+                        Assert.True(loadedSignature.CheckSignature(certificate, true));
+                    }
+                    else
+                    {
+                        Assert.Throws<CryptographicException>(() => loadedData.LoadXml(x509Data));
+                        Assert.Throws<CryptographicException>(() => loadedSignature.LoadXml(signature));
+                    }
+                }
+            }
+        }
+#endif
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/51370", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
