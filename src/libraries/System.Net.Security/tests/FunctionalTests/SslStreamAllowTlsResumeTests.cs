@@ -476,11 +476,6 @@ namespace System.Net.Security.Tests
                         EnabledSslProtocols = protocol,
                         ServerCertificateContext = SslStreamCertificateContext.Create(Configuration.Certificates.GetServerCertificate(), null, false),
                         ClientCertificateRequired = onServer,
-                        RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
-                        {
-                            serverCallbackCount++;
-                            return true;
-                        },
                     };
                     var clientOptions = new SslClientAuthenticationOptions
                     {
@@ -496,13 +491,15 @@ namespace System.Net.Security.Tests
 
                     if (onServer)
                     {
+                        serverOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
+                        {
+                            serverCallbackCount++;
+                            return true;
+                        };
                         clientOptions.ClientCertificates = new X509CertificateCollection() { Configuration.Certificates.GetClientCertificate() };
                     }
 
-                    // The callback under test is the one that validates the peer certificate on the
-                    // side identified by 'onServer'.
-                    int MeasuredCount() => onServer ? serverCallbackCount : clientCallbackCount;
-                    void ResetMeasuredCount()
+                    void ResetCallbackCounts()
                     {
                         clientCallbackCount = 0;
                         serverCallbackCount = 0;
@@ -534,13 +531,14 @@ namespace System.Net.Security.Tests
 
                     // Prime the session cache with a full handshake; the callback always runs here.
                     Assert.False(await ConnectAsync());
-                    Assert.True(MeasuredCount() > 0, "Validation callback was not invoked on the initial full handshake");
+                    Assert.Equal(1, clientCallbackCount);
+                    Assert.Equal(onServer ? 1 : 0, serverCallbackCount);
 
-                    // Establish a resumed session and measure whether the callback runs on it.
+                    // Establish a resumed session and measure whether either callback runs on it.
                     bool measuredResume = false;
                     for (int i = 0; i < 5 && !measuredResume; i++)
                     {
-                        ResetMeasuredCount();
+                        ResetCallbackCounts();
                         measuredResume = await ConnectAsync();
                     }
 
@@ -551,14 +549,10 @@ namespace System.Net.Security.Tests
                         return;
                     }
 
-                    if (revalidate)
-                    {
-                        Assert.True(MeasuredCount() > 0, "Validation callback should run on resumption when RevalidateCertificateOnTlsResume is set");
-                    }
-                    else
-                    {
-                        Assert.True(MeasuredCount() == 0, "Validation callback should not run on resumption by default");
-                    }
+                    int expectedClientCallbackCount = revalidate ? 1 : 0;
+                    int expectedServerCallbackCount = revalidate && onServer ? 1 : 0;
+                    Assert.Equal(expectedClientCallbackCount, clientCallbackCount);
+                    Assert.Equal(expectedServerCallbackCount, serverCallbackCount);
                 }, protocol.ToString(), revalidateOnResume.ToString(), testServer.ToString(), new RemoteInvokeOptions { StartInfo = psi }).DisposeAsync();
 
                 if (File.Exists(skipMarker))
