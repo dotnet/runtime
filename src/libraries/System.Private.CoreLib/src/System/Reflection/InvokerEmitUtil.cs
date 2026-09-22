@@ -180,6 +180,11 @@ namespace System.Reflection
 
                 if (!CanCallConstructorOnExistingInstance(method.DeclaringType!))
                 {
+                    if (method.DeclaringType!.IsArray)
+                    {
+                        il.Emit(OpCodes.Call, Methods.ThrowHelper_Throw_InvalidProgramException());
+                    }
+
                     il.Emit(OpCodes.Ldnull);
                     il.Emit(OpCodes.Ret);
                     il.MarkLabel(allocateAndInvoke);
@@ -361,6 +366,11 @@ namespace System.Reflection
             {
                 throw new NullReferenceException(SR.NullReference_InvokeNullRefReturned);
             }
+
+            public static void Throw_InvalidProgramException()
+            {
+                throw new InvalidProgramException();
+            }
         }
 
         private static class Methods
@@ -376,6 +386,10 @@ namespace System.Reflection
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>
                 s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!;
+
+            private static MethodInfo? s_ThrowHelper_Throw_InvalidProgramException;
+            public static MethodInfo ThrowHelper_Throw_InvalidProgramException() =>
+                s_ThrowHelper_Throw_InvalidProgramException ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_InvalidProgramException))!;
 
             private static MethodInfo? s_Object_GetRawData;
             public static MethodInfo Object_GetRawData() =>
