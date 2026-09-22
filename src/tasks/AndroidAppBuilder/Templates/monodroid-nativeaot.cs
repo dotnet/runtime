@@ -22,8 +22,14 @@ internal static partial class MonoDroidExports
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_setEnv", CallConvs = [typeof(CallConvCdecl)])]
     public static unsafe void SetEnv(JNIEnv* env, JObject thiz, JString j_key, JString j_value)
     {
-        string? key = env->GetStringUTFChars(j_key);
-        string? value = env->GetStringUTFChars(j_value);
+        string? key;
+        string? value;
+        unsafe
+        {
+            key = env->GetStringUTFChars(j_key);
+            value = env->GetStringUTFChars(j_value);
+        }
+
         Console.WriteLine($"SetEnv: {key ?? "null"} = {value ?? "null"}");
         if (key != null && value != null)
         {
@@ -36,11 +42,16 @@ internal static partial class MonoDroidExports
     public static unsafe int InitRuntime(JNIEnv* env, JObject thiz, JString j_files_dir, JString j_entryPointLibName, long current_local_time)
     {
         Console.WriteLine("Initializing Android crypto native library");
-        // The NativeAOT runtime does not need to be initialized, but the crypto library does.
-        JavaVM* javaVM = env->GetJavaVM();
-        AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
 
-        var filesDir = env->GetStringUTFChars(j_files_dir) ?? string.Empty;
+        string filesDir;
+        unsafe
+        {
+            // The NativeAOT runtime does not need to be initialized, but the crypto library does.
+            JavaVM* javaVM = env->GetJavaVM();
+            AndroidCryptoNative_InitLibraryOnLoad(javaVM, null);
+            filesDir = env->GetStringUTFChars(j_files_dir) ?? string.Empty;
+        }
+
         AppContext.SetData("APP_CONTEXT_BASE_DIRECTORY", filesDir);
         Environment.CurrentDirectory = filesDir;
         return 0;
@@ -51,55 +62,58 @@ internal static partial class MonoDroidExports
 
 #if !SINGLE_FILE_TEST_RUNNER
     [DllImport("*", EntryPoint = "__managed__Main")]
-    static unsafe extern int ManagedMain(int argc, void** argv);
+    static extern unsafe int ManagedMain(int argc, void** argv);
 #endif
 
     // int Java_net_dot_MonoRunner_execEntryPoint (JNIEnv* env, jobject thiz, jstring j_entryPointLibName, jobjectArray j_args);
     [UnmanagedCallersOnly(EntryPoint = "Java_net_dot_MonoRunner_execEntryPoint", CallConvs = [typeof(CallConvCdecl)])]
     public static unsafe int ExecEntryPoint(JNIEnv* env, JObject thiz, JString j_entryPointLibName, JObjectArray j_args)
     {
-        int argc = env->GetArrayLength(j_args);
-        string[] args = new string[argc];
-        for (int i = 0; i < argc; i++)
+        unsafe
         {
-            JObject j_arg = env->GetObjectArrayElement(j_args, i);
-            args[i] = env->GetStringUTFChars((JString)j_arg)!;
-        }
+            int argc = env->GetArrayLength(j_args);
+            string[] args = new string[argc];
+            for (int i = 0; i < argc; i++)
+            {
+                JObject j_arg = env->GetObjectArrayElement(j_args, i);
+                args[i] = env->GetStringUTFChars((JString)j_arg)!;
+            }
 
 #if SINGLE_FILE_TEST_RUNNER
-        if (Environment.GetEnvironmentVariable("HOME") is string homeDir)
-        {
-            string excludesFile = Path.Combine(homeDir, "xunit-excludes.txt");
-            if (File.Exists(excludesFile))
+            if (Environment.GetEnvironmentVariable("HOME") is string homeDir)
             {
-                args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+                string excludesFile = Path.Combine(homeDir, "xunit-excludes.txt");
+                if (File.Exists(excludesFile))
+                {
+                    args = args.Concat(File.ReadAllLines(excludesFile).SelectMany(trait => new string[]{"-notrait", trait})).ToArray();
+                }
             }
-        }
-        // SingleFile unit tests
-        return SingleFileTestRunner.Main(args);
+            // SingleFile unit tests
+            return SingleFileTestRunner.Main(args);
 #else
-        string entryPointName = env->GetStringUTFChars(j_entryPointLibName)!;
-        IntPtr[] managedMainArgs = new IntPtr[argc + 1];
-        managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
-        for (int i = 0; i < argc; i++)
-        {
-            managedMainArgs[i + 1] = Marshal.StringToCoTaskMemUTF8(args[i]);
-        }
+            string entryPointName = env->GetStringUTFChars(j_entryPointLibName)!;
+            IntPtr[] managedMainArgs = new IntPtr[argc + 1];
+            managedMainArgs[0] = Marshal.StringToCoTaskMemUTF8(entryPointName);
+            for (int i = 0; i < argc; i++)
+            {
+                managedMainArgs[i + 1] = Marshal.StringToCoTaskMemUTF8(args[i]);
+            }
 
-        int ret;
-        fixed (IntPtr* argvPtrs = managedMainArgs)
-        {
-            void** argv = (void**)argvPtrs;
-            ret = ManagedMain(argc + 1, argv);
-        }
+            int ret;
+            fixed (IntPtr* argvPtrs = managedMainArgs)
+            {
+                void** argv = (void**)argvPtrs;
+                ret = ManagedMain(argc + 1, argv);
+            }
 
-        for (int i = 0; i < managedMainArgs.Length; i++)
-        {
-            Marshal.FreeCoTaskMem(managedMainArgs[i]);
-        }
+            for (int i = 0; i < managedMainArgs.Length; i++)
+            {
+                Marshal.FreeCoTaskMem(managedMainArgs[i]);
+            }
 
-        return ret;
+            return ret;
 #endif
+        }
     }
 
     // void Java_net_dot_MonoRunner_freeNativeResources (JNIEnv* env, jobject thiz);
@@ -118,49 +132,61 @@ internal struct JNIEnv
     JNINativeInterface* NativeInterface;
     public unsafe string? GetStringUTFChars(JString str)
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, null);
-            if (chars is null)
-                return null;
+            fixed (JNIEnv* thisptr = &this)
+            {
+                byte* chars = NativeInterface->GetStringUTFChars(thisptr, str, null);
+                if (chars is null)
+                    return null;
 
-            try
-            {
-                return Marshal.PtrToStringUTF8((nint)chars)!;
-            }
-            finally
-            {
-                NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
+                try
+                {
+                    return Marshal.PtrToStringUTF8((nint)chars)!;
+                }
+                finally
+                {
+                    NativeInterface->ReleaseStringUTFChars(thisptr, str, chars);
+                }
             }
         }
     }
 
     public unsafe JavaVM* GetJavaVM()
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            JavaVM* vm;
-            int result = NativeInterface->GetJavaVM(thisptr, &vm);
-            if (result != 0)
-                return null;
+            fixed (JNIEnv* thisptr = &this)
+            {
+                JavaVM* vm;
+                int result = NativeInterface->GetJavaVM(thisptr, &vm);
+                if (result != 0)
+                    return null;
 
-            return vm;
+                return vm;
+            }
         }
     }
 
     public unsafe JSize GetArrayLength(JObjectArray array)
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            return NativeInterface->GetArrayLength(thisptr, array);
+            fixed (JNIEnv* thisptr = &this)
+            {
+                return NativeInterface->GetArrayLength(thisptr, array);
+            }
         }
     }
 
     public unsafe JObject GetObjectArrayElement(JObjectArray array, JSize index)
     {
-        fixed (JNIEnv* thisptr = &this)
+        unsafe
         {
-            return NativeInterface->GetObjectArrayElement(thisptr, array, index);
+            fixed (JNIEnv* thisptr = &this)
+            {
+                return NativeInterface->GetObjectArrayElement(thisptr, array, index);
+            }
         }
     }
 
