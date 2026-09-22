@@ -250,6 +250,45 @@ namespace TestExtractMostSignificantBits
             return fail ? 101 : 100;
         }
 
+        [Theory]
+        [InlineData(0, 0xFFFFu + byte.MaxValue, 0xFFu + byte.MaxValue)]
+        [InlineData(0x80, 1u + byte.MaxValue, 1u + byte.MaxValue)]
+        [InlineData(0xFF, 0u, 0u)]
+        public static void ByteMaskWithLocalAssertion(byte limit, uint expected128, uint expected64)
+        {
+            object guard = new object();
+            Vector128<byte> value = Vector128<byte>.Zero.WithElement(0, (byte)0x80);
+
+            Assert.Equal(expected128, GuardedByteMask(value, limit, guard));
+            Assert.Equal(expected64, GuardedByteMask64(value.GetLower(), limit, guard));
+            Assert.Throws<ArgumentNullException>(() => GuardedByteMask(value, limit, null));
+            Assert.Throws<ArgumentNullException>(() => GuardedByteMask64(value.GetLower(), limit, null));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint GuardedByteMask(Vector128<byte> value, byte limit, object guard)
+        {
+            if (guard is null)
+            {
+                throw new ArgumentNullException(nameof(guard));
+            }
+
+            Vector128<byte> mask = Vector128.GreaterThanOrEqual(value, Vector128.Create(limit));
+            return mask.ExtractMostSignificantBits() + mask.GetElement(0);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static uint GuardedByteMask64(Vector64<byte> value, byte limit, object guard)
+        {
+            if (guard is null)
+            {
+                throw new ArgumentNullException(nameof(guard));
+            }
+
+            Vector64<byte> mask = Vector64.GreaterThanOrEqual(value, Vector64.Create(limit));
+            return mask.ExtractMostSignificantBits() + mask.GetElement(0);
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static uint LessThanUInt16Mask(Vector128<ushort> value, ushort limit)
         {
