@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.Xml.Tests
                     byte[] rawData = new X509Certificate2Collection(certificate).Export(contentType);
                     if (contentType == X509ContentType.Pkcs7)
                     {
-                        // Certificate import from PKCS#7 requires a signer on some platforms.
+                        // The single-certificate importer requires signer information to select a certificate from PKCS#7.
                         SignedCms cms = new SignedCms(new ContentInfo(new byte[] { 1, 2, 3 }));
                         CmsSigner cmsSigner = new CmsSigner(signingCertificate) { IncludeOption = X509IncludeOption.EndCertOnly };
                         cms.ComputeSignature(cmsSigner);
