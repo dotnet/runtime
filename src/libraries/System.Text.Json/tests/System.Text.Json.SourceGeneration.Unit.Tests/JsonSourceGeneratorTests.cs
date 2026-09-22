@@ -740,6 +740,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [Theory]
         [InlineData("public sealed partial class MySealedClass")]
         [InlineData("public partial class MyGenericClass<T>")]
+        [InlineData("public partial class @event<@class>")]
         [InlineData("public partial interface IMyInterface")]
         [InlineData("public partial interface IMyGenericInterface<T, U>")]
         [InlineData("public partial struct MyStruct")]
@@ -775,6 +776,66 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(languageVersion));
             CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+        }
+
+        [Fact]
+        public void NestedContextDeclarationsPreserveNamesWithoutCopyingParameterAttributes()
+        {
+            string source = """
+                using System;
+                using System.Text.Json.Serialization;
+
+                namespace @namespace
+                {
+                    [AttributeUsage(AttributeTargets.GenericParameter)]
+                    public sealed class MarkerAttribute : Attribute { }
+
+                    public partial class @event<[Marker] @class>
+                    {
+                        public readonly partial struct Middle<T>
+                        {
+                            [JsonSerializable(typeof(int))]
+                            public partial class JsonContext : JsonSerializerContext { }
+                        }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, logger: logger);
+            ContextGenerationSpec context = Assert.Single(result.ContextGenerationSpecs);
+
+            Assert.Equal("@namespace", context.Namespace);
+            Assert.Equal(
+                ["public partial class JsonContext", "public readonly partial struct Middle<T>", "public partial class @event<@class>"],
+                context.ContextClassDeclarations.ToArray());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void EveryContainingDeclarationMustBePartial(int nonPartialLevel)
+        {
+            string source = $$"""
+                using System.Text.Json.Serialization;
+
+                public {{(nonPartialLevel == 2 ? "" : "partial")}} class Outer
+                {
+                    public {{(nonPartialLevel == 1 ? "" : "partial")}} class Middle
+                    {
+                        [JsonSerializable(typeof(int))]
+                        public {{(nonPartialLevel == 0 ? "" : "partial")}} class JsonContext : JsonSerializerContext { }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.Equal("SYSLIB1032", Assert.Single(result.Diagnostics).Id);
+            Assert.Empty(result.ContextGenerationSpecs);
+            Assert.Equal(compilation.SyntaxTrees.Count(), result.NewCompilation.SyntaxTrees.Count());
         }
 
         [Fact]
