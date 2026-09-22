@@ -44,46 +44,21 @@ these variations in order and inspect every returned candidate. Narrow overly
 broad queries instead of truncating results. GitHub best-match ranking can
 place noisier hits above the correct one.
 
-Use `search_issues` for issues and `search_pull_requests` for open or merged
-fix PRs. For every call, specify `owner: "dotnet"`, `repo: "runtime"`, and
-`fields: ["number", "title", "state", "user", "labels", "html_url"]`.
-Never omit `user`, even when the author is not otherwise needed. The integrity
-gateway uses `user.login` to recognize trusted bots before filtering results.
+Use the lookup tools required by the caller; this shared file does not change
+its tool policy. For GitHub MCP lookups, use `search_issues` for issues and
+`search_pull_requests` for PRs. When supplying a `fields` filter, include
+`user` and `labels` alongside `number`, `title`, and `state`; otherwise retain
+the full response. The integrity gateway uses `user.login` to recognize
+trusted bots before filtering results.
 
-### Preserve lookup results
-
-Apply these rules to every issue and PR search below, including open,
-recently closed, merged, and unlabeled-tracker searches. Use the available
-integrity-gated GitHub tools and preserve each query and its complete response.
-
-Never pipe lookup output through `grep`, `head`, or a projection that discards
-filtered markers, errors, author metadata, or result counts. Never replace a
-failed lookup with an empty array, or bypass integrity filtering with `gh`
-or direct GitHub API reads.
-
-Before recording that a query has no match, verify that the tool succeeded,
-the response is valid, and `incomplete_results` is `false`. If `total_count`
-exceeds the returned candidate count, fetch the remaining pages or narrow an
-overbroad query and rerun it. Do not treat an uninspected page as empty.
-Missing or inconsistent counts make the response inconclusive.
-
-- A successful, complete response with zero candidates means only this query
-  has no match. Continue all remaining search variations before deciding to file.
-- For a nonempty response, inspect every returned candidate using the full
-  candidate verification below. A search hit alone does not prove a duplicate.
-- A failed, malformed, or incomplete response, or a candidate missing requested
-  metadata, is inconclusive. Do not emit a KBE for that signature unless the
-  lookup succeeds on retry. Otherwise record
-  `skipped: lookup incomplete, needs human review`.
-
-Any `[Filtered]` or `[DIFC-FILTERED]` marker makes the lookup inconclusive, even
-when visible candidates do not match. Record
-`skipped: integrity-filtered candidate, needs human review` and do not file.
-Failed or filtered candidate body and comments reads also stop filing.
-Record the corresponding incomplete or filtered skip reason. An unreadable
-candidate is not evidence of a different failure.
-
-### Search variations
+Preserve the complete lookup response before extracting candidate numbers or
+titles. Never pipe it through `grep`, `head`, or a projection that discards
+filtered markers, errors, author metadata, or result counts. A failed,
+malformed, incomplete, or unreadable lookup is not an empty result. Report the
+retrieval failure to the caller and do not create a KBE for that signature
+while the lookup remains inconclusive.
+These rules also apply to candidate body and comments reads. Do not switch
+retrieval paths to work around an integrity-filtered or denied read.
 
 1. Full `[FAIL]` line.
 2. Assertion text.
@@ -192,6 +167,12 @@ search misses, also search recently closed KBEs with the same pair:
 
 Apply the closed-candidate timing and full candidate-verification rules below
 to any pair match.
+
+If a candidate's body or comments identify it as a duplicate, read the linked
+original through the same permitted tools and apply the full candidate
+verification to it. Reuse a matching open KBE rather than filing a recurrence
+against its closed duplicate. A duplicate closure does not establish that the
+failure was fixed.
 
 On a closed-candidate hit, compare the failing AzDO build's `finishTime` (read
 it from the build metadata, not the queue time) against the issue's `closed_at`:
