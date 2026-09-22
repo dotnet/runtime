@@ -1,11 +1,17 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// When placed on a type declaration, indicates that the specified subtype should be opted into polymorphic serialization.
     /// </summary>
+    /// <remarks>
+    /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+    /// this attribute will be mapped to <see cref="JsonPolymorphismOptions.DerivedTypes"/>.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     public class JsonDerivedTypeAttribute : JsonAttribute
     {

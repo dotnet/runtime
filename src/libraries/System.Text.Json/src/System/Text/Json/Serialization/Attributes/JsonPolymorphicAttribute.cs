@@ -2,12 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// When placed on a type, indicates that the type should be serialized polymorphically.
     /// </summary>
+    /// <remarks>
+    /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+    /// this attribute configuration will be mapped to <see cref="JsonTypeInfo.PolymorphismOptions"/>.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = false, Inherited = false)]
     public sealed class JsonPolymorphicAttribute : JsonAttribute
     {

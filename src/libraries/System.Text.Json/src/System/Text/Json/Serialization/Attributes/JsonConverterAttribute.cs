@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -14,6 +15,10 @@ namespace System.Text.Json.Serialization
     /// When placed on a type, the specified converter will be used unless a compatible converter is added to
     /// <see cref="JsonSerializerOptions.Converters"/> or there is another <see cref="JsonConverterAttribute"/> on a property or field
     /// of the same type.
+    ///
+    /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+    /// when placed on a property or field this attribute will be mapped to <see cref="JsonPropertyInfo.CustomConverter"/>,
+    /// and when placed on a type it will be mapped to <see cref="JsonTypeInfo.Converter"/>.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class JsonConverterAttribute : JsonAttribute

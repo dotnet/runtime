@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Serialization.Metadata;
+
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// Specifies the property name that is present in the JSON when serializing and deserializing.
     /// This overrides any naming policy specified by <see cref="JsonNamingPolicy"/>.
     /// </summary>
+    /// <remarks>
+    /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+    /// this attribute will be mapped to <see cref="JsonPropertyInfo.Name"/>.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public sealed class JsonPropertyNameAttribute : JsonAttribute
     {

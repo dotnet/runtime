@@ -1,5 +1,7 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
 {
@@ -7,6 +9,10 @@ namespace System.Text.Json.Serialization
     /// When placed on a type, determines the <see cref="JsonUnmappedMemberHandling"/> configuration
     /// for the specific type, overriding the global <see cref="JsonSerializerOptions.UnmappedMemberHandling"/> setting.
     /// </summary>
+    /// <remarks>
+    /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+    /// this attribute will be mapped to <see cref="JsonTypeInfo.UnmappedMemberHandling"/>.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct,
         AllowMultiple = false, Inherited = false)]
     public class JsonUnmappedMemberHandlingAttribute : JsonAttribute

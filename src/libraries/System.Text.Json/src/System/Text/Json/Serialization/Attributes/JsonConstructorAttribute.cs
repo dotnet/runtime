@@ -1,12 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json.Serialization.Metadata;
+
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     /// When placed on a constructor, indicates that the constructor should be used to create
     /// instances of the type on deserialization.
     /// </summary>
+    /// <remarks>
+    /// For contracts originating from <see cref="DefaultJsonTypeInfoResolver"/> or <see cref="JsonSerializerContext"/>,
+    /// this attribute indicates which constructor is used by <see cref="JsonTypeInfo.CreateObject"/>.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Constructor, AllowMultiple = false)]
     public sealed class JsonConstructorAttribute : JsonAttribute
     {
