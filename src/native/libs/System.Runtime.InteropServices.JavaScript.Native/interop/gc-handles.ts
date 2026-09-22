@@ -16,6 +16,8 @@ export const boundJsFunctionSymbol = Symbol.for("wasm bound_js_function");
 export const importedJsFunctionSymbol = Symbol.for("wasm imported_js_function");
 export const proxyDebugSymbol = Symbol.for("wasm proxyDebug");
 export const promiseHolderSymbol = Symbol.for("wasm promise_holder");
+// links an eagerly created Promise back to the JSHandle of its TaskHolder
+export const eagerTaskHandleSymbol = Symbol.for("wasm eager_task_handle");
 
 let forceDisposeProxiesInProgress = false;
 
@@ -192,6 +194,32 @@ function _jsOwnedObjectFinalized(gcHandle: GCHandle): void {
         return;
     }
     teardownManagedProxy(null, gcHandle);
+}
+
+// Counts of live proxies, for leak diagnostics and tests. Exposed as INTERNAL.getProxyCounts.
+// Order: [csOwnedByJsHandle, csOwnedByJsvHandle, jsOwnedRegistered, jsOwnedAlive, importWrappers]
+export function getProxyCounts(): number[] {
+    // index 0 of each list is always a dummy
+    const countLive = (list: any[]): number => {
+        let live = 0;
+        for (let i = 1; i < list.length; i++) {
+            if (list[i] !== undefined && list[i] !== null) live++;
+        }
+        return live;
+    };
+
+    let jsOwnedAlive = 0;
+    for (const wr of jsOwnedObjectTable.values()) {
+        if (wr.deref() !== undefined) jsOwnedAlive++;
+    }
+
+    return [
+        countLive(_CsOwnedObjectsByJsHandle),
+        countLive(_CsOwnedObjectsByJsvHandle),
+        jsOwnedObjectTable.size,
+        jsOwnedAlive,
+        countLive(jsImportWrapperByFnHandle),
+    ];
 }
 
 export function lookupJsOwnedObject(gcHandle: GCHandle): any {

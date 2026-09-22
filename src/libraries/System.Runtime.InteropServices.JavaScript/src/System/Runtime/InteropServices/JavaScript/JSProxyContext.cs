@@ -26,6 +26,19 @@ namespace System.Runtime.InteropServices.JavaScript
         internal Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
         internal int NextJSExportHandle = 1;
 
+        public int PromiseHolderCount
+        {
+            get
+            {
+#if FEATURE_WASM_MANAGED_THREADS
+                lock (this)
+#endif
+                {
+                    return ThreadJsOwnedHolders.Count;
+                }
+            }
+        }
+
 #if !FEATURE_WASM_MANAGED_THREADS
         private JSProxyContext()
         {
@@ -340,7 +353,9 @@ namespace System.Runtime.InteropServices.JavaScript
             lock (this)
 #endif
             {
-                return new PromiseHolder(this);
+                var holder = new PromiseHolder(this);
+                ThreadJsOwnedHolders.Add(holder.GCHandle, holder);
+                return holder;
             }
         }
 
@@ -394,6 +409,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     {
                         throw new InvalidOperationException("ReleasePromiseHolder expected PromiseHolder" + holderGCHandle);
                     }
+                    ThreadJsOwnedHolders.Remove(holderGCHandle);
                     holder.IsDisposed = true;
                     handle.Free();
                 }
@@ -429,6 +445,7 @@ namespace System.Runtime.InteropServices.JavaScript
                     if (target is PromiseHolder holder2)
                     {
                         holder = holder2;
+                        ThreadJsOwnedHolders.Remove(gcHandle);
                     }
                     else
                     {
@@ -561,17 +578,35 @@ namespace System.Runtime.InteropServices.JavaScript
                         GCHandle gcHandle = (GCHandle)gch;
                         gcHandle.Free();
                     }
-                    foreach (var holder in ThreadJsOwnedHolders.Values)
+                    // the callback can re-enter and release a holder, which would mutate the
+                    // dictionary, so walk a snapshot and skip whatever it already took
+                    List<PromiseHolder> holders = new(ThreadJsOwnedHolders.Values);
+                    foreach (var holder in holders)
                     {
+                        if (holder.IsDisposed)
+                        {
+                            continue;
+                        }
+                        holder.IsDisposed = true;
                         unsafe
                         {
-                            holder.Callback!.Invoke(null);
+                            // a pre-created holder has no callback until JS adopts it
+                            holder.Callback?.Invoke(null);
+#if FEATURE_WASM_MANAGED_THREADS
+                            NativeMemory.Free(holder.State);
+                            holder.State = null;
+#endif
                         }
-                        ((GCHandle)holder.GCHandle).Free();
+                        // a GCVHandle is a synthetic index, not a real GCHandle, so it must not be freed
+                        if (!IsGCVHandle(holder.GCHandle))
+                        {
+                            ((GCHandle)holder.GCHandle).Free();
+                        }
                     }
 
                     ThreadCsOwnedObjects.Clear();
                     ThreadJsOwnedObjects.Clear();
+                    ThreadJsOwnedHolders.Clear();
                     JSVHandleFreeList.Clear();
                     NextJSVHandle = IntPtr.Zero;
 
