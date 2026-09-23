@@ -256,12 +256,13 @@ namespace ILCompiler
                 }
             }
 
-            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
+            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason, bool isJitHelper = false)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
                     MethodWithGCInfo methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    methodEntryPoint.IsJitHelper |= isJitHelper;
                     AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
                     // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
@@ -754,7 +755,7 @@ namespace ILCompiler
                         {
                             if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
                                 !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
-                                CorInfoImpl.IsMethodCompilable(this, method))
+                                CorInfoImpl.IsMethodCompilable(this, method, methodCodeNodeNeedingCode.IsJitHelper))
                             {
                                 _methodsWhichNeedMutableILBodies.Add(typicalDef);
                             }

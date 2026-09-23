@@ -609,6 +609,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ImportSectionNode EagerImports;
 
+        public ImportSectionNode EagerActivationFixups;
+
         public ImportSectionNode MethodImports;
 
         public ImportSectionNode DispatchImports;
@@ -1187,6 +1189,15 @@ namespace ILCompiler.DependencyAnalysis
                 emitGCRefMap: false);
             ImportSectionsTable.AddEmbeddedObject(EagerImports);
 
+            EagerActivationFixups = new ImportSectionNode(
+                "EagerActivationFixups",
+                ReadyToRunImportSectionType.Unknown,
+                ReadyToRunImportSectionFlags.EagerActivation,
+                (byte)Target.PointerSize,
+                emitPrecode: false,
+                emitGCRefMap: false);
+            ImportSectionsTable.AddEmbeddedObject(EagerActivationFixups);
+
             // All ready-to-run images have a module import helper which gets patched by the runtime on image load
             ModuleImport = new Import(EagerImports, new ReadyToRunHelperSignature(
                 ReadyToRunHelper.Module));
@@ -1295,6 +1306,7 @@ namespace ILCompiler.DependencyAnalysis
             graph.AddRoot(ImportSectionsTable, "Import sections table is always generated");
             graph.AddRoot(ModuleImport, "Module import is always generated");
             graph.AddRoot(EagerImports, "Eager imports are always generated");
+            graph.AddRoot(EagerActivationFixups, "Eager activation fixups are always generated");
             graph.AddRoot(MethodImports, "Method imports are always generated");
             graph.AddRoot(DispatchImports, "Dispatch imports are always generated");
             graph.AddRoot(HelperImports, "Helper imports are always generated");

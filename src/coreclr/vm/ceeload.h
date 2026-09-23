@@ -1505,7 +1505,8 @@ public:
                            PTR_READYTORUN_IMPORT_SECTION pImportSections, COUNT_T nImportSections,
                            ReadyToRunLoadedImage * pNativeImage, BOOL mayUsePrecompiledPInvokeMethods = TRUE);
     void RunEagerFixups();
-    void RunEagerFixupsUnlocked();
+    void RunEagerActivationFixups();
+    void RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags flag);
 
     ModuleBase *GetModuleFromIndex(DWORD ix);
     ModuleBase *GetModuleFromIndexIfLoaded(DWORD ix);

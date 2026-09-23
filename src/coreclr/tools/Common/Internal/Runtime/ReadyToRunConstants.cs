@@ -37,9 +37,10 @@ namespace Internal.ReadyToRunConstants
     [Flags]
     public enum ReadyToRunImportSectionFlags : ushort
     {
-        None     = 0x0000,
-        Eager    = 0x0001, // Section at module load time.
-        PCode    = 0x0004, // Section contains pointers to code
+        None            = 0x0000,
+        Eager           = 0x0001, // Section at module load time.
+        EagerActivation = 0x0002, // Section after module load and before activation.
+        PCode           = 0x0004, // Section contains pointers to code
     }
 
     /// <summary>

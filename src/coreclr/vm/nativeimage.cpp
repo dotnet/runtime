@@ -56,6 +56,7 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, ReadyToRunLoadedImage 
     m_pImageLayout = pImageLayout;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
+    m_eagerActivationFixupsHaveRun = false;
     m_readyToRunCodeDisabled = false;
 }
 

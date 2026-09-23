@@ -106,7 +106,11 @@ namespace ILCompiler
             {
                 if (method.GetName() == methodName && !method.IsGenericMethodDefinition)
                 {
-                    rootProvider.AddCompilationRoot(method, rootMinimalDependencies: false, $"JIT helper {type}.{methodName}");
+                    rootProvider.AddCompilationRoot(
+                        method,
+                        rootMinimalDependencies: false,
+                        $"JIT helper {type}.{methodName}",
+                        isJitHelper: true);
                 }
             }
         }

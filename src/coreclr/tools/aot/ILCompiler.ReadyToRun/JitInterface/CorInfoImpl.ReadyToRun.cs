@@ -763,7 +763,7 @@ namespace Internal.JitInterface
             return false;
         }
 
-        public static bool IsMethodCompilable(Compilation compilation, MethodDesc method)
+        public static bool IsMethodCompilable(Compilation compilation, MethodDesc method, bool isJitHelper)
         {
             // This logic must mirror the logic in CompileMethod used to get to the point of calling CompileMethodInternal
             if (ShouldSkipCompilation(compilation.InstructionSetSupport, method) || MethodSignatureIsUnstable(method.Signature, out var _))
@@ -773,7 +773,7 @@ namespace Internal.JitInterface
             if (methodIL == null)
                 return false;
 
-            if (FunctionJustThrows(methodIL))
+            if (!isJitHelper && FunctionJustThrows(methodIL))
                 return false;
 
             if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, compilation.NodeFactory.CompilationModuleGroup))
@@ -810,7 +810,7 @@ namespace Internal.JitInterface
                     return;
                 }
 
-                if (FunctionJustThrows(methodIL))
+                if (!_methodCodeNode.IsJitHelper && FunctionJustThrows(methodIL))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
@@ -1001,27 +1001,24 @@ namespace Internal.JitInterface
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
         }
 
-        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum)
+        private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
-            if (_compilation.NodeFactory.Target.IsWasm)
-            {
-                MethodDesc helperMethod = GetWasmManagedHelper(ftnNum);
+            helperMethod = GetManagedHelper(ftnNum);
 
-                // Wasm function indices are module-local, so only expose the method body when this image emits it.
-                if (helperMethod is not null &&
-                    _compilation.CompilationModuleGroup.ContainsMethodBody(helperMethod, unboxingStub: false))
-                {
-                    MethodWithToken helperMethodWithToken = new MethodWithToken(
-                        helperMethod,
-                        _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(helperMethod, true, true),
-                        constrainedType: null,
-                        unboxing: false,
-                        genericContextObject: MethodBeingCompiled);
-                    AddAdditionalDependency(
-                        _compilation.SymbolNodeFactory.ModuleEagerReadyToRunMethodEntry(helperMethodWithToken),
-                        "Module eager ReadyToRun method entry");
-                    return _compilation.NodeFactory.CompiledMethodNode(helperMethod);
-                }
+            if (helperMethod is not null &&
+                _compilation.CompilationModuleGroup.ContainsMethodBody(helperMethod, unboxingStub: false))
+            {
+                MethodWithGCInfo helperMethodNode = _compilation.NodeFactory.CompiledMethodNode(helperMethod);
+                MethodWithToken helperMethodWithToken = new MethodWithToken(
+                    helperMethod,
+                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(helperMethod, true, true),
+                    constrainedType: null,
+                    unboxing: false,
+                    genericContextObject: MethodBeingCompiled);
+                AddAdditionalDependency(
+                    _compilation.SymbolNodeFactory.EagerActivationReadyToRunMethodEntry(helperMethodWithToken),
+                    "Eager activation ReadyToRun method entry");
+                return helperMethodNode;
             }
 
             ReadyToRunHelper id;
@@ -1367,92 +1364,92 @@ namespace Internal.JitInterface
             return _compilation.NodeFactory.GetReadyToRunHelperCell(id);
         }
 
-        private MethodDesc GetWasmManagedHelper(CorInfoHelpFunc helper)
+        private MethodDesc GetManagedHelper(CorInfoHelpFunc helper)
         {
             return helper switch
             {
-                CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuation"u8),
-                CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_CLASS => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationClass"u8),
-                CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_ALLOC_CONTINUATION_METHOD => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "AsyncHelpers"u8, "AllocContinuationMethod"u8),
-                CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_ARRADDR_ST => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "StelemRef"u8),
-                CorInfoHelpFunc.CORINFO_HELP_BOX => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_BOX => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Box"u8),
-                CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_BOX_NULLABLE => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Box_Nullable"u8),
-                CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER => GetManagedHelper(
                     "System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8),
-                CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_CHKCASTANY => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "ChkCastAny"u8),
-                CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD => GetManagedHelper(
                     "System"u8, "RuntimeFieldInfoStub"u8, "FromPtr"u8),
-                CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_GETCURRENTMANAGEDTHREADID => GetManagedHelper(
                     "System"u8, "Environment"u8, "get_CurrentManagedThreadId"u8),
-                CorInfoHelpFunc.CORINFO_HELP_GET_GCSTATIC_BASE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_GET_GCSTATIC_BASE => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCStaticBase"u8),
-                CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_GET_GCTHREADSTATIC_BASE => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetGCThreadStaticBase"u8),
-                CorInfoHelpFunc.CORINFO_HELP_GET_NONGCSTATIC_BASE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_GET_NONGCSTATIC_BASE => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetNonGCStaticBase"u8),
-                CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_GET_NONGCTHREADSTATIC_BASE => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "StaticsHelpers"u8, "GetNonGCThreadStaticBase"u8),
-                CorInfoHelpFunc.CORINFO_HELP_INITCLASS => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_INITCLASS => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "InitHelpers"u8, "InitClass"u8),
-                CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_INITINSTCLASS => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "InitHelpers"u8, "InitInstantiatedClass"u8),
-                CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_ISINSTANCEOFANY => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "IsInstanceOfAny"u8),
-                CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_LDELEMA_REF => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "LdelemaRef"u8),
-                CorInfoHelpFunc.CORINFO_HELP_MEMCPY => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_MEMCPY => GetManagedHelper(
                     "System"u8, "SpanHelpers"u8, "Memmove"u8),
-                CorInfoHelpFunc.CORINFO_HELP_MEMSET => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_MEMSET => GetManagedHelper(
                     "System"u8, "SpanHelpers"u8, "Fill"u8),
-                CorInfoHelpFunc.CORINFO_HELP_MEMZERO => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_MEMZERO => GetManagedHelper(
                     "System"u8, "SpanHelpers"u8, "ClearWithoutReferences"u8),
-                CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD => GetManagedHelper(
                     "System"u8, "RuntimeMethodInfoStub"u8, "FromPtr"u8),
-                CorInfoHelpFunc.CORINFO_HELP_MON_ENTER => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_MON_ENTER => GetManagedHelper(
                     "System.Threading"u8, "Monitor"u8, "SynchronizedMethodEnter"u8),
-                CorInfoHelpFunc.CORINFO_HELP_MON_EXIT => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_MON_EXIT => GetManagedHelper(
                     "System.Threading"u8, "Monitor"u8, "SynchronizedMethodExit"u8),
-                CorInfoHelpFunc.CORINFO_HELP_OVERFLOW => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_OVERFLOW => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowOverflowException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_POLL_GC => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_POLL_GC => GetManagedHelper(
                     "System.Threading"u8, "Thread"u8, "PollGC"u8),
-                CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_RNGCHKFAIL => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowIndexOutOfRangeException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTEXCEPTION => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowArgumentException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowArgumentOutOfRangeException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_THROW_NOT_IMPLEMENTED => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowNotImplementedException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowPlatformNotSupportedException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_THROWDIVZERO => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowDivideByZeroException"u8),
-                CorInfoHelpFunc.CORINFO_HELP_THROWNULLREF => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_THROWNULLREF => GetManagedHelper(
                     "Internal.Runtime.CompilerHelpers"u8, "ThrowHelpers"u8, "ThrowNullReferenceException"u8),
                 CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE or
-                CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE => GetManagedHelper(
                     "System"u8, "RuntimeTypeHandle"u8, "GetRuntimeTypeFromHandle"u8),
-                CorInfoHelpFunc.CORINFO_HELP_UNBOX => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_UNBOX => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Unbox"u8),
-                CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_UNBOX_NULLABLE => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Unbox_Nullable"u8),
-                CorInfoHelpFunc.CORINFO_HELP_UNBOX_TYPETEST => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_UNBOX_TYPETEST => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "CastHelpers"u8, "Unbox_TypeTest"u8),
-                CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR => GetWasmManagedHelper(
+                CorInfoHelpFunc.CORINFO_HELP_VIRTUAL_FUNC_PTR => GetManagedHelper(
                     "System.Runtime.CompilerServices"u8, "VirtualDispatchHelpers"u8, "VirtualFunctionPointer"u8),
                 _ => null,
             };
         }
 
-        private MethodDesc GetWasmManagedHelper(
+        private MethodDesc GetManagedHelper(
             ReadOnlySpan<byte> namespaceName,
             ReadOnlySpan<byte> typeName,
             ReadOnlySpan<byte> methodName)

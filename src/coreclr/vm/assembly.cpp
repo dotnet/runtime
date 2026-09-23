@@ -2052,9 +2052,7 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
-#ifndef TARGET_WASM
         EagerFixups();
-#endif // !TARGET_WASM
         break;
 
     case FILE_LOAD_DELIVER_EVENTS:
@@ -2072,11 +2070,7 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_ACTIVE:
-#ifdef TARGET_WASM
-        // Wasm managed helpers can require type handles in the module eager fixup section. Run these
-        // after the assembly is fully loaded and before activation runs managed code.
-        EagerFixups();
-#endif // TARGET_WASM
+        EagerActivationFixups();
         Activate();
         break;
 
@@ -2143,6 +2137,18 @@ void Assembly::EagerFixups()
     {
         GetModule()->RunEagerFixups();
 
+    }
+#endif // FEATURE_READYTORUN
+}
+
+void Assembly::EagerActivationFixups()
+{
+    WRAPPER_NO_CONTRACT;
+
+#ifdef FEATURE_READYTORUN
+    if (GetModule()->IsReadyToRun())
+    {
+        GetModule()->RunEagerActivationFixups();
     }
 #endif // FEATURE_READYTORUN
 }

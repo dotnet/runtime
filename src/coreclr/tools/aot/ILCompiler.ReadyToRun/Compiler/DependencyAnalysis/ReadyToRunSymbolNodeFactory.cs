@@ -60,10 +60,10 @@ namespace ILCompiler.DependencyAnalysis
 
             _r2rHelpers = new NodeCache<ReadyToRunHelperKey, Import>(CreateReadyToRunHelper);
 
-            _moduleEagerReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
+            _eagerActivationReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
             {
                 return new Import(
-                    _codegenNodeFactory.EagerImports,
+                    _codegenNodeFactory.EagerActivationFixups,
                     _codegenNodeFactory.MethodSignature(
                         ReadyToRunFixupKind.MethodEntry_ReadyToRun,
                         method,
@@ -314,13 +314,13 @@ namespace ILCompiler.DependencyAnalysis
             return _r2rHelpers.GetOrAdd(new ReadyToRunHelperKey(id, target));
         }
 
-        private NodeCache<MethodWithToken, Import> _moduleEagerReadyToRunMethodEntries;
+        private NodeCache<MethodWithToken, Import> _eagerActivationReadyToRunMethodEntries;
         private NodeCache<string, Import> _instructionSetSupportFixups;
         private NodeCache<MethodWithGCInfo, Import> _resumptionStubEntryPointFixups;
 
-        public Import ModuleEagerReadyToRunMethodEntry(MethodWithToken method)
+        public Import EagerActivationReadyToRunMethodEntry(MethodWithToken method)
         {
-            return _moduleEagerReadyToRunMethodEntries.GetOrAdd(method);
+            return _eagerActivationReadyToRunMethodEntries.GetOrAdd(method);
         }
 
         public Import PerMethodInstructionSetSupportFixup(InstructionSetSupport instructionSetSupport)
