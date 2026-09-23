@@ -2161,12 +2161,6 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* 
 
     T gcd = Gcd((T)iv1Step, (T)iv2Step);
 
-    if ((gcd == -1) && (((T)iv1Step == std::numeric_limits<T>::min()) || ((T)iv2Step == std::numeric_limits<T>::min())))
-    {
-        // Avoid signed remainder and division overflow in RephraseIV.
-        return nullptr;
-    }
-
     if ((!allowRephrasingByScalingIV1 && (gcd != (T)iv1Step)) || (!allowRephrasingByScalingIV2 && (gcd != (T)iv2Step)))
     {
         return nullptr;
@@ -2267,10 +2261,12 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
 
     assert(iv->Type == sourceIV->Type);
 
+    // Use unsigned negation for a source step of -1 so that MinValue wraps instead of overflowing.
     if (iv->Type == TYP_INT)
     {
-        assert((int32_t)ivStep % (int32_t)sourceIVStep == 0);
-        int32_t scale = (int32_t)ivStep / (int32_t)sourceIVStep;
+        assert(((int32_t)sourceIVStep == -1) || ((int32_t)ivStep % (int32_t)sourceIVStep == 0));
+        int32_t scale =
+            ((int32_t)sourceIVStep == -1) ? (int32_t)(0u - (uint32_t)ivStep) : (int32_t)ivStep / (int32_t)sourceIVStep;
         if (isPow2(scale))
         {
             return m_compiler->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
@@ -2284,8 +2280,8 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
 
     if (iv->Type == TYP_LONG)
     {
-        assert(ivStep % sourceIVStep == 0);
-        int64_t scale = ivStep / sourceIVStep;
+        assert((sourceIVStep == -1) || (ivStep % sourceIVStep == 0));
+        int64_t scale = (sourceIVStep == -1) ? (int64_t)(0ull - (uint64_t)ivStep) : ivStep / sourceIVStep;
         if (isPow2(scale))
         {
             return m_compiler->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
