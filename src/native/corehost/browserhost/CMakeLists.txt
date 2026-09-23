@@ -133,7 +133,7 @@ target_link_options(browserhost PRIVATE
     -sALLOW_TABLE_GROWTH=1
     -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
     # Module properties the loader sets or reads. Anything not listed here is ignored by emcc, and aborts in a debug build.
-    -sINCOMING_MODULE_JS_API=instantiateWasm,preInit,preRun,postRun,onAbort,onExit,print,printErr
+    -sINCOMING_MODULE_JS_API=instantiateWasm,locateFile,preInit,preRun,postRun,onAbort,onExit,print,printErr
     -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell

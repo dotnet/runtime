@@ -863,6 +863,7 @@
     <!-- Module properties the loader sets or reads. Anything not listed here is ignored by emcc, and aborts in a debug build. -->
     <ItemGroup>
       <EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <EmccIncomingModuleJSAPI Include="locateFile" />
       <EmccIncomingModuleJSAPI Include="preInit" />
       <EmccIncomingModuleJSAPI Include="preRun" />
       <EmccIncomingModuleJSAPI Include="postRun" />
