@@ -163,9 +163,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            // IL-based tools propagate the annotation from typeWithMethods to first (via second),
-            // while the analyzer reports a warning here.
-            [UnexpectedWarning("IL2067", Tool.Analyzer, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructTupleSwapSuccess(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
                 Type typeWithoutMethods)
@@ -176,7 +173,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 first.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructTupleSwap(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
                 Type typeWithoutMethods)

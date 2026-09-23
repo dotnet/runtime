@@ -734,6 +734,30 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             return HandleMethodCallHelper(getMethod, instanceValue, arguments.ToImmutableArray(), operation, state);
         }
 
+        public override TValue VisitDeconstructionAssignment(IDeconstructionAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            base.VisitDeconstructionAssignment(operation, state);
+            SetDeconstructedLocalsToTop(operation.Target, state);
+            return TopValue;
+        }
+
+        private void SetDeconstructedLocalsToTop(IOperation target, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            switch (target)
+            {
+                case ITupleOperation tuple:
+                    foreach (IOperation element in tuple.Elements)
+                        SetDeconstructedLocalsToTop(element, state);
+                    break;
+                case IDeclarationExpressionOperation declaration:
+                    SetDeconstructedLocalsToTop(declaration.Expression, state);
+                    break;
+                case ILocalReferenceOperation local:
+                    SetLocal(local.Local, TopValue, state);
+                    break;
+            }
+        }
+
         public override TValue VisitEventReference(IEventReferenceOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
         {
             // Writing to an event should not go through this path.
