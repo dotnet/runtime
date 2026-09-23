@@ -108,6 +108,24 @@ public class WasmArgumentLayoutTests
         Assert.True(lowered.FuncType.Returns.Types.IsEmpty);
     }
 
+    [Theory]
+    [InlineData(MethodSignatureFlags.None)]
+    [InlineData(MethodSignatureFlags.CallingConventionVarargs)]
+    [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl)]
+    public void ClosedStaticDelegateSignaturePreservesCallingConvention(MethodSignatureFlags flags)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+        MethodSignature invokeSignature = new MethodSignature(flags, 0, objectType, [objectType]);
+
+        MethodSignature targetSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(invokeSignature);
+
+        Assert.Equal(flags | MethodSignatureFlags.Static, targetSignature.Flags);
+        Assert.Same(objectType, targetSignature.ReturnType);
+        Assert.Same(objectType, targetSignature[0]);
+        Assert.Same(objectType, targetSignature[1]);
+    }
+
     public static TheoryData<string, WellKnownType> V128Types()
     {
         TheoryData<string, WellKnownType> data = new();

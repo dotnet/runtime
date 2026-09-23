@@ -27,7 +27,7 @@ namespace Internal.JitInterface
                 arguments[argumentIndex + 1] = signature[argumentIndex];
             }
 
-            return new MethodSignature(MethodSignatureFlags.Static, 0, signature.ReturnType, arguments);
+            return new MethodSignature(signature.Flags | MethodSignatureFlags.Static, 0, signature.ReturnType, arguments);
         }
 
         public static MethodSignature GetStringCtorActualSignature(MethodSignature signature)
