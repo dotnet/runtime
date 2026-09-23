@@ -528,6 +528,8 @@ enum GenTreeFlags : unsigned
 
     GTF_DIV_MOD_NO_OVERFLOW     = 0x40000000, // GT_DIV, GT_MOD -- Div or mod definitely does not overflow.
 
+    GTF_DIV_REM_PAIR            = 0x08000000, // GT_[U]DIV, GT_PHYSREG -- adjacent quotient/remainder definitions on xarch.
+
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
@@ -2459,6 +2461,11 @@ public:
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
+
+    bool IsDivRemPair() const
+    {
+        return OperIs(GT_DIV, GT_UDIV, GT_PHYSREG) && ((gtFlags & GTF_DIV_REM_PAIR) != 0);
+    }
 
 #ifdef DEBUG
     static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);

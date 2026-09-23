@@ -266,6 +266,30 @@ int LinearScan::BuildNode(GenTree* tree)
             BuildDef(tree, allByteRegs());
             break;
 
+        case GT_PHYSREG:
+            if (tree->IsDivRemPair())
+            {
+                assert(tree->AsPhysReg()->gtSrcReg == REG_RDX);
+#ifdef DEBUG
+                // Sequencing may move IL markers between the two definitions.
+                // They emit no register-writing instructions.
+                GenTree* producer = tree->gtPrev;
+                while ((producer != nullptr) && producer->OperIs(GT_IL_OFFSET))
+                {
+                    producer = producer->gtPrev;
+                }
+                assert((producer != nullptr) && producer->IsDivRemPair());
+                assert(producer->OperIs(GT_DIV, GT_UDIV));
+#endif
+                srcCount = 0;
+                BuildDef(tree, SRBM_RDX);
+            }
+            else
+            {
+                srcCount = BuildSimple(tree);
+            }
+            break;
+
         case GT_SELECT:
             assert(dstCount == 1);
             srcCount = BuildSelect(tree->AsConditional());
