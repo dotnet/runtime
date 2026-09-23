@@ -1545,6 +1545,11 @@ public:
     static bool isReservedVN(ValueNum);
 
 private:
+#if defined(FEATURE_HW_INTRINSICS)
+    bool IsVectorPerElementMask(
+        ValueNum vn, var_types simdBaseType, unsigned simdSize, SmallValueNumSet& knownMasks, unsigned depth);
+#endif // FEATURE_HW_INTRINSICS
+
     struct VNDefFuncAppFlexible
     {
         VNFunc   m_func;

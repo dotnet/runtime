@@ -9183,13 +9183,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         return VNZeroForType(type);
                     }
                 }
-                else if (IsVectorPerElementMask(argVN, baseType, simdSize))
+                else if (cnsVN == VNAllBitsForType(type, simdSize))
                 {
                     // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
                     // integrals
-                    ValueNum allBitsVN = VNAllBitsForType(type, simdSize);
-
-                    if (cnsVN == allBitsVN)
+                    if (IsVectorPerElementMask(argVN, baseType, simdSize))
                     {
                         // We are comparing something that is known per element to be either
                         // AllBitsSet or Zero, with AllBitsSet.
@@ -9361,12 +9359,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         return VNAllBitsForType(type, elementCount);
                     }
                 }
-                else if (IsVectorPerElementMask(argVN, baseType, simdSize))
+                else if (cnsVN == VNZeroForType(type))
                 {
                     // Handle `(Mask != Zero) == Mask` and `(Zero != Mask) == Mask` for integral types
-                    ValueNum zeroVN = VNZeroForType(type);
-
-                    if (cnsVN == zeroVN)
+                    if (IsVectorPerElementMask(argVN, baseType, simdSize))
                     {
                         // We are comparing something that is known per element to be either
                         // AllBitsSet or Zero, with Zero.
@@ -9979,13 +9975,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 }
 
 //-------------------------------------------------------------------
-// IsVectorPerElementMask: returns true if the ValueNum is a vector constant per-element mask
+// IsVectorPerElementMask: returns true if the ValueNum is a vector per-element mask
 //                         (every element has either all bits set or none of them) for the
 //                         given simd size and base type.
 //
 // Arguments:
 //    vn           - the value number to check
-//    simdBaseType - the base type of the constant being checked.
+//    simdBaseType - the base type being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
@@ -9993,7 +9989,27 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 //
 bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, unsigned simdSize)
 {
+    SmallValueNumSet knownMasks;
+    return IsVectorPerElementMask(vn, simdBaseType, simdSize, knownMasks, 0);
+}
+
+// Cache successful compound proofs for this query only: mask validity depends on the requested element size.
+// As in scalar evolution analysis, limit recursion to 64 levels to bound native stack usage.
+bool ValueNumStore::IsVectorPerElementMask(
+    ValueNum vn, var_types simdBaseType, unsigned simdSize, SmallValueNumSet& knownMasks, unsigned depth)
+{
     // This should be kept in sync with GenTree::IsVectorPerElementMask
+
+    if (knownMasks.Lookup(vn))
+    {
+        return true;
+    }
+
+    const unsigned MaxDepth = 64;
+    if (depth >= MaxDepth)
+    {
+        return false;
+    }
 
     var_types simdType     = TypeOfVN(vn);
     unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
@@ -10053,6 +10069,8 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
     }
 #endif // TARGET_ARM64
 
+    bool isMask = false;
+
     switch (oper)
     {
         case GT_AND:
@@ -10068,14 +10086,16 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
             // there isn't any way to statically determine this for non-constants and
             // the constant cases should've already been folded.
 
-            return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize) &&
-                   IsVectorPerElementMask(funcApp.GetArg(1), simdBaseType, simdSize);
+            isMask = IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize, knownMasks, depth + 1) &&
+                     IsVectorPerElementMask(funcApp.GetArg(1), simdBaseType, simdSize, knownMasks, depth + 1);
+            break;
         }
 
         case GT_NOT:
         {
             // We are an unary bitwise operation where the input is a per-element mask
-            return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize);
+            isMask = IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize, knownMasks, depth + 1);
+            break;
         }
 
         default:
@@ -10085,7 +10105,12 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
         }
     }
 
-    return false;
+    if (isMask)
+    {
+        knownMasks.Add(m_compiler, vn);
+    }
+
+    return isMask;
 }
 
 #endif // FEATURE_HW_INTRINSICS
