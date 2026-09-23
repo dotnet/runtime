@@ -125,7 +125,6 @@ private:
     static void BuildSessionDirectoryPath(PathCharString& destination, const SharedMemoryId *id, LPCSTR contentsDirectoryName);
     static void EnsureUserFallbackBasePathExists(const SharedMemoryId *id);
     static void VerifyPathLength(const PathCharString& path);
-    static bool ValidateDirectory(int directoryFileDescriptor, const SharedMemoryId *id, bool isSystemDirectory, int *transientRetryCount);
 
 public:
     static LPCSTR GetRuntimeTempDirectoryName(const SharedMemoryId *id);

@@ -724,81 +724,6 @@ int SharedMemoryHelpers::OpenAt(int directoryFileDescriptor, LPCSTR path, int fl
     }
 }
 
-bool SharedMemoryHelpers::ValidateDirectory(
-    int directoryFileDescriptor,
-    const SharedMemoryId *id,
-    bool isSystemDirectory,
-    int *transientRetryCount)
-{
-    _ASSERTE(directoryFileDescriptor != -1);
-    _ASSERTE(id != nullptr);
-    _ASSERTE(transientRetryCount != nullptr);
-
-    struct stat statInfo;
-    if (fstat(directoryFileDescriptor, &statInfo) != 0)
-    {
-        int errorCode = errno;
-        if ((errorCode == ENOENT || errorCode == EACCES) && *transientRetryCount < TransientRetryCount)
-        {
-            (*transientRetryCount)++;
-            Sleep(1);
-            return false;
-        }
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-    }
-
-    bool isValid;
-    if (isSystemDirectory)
-    {
-        // For system directories (such as TEMP_DIRECTORY_PATH), require sufficient permissions only for the owner user. For
-        // instance, "docker run --mount ..." to mount /tmp to some directory on the host mounts the destination directory with
-        // the same permissions as the source directory, which may not include some permissions for other users. In the docker
-        // container, other user permissions are typically not relevant and relaxing the permissions requirement allows for
-        // that scenario to work without having to work around it by first giving sufficient permissions for all users.
-        //
-        // If the directory is being used for user-scoped shared memory data, also ensure that either it has the sticky bit or
-        // it's owned by the current user and without write access for other users.
-        isValid =
-            (statInfo.st_mode & PermissionsMask_OwnerUser_ReadWriteExecute) ==
-                PermissionsMask_OwnerUser_ReadWriteExecute &&
-            (
-                !id->IsUserScope() ||
-                (statInfo.st_mode & PermissionsMask_Sticky) != 0 ||
-                (
-                    statInfo.st_uid == id->GetUserScopeUid() &&
-                    (statInfo.st_mode & PermissionsMask_NonOwnerUsers_Write) == 0
-                )
-            );
-    }
-    else if (id->IsUserScope())
-    {
-        isValid =
-            statInfo.st_uid == id->GetUserScopeUid() &&
-            (statInfo.st_mode & PermissionsMask_AllUsers_ReadWriteExecute) ==
-                PermissionsMask_OwnerUser_ReadWriteExecute;
-    }
-    else
-    {
-        isValid =
-            (statInfo.st_mode & PermissionsMask_AllUsers_ReadWriteExecute) ==
-                PermissionsMask_AllUsers_ReadWriteExecute;
-    }
-
-    if (isValid)
-    {
-        return true;
-    }
-
-    if (*transientRetryCount >= TransientRetryCount)
-    {
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-    }
-
-    (*transientRetryCount)++;
-    Sleep(1);
-    return false;
-}
-
 int SharedMemoryHelpers::OpenSharedFilesSystemDirectory(const SharedMemoryId *id)
 {
     _ASSERTE(id != nullptr);
@@ -844,20 +769,7 @@ int SharedMemoryHelpers::OpenSharedFilesSystemDirectory(const SharedMemoryId *id
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
 
-        try
-        {
-            if (ValidateDirectory(directoryFileDescriptor, id, true /* isSystemDirectory */, &transientRetryCount))
-            {
-                return directoryFileDescriptor;
-            }
-        }
-        catch (SharedMemoryException)
-        {
-            CloseFile(directoryFileDescriptor);
-            throw;
-        }
-
-        CloseFile(directoryFileDescriptor);
+        return directoryFileDescriptor;
     }
 }
 
@@ -966,21 +878,8 @@ int SharedMemoryHelpers::EnsureDirectoryExists(
 
             throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
         }
-
-        try
-        {
-            if (ValidateDirectory(directoryFileDescriptor, id, false /* isSystemDirectory */, &transientRetryCount))
-            {
-                return directoryFileDescriptor;
-            }
-        }
-        catch (SharedMemoryException)
-        {
-            CloseFile(directoryFileDescriptor);
-            throw;
-        }
-
-        CloseFile(directoryFileDescriptor);
+        
+        return directoryFileDescriptor;
     }
 }
 
