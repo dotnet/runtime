@@ -8856,6 +8856,77 @@ void Lowering::TryRemoveShiftRotateMask(GenTreeOp* op)
 }
 
 //------------------------------------------------------------------------
+// TryContainFunnelShift: Combine complementary constant shifts of two values.
+//
+// Arguments:
+//    node - The binary node to check.
+//
+// Return Value:
+//    True if the node can be emitted as SHRD or EXTR.
+//
+bool Lowering::TryContainFunnelShift(GenTreeOp* node)
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    if (!node->OperIs(GT_OR))
+    {
+        return false;
+    }
+    if (node->IsFunnelShift())
+    {
+        return true;
+    }
+
+    if (!m_compiler->opts.OptimizationEnabled() || !node->TypeIs(TYP_INT, TYP_LONG) || node->gtSetFlags())
+    {
+        return false;
+    }
+
+    GenTree* right = node->gtGetOp1();
+    GenTree* left  = node->gtGetOp2();
+    if (right->OperIs(GT_LSH))
+    {
+        std::swap(right, left);
+    }
+
+    if (!right->OperIs(GT_RSZ) || !left->OperIs(GT_LSH) || right->gtSetFlags() || left->gtSetFlags() ||
+        !right->gtGetOp2()->IsCnsIntOrI() || !left->gtGetOp2()->IsCnsIntOrI() ||
+        (right->TypeGet() != node->TypeGet()) || (left->TypeGet() != node->TypeGet()))
+    {
+        return false;
+    }
+
+    ssize_t width      = genTypeSize(node) * BITS_PER_BYTE;
+    ssize_t rightCount = right->gtGetOp2()->AsIntCon()->IconValue();
+    ssize_t leftCount  = left->gtGetOp2()->AsIntCon()->IconValue();
+    if ((rightCount <= 0) || (rightCount >= width) || (leftCount != width - rightCount))
+    {
+        return false;
+    }
+
+    GenTree* lo = right->gtGetOp1();
+    GenTree* hi = left->gtGetOp1();
+    // Keep memory accesses at their original positions, and do not extend a local
+    // read past a redefinition. Both input values must be available in registers.
+    if (lo->isContained() || hi->isContained() || !IsInvariantInRange(lo, node) || !IsInvariantInRange(hi, node))
+    {
+        return false;
+    }
+
+    lo->ClearRegOptional();
+    hi->ClearRegOptional();
+    node->gtOp1 = right;
+    node->gtOp2 = left;
+    MakeSrcContained(node, right);
+    MakeSrcContained(node, left);
+    MakeSrcContained(right, right->gtGetOp2());
+    MakeSrcContained(left, left->gtGetOp2());
+    return true;
+#else
+    return false;
+#endif
+}
+
+//------------------------------------------------------------------------
 // LowerShift: Lower shift nodes
 //
 // Arguments:

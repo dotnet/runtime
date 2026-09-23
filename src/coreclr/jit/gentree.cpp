@@ -12006,6 +12006,39 @@ void Compiler::gtUpdateNodeSideEffects(GenTree* tree)
     });
 }
 
+//------------------------------------------------------------------------
+// IsFunnelShift: Whether lowering contained two complementary shifts in an OR.
+//
+// Return Value:
+//    True for the canonical (lo >>> count) | (hi << (width - count)) form.
+//
+bool GenTree::IsFunnelShift() const
+{
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+    bool isFunnelShift = OperIs(GT_OR) && gtGetOp1()->OperIs(GT_RSZ) && gtGetOp1()->isContained() &&
+                         gtGetOp2()->OperIs(GT_LSH) && gtGetOp2()->isContained();
+#ifdef DEBUG
+    if (isFunnelShift)
+    {
+        // TryContainFunnelShift is the only path that contains both shifts. It validates
+        // their widths and complementary immediate counts before establishing this shape.
+        assert(TypeIs(TYP_INT, TYP_LONG));
+        assert(gtGetOp1()->TypeGet() == TypeGet());
+        assert(gtGetOp2()->TypeGet() == TypeGet());
+        assert(gtGetOp1()->gtGetOp2()->IsCnsIntOrI());
+        assert(gtGetOp2()->gtGetOp2()->IsCnsIntOrI());
+        ssize_t width = genTypeSize(TypeGet()) * BITS_PER_BYTE;
+        ssize_t count = gtGetOp1()->gtGetOp2()->AsIntCon()->IconValue();
+        assert((count > 0) && (count < width));
+        assert(gtGetOp2()->gtGetOp2()->AsIntCon()->IconValue() == width - count);
+    }
+#endif
+    return isFunnelShift;
+#else
+    return false;
+#endif
+}
+
 bool GenTree::gtSetFlags() const
 {
     return (gtFlags & GTF_SET_FLAGS) != 0;

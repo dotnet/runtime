@@ -8586,6 +8586,11 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
     assert(node->OperIsBinary());
 
+    if (TryContainFunnelShift(node))
+    {
+        return;
+    }
+
     if (varTypeIsFloating(node))
     {
         assert(node->OperIs(GT_ADD, GT_SUB));
