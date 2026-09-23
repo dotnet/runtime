@@ -289,12 +289,35 @@ namespace ILCompiler.PortableCallHelpers
                 string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
                 // A partial R2R image can compile an UnmanagedCallersOnly callback to native code. That R2R code
                 // is the directly-callable native entrypoint (same ABI as this wrapper's parameters), so dispatch
-                // to it and skip the interpreter/interp->R2R path entirely.
+                // to it and skip the interpreter/interp->R2R path entirely. A by-reference struct return uses a
+                // hidden return-buffer pointer that this declared signature does not model, so skip the direct
+                // dispatch for those and let the interpreter fallback (which passes the buffer) handle them.
+                bool canDispatchR2R = cb.IsVoid || !IsPassedByReference(cb.ReturnType);
                 string r2rVar = $"R2RCode_{cb.EntrySymbol}";
                 string paramTypesOnly = string.Join(", ", parameterCTypes);
                 string r2rDispatch = cb.IsVoid
-                    ? $"((void(*)({paramTypesOnly})){r2rVar})({arguments});{w.NewLine}        return;"
-                    : $"return (({MapType(cb.ReturnType)}(*)({paramTypesOnly})){r2rVar})({arguments});";
+                    ? $"((void(*)({paramTypesOnly}))r2r)({arguments});{w.NewLine}        return;"
+                    : $"return (({MapType(cb.ReturnType)}(*)({paramTypesOnly}))r2r)({arguments});";
+                // Cache the resolved entrypoint in a per-callback static, published with a volatile store:
+                // these are native entry points that can be entered concurrently, and the value is computed
+                // identically on every call, so the racing read/write is benign but must not tear.
+                string r2rStaticDecl = canDispatchR2R
+                    ? $"{w.NewLine}static void* {r2rVar} = (void*)(intptr_t)-1;"
+                    : string.Empty;
+                string r2rSection = canDispatchR2R
+                    ? w.NewLine + "    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R)."
+                      + w.NewLine + "    // Resolve once and cache; a method's native-code availability is fixed after first prepare."
+                      + w.NewLine + $"    void* r2r = VolatileLoad(&{r2rVar});"
+                      + w.NewLine + "    if (r2r == (void*)(intptr_t)-1)"
+                      + w.NewLine + "    {"
+                      + w.NewLine + $"        r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{cb.EntrySymbol});"
+                      + w.NewLine + $"        VolatileStore(&{r2rVar}, r2r);"
+                      + w.NewLine + "    }"
+                      + w.NewLine + "    if (r2r != nullptr)"
+                      + w.NewLine + "    {"
+                      + w.NewLine + $"        {r2rDispatch}"
+                      + w.NewLine + "    }"
+                    : string.Empty;
                 string exportFunction = cb.IsExport ?
                     $$"""
 
@@ -307,8 +330,7 @@ namespace ILCompiler.PortableCallHelpers
                 w.Write(
                     $$"""
 
-                    static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;
-                    static void* {{r2rVar}} = (void*)(intptr_t)-1;
+                    static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;{{r2rStaticDecl}}
                     static {{
                     MapType(cb.ReturnType)}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
                     {
@@ -316,17 +338,7 @@ namespace ILCompiler.PortableCallHelpers
                         if (!MD_{{cb.EntrySymbol}})
                         {
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
-                        }
-                        // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-                        // Cache the lookup: a method's native-code availability is fixed after first prepare.
-                        if ({{r2rVar}} == (void*)(intptr_t)-1)
-                        {
-                            {{r2rVar}} = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{{cb.EntrySymbol}});
-                        }
-                        if ({{r2rVar}} != nullptr)
-                        {
-                            {{r2rDispatch}}
-                        }{{argsDeclaration}}{{
+                        }{{r2rSection}}{{argsDeclaration}}{{
                         (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
                         ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{(cb.IsVoid ? "nullptr" : "(int8_t*)&result")}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
                         (!cb.IsVoid ? $"{w.NewLine}    return result;" : "")}}
