@@ -7,6 +7,7 @@ include(CheckIncludeFiles)
 include(CheckStructHasMember)
 include(CheckTypeSize)
 include(CheckLibraryExists)
+include(CMakePushCheckState)
 
 if(CLR_CMAKE_TARGET_FREEBSD)
   set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
@@ -140,7 +141,12 @@ check_function_exists(directio HAVE_DIRECTIO)
 check_function_exists(semget HAS_SYSV_SEMAPHORES)
 check_function_exists(pthread_mutex_init HAS_PTHREAD_MUTEXES)
 check_function_exists(ttrace HAVE_TTRACE)
-check_function_exists(pipe2 HAVE_PIPE2)
+
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+check_symbol_exists(pipe2 unistd.h HAVE_PIPE2)
+cmake_pop_check_state()
+
 check_function_exists(strerrorname_np HAVE_STRERRORNAME_NP)
 
 check_cxx_source_compiles("
