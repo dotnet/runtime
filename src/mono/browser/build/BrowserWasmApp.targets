@@ -313,6 +313,20 @@
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
+
+      <!-- Module properties the loader sets or reads. Anything not listed here is ignored by emcc, and aborts in a debug build. -->
+      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <EmccIncomingModuleJSAPI Include="locateFile" />
+      <EmccIncomingModuleJSAPI Include="preInit" />
+      <EmccIncomingModuleJSAPI Include="preRun" />
+      <EmccIncomingModuleJSAPI Include="postRun" />
+      <EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
+      <EmccIncomingModuleJSAPI Include="onAbort" />
+      <EmccIncomingModuleJSAPI Include="onExit" />
+      <EmccIncomingModuleJSAPI Include="print" />
+      <EmccIncomingModuleJSAPI Include="printErr" />
+      <!-- set on the worker from the message which starts a pthread -->
+      <EmccIncomingModuleJSAPI Include="wasmMemory" Condition="'$(WasmEnableThreads)' == 'true'" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>
@@ -325,6 +339,7 @@
       <_WasmSIMDLibToExclude Condition="'$(WasmEnableSIMD)' == 'true'">libmono-wasm-nosimd.a</_WasmSIMDLibToExclude>
       <_EmccExportedLibraryFunction>"[@(EmccExportedLibraryFunction -> '%27%(Identity)%27', ',')]"</_EmccExportedLibraryFunction>
       <_EmccExportedRuntimeMethods>"[@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
+      <_EmccIncomingModuleJSAPI>"[@(EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPI>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
 
@@ -373,6 +388,7 @@
 
       <_EmccLinkStepArgs Include="-s DEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$(_EmccExportedLibraryFunction)" Condition="'$(_EmccExportedLibraryFunction)' != ''" />
       <_EmccLinkStepArgs Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
+      <_EmccLinkStepArgs Include="-s INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPI)" />
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
 
       <_EmccLinkStepArgs Include="$(EmccExtraLDFlags)" />
