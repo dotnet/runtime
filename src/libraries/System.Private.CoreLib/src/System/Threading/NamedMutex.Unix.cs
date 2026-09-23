@@ -667,8 +667,12 @@ namespace System.Threading
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
-                NamedMutexProcessDataBase processData = _processDataHeader._processData!;
-                NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = processData.TryAcquireLock(timeoutMilliseconds);
+
+                // Synchronize on with any other threads currently handling creation or deletion of named mutexes.
+                // It's possible that a thread is currently abandoning a mutex on the finalizer thread while we are trying to acquire it.
+                SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock().Dispose();
+
+                NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = _processDataHeader._processData!.TryAcquireLock(timeoutMilliseconds);
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
