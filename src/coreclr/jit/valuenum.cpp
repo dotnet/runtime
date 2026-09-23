@@ -7030,6 +7030,15 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
     }
     else
     {
+        // Fold loads of byref exposed locals into ByrefExposedLocalLoad
+        VNFuncApp funcApp;
+        if (vnStore->GetVNFunc(vnStore->VNNormalValue(pointerVN), &funcApp) && funcApp.FuncIs(VNF_PtrToLoc))
+        {
+            unsigned lclNum  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(0));
+            unsigned lclOffs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(1));
+            return fgValueNumberByrefExposedLocalLoad(type, lclNum, lclOffs);
+        }
+
         ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
         // The memoization for VNFunc applications does not factor in the result type, so
         // VNF_ByrefExposedLoad takes the loaded type as an explicit parameter.
@@ -7038,6 +7047,32 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
             vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormalValue(pointerVN), memoryVN);
         return loadVN;
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberByrefExposedLocalLoad: Compute the value number for a
+//   byref-exposed load from an address-exposed local.
+//
+// Arguments:
+//    type    - The type of the load
+//    lclNum  - The local being loaded from
+//    lclOffs - The offset into the local
+//
+// Returns:
+//    The value number of the load.
+//
+ValueNum Compiler::fgValueNumberByrefExposedLocalLoad(var_types type, unsigned lclNum, unsigned lclOffs)
+{
+    if (type == TYP_STRUCT)
+    {
+        // See fgValueNumberByrefExposedLoad.
+        return vnStore->VNForExpr(compCurBB, TYP_STRUCT);
+    }
+
+    ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
+    ValueNum typeVN   = vnStore->VNForIntCon(type);
+    return vnStore->VNForFunc(type, VNF_ByrefExposedLocalLoad, typeVN, vnStore->VNForIntCon(lclNum),
+                              vnStore->VNForIntPtrCon(lclOffs), memoryVN);
 }
 
 var_types ValueNumStore::TypeOfVN(ValueNum vn) const
@@ -13384,8 +13419,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 unsigned lclNum  = tree->AsLclFld()->GetLclNum();
                 unsigned lclOffs = tree->AsLclFld()->GetLclOffs();
+
+                // For async functions resumption will give locals a new
+                // address. We model that with a "frame version" argument that
+                // changes inside async functions, but that is unchanged in
+                // normal methods.
+                ValueNum frameVersion =
+                    compIsAsync() ? vnStore->VNForExpr(compCurBB, TYP_INT) : vnStore->VNZeroForType(TYP_INT);
                 tree->gtVNPair.SetBoth(vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                          vnStore->VNForIntPtrCon(lclOffs)));
+                                                          vnStore->VNForIntPtrCon(lclOffs), frameVersion));
                 assert(lvaGetDesc(lclNum)->IsAddressExposed() || lvaGetDesc(lclNum)->IsDefinedViaAddress());
             }
             break;
@@ -13403,9 +13445,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else if (varDsc->IsAddressExposed())
                 {
                     // Address-exposed locals are part of ByrefExposed.
-                    ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                         vnStore->VNForIntPtrCon(lcl->GetLclOffs()));
-                    ValueNum loadVN = fgValueNumberByrefExposedLoad(lcl->TypeGet(), addrVN);
+                    ValueNum loadVN = fgValueNumberByrefExposedLocalLoad(lcl->TypeGet(), lclNum, lcl->GetLclOffs());
 
                     lcl->gtVNPair.SetLiberal(loadVN);
                     lcl->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
@@ -13433,9 +13473,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else if (varDsc->IsAddressExposed())
                 {
                     // Address-exposed locals are part of ByrefExposed.
-                    ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                         vnStore->VNForIntPtrCon(lclFld->GetLclOffs()));
-                    ValueNum loadVN = fgValueNumberByrefExposedLoad(lclFld->TypeGet(), addrVN);
+                    ValueNum loadVN =
+                        fgValueNumberByrefExposedLocalLoad(lclFld->TypeGet(), lclNum, lclFld->GetLclOffs());
 
                     lclFld->gtVNPair.SetLiberal(loadVN);
                     lclFld->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
