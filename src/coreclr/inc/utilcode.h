@@ -2842,7 +2842,6 @@ class RangeList
         {
             INSTANCE_CHECK;
             NOTHROW;
-            FORBID_FAULT;
             GC_NOTRIGGER;
         }
         CONTRACTL_END
@@ -3451,8 +3450,6 @@ namespace util
 }
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
-
-BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 namespace UtilCode
 {

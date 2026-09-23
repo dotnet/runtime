@@ -56,17 +56,12 @@ enum EHFuncletType
     Catch = 0x0004,
 };
 
-// These values are or-ed into the InlinedCallFrame::m_Datum field.
-// The bit 0 is used for unrelated purposes (see comments on the
-// InlinedCallFrame::m_Datum field for details).
+// These values are or-ed into the InlinedCallFrame::m_Datum field when it contains
+// a MethodDesc pointer.
 // [cDAC] [StackWalk]: Contract depends on these values.
 enum class InlinedCallFrameMarker
 {
-#ifdef HOST_64BIT
-    ExceptionHandlingHelper = 2,
-#else // HOST_64BIT
     ExceptionHandlingHelper = 1,
-#endif // HOST_64BIT
     Mask = ExceptionHandlingHelper
 };
 

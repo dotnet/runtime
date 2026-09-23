@@ -45,6 +45,8 @@ public enum DataType
     AppDomain,
     Debugger,
     DebuggerRCThread,
+    DebuggerPatchTable,
+    DebuggerControllerPatch,
     MemoryRange,
     SystemDomain,
     Assembly,
@@ -226,6 +228,9 @@ public enum DataType
     EnCAddedStaticField,
     EnCSyncBlockInfo,
     UnorderedArrayBase,
+
+    LayoutEEClass,
+    EEClassLayoutInfo,
 }
 
 public static class DataTypeTargetExtensions

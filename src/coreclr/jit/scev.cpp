@@ -132,7 +132,7 @@ void Scev::Dump(Compiler* comp)
             }
             else
             {
-                printf("%lld", (int64_t)cns->Value);
+                printf("%lld", (long long)cns->Value);
             }
             break;
         }
@@ -1736,7 +1736,7 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     }
 
     int64_t startCns;
-    if (addRec->Start->GetConstantValue(m_compiler, &startCns) && (startCns != 0))
+    if (!addRec->Start->GetConstantValue(m_compiler, &startCns) || (startCns != 0))
     {
         return true;
     }

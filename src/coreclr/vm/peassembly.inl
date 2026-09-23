@@ -125,7 +125,6 @@ inline void PEAssembly::GetMVID(GUID *pMvid)
     {
         THROWS;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -221,12 +220,12 @@ inline LPCUTF8 PEAssembly::GetDebugName()
 // Classification
 // ------------------------------------------------------------
 
-inline BOOL PEAssembly::IsSystem() const
+inline bool PEAssembly::IsSystem() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return m_isSystem;
+    return this == SystemDomain::SystemPEAssembly();
 }
 
 inline BOOL PEAssembly::IsReflectionEmit() const
@@ -352,7 +351,7 @@ inline BOOL PEAssembly::IsILOnly()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    CONTRACT_VIOLATION(ThrowsViolation|GCViolation|FaultViolation);
+    CONTRACT_VIOLATION(ThrowsViolation|GCViolation);
 
     if (IsReflectionEmit())
         return FALSE;
@@ -689,7 +688,6 @@ inline BOOL PEAssembly::IsPtrInPEImage(PTR_CVOID data)
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
@@ -751,22 +749,6 @@ inline LPCSTR PEAssembly::GetSimpleName()
     return name;
 }
 
-inline BOOL PEAssembly::IsStrongNamed()
-{
-    CONTRACTL
-    {
-        THROWS;
-        WRAPPER(GC_NOTRIGGER);
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD flags = 0;
-    IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, &flags));
-    return (flags & afPublicKey) != 0;
-}
-
-
 //---------------------------------------------------------------------------------------
 //
 // Check to see if this assembly has had its strong name signature verified yet.
@@ -825,7 +807,6 @@ inline DWORD PEAssembly::GetFlags()
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END;

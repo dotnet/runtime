@@ -137,11 +137,7 @@ private:
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
 
-    typedef JitHashTable<unsigned, JitSmallPrimitiveKeyFuncs<unsigned>, bool> LocalSet;
-
-    void     MapParameterRegisterLocals();
-    void     FindInducedParameterRegisterLocals();
-    unsigned TryReuseLocalForParameterAccess(const LIR::Use& use, const LocalSet& storedToLocals);
+    void MapParameterRegisterLocals();
 
     void     LowerBlock(BasicBlock* block);
     void     AfterLowerBlocks();
@@ -199,7 +195,6 @@ private:
 #endif // WINDOWS_AMD64_ABI
     GenTree* LowerDelegateInvoke(GenTreeCall* call);
     void     OptimizeCallIndirectTargetEvaluation(GenTreeCall* call);
-    GenTree* LowerIndirectNonvirtCall(GenTreeCall* call);
     GenTree* LowerDirectCall(GenTreeCall* call);
     GenTree* LowerNonvirtPinvokeCall(GenTreeCall* call);
     GenTree* LowerTailCallViaJitHelper(GenTreeCall* callNode, GenTree* callTarget);
@@ -442,15 +437,21 @@ private:
     bool TryRemoveCast(GenTreeCast* node);
     bool TryRemoveBitCast(GenTreeUnOp* node);
 
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
+#endif // TARGET_XARCH || TARGET_RISCV64
+
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
 
 #ifdef TARGET_WASM
-    static void SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
-    GenTree*    LowerNeg(GenTreeOp* node);
-    void        LowerIndexAddr(GenTreeIndexAddr* indexAddr);
-    void        LowerCkfinite(GenTreeOp* node);
+    static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
+    GenTreeAddrMode* GetFoldableAddrMode(GenTreeIndir* indirNode);
+    void             TryFoldLclAddrOffset(GenTreeIndir* indirNode);
+    GenTree*         LowerNeg(GenTreeOp* node);
+    void             LowerIndexAddr(GenTreeIndexAddr* indexAddr);
+    void             LowerCkfinite(GenTreeOp* node);
 #endif
 
     bool TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* parent);
@@ -481,6 +482,7 @@ private:
     GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
     void     LowerRotate(GenTree* tree);
     void     LowerShift(GenTreeOp* shift);
+    void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -499,6 +501,7 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToZeroHighBits(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);

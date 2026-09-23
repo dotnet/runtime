@@ -642,7 +642,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
 // route/interface sysctl APIs (rt_msghdr), not the protocol statistics that live in tcp_var.h.
 // Gate them on HAVE_RT_MSGHDR so platforms that lack tcp_var.h but do have rt_msghdr (e.g. OpenBSD)
 // still get the real implementation instead of the ENOTSUP stub.
-#if HAVE_RT_MSGHDR
+#if HAVE_RT_MSGHDR && HAVE_SYS_SYSCTL_H
 #include <string.h>
 #include <assert.h>
 #include <sys/types.h>
@@ -858,4 +858,4 @@ int32_t SystemNative_GetNumRoutes(void)
     errno = ENOTSUP;
     return -1;
 }
-#endif // HAVE_RT_MSGHDR
+#endif // HAVE_RT_MSGHDR && HAVE_SYS_SYSCTL_H

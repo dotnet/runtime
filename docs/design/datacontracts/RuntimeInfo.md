@@ -52,6 +52,9 @@ RuntimeInfoOperatingSystem GetTargetOperatingSystem();
 // implemented or call contract APIs that probe for specific capabilities.
 RuntimeInfoRuntimeFlavor GetRuntimeFlavor();
 
+// Gets the runtime product version, including any prerelease label and build number.
+string GetRuntimeProductVersion();
+
 // Returns the runtime's RecommendedReaderVersion global. Returns 0 if the global is absent.
 uint GetRecommendedReaderVersion();
 
@@ -74,6 +77,7 @@ _None._
 | `OperatingSystem` | `string` | Target operating system |
 | `RecommendedReaderVersion` | `uint32` | Incremented when an update to the latest contracts is recommended |
 | `RuntimeFlavor` | `string` | Target runtime flavor |
+| `RuntimeProductVersionString` | `string` | Runtime product version, including prerelease information |
 
 ### Contracts used
 
@@ -84,6 +88,8 @@ _None._
 The contract implementation returns the architecture, operating system, and runtime flavor global
 values parsed as the respective enum case-insensitively. If these globals are not available, the
 contract returns Unknown.
+
+The runtime product version is returned directly from the `RuntimeProductVersionString` global.
 
 `Apple` covers all Apple platforms (macOS, iOS, tvOS, MacCatalyst) — i.e. any target where the
 runtime is compiled with `TARGET_APPLE` defined. It is distinct from `Unix` so that consumers which

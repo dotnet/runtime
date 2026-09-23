@@ -646,6 +646,65 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(frame1.Length + frame2.Length, messageSize);
         }
 
+        public static IEnumerable<object[]> BFinalTerminatedFrames()
+        {
+            // A complete (FIN=1) compressed message terminated with a BFINAL=1 final block (decodes
+            // to "Hello"). 0xf3 sets the BFINAL bit.
+            yield return new object[] { new byte[] { 0xc1, 0x07, 0xf3, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00 } };
+
+            // A non-final (FIN=0) compressed frame whose payload is a BFINAL=1 final block ("Hello")
+            // followed by trailing bytes that can never be consumed.
+            yield return new object[] { new byte[] { 0x42, 0x09, 0xf3, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00, 0x00, 0x00 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(BFinalTerminatedFrames))]
+        public async Task CompressedMessageWithBFinalBitSet_Throws(byte[] frame)
+        {
+            // permessage-deflate messages are not expected to contain a final DEFLATE block. zlib stops
+            // at the BFINAL=1 block leaving compressed bytes unconsumed, so the message is rejected
+            // instead of having the inflater spin forever returning empty results.
+            WebSocketTestStream stream = new();
+            stream.Enqueue(frame);
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
+            });
+
+            Memory<byte> buffer = new byte[64];
+            var exception = await Assert.ThrowsAsync<WebSocketException>(
+                async () => await websocket.ReceiveAsync(buffer, CancellationToken));
+            Assert.Contains("BFINAL", exception.Message);
+            Assert.Equal(WebSocketState.Aborted, websocket.State);
+        }
+
+        [Fact]
+        public async Task CompressedMessageWithBFinalBitSet_PrecededByValidMessage_Throws()
+        {
+            WebSocketTestStream stream = new();
+            // A valid sync-flushed message (0xf2, BFINAL not set) decodes successfully...
+            stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+            using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
+            });
+
+            Memory<byte> buffer = new byte[64];
+            ValueWebSocketReceiveResult result = await websocket.ReceiveAsync(buffer, CancellationToken);
+
+            Assert.True(result.EndOfMessage);
+            Assert.Equal("Hello".Length, result.Count);
+            Assert.Equal(WebSocketMessageType.Text, result.MessageType);
+            Assert.Equal("Hello", Encoding.UTF8.GetString(buffer.Span.Slice(0, result.Count)));
+
+            // ...but a subsequent message terminated with BFINAL=1 (0xf3) is rejected.
+            stream.Enqueue(0xc1, 0x07, 0xf3, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
+            buffer.Span.Clear();
+            var exception = await Assert.ThrowsAsync<WebSocketException>(
+                async () => await websocket.ReceiveAsync(buffer, CancellationToken));
+            Assert.Contains("BFINAL", exception.Message);
+        }
+
         [Fact]
         public async Task DisposeShouldNotCorruptStateWhileReceiving()
         {

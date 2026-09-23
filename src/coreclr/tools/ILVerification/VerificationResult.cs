@@ -12,6 +12,7 @@ namespace ILVerify
         public ExceptionStringID? ExceptionID { get; internal set; }
         public TypeDefinitionHandle Type { get; internal set; }
         public MethodDefinitionHandle Method { get; internal set; }
+        internal EntityHandle MetadataHandle { get; set; }
         public string Message { get; internal set; }
         public object[] Args { get; internal set; }
         public ErrorArgument[] ErrorArguments { get; set; }

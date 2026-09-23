@@ -68,5 +68,30 @@ namespace System.Security.Cryptography
                 }
             }
         }
+
+        internal void UseKey<TState1, TState2, TState3>(
+            TState1 state1,
+            TState2 state2,
+            TState3 state3,
+            Action<TState1, TState2, TState3, ReadOnlySpan<byte>> func)
+        where TState1 : allows ref struct
+        where TState2 : allows ref struct
+        where TState3 : allows ref struct
+        {
+            bool addedRef = false;
+
+            try
+            {
+                DangerousAddRef(ref addedRef);
+                func(state1, state2, state3, DangerousKeySpan);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    DangerousRelease();
+                }
+            }
+        }
     }
 }

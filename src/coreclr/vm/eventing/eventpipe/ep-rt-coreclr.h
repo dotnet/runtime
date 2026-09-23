@@ -16,6 +16,7 @@
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include "CLREventBase.h"
 
 #ifdef HOST_WINDOWS
 #include <windows.h>
@@ -286,7 +287,7 @@ ep_rt_init (void)
 	extern CrstStatic _ep_rt_coreclr_config_lock;
 
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
-	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
+	_ep_rt_coreclr_config_lock_handle.lock->Init (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
@@ -752,7 +753,7 @@ ep_rt_wait_event_wait (
 	int32_t result;
 	EX_TRY
 	{
-		result = wait_event->event->Wait (timeout, alertable);
+		result = wait_event->event->Wait (timeout, alertable, false);
 	}
 	EX_CATCH
 	{
@@ -1123,7 +1124,7 @@ ep_rt_thread_sleep (uint64_t ns)
 	PAL_nanosleep (ns);
 #else  //TARGET_UNIX
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
+	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
 #endif //TARGET_UNIX
 #endif // PERFTRACING_DISABLE_THREADS
 }

@@ -4,6 +4,9 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestTargetUnsupported Condition="'$(TargetsWindows)' == 'true' or '$(RuntimeVariant)' == 'monointerpreter'">true</CLRTestTargetUnsupported>
+    <!-- TODO: Re-enable when the browser host defines a main-program native-handle contract.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MainProgramHandleTests.cs" />

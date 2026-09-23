@@ -54,6 +54,7 @@ internal enum FrameType
 /// </summary>
 internal sealed class FrameHelpers
 {
+    private const ulong InlinedCallFrameMarkerMask = 1;
     private readonly Target _target;
 
     public FrameHelpers(Target target)
@@ -126,7 +127,7 @@ internal sealed class FrameHelpers
             case FrameType.InlinedCallFrame:
                 Data.InlinedCallFrame inlinedCallFrame = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
                 if (InlinedCallFrameHasActiveCall(inlinedCallFrame) && InlinedCallFrameHasFunction(inlinedCallFrame))
-                    return inlinedCallFrame.Datum & ~(ulong)(_target.PointerSize - 1);
+                    return inlinedCallFrame.Datum & ~InlinedCallFrameMarkerMask;
                 else
                     return TargetPointer.Null;
             default:
@@ -348,13 +349,11 @@ internal sealed class FrameHelpers
         if (frameType != FrameType.InlinedCallFrame)
             return false;
 
-        //   ExceptionHandlingHelper = 2 on 64-bit, 1 on 32-bit. Mask == ExceptionHandlingHelper.
         Data.InlinedCallFrame icf = _target.ProcessedData.GetOrAdd<Data.InlinedCallFrame>(frame.Address);
         if (!InlinedCallFrameHasActiveCall(icf))
             return false;
 
-        ulong mask = (ulong)(_target.PointerSize == 8 ? 2 : 1);
-        return (icf.Datum.Value & mask) == mask;
+        return (icf.Datum.Value & InlinedCallFrameMarkerMask) == InlinedCallFrameMarkerMask;
     }
 
     private IPlatformFrameHandler GetFrameHandler(IPlatformAgnosticContext context)
@@ -379,14 +378,30 @@ internal sealed class FrameHelpers
 
     private bool InlinedCallFrameHasFunction(Data.InlinedCallFrame frame)
     {
-        if (_target.PointerSize == sizeof(ulong))
+        ulong datum = frame.Datum.Value & ~InlinedCallFrameMarkerMask;
+
+        if (!UsesInlinedCallFrameStackSizeSentinel())
         {
-            return frame.Datum != TargetPointer.Null && (frame.Datum.Value & 0x1) == 0;
+            return datum != 0;
         }
-        else
+
+        return ((long)datum & ~0xffff) != 0;
+    }
+
+    private bool UsesInlinedCallFrameStackSizeSentinel()
+    {
+        if (_target.PointerSize != sizeof(uint))
         {
-            return ((long)frame.Datum.Value & ~0xffff) != 0;
+            return false;
         }
+
+        if (_target.TryReadGlobalString(Constants.Globals.Architecture, out string? arch)
+            && Enum.TryParse(arch, ignoreCase: true, out RuntimeInfoArchitecture runtimeArchitecture))
+        {
+            return runtimeArchitecture == RuntimeInfoArchitecture.X86;
+        }
+
+        return false;
     }
 
     /// <summary>

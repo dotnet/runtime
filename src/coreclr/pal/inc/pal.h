@@ -266,17 +266,18 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// Callback invoked from the fatal-signal path to write an in-proc crash
 /// report. The callback runs inside the signal handler and must therefore
 /// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
-/// raw ucontext_t pointer received by the PAL signal handler. serialize
-/// mirrors createdump behavior: when true, callback implementations may
-/// serialize concurrent reporters because the caller expects process teardown;
-/// when false, callbacks should not block other threads indefinitely.
+/// raw ucontext_t pointer received by the PAL signal handler.
+///
+/// The PAL serializes concurrent crash diagnostics (this callback and the
+/// out-of-proc createdump path) through a shared gate before invoking the
+/// callback, so implementations do not need to serialize themselves.
 ///
 /// Registration is opt-in: if no callback is installed the PAL falls back
 /// to its default crash-dump path (createdump where available). The PAL
 /// itself has no source-level dependency on the in-proc reporter library;
 /// it only knows about this callback ABI.
 /// </summary>
-typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context, bool serialize);
+typedef VOID (*PINPROCCRASHREPORT_CALLBACK)(int signal, void* siginfo, void* context);
 
 PALIMPORT
 VOID
@@ -582,83 +583,6 @@ GetTempPathA(
 #endif
 
 PALIMPORT
-HANDLE
-PALAPI
-CreateSemaphoreExW(
-        IN LPSECURITY_ATTRIBUTES lpSemaphoreAttributes,
-        IN LONG lInitialCount,
-        IN LONG lMaximumCount,
-        IN LPCWSTR lpName,
-        IN /*_Reserved_*/  DWORD dwFlags,
-        IN DWORD dwDesiredAccess);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenSemaphoreW(
-    IN DWORD dwDesiredAccess,
-    IN BOOL bInheritHandle,
-    IN LPCWSTR lpName);
-
-#define CreateSemaphoreEx CreateSemaphoreExW
-
-PALIMPORT
-BOOL
-PALAPI
-ReleaseSemaphore(
-         IN HANDLE hSemaphore,
-         IN LONG lReleaseCount,
-         OUT LPLONG lpPreviousCount);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN BOOL bManualReset,
-         IN BOOL bInitialState,
-         IN LPCWSTR lpName);
-
-PALIMPORT
-HANDLE
-PALAPI
-CreateEventExW(
-         IN LPSECURITY_ATTRIBUTES lpEventAttributes,
-         IN LPCWSTR lpName,
-         IN DWORD dwFlags,
-         IN DWORD dwDesiredAccess);
-
-// CreateEventExW: dwFlags
-#define CREATE_EVENT_MANUAL_RESET ((DWORD)0x1)
-#define CREATE_EVENT_INITIAL_SET ((DWORD)0x2)
-
-#define CreateEvent CreateEventW
-
-PALIMPORT
-BOOL
-PALAPI
-SetEvent(
-     IN HANDLE hEvent);
-
-PALIMPORT
-BOOL
-PALAPI
-ResetEvent(
-       IN HANDLE hEvent);
-
-PALIMPORT
-HANDLE
-PALAPI
-OpenEventW(
-       IN DWORD dwDesiredAccess,
-       IN BOOL bInheritHandle,
-       IN LPCWSTR lpName);
-
-#ifdef UNICODE
-#define OpenEvent OpenEventW
-#endif
-
-PALIMPORT
 DWORD
 PALAPI
 GetCurrentProcessId();
@@ -715,31 +639,6 @@ TerminateProcess(
 
 #define INFINITE 0xFFFFFFFF // Infinite timeout
 
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObject(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForSingleObjectEx(
-            IN HANDLE hHandle,
-            IN DWORD dwMilliseconds,
-            IN BOOL bAlertable);
-
-PALIMPORT
-DWORD
-PALAPI
-WaitForMultipleObjectsEx(
-             IN DWORD nCount,
-             IN CONST HANDLE *lpHandles,
-             IN BOOL bWaitAll,
-             IN DWORD dwMilliseconds,
-             IN BOOL bAlertable);
-
 #define DUPLICATE_CLOSE_SOURCE      0x00000001
 #define DUPLICATE_SAME_ACCESS       0x00000002
 
@@ -754,19 +653,6 @@ DuplicateHandle(
         IN DWORD dwDesiredAccess,
         IN BOOL bInheritHandle,
         IN DWORD dwOptions);
-
-PALIMPORT
-VOID
-PALAPI
-Sleep(
-      IN DWORD dwMilliseconds);
-
-PALIMPORT
-DWORD
-PALAPI
-SleepEx(
-    IN DWORD dwMilliseconds,
-    IN BOOL bAlertable);
 
 PALIMPORT
 BOOL
@@ -2672,15 +2558,9 @@ typedef struct _RUNTIME_FUNCTION {
 #define READ_CONTROL              (0x00020000L)
 #define MAXIMUM_ALLOWED           (0x02000000L)
 
-#define EVENT_MODIFY_STATE        (0x0002)
-#define EVENT_ALL_ACCESS          (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
-
 #define MUTANT_QUERY_STATE        (0x0001)
 #define MUTANT_ALL_ACCESS         (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | MUTANT_QUERY_STATE)
 #define MUTEX_ALL_ACCESS          MUTANT_ALL_ACCESS
-
-#define SEMAPHORE_MODIFY_STATE    (0x0002)
-#define SEMAPHORE_ALL_ACCESS      (STANDARD_RIGHTS_REQUIRED | SYNCHRONIZE | 0x3)
 
 PALIMPORT
 VOID

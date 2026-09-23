@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_StructPromote_SP1d;
+
 using System.Runtime.CompilerServices;
 using System;
 using Xunit;
@@ -32,6 +34,7 @@ public class SP1d
         // outarg[0] <= inarg[8]; outarg[4] <= r3; outarg[8] <= r2
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

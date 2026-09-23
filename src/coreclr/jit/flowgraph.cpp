@@ -115,7 +115,8 @@ PhaseStatus Compiler::fgInsertGCPolls()
 
         // If we're doing GCPOLL_CALL, just insert a GT_CALL node before the last node in the block.
 
-        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY));
+        assert(block->KindIs(BBJ_RETURN, BBJ_ALWAYS, BBJ_COND, BBJ_SWITCH, BBJ_THROW, BBJ_CALLFINALLY) ||
+               block->hasEHBoundaryOut());
 
         GCPollType pollType = GCPOLL_INLINE;
 
@@ -142,6 +143,14 @@ PhaseStatus Compiler::fgInsertGCPolls()
             // We don't want to deal with all the outgoing edges of a switch block.
             //
             JITDUMP("Selecting CALL poll in block " FMT_BB " because it is a SWITCH block\n", block->bbNum);
+            pollType = GCPOLL_CALL;
+        }
+        else if (block->hasEHBoundaryOut())
+        {
+            // We can't split a block that leaves an EH region: fgCreateGCPoll does not know how to
+            // move its outgoing flow onto the new bottom block.
+            //
+            JITDUMP("Selecting CALL poll in block " FMT_BB " because it ends an EH region\n", block->bbNum);
             pollType = GCPOLL_CALL;
         }
         else if (block->HasFlag(BBF_COLD))
@@ -3159,9 +3168,8 @@ PhaseStatus Compiler::fgCreateFunclets()
         funcInfo[i].funFramePointerReg = REG_NA;
 #endif
 #ifdef TARGET_WASM
-        funcInfo[i].funWasmLocalDecls          = nullptr;
-        funcInfo[i].funWasmExnRefLocalIndex    = UINT_MAX;
-        funcInfo[i].funWasmImageBaseLocalIndex = UINT_MAX;
+        funcInfo[i].funWasmLocalDecls       = nullptr;
+        funcInfo[i].funWasmExnRefLocalIndex = UINT_MAX;
 #endif
     }
 #endif
@@ -5475,7 +5483,7 @@ void FlowGraphNaturalLoops::Dump(FlowGraphNaturalLoops* loops)
 //   TFunc - Callback functor type
 //
 // Parameters:
-//   func - Callback functor that accepts a GenTreeLclVarCommon* and returns a
+//   func - Generic callback functor that accepts a local definition provider and returns a
 //   bool. On true, continue looking for defs; on false, abort.
 //
 // Returns:
@@ -5510,11 +5518,11 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
                 return Compiler::WALK_SKIP_SUBTREES;
             }
 
-            auto visitDef = [=](GenTreeLclVarCommon* lcl) {
-                return m_func(lcl) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
+            auto visitDef = [=](const auto& def) {
+                return m_func(def) ? GenTree::VisitResult::Continue : GenTree::VisitResult::Abort;
             };
 
-            if (tree->VisitLocalDefNodes(m_compiler, visitDef) == GenTree::VisitResult::Abort)
+            if (tree->VisitLogicalLocalDefs(m_compiler, visitDef) == GenTree::VisitResult::Abort)
             {
                 return Compiler::WALK_ABORT;
             }
@@ -5545,8 +5553,7 @@ bool FlowGraphNaturalLoop::VisitDefs(TFunc func)
 //   lclNum - The local.
 //
 // Returns:
-//   Tree that represents a def of the local, or a def of the parent local if
-//   the local is a field; nullptr if no def was found.
+//   Tree that represents a def of the local; nullptr if no def was found.
 //
 // Remarks:
 //   Does not support promoted struct locals, but does support fields of
@@ -5557,18 +5564,11 @@ GenTreeLclVarCommon* FlowGraphNaturalLoop::FindDef(unsigned lclNum)
     LclVarDsc* dsc = m_dfsTree->GetCompiler()->lvaGetDesc(lclNum);
     assert(!dsc->lvPromoted);
 
-    unsigned lclNum2 = BAD_VAR_NUM;
-
-    if (dsc->lvIsStructField)
-    {
-        lclNum2 = dsc->lvParentLcl;
-    }
-
     GenTreeLclVarCommon* result = nullptr;
-    VisitDefs([&result, lclNum, lclNum2](GenTreeLclVarCommon* def) {
-        if ((def->GetLclNum() == lclNum) || (def->GetLclNum() == lclNum2))
+    VisitDefs([&result, lclNum](const auto& def) {
+        if (def.GetLclNum() == lclNum)
         {
-            result = def;
+            result = def.GetDefNode();
             return false;
         }
 
@@ -5700,11 +5700,11 @@ bool FlowGraphNaturalLoop::AnalyzeIteration(NaturalLoopIterInfo* info, bool allo
             continue;
         }
 
-        bool result = VisitDefs([=](GenTreeLclVarCommon* def) {
-            if ((def->GetLclNum() != iterVar) || (def == iterTree))
+        bool result = VisitDefs([=](const auto& def) {
+            if ((def.GetLclNum() != iterVar) || (def.GetDefNode() == iterTree))
                 return true;
 
-            JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def));
+            JITDUMP("    Loop has extraneous def [%06u]\n", Compiler::dspTreeID(def.GetDefNode()));
             return false;
         });
 
@@ -5809,6 +5809,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
     info->HasArrayLengthLimit    = false;
     info->HasInvariantLocalLimit = false;
     info->LimitOffset            = 0;
+    info->LimitVar               = BAD_VAR_NUM;
 
     Compiler* comp = m_dfsTree->GetCompiler();
 
@@ -5921,6 +5922,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasInvariantLocalLimit = true;
+        info->LimitVar               = limitOp->AsLclVarCommon()->GetLclNum();
     }
     else if (limitOp->OperIs(GT_ARR_LENGTH))
     {
@@ -5949,6 +5951,7 @@ bool FlowGraphNaturalLoop::MatchLimit(unsigned iterVar, GenTree* test, NaturalLo
         }
 
         info->HasArrayLengthLimit = true;
+        info->LimitVar            = array->AsLclVarCommon()->GetLclNum();
     }
     else
     {
@@ -6124,11 +6127,24 @@ bool FlowGraphNaturalLoop::CheckLoopConditionBaseCase(BasicBlock* preheader, Nat
 bool FlowGraphNaturalLoop::HasZeroTripTest(BasicBlock* preheader, NaturalLoopIterInfo* info)
 {
     assert(!preheader->KindIs(BBJ_COND));
+    Compiler*   comp     = GetDfsTree()->GetCompiler();
     BasicBlock* curBlock = preheader;
     while (true)
     {
+        for (Statement* stmt : curBlock->Statements())
+        {
+            GenTree* tree = stmt->GetRootNode();
+            if (comp->gtTreeHasLocalStore(tree, info->IterVar) ||
+                ((info->LimitVar != BAD_VAR_NUM) && comp->gtTreeHasLocalStore(tree, info->LimitVar)))
+            {
+                JITDUMP("  Iterator or limit modified by [%06u] in " FMT_BB "\n", Compiler::dspTreeID(tree),
+                        curBlock->bbNum);
+                return false;
+            }
+        }
+
         BasicBlock* prevBlock = curBlock;
-        curBlock              = curBlock->GetUniquePred(GetDfsTree()->GetCompiler());
+        curBlock              = curBlock->GetUniquePred(comp);
 
         if (curBlock == nullptr)
         {
@@ -6283,15 +6299,8 @@ bool FlowGraphNaturalLoop::HasDef(unsigned lclNum)
     // Currently does not handle promoted locals, only fields.
     assert(!dsc->lvPromoted);
 
-    unsigned defLclNum1 = lclNum;
-    unsigned defLclNum2 = BAD_VAR_NUM;
-    if (dsc->lvIsStructField)
-    {
-        defLclNum2 = dsc->lvParentLcl;
-    }
-
-    bool result = VisitDefs([=](GenTreeLclVarCommon* lcl) {
-        if ((lcl->GetLclNum() == defLclNum1) || (lcl->GetLclNum() == defLclNum2))
+    bool result = VisitDefs([=](const auto& def) {
+        if (def.GetLclNum() == lclNum)
         {
             return false;
         }

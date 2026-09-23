@@ -4,12 +4,16 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
 {
     public class BackgroundServiceTests
     {
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsMultithreadingSupported && RemoteExecutor.IsSupported;
+
         [Fact]
         public void StartReturnsCompletedTask()
         {
@@ -29,11 +33,14 @@ namespace Microsoft.Extensions.Hosting.Tests
         public async Task StartCancelledThrowsTaskCanceledException()
         {
             var ct = new CancellationToken(true);
-            var service = new WaitForCancelledTokenService();
+            var service = new TrackingBackgroundService();
 
-            await service.StartAsync(ct);
+            Task startTask = service.StartAsync(ct);
 
+            Assert.True(startTask.IsCompleted);
             await Assert.ThrowsAnyAsync<OperationCanceledException>(() => service.ExecuteTask);
+            Assert.True(service.ExecuteTask.IsCanceled);
+            Assert.False(service.ExecuteInvocation.IsCompleted);
         }
 
         [Fact]
@@ -144,6 +151,86 @@ namespace Microsoft.Extensions.Hosting.Tests
             tokenSource.Cancel();
 
             await service.WaitForEndExecuteTask;
+        }
+
+        [ConditionalTheory(typeof(BackgroundServiceTests), nameof(IsThreadingAndRemoteExecutorSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExecuteAsyncRunsWhenImmediatelyStoppedOrDisposed(bool dispose)
+        {
+            var options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["DOTNET_ThreadPool_UseWindowsThreadPool"] = "0";
+
+            using var _ = RemoteExecutor.Invoke((string disposeString) =>
+            {
+                ThreadPool.GetMinThreads(out int originalMinWorkerThreads, out int originalMinCompletionPortThreads);
+                ThreadPool.GetMaxThreads(out int originalMaxWorkerThreads, out int originalMaxCompletionPortThreads);
+                Assert.True(ThreadPool.SetMinThreads(1, originalMinCompletionPortThreads));
+                Assert.True(ThreadPool.SetMaxThreads(1, originalMaxCompletionPortThreads));
+
+                using var blockerEntered = new ManualResetEventSlim();
+                using var releaseBlocker = new ManualResetEventSlim();
+
+                try
+                {
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        blockerEntered.Set();
+                        releaseBlocker.Wait();
+                    });
+                    Assert.True(blockerEntered.Wait(RemoteExecutor.FailWaitTimeoutMilliseconds));
+
+                    int startThreadId = Environment.CurrentManagedThreadId;
+                    var service = new TrackingBackgroundService();
+                    service.StartAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+                    Task stopTask;
+                    if (bool.Parse(disposeString))
+                    {
+                        service.Dispose();
+                        stopTask = service.ExecuteTask;
+                    }
+                    else
+                    {
+                        stopTask = service.StopAsync(CancellationToken.None);
+                    }
+
+                    releaseBlocker.Set();
+                    stopTask.GetAwaiter().GetResult();
+
+                    (int invocationCount, int threadId, bool isThreadPoolThread, bool isCancellationRequested) =
+                        service.ExecuteInvocation.GetAwaiter().GetResult();
+                    Assert.Equal(1, invocationCount);
+                    Assert.NotEqual(startThreadId, threadId);
+                    Assert.True(isThreadPoolThread);
+                    Assert.True(isCancellationRequested);
+                }
+                finally
+                {
+                    releaseBlocker.Set();
+                    ThreadPool.SetMaxThreads(originalMaxWorkerThreads, originalMaxCompletionPortThreads);
+                    ThreadPool.SetMinThreads(originalMinWorkerThreads, originalMinCompletionPortThreads);
+                }
+            }, dispose.ToString(), options);
+        }
+
+        private sealed class TrackingBackgroundService : BackgroundService
+        {
+            private readonly TaskCompletionSource<(int InvocationCount, int ThreadId, bool IsThreadPoolThread, bool IsCancellationRequested)> _executeInvocation =
+                new(TaskCreationOptions.RunContinuationsAsynchronously);
+            private int _invocationCount;
+
+            public Task<(int InvocationCount, int ThreadId, bool IsThreadPoolThread, bool IsCancellationRequested)> ExecuteInvocation => _executeInvocation.Task;
+
+            protected override Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                _executeInvocation.SetResult((
+                    Interlocked.Increment(ref _invocationCount),
+                    Environment.CurrentManagedThreadId,
+                    Thread.CurrentThread.IsThreadPoolThread,
+                    stoppingToken.IsCancellationRequested));
+                return Task.CompletedTask;
+            }
         }
 
         private class WaitForCancelledTokenService : BackgroundService

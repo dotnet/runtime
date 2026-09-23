@@ -132,6 +132,188 @@ namespace System.Threading.Tasks.Tests
         // condition alongside the shared gates.
         public static bool IsNotMonoRuntime => PlatformDetection.IsNotMonoRuntime;
 
+        // Gate for the async dispatch-frame name-contract tests below: they reflect into CoreCLR-specific
+        // internal types, which is only reliable on the CoreCLR JIT (not Mono, and not NativeAOT where
+        // reflection is metadata-trimmed).
+        public static bool IsCoreClrJitRuntime =>
+            PlatformDetection.IsNotMonoRuntime && !PlatformDetection.IsNativeAot;
+
+        // Async dispatch-frame NAME contract (shared helpers; V1-specific tests live in AsyncProfilerV1Tests.cs
+        // and V2-specific tests in AsyncProfilerV2Tests.cs).
+        private const BindingFlags DeclaredInstanceMethod =
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+        private static Type GetCoreLibType(string fullName)
+        {
+            Type? type = typeof(object).Assembly.GetType(fullName, throwOnError: false);
+            Assert.True(type is not null, $"Type '{fullName}' was not found in System.Private.CoreLib.");
+            return type!;
+        }
+
+        private static Type GetCoreLibNestedType(string declaringTypeFullName, string nestedTypeName)
+        {
+            Type? nested = GetCoreLibType(declaringTypeFullName).GetNestedType(nestedTypeName, BindingFlags.NonPublic);
+            Assert.True(nested is not null, $"Nested type '{nestedTypeName}' was not found on '{declaringTypeFullName}'.");
+            return nested!;
+        }
+
+        // AsyncProfiler.ContinuationWrapper - the V2 wrapper pool the stitcher keys off by name.
+        private static Type ContinuationWrapperType =>
+            GetCoreLibNestedType("System.Runtime.CompilerServices.AsyncProfiler", "ContinuationWrapper");
+
+        // Asserts the async dispatch method the stitcher recognizes by name still exists under that name.
+        // Keys mirror the string constants in the stitcher's AsyncStitchBoundary classifier.
+        private static MethodInfo AssertAsyncDispatchMethodExists(string key)
+        {
+            MethodInfo? method = key switch
+            {
+                "V1.MoveNextAsDispatcher" =>
+                    GetCoreLibNestedType("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1", "AsyncProfilerAsyncStateMachineBox`1")
+                        .GetMethod("MoveNextAsDispatcher", DeclaredInstanceMethod),
+                "V1.AsyncStateMachineDispatcher.MoveNext" =>
+                    GetCoreLibType("System.Runtime.CompilerServices.AsyncStateMachineDispatcher")
+                        .GetMethod("MoveNext", DeclaredInstanceMethod),
+                "V2.DispatchContinuations" =>
+                    GetCoreLibNestedType("System.Runtime.CompilerServices.AsyncHelpers", "RuntimeAsyncTask`1")
+                        .GetMethod("DispatchContinuations", DeclaredInstanceMethod),
+                "V2.InstrumentedDispatchContinuations" =>
+                    GetCoreLibNestedType("System.Runtime.CompilerServices.AsyncHelpers", "RuntimeAsyncTask`1")
+                        .GetMethod("InstrumentedDispatchContinuations", DeclaredInstanceMethod),
+                _ => throw new ArgumentOutOfRangeException(nameof(key), key, "Unknown async dispatch method key."),
+            };
+
+            Assert.True(method is not null,
+                $"Async dispatch method for contract key '{key}' was not found; the CPU stitcher recognizes it by name.");
+            return method!;
+        }
+
+        private static void AssertMethodImplementationFlags(
+            MethodInfo method, MethodImplAttributes requiredFlags, string contractKey)
+        {
+            MethodImplAttributes actualFlags = method.GetMethodImplementationFlags();
+            Assert.True((actualFlags & requiredFlags) == requiredFlags,
+                $"Async dispatch method for contract key '{contractKey}' must have implementation flags " +
+                $"'{requiredFlags}' but had '{actualFlags}'.");
+        }
+
+        // ------------------------------------------------------------------------------------------------
+        // Real-callstack boundary layout.
+        //
+        // Beyond asserting the boundary methods exist (name contract above), these helpers capture the actual
+        // physical managed stack from inside a resumed async continuation and verify the stitcher-recognized
+        // boundary frames are present in the expected leaf->root order -- exactly what an unfiltered CPU sample
+        // would contain. StackTrace.GetFrames() does NOT drop [StackTraceHidden] frames on any runtime (only
+        // ToString filters them), so the boundary frames are visible even though they are hidden from managed
+        // stack traces.
+        // ------------------------------------------------------------------------------------------------
+
+        // Maps a captured frame's method identity to its stitcher boundary label, or null if not a boundary.
+        private static string? ClassifyAsyncBoundaryFrame(DiagnosticMethodInfo? info)
+        {
+            if (info is null)
+            {
+                return null;
+            }
+
+            string name = info.Name;
+            string typeName = info.DeclaringTypeName ?? string.Empty;
+
+            return name switch
+            {
+                _ when name.StartsWith("Continuation_Wrapper_", StringComparison.Ordinal) => "Wrapper",
+                "DispatchContinuations" => "V2.DispatchContinuations",
+                "InstrumentedDispatchContinuations" => "V2.InstrumentedDispatchContinuations",
+                "MoveNextAsDispatcher" => "V1.MoveNextAsDispatcher",
+                "MoveNext" when typeName.EndsWith("AsyncStateMachineDispatcher", StringComparison.Ordinal)
+                    => "V1.AsyncStateMachineDispatcher.MoveNext",
+                _ => null,
+            };
+        }
+
+        // Captures the current thread's physical managed stack UNFILTERED and returns the stitcher-recognized
+        // async boundary labels in leaf->root order. Must be called from inside a resumed async continuation
+        // (while the async profiler is active) so the dispatch machinery is on the stack.
+        private static (List<string> Boundaries, List<string> DiagnosticFrames) CaptureAsyncBoundarySequence()
+        {
+            var capture = CaptureAsyncStack();
+            return (capture.Boundaries, capture.DiagnosticFrames);
+        }
+
+        // Captures the physical stack once and returns, all leaf->root: the stitcher boundary labels, the
+        // per-frame declaring type names, and diagnostic frame names. The declaring type names let
+        // inline-completion tests locate a still-completing child's state-machine frame (its method name is the
+        // compiler-generated MoveNext, so it is identified by its declaring state-machine type name) relative
+        // to the resuming parent frame. The diagnostic names preserve every captured frame for failure output.
+        private static (List<string> Boundaries, List<string> DeclaringTypeNames, List<string> DiagnosticFrames) CaptureAsyncStack()
+        {
+            var boundaries = new List<string>();
+            var typeNames = new List<string>();
+            var diagnosticFrames = new List<string>();
+            foreach (StackFrame frame in new StackTrace(fNeedFileInfo: false).GetFrames())
+            {
+                DiagnosticMethodInfo? info = DiagnosticMethodInfo.Create(frame);
+                string typeName = info?.DeclaringTypeName ?? "<unknown-type>";
+                string methodName = info?.Name ?? "<unknown-method>";
+                typeNames.Add(typeName);
+                diagnosticFrames.Add($"{typeName}::{methodName}");
+
+                string? label = ClassifyAsyncBoundaryFrame(info);
+                if (label is not null)
+                {
+                    boundaries.Add(label);
+                }
+            }
+
+            return (boundaries, typeNames, diagnosticFrames);
+        }
+
+        // Asserts that expectedLeafToRoot appears as an ordered subsequence of the captured boundary labels
+        // (leaf->root). Subsequence (not contiguous) matching tolerates unrelated frames between boundaries
+        // and repeated boundaries from nested resumes, while still enforcing the required relative order.
+        private static void AssertBoundarySubsequence(
+            List<string> capturedLeafToRoot,
+            List<string> diagnosticFramesLeafToRoot,
+            params string[] expectedLeafToRoot)
+        {
+            int matched = 0;
+            foreach (string label in capturedLeafToRoot)
+            {
+                if (matched < expectedLeafToRoot.Length && label == expectedLeafToRoot[matched])
+                {
+                    matched++;
+                }
+            }
+
+            Assert.True(matched == expectedLeafToRoot.Length,
+                $"Expected async boundary frames [{string.Join(" -> ", expectedLeafToRoot)}] (leaf->root) were not all " +
+                $"present in order. Captured boundaries (leaf->root): [{string.Join(" -> ", capturedLeafToRoot)}]. " +
+                $"Captured diagnostic frames (leaf->root): [{string.Join(" -> ", diagnosticFramesLeafToRoot)}].");
+        }
+
+        // Asserts each expected fragment appears (as a substring of a declaring type name) as an ordered
+        // subsequence of the captured declaring type names (leaf->root), tolerating unrelated frames between.
+        // Used to locate specific user state-machine frames by the method name embedded in their generated type.
+        private static void AssertFrameOrder(
+            List<string> capturedLeafToRoot,
+            List<string> diagnosticFramesLeafToRoot,
+            params string[] expectedFragmentsLeafToRoot)
+        {
+            int matched = 0;
+            foreach (string typeName in capturedLeafToRoot)
+            {
+                if (matched < expectedFragmentsLeafToRoot.Length &&
+                    typeName.Contains(expectedFragmentsLeafToRoot[matched], StringComparison.Ordinal))
+                {
+                    matched++;
+                }
+            }
+
+            Assert.True(matched == expectedFragmentsLeafToRoot.Length,
+                $"Expected frames [{string.Join(" -> ", expectedFragmentsLeafToRoot)}] (leaf->root) were not all present " +
+                $"in order. Captured declaring types (leaf->root): [{string.Join(" -> ", capturedLeafToRoot)}]. " +
+                $"Captured diagnostic frames (leaf->root): [{string.Join(" -> ", diagnosticFramesLeafToRoot)}].");
+        }
+
         private const string AsyncProfilerEventSourceName = "System.Runtime.CompilerServices.AsyncProfilerEventSource";
         private const string WrapperNameTemplate = "Continuation_Wrapper_{0}";
         private static readonly string WrapperNamePrefix = WrapperNameTemplate.Substring(0, WrapperNameTemplate.IndexOf("{0}", StringComparison.Ordinal));

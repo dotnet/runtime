@@ -45,6 +45,63 @@ namespace System.Net.Mime.Tests
         }
 
         [Theory]
+        [InlineData("B", "Y2Fmw6kgZmlsZS50eHQ=?=")]
+        [InlineData("b", "Y2Fmw6kgZmlsZS50eHQ=?=")]
+        [InlineData("Q", "caf=C3=A9_file.txt?=")]
+        [InlineData("q", "caf=C3=A9_file.txt?=")]
+        public void DecodeHeaderValue_EncodingIdentifier_IsCaseInsensitive(string encodingIdentifier, string encodedText)
+        {
+            Assert.Equal("caf\u00e9 file.txt", MimeBasePart.DecodeHeaderValue($"=?utf-8?{encodingIdentifier}?{encodedText}"));
+        }
+
+        [Theory]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?=", "Report caf\u00e9.txt")]
+        [InlineData("=?utf-8?B?Y2Fmw6kudHh0?= attached", "caf\u00e9.txt attached")]
+        [InlineData("Report =?utf-8?B?Y2Fmw6kudHh0?= attached", "Report caf\u00e9.txt attached")]
+        [InlineData(" =?utf-8?B?Y2Fmw6kudHh0?= ", " caf\u00e9.txt ")]
+        [InlineData("=?utf-8?B?Y2Fm?= \r\n\t=?utf-8?B?w6kudHh0?=", "caf\u00e9.txt")]
+        [InlineData("Report =?utf-8?X?Y2Fmw6kudHh0?=", "Report =?utf-8?X?Y2Fmw6kudHh0?=")]
+        [InlineData("Report=?utf-8?B?Y2Fmw6kudHh0?=", "Report=?utf-8?B?Y2Fmw6kudHh0?=")]
+        [InlineData("=?utf-99?B?eA?= =?utf-8?B?YQ?=", "=?utf-99?B?eA?= a")]
+        [InlineData("=?utf-7?B?eA?= =?utf-8?B?YQ?=", "=?utf-7?B?eA?= a")]
+        public void DecodeHeaderValue_MixedAsciiAndEncodedWords_DecodesTokens(string value, string expected)
+        {
+            Assert.Equal(expected, MimeBasePart.DecodeHeaderValue(value));
+        }
+
+        [Fact]
+        public void DecodeEncoding_UnknownCharsetBeforeKnownCharset_ReturnsKnownEncoding()
+        {
+            Assert.Equal(Encoding.Latin1, MimeBasePart.DecodeEncoding("=?utf-99?B?eA?= =?iso-8859-1?Q?a?="));
+        }
+
+        [Theory]
+        [InlineData("=?utf-8?B?YQ?=", true)]
+        [InlineData(" =?utf-8?B?YQ?= ", true)]
+        [InlineData("=?utf-8?B?YQ?= =?iso-8859-1?Q?a?=", true)]
+        [InlineData("=?utf-8?B?YQ?=\r\n\t=?utf-8?Q?a?=", true)]
+        [InlineData("=?utf-8?Q?a\"b?=", false)]
+        [InlineData("=?utf-8?Q?a\\b?=", false)]
+        [InlineData("=?utf-8?Q?caf\u00e9?=", false)]
+        [InlineData("=?utf-8?B?YQ?=\r\n", false)]
+        [InlineData("Report =?utf-8?B?YQ?=", false)]
+        [InlineData("", false)]
+        public void IsFullyEncoded_ValidatesEntireParameterValue(string value, bool expected)
+        {
+            Assert.Equal(expected, MimeBasePart.IsFullyEncoded(value));
+        }
+
+        [Fact]
+        public void DecodeHeaderValue_OverlongEncodedWord_Decodes()
+        {
+            string expected = new string('a', 60);
+            string value = $"=?utf-8?B?{Convert.ToBase64String(Encoding.UTF8.GetBytes(expected))}?=";
+            Assert.True(value.Length > 75);
+
+            Assert.Equal(expected, MimeBasePart.DecodeHeaderValue(value));
+        }
+
+        [Theory]
         [InlineData("some test header to base64", 1)]
         [InlineData("some test header to base64asdf \xE9\xE5 encode that contains some unicode \xE5 \xF8\xEE asdf\xE9\xE5 and is really really long and stuff ", 3)]
         public void EncoderAndDecoder_WithQEncodedString_AndNoUnicode_AndShortHeader_ShouldEncodeAndDecode(

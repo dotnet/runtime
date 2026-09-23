@@ -932,7 +932,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_AVX512, LAST_NI_AVX512 },                        // AVX512
     { FIRST_NI_AVX512v2, LAST_NI_AVX512v2 },                    // AVX512v2
     { FIRST_NI_AVX512v3, LAST_NI_AVX512v3 },                    // AVX512v3
-    { NI_Illegal, NI_Illegal },                                 //      AVX10v1
+    { FIRST_NI_AVX10v1, LAST_NI_AVX10v1 },                      // AVX10v1
     { FIRST_NI_AVX10v2, LAST_NI_AVX10v2 },                      // AVX10v2
     { NI_Illegal, NI_Illegal },                                 //      APX
     { FIRST_NI_AES, LAST_NI_AES },                              // AES
@@ -980,6 +980,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Crc32, LAST_NI_Crc32 },                          // Crc32
     { FIRST_NI_Dp, LAST_NI_Dp },                                // Dp
     { FIRST_NI_Rdm, LAST_NI_Rdm },                              // Rdm
+    { FIRST_NI_Fp16, LAST_NI_Fp16 },                            // Fp16
     { FIRST_NI_Sha1, LAST_NI_Sha1 },                            // Sha1
     { FIRST_NI_Sha256, LAST_NI_Sha256 },                        // Sha256
     { NI_Illegal, NI_Illegal },                                 //      Atomics
@@ -1004,6 +1005,7 @@ static const HWIntrinsicIsaRange hwintrinsicIsaRangeArray[] = {
     { FIRST_NI_Crc32_Arm64, LAST_NI_Crc32_Arm64 },              // Crc32_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Dp_Arm64
     { FIRST_NI_Rdm_Arm64, LAST_NI_Rdm_Arm64 },                  // Rdm_Arm64
+    { NI_Illegal, NI_Illegal },                                 //      Fp16_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sha1_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sha256_Arm64
     { NI_Illegal, NI_Illegal },                                 //      Sve_Arm64
@@ -1196,15 +1198,12 @@ static NamedIntrinsic binarySearchId(CORINFO_InstructionSet isa, CORINFO_SIG_INF
 }
 
 //------------------------------------------------------------------------
-// lookupId: Gets the NamedIntrinsic for a given method name and InstructionSet
+// resolveId: Resolve a hardware intrinsic against the compilation's ISA support
 //
 // Arguments:
 //    comp                    -- The compiler
-//    sig                     -- The signature of the intrinsic
-//    className               -- The name of the class associated with the HWIntrinsic to lookup
-//    methodName              -- The name of the method associated with the HWIntrinsic to lookup
-//    innerEnclosingClassName -- The name of the inner enclosing class of nested 64-bit classes
-//    outerEnclosingClassName -- The name of the outer enclosing class of nested 64-bit classes
+//    id                      -- The identity returned by lookup, independent of support
+//    isa                     -- The declaring ISA, before aliasing
 //    isXplatIntrinsic        -- True if the intrinsic lives directly under the cross-platform
 //                               System.Runtime.Intrinsics (or System.Numerics) namespace and
 //                               therefore has a managed fallback when the underlying ISA isn't
@@ -1213,55 +1212,24 @@ static NamedIntrinsic binarySearchId(CORINFO_InstructionSet isa, CORINFO_SIG_INF
 //                               PlatformNotSupportedException when the ISA isn't available.
 //
 // Return Value:
-//    The NamedIntrinsic associated with methodName and isa
-NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
-                                         CORINFO_SIG_INFO* sig,
-                                         const char*       className,
-                                         const char*       methodName,
-                                         const char*       innerEnclosingClassName,
-                                         const char*       outerEnclosingClassName,
-                                         bool              isXplatIntrinsic)
+//    The operation ID, a support-query result, NI_Illegal for a managed fallback,
+//    or NI_Throw_PlatformNotSupportedException for an unavailable platform API.
+//
+// Notes:
+//    Reports dependencies on the declaring ISA, not the operation's aliased ISA
+//    (for example, AVX10v1 operations use AVX512 IDs).
+NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
+                                          NamedIntrinsic         id,
+                                          CORINFO_InstructionSet isa,
+                                          bool                   isXplatIntrinsic)
 {
-#if defined(DEBUG)
-    static bool validationCompleted = false;
-
-    if (!validationCompleted)
-    {
-        ValidateHWIntrinsicIsaRangeArray();
-        validationCompleted = true;
-    }
-#endif // DEBUG
-
-    // Signatures that have a 'this' parameter are illegal intrinsics.
-    if (sig->hasThis())
-    {
-        return NI_Illegal;
-    }
-
-    CORINFO_InstructionSet isa = comp->lookupIsa(className, innerEnclosingClassName, outerEnclosingClassName);
-
-    if (isa == InstructionSet_ILLEGAL)
-    {
-        return NI_Illegal;
-    }
+    assert(isa != InstructionSet_ILLEGAL);
 
     bool     isHWIntrinsicEnabled      = (JitConfig.EnableHWIntrinsic() != 0);
     bool     isIsaSupported            = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa);
-    bool     isHardwareAcceleratedProp = false;
-    bool     isSupportedProp           = false;
+    bool     isHardwareAcceleratedProp = (id == NI_IsHardwareAccelerated);
+    bool     isSupportedProp           = (id == NI_IsSupported);
     uint32_t vectorByteLength          = 0;
-
-    if (strncmp(methodName, "get_Is", 6) == 0)
-    {
-        if (strcmp(methodName + 6, "HardwareAccelerated") == 0)
-        {
-            isHardwareAcceleratedProp = true;
-        }
-        else if (strcmp(methodName + 6, "Supported") == 0)
-        {
-            isSupportedProp = true;
-        }
-    }
 
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
@@ -1286,19 +1254,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
             isa              = InstructionSet_AVX512;
             vectorByteLength = 64;
         }
-        else
-        {
-            assert((strcmp(className, "Vector128") != 0) && (strcmp(className, "Vector256") != 0) &&
-                   (strcmp(className, "Vector512") != 0));
-        }
     }
 #endif
-
-    if (isSupportedProp && (strncmp(className, "Vector", 6) == 0))
-    {
-        // The Vector*<T>.IsSupported props report if T is supported & is specially handled in lookupNamedIntrinsic
-        return NI_Illegal;
-    }
 
     if (isSupportedProp || isHardwareAcceleratedProp)
     {
@@ -1395,14 +1352,49 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_VectorT)
     {
-        // This instruction set should only be set when SVE is enabled.
-        // Baseline Vector<T> will use InstructionSet_VectorT128.
-        if (!comp->compOpportunisticallyDependsOn(InstructionSet_Sve))
-        {
-            return NI_Illegal;
-        }
+        // Scalable Vector<T> has no intrinsic table implementation yet.
+        return NI_Illegal;
     }
 #endif
+
+    return id;
+}
+
+//------------------------------------------------------------------------
+// lookupId: identify an operation within an ISA without querying target support
+//
+// Arguments:
+//    sig -- method signature
+//    isa -- declaring ISA, before mapping aliases such as AVX10v1
+//    methodName -- name of the operation
+//
+// Returns:
+//    The operation's intrinsic ID, or NI_Illegal if it is not recognized.
+//
+NamedIntrinsic HWIntrinsicInfo::lookupId(CORINFO_SIG_INFO* sig, CORINFO_InstructionSet isa, const char* methodName)
+{
+#if defined(DEBUG)
+    static bool validationCompleted = false;
+
+    if (!validationCompleted)
+    {
+        ValidateHWIntrinsicIsaRangeArray();
+        validationCompleted = true;
+    }
+#endif // DEBUG
+
+    // Unmapped nested ISAs have no table entries, independently of target support.
+    if ((isa == InstructionSet_NONE) || sig->hasThis())
+    {
+        return NI_Illegal;
+    }
+
+    if (isa == InstructionSet_Vector)
+    {
+        // Portable vector widths share operation IDs. Vector<T> recognition need
+        // not select a width or report the associated ISA dependency.
+        return binarySearchId(InstructionSet_Vector128, sig, methodName);
+    }
 
 #if defined(TARGET_XARCH)
     // AVX10v1 is a strict superset of all AVX512 ISAs
@@ -1435,6 +1427,29 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
 #endif // TARGET_XARCH
 
     return binarySearchId(isa, sig, methodName);
+}
+
+//------------------------------------------------------------------------
+// lookupVectorIsa: identify the portable vector ISA for a Vector<T> width
+//
+CORINFO_InstructionSet HWIntrinsicInfo::lookupVectorIsa(uint32_t size)
+{
+    switch (size)
+    {
+        case 16:
+            return InstructionSet_Vector128;
+#ifdef TARGET_XARCH
+        case 32:
+            return InstructionSet_Vector256;
+        case 64:
+            return InstructionSet_Vector512;
+#elif defined(TARGET_ARM64)
+        case SIZE_UNKNOWN:
+            return InstructionSet_VectorT;
+#endif
+        default:
+            unreached();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -2783,6 +2798,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 #endif // TARGET_XARCH
 
         userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        gtUpdateNodeSideEffects(retNode);
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
@@ -2912,10 +2928,18 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             switch (intrinsic)
             {
                 case NI_Vector_Abs:
+                {
+                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    break;
+                }
+
                 case NI_Vector_IsNegative:
                 case NI_Vector_IsPositive:
                 {
-                    potentiallyNotSupported = varTypeIsSigned(simdBaseType);
+                    // The 256-bit signed integer comparisons used for sign checks require AVX2.
+                    // Floating-point sign checks reinterpret the lanes as signed integers and use
+                    // the same comparison path.
+                    potentiallyNotSupported = !varTypeIsUnsigned(simdBaseType);
                     break;
                 }
 
@@ -3224,7 +3248,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_AsVector512:
         {
             assert(sig->numArgs == 1);
-            uint32_t vectorTByteLength = getVectorTByteLength();
+            uint32_t vectorTByteLength = getCompileTimeVectorTByteLength();
 
             if (vectorTByteLength == 0)
             {
@@ -4076,6 +4100,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector_GetElement:
         {
             assert(sig->numArgs == 2);
+
+#if defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by extract_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(0).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
+                }
+            }
+#endif // TARGET_WASM
 
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
@@ -5277,6 +5321,24 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Using software fallback if index is out of range (throw exception)
                     return nullptr;
+                }
+            }
+#elif defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by replace_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(1).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
                 }
             }
 #endif

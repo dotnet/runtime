@@ -13,7 +13,7 @@ public sealed class ExecutionManager_1 : IExecutionManager
     internal ExecutionManager_1(Target target)
     {
         TargetPointer addr = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
-        _executionManagerCore = new ExecutionManagerCore<NibbleMapLinearLookup>(target, addr);
+        _executionManagerCore = new ExecutionManagerCore<NibbleMapConstantLookup>(target, addr);
     }
 
     public CodeBlockHandle? GetCodeBlockHandle(TargetCodePointer ip) => _executionManagerCore.GetCodeBlockHandle(ip);

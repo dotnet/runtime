@@ -1199,6 +1199,19 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
     return temp;
 }
 
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    API_ENTER(getAwaitAwaiterInContinuationCall);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    API_LEAVE(getAwaitAwaiterInContinuationCall);
+    return temp;
+}
+
 mdMethodDef WrapICorJitInfo::getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1411,16 +1424,6 @@ void WrapICorJitInfo::getAddressOfPInvokeTarget(
     API_ENTER(getAddressOfPInvokeTarget);
     wrapHnd->getAddressOfPInvokeTarget(method, pLookup);
     API_LEAVE(getAddressOfPInvokeTarget);
-}
-
-void* WrapICorJitInfo::GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    API_ENTER(GetCookieForPInvokeCalliSig);
-    void* temp = wrapHnd->GetCookieForPInvokeCalliSig(szMetaSig, ppIndirection);
-    API_LEAVE(GetCookieForPInvokeCalliSig);
-    return temp;
 }
 
 void* WrapICorJitInfo::GetCookieForInterpreterCalliSig(

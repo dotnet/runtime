@@ -10,6 +10,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -28,6 +29,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
     }
 
+    private readonly Lock _apiLock;
     private readonly Target _target;
     private readonly TargetPointer _module;
     private readonly uint _token;
@@ -36,8 +38,10 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         Target target,
         TargetPointer module,
         uint token,
-        IXCLRDataMethodDefinition? legacyImpl)
+        IXCLRDataMethodDefinition? legacyImpl,
+        Lock apiLock)
     {
+        _apiLock = apiLock;
         _target = target;
         _module = module;
         _token = token;
@@ -48,8 +52,11 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
-        ModuleLookupTables tables = loader.GetLookupTables(moduleHandle);
-        TargetPointer methodDescAddr = loader.GetModuleLookupMapElement(tables.MethodDefToDesc, _token, out _);
+        TargetPointer methodDescAddr = loader.GetModuleLookupMapElement(
+            moduleHandle,
+            ModuleLookupMapKind.MethodDefToDesc,
+            _token,
+            out _);
 
         return methodDescAddr;
     }
@@ -58,7 +65,20 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
-        TargetPointer ilHeader = loader.GetILHeader(moduleHandle, _token);
+        TargetPointer ilHeader = TargetPointer.Null;
+        TargetPointer methodDesc = TryResolveMethodDesc();
+        if (methodDesc != TargetPointer.Null && _target.Contracts.TryGetContract(out ICodeVersions codeVersions))
+        {
+            ILCodeVersionHandle activeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
+            if (activeVersion.IsValid && codeVersions.GetSource(activeVersion) == CodeVersionSource.EnC)
+            {
+                ilHeader = codeVersions.GetIL(activeVersion);
+            }
+        }
+
+        if (ilHeader == TargetPointer.Null)
+            ilHeader = loader.GetILHeader(moduleHandle, _token);
+
         if (ilHeader == TargetPointer.Null)
         {
             codeSize = 0;
@@ -128,16 +148,19 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     }
 
     int IXCLRDataMethodDefinition.GetTypeDefinition(DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodDefinition.StartEnumInstances(IXCLRDataAppDomain? appDomain, ulong* handle)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_FALSE;
         *handle = 0;
 
-        // Start the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // EnumInstance passes the legacy method instance to ClrDataMethodInstance,
-        // which delegates some operations to it.
+        // Start the legacy enumeration to keep it in sync for validation.
         ulong legacyHandle = default;
         int hrLocal = default;
         if (_legacyImpl is not null)
@@ -191,6 +214,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.EnumInstance(ulong* handle, DacComNullableByRef<IXCLRDataMethodInstance> instance)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         if (*handle == 0)
@@ -200,8 +224,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (gcHandle.Target is not SOSDacImpl.EnumMethodInstances emi)
             return HResults.E_INVALIDARG;
 
-        // Advance the legacy enumeration to keep it in sync with the cDAC enumeration.
-        // The legacy method instance is passed to ClrDataMethodInstance for delegation.
+        // Advance the legacy enumeration to keep it in sync for validation.
         IXCLRDataMethodInstance? legacyMethod = null;
         int hrLocal = default;
         if (_legacyImpl is not null)
@@ -218,7 +241,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (emi.Enumerator.MoveNext())
             {
                 MethodDescHandle methodDesc = emi.Enumerator.Current;
-                instance.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod);
+                instance.Interface = new ClrDataMethodInstance(_target, methodDesc, emi._appDomain, legacyMethod, _apiLock);
             }
             else
             {
@@ -227,16 +250,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
         catch (System.Exception ex)
         {
-            // Fall back to the legacy DAC result when available, otherwise propagate the error.
-            if (_legacyImpl is not null)
-            {
-                hr = hrLocal;
-                instance.Interface = legacyMethod;
-            }
-            else
-            {
-                hr = ex.HResult;
-            }
+            hr = ex.HResult;
         }
 
 #if DEBUG
@@ -251,6 +265,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.EndEnumInstances(ulong handle)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -268,8 +283,9 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
             if (_legacyImpl is not null && emi.LegacyHandle != 0)
             {
                 int hrLocal = _legacyImpl.EndEnumInstances(emi.LegacyHandle);
-                if (hrLocal < 0)
-                    hr = hrLocal;
+#if DEBUG
+                Debug.ValidateHResult(hr, hrLocal);
+#endif
             }
         }
         catch (System.Exception ex)
@@ -282,6 +298,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.GetName(uint flags, uint bufLen, uint* nameLen, char* name)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -354,6 +371,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -368,12 +386,11 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
                 {
                     DacComNullableByRef<IXCLRDataModule> legacyModOut = new(isNullRef: false);
                     int hrLegacy = _legacyImpl.GetTokenAndScope(null, legacyModOut);
-                    if (hrLegacy < 0)
-                        return hrLegacy;
-                    legacyMod = legacyModOut.Interface;
+                    if (hrLegacy >= 0)
+                        legacyMod = legacyModOut.Interface;
                 }
 
-                mod.Interface = new ClrDataModule(_module, _target, legacyMod);
+                mod.Interface = new ClrDataModule(_module, _target, legacyMod, _apiLock);
             }
         }
         catch (System.Exception ex)
@@ -404,16 +421,29 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     }
 
     int IXCLRDataMethodDefinition.GetFlags(uint* flags)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodDefinition.IsSameObject(IXCLRDataMethodDefinition? method)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodDefinition.GetLatestEnCVersion(uint* version)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataMethodDefinition.StartEnumExtents(ulong* handle)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -466,6 +496,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.EnumExtent(ulong* handle, ClrDataMethodDefinitionExtent* extent)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         EnumMethodDefinitionExtents? extents = null;
         try
@@ -519,6 +550,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.EndEnumExtents(ulong handle)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         nuint legacyHandle = 0;
         try
@@ -552,6 +584,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.GetCodeNotification(uint* flags)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
 
@@ -576,6 +609,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.SetCodeNotification(uint flags)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         ICodeNotifications codeNotif = _target.Contracts.CodeNotifications;
 
@@ -600,6 +634,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -643,6 +678,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.GetRepresentativeEntryAddress(ClrDataAddress* addr)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -661,7 +697,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         }
 
 #if DEBUG
-        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             ClrDataAddress addrLocal = 0;
             int hrLocal = _legacyImpl.GetRepresentativeEntryAddress(addr is null ? null : &addrLocal);
@@ -678,6 +714,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 
     int IXCLRDataMethodDefinition.HasClassOrMethodInstantiation(int* bGeneric)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try

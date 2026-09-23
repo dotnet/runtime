@@ -44,7 +44,7 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     CONTRACTL
     {
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -57,7 +57,7 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
@@ -141,7 +141,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -262,7 +262,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
-        INJECT_FAULT(return FALSE;);
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -376,35 +376,6 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     return UnlockedReservePages(dwMinSize);
 }
 
-#ifdef _DEBUG
-static DWORD ShouldInjectFault()
-{
-    static DWORD fInjectFault = 99;
-
-    if (fInjectFault == 99)
-        fInjectFault = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault) != 0);
-    return fInjectFault;
-}
-
-#define SHOULD_INJECT_FAULT(return_statement)   \
-    do {                                        \
-        if (ShouldInjectFault() & 0x1)          \
-        {                                       \
-            char *a = new (nothrow) char;       \
-            if (a == NULL)                      \
-            {                                   \
-                return_statement;               \
-            }                                   \
-            delete a;                           \
-        }                                       \
-    } while (FALSE)
-
-#else
-
-#define SHOULD_INJECT_FAULT(return_statement) do { (void)((void *)0); } while (FALSE)
-
-#endif
-
 void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
                                             COMMA_INDEBUG(_In_ const char *szFile)
                                             COMMA_INDEBUG(int  lineNum)
@@ -415,7 +386,7 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     {
         INSTANCE_CHECK;
         NOTHROW;
-        FORBID_FAULT;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
@@ -464,23 +435,15 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     CONTRACTL
     {
         NOTHROW;
-
-        // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
-        //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
-
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 
     size_t dwRequestedSize = m_dwGranularity;
     size_t alignment = 1;
 
-    STATIC_CONTRACT_FAULT;
-
-    SHOULD_INJECT_FAULT(return NULL);
-
     void *pResult;
 
-    INCONTRACT(_ASSERTE(!ARE_FAULTS_FORBIDDEN()));
 
     _ASSERTE(m_dwGranularity >= sizeof(InterleavedStubFreeListNode));
 
@@ -545,7 +508,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
     CONTRACTL
     {
         THROWS;
-        INJECT_FAULT(ThrowOutOfMemory());
+        GC_NOTRIGGER;
     }
     CONTRACTL_END
 

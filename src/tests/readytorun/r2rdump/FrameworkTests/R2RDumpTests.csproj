@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+    <!-- TODO: Re-enable when WASM R2R host tooling can inspect emitted components with R2RDump.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <!-- Needed for CLRTestTargetUnsupported and Process.Start -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <InterpreterIncompatible>true</InterpreterIncompatible> <!-- The test passes, but takes an inordinate amount of time -->

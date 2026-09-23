@@ -761,6 +761,37 @@ namespace System.Runtime.CompilerServices.Tests
                 RuntimeHelpers.Box(ref value, typeof(void).TypeHandle);
             });
         }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [InlineData(1, typeof(OutOfMemoryException))]
+        [InlineData(2, typeof(StackOverflowException))]
+        public static void QCallExceptionStatus_ThrowsSpecialException(int status, Type exceptionType)
+        {
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(
+                () => GetQCallExceptionStatusMarshaller().Invoke(null, [(nint)status]));
+
+            Assert.IsType(exceptionType, exception.InnerException);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public static void QCallExceptionStatus_ThrowsExactExceptionFromHandle()
+        {
+            InvalidOperationException expected = new();
+            GCHandle handle = GCHandle.Alloc(expected);
+
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(
+                () => GetQCallExceptionStatusMarshaller().Invoke(null, [GCHandle.ToIntPtr(handle)]));
+
+            Assert.Same(expected, exception.InnerException);
+        }
+
+        private static MethodInfo GetQCallExceptionStatusMarshaller()
+        {
+            Type marshallerType = typeof(object).Assembly.GetType(
+                "System.Runtime.CompilerServices.QCallExceptionStatusMarshaller",
+                throwOnError: true);
+            return marshallerType.GetMethod("ConvertToManaged", BindingFlags.Public | BindingFlags.Static);
+        }
     }
 
     public struct Age

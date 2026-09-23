@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
@@ -10,10 +9,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal sealed partial class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
 {
     [Field] public partial uint NumberOfSections { get; }
-    public IReadOnlyList<ReadyToRunSection> Sections { get; private set; } = [];
+    [CustomInit(nameof(InitSections))] public partial IReadOnlyList<ReadyToRunSection> Sections { get; }
 
-    [MemberNotNull(nameof(Sections))]
-    partial void OnInit(Target target, TargetPointer address)
+    private partial IReadOnlyList<ReadyToRunSection> InitSections(Target target, TargetPointer address)
     {
         uint headerSize = GetSize(target);
         uint sectionSize = ReadyToRunSection.GetSize(target);
@@ -24,6 +22,6 @@ internal sealed partial class ReadyToRunCoreHeader : IData<ReadyToRunCoreHeader>
             sections.Add(target.ProcessedData.GetOrAdd<ReadyToRunSection>(sectionAddress));
         }
 
-        Sections = sections;
+        return sections;
     }
 }

@@ -103,6 +103,34 @@ public class DataGeneratorTests
         Assert.False(UsesTypeSize(ensureAllFieldsRead));
     }
 
+    [Fact]
+    public void EnsureAllFieldsReadWithCustomInitHasNoShortCircuitingDependencies()
+    {
+        InterfaceMapping map = typeof(TestCustomInit).GetInterfaceMap(typeof(IReadableData));
+        int index = Array.IndexOf(map.InterfaceMethods, typeof(IReadableData).GetMethod(nameof(IReadableData.EnsureAllFieldsRead))!);
+        MethodInfo ensureAllFieldsRead = map.TargetMethods[index];
+
+        Assert.Empty(Dependencies(ensureAllFieldsRead));
+        Assert.False(UsesTypeSize(ensureAllFieldsRead));
+    }
+
+    [Fact]
+    public void CustomInitNamesInitializerWithDependencyMetadata()
+    {
+        PropertyInfo property = typeof(TestCustomInit).GetProperty(nameof(TestCustomInit.Doubled))!;
+        CustomInitAttribute customInit = property.GetCustomAttribute<CustomInitAttribute>()!;
+        Assert.Equal("InitDoubled", customInit.MethodName);
+
+        MethodInfo initializer = typeof(TestCustomInit).GetMethod(
+            "InitDoubled",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        Assert.Equal(
+            [(FieldName: "CustomValue", NativeType: "uint32", TypeName: "CustomDescriptor")],
+            Dependencies(initializer)
+                .Select(attribute => (attribute.FieldName, attribute.NativeType, attribute.TypeName)));
+        Assert.True(UsesTypeSize(initializer));
+    }
+
     // ================================================================
     // Single-source baselines
     // ================================================================
@@ -110,7 +138,7 @@ public class DataGeneratorTests
     [Fact]
     public void Native_Baseline_Reads()
     {
-        var target = new TestTarget()
+        TestTarget target = new TestTarget()
             .AddNativeType("TestNative", size: 16,
                 ("A", 0),
                 ("B", 8))
@@ -422,6 +450,31 @@ public class DataGeneratorTests
 
         Assert.Equal(5u, t.Required);
         Assert.Null(t.Optional);
+    }
+
+    // ================================================================
+    // CustomInit -- author-provided lazy initializer
+    // ================================================================
+
+    [Fact]
+    public void CustomInit_ComputesLazilyAndMemoizes()
+    {
+        TestTarget target = new TestTarget()
+            .AddNativeType("TestCustomInit", size: 4, ("Raw", 0))
+            .Allocate(InstanceAddr, 4, (0, U32(21u)));
+
+        TestCustomInit.InitDoubledCallCount = 0;
+        TestCustomInit t = Materialize<TestCustomInit>(target, InstanceAddr);
+
+        // Constructing does not run the initializer (it is lazy).
+        Assert.Equal(0, TestCustomInit.InitDoubledCallCount);
+
+        Assert.Equal(42u, t.Doubled);
+        Assert.Equal(1, TestCustomInit.InitDoubledCallCount);
+
+        // Second access is memoized -- the initializer does not run again.
+        Assert.Equal(42u, t.Doubled);
+        Assert.Equal(1, TestCustomInit.InitDoubledCallCount);
     }
 
     // ================================================================

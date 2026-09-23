@@ -80,7 +80,7 @@ int32_t hostfxr_resolve_sdk2(
     hostfxr_resolve_sdk2_result_fn result)
 ```
 
-Determine the directory location of the SDK, accounting for global.json and multi-level lookup policy.
+Determine the directory location of the SDK, accounting for global.json.
 * `exe_dir` - main directory where SDKs are located in `sdk\[version]` sub-folders.
 * `working_dir` - directory where the search for `global.json` will start and proceed upwards
 * `flags` - flags that influence resolution

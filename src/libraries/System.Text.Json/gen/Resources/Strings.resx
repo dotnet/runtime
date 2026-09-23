@@ -237,6 +237,18 @@
   <data name="DerivedTypeDiscriminatorCollisionMessageFormat" xml:space="preserve">
     <value>The type discriminator '{0}' is specified more than once for the polymorphic type '{1}'. Derived types must correspond to unique discriminators.</value>
   </data>
+  <data name="InferClosedTypePolymorphismOnNonClosedTypeTitle" xml:space="preserve">
+    <value>Inferred closed type polymorphism is enabled on a type that is not a closed type.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat" xml:space="preserve">
+    <value>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle" xml:space="preserve">
+    <value>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</value>
+  </data>
+  <data name="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat" xml:space="preserve">
+    <value>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</value>
+  </data>
   <data name="Polymorphism_OpenGeneric_Reason_NotAssignable" xml:space="preserve">
     <value>the derived type is not assignable to the base type</value>
   </data>

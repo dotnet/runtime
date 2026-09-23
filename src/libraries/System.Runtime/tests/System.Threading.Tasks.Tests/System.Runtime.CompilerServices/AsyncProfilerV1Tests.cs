@@ -108,10 +108,17 @@ namespace System.Threading.Tasks.Tests
         {
             if (depth <= 1)
             {
-                await gate;
+                await StateMachineAsync_RecursiveChainGated_Leaf(gate);
                 return;
             }
             await StateMachineAsync_RecursiveChainGated(depth - 1, gate);
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_RecursiveChainGated_Leaf(Task gate)
+        {
+            await gate;
         }
 
         [RuntimeAsyncMethodGeneration(false)]
@@ -1530,14 +1537,15 @@ namespace System.Threading.Tasks.Tests
             const int MaxFrames = byte.MaxValue;
             const int Iterations = 128;
 
-            // Warm up the recursive method so its state machine id is frozen at its tier-0 version, then
-            // snapshot that id before tracing. (Snapshot is a no-op on non-Mono, where ids resolve
-            // reflectively; the warmup itself runs on all runtimes.)
+            // Warm up the leaf and record its current code address for method-name resolution.
+            // Mono interpreter tiering can change that address, while the profiler retains its
+            // cached method ID. Snapshotting preserves the old ID-to-name mapping.
+            // The snapshot is a no-op on non-Mono runtimes.
             var warmupGate = new TaskCompletionSource();
             Task warmup = StateMachineAsync_RecursiveChainGated(2, warmupGate.Task);
             warmupGate.SetResult();
             warmup.GetAwaiter().GetResult();
-            SnapshotStateMachineMethodIdFor(typeof(AsyncProfilerTests).GetMethod(nameof(StateMachineAsync_RecursiveChainGated), BindingFlags.NonPublic | BindingFlags.Static)!);
+            SnapshotStateMachineMethodIdFor(typeof(AsyncProfilerTests).GetMethod(nameof(StateMachineAsync_RecursiveChainGated_Leaf), BindingFlags.NonPublic | BindingFlags.Static)!);
 
             var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword, () =>
             {
@@ -1558,20 +1566,17 @@ namespace System.Threading.Tasks.Tests
             var stream = ParseAllEvents(events);
 
             // The deep chains overflow the per-thread buffer many times over, so the rent/overflow path is
-            // exercised. The regression check: every chain resume must carry the full (capped) frame count.
-            // Scope to our recursive chains by method rather than by frame count -- a callstack truncated by
-            // the overflow bug has fewer frames but still consists of the recursive method, so it stays in
-            // scope and is caught.
+            // exercised. Each leaf resume must carry the full (capped) frame count. Later resumes can
+            // legitimately be shorter when stack protection queues the remaining continuations.
+            // Filter by the leaf method rather than frame count so truncated leaf callstacks are still caught.
             var chainCallstacks = stream.OfType(AsyncEventID.ResumeStateMachineAsyncCallstack)
-                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChainGated)))
+                .Where(cs => cs.Frames.Any(f => GetMethodNameFromMethodId(cs.CallstackType, f.MethodId) == nameof(StateMachineAsync_RecursiveChainGated_Leaf)))
                 .ToList();
-            AssertNotEmpty(stream, chainCallstacks);
+            AssertEqual(stream, Iterations, chainCallstacks.Count);
 
-            int leafDepth = chainCallstacks.Max(cs => (int)cs.FrameCount);
-            AssertEqual(stream, MaxFrames, leafDepth);
             foreach (var cs in chainCallstacks)
             {
-                AssertEqual(stream, leafDepth, (int)cs.FrameCount);
+                AssertEqual(stream, MaxFrames, (int)cs.FrameCount);
                 AssertEqual(stream, (int)cs.FrameCount, cs.Frames.Count);
             }
         }
@@ -3182,6 +3187,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3255,6 +3261,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3331,6 +3338,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3379,6 +3387,145 @@ namespace System.Threading.Tasks.Tests
                     AssertTrue(stream, resumeEvt.Timestamp <= completeEvt.Timestamp,
                         $"Dispatcher {dispatcherId}: CompleteStateMachineAsyncContext must follow ResumeStateMachineAsyncContext.");
                 }
+            }
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(
+            StrongBox<(List<string> Boundaries, List<string> DiagnosticFrames)> capture)
+        {
+            await Task.Yield();
+            capture.Value = CaptureAsyncBoundarySequence();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_ResumeDispatchStack()
+        {
+            var capture = new StrongBox<(List<string> Boundaries, List<string> DiagnosticFrames)>();
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenario(() => StateMachineAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(capture));
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value.Boundaries is not null,
+                "The state-machine continuation did not run (no boundary sequence was captured).");
+
+            // A V1 leaf resume runs through MoveNextAsDispatcher.
+            AssertBoundarySubsequence(
+                capture.Value.Boundaries,
+                capture.Value.DiagnosticFrames,
+                "V1.MoveNextAsDispatcher");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingResumeDispatchStack_ContainsExpectedBoundaryFrames(
+            StrongBox<(List<string> Boundaries, List<string> DiagnosticFrames)> capture)
+        {
+            await Task.Yield();
+            capture.Value = CaptureAsyncBoundarySequence();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingResumeDispatchStack()
+        {
+            var capture = new StrongBox<(List<string> Boundaries, List<string> DiagnosticFrames)>();
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenario(() => StateMachineAsync_PoolingResumeDispatchStack_ContainsExpectedBoundaryFrames(capture).AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value.Boundaries is not null,
+                "The pooling state-machine continuation did not run (no boundary sequence was captured).");
+
+            AssertBoundarySubsequence(
+                capture.Value.Boundaries,
+                capture.Value.DiagnosticFrames,
+                "V1.AsyncStateMachineDispatcher.MoveNext");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_InlineCompletionClimb_Child(Task childGate)
+        {
+            await childGate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_InlineCompletionClimb_ContainsExpectedBoundaryFrames(
+            Task childTask, StrongBox<(List<string> Boundaries, List<string> Types, List<string> DiagnosticFrames)> capture)
+        {
+            // This continuation is resumed inline as the child's continuation while the child is still
+            // completing, so the child's frames (its dispatch boundary + state-machine MoveNext) remain on the
+            // physical stack beneath this capture point -- the inline-completion layout the CPU stitcher must
+            // account for via completed-frame trimming.
+            await childTask;
+            capture.Value = CaptureAsyncStack();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_InlineCompletionClimb()
+        {
+            var capture = new StrongBox<(List<string> Boundaries, List<string> Types, List<string> DiagnosticFrames)>();
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var childGate = new TaskCompletionSource();
+
+                    // Child suspends on childGate; parent suspends awaiting child.
+                    Task child = StateMachineAsync_InlineCompletionClimb_Child(childGate.Task);
+                    Task parent = StateMachineAsync_InlineCompletionClimb_ContainsExpectedBoundaryFrames(child, capture);
+
+                    // Completing the child inline resumes the parent inline (the climb under test): the child's
+                    // still-completing frames stay on the physical stack beneath the parent's resume.
+                    childGate.SetResult();
+
+                    await parent;
+                    await child;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value.Boundaries is not null,
+                "The inline completion climb did not run (no stack was captured).");
+
+            // The still-completing child's state-machine frame remains on the stack below the resuming parent
+            // (leaf->root: parent above child), so a CPU sample here sees the completed child leaf frame.
+            AssertFrameOrder(
+                capture.Value.Types,
+                capture.Value.DiagnosticFrames,
+                nameof(StateMachineAsync_InlineCompletionClimb_ContainsExpectedBoundaryFrames),
+                nameof(StateMachineAsync_InlineCompletionClimb_Child));
+
+            // The child was resumed as a leaf through MoveNextAsDispatcher, and that boundary is still on the
+            // stack beneath the parent, so the completed leaf frame is paired with its dispatch boundary.
+            Assert.True(capture.Value.Boundaries.Contains("V1.MoveNextAsDispatcher"),
+                $"Expected boundary 'V1.MoveNextAsDispatcher' was not present. Captured boundaries (leaf->root): " +
+                $"[{string.Join(" -> ", capture.Value.Boundaries)}]. Captured diagnostic frames (leaf->root): " +
+                $"[{string.Join(" -> ", capture.Value.DiagnosticFrames)}].");
+        }
+
+        [ConditionalTheory(nameof(IsStateMachineAsyncSupported))]
+        [InlineData("V1.MoveNextAsDispatcher", true)]
+        [InlineData("V1.AsyncStateMachineDispatcher.MoveNext", false)]
+        public void V1AsyncDispatchMethod_NameContract_IsStable(string key, bool requiresNoInlining)
+        {
+            MethodInfo method = AssertAsyncDispatchMethodExists(key);
+            if (requiresNoInlining)
+            {
+                AssertMethodImplementationFlags(method, MethodImplAttributes.NoInlining, key);
             }
         }
     }

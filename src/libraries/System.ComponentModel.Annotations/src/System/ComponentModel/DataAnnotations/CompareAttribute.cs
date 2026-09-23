@@ -26,8 +26,18 @@ namespace System.ComponentModel.DataAnnotations
         public override bool RequiresValidationContext => true;
 
         public override string FormatErrorMessage(string name) =>
-            string.Format(
-                CultureInfo.CurrentCulture, ErrorMessageString, name, OtherPropertyDisplayName ?? OtherProperty);
+            FormatMessage(ErrorMessageString, name);
+
+        /// <inheritdoc />
+        /// <remarks>
+        /// <c>{0}</c> is replaced with <paramref name="name" /> and <c>{1}</c> is replaced with
+        /// <see cref="OtherPropertyDisplayName" />, or <see cref="OtherProperty" /> when no display name is available.
+        /// </remarks>
+        public override string FormatMessage([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, string name)
+        {
+            return string.Format(
+                CultureInfo.CurrentCulture, format, name, OtherPropertyDisplayName ?? OtherProperty);
+        }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2072:UnrecognizedReflectionPattern",
             Justification = "The ctor is marked with RequiresUnreferencedCode informing the caller to preserve the other property.")]

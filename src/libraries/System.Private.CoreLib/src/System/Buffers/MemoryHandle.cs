@@ -20,6 +20,7 @@ namespace System.Buffers
         /// <param name="pointer">pointer to memory</param>
         /// <param name="pinnable">reference to manually managed object, or default if there is no memory manager</param>
         /// <param name="handle">handle used to pin array buffers</param>
+        /// <safety>Only stores the supplied pointer, GC handle, and pinnable reference into the struct's fields; it performs no dereference of the pointer.</safety>
         [CLSCompliant(false)]
         public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable? pinnable = default)
         {
@@ -31,6 +32,7 @@ namespace System.Buffers
         /// <summary>
         /// Returns the pointer to memory, where the memory is assumed to be pinned and hence the address won't change.
         /// </summary>
+        /// <safety>Returns the stored pointer value to already-pinned memory; obtaining the address performs no dereference.</safety>
         [CLSCompliant(false)]
         public void* Pointer => _pointer;
 

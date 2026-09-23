@@ -3350,33 +3350,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     {
         params.sigInfo = call->callSig;
     }
-
-    if (call->IsFastTailCall())
-    {
-        regMaskTP trashedByEpilog = RBM_CALLEE_SAVED;
-
-        // The epilog may use and trash some registers for the GS cookie check.
-        // Make sure we have no non-standard args that may be trash if this is
-        // a tailcall.
-        if (m_compiler->getNeedsGSSecurityCookie())
-        {
-            trashedByEpilog |= genGetGSCookieTempRegs(/* tailCall */ true);
-        }
-
-        for (CallArg& arg : call->gtArgs.Args())
-        {
-            for (const ABIPassingSegment& seg : arg.AbiInfo.Segments())
-            {
-                if (seg.IsPassedInRegister() && ((trashedByEpilog & seg.GetRegisterMask()) != 0))
-                {
-                    JITDUMP("Tail call node:\n");
-                    DISPTREE(call);
-                    JITDUMP("Register used: %s\n", getRegName(seg.GetRegister()));
-                    assert(!"Argument to tailcall may be trashed by epilog");
-                }
-            }
-        }
-    }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);
@@ -3926,6 +3900,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
 
             // Verify that MonAcquired bool is at the bottom of the frame header
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
+        }
+
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
         }
 
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
