@@ -2058,9 +2058,8 @@ static T Gcd(T a, T b)
     {
         if (a == -1)
         {
-            // Avoid signed remainder overflow for MinValue % -1. Return positive 1
-            // so that callers do not divide MinValue by -1 either.
-            return 1;
+            // Avoid signed remainder overflow for MinValue % -1.
+            return -1;
         }
 
         T newA = b % a;
@@ -2161,6 +2160,12 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* 
     }
 
     T gcd = Gcd((T)iv1Step, (T)iv2Step);
+
+    if ((gcd == -1) && (((T)iv1Step == std::numeric_limits<T>::min()) || ((T)iv2Step == std::numeric_limits<T>::min())))
+    {
+        // Avoid signed remainder and division overflow in RephraseIV.
+        return nullptr;
+    }
 
     if ((!allowRephrasingByScalingIV1 && (gcd != (T)iv1Step)) || (!allowRephrasingByScalingIV2 && (gcd != (T)iv2Step)))
     {
