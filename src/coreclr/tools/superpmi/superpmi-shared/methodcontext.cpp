@@ -792,26 +792,27 @@ bool MethodContext::repNotifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
     return value != 0;
 }
 
-void MethodContext::recNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool result)
+void MethodContext::recNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency, bool result)
 {
     if (NotifyInstructionSetUsage == nullptr)
         NotifyInstructionSetUsage = new LightWeightMap<DD, DWORD>();
 
     DD key{};
     key.A = (DWORD)isa;
-    key.B = supported ? 1 : 0;
+    key.B = (supported ? 1 : 0) | (preserveNegativeDependency ? 2 : 0);
     NotifyInstructionSetUsage->Add(key, result ? 1 : 0);
     DEBUG_REC(dmpNotifyInstructionSetUsage(key, result ? 1 : 0));
 }
 void MethodContext::dmpNotifyInstructionSetUsage(DD key, DWORD value)
 {
-    printf("NotifyInstructionSetUsage key isa-%u, supported-%u, res-%u", key.A, key.B, value);
+    printf("NotifyInstructionSetUsage key isa-%u, supported-%u, preserve-negative-dependency-%u, res-%u",
+           key.A, key.B & 1, (key.B >> 1) & 1, value);
 }
-bool MethodContext::repNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported)
+bool MethodContext::repNotifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported, bool preserveNegativeDependency)
 {
     DD key{};
     key.A = (DWORD)isa;
-    key.B = supported ? 1 : 0;
+    key.B = (supported ? 1 : 0) | (preserveNegativeDependency ? 2 : 0);
 
     if (NotifyInstructionSetUsage != nullptr)
     {

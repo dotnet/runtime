@@ -2560,25 +2560,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = 16;
-
-#ifdef FEATURE_SIMD
-#ifdef TARGET_XARCH
-            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
-            {
-                MaxUnrollSize = 128;
-            }
-            else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // We need AVX2 for TYP_SIMD32 based op_Equality, fallback to Vector128 if only AVX is available
-                MaxUnrollSize = 64;
-            }
-            else
-#endif // TARGET_XARCH
-            {
-                MaxUnrollSize = 32;
-            }
-#endif // FEATURE_SIMD
+            const ssize_t MaxUnrollSize = m_compiler->getUnrollThreshold(Compiler::Memcmp);
 
             if (cnsSize <= MaxUnrollSize)
             {
