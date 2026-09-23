@@ -5,19 +5,14 @@ namespace System.Security.Cryptography
 {
     internal sealed partial class HpkeKemMetadata
     {
+        internal const int MaximumInputKeyingMaterialLength = Hpke.MaximumInputSizeInBytes;
+
         internal HpkeKem Kem { get; }
         internal int Nsk { get; }
         internal int Npk { get; }
         internal int Nenc { get; }
         internal int Nsecret { get; }
         internal string Name { get; }
-
-        internal int MaximumInputKeyingMaterialLength => Kem switch
-        {
-            HpkeKem.MLKEM_512 or HpkeKem.MLKEM_768 or HpkeKem.MLKEM_1024 => ushort.MaxValue,
-            HpkeKem.MLKEM768_P256 or HpkeKem.MLKEM1024_P384 => ushort.MaxValue,
-            _ => Hpke.MaximumInputSizeInBytes,
-        };
 
         private HpkeKemMetadata(HpkeKem kem, int nsecret, int nenc, int npk, int nsk, string name)
         {

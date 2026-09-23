@@ -173,7 +173,6 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(KeyDerivationKdf.Kdf == HpkeKdf.SHAKE256);
             Debug.Assert(!KeyDerivationKdf.IsTwoStage);
-            Debug.Assert(ikm.Length <= ushort.MaxValue);
             Debug.Assert(context.Length <= ushort.MaxValue);
             Debug.Assert(output.Length <= ushort.MaxValue);
 
