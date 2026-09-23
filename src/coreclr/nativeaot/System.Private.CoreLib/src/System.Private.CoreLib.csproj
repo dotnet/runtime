@@ -41,13 +41,13 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
-      <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
-      <FeaturePortableHelpers>true</FeaturePortableHelpers>
+    <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
+    <FeaturePortableHelpers>true</FeaturePortableHelpers>
 
-      <!-- single thread -->
-      <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
-      <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
-      <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
+    <!-- single thread -->
+    <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
+    <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
+    <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -315,7 +315,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
-    <Compile Include="System\Diagnostics\StackTrace.NativeAot.Browser.cs" />
+    <Compile Include="System\Diagnostics\StackTrace.NativeAot.Wasm.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
