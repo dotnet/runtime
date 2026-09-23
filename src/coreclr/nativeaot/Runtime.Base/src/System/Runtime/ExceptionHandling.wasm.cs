@@ -7,7 +7,7 @@ using Internal.Runtime;
 
 namespace System.Runtime
 {
-    // These exports preserve the browser-WASM compiler/runtime ABI while exception dispatch
+    // These exports preserve the WASM compiler/runtime ABI while exception dispatch
     // remains unimplemented.
     internal static unsafe partial class EH
     {
