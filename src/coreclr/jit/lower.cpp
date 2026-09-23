@@ -3005,7 +3005,14 @@ GenTree* Lowering::LowerCall(GenTree* node)
     // the call according to the portable entrypoint abi
     if (!call->IsUnmanaged() && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PORTABLE_ENTRY_POINTS))
     {
-        LowerPEPCall(call);
+        if (call->gtDirectCallAddress != nullptr)
+        {
+            AddWasmPortableEntryPointArg(call, m_compiler->gtNewIconNode(0, TYP_I_IMPL));
+        }
+        else
+        {
+            LowerPEPCall(call);
+        }
     }
 #endif // TARGET_WASM
 
@@ -6391,6 +6398,14 @@ GenTree* Lowering::LowerDirectCall(GenTreeCall* call)
             // For JIT helper based tailcall (only used on x86) the target
             // address is passed as an arg to the helper so we want a node for
             // it.
+#ifdef TARGET_WASM
+            if (m_compiler->IsReadyToRun())
+            {
+                // IAT_VALUE identifies a directly callable symbol rather than a portable entrypoint cell.
+                call->gtDirectCallAddress = addr;
+                break;
+            }
+#endif
             if (!IsCallTargetInRange(addr) || call->IsTailCallViaJitHelper())
             {
                 result = AddrGen(addr);

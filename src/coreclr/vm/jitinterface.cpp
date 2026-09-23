@@ -14587,6 +14587,26 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
         }
         break;
 
+    case READYTORUN_FIXUP_MethodEntry_ReadyToRun:
+        {
+            pMD = ZapSig::DecodeMethod(currentModule, pInfoModule, pBlob);
+
+            if (!pMD->GetModule()->IsReadyToRun())
+            {
+                return FALSE;
+            }
+
+            pMD->EnsureActive();
+
+            PrepareCodeConfig config(NativeCodeVersion(pMD), FALSE, TRUE);
+            result = pMD->GetModule()->GetReadyToRunInfo()->GetEntryPoint(pMD, &config, TRUE /* fFixups */);
+            if (result == 0)
+            {
+                return FALSE;
+            }
+        }
+        break;
+
 #ifdef HAS_PINVOKE_IMPORT_PRECODE
     case READYTORUN_FIXUP_IndirectPInvokeTarget:
         {

@@ -336,6 +336,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
+    READYTORUN_FIXUP_MethodEntry_ReadyToRun       = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
+
     READYTORUN_FIXUP_ModuleOverride             = 0x80, /* followed by sig-encoded UInt with assemblyref index into either the assemblyref table of the MSIL metadata of the master context module for the signature or */
                                                         /* into the extra assemblyref table in the manifest metadata R2R header table (used in cases inlining brings in references to assemblies not seen in the MSIL). */
 };

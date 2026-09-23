@@ -201,6 +201,8 @@ namespace Internal.ReadyToRunConstants
 
         StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
+        MethodEntry_ReadyToRun = 0x3B, /* Ensure that a method's ReadyToRun entry point and fixups are initialized */
+
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
         // table of the MSIL metadata of the master context module for the signature or
