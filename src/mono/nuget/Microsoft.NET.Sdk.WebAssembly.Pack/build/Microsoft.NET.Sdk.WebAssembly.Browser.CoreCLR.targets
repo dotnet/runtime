@@ -25,8 +25,6 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
-    <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
-    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:

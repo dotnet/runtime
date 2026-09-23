@@ -138,7 +138,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo --verify-type-and-field-layout >> "$__ResponseFile"
         echo --method-layout:random >> "$__ResponseFile"
         if [ "$(CrossGen2OutputFormat)" == "wasm" ]; then
-            echo --codegenopt:JitWasmNyiToR2RUnsupported=1 >> "$__ResponseFile"
             echo --verify-gc-mode-transitions >> "$__ResponseFile"
         fi
         if [ ! -z ${CrossGen2SynthesizePgo+x} ]%3B then
@@ -370,7 +369,6 @@ if defined RunCrossGen2 (
     echo --verify-type-and-field-layout>>!__ResponseFile!
     echo --method-layout:random>>!__ResponseFile!
     if "$(CrossGen2OutputFormat)"=="wasm" (
-        echo "--codegenopt:JitWasmNyiToR2RUnsupported=1">>!__ResponseFile!
         echo --verify-gc-mode-transitions>>!__ResponseFile!
     )
     if not "$(CrossGen2OutputFormat)"=="" (

@@ -1106,8 +1106,6 @@ class SuperPMICollect:
                             rsp_write_handle.write("--targetos:" + self.coreclr_args.target_os + "\n")
                         if self.coreclr_args.target_arch == "wasm":
                             rsp_write_handle.write("--obj-format:wasm" + "\n")
-                            # FIXME: Remove JitWasmNyiToR2RUnsupported once wasm codegen covers all cases
-                            rsp_write_handle.write("--codegenopt:JitWasmNyiToR2RUnsupported=1" + "\n")
                         for var, value in dotnet_env.items():
                             rsp_write_handle.write("--codegenopt:" + var + "=" + value + "\n")
 
@@ -2311,17 +2309,6 @@ class SuperPMIReplayAsmDiffs:
                     # that both Release compilers can interpret). However, we rarely or never compare
                     # two Release compilers, so this is safest.
                     flags += [ "-ignoreStoredConfig" ]
-
-                    # `-ignoreStoredConfig` drops any codegenopt the collection recorded into the
-                    # MCH stored config. For wasm we need to re-supply
-                    # `JitWasmNyiToR2RUnsupported=1` (set by crossgen-corelib.proj during collection)
-                    # so that unimplemented opcodes turn into R2R-unsupported skips rather than
-                    # asserts. FIXME: remove once wasm codegen covers all cases.
-                    if self.coreclr_args.target_arch == "wasm":
-                        flags += [
-                            "-jitoption", "force", "JitWasmNyiToR2RUnsupported=1",
-                            "-jit2option", "force", "JitWasmNyiToR2RUnsupported=1"
-                        ]
 
                 # Change the working directory to the Core_Root we will call SuperPMI from.
                 # This is done to allow libcoredistools to be loaded correctly on unix
