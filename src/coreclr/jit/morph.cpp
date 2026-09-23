@@ -10076,6 +10076,14 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 // The simdBaseTypes can differ for GT_NOT since its a bitwise operation
                 GenTree* result = ExtractEffectiveOp(GT_NOT, op1Intrin, /* destroyNodes */ true);
                 ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
+
+                if (cvtIntrin != nullptr)
+                {
+                    cvtIntrin->Op(1) = result;
+                    result           = cvtIntrin;
+                }
+
+                assert(result->TypeGet() == retType);
                 return result;
             }
 
@@ -10195,6 +10203,13 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                             ExtractEffectiveOp(GT_NOT, node, /* destroyNodes */ true);
                             cmpOp3->AsIntConCommon()->SetIntegralValue(static_cast<uint8_t>(newMode));
                             fgUpdateConstTreeValueNumber(cmpOp3);
+
+                            if (cvtIntrin != nullptr)
+                            {
+                                op1Intrin = cvtIntrin;
+                            }
+
+                            assert(op1Intrin->TypeGet() == retType);
                             return fgMorphHWIntrinsicRequired(op1Intrin);
                         }
                         break;
