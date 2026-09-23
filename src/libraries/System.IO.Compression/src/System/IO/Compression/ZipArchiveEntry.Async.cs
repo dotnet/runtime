@@ -14,6 +14,7 @@ public partial class ZipArchiveEntry
     /// <summary>
     /// Asynchronously opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
     /// </summary>
+    /// <remarks>In forward-read mode, the entry lifetime and validation rules described by <see cref="Open()"/> apply. Opening the entry performs no I/O.</remarks>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A Stream that represents the contents of the entry.</returns>
     /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
@@ -119,6 +120,8 @@ public partial class ZipArchiveEntry
 
         switch (_archive.Mode)
         {
+            case ZipArchiveMode.ForwardRead:
+                return Task.FromResult(OpenForwardRead());
             case ZipArchiveMode.Read:
                 return OpenInReadModeAsync(checkOpenable: true, password, cancellationToken);
             case ZipArchiveMode.Create:

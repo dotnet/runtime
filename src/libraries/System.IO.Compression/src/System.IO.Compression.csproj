@@ -16,8 +16,10 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\IO\Compression\ZipArchive.cs" />
     <Compile Include="System\IO\Compression\ZipArchive.Async.cs" />
+    <Compile Include="System\IO\Compression\ZipArchive.ForwardRead.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveEntry.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Async.cs" />
+    <Compile Include="System\IO\Compression\ZipArchiveEntry.ForwardRead.cs" />
     <Compile Include="System\IO\Compression\ZipArchiveMode.cs" />
     <Compile Include="System\IO\Compression\ZipBlocks.cs" />
     <Compile Include="System\IO\Compression\ZipBlocks.Async.cs" />

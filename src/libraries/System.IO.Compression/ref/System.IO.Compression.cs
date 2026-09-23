@@ -156,6 +156,8 @@ namespace System.IO.Compression
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public System.IO.Compression.ZipArchiveEntry? GetEntry(string entryName) { throw null; }
+        public System.IO.Compression.ZipArchiveEntry? GetNextEntry() { throw null; }
+        public System.Threading.Tasks.ValueTask<System.IO.Compression.ZipArchiveEntry?> GetNextEntryAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public partial class ZipArchiveEntry
     {
@@ -192,6 +194,7 @@ namespace System.IO.Compression
         Read = 0,
         Create = 1,
         Update = 2,
+        ForwardRead = 3,
     }
     public enum ZipCompressionMethod
     {

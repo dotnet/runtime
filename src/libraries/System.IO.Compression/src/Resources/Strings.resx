@@ -429,4 +429,19 @@
   <data name="UnsupportedEncryptionMethod" xml:space="preserve">
     <value>The entry's encryption method is not supported.</value>
   </data>
+  <data name="ForwardReadOperationNotSupported" xml:space="preserve">
+    <value>This operation requires archive metadata or random access and is not supported in ForwardRead mode.</value>
+  </data>
+  <data name="ForwardReadModeRequired" xml:space="preserve">
+    <value>Sequential entry access requires an archive opened in ForwardRead mode.</value>
+  </data>
+  <data name="ForwardReadEntryExpired" xml:space="preserve">
+    <value>This entry can no longer be read because the archive has advanced past it.</value>
+  </data>
+  <data name="ForwardReadEntryAlreadyOpened" xml:space="preserve">
+    <value>An entry in ForwardRead mode can be opened only once.</value>
+  </data>
+  <data name="ForwardReadUnsupportedEntry" xml:space="preserve">
+    <value>This forward reader supports only unencrypted Stored entries with known, non-ZIP64 sizes and no optional flags other than UTF-8 names.</value>
+  </data>
 </root>

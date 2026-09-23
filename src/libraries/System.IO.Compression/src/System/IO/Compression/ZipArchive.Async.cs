@@ -88,6 +88,8 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
 
             switch (mode)
             {
+                case ZipArchiveMode.ForwardRead:
+                    break;
                 case ZipArchiveMode.Create:
                     zipArchive._readEntries = true;
                     break;
@@ -145,6 +147,9 @@ public partial class ZipArchive : IDisposable, IAsyncDisposable
             {
                 switch (_mode)
                 {
+                    case ZipArchiveMode.ForwardRead:
+                        DisposeForwardReader();
+                        break;
                     case ZipArchiveMode.Read:
                         break;
                     case ZipArchiveMode.Create:

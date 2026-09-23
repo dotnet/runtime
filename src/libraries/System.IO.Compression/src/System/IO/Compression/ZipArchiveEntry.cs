@@ -14,6 +14,12 @@ using static System.IO.Compression.ZipArchiveEntryConstants;
 namespace System.IO.Compression
 {
     // The disposable fields that this class owns get disposed when the ZipArchive it belongs to gets disposed
+    /// <summary>Represents a file or directory entry in a ZIP archive.</summary>
+    /// <remarks>
+    /// In <see cref="ZipArchiveMode.ForwardRead"/> mode, an entry can be opened only once,
+    /// before advancing, and only with <see cref="FileAccess.Read"/>. Comments, external
+    /// attributes, and the creator version are unavailable.
+    /// </remarks>
     public partial class ZipArchiveEntry
     {
         private ZipArchive _archive;
@@ -274,11 +280,13 @@ namespace System.IO.Compression
         {
             get
             {
+                _archive?.ThrowIfForwardRead();
                 return (int)_externalFileAttr;
             }
             set
             {
                 ThrowIfInvalidArchive();
+                _archive.ThrowIfForwardRead();
                 _externalFileAttr = (uint)value;
                 Changes |= ZipArchive.ChangeState.FixedLengthMetadata;
             }
@@ -294,9 +302,14 @@ namespace System.IO.Compression
         [AllowNull]
         public string Comment
         {
-            get => DecodeEntryString(_fileComment);
+            get
+            {
+                _archive?.ThrowIfForwardRead();
+                return DecodeEntryString(_fileComment);
+            }
             set
             {
+                _archive.ThrowIfForwardRead();
                 _fileComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, _archive.EntryNameAndCommentEncoding, ushort.MaxValue, out bool isUTF8);
 
                 if (isUTF8)
@@ -365,7 +378,7 @@ namespace System.IO.Compression
             set
             {
                 ThrowIfInvalidArchive();
-                if (_archive.Mode == ZipArchiveMode.Read)
+                if (_archive.Mode is ZipArchiveMode.Read or ZipArchiveMode.ForwardRead)
                 {
                     throw new NotSupportedException(SR.ReadOnlyArchive);
                 }
@@ -402,7 +415,10 @@ namespace System.IO.Compression
         /// <summary>
         /// The filename of the entry. This is equivalent to the substring of Fullname that follows the final directory separator character.
         /// </summary>
-        public string Name => ParseFileName(FullName, _versionMadeByPlatform);
+        /// <remarks>In forward-read mode, only the ZIP path separator <c>/</c> is recognized because the creator platform is unavailable.</remarks>
+        public string Name => _archive?.Mode == ZipArchiveMode.ForwardRead
+            ? GetFileName_Unix(FullName)
+            : ParseFileName(FullName, _versionMadeByPlatform);
 
         /// <summary>
         /// Gets the "version made by" field of the entry as stored in the archive's central directory record.
@@ -411,7 +427,14 @@ namespace System.IO.Compression
         /// As defined by the ZIP file format specification, the low byte contains the version of the specification used to create the entry, and the high byte identifies the host system (platform) compatibility.
         /// </remarks>
         [CLSCompliant(false)]
-        public ushort VersionMadeBy => (ushort)(((byte)_versionMadeByPlatform << 8) | (byte)_versionMadeBySpecification);
+        public ushort VersionMadeBy
+        {
+            get
+            {
+                _archive?.ThrowIfForwardRead();
+                return (ushort)(((byte)_versionMadeByPlatform << 8) | (byte)_versionMadeBySpecification);
+            }
+        }
 
         internal ZipArchive.ChangeState Changes { get; private set; }
 
@@ -452,7 +475,18 @@ namespace System.IO.Compression
         /// <summary>
         /// Opens the entry. If the archive that the entry belongs to was opened in Read mode, the returned stream will be readable, and it may or may not be seekable. If Create mode, the returned stream will be writable and not seekable. If Update mode, the returned stream will be readable, writable, seekable, and support SetLength.
         /// </summary>
+        /// <remarks>
+        /// In forward-read mode, the stream is readable and non-seekable. Advancing the archive
+        /// invalidates the stream. CRC validation completes when a nonempty read observes EOF
+        /// or advancement drains the entry, including after caller disposal of the stream.
+        /// Disposing the archive does not drain or validate remaining data.
+        /// Do not continue using the archive or entry stream after a read or validation failure.
+        /// Complete each archive or entry-stream operation before starting another or disposing the archive.
+        /// Reading a caller-disposed stream throws <see cref="ObjectDisposedException"/>;
+        /// reading an archive-invalidated stream throws <see cref="NotSupportedException"/>.
+        /// </remarks>
         /// <returns>A Stream that represents the contents of the entry.</returns>
+        /// <exception cref="InvalidOperationException">In forward-read mode, the entry has expired or already been opened.</exception>
         /// <exception cref="IOException">The entry is already currently open for writing. -or- The entry has been deleted from the archive. -or- The archive that this entry belongs to was opened in ZipArchiveMode.Create, and this entry has already been written to once.</exception>
         /// <exception cref="InvalidDataException">The entry is missing from the archive or is corrupt and cannot be read. -or- The entry has been compressed using a compression method that is not supported.</exception>
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
@@ -525,7 +559,7 @@ namespace System.IO.Compression
 
         private FileAccess InferAccessFromMode() => _archive.Mode switch
         {
-            ZipArchiveMode.Read => FileAccess.Read,
+            ZipArchiveMode.Read or ZipArchiveMode.ForwardRead => FileAccess.Read,
             ZipArchiveMode.Create => FileAccess.Write,
             _ => FileAccess.ReadWrite
         };
@@ -540,6 +574,7 @@ namespace System.IO.Compression
             switch (_archive.Mode)
             {
                 case ZipArchiveMode.Read:
+                case ZipArchiveMode.ForwardRead:
                     if (access != FileAccess.Read)
                     {
                         throw new InvalidOperationException(SR.CannotBeWrittenInReadMode);
@@ -558,6 +593,8 @@ namespace System.IO.Compression
         {
             switch (_archive.Mode)
             {
+                case ZipArchiveMode.ForwardRead:
+                    return OpenForwardRead();
                 case ZipArchiveMode.Read:
                     return OpenInReadMode(checkOpenable: true, password);
                 case ZipArchiveMode.Create:
