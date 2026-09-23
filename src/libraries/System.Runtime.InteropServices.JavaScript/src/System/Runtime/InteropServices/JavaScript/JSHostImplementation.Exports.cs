@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It's kept from trimming by DynamicDependencyAttribute in the generated code.")]
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
-            var ctx = JSProxyContext.CurrentThreadContext;
+            var ctx = JSProxyContext.AssertIsInteropThread();
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             var wrapperName = $"__Wrapper_{methodName}_{signatureHash}";
             shortClassName = shortClassName.Replace('/', '+');
