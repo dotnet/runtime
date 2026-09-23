@@ -290,6 +290,12 @@ bool OptIfConversionDsc::IfConvertTryGetElseFromJtrueBlock(GenTreeLclVar* thenSt
             GenTreeLclVar* prevStore = tree->AsLclVar();
             if (prevStore->GetLclNum() == targetLclNum)
             {
+                // Sinking an explicit init could expose an uninitialized GC local at a safepoint.
+                if ((prevStore->gtFlags & GTF_VAR_EXPLICIT_INIT) != 0)
+                {
+                    return false;
+                }
+
                 if (prevStore->Data()->IsInvariant())
                 {
                     m_elseOperation.block = m_startBlock;

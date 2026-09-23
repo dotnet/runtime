@@ -1459,7 +1459,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags();
+                    // Zero initialization uses a 128-bit xor, which also clears the upper vector bits.
+                    SetContainsAVXFlags(src->IsIntegralConst(0) ? XMM_REGSIZE_BYTES
+                                                                : m_compiler->roundDownSIMDSize(size));
                 }
 
 #ifdef TARGET_X86
@@ -1564,7 +1566,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     }
-                    SetContainsAVXFlags();
+                    SetContainsAVXFlags(simdSize);
                 }
                 else if (isPow2(size))
                 {
@@ -2788,7 +2790,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
-                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    // generate blendvp*, which requires XMM0 specifically for the mask register.
                     buildInternalFloatRegisterDefForNode(intrinsicTree,
                                                          m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                                              ? lowSIMDRegs()
