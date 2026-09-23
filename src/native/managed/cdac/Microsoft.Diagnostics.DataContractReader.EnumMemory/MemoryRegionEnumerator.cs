@@ -17,6 +17,8 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
     RuntimeModuleInfo runtimeModule) : ICLRDataEnumMemoryRegions
 {
     private const uint MiniDumpWithPrivateReadWriteMemory = 0x200;
+    private const uint MiniDumpWithFullAuxiliaryState = 0x8000;
+    private const uint MiniDumpFilterTriage = 0x100000;
     private const nuint ContextAlignment = 16;
 
     public int EnumMemoryRegions(void* callback, uint miniDumpFlags, CLRDataEnumMemoryFlags clrFlags)
@@ -35,11 +37,9 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
 
             var emitter = new MemoryRegionEmitter((nint)callback, pointerSize);
             ContractDescriptorTarget target = CreateTarget(emitter);
-            bool includeHeap =
-                clrFlags is CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP or CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2
-                || (miniDumpFlags & MiniDumpWithPrivateReadWriteMemory) != 0;
-
-            new DumpCreator(target, runtimeModule, includeHeap, emitter).EnumerateMemoryRegions();
+            // Like the native DAC, ignore the reserved clrFlags argument.
+            CLRDataEnumMemoryFlags flags = GetDumpFlags(miniDumpFlags);
+            new DumpCreator(target, runtimeModule, flags, emitter).EnumerateMemoryRegions();
             return emitter.Result;
         }
         catch (System.Exception ex)
@@ -47,6 +47,18 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
         }
+    }
+
+    internal static CLRDataEnumMemoryFlags GetDumpFlags(uint miniDumpFlags)
+    {
+        if ((miniDumpFlags & MiniDumpWithPrivateReadWriteMemory) != 0)
+            return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2;
+        if ((miniDumpFlags & MiniDumpWithFullAuxiliaryState) != 0)
+            return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_DEFAULT;
+        if ((miniDumpFlags & MiniDumpFilterTriage) != 0)
+            return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_TRIAGE;
+
+        return CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_MINI;
     }
 
     private ContractDescriptorTarget CreateTarget(MemoryRegionEmitter emitter)

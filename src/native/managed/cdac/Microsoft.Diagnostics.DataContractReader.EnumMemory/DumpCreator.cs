@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using ContractModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
 
 namespace Microsoft.Diagnostics.DataContractReader.EnumMemory;
@@ -25,15 +26,15 @@ internal sealed class DumpCreator
     public DumpCreator(
         Target target,
         RuntimeModuleInfo runtimeModule,
-        bool includeHeap,
+        CLRDataEnumMemoryFlags flags,
         MemoryRegionEmitter emitter)
     {
         _target = target;
         _runtimeModule = runtimeModule;
-        _includeHeap = includeHeap;
+        _includeHeap = flags == CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_HEAP2;
         _emitter = emitter;
         _methods = new(target);
-        _objects = new(target, emitter, _methods);
+        _objects = new(target, emitter, _methods, flags == CLRDataEnumMemoryFlags.CLRDATA_ENUM_MEM_TRIAGE);
     }
 
     public void EnumerateMemoryRegions()
@@ -256,16 +257,19 @@ internal sealed class DumpCreator
     private void EnumerateCodeAndLoaderHeaps()
     {
         IExecutionManager executionManager = _target.Contracts.ExecutionManager;
-        foreach (ICodeHeapInfo codeHeap in executionManager.GetCodeHeapInfos())
+        foreach (JitManagerKind kind in new[] { JitManagerKind.EE, JitManagerKind.Interpreter })
         {
-            switch (codeHeap)
+            foreach (ICodeHeapInfo codeHeap in executionManager.GetCodeHeapInfos(kind))
             {
-                case HostCodeHeapInfo host when host.CurrentAddress > host.BaseAddress:
-                    _emitter.Add(host.BaseAddress.Value, host.CurrentAddress.Value - host.BaseAddress.Value);
-                    break;
-                case LoaderCodeHeapInfo loader:
-                    AddLoaderHeapBlocks(loader.LoaderHeapAddress);
-                    break;
+                switch (codeHeap)
+                {
+                    case HostCodeHeapInfo host when host.CurrentAddress > host.BaseAddress:
+                        _emitter.Add(host.BaseAddress.Value, host.CurrentAddress.Value - host.BaseAddress.Value);
+                        break;
+                    case LoaderCodeHeapInfo loader:
+                        AddLoaderHeapBlocks(loader.LoaderHeapAddress);
+                        break;
+                }
             }
         }
 

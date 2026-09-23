@@ -61,6 +61,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.DataContractReader.Tests" />
     <InstallRuntimeComponentDestination Include="." />
     <InstallRuntimeComponentDestination Include="sharedFramework" />
   </ItemGroup>
