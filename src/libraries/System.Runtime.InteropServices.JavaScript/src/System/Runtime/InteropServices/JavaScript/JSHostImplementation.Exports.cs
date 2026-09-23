@@ -15,13 +15,14 @@ namespace System.Runtime.InteropServices.JavaScript
             var ctx = JSProxyContext.AssertIsInteropThread();
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             var wrapperName = $"__Wrapper_{methodName}_{signatureHash}";
-            shortClassName = shortClassName.Replace('/', '+');
+            // reflection wants '+' between nested types, but the JS side walks the export tree on '/', so keep shortClassName as parsed
+            var reflectionClassName = shortClassName.Replace('/', '+');
 
             // get MethodInfo from the fully qualified name
             var assembly = Assembly.Load(new AssemblyName(assemblyName));
             var clazz = string.IsNullOrEmpty(nameSpace)
-                ? assembly.GetType(shortClassName)
-                : assembly.GetType(nameSpace + "." + shortClassName);
+                ? assembly.GetType(reflectionClassName)
+                : assembly.GetType(nameSpace + "." + reflectionClassName);
             if (clazz == null)
             {
                 Environment.FailFast($"Can't find {nameSpace}{shortClassName} in {assemblyName} assembly");
