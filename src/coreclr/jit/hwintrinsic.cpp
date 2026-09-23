@@ -1225,10 +1225,11 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
 {
     assert(isa != InstructionSet_ILLEGAL);
 
-    bool isShuffleNative = (id == NI_Vector_ShuffleNative) || (id == NI_Vector_ShuffleNativeFallback);
+    bool preserveNegativeDependency = (id == NI_Vector_MaxNative) || (id == NI_Vector_MinNative) ||
+                                      (id == NI_Vector_ShuffleNative) || (id == NI_Vector_ShuffleNativeFallback);
 
     bool isHWIntrinsicEnabled = (JitConfig.EnableHWIntrinsic() != 0);
-    bool isIsaSupported       = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa, isShuffleNative);
+    bool isIsaSupported       = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa, preserveNegativeDependency);
 
     bool     isHardwareAcceleratedProp = (id == NI_IsHardwareAccelerated);
     bool     isSupportedProp           = (id == NI_IsSupported);
