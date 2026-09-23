@@ -6928,7 +6928,8 @@ GenTreeOp* Compiler::fgMorphCommutative(GenTreeOp* tree)
     GenTreeIntCon* cns1 = op1->gtGetOp2()->AsIntCon();
     GenTreeIntCon* cns2 = tree->gtGetOp2()->AsIntCon();
 
-    if (!varTypeIsIntegralOrI(tree->TypeGet()) || cns1->TypeIs(TYP_REF) || !cns1->TypeIs(cns2->TypeGet()))
+    if (cns1->IsIconHandle() || cns2->IsIconHandle() || !varTypeIsIntegralOrI(tree->TypeGet()) ||
+        cns1->TypeIs(TYP_REF) || !cns1->TypeIs(cns2->TypeGet()))
     {
         return nullptr;
     }

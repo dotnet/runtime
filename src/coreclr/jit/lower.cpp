@@ -7983,7 +7983,7 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 GenTreeIntConCommon* cns1 = op1->gtGetOp2()->AsIntConCommon();
                 GenTreeIntConCommon* cns2 = op2->AsIntConCommon();
 
-                if (cns1->ImmedValNeedsReloc(m_compiler) || cns2->ImmedValNeedsReloc(m_compiler))
+                if (cns1->IsIconHandle() || cns2->IsIconHandle())
                 {
                     break;
                 }
