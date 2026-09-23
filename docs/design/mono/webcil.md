@@ -198,9 +198,18 @@ engines, counts towards no limit, and may be stripped when size matters.
   (elem (;0;) (global.get 2) func 2)) ;; active at __table_base
 ```
 
-(**Rationale**: With this approach it is possible to identify without loading the webcil module
-exactly the allocations/table growth/globals which are needed to load the webcil module via
-instantiateStreaming without actually loading the module.)
+(**Rationale**: The size metadata describes the memory and table ranges that the host must reserve
+before instantiation. Active segments initialize those ranges; they do not allocate memory or grow
+the table. The browser host uses the sizes from the matching boot configuration to reserve these
+ranges before instantiation, allowing both IL-only and R2R images to use `instantiateStreaming`
+without first buffering or parsing the module. Corerun reads the sizes from data segment 0 of the
+local module.)
+
+WebCIL modules are trusted build artifacts, not isolated code. Their segment layout and size
+metadata must agree with the compiler output and, for browser loading, the boot configuration.
+The loader does not validate that layout before instantiation; a module importing the runtime's
+memory can also access that memory from its code. Applications must deploy matching modules and
+boot configuration, retaining the resource integrity hashes used by the browser loader.
 
 (**Rationale**: Using a new function called fillWebcilTable to fill in the table enables future
 multithreading logic which may require instantiating the table in multiple workers, without

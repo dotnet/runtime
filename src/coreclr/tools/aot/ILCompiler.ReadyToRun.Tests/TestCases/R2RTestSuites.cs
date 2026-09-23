@@ -1,21 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-extern alias crossgen2;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection.PortableExecutable;
-using ILCompiler.ObjectWriter;
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.ReadyToRunConstants;
 using Internal.Runtime;
 using Xunit;
 using Xunit.Abstractions;
-using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCases;
 
@@ -408,6 +405,25 @@ public class R2RTestSuites
             ReadyToRunSection section = reader.ReadyToRunHeader.Sections.Values.First();
             int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
             Assert.Equal(0, payloadOffset & 0xF);
+
+            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isSelfInstalling: true);
+
+            foreach (string assemblyName in new[] { "CompositeLib", nameof(WasmCompositeModule) })
+            {
+                string componentPath = Path.Combine(
+                    Path.GetDirectoryName(reader.Filename)!,
+                    assemblyName + ".wasm");
+                Assert.True(File.Exists(componentPath), $"Component image not found: {componentPath}");
+
+                var componentReader = new WebcilImageReader(File.ReadAllBytes(componentPath));
+                WasmR2RAssert.AssertWebcilSegmentLayout(componentReader, isSelfInstalling: false);
+
+                IAssemblyMetadata metadata = componentReader.GetStandaloneAssemblyMetadata();
+                Assert.NotNull(metadata);
+                Assert.Equal(
+                    assemblyName,
+                    metadata.MetadataReader.GetString(metadata.MetadataReader.GetAssemblyDefinition().Name));
+            }
         }
     }
 
@@ -2248,108 +2264,8 @@ public class R2RTestSuites
 
         static void Validate(ReadyToRunReader reader)
         {
-            var imageSpan = reader.Image.AsSpan();
-            Assert.True(imageSpan.Slice(0, 8) is [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00], "Expected wasm magic and version at the start of the image");
-            // Skip wasm magic and version
-            long offset = 8;
-            int sectionCount = 0;
-            bool foundDataSection = false;
-            bool foundElementSection = false;
-            const int MaxExpectedSectionCount = 64; // sanity check to avoid infinite loops in case of malformed wasm image
-            while (offset < imageSpan.Length && sectionCount < MaxExpectedSectionCount)
-            {
-                sectionCount++;
-                byte sectionKind = imageSpan[(int)offset];
-                long sectionSize = (long)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1)), out int sectionSizeBytes);
-                long sectionEnd = offset + sectionSize + 1 + sectionSizeBytes;
-                if (sectionKind == 9 /*Element*/)
-                {
-                    int segmentCount = (int)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1 + sectionSizeBytes)), out int segmentCountBytes);
-                    Assert.True(segmentCount == 1, "Expected 1 segment in the element section");
-
-                    int elementSegmentOffset = (int)(offset + 1 + sectionSizeBytes + segmentCountBytes);
-                    int elementSegmentKind = imageSpan[elementSegmentOffset];
-                    Assert.True(elementSegmentKind == 0, "Expected element segment to be active (kind 0)");
-                    int elementSegmentOffsetExpr = elementSegmentOffset + 1;
-                    Assert.True(imageSpan[elementSegmentOffsetExpr] == 0x23, "Expected active element segment offset to use global.get");
-                    ulong elementSegmentOffsetGlobalIndex = DwarfHelper.ReadULEB128(imageSpan.Slice(elementSegmentOffsetExpr + 1), out int elementGlobalIndexBytes);
-                    Assert.True(elementSegmentOffsetGlobalIndex == WebCilObjectWriter.TableBaseGlobalIndex,
-                        $"Expected active element segment offset to use table base global {WebCilObjectWriter.TableBaseGlobalIndex}, but got {elementSegmentOffsetGlobalIndex}");
-                    elementSegmentOffsetExpr += 1 + elementGlobalIndexBytes;
-                    Assert.True(imageSpan[elementSegmentOffsetExpr] == 0x0B, "Expected active element segment offset expression to end before function count");
-                    int functionCountOffset = elementSegmentOffsetExpr + 1;
-                    ulong functionCount = DwarfHelper.ReadULEB128(imageSpan.Slice(functionCountOffset), out _);
-                    Assert.True(functionCount > 0, "Expected active element segment to contain function indices");
-                    foundElementSection = true;
-                }
-                else if (sectionKind == 11 /*Data*/)
-                {
-                    // Data section for webcil:
-                    // (byte) 11 // section kind
-                    // (ULEB) section size
-                    // (ULEB) segment count
-                    // Webcil segment 0
-                    // | (byte) segment kind (1, passive)
-                    // | (ULEB) segment size
-                    // | (byte*) content - 2 little endian u32 (payloadsize, tablesize)
-                    // Webcil payload
-                    // | (segment kind) (0, active)
-                    // | (init expr) global.get __memory_base
-                    // | (ULEB) segment size
-                    // | (byte*) content - webcil data, aligned
-
-                    int segmentCount = (int)DwarfHelper.ReadULEB128(imageSpan.Slice((int)(offset + 1 + sectionSizeBytes)), out int segmentCountBytes);
-                    Assert.True(segmentCount == 2, "Expected 2 segments in the data section");
-
-                    int firstSegmentOffset = (int)(offset + 1 + sectionSizeBytes + segmentCountBytes);
-                    int firstSegmentKind = imageSpan[firstSegmentOffset];
-                    Assert.True(firstSegmentKind == 1, "Expected first segment to be passive (kind 1)");
-                    int firstSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(firstSegmentOffset + 1), out int firstSegmentSizeBytes);
-                    Assert.True(firstSegmentSize >= 8, "Expected first segment to contain payloadSize and tableSize");
-                    int firstSegmentContentOffset = firstSegmentOffset + 1 + firstSegmentSizeBytes;
-                    uint payloadSize = BinaryPrimitives.ReadUInt32LittleEndian(imageSpan.Slice(firstSegmentContentOffset, sizeof(uint)));
-                    uint tableSize = BinaryPrimitives.ReadUInt32LittleEndian(imageSpan.Slice(firstSegmentContentOffset + sizeof(uint), sizeof(uint)));
-                    Assert.True(tableSize > 0, "Expected R2R Webcil image to require a function table");
-
-                    int payloadSegmentOffset = firstSegmentContentOffset + firstSegmentSize;
-                    int payloadSegmentKind = imageSpan[payloadSegmentOffset];
-                    Assert.True(payloadSegmentKind == 0, "Expected second segment to be active (kind 0)");
-                    int payloadSegmentSizeOffset = payloadSegmentOffset + 1;
-                    Assert.True(imageSpan[payloadSegmentSizeOffset] == 0x23, "Expected active payload segment offset to use global.get");
-                    ulong payloadSegmentOffsetGlobalIndex = DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentSizeOffset + 1), out int globalIndexBytes);
-                    Assert.True(payloadSegmentOffsetGlobalIndex == WebCilObjectWriter.ImageBaseGlobalIndex,
-                        $"Expected active payload segment offset to use image base global {WebCilObjectWriter.ImageBaseGlobalIndex}, but got {payloadSegmentOffsetGlobalIndex}");
-                    payloadSegmentSizeOffset += 1 + globalIndexBytes;
-                    Assert.True(imageSpan[payloadSegmentSizeOffset] == 0x0B, "Expected active payload segment offset expression to end before payload size");
-                    payloadSegmentSizeOffset++;
-                    int payloadSegmentSize = (int)DwarfHelper.ReadULEB128(imageSpan.Slice(payloadSegmentSizeOffset), out int payloadSegmentSizeBytes);
-                    Assert.True(payloadSegmentSize == payloadSize,
-                        $"Expected payload segment size to match advertised payloadSize {payloadSize}, but got {payloadSegmentSize}");
-                    int payloadContentOffset = payloadSegmentSizeOffset + payloadSegmentSizeBytes;
-                    Assert.True(payloadContentOffset % WebCilObjectWriter.WebcilSectionAlignment == 0,
-                        $"Expected payload content to be aligned to {WebCilObjectWriter.WebcilSectionAlignment} bytes, but got offset {payloadContentOffset}");
-                    Assert.True(payloadContentOffset + payloadSegmentSize == sectionEnd,
-                        $"Expected payload segment to end at the end of the data section, but got {payloadContentOffset + payloadSegmentSize} vs {sectionEnd}");
-                    foundDataSection = true;
-                }
-
-                if (foundDataSection && foundElementSection)
-                {
-                    return;
-                }
-
-                offset = sectionEnd;
-            }
-
-            if (!foundElementSection)
-            {
-                Assert.Fail("Element section not found in the wasm image");
-            }
-
-            if (!foundDataSection)
-            {
-                Assert.Fail("Data section not found in the wasm image");
-            }
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isSelfInstalling: true);
         }
     }
 }
