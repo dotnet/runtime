@@ -161,21 +161,18 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         {
             ImmutableArray<Diagnostic> outputDiagnostics = result.OutputCompilation.GetDiagnostics();
 
-            if (expectedDiags is ExpectedDiagnostics.None)
-            {
-                foreach (Diagnostic diagnostic in outputDiagnostics)
-                {
-                    Assert.True(
-                        IsPermitted(diagnostic),
-                        $"Generator caused diagnostic in output compilation: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}.");
-                }
-            }
-            else
+            if (expectedDiags is not ExpectedDiagnostics.None)
             {
                 Debug.Assert(expectedDiags is ExpectedDiagnostics.FromGeneratorOnly);
 
                 Assert.NotEmpty(result.Diagnostics);
-                Assert.False(outputDiagnostics.Any(diag => !IsPermitted(diag)));
+            }
+
+            foreach (Diagnostic diagnostic in outputDiagnostics)
+            {
+                Assert.True(
+                    IsPermitted(diagnostic),
+                    $"Generator caused diagnostic in output compilation: {diagnostic.Id}: {diagnostic.GetMessage(CultureInfo.InvariantCulture)}.");
             }
 
             static bool IsPermitted(Diagnostic diagnostic) => diagnostic.Severity <= DiagnosticSeverity.Info;

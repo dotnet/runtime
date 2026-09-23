@@ -723,6 +723,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                             ? int.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture) + 10
                             : base.ConvertFrom(context, culture, value);
                 }
+
+                namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
                 """;
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
@@ -947,6 +949,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                         configuration.Bind(new Options());
                     }
                 }
+
+                namespace System.Runtime.CompilerServices { internal static class IsExternalInit { } }
                 """;
 
             ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
