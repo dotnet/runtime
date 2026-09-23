@@ -384,6 +384,19 @@ namespace CustomTaskCovariantReturnGenerics
             });
         }
 
+        public class ArrayMid<T> : GBase<T[]>
+        {
+        }
+
+        public class MultiHopDerived<U> : ArrayMid<List<U>>
+        {
+            public override MyTask<List<U>[]> M1(List<U>[] t) => new MyTask<List<U>[]>(() =>
+            {
+                Trace += "MultiHopDerived.M1;";
+                return t;
+            });
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task<T> CallM1<T>(Base b, T t) => await b.M1<T>(t);
 
@@ -568,6 +581,19 @@ namespace CustomTaskCovariantReturnGenerics
             Trace = null;
             Assert.Equal(new List<string> { "hi" }, CallGM1(bs, new List<string> { "hi" }).GetAwaiter().GetResult());
             Assert.Equal("ListDerived.M1;", Trace);
+        }
+
+        [Fact]
+        public static void TestMultiHopComposedGenericBaseCovariantOverride()
+        {
+            GBase<List<int>[]> b = DateTime.Now.Year > 0 ? new MultiHopDerived<int>() : new GBase<List<int>[]>();
+            List<int>[] input = new List<int>[] { new List<int> { 42 } };
+
+            Trace = null;
+            List<int>[] result = CallGM1(b, input).GetAwaiter().GetResult();
+            Assert.Same(input, result);
+            Assert.Equal(new List<int> { 42 }, result[0]);
+            Assert.Equal("MultiHopDerived.M1;", Trace);
         }
     }
 }
