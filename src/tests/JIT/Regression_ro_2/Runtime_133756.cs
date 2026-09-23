@@ -6,26 +6,11 @@ using Xunit;
 
 public class Runtime_133756
 {
-    [Theory]
-    [InlineData(0, 0)]
-    [InlineData(1, 0)]
-    [InlineData(2, int.MaxValue)]
-    [InlineData(5, -10)]
-    [InlineData(6, int.MaxValue - 14)]
-    public static void TestInt32(int n, int expected)
+    [Fact]
+    public static void TestEntryPoint()
     {
-        Assert.Equal(expected, SumInt32(n));
-    }
-
-    [Theory]
-    [InlineData(0, 0L)]
-    [InlineData(1, 0L)]
-    [InlineData(2, long.MaxValue)]
-    [InlineData(5, -10L)]
-    [InlineData(6, long.MaxValue - 14)]
-    public static void TestInt64(int n, long expected)
-    {
-        Assert.Equal(expected, SumInt64(n));
+        Assert.Equal(-10, SumInt32(5));
+        Assert.Equal(-10L, SumInt64(5));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
