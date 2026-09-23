@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Xunit;
@@ -303,6 +304,14 @@ namespace AbstractCovariantReturn
     public class Program
     {
         internal static string Trace;
+
+        [Fact]
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+            Justification = "This test intentionally exercises Assembly.GetTypes().")]
+        public static void TestAssemblyGetTypes()
+        {
+            _ = typeof(Program).Assembly.GetTypes();
+        }
 
         [Fact]
         public static void TestAbstractCovariantOverride()
