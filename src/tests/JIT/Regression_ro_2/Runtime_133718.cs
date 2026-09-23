@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using Xunit;
@@ -136,6 +137,19 @@ public class Runtime_133718
     {
         Assert.Equal(Vector128.Create(3, 5, 7, 9), CreateSequence([3], 2));
         Assert.Throws<IndexOutOfRangeException>(() => CreateSequence(Array.Empty<int>(), 2));
+    }
+
+    [Theory]
+    [InlineData(3, 7, 2)]
+    [InlineData(-4, 9, -3)]
+    public static void CreateScalableSequenceBeforeStepMutation(int start, int replacement, int step)
+    {
+        int originalStart = start;
+        Vector<int> result = CreateSequenceWithMutatingStep(ref start, replacement, step);
+
+        Assert.Equal(replacement, start);
+        Assert.Equal(originalStart, result[0]);
+        Assert.Equal(originalStart + step, result[1]);
     }
 
     [Fact]
@@ -297,6 +311,17 @@ public class Runtime_133718
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static Vector128<int> CreateSequence(int[] starts, int step) =>
         Vector128.CreateSequence(starts[0], step);
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector<int> CreateSequenceWithMutatingStep(ref int start, int replacement, int step) =>
+        Vector.CreateSequence(start, MutateAndReturnStep(ref start, replacement, step));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int MutateAndReturnStep(ref int start, int replacement, int step)
+    {
+        start = replacement;
+        return step;
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static Vector128<int> CreateAlternatingSequence(int[] even, int[] odd) =>

@@ -4045,6 +4045,7 @@ public:
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
+    bool gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp);
     void gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp);
 
     // Given an address expression, compute its costs and addressing mode opportunities,

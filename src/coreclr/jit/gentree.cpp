@@ -5497,6 +5497,36 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 }
 
 //------------------------------------------------------------------------
+// gtCanReorderWithoutTemp: Check whether operands can be evaluated in either order.
+//
+// Arguments:
+//    firstOp  - The operand that must be evaluated first
+//    secondOp - The operand that may be evaluated first in the resulting tree
+//
+// Notes:
+//    A pure read in firstOp can observe secondOp's writes even when gtCanSwapOrder
+//    permits swapping the operands.
+//
+bool Compiler::gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp)
+{
+    assert(fgOrder == FGOrderTree);
+
+    if (impIsInvariant(firstOp) || impIsInvariant(secondOp))
+    {
+        // Invariant operands need no sequencing.
+        return true;
+    }
+
+    if ((secondOp->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    {
+        // The second operand may change the value read by the first.
+        return false;
+    }
+
+    return gtCanSwapOrder(firstOp, secondOp);
+}
+
+//------------------------------------------------------------------------
 // gtPrepareOperandsForReordering: Preserve firstOp's evaluation before secondOp when
 //    constructing a tree that uses secondOp before firstOp.
 //
@@ -5510,18 +5540,8 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 //
 void Compiler::gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp)
 {
-    assert(fgOrder == FGOrderTree);
-
-    if (impIsInvariant(*firstOp) || impIsInvariant(*secondOp))
+    if (gtCanReorderWithoutTemp(*firstOp, *secondOp))
     {
-        // Invariant operands need no sequencing.
-        return;
-    }
-
-    if ((((*secondOp)->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) == 0) &&
-        gtCanSwapOrder(*firstOp, *secondOp))
-    {
-        // The operands can swap, and secondOp cannot change firstOp's value.
         return;
     }
 
@@ -25337,6 +25357,16 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
             }
             else
             {
+                if (!gtCanReorderWithoutTemp(op1, op2))
+                {
+                    TempInfo temp      = fgMakeTemp(op1);
+                    GenTree* intrinsic = gtNewSimdHWIntrinsicNode(type, temp.load, op2, NI_Vector_CreateSequence,
+                                                                  simdBaseType, simdSize);
+
+                    // Keep the store outside the intrinsic so the start is captured before the step.
+                    return gtNewOperNode(GT_COMMA, type, temp.store, intrinsic);
+                }
+
                 return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_CreateSequence, simdBaseType, simdSize);
             }
         }
