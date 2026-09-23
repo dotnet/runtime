@@ -637,6 +637,21 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
 #endif // !TARGET_WASM
 
 #ifdef _DEBUG
+static int32_t GetUnpatchedInterpreterOpcode(const int32_t* ip)
+{
+    WRAPPER_NO_CONTRACT;
+
+    int32_t opcode = *ip;
+#ifdef DEBUGGING_SUPPORTED
+    if (opcode == INTOP_BREAKPOINT && g_pDebugInterface != nullptr)
+    {
+        // The patch can be removed before the lookup; the debugger also reads unpatched code under its lock.
+        opcode = static_cast<int32_t>(g_pDebugInterface->GetPatchedOpcode(reinterpret_cast<CORDB_ADDRESS_TYPE*>(ip)));
+    }
+#endif // DEBUGGING_SUPPORTED
+    return opcode;
+}
+
 void DBG_PrintInterpreterStack()
 {
     Thread* pThread = GetThread();
@@ -4846,8 +4861,8 @@ do                                                                      \
 
                         // Now we have an IP to where we should resume execution. This should be an INTOP_HANDLE_CONTINUATION_RESUME opcode
                         // And before it should be an INTOP_HANDLE_CONTINUATION_SUSPEND opcode
-                        _ASSERTE(*ip == INTOP_HANDLE_CONTINUATION_RESUME);
-                        _ASSERTE(*(ip-3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
+                        _ASSERTE(GetUnpatchedInterpreterOpcode(ip) == INTOP_HANDLE_CONTINUATION_RESUME);
+                        _ASSERTE(GetUnpatchedInterpreterOpcode(ip - 3) == INTOP_HANDLE_CONTINUATION_SUSPEND);
                         INTOP_NEXT;
                     }
                     ip += 3;
