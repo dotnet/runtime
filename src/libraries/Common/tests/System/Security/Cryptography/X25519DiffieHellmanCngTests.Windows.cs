@@ -113,6 +113,12 @@ namespace System.Security.Cryptography.Tests
 
         protected abstract CngExportPolicies ExportPolicy { get; }
 
+        // Windows 10's X25519 implementation mishandles all-zero public keys when they are imported.
+        // If the key is represented by a CngKey exporting it back out does not give enough information to know
+        // if the public key is all-zero. Later versions of Windows handle this correctly. The exact version boundary
+        // is not known, it can be made more specific if tests show it needs to be narrowed down.
+        protected override bool CanRoundTripReducedZeroPublicKeys => PlatformDetection.IsWindows10Version22000OrGreater;
+
         public override X25519DiffieHellman GenerateKey()
         {
             using CngKey key = GenerateCngKey(exportPolicy: ExportPolicy);
