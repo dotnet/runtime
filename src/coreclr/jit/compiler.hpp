@@ -473,53 +473,30 @@ BasicBlockVisit BasicBlock::VisitEHEnclosedHandlerSecondPassSuccs(Compiler* comp
 
     assert(enclosingHBtab->HasFilter());
 
-    // Search the EH table for enclosed regions.
-    //
-    // All the enclosed regions will be lower numbered and
-    // immediately prior to and contiguous with the enclosing
-    // region in the EH tab.
+    // Search all lower-numbered regions. Regions nested in sibling handlers
+    // can intervene, so a non-enclosed region does not end the search.
     unsigned index = thisHndIndex;
 
     while (index > 0)
     {
         index--;
-        bool     inTry;
-        unsigned enclosingIndex = comp->ehGetEnclosingRegionIndex(index, &inTry);
-        bool     isEnclosed     = false;
-
-        // To verify this is an enclosed region, search up
-        // through the enclosing regions until we find the
-        // region associated with the filter.
-        while (enclosingIndex != EHblkDsc::NO_ENCLOSING_INDEX)
+        EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
+        if (!enclosedHBtab->HasFinallyOrFaultHandler())
         {
-            if (enclosingIndex == thisHndIndex)
-            {
-                isEnclosed = true;
-                break;
-            }
-
-            enclosingIndex = comp->ehGetEnclosingRegionIndex(enclosingIndex, &inTry);
+            continue;
         }
 
-        // If we found an enclosed region, check if the region
-        // is a try fault or try finally, and if so, invoke the callback
-        // for the enclosed region's handler.
-        if (isEnclosed)
+        // Follow only enclosing tries, as in BlockPredsWithEH. Following a
+        // handler link could lead to a mutually-protecting sibling's try.
+        unsigned enclosingIndex = enclosedHBtab->ebdEnclosingTryIndex;
+        while (enclosingIndex < thisHndIndex)
         {
-            if (inTry)
-            {
-                EHblkDsc* enclosedHBtab = comp->ehGetDsc(index);
-
-                if (enclosedHBtab->HasFinallyOrFaultHandler())
-                {
-                    RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
-                }
-            }
+            enclosingIndex = comp->ehGetEnclosingTryIndex(enclosingIndex);
         }
-        // Once we run across a non-enclosed region, we can stop searching.
-        else
+
+        if (enclosingIndex == thisHndIndex)
         {
-            break;
+            RETURN_ON_ABORT(func(enclosedHBtab->ebdHndBeg));
         }
     }
 
