@@ -668,14 +668,6 @@ namespace System.Threading
             {
                 lockHolder.Dispose();
 
-#if MONO
-                // Synchronize with any other threads currently handling creation or deletion of named mutexes.
-                // It's possible that a thread is currently abandoning a mutex on the finalizer thread while we are trying to acquire it.
-                // Mono doesn't use the shared Thread.Join implementation that ensures we have this handled in the right order,
-                // so we synchronize here.
-                SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock().Dispose();
-#endif
-
                 NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = _processDataHeader._processData!.TryAcquireLock(timeoutMilliseconds);
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
