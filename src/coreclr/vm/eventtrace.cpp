@@ -4473,13 +4473,31 @@ TADDR MethodAndStartAddressToEECodeInfoPointer(MethodDesc *pMethodDesc, PCODE pN
     } CONTRACTL_END;
 
     // MethodDesc ==> Code Address ==>JitManager
-    TADDR start = pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode();
-    if(start == 0) {
+    TADDR entryPoint = pNativeCodeStartAddress ? pNativeCodeStartAddress : pMethodDesc->GetNativeCode();
+    if(entryPoint == 0) {
         // this method hasn't been jitted
         return 0;
     }
 
-    return GetInterpreterCodeFromEntryPointIfPresent(start);
+    TADDR start = GetInterpreterCodeFromEntryPointIfPresent(entryPoint);
+
+#if defined(TARGET_WASM) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
+    if (start == entryPoint && entryPoint == pMethodDesc->GetPortableEntryPointIfExists() &&
+        PortableEntryPoint::HasNativeEntryPoint((PCODE)entryPoint))
+    {
+        // Native R2R portable entry points store a function-table index rather than an address
+        // registered with ExecutionManager. EventPipe needs the corresponding synthetic virtual IP.
+        DWORD functionTableIndex =
+            static_cast<DWORD>(reinterpret_cast<TADDR>(PortableEntryPoint::GetActualCode((PCODE)entryPoint)));
+        TADDR virtualIP = ExecutionManager::GetWasmVirtualIPFromFunctionTableIndex(functionTableIndex);
+        if (virtualIP != 0)
+        {
+            start = virtualIP;
+        }
+    }
+#endif // TARGET_WASM && FEATURE_PORTABLE_ENTRYPOINTS
+
+    return start;
 }
 
 /****************************************************************************/

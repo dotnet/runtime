@@ -3732,6 +3732,38 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
 
+        case NI_System_Math_MinNative:
+        case NI_System_Math_MaxNative:
+        {
+            CHECK_STACK(2);
+            CorInfoType elementType = sig.retType;
+            if (elementType != CORINFO_TYPE_FLOAT && elementType != CORINFO_TYPE_DOUBLE)
+            {
+                goto FAIL_TO_EXPAND_INTRINSIC;
+            }
+            InterpType type = GetInterpType(elementType);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-2], g_stackTypeFromInterpType[type]);
+            ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[-1], g_stackTypeFromInterpType[type]);
+
+            int32_t left = m_pStackPointer[-2].var;
+            int32_t right = m_pStackPointer[-1].var;
+            m_pStackPointer -= 2;
+            int32_t opcode;
+            if (elementType == CORINFO_TYPE_FLOAT)
+            {
+                opcode = ni == NI_System_Math_MaxNative ? INTOP_MAX_NATIVE_R4 : INTOP_MIN_NATIVE_R4;
+            }
+            else
+            {
+                opcode = ni == NI_System_Math_MaxNative ? INTOP_MAX_NATIVE_R8 : INTOP_MIN_NATIVE_R8;
+            }
+            AddIns(opcode);
+            m_pLastNewIns->SetSVars2(left, right);
+            PushInterpType(type, NULL);
+            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
+            return true;
+        }
+
         case NI_System_Math_MultiplyAddEstimate:
         {
             CHECK_STACK(3);
@@ -3764,6 +3796,8 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             return true;
         }
         case NI_System_Math_ReciprocalSqrtEstimate:
+            FALLTHROUGH;
+
         case NI_System_Math_Sqrt:
         {
             CHECK_STACK(1);
@@ -3794,7 +3828,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             m_pStackPointer--;
             InterpType estimateType = GetInterpType(sig.retType);
             ConvertFloatingPointStackEntryToStackType(&m_pStackPointer[0], g_stackTypeFromInterpType[estimateType]);
-
             int32_t argumentVar = m_pStackPointer[0].var;
 
             if (estimateType == InterpTypeR4)

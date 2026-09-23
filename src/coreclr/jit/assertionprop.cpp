@@ -90,6 +90,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 //
 static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
 {
+    // Only valid during global assertion prop, this relies on value numbers.
+    assert(comp->vnStore != nullptr);
+
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
 
     if (intrinsic != NI_Vector_ExtractMostSignificantBits)
@@ -5287,6 +5290,12 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     ValueNum       vnBase = vn;
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
+    if ((offset < 0) || fgIsBigOffset(static_cast<size_t>(offset)))
+    {
+        // A non-null base does not imply a non-null address for these offsets.
+        // Still allow assertions about the full address.
+        vnBase = vn;
+    }
 
     // Check each assertion to find if we have a vn != null assertion. Note that 'assertions'
     // may be uninit here (e.g. when the current block has no live assertions); in that case we
@@ -5957,7 +5966,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            // This optimization needs value numbers, which are not available during local assertion prop.
+            if (!optLocalAssertionProp)
+            {
+                optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            }
             return nullptr;
 #endif // FEATURE_HW_INTRINSICS
 

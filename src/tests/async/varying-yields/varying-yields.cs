@@ -16,7 +16,7 @@ using Xunit;
 
 public class Async2VaryingYields
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Task.Run(AsyncEntry).Wait();
