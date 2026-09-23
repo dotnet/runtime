@@ -2279,6 +2279,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                 {
                     node->Data()->SetUnusedValue();
                     blockRange.Remove(node);
+                    m_compiler->fgStmtRemoved = true;
                 }
                 break;
             }

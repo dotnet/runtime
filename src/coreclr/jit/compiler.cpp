@@ -5480,7 +5480,8 @@ void Compiler::SplitTreesRandomly()
             int numTrees = 0;
             for (GenTree* tree : stmt->TreeList())
             {
-                if (tree->OperIs(GT_JTRUE)) // Due to relop invariant
+                // Keep relops with JTRUE and multi-register sources with STORE_LCL_VARS.
+                if (tree->OperIs(GT_JTRUE, GT_STORE_LCL_VARS))
                 {
                     continue;
                 }
@@ -5491,7 +5492,7 @@ void Compiler::SplitTreesRandomly()
             int splitTree = rng.Next(numTrees);
             for (GenTree* tree : stmt->TreeList())
             {
-                if (tree->OperIs(GT_JTRUE))
+                if (tree->OperIs(GT_JTRUE, GT_STORE_LCL_VARS))
                     continue;
 
                 if (splitTree == 0)

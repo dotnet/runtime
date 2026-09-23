@@ -167,7 +167,7 @@ static void MarkMutatedVarDsc(Compiler* compiler, LclVarDsc* varDsc, VARSET_TP& 
 //
 static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if (node->OperIsLocalStore())
+    if (node->OperIsLocalStore() || node->OperIs(GT_STORE_LCL_VARS))
     {
         // If this is a zero initialization then we do not need to consider it
         // mutated if we know the prolog will zero it anyway (otherwise we
@@ -175,7 +175,7 @@ static void UpdateMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mut
         // We could improve this a bit by still skipping it but inserting
         // explicit zero init on resumption, but these cases seem to be rare
         // and that would require tracking additional information.
-        if (IsDefaultValue(node->AsLclVarCommon()->Data()) &&
+        if (node->OperIsLocalStore() && IsDefaultValue(node->AsLclVarCommon()->Data()) &&
             !compiler->fgVarNeedsExplicitZeroInit(node->AsLclVarCommon()->GetLclNum(), /* bbInALoop */ false,
                                                   /* bbIsReturn */ false))
         {
@@ -350,7 +350,7 @@ void DefaultValueAnalysis::DumpMutatedVarsIn()
 //
 static void MarkMutatedLocal(Compiler* compiler, GenTree* node, VARSET_TP& mutated)
 {
-    if (node->IsCall())
+    if (node->OperIs(GT_CALL, GT_STORE_LCL_VARS))
     {
         auto visitDef = [&](const auto& def) {
             MarkMutatedVarDsc(compiler, compiler->lvaGetDesc(def.GetLclNum()), mutated);

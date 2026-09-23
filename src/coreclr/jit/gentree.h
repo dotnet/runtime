@@ -4075,6 +4075,7 @@ public:
 // The definition nodes carry local, SSA, liveness and register information. They
 // are metadata, not operands: the source is evaluated once, before any definition.
 // Destinations are distinct, non-address-exposed scalar or SIMD locals.
+// This is not an atomic or volatile memory store.
 struct GenTreeStoreLclVars : public GenTreeUnOp
 {
     struct Destination

@@ -1356,6 +1356,7 @@ const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
 bool ReplaceVisitor::TryStoreMultiRegValue(GenTree** use, Replacement* first, Replacement* end)
 {
     GenTree* store = *use;
+    // Volatile and other indirect stores must retain their memory semantics.
     if (!store->OperIsLocalStore())
     {
         return false;
@@ -1363,6 +1364,11 @@ bool ReplaceVisitor::TryStoreMultiRegValue(GenTree** use, Replacement* first, Re
 
     GenTree* source = store->Data();
     if ((!source->IsCall() && !source->OperIsHWIntrinsic()) || !source->IsMultiRegNode())
+    {
+        return false;
+    }
+    // Async lowering may replace the call result with a struct local.
+    if (source->IsCall() && source->AsCall()->IsAsync())
     {
         return false;
     }

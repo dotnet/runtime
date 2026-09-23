@@ -8927,6 +8927,10 @@ bool GenTree::OperRequiresGlobRefFlag(Compiler* comp) const
 {
     switch (OperGet())
     {
+        case GT_STORE_LCL_VARS:
+            // All destinations are non-address-exposed locals. Source effects are tracked separately.
+            return false;
+
         case GT_LCL_VAR:
         case GT_LCL_FLD:
         case GT_STORE_LCL_VAR:

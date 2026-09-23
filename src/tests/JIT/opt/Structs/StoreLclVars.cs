@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
+using System.Threading;
 using Xunit;
 
 /// <summary>Checks independent local definitions from multi-register results.</summary>
@@ -47,16 +48,30 @@ public class StoreLclVars
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static RefPair MakeRefs(object first, object second) => new RefPair { Alias = first, Second = second };
+    private static unsafe int VolatileVectorResults(byte* address)
+    {
+        Volatile.Write(ref address[0], (byte)5);
+        VectorPair before = new VectorPair { Results = AdvSimd.Arm64.LoadPairVector128(address) };
+        Volatile.Write(ref address[0], (byte)9);
+        int observed = Volatile.Read(ref address[0]);
+        VectorPair after = new VectorPair { Results = AdvSimd.Arm64.LoadPairVector128(address) };
+        return before.First.GetElement(0) + before.First.GetElement(15) +
+               before.Second.GetElement(0) + before.Second.GetElement(15) + observed +
+               after.First.GetElement(0) + after.First.GetElement(15) +
+               after.Second.GetElement(0) + after.Second.GetElement(15);
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static bool CheckRefs(object first, object second)
+    private static RefPair MakeRefs() => new RefPair { Alias = new int[] { 17 }, Second = new int[] { 23 } };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CheckRefs()
     {
-        RefPair pair = MakeRefs(first, second);
-        if (!ReferenceEquals(pair.First, first) || !ReferenceEquals(pair.Second, second))
-            return false;
+        RefPair pair = MakeRefs();
+        ((int[])pair.First)[0]++;
+        ((int[])pair.Second)[0]++;
         GC.Collect();
-        return ReferenceEquals(pair.First, first) && ReferenceEquals(pair.Second, second);
+        return ((int[])pair.First)[0] == 18 && ((int[])pair.Second)[0] == 24;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -155,6 +170,22 @@ public class StoreLclVars
         return result.First * 17 + result.Second + (result.First ^ result.Second);
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static long ExceptionPreservesIntermediate(bool throws)
+    {
+        Pair result = new Pair { First = 13, Second = 7 };
+        try
+        {
+            result = MakePair(1, 2);
+            result = MakePairOrThrow(100, 23, throws);
+        }
+        catch (InvalidOperationException)
+        {
+            return result.First * 17 + result.Second + (result.First ^ result.Second);
+        }
+        return result.First * 17 + result.Second + (result.First ^ result.Second);
+    }
+
     /// <summary>Checks both results, dead results, and exceptional definitions.</summary>
     [Fact]
     public static unsafe void TestEntryPoint()
@@ -163,7 +194,9 @@ public class StoreLclVars
         Assert.Equal(108, CallOverwrite(100, 23));
         Assert.Equal(238, ExceptionPreservesPrevious(true));
         Assert.Equal(1838, ExceptionPreservesPrevious(false));
-        Assert.True(CheckRefs(new object(), new object()));
+        Assert.Equal(22, ExceptionPreservesIntermediate(true));
+        Assert.Equal(1838, ExceptionPreservesIntermediate(false));
+        Assert.True(CheckRefs());
         Assert.Equal(0, DiscardCall(false));
         Assert.Throws<InvalidOperationException>(() => DiscardCall(true));
         if (AdvSimd.Arm64.IsSupported)
@@ -172,6 +205,7 @@ public class StoreLclVars
             for (int i = 0; i < 32; i++)
                 values[i] = (byte)i;
             Assert.Equal(62, VectorResults(values));
+            Assert.Equal(147, VolatileVectorResults(values));
         }
         if (X86Base.X64.IsSupported)
         {

@@ -4845,6 +4845,12 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                     {
                         isGloballyVisibleStore = m_compiler->lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed();
                     }
+                    else if (tree->OperIs(GT_STORE_LCL_VARS))
+                    {
+                        // These destinations are non-address-exposed locals. The source is visited separately,
+                        // including any calls, volatile accesses, or other ordering side effects.
+                        isGloballyVisibleStore = false;
+                    }
                     else
                     {
                         isGloballyVisibleStore = true;

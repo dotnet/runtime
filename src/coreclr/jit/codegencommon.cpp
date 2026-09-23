@@ -8045,24 +8045,18 @@ void CodeGen::genStoreLclVars(GenTreeStoreLclVars* store)
         LclVarDsc*     varDsc      = m_compiler->lvaGetDesc(destination);
         regNumber      targetReg   = destination->GetRegNum();
         var_types      type        = varDsc->TypeGet();
-        if (targetReg != REG_NA)
+        if (targetReg == REG_NA)
         {
-            inst_Mov(type, targetReg, sourceReg, /* canSkip */ true);
-        }
-        if (((targetReg == REG_NA) || varDsc->IsAlwaysAliveInMemory()) && !destination->IsLastUse(0))
-        {
-            GetEmitter()->emitIns_S_R(ins_StoreFromSrc(sourceReg, type), emitTypeSize(type), sourceReg,
-                                      destination->GetLclNum(), 0);
-        }
-        varDsc->SetRegNum(targetReg == REG_NA ? REG_STK : targetReg);
-        if (targetReg != REG_NA)
-        {
-            genProduceReg(destination);
+            // A dead register definition can still need a stack home visible to an EH handler.
+            unsigned lclNum = destination->GetLclNum();
+            GetEmitter()->emitIns_S_R(ins_Store(type, m_compiler->isSIMDTypeLocalAligned(lclNum)), emitTypeSize(type),
+                                      sourceReg, lclNum, 0);
         }
         else
         {
-            genUpdateLife(destination);
+            inst_Mov(type, targetReg, sourceReg, /* canSkip */ true);
         }
+        genUpdateLifeStore(destination, targetReg, varDsc);
     }
 }
 
