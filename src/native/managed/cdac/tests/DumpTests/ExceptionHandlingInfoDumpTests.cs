@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
@@ -41,7 +40,7 @@ public class ExceptionHandlingInfoDumpTests : DumpTestBase
         {
             TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
             string? name = DumpTestHelpers.GetMethodName(Target, methodDescPtr);
-            if (name?.Contains("CrashInExceptionHandler", StringComparison.Ordinal) == true)
+            if (name is "CrashInExceptionHandler")
             {
                 MethodDescHandle mdHandle = rts.GetMethodDescHandle(methodDescPtr);
                 TargetCodePointer nativeCode = rts.GetNativeCode(mdHandle);

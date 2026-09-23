@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.GCInfoHelpers.X86;
@@ -182,7 +181,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
 
                 TargetPointer methodDesc = new(data.v.jitFuncData.vmNativeCodeMethodDescToken);
                 if (frameType == FrameType.ManagedStackFrame &&
-                    DumpTestHelpers.GetMethodName(Target, methodDesc)?.Contains("MethodB", StringComparison.Ordinal) == true)
+                    DumpTestHelpers.GetMethodName(Target, methodDesc) == "MethodB")
                 {
                     IPlatformAgnosticContext frameContext = IPlatformAgnosticContext.GetContextForPlatform(Target);
                     frameContext.FillFromBuffer(contextBuffer);

@@ -193,7 +193,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodA", StringComparison.Ordinal) != true)
+            if (name is not "MethodA")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);
@@ -229,7 +229,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodB", StringComparison.Ordinal) != true)
+            if (name is not "MethodB")
                 continue;
 
             IRuntimeTypeSystem rts = Target.Contracts.RuntimeTypeSystem;
@@ -300,7 +300,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodA", StringComparison.Ordinal) != true)
+            if (name is not "MethodA")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);
@@ -335,7 +335,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodA", StringComparison.Ordinal) != true)
+            if (name is not "MethodA")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);
@@ -373,7 +373,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodA", StringComparison.Ordinal) != true)
+            if (name is not "MethodA")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);
@@ -409,7 +409,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodB", StringComparison.Ordinal) != true)
+            if (name is not "MethodB")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);
@@ -444,7 +444,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodB", StringComparison.Ordinal) != true)
+            if (name is not "MethodB")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);
@@ -482,7 +482,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
                 continue;
 
             string? name = DumpTestHelpers.GetMethodName(Target, md);
-            if (name?.Contains("MethodB", StringComparison.Ordinal) != true)
+            if (name is not "MethodB")
                 continue;
 
             ClrDataFrame frame = CreateFrame(dataFrame);

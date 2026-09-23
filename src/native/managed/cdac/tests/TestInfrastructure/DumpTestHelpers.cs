@@ -14,7 +14,7 @@ namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 public static class DumpTestHelpers
 {
     /// <summary>
-    /// Resolves the fully formatted method name for a <see cref="MethodDescHandle"/> using
+    /// Resolves the unqualified method name for a <see cref="MethodDescHandle"/> using
     /// <see cref="ISOSDacInterface.GetMethodDescName"/>.
     /// </summary>
     public static unsafe string? GetMethodName(ContractDescriptorTarget target, MethodDescHandle mdHandle)
@@ -35,7 +35,7 @@ public static class DumpTestHelpers
         if (hr < 0 || requiredLength <= 1)
             return null;
 
-        return new string(nameBuffer, 0, checked((int)requiredLength - 1));
+        return GetSimpleMethodName(new string(nameBuffer, 0, checked((int)requiredLength - 1)));
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ public static class DumpTestHelpers
             {
                 TargetPointer methodDescPtr = stackWalk.GetMethodDescPtr(frame);
                 string? name = GetMethodName(target, methodDescPtr);
-                if (name is not null && name.Contains(methodNameSubstring, StringComparison.Ordinal))
+                if (name is not null && name.Contains(methodNameSubstring))
                     return threadData;
             }
 
@@ -89,5 +89,42 @@ public static class DumpTestHelpers
     public static ThreadData FindFailFastThread(ContractDescriptorTarget target)
     {
         return FindThreadWithMethod(target, "FailFast");
+    }
+
+    /// <summary>
+    /// Extracts the unqualified method name without generic arguments or parameter types
+    /// from a name formatted by <see cref="ISOSDacInterface.GetMethodDescName"/>.
+    /// </summary>
+    public static string GetSimpleMethodName(string formattedName)
+    {
+        ReadOnlySpan<char> name = formattedName;
+        int parametersStart = name.IndexOf('(');
+        if (parametersStart >= 0)
+            name = name[..parametersStart];
+
+        if (name.EndsWith("]", StringComparison.Ordinal))
+        {
+            int depth = 0;
+            for (int i = name.Length - 1; i >= 0; i--)
+            {
+                if (name[i] == ']')
+                    depth++;
+                else if (name[i] == '[' && --depth == 0)
+                {
+                    name = name[..i];
+                    break;
+                }
+            }
+        }
+
+        int methodStart = name.LastIndexOf('.') + 1;
+        // Constructors have a leading dot in addition to the declaring-type separator.
+        if (methodStart > 0 && name[methodStart..] is "ctor" or "cctor" &&
+            (methodStart == 1 || name[methodStart - 2] == '.'))
+        {
+            methodStart--;
+        }
+
+        return name[methodStart..].ToString();
     }
 }
