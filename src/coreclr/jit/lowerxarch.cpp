@@ -402,7 +402,8 @@ void Lowering::ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenT
     // up to 16 bytes lower than offset + size. But offsets large enough to hit this case are likely
     // to be extremely rare for this to ever be a CQ issue.
     // On x86 this shouldn't be needed but then again, offsets large enough to hit this are rare.
-    if (addrMode->Offset() > (INT32_MAX - static_cast<int>(size)))
+    // Keep offset + size strictly below INT32_MAX, as required by unrolled block codegen.
+    if (addrMode->Offset() >= (INT32_MAX - static_cast<int>(size)))
     {
         return;
     }
@@ -1313,6 +1314,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
             continue;
         }
 
+        if (isScalar && (i == 1))
+        {
+            // Scalar FMA copies the upper elements of its first operand, including any vector negation.
+            continue;
+        }
+
         if (!arg->OperIsHWIntrinsic())
         {
             continue;
@@ -1424,21 +1431,16 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         size_t   numArgs = node->GetOperandCount();
         GenTree* lastOp  = node->Op(numArgs);
-        uint8_t  mode    = 0xFF;
 
         if (lastOp->IsCnsIntOrI())
         {
             // Mark the constant as contained since it's specially encoded
             MakeSrcContained(node, lastOp);
-
-            mode = static_cast<uint8_t>(lastOp->AsIntCon()->IconValue());
         }
 
-        if ((mode & 0x03) != 0x00)
-        {
-            // Embedded rounding only works for register-to-register operations, so skip containment
-            return node->gtNext;
-        }
+        // Codegen consumes the rounding operand. The remaining lowering and containment
+        // expect the ordinary operand count, even when the rounding mode is implicit.
+        return node->gtNext;
     }
 
     bool       isScalar = false;
@@ -2618,7 +2620,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // If either of the value operands is const zero and the mask is either all
             // zeros or all ones per-element, we can optimize down to AND or AND_NOT.
-            if (op3->IsVectorPerElementMask(m_compiler, TYP_BYTE, simdSize) &&
+            if (op3->IsVectorPerElementMask(m_compiler, simdBaseType, simdSize) &&
                 (op1->IsVectorZero() || op2->IsVectorZero()))
             {
                 var_types simdType = node->TypeGet();
@@ -3014,7 +3016,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         // This works since the upper bits are implicitly zero and so by inverting matches also become
         // zero, which in turn means that `AllBitsSet` will become `Zero` and other cases become non-zero
 
-        if (varTypeIsMask(op1Msk) && op2->IsCnsVec())
+        if (varTypeIsMask(op1Msk) && (op2->IsVectorZero() || op2->IsVectorAllBitsSet()))
         {
             // We want to specially handle the common cases of `mask op Zero` and `mask op AllBitsSet`
             //
@@ -3156,31 +3158,37 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                                 (nestedIntrinId == NI_AVX2_BroadcastScalarToVector256) ||
                                 (nestedIntrinId == NI_AVX512_BroadcastScalarToVector512))
                             {
-                                // We need to rewrite the embedded broadcast back to a regular constant
-                                // so that the subsequent containment check for ptestm can determine
-                                // if the embedded broadcast is still relevant
+                                // Restore constant broadcasts so ptestm can choose its own broadcast
+                                // granularity. Runtime broadcasts must retain their original load size.
 
                                 GenTree* broadcastOp = nestedIntrin->Op(1);
+                                GenTree* scalarOp    = broadcastOp;
 
                                 if (broadcastOp->OperIsHWIntrinsic(NI_Vector_CreateScalarUnsafe) &&
                                     broadcastOp->TypeIs(TYP_SIMD16))
                                 {
-                                    BlockRange().Remove(broadcastOp);
-                                    broadcastOp = broadcastOp->AsHWIntrinsic()->Op(1);
+                                    scalarOp = broadcastOp->AsHWIntrinsic()->Op(1);
                                 }
 
-                                assert(broadcastOp->OperIsConst());
+                                if (!nestedIntrin->OperIsMemoryLoad() && scalarOp->OperIsConst())
+                                {
+                                    GenTree* vecCns =
+                                        m_compiler->gtNewSimdCreateBroadcastNode(simdType, scalarOp,
+                                                                                 nestedIntrin->GetSimdBaseType(),
+                                                                                 simdSize);
 
-                                GenTree* vecCns =
-                                    m_compiler->gtNewSimdCreateBroadcastNode(simdType, broadcastOp,
-                                                                             nestedIntrin->GetSimdBaseType(), simdSize);
+                                    assert(vecCns->IsCnsVec());
+                                    BlockRange().InsertAfter(scalarOp, vecCns);
+                                    nestedOp2 = vecCns;
 
-                                assert(vecCns->IsCnsVec());
-                                BlockRange().InsertAfter(broadcastOp, vecCns);
-                                nestedOp2 = vecCns;
+                                    if (scalarOp != broadcastOp)
+                                    {
+                                        BlockRange().Remove(broadcastOp);
+                                    }
 
-                                BlockRange().Remove(broadcastOp);
-                                BlockRange().Remove(nestedIntrin);
+                                    BlockRange().Remove(scalarOp);
+                                    BlockRange().Remove(nestedIntrin);
+                                }
                             }
                         }
 
@@ -3251,6 +3259,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             // so ensure that we track the base type as the one we'll be producing
             // via the vector comparison introduced here.
             maskBaseType = simdBaseType;
+            count        = simdSize / genTypeSize(maskBaseType);
 
             // We have `x == y` or `x != y` both of which where we want to find `AllBitsSet` in the mask since
             // we can directly do the relevant comparison. Given the above tables then when we have a full mask
@@ -3793,7 +3802,7 @@ GenTree* Lowering::LowerHWIntrinsicTernaryLogic(GenTreeHWIntrinsic* node)
                         case NI_X86Base_CompareNotGreaterThan:
                         case NI_AVX_CompareNotGreaterThan:
                         {
-                            cndId = NI_AVX512_CompareGreaterThanMask;
+                            cndId = NI_AVX512_CompareNotGreaterThanMask;
                             break;
                         }
 
@@ -5582,7 +5591,11 @@ GenTree* Lowering::LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node)
     GenTree* tmp2 = nullptr;
     GenTree* tmp3 = nullptr;
 
-    tmp1 = m_compiler->gtNewSimdBinOpNode(GT_MUL, simdType, op1, op2, simdBaseType, simdSize);
+    // CreateScalarUnsafe elision can leave scalar-typed operands here, but Dot still needs a
+    // vector multiply. Avoid the scalar-broadcast semantics of gtNewSimdBinOpNode.
+    NamedIntrinsic multiply = GenTreeHWIntrinsic::GetHWIntrinsicIdForBinOp(m_compiler, GT_MUL, op1, op2, simdBaseType,
+                                                                           simdSize, /* isScalar */ false);
+    tmp1 = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, multiply, simdBaseType, simdSize);
     BlockRange().InsertBefore(node, tmp1);
     LowerNode(tmp1);
 
@@ -7558,7 +7571,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
         GenTreeIntConCommon* icon = addr->AsIntConCommon();
 
 #if defined(FEATURE_SIMD)
-        if ((!addr->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(m_compiler)) && icon->FitsInAddrBase(m_compiler))
+        if ((!node->TypeIs(TYP_SIMD12) || !icon->ImmedValNeedsReloc(m_compiler)) && icon->FitsInAddrBase(m_compiler))
 #else
         if (icon->FitsInAddrBase(m_compiler))
 #endif
@@ -8740,6 +8753,14 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
 
     // We shouldn't have called in here if parentNode doesn't support containment
     assert(HWIntrinsicInfo::SupportsContainment(parentIntrinsicId));
+
+    if ((parentIntrinsicId == NI_AVX512_BlendVariableMask) && childNode->NodeOrContainedOperandsMayThrow(m_compiler))
+    {
+        // The blend itself suppresses faults from unselected memory lanes, even
+        // when we are not embedding another operation under its mask.
+        *supportsRegOptional = false;
+        return false;
+    }
 
     // In general, we can mark the child regOptional as long as it is at least as large as the parent instruction's
     // memory operand size.
@@ -10503,10 +10524,10 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                                                 GenTreeHWIntrinsic* broadcastNode =
                                                     op2->AsHWIntrinsic()->Op(broadcastOpIndex)->AsHWIntrinsic();
                                                 GenTree* constNode = broadcastNode->Op(1);
-                                                int64_t  lval      = 0;
+                                                uint64_t lval      = 0;
 
                                                 assert(genTypeSize(constNode) == 4);
-                                                assert(tgtMaskSize == 2);
+                                                assert(tgtMaskSize == (simdSize / 8));
 
                                                 if (constNode->IsCnsFltOrDbl())
                                                 {

@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Net.WebSockets.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134264", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
     public class WebSocketReceiveErrorMessageTests
     {
         // The test WebSocket is created with isServer:false, so received frames must NOT be masked

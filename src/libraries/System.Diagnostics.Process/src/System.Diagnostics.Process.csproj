@@ -311,6 +311,10 @@
              Link="Common\Interop\Unix\Interop.WaitPid.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Access.cs"
              Link="Common\Interop\Unix\System.Native\Interop.Access.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
+             Link="Common\Interop\Unix\Interop.Stat.cs" />
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.Span.cs"
+             Link="Common\Interop\Unix\Interop.Stat.Span.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsAtomicNonInheritablePipeCreationSupported.cs"
              Link="Common\Interop\Unix\Interop.IsAtomicNonInheritablePipeCreationSupported.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.IsATty.cs"
@@ -387,8 +391,6 @@
              Link="Common\Interop\FreeBSD\Interop.Process.cs" />
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\FreeBSD\Interop.Process.GetProcInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
-             Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'openbsd'">
@@ -403,8 +405,6 @@
              Link="Common\Interop\OpenBSD\Interop.Process.cs" />
     <Compile Include="$(CommonPath)Interop\OpenBSD\Interop.Process.GetProcInfo.cs"
              Link="Common\Interop\OpenBSD\Interop.Process.GetProcInfo.cs" />
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs"
-             Link="Common\Interop\Unix\Interop.Stat.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'illumos' or '$(TargetPlatformIdentifier)' == 'solaris'">

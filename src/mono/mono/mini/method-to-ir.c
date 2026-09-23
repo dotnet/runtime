@@ -694,8 +694,13 @@ compute_bb_regions (MonoCompile *cfg)
 }
 
 
-static gboolean
-ip_in_finally_clause (MonoCompile *cfg, int offset)
+/*
+ * Return the index of the innermost finally/fault clause whose handler contains
+ * OFFSET, or -1 if there is none. The clauses are ordered from inner to outer,
+ * so the first match is the innermost one.
+ */
+static int
+ip_get_finally_clause_index (MonoCompile *cfg, int offset)
 {
 	MonoMethodHeader *header = cfg->header;
 	MonoExceptionClause *clause;
@@ -706,9 +711,9 @@ ip_in_finally_clause (MonoCompile *cfg, int offset)
 			continue;
 
 		if (MONO_OFFSET_IN_HANDLER (clause, GINT_TO_UINT32(offset)))
-			return TRUE;
+			return GUINT_TO_INT (i);
 	}
-	return FALSE;
+	return -1;
 }
 
 /* Find clauses between ip and target, from inner to outer */
@@ -6456,6 +6461,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	MonoBasicBlock *tblock = NULL;
 	MonoBasicBlock *init_localsbb = NULL, *init_localsbb2 = NULL;
 	MonoSimpleBasicBlock *bb = NULL, *original_bb = NULL;
+	/*
+	 * For each finally clause, the bblocks containing its ENDFINALLY instructions and the
+	 * targets of the LEAVE instructions which invoke it. Only used by the LLVM backend.
+	 */
+	GSList **llvm_clause_endfinally_bbs = NULL;
+	GSList **llvm_clause_leave_target_bbs = NULL;
 	MonoMethod *method_definition;
 	MonoInst **arg_array;
 	MonoMethodHeader *header;
@@ -6658,6 +6669,11 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		if (header->num_clauses) {
 			cfg->spvars = g_hash_table_new (NULL, NULL);
 			cfg->exvars = g_hash_table_new (NULL, NULL);
+
+			if (COMPILE_LLVM (cfg)) {
+				llvm_clause_endfinally_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
+				llvm_clause_leave_target_bbs = mono_mempool_alloc0 (cfg->mempool, sizeof (GSList*) * header->num_clauses);
+			}
 		}
 		cfg->clause_is_dead = mono_mempool_alloc0 (cfg->mempool, sizeof (gboolean) * header->num_clauses);
 
@@ -11224,14 +11240,20 @@ field_access_end:
 			if (COMPILE_LLVM (cfg))
 				INLINE_FAILURE ("throw");
 			break;
-		case MONO_CEE_ENDFINALLY:
-			if (!ip_in_finally_clause (cfg, GPTRDIFF_TO_INT (ip - header->code)))
+		case MONO_CEE_ENDFINALLY: {
+			int clause_index = ip_get_finally_clause_index (cfg, GPTRDIFF_TO_INT (ip - header->code));
+
+			if (clause_index < 0)
 				UNVERIFIED;
 			/* mono_save_seq_point_info () depends on this */
 			if (sp != stack_start)
 				emit_seq_point (cfg, method, ip, FALSE, FALSE);
 			MONO_INST_NEW (cfg, ins, OP_ENDFINALLY);
 			MONO_ADD_INS (cfg->cbb, ins);
+
+			if (llvm_clause_endfinally_bbs)
+				llvm_clause_endfinally_bbs [clause_index] = g_slist_prepend_mempool (cfg->mempool, llvm_clause_endfinally_bbs [clause_index], cfg->cbb);
+
 			start_new_bblock = 1;
 			ins_has_side_effect = FALSE;
 
@@ -11243,6 +11265,7 @@ field_access_end:
 				sp--;
 			}
 			break;
+		}
 		case MONO_CEE_LEAVE:
 		case MONO_CEE_LEAVE_S: {
 			GList *handlers;
@@ -11344,16 +11367,10 @@ field_access_end:
 					MONO_START_BB (cfg, dont_throw);
 					cfg->cbb->clause_holes = tmp;
 
-					if (COMPILE_LLVM (cfg)) {
+					if (llvm_clause_leave_target_bbs) {
 						MonoBasicBlock *target_bb;
-
-						/*
-						 * Link the finally bblock with the target, since it will
-						 * conceptually branch there.
-						 */
-						GET_BBLOCK (cfg, tblock, cfg->cil_start + clause->handler_offset + clause->handler_len - 1);
 						GET_BBLOCK (cfg, target_bb, target);
-						link_bblock (cfg, tblock, target_bb);
+						llvm_clause_leave_target_bbs [leave->index] = g_slist_prepend_mempool (cfg->mempool, llvm_clause_leave_target_bbs [leave->index], target_bb);
 					}
 				}
 			}
@@ -12547,6 +12564,19 @@ all_bbs_done:
 
 				NEW_SEQ_POINT (cfg, seq_point_ins, i, FALSE);
 				mono_add_seq_point (cfg, NULL, seq_point_ins, SEQ_POINT_NATIVE_OFFSET_DEAD_CODE);
+			}
+		}
+	}
+
+	/*
+	 * Link the finally bblock with the target, since it will
+	 * conceptually branch there.
+	 */
+	if (llvm_clause_endfinally_bbs) {
+		for (guint i = 0; i < header->num_clauses; ++i) {
+			for (GSList *l = llvm_clause_endfinally_bbs [i]; l; l = l->next) {
+				for (GSList *l2 = llvm_clause_leave_target_bbs [i]; l2; l2 = l2->next)
+					link_bblock (cfg, (MonoBasicBlock*)l->data, (MonoBasicBlock*)l2->data);
 			}
 		}
 	}

@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 #include "common.h"
+#include <minipal/time.h>
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
@@ -448,7 +449,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
             // for GC during the stacktrace reporting.
             GCX_PREEMP();
 
-            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+            minipal_sleep(INFINITE);
         }
         return;
     }
@@ -685,11 +686,14 @@ void DisplayStackOverflowException()
     PrintToStdErrA("Stack overflow.\n");
 }
 
+static volatile LONG g_stackOverflowCallStackLogged = 0;
+
 DWORD LogStackOverflowStackTraceThread(void* arg)
 {
-    LogCallstackForLogWorker((Thread*)arg, NULL, /*captureStackOverflowTrace*/ true);
+   LogCallstackForLogWorker((Thread*)arg, NULL, /*captureStackOverflowTrace*/ true);
+   InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
 
-    return 0;
+   return 0;
 }
 
 void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger)
@@ -747,8 +751,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         fef.InitAndLink(pExceptionContext);
     }
 
-    static volatile LONG g_stackOverflowCallStackLogged = 0;
-
     // Dump stack trace only for the first thread failing with stack overflow to prevent mixing
     // multiple stack traces together.
     if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
@@ -763,15 +765,19 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         if (stackDumpThreadHandle != NULL)
         {
             // Wait for the stack trace logging completion
-            DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
-            _ASSERTE(res == WAIT_OBJECT_0);
+            while (g_stackOverflowCallStackLogged != 2)
+            {
+                minipal_sleep(1);
+            }
  #ifdef _DEBUG
             if (g_LogStackOverflowExit)
                 PrintToStdErrA("@Stack trace printing helper thread exited.\n");
  #endif
         }
-
-        g_stackOverflowCallStackLogged = 2;
+        else
+        {
+            InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
+        }
     }
     else
     {
@@ -782,7 +788,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         // Wait for the thread that is logging the stack trace to complete
         while (g_stackOverflowCallStackLogged != 2)
         {
-            Sleep(50);
+            minipal_sleep(50);
         }
     }
 

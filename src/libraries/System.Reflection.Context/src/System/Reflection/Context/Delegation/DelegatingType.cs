@@ -74,10 +74,27 @@ namespace System.Reflection.Context.Delegation
             get { return _typeInfo.GUID; }
         }
 
+        public override bool IsByRefLike
+        {
+            get { return _typeInfo.IsByRefLike; }
+        }
+
+        public override bool IsConstructedGenericType
+        {
+            get { return _typeInfo.IsConstructedGenericType; }
+        }
+
         public override bool IsEnum
         {
             get { return _typeInfo.IsEnum; }
         }
+
+#if NET
+        public override bool IsFunctionPointer
+        {
+            get { return _typeInfo.IsFunctionPointer; }
+        }
+#endif
 
         public override bool IsGenericParameter
         {
@@ -115,6 +132,28 @@ namespace System.Reflection.Context.Delegation
         public override bool IsSerializable
         {
             get { return _typeInfo.IsSerializable; }
+        }
+
+        public override bool IsSZArray
+        {
+            get { return _typeInfo.IsSZArray; }
+        }
+
+        public override bool IsTypeDefinition
+        {
+            get { return _typeInfo.IsTypeDefinition; }
+        }
+
+#if NET
+        public override bool IsUnmanagedFunctionPointer
+        {
+            get { return _typeInfo.IsUnmanagedFunctionPointer; }
+        }
+#endif
+
+        public override MemberTypes MemberType
+        {
+            get { return _typeInfo.MemberType; }
         }
 
         public override int MetadataToken
@@ -192,10 +231,24 @@ namespace System.Reflection.Context.Delegation
             return _typeInfo.GetEnumValues();
         }
 
+#if NET
+        public override Array GetEnumValuesAsUnderlyingType()
+        {
+            return _typeInfo.GetEnumValuesAsUnderlyingType();
+        }
+#endif
+
         public override Type GetEnumUnderlyingType()
         {
             return _typeInfo.GetEnumUnderlyingType();
         }
+
+#if NET11_0_OR_GREATER
+        public override Type? GetNullableUnderlyingType()
+        {
+            return _typeInfo.GetNullableUnderlyingType();
+        }
+#endif
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
@@ -216,6 +269,23 @@ namespace System.Reflection.Context.Delegation
         {
             return _typeInfo.GetEvents();
         }
+
+#if NET
+        public override Type[] GetFunctionPointerCallingConventions()
+        {
+            return _typeInfo.GetFunctionPointerCallingConventions();
+        }
+
+        public override Type[] GetFunctionPointerParameterTypes()
+        {
+            return _typeInfo.GetFunctionPointerParameterTypes();
+        }
+
+        public override Type GetFunctionPointerReturnType()
+        {
+            return _typeInfo.GetFunctionPointerReturnType();
+        }
+#endif
 
         public override Type[] GetGenericArguments()
         {
@@ -457,6 +527,13 @@ namespace System.Reflection.Context.Delegation
         {
             return _typeInfo.MakePointerType();
         }
+
+#if NET11_0_OR_GREATER
+        public override Type MakeFunctionPointerType(Type[]? parameterTypes, bool isUnmanaged = false)
+        {
+            return _typeInfo.MakeFunctionPointerType(parameterTypes, isUnmanaged);
+        }
+#endif
 
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)

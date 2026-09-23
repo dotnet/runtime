@@ -271,6 +271,20 @@ public:
         return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_PARTIAL;
     }
 
+    // True when this image was compiled with the GC mode transition verification scaffolding.
+    //
+    // Only WebAssembly emits the scaffolding: the helper call at catch resumption points is
+    // inserted by the WebAssembly-only JIT path in fgwasm.cpp, and only the WebAssembly catch
+    // resumption path consumes this. On any other target the flag is inert even if set, so do not
+    // treat it as a general statement that the image's catch resumption points call
+    // READYTORUN_HELPER_ResumeAfterCatch. See the comment on t_gcModeSwitchPermitted in
+    // vm/threads.h.
+    BOOL VerifiesGCModeTransitions()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pHeader->CoreHeader.Flags & READYTORUN_FLAG_VERIFY_GC_MODE_TRANSITIONS;
+    }
+
     BOOL HasStrippedILBodies()
     {
         LIMITED_METHOD_CONTRACT;
@@ -417,11 +431,13 @@ public:
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();
 
+    bool TryGetPrecachedExternalTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedExternalTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedExternalTypeMapEntry(MethodTable* pGroupType, LPCUTF8 pKey);
 
     bool CheckForUniqueExternalTypeMapKeys(MethodTable* pGroupType, ExternalTypeNameHash *pHash);
 
+    bool TryGetPrecachedProxyTypeMap(MethodTable* pGroupType, NativeFormat::NativeHashtable* pTypeMap, NativeFormat::NativeParser* pNamedEntries);
     bool HasPrecachedProxyTypeMap(MethodTable* pGroupType);
     TypeHandle FindPrecachedProxyTypeMapEntry(MethodTable* pGroupType, TypeHandle key);
 

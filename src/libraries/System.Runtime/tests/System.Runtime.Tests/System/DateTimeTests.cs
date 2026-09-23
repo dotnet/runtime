@@ -2935,10 +2935,77 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [InlineData("'é'", "é")]
+        [InlineData("'\\é'", "é")]
+        [InlineData("%é", "é")]
+        [InlineData("\\é", "é")]
+        [InlineData("'\U0001F600'", "\U0001F600")]
+        [InlineData("'\\\U0001F600'", "\U0001F600")]
+        [InlineData("%\U0001F600", "\U0001F600")]
+        [InlineData("\\\U0001F600", "\U0001F600")]
+        public static void TryFormat_CustomFormatWithUnicodeLiteral(string format, string expected)
+        {
+            AssertFormatted(DateTime.UnixEpoch, format, CultureInfo.InvariantCulture, expected);
+            AssertFormatted(DateTimeOffset.UnixEpoch, format, CultureInfo.InvariantCulture, expected);
+            AssertFormatted(DateOnly.MinValue, format, CultureInfo.InvariantCulture, expected);
+            AssertFormatted(TimeOnly.MinValue, format, CultureInfo.InvariantCulture, expected);
+        }
+
+        [Fact]
+        public static void TryFormat_SingleDesignatorWithSupplementaryCharacter()
+        {
+            DateTimeFormatInfo dtfi = (DateTimeFormatInfo)CultureInfo.InvariantCulture.DateTimeFormat.Clone();
+            dtfi.AMDesignator = "\U0001F600x";
+
+            AssertFormatted(DateTime.UnixEpoch, "%t", dtfi, "\U0001F600");
+            AssertFormatted(TimeOnly.MinValue, "%t", dtfi, "\U0001F600");
+            Assert.Equal(0, DateTime.ParseExact("\U0001F600", "%t", dtfi).Hour);
+            Assert.Equal(TimeOnly.MinValue, TimeOnly.ParseExact("\U0001F600", "%t", dtfi));
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void TryFormat_CustomFormatWithUnpairedSurrogate(bool highSurrogate)
+        {
+            string literal = new(highSurrogate ? '\uD83D' : '\uDE00', 1);
+            AssertFormattedWithUnpairedSurrogate(DateTime.UnixEpoch, literal);
+            AssertFormattedWithUnpairedSurrogate(DateTimeOffset.UnixEpoch, literal);
+            AssertFormattedWithUnpairedSurrogate(DateOnly.MinValue, literal);
+            AssertFormattedWithUnpairedSurrogate(TimeOnly.MinValue, literal);
+        }
+
         [Fact]
         public static void UnixEpoch()
         {
             VerifyDateTime(DateTime.UnixEpoch, 1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        }
+
+        private static void AssertFormatted<T>(T value, string format, IFormatProvider provider, string expected)
+            where T : ISpanFormattable, IUtf8SpanFormattable
+        {
+            Span<char> chars = new char[expected.Length];
+            Assert.True(value.TryFormat(chars, out int charsWritten, format, provider));
+            Assert.Equal(expected, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = new byte[Encoding.UTF8.GetByteCount(expected)];
+            Assert.True(value.TryFormat(bytes, out int bytesWritten, format, provider));
+            Assert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]));
+        }
+
+        private static void AssertFormattedWithUnpairedSurrogate<T>(T value, string literal)
+            where T : ISpanFormattable, IUtf8SpanFormattable
+        {
+            string format = $"'{literal}'";
+
+            Span<char> chars = new char[literal.Length];
+            Assert.True(value.TryFormat(chars, out int charsWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal(literal, new string(chars[..charsWritten]));
+
+            Span<byte> bytes = stackalloc byte[3];
+            Assert.True(value.TryFormat(bytes, out int bytesWritten, format, CultureInfo.InvariantCulture));
+            Assert.Equal("\uFFFD", Encoding.UTF8.GetString(bytes[..bytesWritten]));
         }
 
         [Fact]

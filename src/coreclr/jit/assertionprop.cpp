@@ -90,6 +90,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 //
 static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
 {
+    // Only valid during global assertion prop, this relies on value numbers.
+    assert(comp->vnStore != nullptr);
+
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
 
     if (intrinsic != NI_Vector_ExtractMostSignificantBits)
@@ -1850,6 +1853,27 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
         return NO_ASSERTION_INDEX;
     }
 
+    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
+    bool isUnsignedCompareCheckedBound = vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd);
+
+    bool arrLenIsOp1 =
+        !isUnsignedCompareCheckedBound && vnStore->IsVNArrLen(op1VN) && relopFuncApp.FuncIs(VNF_LT_UN, VNF_GE_UN);
+    bool arrLenIsOp2 =
+        !isUnsignedCompareCheckedBound && vnStore->IsVNArrLen(op2VN) && relopFuncApp.FuncIs(VNF_GT_UN, VNF_LE_UN);
+    if (arrLenIsOp1 || arrLenIsOp2)
+    {
+        if (arrLenIsOp1)
+        {
+            relopFunc = ValueNumStore::SwapRelop(relopFunc);
+            std::swap(op1VN, op2VN);
+        }
+
+        AssertionDsc   dsc = AssertionDsc::CreateCompareCheckedBound(this, relopFunc, op1VN, op2VN, 0, true);
+        AssertionIndex idx = optAddAssertion(dsc);
+        optCreateComplementaryAssertion(idx);
+        return idx;
+    }
+
     // "CheckedBnd <relop> X"
     if (!isUnsignedRelop && vnStore->IsVNCheckedBound(op1VN))
     {
@@ -1880,6 +1904,15 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
             optCreateComplementaryAssertion(idx);
             return idx;
         }
+    }
+
+    if (!isUnsignedCompareCheckedBound && isUnsignedRelop && (op1VN != op2VN) && !vnStore->IsVNConstant(op1VN) &&
+        !vnStore->IsVNConstant(op2VN) && vnStore->IsVNCheckedBoundIndex(op1VN) && optAssertionHasAssertionsForVN(op2VN))
+    {
+        AssertionDsc   dsc = AssertionDsc::CreateRelopVN(this, relopFunc, op1VN, op2VN);
+        AssertionIndex idx = optAddAssertion(dsc);
+        optCreateComplementaryAssertion(idx);
+        return idx;
     }
 
     // The remaining "(CheckedBnd + CNS) <relop> X" cases are only useful when the
@@ -1915,8 +1948,7 @@ AssertionInfo Compiler::optCreateJTrueBoundsAssertion(GenTree* tree)
 
     // Loop condition like "(uint)i < (uint)bnd" or equivalent
     // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < bnd (on the appropriate edge)
-    ValueNumStore::UnsignedCompareCheckedBoundInfo unsignedCompareBnd;
-    if (vnStore->IsVNUnsignedCompareCheckedBound(relopVN, &unsignedCompareBnd))
+    if (isUnsignedCompareCheckedBound)
     {
         ValueNum idxVN = vnStore->VNNormalValue(unsignedCompareBnd.vnIdx);
         ValueNum lenVN = vnStore->VNNormalValue(unsignedCompareBnd.vnBound);
@@ -3282,9 +3314,22 @@ GenTree* Compiler::optVNBasedFoldConstExpr(BasicBlock* block, GenTree* parent, G
             return nullptr;
         }
 
-        // Were able to optimize.
+        // We're able to optimize.
         conValTree->gtVNPair = vnPair;
-        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT, true);
+
+        bool ignoreRoot = true;
+        if (((tree->gtFlags & GTF_EXCEPT) != 0) && (tree->OperExceptions(this) != ExceptionSetFlags::None))
+        {
+            ValueNumPair operandsExcSet = vnStore->VNPForEmptyExcSet();
+            for (GenTree* operand : tree->Operands())
+            {
+                ValueNumPair operandVNP = operand->gtVNPair.BothDefined() ? operand->gtVNPair : vnStore->VNPForVoid();
+                operandsExcSet          = vnStore->VNPUnionExcSet(operandVNP, operandsExcSet);
+            }
+            ignoreRoot = vnStore->VNPExcIsSubset(operandsExcSet, vnStore->VNPExceptionSet(vnPair));
+        }
+
+        return gtWrapWithSideEffects(conValTree, tree, GTF_SIDE_EFFECT, ignoreRoot);
     }
     else
     {
@@ -5245,6 +5290,12 @@ bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions,
     ValueNum       vnBase = vn;
     target_ssize_t offset = 0;
     vnStore->PeelOffsets(&vnBase, &offset);
+    if ((offset < 0) || fgIsBigOffset(static_cast<size_t>(offset)))
+    {
+        // A non-null base does not imply a non-null address for these offsets.
+        // Still allow assertions about the full address.
+        vnBase = vn;
+    }
 
     // Check each assertion to find if we have a vn != null assertion. Note that 'assertions'
     // may be uninit here (e.g. when the current block has no live assertions); in that case we
@@ -5830,9 +5881,6 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             // to the next node in the tree. We will re-morph this entire statement in
             // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
             newTree->gtNext = tree->gtNext;
-
-            // Old tree should not be referenced anymore.
-            DEBUG_DESTROY_NODE(tree);
         }
     }
 
@@ -5918,7 +5966,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            // This optimization needs value numbers, which are not available during local assertion prop.
+            if (!optLocalAssertionProp)
+            {
+                optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            }
             return nullptr;
 #endif // FEATURE_HW_INTRINSICS
 
@@ -6806,10 +6858,6 @@ PhaseStatus Compiler::optAssertionPropMain()
         }
         return madeChanges ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
     }
-
-#ifdef DEBUG
-    fgDebugCheckLinks();
-#endif
 
     // Allocate the bits for the predicate sensitive dataflow analysis
     bbJtrueAssertionOut    = optInitAssertionDataflowFlags();

@@ -52,7 +52,7 @@ namespace System
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -62,7 +62,7 @@ namespace System
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
@@ -214,7 +214,7 @@ namespace System
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
         public override bool IsEnumDefined(object value)
