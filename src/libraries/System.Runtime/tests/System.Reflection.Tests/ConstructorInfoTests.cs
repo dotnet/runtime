@@ -64,7 +64,8 @@ namespace System.Reflection.Tests
             object target = "existing";
             object?[] arguments = new object?[] { new[] { 'n', 'e', 'w' } };
 
-            Assert.Null(constructor.Invoke(target, arguments));
+            TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(target, arguments));
+            Assert.IsType<NotSupportedException>(exception.InnerException);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
@@ -75,7 +76,7 @@ namespace System.Reflection.Tests
             object?[] arguments = new object?[] { 3 };
 
             TargetInvocationException exception = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(target, arguments));
-            Assert.IsType<InvalidProgramException>(exception.InnerException);
+            Assert.IsType<NotSupportedException>(exception.InnerException);
         }
 
         public static IEnumerable<object[]> Invoke_ReferenceConstructors_SharedThunk_TestData()
