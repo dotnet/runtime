@@ -28,7 +28,8 @@ static void PromoteCarefully(PTR_PTR_Object obj, uint32_t flags, ScanFunc* fnGcE
 
     // If the object reference points into the stack, we
     // must not promote it, the GC cannot handle these.
-    if (pSc->thread_under_crawl->IsWithinStackBounds(*obj))
+    // Only the part above stack_limit is live stack; the recorded bounds can span other mappings (e.g. musl main thread under QEMU).
+    if (pSc->thread_under_crawl->IsWithinStackBounds(*obj) && ((uintptr_t)*obj >= pSc->stack_limit))
         return;
 
     fnGcEnumRef(obj, pSc, flags);
