@@ -854,24 +854,41 @@
   <Target Name="_CoreCLRWriteLinkRsp"
           DependsOnTargets="GenerateEmccExports">
 
+    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
+    <ItemGroup>
+      <EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
+      <EmccIncomingModuleJSAPI Include="arguments" />
+      <EmccIncomingModuleJSAPI Include="canvas" />
+      <EmccIncomingModuleJSAPI Include="dynamicLibraries" />
+      <EmccIncomingModuleJSAPI Include="elementPointerLock" />
+      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <EmccIncomingModuleJSAPI Include="locateFile" />
+      <EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
+      <EmccIncomingModuleJSAPI Include="noExitRuntime" />
+      <EmccIncomingModuleJSAPI Include="noInitialRun" />
+      <EmccIncomingModuleJSAPI Include="onAbort" />
+      <EmccIncomingModuleJSAPI Include="onExit" />
+      <EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
+      <EmccIncomingModuleJSAPI Include="postRun" />
+      <EmccIncomingModuleJSAPI Include="preInit" />
+      <EmccIncomingModuleJSAPI Include="preRun" />
+      <EmccIncomingModuleJSAPI Include="print" />
+      <EmccIncomingModuleJSAPI Include="printErr" />
+      <EmccIncomingModuleJSAPI Include="setStatus" />
+      <EmccIncomingModuleJSAPI Include="statusMessage" />
+      <EmccIncomingModuleJSAPI Include="stderr" />
+      <EmccIncomingModuleJSAPI Include="stdin" />
+      <EmccIncomingModuleJSAPI Include="stdout" />
+      <EmccIncomingModuleJSAPI Include="thisProgram" />
+      <EmccIncomingModuleJSAPI Include="wasm" />
+      <EmccIncomingModuleJSAPI Include="websocket" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>"[BROWSER_HOST,@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
       <_EmccIncomingModuleJSAPI>"[@(EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPI>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
-
-    <!-- Module properties the loader sets or reads. Anything not listed here is ignored by emcc, and aborts in a debug build. -->
-    <ItemGroup>
-      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
-      <EmccIncomingModuleJSAPI Include="locateFile" />
-      <EmccIncomingModuleJSAPI Include="preInit" />
-      <EmccIncomingModuleJSAPI Include="preRun" />
-      <EmccIncomingModuleJSAPI Include="postRun" />
-      <EmccIncomingModuleJSAPI Include="onAbort" />
-      <EmccIncomingModuleJSAPI Include="onExit" />
-      <EmccIncomingModuleJSAPI Include="print" />
-      <EmccIncomingModuleJSAPI Include="printErr" />
-    </ItemGroup>
 
     <!-- CoreCLR static libraries from the runtime pack (order matches CMakeLists.txt) -->
     <ItemGroup>
