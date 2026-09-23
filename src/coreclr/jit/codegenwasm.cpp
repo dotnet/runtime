@@ -3317,6 +3317,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if (pepArg != nullptr)
     {
         assert(target != nullptr);
+        // The control expression was emitted after the explicit arguments. Since lowering marked it multiply used,
+        // WasmProduceReg left the PEP on the operand stack as the final argument and tee'd it into this local. Reload
+        // the local and dereference the PEP to obtain the call_indirect table index.
         regNumber pepReg = GetMultiUseOperandReg(target);
         genConsumeReg(target);
 
