@@ -9483,8 +9483,10 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            // Must be working with the same types of vectors.
-            if (hwop1->TypeGet() != retType)
+            // Must have matching vector sizes and compatible element types.
+            // Signedness-only differences preserve the broadcast bits.
+            if ((hwop1->TypeGet() != retType) ||
+                (varTypeToSigned(hwop1->GetSimdBaseType()) != varTypeToSigned(simdBaseType)))
             {
                 break;
             }
