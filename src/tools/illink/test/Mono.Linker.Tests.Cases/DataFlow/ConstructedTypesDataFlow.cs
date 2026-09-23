@@ -48,6 +48,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             static Type annotatedfield;
 
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+            static Type secondAnnotatedField;
+
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             static ref Type AnnotatedProperty => ref annotatedfield;
 
             [ExpectedWarning("IL2062", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/linker/issues/2158")]
@@ -353,6 +356,65 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     : ((nameof(object.ToString), typeof(object)), new object());
                 var ((methodName, type), instance) = tuple;
                 type.GetMethod(methodName);
+            }
+
+            [ExpectedWarning("IL2069", nameof(unannotatedFirst), nameof(annotatedfield), Tool.All, "The inner deconstruction assigns an unannotated source to an annotated field.")]
+            [ExpectedWarning("IL2069", nameof(unannotatedSecond), nameof(secondAnnotatedField), Tool.All, "The inner deconstruction assigns an unannotated source to an annotated field.")]
+            [ExpectedWarning("IL2077", ".Item1", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
+            [ExpectedWarning("IL2077", ".Item2", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
+            static void DeconstructNestedConditionalToAnnotatedFields(bool condition, Type unannotatedFirst, Type unannotatedSecond)
+            {
+                Type outerFirst;
+                Type outerSecond;
+                (outerFirst, outerSecond) = condition
+                    ? ((annotatedfield, secondAnnotatedField) = (unannotatedFirst, unannotatedSecond))
+                    : (typeof(string), typeof(object));
+                outerFirst.RequiresPublicMethods();
+                outerSecond.RequiresPublicMethods();
+            }
+
+            [UnexpectedWarning("IL2077", ".Item1", Tool.All, "The nested conditional loses the annotation on the inner tuple result.")]
+            [UnexpectedWarning("IL2077", ".Item2", Tool.All, "The nested conditional loses the annotation on the inner tuple result.")]
+            static void DeconstructNestedConditionalAnnotatedLocalPostState(
+                bool condition,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotatedFirst,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotatedSecond)
+            {
+                Type first = annotatedFirst;
+                Type second = annotatedSecond;
+                Type outerFirst;
+                Type outerSecond;
+                (outerFirst, outerSecond) = condition
+                    ? ((first, second) = (annotatedSecond, annotatedFirst))
+                    : (annotatedFirst, annotatedSecond);
+                first.RequiresPublicMethods();
+                second.RequiresPublicMethods();
+                outerFirst.RequiresPublicMethods();
+                outerSecond.RequiresPublicMethods();
+            }
+
+            [ExpectedWarning("IL2067", nameof(unannotatedFirst), Tool.All, "The true arm assigns an unannotated source to the first local.")]
+            [ExpectedWarning("IL2067", nameof(unannotatedSecond), Tool.All, "The true arm assigns an unannotated source to the second local.")]
+            [ExpectedWarning("IL2077", ".Item1", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
+            [ExpectedWarning("IL2077", ".Item2", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
+            static void DeconstructNestedConditionalUnannotatedLocalPostState(
+                bool condition,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotatedFirst,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotatedSecond,
+                Type unannotatedFirst,
+                Type unannotatedSecond)
+            {
+                Type first = annotatedFirst;
+                Type second = annotatedSecond;
+                Type outerFirst;
+                Type outerSecond;
+                (outerFirst, outerSecond) = condition
+                    ? ((first, second) = (unannotatedFirst, unannotatedSecond))
+                    : (annotatedFirst, annotatedSecond);
+                first.RequiresPublicMethods();
+                second.RequiresPublicMethods();
+                outerFirst.RequiresPublicMethods();
+                outerSecond.RequiresPublicMethods();
             }
 
             [ExpectedWarning("IL2080", ".Item2", Tool.Trimmer | Tool.NativeAot, "Analyzer cannot determine what compiles to ValueTuple or local variables.")]
@@ -693,6 +755,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructCapturedTupleLocal(false);
                 DeconstructNestedConditionalTuple(false);
                 DeconstructNestedConditionalTupleLocal(false);
+                DeconstructNestedConditionalToAnnotatedFields(true, typeof(string), typeof(object));
+                DeconstructNestedConditionalToAnnotatedFields(false, typeof(string), typeof(object));
+                DeconstructNestedConditionalAnnotatedLocalPostState(true, typeof(string), typeof(object));
+                DeconstructNestedConditionalAnnotatedLocalPostState(false, typeof(string), typeof(object));
+                DeconstructNestedConditionalUnannotatedLocalPostState(true, typeof(string), typeof(object), typeof(string), typeof(object));
+                DeconstructNestedConditionalUnannotatedLocalPostState(false, typeof(string), typeof(object), typeof(string), typeof(object));
                 DeconstructSwitchTuple("string");
                 DeconstructSwitchTupleUnannotated("string", typeof(string));
                 DeconstructSwitchTupleWithThrow("string");
