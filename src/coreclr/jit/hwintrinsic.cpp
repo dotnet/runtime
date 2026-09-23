@@ -3898,11 +3898,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
 #endif
 
-#if defined(TARGET_WASM)
-            impSpillSideEffect(true, stackState.esStackDepth -
-                                         2 DEBUGARG("Spilling op1 side effects for vector CreateSequence"));
-#endif // TARGET_WASM
-
             op2 = impPopStack().val;
             op1 = impPopStack().val;
 

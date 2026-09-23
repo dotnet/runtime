@@ -112,6 +112,42 @@ public class Runtime_133718
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public static void StoreComputedValueWithExceptionalAddress(bool validDestination)
+    {
+        Vector128<int> left = Vector128.Create(1, 2, 3, 4);
+        Vector128<int> right = Vector128.Create(5, 6, 7, 8);
+        Vector128<int>[] destination = validDestination ? new Vector128<int>[1] : Array.Empty<Vector128<int>>();
+
+        if (validDestination)
+        {
+            StoreComputedVectorToArray(left, right, destination);
+            Assert.Equal(left + right, destination[0]);
+        }
+        else
+        {
+            Assert.Throws<IndexOutOfRangeException>(() => StoreComputedVectorToArray(left, right, destination));
+        }
+    }
+
+    [Fact]
+    public static void CreateSequenceWithLocalStep()
+    {
+        Assert.Equal(Vector128.Create(3, 5, 7, 9), CreateSequence([3], 2));
+        Assert.Throws<IndexOutOfRangeException>(() => CreateSequence(Array.Empty<int>(), 2));
+    }
+
+    [Fact]
+    public static void StoreValueBeforeAddressMutation()
+    {
+        Vector128<int> original = Vector128.Create(1, 2, 3, 4);
+        Vector128<int> value = original;
+        Vector128.StoreUnsafe(value, ref MutateAndGetAddress(ref value));
+        Assert.Equal(original, value);
+    }
+
+    [Theory]
     [InlineData(Operation.StoreUnsafe)]
     [InlineData(Operation.StoreUnsafeOffset)]
     [InlineData(Operation.StoreAligned)]
@@ -204,6 +240,18 @@ public class Runtime_133718
     }
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static void StoreComputedVectorToArray(
+        Vector128<int> left, Vector128<int> right, Vector128<int>[] destination) =>
+        Vector128.StoreUnsafe(left + right, ref Unsafe.As<Vector128<int>, int>(ref destination[0]));
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static ref int MutateAndGetAddress(ref Vector128<int> value)
+    {
+        value = Vector128.Create(5, 6, 7, 8);
+        return ref Unsafe.As<Vector128<int>, int>(ref value);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static double Min(double[] values, int index, bool nanFirst) =>
         nanFirst
             ? Math.Min(double.NaN, values[index])
@@ -245,6 +293,10 @@ public class Runtime_133718
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static Vector128<int> CreateSequence(int[] starts, int[] steps) =>
         Vector128.CreateSequence(starts[0], steps[0]);
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static Vector128<int> CreateSequence(int[] starts, int step) =>
+        Vector128.CreateSequence(starts[0], step);
 
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static Vector128<int> CreateAlternatingSequence(int[] even, int[] odd) =>

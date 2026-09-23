@@ -5506,17 +5506,28 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 //
 // Notes:
 //    Morph does not consistently honor GTF_REVERSE_OPS, so capture firstOp in a temp
-//    at the start of secondOp. Invariant operands need no sequencing, and LIR already
-//    has an explicit execution order.
+//    at the start of secondOp when their effects cannot be reordered.
 //
 void Compiler::gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp)
 {
-    if ((fgNodeThreading != NodeThreading::LIR) && !impIsInvariant(*firstOp) && !impIsInvariant(*secondOp))
+    assert(fgOrder == FGOrderTree);
+
+    if (impIsInvariant(*firstOp) || impIsInvariant(*secondOp))
     {
-        TempInfo temp = fgMakeTemp(*firstOp);
-        *firstOp      = temp.load;
-        *secondOp     = gtNewOperNode(GT_COMMA, (*secondOp)->TypeGet(), temp.store, *secondOp);
+        // Invariant operands need no sequencing.
+        return;
     }
+
+    if ((((*secondOp)->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) == 0) &&
+        gtCanSwapOrder(*firstOp, *secondOp))
+    {
+        // The operands can swap, and secondOp cannot change firstOp's value.
+        return;
+    }
+
+    TempInfo temp = fgMakeTemp(*firstOp);
+    *firstOp      = temp.load;
+    *secondOp     = gtNewOperNode(GT_COMMA, (*secondOp)->TypeGet(), temp.store, *secondOp);
 }
 
 //------------------------------------------------------------------------
