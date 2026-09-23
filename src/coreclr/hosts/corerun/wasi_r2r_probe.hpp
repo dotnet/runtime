@@ -7,7 +7,7 @@
 // obtain the composite R2R webcil image and the per-assembly stubs. Keeping it here (rather than in a
 // single host) means both hosts serve R2R identically instead of one silently falling back to interp.
 //
-// src/mono/wasi/build/compose-r2r.py populates the image for in-tree publishing and runtime tests.
+// The in-tree WASI R2R composer populates the image for publishing and runtime tests.
 // Both hosts must be linked with the flags that supply a composite's imports -- see
 // CORERUN_WASI_COMPOSITE_R2R in corerun/CMakeLists.txt and WasiEnableCompositeR2R in
 // WasiApp.CoreCLR.targets. Without them this probe compiles but can never be satisfied.
@@ -57,12 +57,9 @@ static constexpr uint32_t g_wasi_r2r_image_cap = WASI_R2R_IMAGE_CAP;
 #ifndef WASI_R2R_TABLE_BASE
 #define WASI_R2R_TABLE_BASE (1u)
 #endif
-// Header version 1 adds TableBase to the 28-byte version 0 header.
-#define WEBCIL_HEADER_V0_SIZE       (28u)
 #define WEBCIL_HEADER_V1_SIZE       (32u)
 #define WEBCIL_SECTION_HEADER_SIZE  (16u)
 #define WEBCIL_VERSION_MAJOR_OFFSET (4u)
-#define WEBCIL_TABLE_BASE_OFFSET    (28u)
 
 // The composite native image's bundle-relative file name (the ownerCompositeExecutable named by each
 // per-assembly stub). The runtime asks for this via NativeImage::Open -> external_assembly_probe.
@@ -70,14 +67,14 @@ static constexpr uint32_t g_wasi_r2r_image_cap = WASI_R2R_IMAGE_CAP;
 #define WASI_R2R_COMPOSITE_NAME "composite-r2r.wasm"
 #endif
 
-static size_t WasiWebcilHeaderSize(const uint8_t* p, size_t len)
+static bool WasiIsWebcilV1(const uint8_t* p, size_t len)
 {
-    if (len < WEBCIL_HEADER_V0_SIZE)
-        return 0;
+    if (len < WEBCIL_HEADER_V1_SIZE)
+        return false;
 
     uint16_t versionMajor;
     memcpy(&versionMajor, p + WEBCIL_VERSION_MAJOR_OFFSET, sizeof(versionMajor));
-    return versionMajor >= 1 ? WEBCIL_HEADER_V1_SIZE : WEBCIL_HEADER_V0_SIZE;
+    return versionMajor == 1;
 }
 
 // Compute the exact WbIL payload size from its self-describing header - no baked constant needed.
@@ -91,8 +88,7 @@ static size_t WasiWebcilHeaderSize(const uint8_t* p, size_t len)
 // hands the runtime a truncated image.
 static int64_t WasiWebcilPayloadSize(const uint8_t* p, size_t len)
 {
-    size_t headerSize = WasiWebcilHeaderSize(p, len);
-    if (headerSize == 0 || headerSize > len)
+    if (!WasiIsWebcilV1(p, len))
         return 0;
 
     if (p[0] != 'W' || p[1] != 'b' || p[2] != 'I' || p[3] != 'L')
@@ -102,10 +98,10 @@ static int64_t WasiWebcilPayloadSize(const uint8_t* p, size_t len)
     memcpy(&coffSections, p + 8, sizeof(coffSections));
 
     // Section headers must fit entirely within the buffer.
-    if ((len - headerSize) / WEBCIL_SECTION_HEADER_SIZE < coffSections)
+    if ((len - WEBCIL_HEADER_V1_SIZE) / WEBCIL_SECTION_HEADER_SIZE < coffSections)
         return 0;
 
-    const uint8_t* sec = p + headerSize;
+    const uint8_t* sec = p + WEBCIL_HEADER_V1_SIZE;
     uint32_t maxEnd = 0;
     for (uint16_t i = 0; i < coffSections; i++)
     {
@@ -126,110 +122,31 @@ static int64_t WasiWebcilPayloadSize(const uint8_t* p, size_t len)
     return (int64_t)maxEnd;
 }
 
-// Minimal LEB128 reader for parsing a wasm binary's Data section. Returns false on a truncated or
-// over-long encoding rather than shifting past the width of the result (which would be UB).
-static bool wasi_read_uleb(const uint8_t* p, size_t len, size_t* pos, uint64_t* value)
-{
-    uint64_t result = 0;
-    int shift = 0;
-    while (*pos < len)
-    {
-        uint8_t b = p[(*pos)++];
-        if (shift >= 64)
-            return false; // over-long encoding
-        result |= (uint64_t)(b & 0x7f) << shift;
-        if ((b & 0x80) == 0)
-        {
-            *value = result;
-            return true;
-        }
-        shift += 7;
-    }
-    return false; // ran off the end without a terminating byte
-}
-
-// Extract the raw WbIL webcil payload (passive data segment index 1) from a wasm-wrapped-webcil stub
-// on disk. The stub's tableBase field (WEBCIL_TABLE_BASE_OFFSET) is authoritative: the offline merge
-// step patches it to the composite's merge-time table base, so this host trusts the on-disk value
-// rather than injecting a baked constant.
-// Mirrors what the browser JS loader's getWebcilPayload does, but purely in native code (no instantiation).
-//
-// On success the file mapping is deliberately RETAINED and *data_start points into it: the runtime
-// takes ownership of neither (ProbeExtensionResult::External never frees), so copying to a malloc'd
-// buffer would leak the copy on top of the mapping. Every failure path unmaps.
-//
-// The stub is untrusted input, so each length read is validated against the remaining extent before
-// it is used to advance or copy.
-static bool WasiExtractStubPayload(const char* wasmPath, void** data_start, int64_t* size)
+// Map a raw WebCIL component forwarding stub extracted by the build-time composer. On success the
+// file mapping is deliberately retained and returned directly to the runtime.
+static bool WasiMapStubPayload(const char* webcilPath, void** data_start, int64_t* size)
 {
     void* filedata = nullptr; int64_t filesize = 0;
-    if (!pal::try_map_file_readonly(wasmPath, &filedata, &filesize))
+    if (!pal::try_map_file_readonly(webcilPath, &filedata, &filesize))
         return false;
 
-    const uint8_t* p = (const uint8_t*)filedata;
-    size_t len = (size_t)filesize;
-    bool ok = false;
-    if (len >= 8 && p[0] == 0x00 && p[1] == 0x61 && p[2] == 0x73 && p[3] == 0x6d)
+    if (filesize <= 0)
+        return false;
+
+    int64_t payloadSize = WasiWebcilPayloadSize(static_cast<const uint8_t*>(filedata), static_cast<size_t>(filesize));
+    if (payloadSize <= 0 || payloadSize != filesize)
     {
-        size_t pos = 8;
-        while (pos < len)
-        {
-            uint8_t secId = p[pos++];
-            uint64_t secSize;
-            if (!wasi_read_uleb(p, len, &pos, &secSize))
-                break;
-            // len - pos cannot underflow (pos <= len) and avoids overflowing pos + secSize, which
-            // wraps on wasm32 where size_t is 32-bit.
-            if (secSize > (uint64_t)(len - pos))
-                break;
-            size_t secEnd = pos + (size_t)secSize;
-            if (secId == 11) // Data section
-            {
-                size_t q = pos;
-                uint64_t segCount;
-                if (!wasi_read_uleb(p, secEnd, &q, &segCount))
-                    break;
-                for (uint64_t s = 0; s < segCount && q < secEnd; s++)
-                {
-                    uint64_t mode;
-                    if (!wasi_read_uleb(p, secEnd, &q, &mode))
-                        break;
-                    // Only passive segments (mode 1) are used by the webcil wrapper. A composite's
-                    // payload segment is ACTIVE, so this also declines a composite handed here by
-                    // mistake rather than misreading its offset expression as segment data.
-                    if (mode != 1) { break; }
-                    uint64_t dlen;
-                    if (!wasi_read_uleb(p, secEnd, &q, &dlen))
-                        break;
-                    if (dlen > (uint64_t)(secEnd - q))
-                        break; // segment claims more bytes than the section holds
-                    size_t dstart = q;
-                    q += (size_t)dlen;
-                    if (s == 1) // segment[1] == the WbIL payload
-                    {
-                        // Validate rather than assume: if the wrapper's segment layout ever changes,
-                        // fail loudly here instead of handing the runtime a non-webcil buffer.
-                        if (dlen >= 4 && memcmp(p + dstart, "WbIL", 4) == 0)
-                        {
-                            *data_start = (void*)(p + dstart);
-                            *size = (int64_t)dlen;
-                            ok = true;
-                        }
-                        break;
-                    }
-                }
-                break;
-            }
-            pos = secEnd;
-        }
+        munmap(filedata, static_cast<size_t>(filesize));
+        return false;
     }
-    if (!ok)
-        munmap(filedata, (size_t)filesize);
-    return ok;
+
+    *data_start = filedata;
+    *size = filesize;
+    return true;
 }
 
 // The external-assembly R2R probe: serves the composite webcil from the baked buffer and each managed
-// assembly's per-assembly stub from "<dir>/comp/<base>.wasm" on disk, searching the supplied dirs (each
+// assembly's per-assembly stub from "<dir>/comp/<base>.dll" on disk, searching the supplied dirs (each
 // expected to carry a trailing path delimiter). Returns false for anything it does not provide, letting
 // the caller fall back to its normal assembly load.
 static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t ndirs, void** data_start, int64_t* size)
@@ -239,28 +156,12 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
     if (strcmp(name, WASI_R2R_COMPOSITE_NAME) == 0)
     {
         int64_t payloadSize = WasiWebcilPayloadSize(&g_wasi_r2r_image[0], g_wasi_r2r_image_cap);
-        if (payloadSize <= 0 || (size_t)payloadSize > g_wasi_r2r_image_cap)
+        if (payloadSize <= 0 || static_cast<size_t>(payloadSize) > g_wasi_r2r_image_cap)
             return false; // buffer not populated, or composite payload exceeds the cap
 
-        // A current self-installing image patches its own TableBase from the composition shim's start
-        // function. Older images predate patchWebcilHeader, so retain the native fallback when the
-        // field is still zero. WebcilDecoder treats an unwritten zero as a valid base and would
-        // otherwise shift every R2R function index to the wrong table slot.
-        //
         // NOTE: the cap test above cannot protect this buffer -- the engine installs the segment before any
         // host code runs, so an over-cap payload has already overwritten whatever follows by the time we look.
-        // The enforceable check is at build time; compose-r2r.py compares the payload size against the cap.
-        uint8_t* hdr = &g_wasi_r2r_image[0];
-        if (WasiWebcilHeaderSize(hdr, (size_t)payloadSize) >= WEBCIL_HEADER_V1_SIZE)
-        {
-            uint32_t existingTableBase;
-            memcpy(&existingTableBase, hdr + WEBCIL_TABLE_BASE_OFFSET, sizeof(existingTableBase));
-            if (existingTableBase == 0)
-            {
-                uint32_t tableBase = WASI_R2R_TABLE_BASE;
-                memcpy(hdr + WEBCIL_TABLE_BASE_OFFSET, &tableBase, sizeof(tableBase));
-            }
-        }
+        // The enforceable check is at build time; the C# composer compares the payload size against the cap.
 
         *data_start = &g_wasi_r2r_image[0];
         *size = payloadSize;
@@ -278,9 +179,12 @@ static bool WasiStaticR2RProbe(const char* name, const char* const* dirs, size_t
         {
             const char* dir = dirs[i];
             if (dir == nullptr) continue;
-            // Build "<dir>/comp/<base>.wasm"
-            snprintf(stub, sizeof(stub), "%scomp/%.*s.wasm", dir, (int)(nlen - 4), name);
-            if (WasiExtractStubPayload(stub, data_start, size))
+            // Build "<dir>/comp/<base>.dll"; the build-time composer extracts raw WebCIL from the
+            // passive wrapper so the runtime host does not need its own Wasm parser.
+            int written = snprintf(stub, sizeof(stub), "%scomp/%s", dir, name);
+            if (written < 0 || static_cast<size_t>(written) >= sizeof(stub))
+                continue;
+            if (WasiMapStubPayload(stub, data_start, size))
             {
                 return true;
             }
@@ -304,7 +208,7 @@ extern "C" __attribute__((export_name("wasi_r2r_image_base"))) uint32_t wasi_r2r
 
 // The staging buffer's capacity and the table slot the composite installs at, exported for the same
 // reason as the base: the splice must not carry its own copy of either. The host owns these values;
-// compose-r2r.py reads them out of the linked binary and validates the composite
+// The WASI R2R composer reads them out of the linked binary and validates the composite
 // against them, so a mismatch is a build-time error instead of a wrong-function dispatch at runtime.
 #ifdef WASI_R2R_EXTERNAL_IMAGE_BUFFER
 #define WASI_R2R_IMAGE_CAP_WEAK __attribute__((weak))

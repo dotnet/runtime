@@ -296,7 +296,9 @@ jobs:
       combined: true
       include:
       - eng/testing/wasi-r2r-provisioning.targets
-      - src/mono/wasi/build/compose-r2r.py
+      - src/tests/Common/WasiR2RComposer.proj
+      - src/tasks/Microsoft.NET.WebAssembly.Webcil/*
+      - src/tasks/WasmAppBuilder/*
       - src/tests/*
       - src/coreclr/*
       - ${{ parameters._const_paths._wasm_src_native }}

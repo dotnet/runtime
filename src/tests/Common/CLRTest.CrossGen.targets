@@ -245,11 +245,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       if [ "$(TargetOS)" == "wasi" ] && [ $__cg2ExitCode -eq 0 ] && [ $__r2rDumpExitCode -eq 0 ]; then
         (
           mkdir -p IL-CG2/wasi-r2r/comp || exit 1
-          for dllFile in "$PWD"/IL-CG2/*.dll; do
-            bareFileName="${dllFile##*/}"
-            cp "$PWD/${bareFileName%.dll}.wasm" IL-CG2/wasi-r2r/comp/ || exit 1
-          done
-          COMP="$PWD/composite-r2r.wasm" CORERUN="$CORE_ROOT/corerun" OUTDIR="$PWD/IL-CG2/wasi-r2r" python3 "$CORE_ROOT/wasi-r2r/compose-r2r.py"
+          "$__TestDotNetCmd" msbuild "$CORE_ROOT/wasi-r2r/WasiR2RComposer.proj" -nologo -t:Compose "/p:CompositePath=$PWD/composite-r2r.wasm" "/p:ComponentPath=$CORE_ROOT/corerun" "/p:OutputDirectory=$PWD/IL-CG2/wasi-r2r/work" "/p:OutputPath=$PWD/IL-CG2/wasi-r2r/corerun-composite.wasm" "/p:WasmToolsPath=%24(command -v wasm-tools)" "/p:WasmMergePath=%24(command -v wasm-merge)" "/p:WasmOptPath=%24(command -v wasm-opt)" "/p:StubOutputDirectory=$PWD/IL-CG2/wasi-r2r/comp" "/p:ComponentStubsDirectory=$PWD"
         )
         __linkExitCode=$?
         if [ $__linkExitCode -ne 0 ]; then

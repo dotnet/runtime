@@ -4,16 +4,16 @@ This is an experimental in-tree publishing and runtime-test workflow. The shippi
 does not yet select the CoreCLR app builder.
 
 WASI requires the compiled composite to be composed into the host component before execution.
-Copying `composite-r2r.wasm` beside an unmodified host is not sufficient. The composer lives
-alongside the WASI app-builder targets in `src/mono/wasi/build/compose-r2r.py`.
+Copying `composite-r2r.wasm` beside an unmodified host is not sufficient. Composition is
+implemented by the in-tree `ComposeWasiReadyToRun` MSBuild task.
 The [WebCIL design document](../../../design/mono/webcil.md#wasi-host-composition) describes
 the image layout and host contract.
 
 ## Prerequisites
 
 Build prerequisites are described in the [CoreCLR build guide](README.md).
-Composition additionally requires Python 3.8+, `wasm-tools`, and Binaryen's `wasm-merge` and
-`wasm-opt` on `PATH`. Running the result requires wasmtime with WebAssembly exception support.
+Composition additionally requires `wasm-tools` and Binaryen's `wasm-merge` and `wasm-opt`.
+Running the result requires wasmtime with WebAssembly exception support.
 CI provisions pinned tool versions through `eng/testing/wasi-r2r-provisioning.targets`.
 
 Framework-sized composites can require several GiB of memory during composition. Allow for the
@@ -48,8 +48,9 @@ export __TestDotNetCmd="$PWD/.dotnet/dotnet"
 RunCrossGen2=1 bash artifacts/tests/coreclr/wasi.wasm.Checked/JIT/CodeGenBringUpTests/JIT.CodeGenBringUpTests_ro/JIT.CodeGenBringUpTests_ro.sh
 ```
 
-The wrapper compiles the runner and referenced test assemblies into a composite, then invokes
-`CORE_ROOT/wasi-r2r/compose-r2r.py`. It launches `IL-CG2/wasi-r2r/corerun-composite.wasm` with
+The wrapper compiles the runner and referenced test assemblies into a composite, then invokes the
+same composition task through `CORE_ROOT/wasi-r2r/WasiR2RComposer.proj`. It launches
+`IL-CG2/wasi-r2r/corerun-composite.wasm` with
 `APP_ASSEMBLIES=EXTERNAL` and `CORE_LIBRARIES=/IL-CG2/wasi-r2r` so the guest probes the private
 `comp/` stubs. `TEST_READY_TO_RUN_MODE=1` enables R2R-specific test conditions.
 
@@ -57,20 +58,11 @@ Without `RunCrossGen2`, the wrapper uses the original host and does not probe th
 Composition failures fail the test rather than silently falling back to interpretation.
 Helix receives the composition tools through a separate correlation payload.
 
-## Composer interface and diagnostics
+## Composer diagnostics
 
 The build targets generate Crossgen2 response files; a hand-maintained response-file template
-is not required. To inspect or compose existing outputs directly:
-
-```bash
-python3 src/mono/wasi/build/compose-r2r.py --describe <composite.wasm>
-COMP=<composite.wasm> CORERUN=<host-component> OUTDIR=<output-directory> \
-  python3 src/mono/wasi/build/compose-r2r.py
-```
-
-`--describe` reports `functionCount,payloadBytes`. Composition requires all three environment
-variables and writes `corerun-composite.wasm` into `OUTDIR`. The host supplies the image and table
-bases; the script rejects an undersized buffer or overlapping table reservation.
+is not required. The host supplies the image and table bases, and the C# composer rejects an
+undersized buffer, overlapping table reservation, or a non-self-installing composite.
 
 A valid composed module and passing tests alone do not prove R2R was used. Enable the guest's
 `DOTNET_ReadyToRunLogFile` and look for `Ready to Run initialized successfully` for the test

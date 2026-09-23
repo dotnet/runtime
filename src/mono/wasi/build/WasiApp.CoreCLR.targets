@@ -54,6 +54,9 @@
   <Import Project="$(MSBuildThisFileDirectory)WasiApp.targets" />
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.FilterManagedAssemblies" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComposeWasiReadyToRun"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <WasmAppRuntimeFlavor>CoreCLR</WasmAppRuntimeFlavor>
@@ -70,8 +73,6 @@
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">true</PublishReadyToRunComposite>
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*;--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
     <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">true</WasiEnableCompositeR2R>
-    <WasiR2RPythonCommand Condition="'$(WasiR2RPythonCommand)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">python</WasiR2RPythonCommand>
-    <WasiR2RPythonCommand Condition="'$(WasiR2RPythonCommand)' == ''">python3</WasiR2RPythonCommand>
   </PropertyGroup>
 
   <Target Name="_WasiCoreCLRValidateReadyToRun"
@@ -137,19 +138,12 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(_WasiR2RCompositePath)')"
            Text="The ReadyToRun composite was not found at '$(_WasiR2RCompositePath)'." />
-    <Error Condition="'$(WasiR2RComposeToolPath)' == '' or !Exists('$(WasiR2RComposeToolPath)')"
-           Text="The WASI ReadyToRun composition tool was not found at '$(WasiR2RComposeToolPath)'." />
-    <Exec Command="&quot;$(WasiR2RPythonCommand)&quot; &quot;$(WasiR2RComposeToolPath)&quot; --describe &quot;$(_WasiR2RCompositePath)&quot;"
-          ConsoleToMSBuild="true"
-          IgnoreStandardErrorWarningFormat="true"
-          StandardOutputImportance="Low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="_WasiR2RDescription" />
-    </Exec>
-    <Error Condition="!$([System.Text.RegularExpressions.Regex]::IsMatch('$(_WasiR2RDescription)', '^[0-9]+,[0-9]+$'))"
-           Text="The WASI ReadyToRun composition tool returned invalid requirements '$(_WasiR2RDescription)'." />
+    <ComposeWasiReadyToRun CompositePath="$(_WasiR2RCompositePath)"
+                           InspectOnly="true">
+      <Output TaskParameter="FunctionCount" PropertyName="_WasiR2RFunctionCount" />
+      <Output TaskParameter="PayloadSize" PropertyName="_WasiR2RPayloadSize" />
+    </ComposeWasiReadyToRun>
     <PropertyGroup>
-      <_WasiR2RFunctionCount>$([System.String]::Copy('$(_WasiR2RDescription)').Split(',').GetValue(0))</_WasiR2RFunctionCount>
-      <_WasiR2RPayloadSize>$([System.String]::Copy('$(_WasiR2RDescription)').Split(',').GetValue(1))</_WasiR2RPayloadSize>
       <!-- The composite starts at table slot 1, so the host's functions begin immediately after it. -->
       <WasiCompositeR2RTableBase>$([MSBuild]::Add($(_WasiR2RFunctionCount), 1))</WasiCompositeR2RTableBase>
     </PropertyGroup>
@@ -453,8 +447,7 @@
       <WasiEnableCompositeR2R Condition="'$(WasiEnableCompositeR2R)' == ''">false</WasiEnableCompositeR2R>
       <!-- Table slots 1..N-1 are reserved for the composite's ACTIVE element segment, which the engine
            installs at instantiation - so the table must already be large enough. Reserve by the
-           composite's FUNCTION count, not its assembly count. Must be > the composite's function count;
-           compose-r2r.py checks this and names the required value if it is too small. -->
+           composite's FUNCTION count, not its assembly count. Must be > the composite's function count. -->
       <WasiCompositeR2RTableBase Condition="'$(WasiCompositeR2RTableBase)' == ''">65537</WasiCompositeR2RTableBase>
     </PropertyGroup>
 
@@ -513,32 +506,32 @@
   <Target Name="_WasiCoreCLRComposeReadyToRun"
           AfterTargets="_WasiCoreCLRRelinkCoreRun"
           DependsOnTargets="_WasiCoreCLRInspectReadyToRunComposite"
-          Inputs="$(_WasiRelinkOutput);$(_WasiR2RCompositePath);$(WasiR2RComposeToolPath)"
+          Inputs="$(_WasiRelinkOutput);$(_WasiR2RCompositePath);$(WasmAppBuilderTasksAssemblyPath)"
           Outputs="$(_WasiPublishedHost)"
           Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmGenerateAppBundle)' == 'true' and '$(WasmSingleFileBundle)' != 'true'">
     <PropertyGroup>
       <_WasiR2RComposeOutputDir>$([MSBuild]::NormalizeDirectory('$(_WasmIntermediateOutputPath)', 'r2r-compose'))</_WasiR2RComposeOutputDir>
-      <_WasiR2RComposedHost>$(_WasiR2RComposeOutputDir)corerun-composite.wasm</_WasiR2RComposedHost>
       <_WasiR2RStubDir>$([MSBuild]::NormalizeDirectory('$(WasmAppDir)', 'managed', 'comp'))</_WasiR2RStubDir>
-      <_WasiR2RToolPath>$(WasmToolsCacheDir):$(BinaryenCacheDir)bin:$(PATH)</_WasiR2RToolPath>
     </PropertyGroup>
     <RemoveDir Directories="$(_WasiR2RStubDir)" />
     <MakeDir Directories="$(_WasiR2RComposeOutputDir);$(_WasiR2RStubDir)" />
-    <Exec Command="&quot;$(WasiR2RPythonCommand)&quot; &quot;$(WasiR2RComposeToolPath)&quot;"
-          EnvironmentVariables="COMP=$(_WasiR2RCompositePath);CORERUN=$(_WasiRelinkOutput);OUTDIR=$(_WasiR2RComposeOutputDir);PATH=$(_WasiR2RToolPath)" />
-    <Copy SourceFiles="$(_WasiR2RComposedHost)"
-          DestinationFiles="$(_WasiPublishedHost)" />
     <ItemGroup>
       <_WasiR2RComponentStub Include="@(_ReadyToRunCompositeBuildInput->'$(_WasiR2ROutputDir)%(FileName).wasm')" />
       <_WasiR2RComponentStub Include="@(_ReadyToRunCompositeUnrootedBuildInput->'$(_WasiR2ROutputDir)%(FileName).wasm')" />
     </ItemGroup>
-    <Copy SourceFiles="@(_WasiR2RComponentStub)"
-          DestinationFolder="$(_WasiR2RStubDir)"
-          SkipUnchangedFiles="true" />
+    <ComposeWasiReadyToRun CompositePath="$(_WasiR2RCompositePath)"
+                           ComponentPath="$(_WasiRelinkOutput)"
+                           OutputDirectory="$(_WasiR2RComposeOutputDir)"
+                           OutputPath="$(_WasiPublishedHost)"
+                           WasmToolsPath="$(WasmToolsCacheDir)wasm-tools"
+                           WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge"
+                           WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt"
+                           ComponentStubs="@(_WasiR2RComponentStub)"
+                           StubOutputDirectory="$(_WasiR2RStubDir)">
+      <Output TaskParameter="FileWrites" ItemName="_WasiR2RCompositionWrites" />
+    </ComposeWasiReadyToRun>
     <ItemGroup>
-      <FileWrites Include="$(_WasiR2RComposeOutputDir)**" />
-      <FileWrites Include="$(_WasiPublishedHost)" />
-      <FileWrites Include="@(_WasiR2RComponentStub->'$(_WasiR2RStubDir)%(FileName)%(Extension)')" />
+      <FileWrites Include="@(_WasiR2RCompositionWrites)" />
     </ItemGroup>
   </Target>
 
