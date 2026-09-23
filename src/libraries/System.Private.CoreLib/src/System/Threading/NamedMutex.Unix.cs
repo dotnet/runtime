@@ -69,10 +69,13 @@ namespace System.Threading
 
     internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> header) : ISharedMemoryProcessData
     {
+        // The shared data layout must stay compatible with the CoreCLR PAL implementation used by .NET 10 and earlier
+        // (src/coreclr/pal/src/synchobj/mutex.cpp), which uses the same shared memory files and the same SyncSystemVersion.
+        // Processes from both implementations may open the same named mutex at the same time.
         private const byte SyncSystemVersion = 1;
         protected const int PollLoopMaximumSleepMilliseconds = 100;
         protected const uint InvalidProcessId = unchecked((uint)-1);
-        protected const uint InvalidThreadId = unchecked((uint)-1);
+        protected const ulong InvalidThreadId = unchecked((ulong)-1);
 
         // Use PThread mutex-backed named mutexes if possible.
         // macOS has support for the features we need in the pthread mutexes on arm64
@@ -82,7 +85,12 @@ namespace System.Threading
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
         // On OpenBSD, cross process mutexes are not supported in the pthread implementation. See https://github.com/dotnet/runtime/pull/125089.
         // On Haiku, robust mutexes are WIP. See https://github.com/dotnet/runtime/pull/126701#issuecomment-4334338213.
-        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku();
+        // On Linux arm and arm64, we do not use PThread mutex-backed named mutexes for compatibility with previous .NET versions.
+        private static bool UsePThreadMutexes =>
+#if (TARGET_ARM || TARGET_ARM64)
+            !OperatingSystem.IsLinux() &&
+#endif
+            !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku();
 
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
@@ -298,7 +306,7 @@ namespace System.Threading
 
         protected override bool IsLockOwnedByThreadInThisProcess(Thread thread)
         {
-            Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out uint ownerThreadId);
+            Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out ulong ownerThreadId);
             return ownerProcessId == (uint)Environment.ProcessId &&
                    ownerThreadId == (uint)thread.ManagedThreadId;
         }
@@ -581,12 +589,14 @@ namespace System.Threading
             }
         }
 
+        // Must match the file lock variant of NamedMutexSharedData in the CoreCLR PAL used by .NET 10 and earlier
+        // (src/coreclr/pal/src/include/pal/mutex.hpp): the owner thread ID is 64 bits wide and _isAbandoned follows it.
         [StructLayout(LayoutKind.Sequential)]
         internal ref struct SharedData
         {
             private uint _timedWaiterCount;
             private uint _lockOwnerProcessId;
-            private uint _lockOwnerThreadId;
+            private ulong _lockOwnerThreadId;
             private byte _isAbandoned;
 
             public uint TimedWaiterCount { get => _timedWaiterCount; set => _timedWaiterCount = value; }
@@ -602,7 +612,7 @@ namespace System.Threading
                 }
             }
 
-            public uint LockOwnerThreadId
+            public ulong LockOwnerThreadId
             {
                 get
                 {
