@@ -256,15 +256,10 @@ namespace ILCompiler.DependencyAnalysisFramework
                         _newDynamicDependenciesMayHaveAppeared = true;
                     }
 
-                    bool staticDependenciesAreComputed = currentNode.StaticDependenciesAreComputed;
-
                     // Add all static dependencies to the mark stack
                     GetStaticDependencies(currentNode);
 
-                    if (staticDependenciesAreComputed)
-                    {
-                        RegisterDynamicDependencies(currentNode);
-                    }
+                    RegisterDynamicDependencies(currentNode);
 
                     // If this new node satisfies any stored conditional dependencies,
                     // add them to the mark stack
@@ -321,7 +316,6 @@ namespace ILCompiler.DependencyAnalysisFramework
                         {
                             Debug.Assert(node.StaticDependenciesAreComputed);
                             AddStaticDependencies(node);
-                            RegisterDynamicDependencies(node);
                         }
 
                         deferredDependenciesInCurrentPhase.Clear();
