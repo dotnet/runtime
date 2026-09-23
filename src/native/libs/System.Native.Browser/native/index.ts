@@ -61,7 +61,7 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                 _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
                 _ems_.FS.chdir(virtualWorkingDirectory!);
             }
-        }, ...(_ems_.Module.preInit || [])];
+        }, ...asCallbackArray(_ems_.Module.preInit)];
 
         // preInit runs before Emscripten assigns the native WASM exports.
         _ems_.Module.preRun = [() => {
@@ -80,6 +80,12 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                     // silently ignore any error during shutdown
                 }
             };
-        }, ...(_ems_.Module.preRun || [])];
+        }, ...asCallbackArray(_ems_.Module.preRun)];
     }
+}
+
+// emscripten accepts a single callback or an array of them
+function asCallbackArray(callbacks: undefined | (() => any) | (() => any)[]): (() => any)[] {
+    if (!callbacks) return [];
+    return typeof callbacks === "function" ? [callbacks] : callbacks;
 }
