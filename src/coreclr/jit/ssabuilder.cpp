@@ -487,7 +487,8 @@ unsigned SsaBuilder::RenamePushDef(GenTree* defNode, BasicBlock* block, unsigned
 
     LclVarDsc* const varDsc = m_compiler->lvaGetDesc(lclNum);
     unsigned const   ssaNum =
-        varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block, !defNode->IsCall() ? defNode->AsLclVarCommon() : nullptr);
+        varDsc->lvPerSsaData.AllocSsaNum(m_allocator, block,
+                                         defNode->OperIsLocalStore() ? defNode->AsLclVarCommon() : nullptr);
 
     if (!isFullDef)
     {

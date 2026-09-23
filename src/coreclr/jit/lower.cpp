@@ -626,6 +626,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
         }
 
+        case GT_STORE_LCL_VARS:
+            // Each result already has the exact type of its destination.
+            break;
+
         case GT_STORE_LCL_VAR:
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
             FALLTHROUGH;
@@ -9186,6 +9190,20 @@ void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 {
     switch (node->OperGet())
     {
+        case GT_STORE_LCL_VARS:
+        {
+            GenTreeStoreLclVars* store = node->AsStoreLclVars();
+            assert(store->gtOp1->IsMultiRegNode());
+            assert(store->gtOp1->GetMultiRegCount(compiler) == store->m_count);
+            for (unsigned i = 0; i < store->m_count; i++)
+            {
+                LclVarDsc* varDsc = compiler->lvaGetDesc(store->GetDestination(i));
+                assert(!varDsc->IsAddressExposed() && !varDsc->lvPromoted && (varDsc->TypeGet() != TYP_STRUCT));
+                assert(genActualType(varDsc) == genActualType(store->gtOp1->GetRegTypeByIndex(i)));
+            }
+            break;
+        }
+
         case GT_CALL:
             CheckCall(node->AsCall());
             break;

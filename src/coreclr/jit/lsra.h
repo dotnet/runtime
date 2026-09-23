@@ -2015,6 +2015,7 @@ private:
     int  BuildIntrinsic(GenTree* tree);
     void BuildStoreLocDef(GenTreeLclVarCommon* storeLoc, LclVarDsc* varDsc, RefPosition* singleUseRef, int index);
     int  BuildMultiRegStoreLoc(GenTreeLclVar* storeLoc);
+    int  BuildStoreLclVars(GenTreeStoreLclVars* store);
     int  BuildStoreLoc(GenTreeLclVarCommon* tree);
     int  BuildIndir(GenTreeIndir* indirTree);
     int  BuildGCWriteBarrier(GenTree* tree);

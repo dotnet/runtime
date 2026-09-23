@@ -8035,6 +8035,38 @@ void CodeGen::genJmpPlaceArgs(GenTree* jmp)
 }
 
 //----------------------------------------------------------------------------------
+// genStoreLclVars: Move each result to its independent register or stack home.
+void CodeGen::genStoreLclVars(GenTreeStoreLclVars* store)
+{
+    for (unsigned i = 0; i < store->m_count; i++)
+    {
+        regNumber      sourceReg   = genConsumeReg(store->gtOp1, i);
+        GenTreeLclVar* destination = store->GetDestination(i);
+        LclVarDsc*     varDsc      = m_compiler->lvaGetDesc(destination);
+        regNumber      targetReg   = destination->GetRegNum();
+        var_types      type        = varDsc->TypeGet();
+        if (targetReg != REG_NA)
+        {
+            inst_Mov(type, targetReg, sourceReg, /* canSkip */ true);
+        }
+        if (((targetReg == REG_NA) || varDsc->IsAlwaysAliveInMemory()) && !destination->IsLastUse(0))
+        {
+            GetEmitter()->emitIns_S_R(ins_StoreFromSrc(sourceReg, type), emitTypeSize(type), sourceReg,
+                                      destination->GetLclNum(), 0);
+        }
+        varDsc->SetRegNum(targetReg == REG_NA ? REG_STK : targetReg);
+        if (targetReg != REG_NA)
+        {
+            genProduceReg(destination);
+        }
+        else
+        {
+            genUpdateLife(destination);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
 // genMultiRegStoreToLocal: store multi-reg value to a local
 //
 // Arguments:

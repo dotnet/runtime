@@ -727,6 +727,13 @@ void Liveness<TLiveness>::PerNodeLocalVarLiveness(GenTree* tree)
 
     switch (tree->gtOper)
     {
+        case GT_STORE_LCL_VARS:
+            tree->VisitPhysicalLocalDefNodes(m_compiler, [=](GenTreeLclVarCommon* def) {
+                MarkUseDef(def);
+                return GenTree::VisitResult::Continue;
+            });
+            break;
+
         case GT_QMARK:
         case GT_COLON:
             // We never should encounter a GT_QMARK or GT_COLON node
@@ -1613,6 +1620,13 @@ void Liveness<TLiveness>::ComputeLife(VARSET_TP&           life,
                 varDsc = m_compiler->lvaGetDesc(partialDef);
             }
         }
+        else if (tree->OperIs(GT_STORE_LCL_VARS))
+        {
+            tree->VisitPhysicalLocalDefNodes(m_compiler, [&](GenTreeLclVarCommon* def) {
+                ComputeLifeLocal(life, keepAliveVars, def);
+                return GenTree::VisitResult::Continue;
+            });
+        }
         else if (tree->OperIsNonPhiLocal())
         {
             isUse            = (tree->gtFlags & GTF_VAR_USEASG) != 0;
@@ -2254,6 +2268,21 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
         bool isDeadStore;
         switch (node->OperGet())
         {
+            case GT_STORE_LCL_VARS:
+            {
+                bool allDead = true;
+                node->VisitPhysicalLocalDefNodes(m_compiler, [&](GenTreeLclVarCommon* def) {
+                    allDead &= ComputeLifeLocal(life, keepAliveVars, def);
+                    return GenTree::VisitResult::Continue;
+                });
+                if (allDead && TLiveness::EliminateDeadCode)
+                {
+                    node->Data()->SetUnusedValue();
+                    blockRange.Remove(node);
+                }
+                break;
+            }
+
             case GT_CALL:
             {
                 GenTreeCall* const call = node->AsCall();

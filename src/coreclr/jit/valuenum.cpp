@@ -6691,7 +6691,7 @@ void Compiler::fgValueNumberLocalStore(GenTree* storeNode, const TDef& def, Valu
     unsigned             defLclNum = def.GetLclNum();
     LclVarDsc*           defVarDsc = lvaGetDesc(defLclNum);
     ValueNumPair         defValue  = value;
-    if (def.HasMultiDefIndex())
+    if (def.NeedsValueExtraction())
     {
         var_types defValueType = TYP_STRUCT;
         if (def.IsEntire(this))
@@ -11524,7 +11524,7 @@ const uint8_t ValueNumStore::s_vnfOpAttribs[VNF_COUNT] = {
 static genTreeOps genTreeOpsIllegalAsVNFunc[] = {GT_IND, // When we do heap memory.
                                                  GT_NULLCHECK, GT_QMARK, GT_COLON, GT_LOCKADD, GT_XADD, GT_XCHG,
                                                  GT_CMPXCHG, GT_LCLHEAP, GT_BOX, GT_XORR, GT_XAND, GT_STORE_LCL_VAR,
-                                                 GT_STORE_LCL_FLD, GT_STOREIND, GT_STORE_BLK,
+                                                 GT_STORE_LCL_FLD, GT_STORE_LCL_VARS, GT_STOREIND, GT_STORE_BLK,
                                                  // These need special semantics:
                                                  GT_COMMA, // == second argument (but with exception(s) from first).
                                                  GT_ARR_ADDR, GT_BOUNDS_CHECK,
@@ -12890,7 +12890,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
     assert(valueVNPair.BothDefined());
 
     // Is the type being stored different from the type computed by "value"?
-    if (value->TypeGet() != store->TypeGet())
+    if ((value->TypeGet() != store->TypeGet()) && !store->OperIs(GT_STORE_LCL_VARS))
     {
         if (store->OperIsInitBlkOp())
         {
@@ -12924,6 +12924,7 @@ void Compiler::fgValueNumberStore(GenTree* store)
     // Now, record the new VN for the store (performing the indicated "state update").
     switch (store->OperGet())
     {
+        case GT_STORE_LCL_VARS:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         {
@@ -13721,6 +13722,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 // Some of the genTreeOps that aren't legal VNFuncs so they get special handling.
                 switch (oper)
                 {
+                    case GT_STORE_LCL_VARS:
                     case GT_STORE_LCL_VAR:
                     case GT_STORE_LCL_FLD:
                     case GT_STOREIND:

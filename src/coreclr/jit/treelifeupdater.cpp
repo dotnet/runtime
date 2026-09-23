@@ -306,7 +306,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     {
         UpdateLifeVar(tree, tree->AsIndir()->Addr()->AsLclVarCommon());
     }
-    else if (tree->IsCall())
+    else if (tree->OperIs(GT_CALL, GT_STORE_LCL_VARS))
     {
         auto visitDef = [=](GenTreeLclVarCommon* lcl) {
             UpdateLifeVar(tree, lcl);

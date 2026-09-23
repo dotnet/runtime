@@ -4008,6 +4008,30 @@ void LinearScan::BuildStoreLocDef(GenTreeLclVarCommon* storeLoc,
 }
 
 //------------------------------------------------------------------------
+// BuildStoreLclVars: Consume each result before defining its independent local.
+// As with promoted multi-register stores, separate locations let LSRA resolve
+// conflicts between an earlier destination and a later source.
+int LinearScan::BuildStoreLclVars(GenTreeStoreLclVars* store)
+{
+    assert(store->gtOp1->GetMultiRegCount(m_compiler) == store->m_count);
+    for (unsigned i = 0; i < store->m_count; i++)
+    {
+        GenTreeLclVar* destination = store->GetDestination(i);
+        LclVarDsc*     varDsc      = m_compiler->lvaGetDesc(destination);
+        RefPosition*   use         = BuildUse(store->gtOp1, RBM_NONE, i);
+        if (isCandidateVar(varDsc))
+        {
+            BuildStoreLocDef(destination, varDsc, use, 0);
+        }
+        if (i + 1 < store->m_count)
+        {
+            currentLoc += 2;
+        }
+    }
+    return store->m_count;
+}
+
+//------------------------------------------------------------------------
 // BuildMultiRegStoreLoc: Set register requirements for a store of a lclVar
 //
 // Arguments:

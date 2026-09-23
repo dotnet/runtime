@@ -1801,7 +1801,7 @@ public:
 
     bool OperIsSsaDef() const
     {
-        return OperIsLocalStore() || OperIs(GT_CALL);
+        return OperIsLocalStore() || OperIs(GT_CALL, GT_STORE_LCL_VARS);
     }
 
     static bool OperIsHWIntrinsic(genTreeOps gtOper)
@@ -4069,6 +4069,54 @@ public:
     {
     }
 #endif
+};
+
+// A simultaneous definition of independent locals from a multi-register value.
+// The definition nodes carry local, SSA, liveness and register information. They
+// are metadata, not operands: the source is evaluated once, before any definition.
+// Destinations are distinct, non-address-exposed scalar or SIMD locals.
+struct GenTreeStoreLclVars : public GenTreeUnOp
+{
+    struct Destination
+    {
+        GenTreeLclVar* Node;
+        unsigned       Offset;
+    };
+
+    Destination* m_destinations;
+    unsigned     m_count;
+    unsigned     m_size;
+
+    GenTreeStoreLclVars(GenTree* source, Destination* destinations, unsigned count, unsigned size)
+        : GenTreeUnOp(GT_STORE_LCL_VARS, TYP_VOID, source)
+        , m_destinations(destinations)
+        , m_count(count)
+        , m_size(size)
+    {
+        assert(count > 1 && count <= MAX_MULTIREG_COUNT);
+        gtFlags |= GTF_ASG;
+#ifdef DEBUG
+        for (unsigned i = 0; i < count; i++)
+        {
+            assert(destinations[i].Node->OperIs(GT_LCL_VAR));
+            assert((destinations[i].Node->gtFlags & GTF_VAR_DEF) != 0);
+            for (unsigned j = 0; j < i; j++)
+            {
+                assert(destinations[i].Node->GetLclNum() != destinations[j].Node->GetLclNum());
+            }
+        }
+#endif
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeStoreLclVars() = default;
+#endif
+
+    GenTreeLclVar* GetDestination(unsigned index) const
+    {
+        assert(index < m_count);
+        return m_destinations[index].Node;
+    }
 };
 
 // gtLclFld -- load/store/addr of local variable field
@@ -10121,6 +10169,10 @@ inline GenTree* GenTree::gtGetOp2IfPresent() const
 inline GenTree*& GenTree::Data()
 {
     assert(OperIsStore());
+    if (OperIs(GT_STORE_LCL_VARS))
+    {
+        return AsStoreLclVars()->gtOp1;
+    }
     return OperIsLocalStore() ? AsLclVarCommon()->Data() : AsIndir()->Data();
 }
 

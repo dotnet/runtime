@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <Optimize>true</Optimize>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);SYSLIB5004</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="StoreLclVars.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_EnableMultiRegLocals" Value="0" />
+  </ItemGroup>
+</Project>

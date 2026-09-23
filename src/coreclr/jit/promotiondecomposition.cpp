@@ -1351,6 +1351,73 @@ const GenTree* Compiler::gtPeelFieldAddrs(const GenTree* addr) const
     return gtPeelFieldAddrs(const_cast<GenTree*>(addr));
 }
 
+// TryStoreMultiRegValue: Replace a complete, exact register-to-field mapping.
+// Packed fields and partial promotion continue through the existing readback path.
+bool ReplaceVisitor::TryStoreMultiRegValue(GenTree** use, Replacement* first, Replacement* end)
+{
+    GenTree* store = *use;
+    if (!store->OperIsLocalStore())
+    {
+        return false;
+    }
+
+    GenTree* source = store->Data();
+    if ((!source->IsCall() && !source->OperIsHWIntrinsic()) || !source->IsMultiRegNode())
+    {
+        return false;
+    }
+#ifdef SWIFT_SUPPORT
+    if (source->IsCall() && source->AsCall()->GetUnmanagedCallConv() == CorInfoCallConvExtension::Swift)
+    {
+        return false;
+    }
+#endif
+    unsigned count = source->GetMultiRegCount(m_compiler);
+    if ((count <= 1) || (static_cast<unsigned>(end - first) != count))
+    {
+        return false;
+    }
+
+    unsigned size       = store->AsLclVarCommon()->GetLayout(m_compiler)->GetSize();
+    unsigned baseOffset = store->AsLclVarCommon()->GetLclOffs();
+    unsigned offset     = 0;
+    for (unsigned i = 0; i < count; i++)
+    {
+        var_types type = source->GetRegTypeByIndex(i);
+        if ((first[i].Offset != baseOffset + offset) || (genActualType(first[i].AccessType) != genActualType(type)) ||
+            (genTypeSize(first[i].AccessType) != genTypeSize(type)))
+        {
+            return false;
+        }
+        if (source->IsCall() && source->AsCall()->GetReturnTypeDesc()->GetReturnFieldOffset(i) != offset)
+        {
+            return false;
+        }
+        offset += genTypeSize(type);
+    }
+    if (offset != size)
+    {
+        return false;
+    }
+
+    auto* destinations = new (m_compiler, CMK_ASTNode) GenTreeStoreLclVars::Destination[count];
+    for (unsigned i = 0; i < count; i++)
+    {
+        Replacement&   rep = first[i];
+        GenTreeLclVar* def = m_compiler->gtNewLclvNode(rep.LclNum, genActualType(rep.AccessType))->AsLclVar();
+        def->gtFlags |= GTF_VAR_DEF;
+        destinations[i] = {def, rep.Offset - baseOffset};
+        ClearNeedsReadBack(rep);
+        SetNeedsWriteBack(rep);
+    }
+    *use = new (m_compiler, GT_STORE_LCL_VARS) GenTreeStoreLclVars(source, destinations, count, size);
+    m_compiler->gtUpdateNodeSideEffects(*use);
+    m_madeChanges = true;
+    JITDUMP("Created STORE_LCL_VARS for %u register results\n", count);
+    return true;
+}
+
+//------------------------------------------------------------------------
 // HandleStructStore:
 //   Handle a store that may be between struct locals with replacements.
 //
@@ -1379,6 +1446,11 @@ void ReplaceVisitor::HandleStructStore(GenTree** use, GenTree* user)
     {
         // TODO-CQ: If the destination is an aggregate we can still use liveness
         // information for the remainder to DCE this.
+        return;
+    }
+
+    if (dstInvolvesReplacements && TryStoreMultiRegValue(use, dstFirstRep, dstEndRep))
+    {
         return;
     }
 

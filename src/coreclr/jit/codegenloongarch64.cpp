@@ -4073,6 +4073,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForStoreLclFld(treeNode->AsLclFld());
             break;
 
+        case GT_STORE_LCL_VARS:
+            genStoreLclVars(treeNode->AsStoreLclVars());
+            break;
+
         case GT_STORE_LCL_VAR:
             genCodeForStoreLclVar(treeNode->AsLclVar());
             break;

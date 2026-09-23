@@ -5345,6 +5345,16 @@ void Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk, FlowGraphNatura
             // that the compiler creates.
             switch (oper)
             {
+                case GT_STORE_LCL_VARS:
+                    tree->VisitPhysicalLocalDefNodes(this, [&](GenTreeLclVarCommon* def) {
+                        if (lvaVarAddrExposed(def->GetLclNum()))
+                        {
+                            memoryHavoc |= memoryKindSet(ByrefExposed);
+                        }
+                        return GenTree::VisitResult::Continue;
+                    });
+                    break;
+
                 case GT_STORE_LCL_VAR:
                 case GT_STORE_LCL_FLD:
                 {
@@ -5824,6 +5834,22 @@ void Compiler::optRemoveRedundantZeroInits()
 
                 switch (tree->gtOper)
                 {
+                    case GT_STORE_LCL_VARS:
+                        tree->VisitLogicalLocalDefs(this, [&](const auto& def) {
+                            unsigned lclNum = def.GetLclNum();
+                            unsigned count  = 0;
+                            refCounts.Lookup(lclNum, &count);
+                            refCounts.Set(lclNum, count + 1, LclVarRefCounts::Overwrite);
+                            if (lvaGetDesc(lclNum)->lvTracked)
+                            {
+                                count = 0;
+                                defsInBlock.Lookup(lclNum, &count);
+                                defsInBlock.Set(lclNum, count + 1, LclVarRefCounts::Overwrite);
+                            }
+                            return GenTree::VisitResult::Continue;
+                        });
+                        break;
+
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
                     case GT_LCL_ADDR:

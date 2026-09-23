@@ -26,6 +26,7 @@ GTNODE(LCL_FLD          , GenTreeLclFld      ,0,0,GTK_LEAF)             // field
 GTNODE(STORE_LCL_VAR    , GenTreeLclVar      ,0,1,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store to local variable
 GTNODE(STORE_LCL_FLD    , GenTreeLclFld      ,0,1,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store to a part of the variable
 GTNODE(LCL_ADDR         , GenTreeLclFld      ,0,0,GTK_LEAF)             // local address
+GTNODE(STORE_LCL_VARS   , GenTreeStoreLclVars,0,1,GTK_UNOP|GTK_EXOP|GTK_NOVALUE|GTK_STORE) // store register results to independent locals
 
 //-----------------------------------------------------------------------------
 //  Leaf nodes (i.e. these nodes have no sub-operands):

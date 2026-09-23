@@ -295,6 +295,7 @@ void GenTree::InitNodeSize()
 #endif // FEATURE_SIMD
     static_assert(sizeof(GenTreeLclVarCommon) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeLclVar)       <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeStoreLclVars) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeLclFld)       <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeCC)           <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeOpCC)         <= TREE_NODE_SZ_SMALL);
@@ -2901,6 +2902,25 @@ AGAIN:
             // these should be included in the comparison.
             switch (oper)
             {
+                case GT_STORE_LCL_VARS:
+                {
+                    GenTreeStoreLclVars* store1 = op1->AsStoreLclVars();
+                    GenTreeStoreLclVars* store2 = op2->AsStoreLclVars();
+                    if ((store1->m_count != store2->m_count) || (store1->m_size != store2->m_size))
+                    {
+                        return false;
+                    }
+                    for (unsigned i = 0; i < store1->m_count; i++)
+                    {
+                        if (!GenTreeLclVarCommon::EqualsLocal(store1->GetDestination(i), store2->GetDestination(i)) ||
+                            (store1->m_destinations[i].Offset != store2->m_destinations[i].Offset))
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                }
+
                 case GT_STORE_LCL_FLD:
                     if ((op1->AsLclFld()->GetLclOffs() != op2->AsLclFld()->GetLclOffs()) ||
                         (op1->AsLclFld()->GetLayout() != op2->AsLclFld()->GetLayout()))
@@ -3197,6 +3217,17 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 
     if (tree->OperIsUnary())
     {
+        if (tree->OperIs(GT_STORE_LCL_VARS))
+        {
+            GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+            for (unsigned i = 0; i < store->m_count; i++)
+            {
+                if (store->GetDestination(i)->GetLclNum() == lclNum)
+                {
+                    return true;
+                }
+            }
+        }
         if (tree->OperIsLocalStore() && (tree->AsLclVarCommon()->GetLclNum() == lclNum))
         {
             return true;
@@ -3520,6 +3551,17 @@ AGAIN:
             // these should be included in the hash code.
             switch (oper)
             {
+                case GT_STORE_LCL_VARS:
+                {
+                    GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+                    hash                       = genTreeHashAdd(hash, store->m_size);
+                    for (unsigned i = 0; i < store->m_count; i++)
+                    {
+                        hash = genTreeHashAdd(hash, store->GetDestination(i)->GetLclNum());
+                        hash = genTreeHashAdd(hash, store->m_destinations[i].Offset);
+                    }
+                    break;
+                }
                 case GT_STORE_LCL_VAR:
                     hash = genTreeHashAdd(hash, tree->AsLclVar()->GetLclNum());
                     break;
@@ -7145,6 +7187,11 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     }
                     break;
 
+                case GT_STORE_LCL_VARS:
+                    costEx += tree->AsStoreLclVars()->m_count;
+                    costSz += tree->AsStoreLclVars()->m_count;
+                    break;
+
                 case GT_STORE_LCL_VAR:
                     if (gtIsLikelyRegVar(tree))
                     {
@@ -8010,19 +8057,19 @@ bool Compiler::gtMayHaveStoreInterference(GenTree* treeWithStores, GenTree* tree
                 return WALK_SKIP_SUBTREES;
             }
 
-            if (node->OperIsLocalStore())
+            if (node->OperIsLocalStore() || node->OperIs(GT_STORE_LCL_VARS))
             {
-                // Check up to 8 stores before we bail with a conservative
-                // answer. Avoids quadratic behavior in case we have a large
-                // number of stores (e.g. created by physical promotion or by
-                // call args morphing).
-                if ((m_numStoresChecked >= 8) ||
-                    m_compiler->gtTreeHasLocalRead(m_readTree, node->AsLclVarCommon()->GetLclNum()))
+                auto interferes = [&](GenTreeLclVarCommon* def) {
+                    if ((m_numStoresChecked++ >= 8) || m_compiler->gtTreeHasLocalRead(m_readTree, def->GetLclNum()))
+                    {
+                        return GenTree::VisitResult::Abort;
+                    }
+                    return GenTree::VisitResult::Continue;
+                };
+                if (node->VisitPhysicalLocalDefNodes(m_compiler, interferes) == GenTree::VisitResult::Abort)
                 {
                     return WALK_ABORT;
                 }
-
-                m_numStoresChecked++;
             }
 
             return WALK_CONTINUE;
@@ -8522,6 +8569,7 @@ bool GenTree::OperRequiresAsgFlag() const
 {
     switch (OperGet())
     {
+        case GT_STORE_LCL_VARS:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_STOREIND:
@@ -11308,6 +11356,19 @@ GenTree* Compiler::gtCloneExpr(GenTree* tree)
 
         switch (oper)
         {
+            case GT_STORE_LCL_VARS:
+            {
+                GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+                auto* destinations         = new (this, CMK_ASTNode) GenTreeStoreLclVars::Destination[store->m_count];
+                for (unsigned i = 0; i < store->m_count; i++)
+                {
+                    destinations[i]      = store->m_destinations[i];
+                    destinations[i].Node = gtCloneExpr(destinations[i].Node)->AsLclVar();
+                }
+                copy = new (this, oper) GenTreeStoreLclVars(store->gtOp1, destinations, store->m_count, store->m_size);
+                break;
+            }
+
             case GT_STORE_LCL_VAR:
                 // Remember that the local node has been cloned. The flag will be set on 'copy' as well.
                 tree->gtFlags |= GTF_VAR_MOREUSES;
@@ -12080,6 +12141,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
             return;
 
         // Standard unary operators
+        case GT_STORE_LCL_VARS:
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
@@ -13258,6 +13320,25 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, _In_ _In_opt_
     }
 
     gtDispNodeName(tree);
+    if ((tree != nullptr) && tree->OperIs(GT_STORE_LCL_VARS))
+    {
+        GenTreeStoreLclVars* store = tree->AsStoreLclVars();
+        printf(" [");
+        for (unsigned i = 0; i < store->m_count; i++)
+        {
+            GenTreeLclVar* def = store->GetDestination(i);
+            printf("%sV%02u", i == 0 ? "" : ", ", def->GetLclNum());
+            if (def->HasSsaName())
+            {
+                printf(".%u", def->GetSsaNum());
+            }
+            if (def->IsLastUse(0))
+            {
+                printf("(dead)");
+            }
+        }
+        printf("]");
+    }
 
     assert(tree == nullptr || tree->gtOper < GT_COUNT);
 

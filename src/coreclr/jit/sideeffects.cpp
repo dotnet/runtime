@@ -148,6 +148,19 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     , m_lclNum(0)
     , m_lclOffs(0)
 {
+    if (node->OperIs(GT_STORE_LCL_VARS))
+    {
+        m_flags  = ALIAS_WRITES_LCL_VAR;
+        m_lclNum = BAD_VAR_NUM;
+        node->VisitPhysicalLocalDefNodes(compiler, [&](GenTreeLclVarCommon* def) {
+            if (compiler->lvaGetDesc(def)->IsAddressExposed())
+            {
+                m_flags |= ALIAS_WRITES_ADDRESSABLE_LOCATION;
+            }
+            return GenTree::VisitResult::Continue;
+        });
+        return;
+    }
     if (node->IsCall())
     {
         // For calls having return buffer, update the local number that is written after this call.
@@ -409,6 +422,12 @@ bool AliasSet::InterferesWith(const AliasSet& other) const
 //
 bool AliasSet::InterferesWith(const NodeInfo& other) const
 {
+    if (other.Node()->OperIs(GT_STORE_LCL_VARS))
+    {
+        AliasSet otherSet;
+        otherSet.AddNode(other.TheCompiler(), other.Node());
+        return InterferesWith(otherSet);
+    }
     // First check whether or not this set interferes with the lclVar uses associated with the given node.
     if (m_writesAddressableLocation || !m_lclVarWrites.IsEmpty())
     {

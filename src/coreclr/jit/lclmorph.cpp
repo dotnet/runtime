@@ -84,6 +84,13 @@ public:
         {
             SequenceCall(node->AsCall());
         }
+        else if (node->OperIs(GT_STORE_LCL_VARS))
+        {
+            node->VisitPhysicalLocalDefNodes(m_compiler, [=](GenTreeLclVarCommon* def) {
+                SequenceLocal(def);
+                return GenTree::VisitResult::Continue;
+            });
+        }
 
         return fgWalkResult::WALK_CONTINUE;
     }

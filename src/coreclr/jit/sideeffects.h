@@ -111,6 +111,7 @@ public:
         inline unsigned LclNum() const
         {
             assert(IsLclVarRead() || IsLclVarWrite());
+            assert(!m_node->OperIs(GT_STORE_LCL_VARS));
             return m_lclNum;
         }
 
@@ -122,6 +123,17 @@ public:
 
         inline bool WritesAnyLocation() const
         {
+            if (m_node->OperIs(GT_STORE_LCL_VARS))
+            {
+                auto isVisible = [=](GenTreeLclVarCommon* def) {
+                    LclVarDsc* varDsc = m_compiler->lvaGetDesc(def);
+                    bool       visible =
+                        varDsc->IsAddressExposed() ||
+                        (varDsc->lvTracked ? varDsc->IsLiveInOutOfHandler() : m_compiler->compHndBBtabCount > 0);
+                    return visible ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+                };
+                return m_node->VisitPhysicalLocalDefNodes(m_compiler, isVisible) == GenTree::VisitResult::Abort;
+            }
             if ((m_flags & ALIAS_WRITES_ADDRESSABLE_LOCATION) != 0)
             {
                 return true;

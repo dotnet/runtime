@@ -4454,7 +4454,7 @@ GenTree::VisitResult GenTree::VisitOperandUses(TVisitor visitor)
 template <typename TDerived>
 struct LocalDefProvider
 {
-    bool HasMultiDefIndex() const
+    bool NeedsValueExtraction() const
     {
         return static_cast<const TDerived*>(this)->GetMultiDefIndex() != BAD_VAR_NUM;
     }
@@ -4529,6 +4529,36 @@ struct StoreLclVarDef : LocalDefProvider<StoreLclVarDef>
     ValueSize GetStoreSize(Compiler* compiler) const
     {
         return compiler->lvaLclValueSize(GetLclNum());
+    }
+};
+
+struct StoreLclVarsDef : StoreLclVarDef
+{
+    // Each destination has a scalar SSA number, but its value is a slice of
+    // the multi-register source rather than the source's entire value.
+    unsigned m_valueOffset;
+    unsigned m_storeSize;
+
+    StoreLclVarsDef(GenTreeStoreLclVars* store, unsigned index)
+        : StoreLclVarDef(store->GetDestination(index))
+        , m_valueOffset(store->m_destinations[index].Offset)
+        , m_storeSize(store->m_size)
+    {
+    }
+
+    bool NeedsValueExtraction() const
+    {
+        return true;
+    }
+
+    ssize_t GetValueOffset(Compiler* compiler) const
+    {
+        return m_valueOffset;
+    }
+
+    ValueSize GetStoreSize(Compiler* compiler) const
+    {
+        return ValueSize(m_storeSize);
     }
 };
 
@@ -4818,7 +4848,7 @@ GenTree::VisitResult VisitPromotedRangeLocalDefs(
 //
 inline bool GenTree::IsEntireLocalDef(Compiler* comp, GenTreeLclVarCommon* def)
 {
-    if (OperIs(GT_STORE_LCL_VAR))
+    if (OperIs(GT_STORE_LCL_VAR, GT_STORE_LCL_VARS))
     {
         return true;
     }
@@ -4921,6 +4951,15 @@ GenTree::VisitResult GenTree::VisitLocalDef(
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor visitor)
 {
+    if (OperIs(GT_STORE_LCL_VARS))
+    {
+        GenTreeStoreLclVars* store = AsStoreLclVars();
+        for (unsigned i = 0; i < store->m_count; i++)
+        {
+            RETURN_IF_ABORT(visitor(StoreLclVarsDef(store, i)));
+        }
+        return VisitResult::Continue;
+    }
     if (OperIs(GT_STORE_LCL_VAR))
     {
         return VisitLocalDef(comp, AsLclVarCommon(), visitor);
@@ -4978,6 +5017,15 @@ GenTree::VisitResult GenTree::VisitLogicalLocalDefs(Compiler* comp, TVisitor vis
 template <typename TVisitor>
 GenTree::VisitResult GenTree::VisitPhysicalLocalDefNodes(Compiler* comp, TVisitor visitor)
 {
+    if (OperIs(GT_STORE_LCL_VARS))
+    {
+        GenTreeStoreLclVars* store = AsStoreLclVars();
+        for (unsigned i = 0; i < store->m_count; i++)
+        {
+            RETURN_IF_ABORT(visitor(store->GetDestination(i)));
+        }
+        return VisitResult::Continue;
+    }
     if (OperIs(GT_STORE_LCL_VAR))
     {
         return visitor(AsLclVarCommon());

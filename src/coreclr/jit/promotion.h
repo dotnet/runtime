@@ -309,6 +309,7 @@ private:
     void              MarkForReadBack(GenTreeLclVarCommon* lcl, unsigned size DEBUGARG(const char* reason));
 
     void HandleStructStore(GenTree** use, GenTree* user);
+    bool TryStoreMultiRegValue(GenTree** use, Replacement* first, Replacement* end);
     bool OverlappingReplacements(GenTreeLclVarCommon* lcl,
                                  Replacement**        firstReplacement,
                                  Replacement**        endReplacement = nullptr);

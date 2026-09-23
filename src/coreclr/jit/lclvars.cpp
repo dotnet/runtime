@@ -3196,6 +3196,18 @@ bool LclVarDsc::CanBeReplacedWithItsField(Compiler* comp) const
 
 void Compiler::lvaMarkLclRefs(GenTree* tree, BasicBlock* block, Statement* stmt)
 {
+    if (tree->OperIs(GT_STORE_LCL_VARS))
+    {
+        tree->VisitPhysicalLocalDefNodes(this, [&](GenTreeLclVarCommon* def) {
+            lvaMarkLclRefs(def, block, stmt);
+            LclVarDsc* varDsc                         = lvaGetDesc(def);
+            varDsc->lvSingleDefRegCandidate           = false;
+            varDsc->lvDisqualifySingleDefRegCandidate = true;
+            return GenTree::VisitResult::Continue;
+        });
+        return;
+    }
+
     const weight_t weight = block->getBBWeight(this);
 
     /* Is this a call to unmanaged code ? */
@@ -3679,6 +3691,16 @@ void Compiler::lvaComputePreciseRefCounts(bool isRecompute, bool setSlotNumbers)
                         assert(node->OperIs(GT_LCL_VAR));
                         lvaGenericsContextInUse = true;
                     }
+                }
+                else if (node->OperIs(GT_STORE_LCL_VARS))
+                {
+                    node->VisitPhysicalLocalDefNodes(this, [&](GenTreeLclVarCommon* def) {
+                        LclVarDsc* varDsc = lvaGetDesc(def);
+                        bool       zeroWeight =
+                            varDsc->lvTracked && varDsc->IsLiveInOutOfHandler() && !varDsc->lvDoNotEnregister;
+                        varDsc->incRefCnts(zeroWeight ? 0 : weight, this);
+                        return GenTree::VisitResult::Continue;
+                    });
                 }
             }
         }

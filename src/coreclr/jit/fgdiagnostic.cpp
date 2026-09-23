@@ -3847,7 +3847,7 @@ void Compiler::fgDebugCheckLinkedLocals()
                 }
             }
 
-            if (node->IsCall())
+            if (node->OperIs(GT_CALL, GT_STORE_LCL_VARS))
             {
                 auto linkDefs = [&](GenTree* def) {
                     assert(ShouldLink(def));

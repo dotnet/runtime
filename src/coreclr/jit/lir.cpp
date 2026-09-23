@@ -1451,7 +1451,28 @@ public:
                 PushLclVarRead(nodeInfo);
             }
 
-            if (nodeInfo.IsLclVarWrite())
+            if (node->OperIs(GT_STORE_LCL_VARS))
+            {
+                auto checkDef = [&](GenTreeLclVarCommon* def) {
+                    SmallHashTable<GenTree*, GenTree*>* reads;
+                    if (unusedLclVarReads.TryGetValue(def->GetLclNum(), &reads))
+                    {
+                        for (auto read : *reads)
+                        {
+                            JITDUMP("STORE_LCL_VARS [%06u] overlaps outstanding read [%06u] of V%02u\n",
+                                    Compiler::dspTreeID(node), Compiler::dspTreeID(read.Key()), def->GetLclNum());
+                            assert(!"Write to unaliased local overlaps outstanding read");
+                            return GenTree::VisitResult::Abort;
+                        }
+                    }
+                    return GenTree::VisitResult::Continue;
+                };
+                if (node->VisitPhysicalLocalDefNodes(compiler, checkDef) == GenTree::VisitResult::Abort)
+                {
+                    return false;
+                }
+            }
+            else if (nodeInfo.IsLclVarWrite())
             {
                 // If this node is a lclVar write, it must not alias a lclVar with an outstanding read
                 SmallHashTable<GenTree*, GenTree*>* reads;
