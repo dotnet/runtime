@@ -538,13 +538,7 @@ namespace System.Net.Sockets
         [DynamicDependency("set_PreferInlineCompletions", typeof(Socket))]
         internal void SetInlineCompletions(bool value)
         {
-            if (SocketAsyncContext.InlineSocketCompletionsEnabled)
-            {
-                // Ignore value. All completions are inline.
-                return;
-            }
-
-            if (_asyncContext is not null || value)
+            if (_asyncContext is not null || value != InlineSocketCompletionsEnabled)
             {
                 AsyncContext.InlineCompletions = value;
             }
