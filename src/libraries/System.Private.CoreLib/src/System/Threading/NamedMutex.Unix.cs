@@ -303,7 +303,7 @@ namespace System.Threading
                     return MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
                 }
 
-                return MutexTryAcquireLockResult.AcquiredLock;
+                return rawAcquireResult;
             }
         }
     }
