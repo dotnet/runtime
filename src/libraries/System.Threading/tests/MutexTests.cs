@@ -598,7 +598,6 @@ namespace System.Threading.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(AbandonExisting_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/117760",platforms: TestPlatforms.Android, runtimes: TestRuntimes.CoreCLR)]
-        [SkipOnMono("Mono is not officially supported on multithreading platforms and this test hits bad interactions with Mono's custom Thread.Join implementation.")]
         public void AbandonExisting(
             string name,
             WaitHandleWaitType waitType,
