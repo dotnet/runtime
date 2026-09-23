@@ -2056,12 +2056,6 @@ static T Gcd(T a, T b)
 {
     while (a != 0)
     {
-        if (a == -1)
-        {
-            // Avoid signed remainder overflow for MinValue % -1.
-            return -1;
-        }
-
         T newA = b % a;
         T newB = a;
         a      = newA;
@@ -2155,6 +2149,12 @@ ScevAddRec* StrengthReductionContext::ComputeRephrasableIVByScaling(ScevAddRec* 
     int64_t iv1Step;
     int64_t iv2Step;
     if (!iv1->Step->GetConstantValue(m_compiler, &iv1Step) || !iv2->Step->GetConstantValue(m_compiler, &iv2Step))
+    {
+        return nullptr;
+    }
+
+    // Avoid the edge case of computing MinValue / -1.
+    if (((T)iv1Step == std::numeric_limits<T>::min()) || ((T)iv2Step == std::numeric_limits<T>::min()))
     {
         return nullptr;
     }
@@ -2261,12 +2261,10 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
 
     assert(iv->Type == sourceIV->Type);
 
-    // Use unsigned negation for a source step of -1 so that MinValue wraps instead of overflowing.
     if (iv->Type == TYP_INT)
     {
-        assert(((int32_t)sourceIVStep == -1) || ((int32_t)ivStep % (int32_t)sourceIVStep == 0));
-        int32_t scale =
-            ((int32_t)sourceIVStep == -1) ? (int32_t)(0u - (uint32_t)ivStep) : (int32_t)ivStep / (int32_t)sourceIVStep;
+        assert((int32_t)ivStep % (int32_t)sourceIVStep == 0);
+        int32_t scale = (int32_t)ivStep / (int32_t)sourceIVStep;
         if (isPow2(scale))
         {
             return m_compiler->gtNewOperNode(GT_LSH, TYP_INT, sourceTree,
@@ -2280,8 +2278,8 @@ GenTree* StrengthReductionContext::RephraseIV(ScevAddRec* iv, ScevAddRec* source
 
     if (iv->Type == TYP_LONG)
     {
-        assert((sourceIVStep == -1) || (ivStep % sourceIVStep == 0));
-        int64_t scale = (sourceIVStep == -1) ? (int64_t)(0ull - (uint64_t)ivStep) : ivStep / sourceIVStep;
+        assert(ivStep % sourceIVStep == 0);
+        int64_t scale = ivStep / sourceIVStep;
         if (isPow2(scale))
         {
             return m_compiler->gtNewOperNode(GT_LSH, TYP_LONG, sourceTree,
