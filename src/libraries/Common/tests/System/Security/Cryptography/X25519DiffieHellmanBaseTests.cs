@@ -265,6 +265,8 @@ namespace System.Security.Cryptography.Tests
             yield return ["5f9c95bca3508c24b1d0b1559c83ef5b04445cc4581c8e86d8224eddd09f1157"];
             // Wycheproof tcId 32: peer public key is zero.
             yield return ["0000000000000000000000000000000000000000000000000000000000000000"];
+            // Wycheproof tcId 83: peer public key is p, which reduces to zero.
+            yield return ["edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"];
         }
 
         [ConditionalTheory(nameof(IsNotStrictKeyValidatingPlatform))]
