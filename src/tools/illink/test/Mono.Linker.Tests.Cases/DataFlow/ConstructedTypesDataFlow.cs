@@ -358,10 +358,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.GetMethod(methodName);
             }
 
-            [ExpectedWarning("IL2069", nameof(unannotatedFirst), nameof(annotatedfield), Tool.All, "The inner deconstruction assigns an unannotated source to an annotated field.")]
-            [ExpectedWarning("IL2069", nameof(unannotatedSecond), nameof(secondAnnotatedField), Tool.All, "The inner deconstruction assigns an unannotated source to an annotated field.")]
-            [ExpectedWarning("IL2077", ".Item1", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
-            [ExpectedWarning("IL2077", ".Item2", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
+            [ExpectedWarning("IL2069", nameof(unannotatedFirst), nameof(annotatedfield))]
+            [ExpectedWarning("IL2069", nameof(unannotatedSecond), nameof(secondAnnotatedField))]
+            [ExpectedWarning("IL2077", ".Item1")]
+            [ExpectedWarning("IL2077", ".Item2")]
             static void DeconstructNestedConditionalToAnnotatedFields(bool condition, Type unannotatedFirst, Type unannotatedSecond)
             {
                 Type outerFirst;
@@ -389,14 +389,16 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     : (annotatedFirst, annotatedSecond);
                 first.RequiresPublicMethods();
                 second.RequiresPublicMethods();
+                annotatedfield = first;
+                secondAnnotatedField = second;
                 outerFirst.RequiresPublicMethods();
                 outerSecond.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067", nameof(unannotatedFirst), Tool.All, "The true arm assigns an unannotated source to the first local.")]
-            [ExpectedWarning("IL2067", nameof(unannotatedSecond), Tool.All, "The true arm assigns an unannotated source to the second local.")]
-            [ExpectedWarning("IL2077", ".Item1", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
-            [ExpectedWarning("IL2077", ".Item2", Tool.All, "The outer deconstruction consumes the unannotated inner result.")]
+            [ExpectedWarning("IL2067", nameof(unannotatedFirst))]
+            [ExpectedWarning("IL2067", nameof(unannotatedSecond))]
+            [ExpectedWarning("IL2077", ".Item1")]
+            [ExpectedWarning("IL2077", ".Item2")]
             static void DeconstructNestedConditionalUnannotatedLocalPostState(
                 bool condition,
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotatedFirst,
