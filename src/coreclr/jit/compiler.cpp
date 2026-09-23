@@ -10425,7 +10425,7 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
             //
             if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
                 (varNum != lvaResumedIndicator) && (varNum != lvaAsyncExecutionContextVar) &&
-                (varNum != lvaAsyncSynchronizationContextVar))
+                (varNum != lvaAsyncSynchronizationContextVar) && (varNum != lvaCachedGenericContextArg))
             {
                 assert(varDsc->lvIsStructField);
                 assert(varDsc->lvParentLcl < info.compLocalsCount);
@@ -10455,6 +10455,16 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
 {
     assert(lvaIsOSRLocal(varNum));
 
+    if (varNum == lvaCachedGenericContextArg)
+    {
+        if (info.compPatchpointInfo->HasGenericContextArgOffset())
+        {
+            return info.compPatchpointInfo->GenericContextArgOffset();
+        }
+
+        assert(info.compPatchpointInfo->HasKeptAliveThis());
+        return info.compPatchpointInfo->KeptAliveThisOffset();
+    }
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
