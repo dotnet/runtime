@@ -12,62 +12,6 @@ namespace System.Buffers.Text
 {
     internal static partial class Base64Helper
     {
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertRead<TVector>(byte* src, byte* srcStart, int srcLength)
-        {
-            int vectorElements = sizeof(TVector);
-            byte* readEnd = src + vectorElements;
-            byte* srcEnd = srcStart + srcLength;
-
-            if (readEnd > srcEnd)
-            {
-                int srcIndex = (int)(src - srcStart);
-                Debug.Fail($"Read for {typeof(TVector)} is not within safe bounds. srcIndex: {srcIndex}, srcLength: {srcLength}");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertWrite<TVector>(byte* dest, byte* destStart, int destLength)
-        {
-            int vectorElements = sizeof(TVector);
-            byte* writeEnd = dest + vectorElements;
-            byte* destEnd = destStart + destLength;
-
-            if (writeEnd > destEnd)
-            {
-                int destIndex = (int)(dest - destStart);
-                Debug.Fail($"Write for {typeof(TVector)} is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertRead<TVector>(ushort* src, ushort* srcStart, int srcLength)
-        {
-            int vectorElements = sizeof(TVector);
-            ushort* readEnd = src + vectorElements;
-            ushort* srcEnd = srcStart + srcLength;
-
-            if (readEnd > srcEnd)
-            {
-                int srcIndex = (int)(src - srcStart);
-                Debug.Fail($"Read for {typeof(TVector)} is not within safe bounds. srcIndex: {srcIndex}, srcLength: {srcLength}");
-            }
-        }
-
-        [Conditional("DEBUG")]
-        internal static unsafe void AssertWrite<TVector>(ushort* dest, ushort* destStart, int destLength)
-        {
-            int vectorElements = sizeof(TVector);
-            ushort* writeEnd = dest + vectorElements;
-            ushort* destEnd = destStart + destLength;
-
-            if (writeEnd > destEnd)
-            {
-                int destIndex = (int)(dest - destStart);
-                Debug.Fail($"Write for {typeof(TVector)} is not within safe bounds. destIndex: {destIndex}, destLength: {destLength}");
-            }
-        }
-
         [DoesNotReturn]
         internal static void ThrowUnreachableException()
         {
@@ -88,16 +32,17 @@ namespace System.Buffers.Text
             int GetMaxSrcLength(int srcLength, int destLength);
             int GetMaxEncodedLength(int srcLength);
             uint GetInPlaceDestinationLength(int encodedLength, int leftOver);
-            unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, T* dest, ref byte encodingMap);
-            unsafe void EncodeTwoOptionallyPadOne(byte* oneByte, T* dest, ref byte encodingMap);
-            unsafe void EncodeThreeAndWrite(byte* threeBytes, T* destination, ref byte encodingMap);
+            void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<T> dest, ReadOnlySpan<byte> encodingMap);
+            void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<T> dest, ReadOnlySpan<byte> encodingMap);
+            void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<T> destination, ReadOnlySpan<byte> encodingMap);
             int IncrementPadTwo { get; }
             int IncrementPadOne { get; }
 #if NET
-            unsafe void StoreVector512ToDestination(T* dest, T* destStart, int destLength, Vector512<byte> str);
-            unsafe void StoreVector256ToDestination(T* dest, T* destStart, int destLength, Vector256<byte> str);
-            unsafe void StoreVector128ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> str);
-            unsafe void StoreArmVector128x4ToDestination(T* dest, T* destStart, int destLength, Vector128<byte> res1,
+            // The callers guarantee that dest has room for the whole (widened) vector.
+            void StoreVector512ToDestination(Span<T> dest, Vector512<byte> str);
+            void StoreVector256ToDestination(Span<T> dest, Vector256<byte> str);
+            void StoreVector128ToDestination(Span<T> dest, Vector128<byte> str);
+            void StoreArmVector128x4ToDestination(Span<T> dest, Vector128<byte> res1,
                 Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4);
 #endif // NET
         }
@@ -140,14 +85,15 @@ namespace System.Buffers.Text
                 Vector256<sbyte> lutShift,
                 Vector256<sbyte> shiftForUnderscore,
                 out Vector256<sbyte> result);
-            unsafe bool TryLoadVector512(T* src, T* srcStart, int sourceLength, out Vector512<sbyte> str);
-            unsafe bool TryLoadAvxVector256(T* src, T* srcStart, int sourceLength, out Vector256<sbyte> str);
-            unsafe bool TryLoadVector128(T* src, T* srcStart, int sourceLength, out Vector128<byte> str);
-            unsafe bool TryLoadArmVector128x4(T* src, T* srcStart, int sourceLength,
+            // The callers guarantee that src has enough elements for the vector loads.
+            bool TryLoadVector512(ReadOnlySpan<T> src, out Vector512<sbyte> str);
+            bool TryLoadAvxVector256(ReadOnlySpan<T> src, out Vector256<sbyte> str);
+            bool TryLoadVector128(ReadOnlySpan<T> src, out Vector128<byte> str);
+            bool TryLoadArmVector128x4(ReadOnlySpan<T> src,
                 out Vector128<byte> str1, out Vector128<byte> str2, out Vector128<byte> str3, out Vector128<byte> str4);
 #endif // NET
-            unsafe int DecodeFourElements(T* source, ref sbyte decodingMap);
-            unsafe int DecodeRemaining(T* srcEnd, ref sbyte decodingMap, long remaining, out uint t2, out uint t3);
+            int DecodeFourElements(ReadOnlySpan<T> source, ReadOnlySpan<sbyte> decodingMap);
+            int DecodeRemaining(ReadOnlySpan<T> remaining, ReadOnlySpan<sbyte> decodingMap, out uint t2, out uint t3);
             int IndexOfAnyExceptWhiteSpace(ReadOnlySpan<T> span);
             OperationStatus DecodeWithWhiteSpaceBlockwiseWrapper<TTBase64Decoder>(TTBase64Decoder decoder, ReadOnlySpan<T> source,
                 Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)

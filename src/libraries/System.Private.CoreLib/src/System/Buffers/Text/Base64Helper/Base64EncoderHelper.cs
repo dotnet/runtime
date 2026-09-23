@@ -1,9 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 #if NET
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
@@ -17,7 +18,7 @@ namespace System.Buffers.Text
     // Vector128 version based on https://github.com/aklomp/base64/tree/e516d769a2a432c08404f1981e73b431566057be/lib/arch/ssse3
     internal static partial class Base64Helper
     {
-        internal static unsafe OperationStatus EncodeTo<TBase64Encoder, T>(TBase64Encoder encoder, ReadOnlySpan<byte> source,
+        internal static OperationStatus EncodeTo<TBase64Encoder, T>(TBase64Encoder encoder, ReadOnlySpan<byte> source,
             Span<T> destination, out int bytesConsumed, out int bytesWritten, bool isFinalBlock = true)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
@@ -29,124 +30,92 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
             }
 
-            fixed (byte* srcBytes = &MemoryMarshal.GetReference(source))
-            fixed (T* destBytes = &MemoryMarshal.GetReference(destination))
-            {
-                int srcLength = source.Length;
-                int destLength = destination.Length;
-                int maxSrcLength = encoder.GetMaxSrcLength(srcLength, destLength);
+            int srcLength = source.Length;
+            int maxSrcLength = encoder.GetMaxSrcLength(srcLength, destination.Length);
 
-                byte* src = srcBytes;
-                T* dest = destBytes;
-                byte* srcEnd = srcBytes + (uint)srcLength;
-                byte* srcMax = srcBytes + (uint)maxSrcLength;
+            ReadOnlySpan<byte> src = source.Slice(0, maxSrcLength);
+            Span<T> dest = destination;
 
 #if NET
-                if (maxSrcLength >= 16)
+            if (src.Length >= 16)
+            {
+                if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && src.Length >= 64)
                 {
-                    byte* end = srcMax - 64;
-                    if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
-                    {
-                        Avx512Encode(encoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
-
-                        if (src == srcEnd)
-                            goto DoneExit;
-                    }
-
-                    end = srcMax - 32;
-                    if (Avx2.IsSupported && (end >= src))
-                    {
-                        Avx2Encode(encoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
-
-                        if (src == srcEnd)
-                            goto DoneExit;
-                    }
-
-                    end = srcMax - 48;
-                    if (AdvSimd.Arm64.IsSupported && (end >= src))
-                    {
-                        AdvSimdEncode(encoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
-
-                        if (src == srcEnd)
-                            goto DoneExit;
-                    }
-
-                    end = srcMax - 16;
-                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
-                    {
-                        Vector128Encode(encoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
-
-                        if (src == srcEnd)
-                            goto DoneExit;
-                    }
-                }
-#endif
-                ref byte encodingMap = ref MemoryMarshal.GetReference(encoder.EncodingMap);
-
-                srcMax -= 2;
-                while (src < srcMax)
-                {
-                    encoder.EncodeThreeAndWrite(src, dest, ref encodingMap);
-                    src += 3;
-                    dest += 4;
+                    Avx512Encode(encoder, ref src, ref dest);
                 }
 
-                if (srcMax + 2 != srcEnd)
-                    goto DestinationTooSmallExit;
-
-                if (!isFinalBlock)
+                if (Avx2.IsSupported && src.Length >= 32)
                 {
-                    if (src == srcEnd)
-                        goto DoneExit;
-
-                    goto NeedMoreData;
+                    Avx2Encode(encoder, ref src, ref dest);
                 }
 
-                if (src + 1 == srcEnd)
+                if (AdvSimd.Arm64.IsSupported && src.Length >= 48)
                 {
-                    encoder.EncodeOneOptionallyPadTwo(src, dest, ref encodingMap);
-                    src += 1;
-                    dest += encoder.IncrementPadTwo;
-                }
-                else if (src + 2 == srcEnd)
-                {
-                    encoder.EncodeTwoOptionallyPadOne(src, dest, ref encodingMap);
-                    src += 2;
-                    dest += encoder.IncrementPadOne;
+                    AdvSimdEncode(encoder, ref src, ref dest);
                 }
 
-            DoneExit:
-                bytesConsumed = (int)(src - srcBytes);
-                bytesWritten = (int)(dest - destBytes);
-                return OperationStatus.Done;
-
-            DestinationTooSmallExit:
-                bytesConsumed = (int)(src - srcBytes);
-                bytesWritten = (int)(dest - destBytes);
-                return OperationStatus.DestinationTooSmall;
-
-            NeedMoreData:
-                bytesConsumed = (int)(src - srcBytes);
-                bytesWritten = (int)(dest - destBytes);
-                return OperationStatus.NeedMoreData;
+                if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && src.Length >= 16)
+                {
+                    Vector128Encode(encoder, ref src, ref dest);
+                }
             }
+#endif
+            ReadOnlySpan<byte> encodingMap = encoder.EncodingMap;
+
+            // maxSrcLength guarantees that dest has room for all full blocks, the dest check is only for bounds check elimination.
+            while (src.Length >= 3 && dest.Length >= 4)
+            {
+                encoder.EncodeThreeAndWrite(src, dest, encodingMap);
+                src = src.Slice(3);
+                dest = dest.Slice(4);
+            }
+
+            int written = destination.Length - dest.Length;
+            OperationStatus status = OperationStatus.Done;
+
+            if (maxSrcLength != srcLength)
+            {
+                status = OperationStatus.DestinationTooSmall;
+            }
+            else if (!isFinalBlock)
+            {
+                if (!src.IsEmpty)
+                {
+                    status = OperationStatus.NeedMoreData;
+                }
+            }
+            else if (src.Length == 1)
+            {
+                encoder.EncodeOneOptionallyPadTwo(src, dest, encodingMap);
+                src = src.Slice(1);
+                written += encoder.IncrementPadTwo;
+            }
+            else if (src.Length == 2)
+            {
+                encoder.EncodeTwoOptionallyPadOne(src, dest, encodingMap);
+                src = src.Slice(2);
+                written += encoder.IncrementPadOne;
+            }
+
+            bytesConsumed = maxSrcLength - src.Length;
+            bytesWritten = written;
+            return status;
         }
 
 #if NET
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         [CompExactlyDependsOn(typeof(Avx512Vbmi))]
-        private static unsafe void Avx512Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+        private static void Avx512Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref ReadOnlySpan<byte> srcRef, ref Span<T> destRef)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
         {
             // Reference for VBMI implementation : https://github.com/WojciechMula/base64simd/tree/master/encode
             // If we have AVX512 support, pick off 48 bytes at a time for as long as we can.
-            // But because we read 64 bytes at a time, ensure we have enough room to do a
-            // full 64-byte read without segfaulting.
+            // But because we read 64 bytes at a time, ensure we have enough room to do a full 64-byte read.
 
-            byte* src = srcBytes;
-            T* dest = destBytes;
+            ReadOnlySpan<byte> src = srcRef;
+            Span<T> dest = destRef;
 
             // The JIT won't hoist these "constants", so help it
             Vector512<sbyte> shuffleVecVbmi = Vector512.Create(
@@ -161,16 +130,13 @@ namespace System.Buffers.Text
             Vector512<ushort> shiftAC = Vector512.Create((uint)0x0006000a).AsUInt16();
             Vector512<ushort> shiftBB = Vector512.Create((uint)0x00080004).AsUInt16();
 
-            AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
-
             // This algorithm requires AVX512VBMI support.
             // Vbmi was first introduced in CannonLake and is available from IceLake on.
-
-            // str = [...|PONM|LKJI|HGFE|DCBA]
-            Vector512<sbyte> str = Vector512.Load(src).AsSByte();
-
-            while (true)
+            while (src.Length >= 64 && dest.Length >= 64)
             {
+                // str = [...|PONM|LKJI|HGFE|DCBA]
+                Vector512<sbyte> str = Vector512.Create(src).AsSByte();
+
                 // Step 1 : Split 48 bytes into 64 bytes with each byte using 6-bits from input
                 // str = [...|KLJK|HIGH|EFDE|BCAB]
                 str = Avx512Vbmi.PermuteVar64x8(str, shuffleVecVbmi);
@@ -192,31 +158,24 @@ namespace System.Buffers.Text
                 // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
                 str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
 
-                encoder.StoreVector512ToDestination(dest, destStart, destLength, str.AsByte());
+                encoder.StoreVector512ToDestination(dest, str.AsByte());
 
-                src += 48;
-                dest += 64;
-
-                if (src > srcEnd)
-                    break;
-
-                AssertRead<Vector512<sbyte>>(src, srcStart, sourceLength);
-                str = Vector512.Load(src).AsSByte();
+                src = src.Slice(48);
+                dest = dest.Slice(64);
             }
 
-            srcBytes = src;
-            destBytes = dest;
+            srcRef = src;
+            destRef = dest;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
-        private static unsafe void Avx2Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+        private static void Avx2Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref ReadOnlySpan<byte> srcRef, ref Span<T> destRef)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
         {
             // If we have AVX2 support, pick off 24 bytes at a time for as long as we can.
-            // But because we read 32 bytes at a time, ensure we have enough room to do a
-            // full 32-byte read without segfaulting.
+            // But because we read 32 bytes at a time, ensure we have enough room to do a full 32-byte read.
 
             // translation from SSSE3 into AVX2 of procedure
             // This one works with shifted (4 bytes) input in order to
@@ -225,6 +184,14 @@ namespace System.Buffers.Text
             // srcBytes, bytes MSB to LSB:
             // 0 0 0 0 x w v u t s r q p o n m
             // l k j i h g f e d c b a 0 0 0 0
+
+            ReadOnlySpan<byte> src = srcRef;
+            Span<T> dest = destRef;
+
+            if (src.Length < 32 || dest.Length < 32)
+            {
+                return;
+            }
 
             // The JIT won't hoist these "constants", so help it
             Vector256<sbyte> shuffleVec = Vector256.Create(
@@ -254,15 +221,8 @@ namespace System.Buffers.Text
             Vector256<byte> const51 = Vector256.Create((byte)51);
             Vector256<sbyte> const25 = Vector256.Create((sbyte)25);
 
-            byte* src = srcBytes;
-            T* dest = destBytes;
-
-            // first load is done at c-0 not to get a segfault
-            AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
-            Vector256<sbyte> str = Avx.LoadVector256(src).AsSByte();
-
-            // shift by 4 bytes, as required by Reshuffle
-            str = Avx2.PermuteVar8x32(str.AsInt32(), Vector256.Create(
+            // The first load is done at offset 0 and shifted by 4 bytes, as required by Reshuffle
+            Vector256<sbyte> str = Avx2.PermuteVar8x32(Vector256.Create(src).AsInt32(), Vector256.Create(
                 0, 0, 0, 0,
                 0, 0, 0, 0,
                 1, 0, 0, 0,
@@ -272,8 +232,8 @@ namespace System.Buffers.Text
                 5, 0, 0, 0,
                 6, 0, 0, 0).AsInt32()).AsSByte();
 
-            // Next loads are done at src-4, as required by Reshuffle, so shift it once
-            src -= 4;
+            // Next loads are done 4 bytes before the current position, as required by Reshuffle
+            src = src.Slice(24 - 4);
 
             while (true)
             {
@@ -363,26 +323,25 @@ namespace System.Buffers.Text
                 // Add offsets to input values:
                 str += Avx2.Shuffle(lut, tmp);
 
-                encoder.StoreVector256ToDestination(dest, destStart, destLength, str.AsByte());
+                encoder.StoreVector256ToDestination(dest, str.AsByte());
+                dest = dest.Slice(32);
 
-                src += 24;
-                dest += 32;
-
-                if (src > srcEnd)
+                if (src.Length < 32 || dest.Length < 32)
+                {
                     break;
+                }
 
-                // Load at src-4, as required by Reshuffle (already shifted by -4)
-                AssertRead<Vector256<sbyte>>(src, srcStart, sourceLength);
-                str = Avx.LoadVector256(src).AsSByte();
+                str = Vector256.Create(src).AsSByte();
+                src = src.Slice(24);
             }
 
-            srcBytes = src + 4;
-            destBytes = dest;
+            srcRef = src.Slice(4);
+            destRef = dest;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-        private static unsafe void AdvSimdEncode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+        private static void AdvSimdEncode<TBase64Encoder, T>(TBase64Encoder encoder, ref ReadOnlySpan<byte> srcRef, ref Span<T> destRef)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
         {
@@ -398,15 +357,25 @@ namespace System.Buffers.Text
             Vector128<byte> tblEnc2 = Vector128.Create("QRSTUVWXYZabcdef"u8).AsByte();
             Vector128<byte> tblEnc3 = Vector128.Create("ghijklmnopqrstuv"u8).AsByte();
             Vector128<byte> tblEnc4 = Vector128.Create(encoder.AdvSimdLut4).AsByte();
-            byte* src = srcBytes;
-            T* dest = destBytes;
+
+            // Deinterleave indices (emulates LD3)
+            Vector128<byte> unzip3Idx0 = Vector128.Create((byte)0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45);
+            Vector128<byte> unzip3Idx1 = unzip3Idx0 + Vector128<byte>.One;
+            Vector128<byte> unzip3Idx2 = unzip3Idx1 + Vector128<byte>.One;
+
+            ReadOnlySpan<byte> src = srcRef;
+            Span<T> dest = destRef;
 
             // If we have Neon support, pick off 48 bytes at a time for as long as we can.
-            do
+            while (src.Length >= 48 && dest.Length >= 64)
             {
                 // Load 48 bytes and deinterleave:
-                AssertRead<Vector128<byte>>(src, srcStart, sourceLength);
-                (str1, str2, str3) = AdvSimd.Arm64.Load3xVector128AndUnzip(src);
+                Vector128<byte> in1 = Vector128.Create(src);
+                Vector128<byte> in2 = Vector128.Create(src.Slice(16, 16));
+                Vector128<byte> in3 = Vector128.Create(src.Slice(32, 16));
+                str1 = AdvSimd.Arm64.VectorTableLookup((in1, in2, in3), unzip3Idx0);
+                str2 = AdvSimd.Arm64.VectorTableLookup((in1, in2, in3), unzip3Idx1);
+                str3 = AdvSimd.Arm64.VectorTableLookup((in1, in2, in3), unzip3Idx2);
 
                 // Divide bits of three input bytes over four output bytes:
                 res1 = str1 >>> 2;
@@ -429,27 +398,43 @@ namespace System.Buffers.Text
                 res4 = AdvSimd.Arm64.VectorTableLookup((tblEnc1, tblEnc2, tblEnc3, tblEnc4), res4);
 
                 // Interleave and store result:
-                encoder.StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
+                encoder.StoreArmVector128x4ToDestination(dest, res1, res2, res3, res4);
 
-                src += 48;
-                dest += 64;
-            } while (src <= srcEnd);
+                src = src.Slice(48);
+                dest = dest.Slice(64);
+            }
 
-            srcBytes = src;
-            destBytes = dest;
+            srcRef = src;
+            destRef = dest;
+        }
+
+        /// <summary>Interleaves the bytes of 4 vectors (emulates ST4).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        internal static void AdvSimdZip4(Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4,
+            out Vector128<byte> out1, out Vector128<byte> out2, out Vector128<byte> out3, out Vector128<byte> out4)
+        {
+            Vector128<ushort> zip12Low = AdvSimd.Arm64.ZipLow(res1, res2).AsUInt16();
+            Vector128<ushort> zip12High = AdvSimd.Arm64.ZipHigh(res1, res2).AsUInt16();
+            Vector128<ushort> zip34Low = AdvSimd.Arm64.ZipLow(res3, res4).AsUInt16();
+            Vector128<ushort> zip34High = AdvSimd.Arm64.ZipHigh(res3, res4).AsUInt16();
+
+            out1 = AdvSimd.Arm64.ZipLow(zip12Low, zip34Low).AsByte();
+            out2 = AdvSimd.Arm64.ZipHigh(zip12Low, zip34Low).AsByte();
+            out3 = AdvSimd.Arm64.ZipLow(zip12High, zip34High).AsByte();
+            out4 = AdvSimd.Arm64.ZipHigh(zip12High, zip34High).AsByte();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(PackedSimd))]
-        private static unsafe void Vector128Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref byte* srcBytes, ref T* destBytes, byte* srcEnd, int sourceLength, int destLength, byte* srcStart, T* destStart)
+        private static void Vector128Encode<TBase64Encoder, T>(TBase64Encoder encoder, ref ReadOnlySpan<byte> srcRef, ref Span<T> destRef)
             where TBase64Encoder : IBase64Encoder<T>
             where T : unmanaged
         {
             // If we have SSSE3 support, pick off 12 bytes at a time for as long as we can.
-            // But because we read 16 bytes at a time, ensure we have enough room to do a
-            // full 16-byte read without segfaulting.
+            // But because we read 16 bytes at a time, ensure we have enough room to do a full 16-byte read.
 
             // srcBytes, bytes MSB to LSB:
             // 0 0 0 0 l k j i h g f e d c b a
@@ -465,14 +450,12 @@ namespace System.Buffers.Text
             Vector128<sbyte> const25 = Vector128.Create((sbyte)25);
             Vector128<byte> mask8F = Vector128.Create((byte)0x8F);
 
-            byte* src = srcBytes;
-            T* dest = destBytes;
+            ReadOnlySpan<byte> src = srcRef;
+            Span<T> dest = destRef;
 
-            //while (remaining >= 16)
-            do
+            while (src.Length >= 16 && dest.Length >= 16)
             {
-                AssertRead<Vector128<sbyte>>(src, srcStart, sourceLength);
-                Vector128<byte> str = Vector128.LoadUnsafe(ref *src);
+                Vector128<byte> str = Vector128.Create(src);
 
                 // Reshuffle
                 str = SimdShuffle(str, shuffleVec, mask8F);
@@ -577,19 +560,18 @@ namespace System.Buffers.Text
                 // Add offsets to input values:
                 str += SimdShuffle(lut, tmp.AsByte(), mask8F);
 
-                encoder.StoreVector128ToDestination(dest, destStart, destLength, str);
+                encoder.StoreVector128ToDestination(dest, str);
 
-                src += 12;
-                dest += 16;
+                src = src.Slice(12);
+                dest = dest.Slice(16);
             }
-            while (src <= srcEnd);
 
-            srcBytes = src;
-            destBytes = dest;
+            srcRef = src;
+            destRef = dest;
         }
 #endif
 
-        internal static unsafe OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int dataLength, out int bytesWritten)
+        internal static OperationStatus EncodeToUtf8InPlace<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int dataLength, out int bytesWritten)
             where TBase64Encoder : IBase64Encoder<byte>
         {
             if (buffer.IsEmpty)
@@ -598,119 +580,102 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
             }
 
-            fixed (byte* bufferBytes = &MemoryMarshal.GetReference(buffer))
+            int encodedLength = encoder.GetMaxEncodedLength(dataLength);
+            if (buffer.Length < encodedLength)
             {
-                int encodedLength = encoder.GetMaxEncodedLength(dataLength);
-                if (buffer.Length < encodedLength)
+                bytesWritten = 0;
+                return OperationStatus.DestinationTooSmall;
+            }
+
+            int leftover = (int)((uint)dataLength % 3); // how many bytes after packs of 3
+
+            int destinationIndex = (int)encoder.GetInPlaceDestinationLength(encodedLength, leftover);
+            int sourceIndex = dataLength - leftover;
+            ReadOnlySpan<byte> encodingMap = encoder.EncodingMap;
+
+            // encode last pack first, the full blocks below may overwrite its source
+            if (leftover != 0)
+            {
+                if (leftover == 1)
                 {
-                    bytesWritten = 0;
-                    return OperationStatus.DestinationTooSmall;
+                    encoder.EncodeOneOptionallyPadTwo(buffer.Slice(sourceIndex, 1), buffer.Slice(destinationIndex), encodingMap);
                 }
-
-                int leftover = (int)((uint)dataLength % 3); // how many bytes after packs of 3
-
-                uint destinationIndex = encoder.GetInPlaceDestinationLength(encodedLength, leftover);
-                uint sourceIndex = (uint)(dataLength - leftover);
-                ref byte encodingMap = ref MemoryMarshal.GetReference(encoder.EncodingMap);
-
-                // encode last pack to avoid conditional in the main loop
-                if (leftover != 0)
+                else
                 {
-                    if (leftover == 1)
-                    {
-                        encoder.EncodeOneOptionallyPadTwo(bufferBytes + sourceIndex, bufferBytes + destinationIndex, ref encodingMap);
-                    }
-                    else
-                    {
-                        encoder.EncodeTwoOptionallyPadOne(bufferBytes + sourceIndex, bufferBytes + destinationIndex, ref encodingMap);
-                    }
-
-                    destinationIndex -= 4;
+                    encoder.EncodeTwoOptionallyPadOne(buffer.Slice(sourceIndex, 2), buffer.Slice(destinationIndex), encodingMap);
                 }
+            }
 
-                sourceIndex -= 3;
-                while ((int)sourceIndex >= 0)
-                {
-                    uint result = Encode(bufferBytes + sourceIndex, ref encodingMap);
-                    Unsafe.WriteUnaligned(bufferBytes + destinationIndex, result);
-                    destinationIndex -= 4;
-                    sourceIndex -= 3;
-                }
+            bytesWritten = encodedLength;
 
-                bytesWritten = encodedLength;
+            // Encode the full blocks back to front. The output of each block starts at or after its own source start,
+            // so it never overwrites source that hasn't been read yet.
+            if (sourceIndex >= 16)
+            {
+                EncodeInPlaceChunked(encoder, buffer, sourceIndex);
                 return OperationStatus.Done;
             }
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe uint Encode(byte* threeBytes, ref byte encodingMap)
-        {
-            uint t0 = threeBytes[0];
-            uint t1 = threeBytes[1];
-            uint t2 = threeBytes[2];
-
-            uint i = (t0 << 16) | (t1 << 8) | t2;
-
-            uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-            uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-            uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-            uint i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
-
-            return ConstructResult(i0, i1, i2, i3);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint ConstructResult(uint i0, uint i1, uint i2, uint i3)
-        {
-            if (BitConverter.IsLittleEndian)
+            // Too small for the vectorized paths, encode the blocks directly.
+            for (int srcIndex = sourceIndex - 3, destIndex = (int)((uint)sourceIndex / 3) * 4 - 4; srcIndex >= 0; srcIndex -= 3, destIndex -= 4)
             {
-                return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
+                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(destIndex, 4), Encode(buffer.Slice(srcIndex, 3), encodingMap));
             }
-            else
+
+            return OperationStatus.Done;
+        }
+
+        /// <summary>Encodes the first <paramref name="sourceLength"/> (a multiple of 3) bytes of <paramref name="buffer"/> in place, back to front.</summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void EncodeInPlaceChunked<TBase64Encoder>(TBase64Encoder encoder, Span<byte> buffer, int sourceLength)
+            where TBase64Encoder : IBase64Encoder<byte>
+        {
+            // Each chunk is copied aside first, so the vectorized EncodeTo can overwrite its source.
+            Span<byte> chunk = stackalloc byte[Math.Min(sourceLength, InPlaceChunkSize)];
+            while (sourceLength > 0)
             {
-                return (i0 << 24) | (i1 << 16) | (i2 << 8) | i3;
+                int chunkLength = Math.Min(sourceLength, chunk.Length);
+                sourceLength -= chunkLength;
+
+                buffer.Slice(sourceLength, chunkLength).CopyTo(chunk);
+                OperationStatus status = EncodeTo(encoder, chunk.Slice(0, chunkLength), buffer.Slice(sourceLength / 3 * 4), out _, out _);
+                Debug.Assert(status == OperationStatus.Done);
             }
         }
 
+        private const int InPlaceChunkSize = 768; // multiple of 3 (and of the 48-byte vector blocks)
+
+        /// <summary>Encodes three bytes into four Base64 characters packed as a little-endian uint.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap)
+        private static uint Encode(ReadOnlySpan<byte> threeBytes, ReadOnlySpan<byte> encodingMap)
+        {
+            uint i = ((uint)threeBytes[0] << 16) | ((uint)threeBytes[1] << 8) | threeBytes[2];
+
+            uint i0 = encodingMap[(int)(i >> 18) & 0x3F];
+            uint i1 = encodingMap[(int)(i >> 12) & 0x3F];
+            uint i2 = encodingMap[(int)(i >> 6) & 0x3F];
+            uint i3 = encodingMap[(int)i & 0x3F];
+
+            return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<ushort> dest, ReadOnlySpan<byte> encodingMap)
         {
             uint t0 = oneByte[0];
 
-            uint i = t0 << 8;
-
-            uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-            uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-            uint result;
-
-            if (BitConverter.IsLittleEndian)
-            {
-                result = (i0 | (i1 << 16));
-            }
-            else
-            {
-                result = ((i0 << 16) | i1);
-            }
-
-            Unsafe.WriteUnaligned(dest, result);
+            dest[1] = encodingMap[(int)(t0 << 4) & 0x3F];
+            dest[0] = encodingMap[(int)(t0 >> 2)];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap)
+        public static void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<ushort> dest, ReadOnlySpan<byte> encodingMap)
         {
-            uint t0 = twoBytes[0];
-            uint t1 = twoBytes[1];
+            uint i = ((uint)twoBytes[0] << 16) | ((uint)twoBytes[1] << 8);
 
-            uint i = (t0 << 16) | (t1 << 8);
-
-            ushort i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-            ushort i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-            ushort i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-            dest[0] = i0;
-            dest[1] = i1;
-            dest[2] = i2;
+            dest[2] = encodingMap[(int)(i >> 6) & 0x3F];
+            dest[1] = encodingMap[(int)(i >> 12) & 0x3F];
+            dest[0] = encodingMap[(int)(i >> 18) & 0x3F];
         }
 
         internal const uint EncodingPad = '='; // '=', for padding
@@ -743,74 +708,54 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int srcLength) => Base64.GetMaxEncodedToUtf8Length(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<byte> dest, ReadOnlySpan<byte> encodingMap)
             {
                 uint t0 = oneByte[0];
 
-                uint i = t0 << 8;
+                uint i0 = encodingMap[(int)(t0 >> 2)];
+                uint i1 = encodingMap[(int)(t0 << 4) & 0x3F];
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-                uint result = ConstructResult(i0, i1, EncodingPad, EncodingPad);
-                Unsafe.WriteUnaligned(dest, result);
+                BinaryPrimitives.WriteUInt32LittleEndian(dest, i0 | (i1 << 8) | (EncodingPad << 16) | (EncodingPad << 24));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, byte* dest, ref byte encodingMap)
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<byte> dest, ReadOnlySpan<byte> encodingMap)
             {
-                uint t0 = twoBytes[0];
-                uint t1 = twoBytes[1];
+                uint i = ((uint)twoBytes[0] << 16) | ((uint)twoBytes[1] << 8);
 
-                uint i = (t0 << 16) | (t1 << 8);
+                uint i0 = encodingMap[(int)(i >> 18) & 0x3F];
+                uint i1 = encodingMap[(int)(i >> 12) & 0x3F];
+                uint i2 = encodingMap[(int)(i >> 6) & 0x3F];
 
-                uint i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                uint i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                uint i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-                uint result = ConstructResult(i0, i1, i2, EncodingPad);
-                Unsafe.WriteUnaligned(dest, result);
+                BinaryPrimitives.WriteUInt32LittleEndian(dest, i0 | (i1 << 8) | (i2 << 16) | (EncodingPad << 24));
             }
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector512ToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str)
-            {
-                AssertWrite<Vector512<sbyte>>(dest, destStart, destLength);
-                str.Store(dest);
-            }
+            public void StoreVector512ToDestination(Span<byte> dest, Vector512<byte> str) => str.CopyTo(dest);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [CompExactlyDependsOn(typeof(Avx2))]
-            public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str)
-            {
-                AssertWrite<Vector256<sbyte>>(dest, destStart, destLength);
-                Avx.Store(dest, str.AsByte());
-            }
+            public void StoreVector256ToDestination(Span<byte> dest, Vector256<byte> str) => str.CopyTo(dest);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector128ToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str)
-            {
-                AssertWrite<Vector128<sbyte>>(dest, destStart, destLength);
-                str.Store(dest);
-            }
+            public void StoreVector128ToDestination(Span<byte> dest, Vector128<byte> str) => str.CopyTo(dest);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
+            public void StoreArmVector128x4ToDestination(Span<byte> dest,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
             {
-                AssertWrite<Vector128<byte>>(dest, destStart, destLength);
-                AdvSimd.Arm64.StoreVectorAndZip(dest, (res1, res2, res3, res4));
+                AdvSimdZip4(res1, res2, res3, res4, out Vector128<byte> out1, out Vector128<byte> out2, out Vector128<byte> out3, out Vector128<byte> out4);
+                out1.CopyTo(dest);
+                out2.CopyTo(dest.Slice(16, 16));
+                out3.CopyTo(dest.Slice(32, 16));
+                out4.CopyTo(dest.Slice(48, 16));
             }
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap)
-            {
-                uint result = Encode(threeBytes, ref encodingMap);
-                Unsafe.WriteUnaligned(destination, result);
-            }
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<byte> destination, ReadOnlySpan<byte> encodingMap) =>
+                BinaryPrimitives.WriteUInt32LittleEndian(destination, Encode(threeBytes, encodingMap));
         }
 
         internal readonly struct Base64EncoderChar : IBase64Encoder<ushort>
@@ -837,88 +782,75 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap)
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<ushort> dest, ReadOnlySpan<byte> encodingMap)
             {
-                Base64Helper.EncodeOneOptionallyPadTwo(oneByte, dest, ref encodingMap);
-                dest[2] = (ushort)EncodingPad;
+                Base64Helper.EncodeOneOptionallyPadTwo(oneByte, dest, encodingMap);
                 dest[3] = (ushort)EncodingPad;
+                dest[2] = (ushort)EncodingPad;
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap)
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<ushort> dest, ReadOnlySpan<byte> encodingMap)
             {
-                Base64Helper.EncodeTwoOptionallyPadOne(twoBytes, dest, ref encodingMap);
+                Base64Helper.EncodeTwoOptionallyPadOne(twoBytes, dest, encodingMap);
                 dest[3] = (ushort)EncodingPad;
             }
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector512ToDestination(ushort* dest, ushort* destStart, int destLength, Vector512<byte> str)
+            public void StoreVector512ToDestination(Span<ushort> dest, Vector512<byte> str)
             {
-                AssertWrite<Vector512<short>>(dest, destStart, destLength);
                 (Vector512<ushort> utf16LowVector, Vector512<ushort> utf16HighVector) = Vector512.Widen(str);
-                utf16LowVector.Store(dest);
-                utf16HighVector.Store(dest + 32);
+                utf16LowVector.CopyTo(dest);
+                utf16HighVector.CopyTo(dest.Slice(32, 32));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector256ToDestination(ushort* dest, ushort* destStart, int destLength, Vector256<byte> str)
+            public void StoreVector256ToDestination(Span<ushort> dest, Vector256<byte> str)
             {
-                AssertWrite<Vector256<short>>(dest, destStart, destLength);
                 (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(str);
-                utf16LowVector.Store(dest);
-                utf16HighVector.Store(dest + 16);
+                utf16LowVector.CopyTo(dest);
+                utf16HighVector.CopyTo(dest.Slice(16, 16));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector128ToDestination(ushort* dest, ushort* destStart, int destLength, Vector128<byte> str)
+            public void StoreVector128ToDestination(Span<ushort> dest, Vector128<byte> str)
             {
-                AssertWrite<Vector128<short>>(dest, destStart, destLength);
                 (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(str);
-                utf16LowVector.Store(dest);
-                utf16HighVector.Store(dest + 8);
+                utf16LowVector.CopyTo(dest);
+                utf16HighVector.CopyTo(dest.Slice(8, 8));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            public unsafe void StoreArmVector128x4ToDestination(ushort* dest, ushort* destStart, int destLength,
+            public void StoreArmVector128x4ToDestination(Span<ushort> dest,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4)
             {
-                AssertWrite<Vector128<short>>(dest, destStart, destLength);
-                (Vector128<ushort> utf16LowVector1, Vector128<ushort> utf16HighVector1) = Vector128.Widen(res1);
-                (Vector128<ushort> utf16LowVector2, Vector128<ushort> utf16HighVector2) = Vector128.Widen(res2);
-                (Vector128<ushort> utf16LowVector3, Vector128<ushort> utf16HighVector3) = Vector128.Widen(res3);
-                (Vector128<ushort> utf16LowVector4, Vector128<ushort> utf16HighVector4) = Vector128.Widen(res4);
-                AdvSimd.Arm64.StoreVectorAndZip(dest, (utf16LowVector1, utf16LowVector2, utf16LowVector3, utf16LowVector4));
-                AdvSimd.Arm64.StoreVectorAndZip(dest + 32, (utf16HighVector1, utf16HighVector2, utf16HighVector3, utf16HighVector4));
+                AdvSimdZip4(res1, res2, res3, res4, out Vector128<byte> out1, out Vector128<byte> out2, out Vector128<byte> out3, out Vector128<byte> out4);
+                (Vector128<ushort> utf16LowVector1, Vector128<ushort> utf16HighVector1) = Vector128.Widen(out1);
+                (Vector128<ushort> utf16LowVector2, Vector128<ushort> utf16HighVector2) = Vector128.Widen(out2);
+                (Vector128<ushort> utf16LowVector3, Vector128<ushort> utf16HighVector3) = Vector128.Widen(out3);
+                (Vector128<ushort> utf16LowVector4, Vector128<ushort> utf16HighVector4) = Vector128.Widen(out4);
+                utf16LowVector1.CopyTo(dest);
+                utf16HighVector1.CopyTo(dest.Slice(8, 8));
+                utf16LowVector2.CopyTo(dest.Slice(16, 8));
+                utf16HighVector2.CopyTo(dest.Slice(24, 8));
+                utf16LowVector3.CopyTo(dest.Slice(32, 8));
+                utf16HighVector3.CopyTo(dest.Slice(40, 8));
+                utf16LowVector4.CopyTo(dest.Slice(48, 8));
+                utf16HighVector4.CopyTo(dest.Slice(56, 8));
             }
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, ushort* destination, ref byte encodingMap)
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<ushort> destination, ReadOnlySpan<byte> encodingMap)
             {
-                uint t0 = threeBytes[0];
-                uint t1 = threeBytes[1];
-                uint t2 = threeBytes[2];
+                uint i = ((uint)threeBytes[0] << 16) | ((uint)threeBytes[1] << 8) | threeBytes[2];
 
-                uint i = (t0 << 16) | (t1 << 8) | t2;
-
-                ulong i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                ulong i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                ulong i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-                ulong i3 = Unsafe.Add(ref encodingMap, (IntPtr)(i & 0x3F));
-
-                ulong result;
-                if (BitConverter.IsLittleEndian)
-                {
-                    result = i0 | (i1 << 16) | (i2 << 32) | (i3 << 48);
-                }
-                else
-                {
-                    result = (i0 << 48) | (i1 << 32) | (i2 << 16) | i3;
-                }
-
-                Unsafe.WriteUnaligned(destination, result);
+                destination[0] = encodingMap[(int)(i >> 18) & 0x3F];
+                destination[1] = encodingMap[(int)(i >> 12) & 0x3F];
+                destination[2] = encodingMap[(int)(i >> 6) & 0x3F];
+                destination[3] = encodingMap[(int)i & 0x3F];
             }
         }
     }
