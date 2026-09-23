@@ -125,7 +125,8 @@ namespace ILCompiler.DependencyAnalysis
                         }
 
                         FieldDesc field;
-                        if (opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda ||
+                        if (opcode == ILOpcode.stfld || opcode == ILOpcode.stsfld ||
+                            opcode == ILOpcode.ldfld || opcode == ILOpcode.ldflda ||
                             opcode == ILOpcode.ldsfld || opcode == ILOpcode.ldsflda)
                         {
                             field = _module.TryGetField(token);

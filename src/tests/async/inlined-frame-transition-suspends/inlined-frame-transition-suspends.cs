@@ -12,6 +12,7 @@ using Xunit;
 // to get back onto the caller's continuation context. If that means switching contexts the
 // transition itself suspends, so everything the caller still needs afterwards has to
 // survive that suspension -- including the record of which frames have resumed.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameTransitionSuspends
 {
     // Never runs the callback inline: every Post goes to a dedicated thread, so getting

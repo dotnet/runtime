@@ -95,7 +95,19 @@ void CodeGen::genEmitGSCookieCheck(bool tailCall)
 {
     noway_assert(m_compiler->gsGlobalSecurityCookieAddr || m_compiler->gsGlobalSecurityCookieVal);
 
-    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall);
+    GenTreeCall* tailCallNode = nullptr;
+    if (tailCall)
+    {
+        assert(m_compiler->compCurBB != nullptr);
+        GenTree* lastNode = m_compiler->compCurBB->lastNode();
+        if (lastNode->OperIs(GT_CALL))
+        {
+            tailCallNode = lastNode->AsCall();
+            assert(tailCallNode->IsFastTailCall());
+        }
+    }
+
+    regMaskTP tempRegs = genGetGSCookieTempRegs(tailCall, tailCallNode);
     assert(tempRegs != RBM_NONE);
     regNumber regGSCheck = genFirstRegNumFromMask(tempRegs);
 
@@ -369,7 +381,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val32.IsZero())
             {
-                emit->emitIns_SIMD_R_R_R(INS_xorps, attr, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+                // VEX/EVEX 128-bit zeroing also clears the upper bits without dirtying upper vector state.
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
             {
@@ -388,13 +401,8 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, simd_t
             }
             else if (val64.IsZero())
             {
-                // Use VEX version because it's smaller (for zmm0-zmm15) than EVEX to zero a zmm register and still
-                // zeros the entire register:
-                //
-                //   xorps zmm0, zmm0, zmm0 (6 bytes)
-                //   xorps ymm0, ymm0, ymm0 (4 bytes)
-                //
-                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_32BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
+                // VEX/EVEX 128-bit zeroing also clears the upper bits without dirtying upper vector state.
+                emit->emitIns_SIMD_R_R_R(INS_xorps, EA_16BYTE, targetReg, targetReg, targetReg, INS_OPTS_NONE);
             }
             else
             {
@@ -5345,7 +5353,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         // data goes in REG_WRITE_BARRIER_SRC
         genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
-        genGCWriteBarrier(tree, writeBarrierForm);
+        genGCWriteBarrier(writeBarrierForm);
     }
     else
     {
@@ -5754,8 +5762,6 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
-    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize
@@ -6074,6 +6080,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
     {
         params.sigInfo = call->callSig;
     }
+    genCheckTailCallEpilogRegisters(call);
 #endif // DEBUG
 
     GenTree* target = getCallTarget(call, &params.methHnd);

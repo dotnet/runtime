@@ -10,7 +10,7 @@ using Xunit;
 
 public class Async2Struct
 {
-    [Fact]
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         Async().Wait();

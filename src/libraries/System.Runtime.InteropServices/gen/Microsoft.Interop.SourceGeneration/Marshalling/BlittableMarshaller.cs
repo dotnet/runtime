@@ -1,12 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-
 namespace Microsoft.Interop
 {
     public sealed class BlittableMarshaller : IUnboundMarshallingGenerator
@@ -34,10 +28,10 @@ namespace Microsoft.Interop
             return ValueBoundaryBehavior.AddressOfNativeIdentifier;
         }
 
-        public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
+        public void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context)
         {
             if (!info.IsByRef || codeContext.IsInStubReturnPosition(info))
-                yield break;
+                return;
 
             (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 
@@ -45,21 +39,9 @@ namespace Microsoft.Interop
             {
                 if (context.CurrentStage == StubIdentifierContext.Stage.Pin)
                 {
-                    yield return FixedStatement(
-                        VariableDeclaration(
-                            PointerType(AsNativeType(info).Syntax),
-                            SingletonSeparatedList(
-                                VariableDeclarator(Identifier(nativeIdentifier))
-                                    .WithInitializer(EqualsValueClause(
-                                        PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                            IdentifierName(managedIdentifier))
-                                    ))
-                            )
-                        ),
-                        EmptyStatement()
-                    );
+                    writer.WriteLine($"fixed ({AsNativeType(info).FullTypeName}* {nativeIdentifier} = &{managedIdentifier})");
                 }
-                yield break;
+                return;
             }
 
             MarshalDirection direction = MarshallerHelpers.GetMarshalDirection(info, codeContext);
@@ -71,22 +53,14 @@ namespace Microsoft.Interop
                 case StubIdentifierContext.Stage.Marshal:
                     if (direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional && info.IsByRef)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(nativeIdentifier),
-                                IdentifierName(managedIdentifier)));
+                        writer.WriteLine($"{nativeIdentifier} = {managedIdentifier};");
                     }
 
                     break;
                 case StubIdentifierContext.Stage.Unmarshal:
                     if (direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional && info.IsByRef)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                IdentifierName(nativeIdentifier)));
+                        writer.WriteLine($"{managedIdentifier} = {nativeIdentifier};");
                     }
                     break;
                 default:

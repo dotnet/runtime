@@ -3372,6 +3372,58 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// compAsyncInliningStress: determine if general runtime async inlining is being
+//   stressed, i.e. if async callees that may suspend are inlined with a decaying
+//   random probability.
+//
+// Returns:
+//   true if the stress is enabled
+//
+// Notes:
+//   The stress is enabled either explicitly via JitStressAsyncInlining, or for
+//   roughly 50% of async methods under JitStress. Only async methods are stressed
+//   since awaits cannot be inlined into non-async roots anyway.
+//
+//   See AsyncStressPolicy.
+//
+bool Compiler::compAsyncInliningStress()
+{
+    if (JitConfig.JitStressAsyncInlining() != 0)
+    {
+        return true;
+    }
+
+    return impInlineRoot()->compIsAsync() && compStressCompile(STRESS_ASYNC_INLINE, 50);
+}
+
+//------------------------------------------------------------------------
+// compAsyncInliningStressSeed: get the external seed for the random decisions
+//   made when stressing general async inlining.
+//
+// Returns:
+//   Non-zero seed value.
+//
+int Compiler::compAsyncInliningStressSeed()
+{
+    int seed = JitConfig.JitStressAsyncInlining();
+
+    if (seed == 0)
+    {
+        // The stress kicked in via JitStress, so use its value as the seed. It can be
+        // zero when the stress mode was enabled via DOTNET_JitStressModeNames, in which
+        // case any non-zero seed will do.
+        seed = getJitStressLevel();
+
+        if (seed == 0)
+        {
+            seed = 2;
+        }
+    }
+
+    return seed;
+}
+
+//------------------------------------------------------------------------
 // dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
 // a potentially large number of registers.
 //
@@ -4340,9 +4392,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_INDXCALL, &Compiler::fgTransformIndirectCalls);
 
-    // Relaxed IR checks are currently only enabled through indirect call transformation.
-    activePhaseChecks &= ~(PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED);
-
     // Cleanup un-imported BBs, cleanup un-imported or
     // partially imported try regions, add OSR step blocks.
     //
@@ -4508,6 +4557,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = true);
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
 #ifdef DEBUG
@@ -4518,8 +4568,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    // Global morph restores the strict IR flag invariants.
+    activePhaseChecks &= ~PhaseChecks::CHECK_IR_RELAXED;
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args

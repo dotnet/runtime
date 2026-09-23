@@ -7,6 +7,7 @@ using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
 using ILCompiler.DependencyAnalysisFramework;
+using Mono.Linker;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -66,7 +67,11 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (type.GetStaticConstructor() is EcmaMethod cctor)
+            bool preserveBeforeFieldInit = !factory.Settings.Optimizations.IsEnabled(
+                CodeOptimizations.BeforeFieldInit,
+                _module.Assembly.GetName().Name);
+            if ((!type.IsBeforeFieldInit || preserveBeforeFieldInit) &&
+                type.GetStaticConstructor() is EcmaMethod cctor)
             {
                 dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static constructor");
             }

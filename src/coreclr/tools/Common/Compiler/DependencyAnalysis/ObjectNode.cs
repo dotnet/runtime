@@ -66,10 +66,10 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (factory.Target.IsWasm && this is IMethodCodeNodeWithTypeSignature wasmMethodCodeNode)
+            if (factory.Target.IsWasm && this is INodeWithTypeSignature wasmCodeNode)
             {
-                WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmMethodCodeNode.Method);
-                sink.Add(wasmTypeNode, "Wasm Method Code Nodes Require Signature");
+                WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmCodeNode);
+                sink.Add(wasmTypeNode, "Wasm Code Nodes Require Signature");
             }
         }
 

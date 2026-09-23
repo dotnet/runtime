@@ -102,6 +102,10 @@ namespace ILCompiler
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { DefaultValueFactory = _ => Array.Empty<string>(), Description = SR.DirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -146,6 +150,8 @@ namespace ILCompiler
             new("--make-repro-path") { Description = "Path where to place a repro package" };
         public Option<bool> HotColdSplitting { get; } =
             new("--hot-cold-splitting") { Description = SR.HotColdSplittingOption };
+        public Option<bool> VerifyGCModeTransitions { get; } =
+            new("--verify-gc-mode-transitions") { Description = SR.VerifyGCModeTransitionsOption };
         public Option<bool> StripInliningInfo { get; } =
             new("--strip-inlining-info") { Description = SR.StripInliningInfoOption };
         public Option<bool> StripDebugInfo { get; } =
@@ -207,6 +213,8 @@ namespace ILCompiler
             Options.Add(TargetAllowsRuntimeCodeGeneration);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);
@@ -226,6 +234,7 @@ namespace ILCompiler
             Options.Add(MethodLayout);
             Options.Add(FileLayout);
             Options.Add(VerifyTypeAndFieldLayout);
+            Options.Add(VerifyGCModeTransitions);
             Options.Add(CallChainProfileFile);
             Options.Add(MakeReproPath);
             Options.Add(HotColdSplitting);

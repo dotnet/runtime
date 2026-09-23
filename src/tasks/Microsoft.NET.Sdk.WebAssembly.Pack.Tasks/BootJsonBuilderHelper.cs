@@ -247,6 +247,7 @@ namespace Microsoft.NET.Sdk.WebAssembly
             assets.wasmSymbols = resources.wasmSymbols?.Select(a => new SymbolsAsset()
             {
                 name = a.Key,
+                hash = a.Value,
                 cache = GetCacheControl(a.Key, resources)
             }).ToList();
 

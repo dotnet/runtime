@@ -13,9 +13,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ExternalTypeMapNode : SortableDependencyNode, IExternalTypeMapNode
     {
-        private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> _mapEntries;
+        private readonly IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> _mapEntries;
 
-        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> mapEntries)
+        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, TypeMapMetadata.ExternalTypeMapEntry>> mapEntries)
         {
             _mapEntries = mapEntries;
             TypeMapGroup = typeMapGroup;
@@ -37,7 +37,8 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                TypeDesc targetType = entry.Value.Type;
+                TypeDesc trimmingTargetType = entry.Value.TrimmingType;
                 if (trimmingTargetType is not null)
                 {
                     IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
@@ -57,7 +58,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                TypeDesc targetType = entry.Value.Type;
+                TypeDesc trimmingTargetType = entry.Value.TrimmingType;
                 if (trimmingTargetType is null)
                 {
                     sink.Add(
@@ -82,7 +84,8 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                TypeDesc targetType = entry.Value.Type;
+                TypeDesc trimmingTargetType = entry.Value.TrimmingType;
 
                 if (trimmingTargetType is null
                     || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
