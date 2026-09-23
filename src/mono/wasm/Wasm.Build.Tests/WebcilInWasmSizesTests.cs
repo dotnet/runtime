@@ -59,8 +59,11 @@ public class WebcilInWasmSizesTests
         Assert.Equal(0x42, tableSize);
     }
 
-    [Fact]
-    public void R2R_WithActivePayload_WebcilReaderReadsMetadata()
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(128)]
+    public void R2R_WithActivePayload_WebcilReaderReadsMetadata(int? memoryIndex)
     {
         using var directory = new TempDirectory();
         string assemblyPath = typeof(object).Assembly.Location;
@@ -70,7 +73,7 @@ public class WebcilInWasmSizesTests
         converter.ConvertToWebcil();
 
         byte[] payload = File.ReadAllBytes(webcilPath);
-        byte[] wasm = BuildWebcilInWasm(payload, tableSize: 1, activePayload: true);
+        byte[] wasm = BuildWebcilInWasm(payload, tableSize: 1, activePayload: true, memoryIndex: memoryIndex);
 
         using var stream = new MemoryStream(wasm);
         using var reader = new WebcilReader(stream);
@@ -79,6 +82,9 @@ public class WebcilInWasmSizesTests
         Assert.Equal(
             typeof(object).Assembly.GetName().Name,
             metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name));
+        Assert.Equal(
+            typeof(object).Module.ModuleVersionId,
+            metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid));
     }
 
     [Fact]
@@ -235,8 +241,12 @@ public class WebcilInWasmSizesTests
         Assert.True(r2rWebcil.SequenceEqual(File.ReadAllBytes(Path.Combine(outputDirectory, "R2RAssembly.wasm"))));
     }
 
-    [Fact]
-    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches()
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(true, 0)]
+    [InlineData(true, 128)]
+    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches(bool wrapInWebcil, int? memoryIndex)
     {
         // A prebuilt R2R image whose MVID differs from the candidate must never be staged: it would fail-fast
         // at load against the current version bubble. Use two real assemblies with distinct MVIDs.
@@ -249,7 +259,20 @@ public class WebcilInWasmSizesTests
         string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
         string outputDirectory = Path.Combine(directory.Path, "output");
         Directory.CreateDirectory(prebuiltDirectory);
-        File.Copy(mismatchedAssembly, Path.Combine(prebuiltDirectory, "System.Console.wasm"));
+        string prebuiltPath = Path.Combine(prebuiltDirectory, "System.Console.wasm");
+        if (wrapInWebcil)
+        {
+            string payloadPath = Path.Combine(directory.Path, "payload.webcil");
+            WebcilConverter converter = WebcilConverter.FromPortableExecutable(mismatchedAssembly, payloadPath, webcilVersion: 1);
+            converter.WrapInWebAssembly = false;
+            converter.ConvertToWebcil();
+            File.WriteAllBytes(prebuiltPath, BuildWebcilInWasm(
+                File.ReadAllBytes(payloadPath), tableSize: 1, activePayload: true, memoryIndex: memoryIndex));
+        }
+        else
+        {
+            File.Copy(mismatchedAssembly, prebuiltPath);
+        }
 
         var candidate = new TaskItem(candidatePath);
         candidate.SetMetadata("RelativePath", "System.Console.dll");
@@ -280,7 +303,7 @@ public class WebcilInWasmSizesTests
     private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize, bool activePayload = false)
         => BuildWebcilInWasm(new byte[] { 0xde, 0xad, 0xbe, 0xef }, tableSize, activePayload, payloadSize);
 
-    private static byte[] BuildWebcilInWasm(byte[] payload, int? tableSize, bool activePayload = false, int? payloadSize = null)
+    private static byte[] BuildWebcilInWasm(byte[] payload, int? tableSize, bool activePayload = false, int? payloadSize = null, int? memoryIndex = null)
     {
         var sizes = new List<byte>();
         WriteUInt32LE(sizes, (uint)(payloadSize ?? payload.Length));
@@ -296,7 +319,9 @@ public class WebcilInWasmSizesTests
 
         if (activePayload)
         {
-            body.Add(0x00); // active
+            body.Add(memoryIndex.HasValue ? (byte)0x02 : (byte)0x00); // active
+            if (memoryIndex is int index)
+                WriteULEB(body, (uint)index);
             body.Add(0x23); // global.get
             WriteULEB(body, 1); // __memory_base
             body.Add(0x0B); // end

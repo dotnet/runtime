@@ -68,6 +68,7 @@ internal class WasmModuleReader : IDisposable
     private const uint WASM_MAGIC = 0x6d736100u; // "\0asm"
     private const byte DataSegmentModeActive = 0x00;
     private const byte DataSegmentModePassive = 0x01;
+    private const byte DataSegmentModeActiveWithMemoryIndex = 0x02;
     private const byte WasmOpcodeGlobalGet = 0x23;
     private const byte WasmOpcodeI32Const = 0x41;
     private const byte WasmOpcodeEnd = 0x0B;
@@ -149,6 +150,12 @@ internal class WasmModuleReader : IDisposable
         byte code = _reader.ReadByte();
         switch (code)
         {
+            case DataSegmentModeActiveWithMemoryIndex:
+                if (!allowActive)
+                    return false;
+                ReadULEB128(); // memory index precedes the offset expression
+                goto case DataSegmentModeActive;
+
             case DataSegmentModeActive:
                 if (!allowActive || !TryReadActiveDataSegmentOffsetExpression())
                     return false;
