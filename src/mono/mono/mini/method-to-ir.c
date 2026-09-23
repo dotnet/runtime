@@ -7894,6 +7894,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod_override) {
 				cmethod = cmethod_override;
 				cmethod_override = NULL;
+				check_this = virtual_;
 				virtual_ = FALSE;
 				//il_op = MONO_CEE_CALL;
 			} else {
@@ -8053,6 +8054,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			//g_assert (!virtual_ || fsig->hasthis);
 
 			sp -= n;
+
+			// A resolved callvirt needs its null check even when the target is inlined.
+			if (check_this) {
+				MONO_EMIT_NEW_CHECK_THIS (cfg, sp [0]->dreg);
+				check_this = FALSE;
+			}
 
 			if (virtual_ && cmethod && sp [0] && sp [0]->opcode == OP_TYPED_OBJREF) {
 				error_init_reuse (error);
