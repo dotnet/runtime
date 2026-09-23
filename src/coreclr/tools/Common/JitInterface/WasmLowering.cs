@@ -15,6 +15,21 @@ namespace Internal.JitInterface
 {
     public static partial class WasmLowering
     {
+        public static MethodSignature GetClosedStaticDelegateTargetSignature(MethodSignature signature)
+        {
+            Debug.Assert(!signature.IsStatic && !signature.IsExplicitThis);
+            Debug.Assert(signature.GenericParameterCount == 0);
+
+            TypeDesc[] arguments = new TypeDesc[signature.Length + 1];
+            arguments[0] = signature.Context.GetWellKnownType(WellKnownType.Object);
+            for (int argumentIndex = 0; argumentIndex < signature.Length; argumentIndex++)
+            {
+                arguments[argumentIndex + 1] = signature[argumentIndex];
+            }
+
+            return new MethodSignature(MethodSignatureFlags.Static, 0, signature.ReturnType, arguments);
+        }
+
         public static MethodSignature GetStringCtorActualSignature(MethodSignature signature)
         {
             Debug.Assert(signature.Context.GetWellKnownType(WellKnownType.String).GetMethod(".ctor"u8, signature) != null);

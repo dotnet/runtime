@@ -2548,6 +2548,13 @@ namespace Internal.JitInterface
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
 
+            if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
+            {
+                MethodSignature closedStaticSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(targetMethod.Signature);
+                WasmSignature wasmSignature = WasmLowering.GetSignature(closedStaticSignature, WasmLowering.GetLoweringFlags(targetMethod));
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSignature), "R2R-to-interpreter thunk for closed-static delegate target");
+            }
+
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
             switch (pResult->kind)

@@ -55,6 +55,59 @@ public class WasmArgumentLayoutTests
         _output = output;
     }
 
+    [Theory]
+    [InlineData("Byte", false)]
+    [InlineData("Int16", false)]
+    [InlineData("Int64", false)]
+    [InlineData("Byte", true)]
+    [InlineData("Int16", true)]
+    [InlineData("Int64", true)]
+    public void ClosedStaticDelegateSignaturePreservesArgumentLayout(string underlyingType, bool returnsStruct)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc objectType = context.GetWellKnownType(WellKnownType.Object);
+        DefType nullableType = context.SystemModule.GetType("System"u8, "Nullable`1"u8)
+            .MakeInstantiatedType(GetSystemType(context, underlyingType));
+        TypeDesc returnType = returnsStruct ? MakeAlignedEightBlob(context, 16) : objectType;
+        MethodSignature invokeSignature = new MethodSignature(0, 0, returnType, [objectType, objectType, nullableType]);
+
+        MethodSignature targetSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(invokeSignature);
+        Assert.True(targetSignature.IsStatic);
+        Assert.Same(returnType, targetSignature.ReturnType);
+        Assert.Equal(4, targetSignature.Length);
+        Assert.Same(objectType, targetSignature[0]);
+        for (int argumentIndex = 0; argumentIndex < invokeSignature.Length; argumentIndex++)
+        {
+            Assert.Same(invokeSignature[argumentIndex], targetSignature[argumentIndex + 1]);
+        }
+
+        WasmSignature lowered = WasmLowering.GetSignature(targetSignature, WasmLowering.LoweringFlags.None);
+        Assert.Equal($"{(returnsStruct ? "S16" : "i")}iiiS{nullableType.InstanceFieldSize.AsInt}p", lowered.SignatureString);
+        Assert.Equal(returnsStruct ? 7 : 6, lowered.FuncType.Params.Types.Length);
+        MethodSignature raised = WasmLowering.RaiseSignature(lowered, context);
+        Assert.Equal(GetArgumentOffsets(context, targetSignature), GetArgumentOffsets(context, raised));
+        Assert.Equal(new[] { 0, 8, 16, 24 }, GetArgumentOffsets(context, targetSignature));
+    }
+
+    [Theory]
+    [InlineData(WasmLowering.LoweringFlags.None, "viiS16p", 5)]
+    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg, "viiiS16p", 6)]
+    [InlineData(WasmLowering.LoweringFlags.IsAsyncCall, "vaiiS16p", 6)]
+    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "viaiiS16p", 7)]
+    public void ClosedStaticDelegateSignaturePreservesHiddenArguments(WasmLowering.LoweringFlags flags, string expectedSignature, int expectedParameters)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        MethodSignature invokeSignature = new MethodSignature(0, 0, context.GetWellKnownType(WellKnownType.Void),
+            [context.GetWellKnownType(WellKnownType.Int32), MakeAlignedEightBlob(context, 16)]);
+
+        MethodSignature targetSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(invokeSignature);
+        WasmSignature lowered = WasmLowering.GetSignature(targetSignature, flags);
+
+        Assert.Equal(expectedSignature, lowered.SignatureString);
+        Assert.Equal(expectedParameters, lowered.FuncType.Params.Types.Length);
+        Assert.True(lowered.FuncType.Returns.Types.IsEmpty);
+    }
+
     public static TheoryData<string, WellKnownType> V128Types()
     {
         TheoryData<string, WellKnownType> data = new();
