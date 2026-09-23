@@ -134,10 +134,6 @@ internal sealed class Program
             {
                 options.Machine = Machine.Amd64;
             }
-            else if (Get(_command.TargetArm))
-            {
-                options.Machine = Machine.ArmThumb2;
-            }
             else if (Get(_command.TargetArm64))
             {
                 options.Machine = Machine.Arm64;

@@ -101,9 +101,6 @@ internal sealed class IlasmRootCommand : RootCommand
     public Option<bool> TargetX64 { get; } =
         new("--x64") { Description = "Target processor: 64bit AMD processor" };
 
-    public Option<bool> TargetArm { get; } =
-        new("--arm") { Description = "Target processor: ARM (AArch32) processor" };
-
     public Option<bool> TargetArm64 { get; } =
         new("--arm64") { Description = "Target processor: ARM64 (AArch64) processor" };
 
@@ -148,7 +145,6 @@ internal sealed class IlasmRootCommand : RootCommand
         Options.Add(NoCorStub);
         Options.Add(StripReloc);
         Options.Add(TargetX64);
-        Options.Add(TargetArm);
         Options.Add(TargetArm64);
         Options.Add(Prefer32Bit);
         Options.Add(WaitForDebugger);

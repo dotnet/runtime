@@ -25,6 +25,7 @@ Currently managed ilasm does not do any optimizations of the IL written by the u
 
 Currently managed ilasm does not fold identical IL bodies from different methods into the same blob.
 
-## VTable Exports don't support ARM32
+## ARM32 target images are not supported
 
-VTable exports are Windows-only and Windows ARM32 is unsupported, so managed ILASM doesn't support them.
+Managed ilasm does not support generating ARM32 (AArch32) machine images. The native `/ARM`
+switch is rejected.

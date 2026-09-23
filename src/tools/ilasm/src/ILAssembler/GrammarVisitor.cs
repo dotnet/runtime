@@ -257,6 +257,11 @@ namespace ILAssembler
             ushort majorSubsystemVersion = _options.SubsystemVersion?.Major ?? 4;
             ushort minorSubsystemVersion = _options.SubsystemVersion?.Minor ?? 0;
 
+            if (machine == Machine.ArmThumb2)
+            {
+                throw new PlatformNotSupportedException("ARM32 target images are not supported.");
+            }
+
             // Build DllCharacteristics from options
             DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware;
             if (_options.AppContainer)
@@ -277,7 +282,7 @@ namespace ILAssembler
             {
                 imageCharacteristics |= Characteristics.Dll;
             }
-            if (machine is Machine.I386 or Machine.ArmThumb2)
+            if (machine == Machine.I386)
             {
                 imageCharacteristics |= Characteristics.Bit32Machine;
             }

@@ -122,12 +122,8 @@ internal static class NativeCommandLine
             }
             else if (optionName.Equals("ARM", StringComparison.OrdinalIgnoreCase))
             {
-                if (value is not null)
-                {
-                    throw new ArgumentException($"Invalid native option '{arg}'.");
-                }
-
-                normalizedOption = "--arm";
+                throw new ArgumentException(
+                    $"Unsupported native option '{arg}'. ARM32 target images are not supported.");
             }
             else if (optionName.StartsWith("ARM", StringComparison.OrdinalIgnoreCase))
             {

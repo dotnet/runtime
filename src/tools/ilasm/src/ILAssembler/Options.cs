@@ -61,7 +61,7 @@ namespace ILAssembler
         public CorFlags? CorFlags { get; set; }
 
         /// <summary>
-        /// Target machine type (x64, arm, arm64).
+        /// Target machine type (x64, arm64).
         /// </summary>
         public Machine? Machine { get; set; }
 

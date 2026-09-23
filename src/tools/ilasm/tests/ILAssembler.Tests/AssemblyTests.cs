@@ -68,6 +68,19 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void Arm32Machine_IsRejected()
+        {
+            string source = """
+                .assembly test { }
+                """;
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => DocumentCompilerTestHelpers.CompileAndGetReader(
+                    source,
+                    new Options { Machine = Machine.ArmThumb2 }));
+        }
+
+        [Fact]
         public void Diagnostic_AssemblyNotFound()
         {
             // Reference an assembly that doesn't exist in an exported type declaration

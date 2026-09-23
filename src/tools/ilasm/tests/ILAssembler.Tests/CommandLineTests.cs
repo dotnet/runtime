@@ -259,11 +259,9 @@ public class CommandLineTests
     }
 
     [Theory]
-    [InlineData("-ARM", "--arm")]
     [InlineData("-arm64", "--arm64")]
     [InlineData("-ARM64Anything", "--arm64")]
     [InlineData("-ARM64=value", "--arm64")]
-    [InlineData("/arm", "--arm")]
     [InlineData("/ARM64Anything:value", "--arm64")]
     public void ArmOptions_UseNativeDisambiguation(string argument, string expectedOption)
     {
@@ -273,13 +271,15 @@ public class CommandLineTests
     }
 
     [Theory]
+    [InlineData("-ARM")]
+    [InlineData("/arm")]
     [InlineData("-ARMAnything")]
     [InlineData("-ARM:value")]
     [InlineData("-ARM6")]
-    public void InvalidArmOption_Throws(string argument)
+    public void UnsupportedOrInvalidArmOption_Throws(string argument)
     {
         Assert.Throws<ArgumentException>(
-            () => NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+            () => NativeCommandLine.Normalize([argument], allowSlashOptions: argument[0] == '/'));
     }
 
     [Theory]
