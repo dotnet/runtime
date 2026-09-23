@@ -1689,11 +1689,13 @@ void HelperCallProperties::init()
             case CORINFO_HELP_CHECKED_ASSIGN_REF_EDI:
 #endif
             // GC Write barrier support
-            // TODO-ARM64-Bug?: Can these throw or not?
             case CORINFO_HELP_ASSIGN_REF:
             case CORINFO_HELP_CHECKED_ASSIGN_REF:
-                isNoGC = true;
-                FALLTHROUGH;
+            case CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                isNoGC      = true;
+                mutatesHeap = true;
+                break;
+
             case CORINFO_HELP_BULK_WRITEBARRIER:
                 mutatesHeap = true;
                 break;

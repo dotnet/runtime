@@ -396,6 +396,12 @@ private:
         VCA_ReservedBits = 0x01, // i.e. (VCA_UnsignedSrc)
     };
 
+#ifdef FEATURE_SIMD
+    static constexpr unsigned SimdTypeBits = 8;
+    static constexpr unsigned SimdTypeMask = (1 << SimdTypeBits) - 1;
+    static_assert(TYP_COUNT <= SimdTypeMask);
+#endif
+
     // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
     static constexpr uint8_t GetOpAttribsForArity(genTreeOps oper, GenTreeOperKind kind);
     static constexpr uint8_t GetOpAttribsForGenTree(genTreeOps      oper,
@@ -792,7 +798,7 @@ public:
     ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
 
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType, var_types auxiliaryType);
 
     // Returns if a value number represents NaN in all elements
     bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);

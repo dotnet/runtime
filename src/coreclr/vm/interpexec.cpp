@@ -4482,6 +4482,44 @@ do                                                                      \
                     INTOP_NEXT;
                 }
 
+                // Native min/max permits hardware-dependent NaN and signed-zero results, so these
+                // operations make no effort to match the JIT's target-specific result.
+                INTOP_CASE(INTOP_MAX_NATIVE_R4)
+                {
+                    float left = LOCAL_VAR(ip[2], float);
+                    float right = LOCAL_VAR(ip[3], float);
+                    LOCAL_VAR(ip[1], float) = left > right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MAX_NATIVE_R8)
+                {
+                    double left = LOCAL_VAR(ip[2], double);
+                    double right = LOCAL_VAR(ip[3], double);
+                    LOCAL_VAR(ip[1], double) = left > right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MIN_NATIVE_R4)
+                {
+                    float left = LOCAL_VAR(ip[2], float);
+                    float right = LOCAL_VAR(ip[3], float);
+                    LOCAL_VAR(ip[1], float) = left < right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MIN_NATIVE_R8)
+                {
+                    double left = LOCAL_VAR(ip[2], double);
+                    double right = LOCAL_VAR(ip[3], double);
+                    LOCAL_VAR(ip[1], double) = left < right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
                 INTOP_CASE(INTOP_CALL_FINALLY)
                 {
                     const int32_t* targetIp = ip + ip[1];
