@@ -19,6 +19,10 @@
 //     interp-to-managed file uses it but does not include that header.
 //   * LF_INTEROP/LL_INFO1000/LOG/PORTABILITY_ASSERT -- CoreCLR logging
 //     primitives used by callhelpers-pinvoke.cpp.
+//   * VolatileLoad/VolatileStore -- declared in inc/volatile.h in-tree; the
+//     reverse-thunk file uses them to publish its cached R2R entrypoint but
+//     does not include that header. wasm is single-threaded, so the in-tree
+//     memory-barrier machinery collapses to a plain volatile access here.
 //
 // Definitions for symbols declared by <callhelpers.hpp> (g_portableCallHelperThunks,
 // g_ReverseThunks, ...) live in libcoreclr_static.a or in the same generated
@@ -40,6 +44,22 @@ typedef uintptr_t PCODE;
 typedef uint32_t ULONG;
 #define INTERP_STACK_SLOT_SIZE 8u
 #endif
+
+// CoreCLR volatile access helpers (inc/volatile.h). wasm is single-threaded,
+// so these reduce to a plain volatile load/store with no memory barrier.
+#ifdef __cplusplus
+template<typename T>
+inline T VolatileLoad(T const * pt)
+{
+    return *(T volatile const *)pt;
+}
+
+template<typename T>
+inline void VolatileStore(T* pt, T val)
+{
+    *(T volatile *)pt = val;
+}
+#endif // __cplusplus
 
 // CoreCLR logging stubs.
 #define LF_INTEROP 0
