@@ -18,7 +18,7 @@ namespace Microsoft.Interop.JavaScript
         protected override string AttributeMetadataName => Constants.JSExportAttribute;
         protected override DiagnosticDescriptor InvalidSignatureDescriptor => GeneratorDiagnostics.InvalidExportAttributedMethodSignature;
         protected override DiagnosticDescriptor ContainingTypeMissingModifiersDescriptor => GeneratorDiagnostics.InvalidExportAttributedMethodContainingTypeMissingModifiers;
-        protected override DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor => GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks;
+        protected override DiagnosticDescriptor? RequiresAllowUnsafeBlocksDescriptor => GeneratorDiagnostics.JSExportRequiresAllowUnsafeBlocks;
         protected override bool RequiresImplementation => true;
 
         protected override ImmutableArray<DiagnosticInfo> CalculateDiagnostics(

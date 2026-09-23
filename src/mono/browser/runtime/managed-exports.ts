@@ -3,7 +3,7 @@
 
 import WasmEnableThreads from "consts:wasmEnableThreads";
 
-import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr } from "./types/internal";
+import { GCHandle, GCHandleNull, JSMarshalerArguments, JSThreadBlockingMode, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod, PThreadPtr, CSFnHandle } from "./types/internal";
 import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
@@ -41,6 +41,9 @@ export function init_managed_exports (): void {
     managedExports.GetManagedStackTrace = get_method("GetManagedStackTrace");
     managedExports.LoadSatelliteAssembly = get_method("LoadSatelliteAssembly");
     managedExports.LoadLazyAssembly = get_method("LoadLazyAssembly");
+
+    // [JSExport] wrappers are dispatched by handle through this single method
+    cwraps.mono_wasm_set_jsexport_dispatcher(get_method("CallJSExport"));
 }
 
 // the marshaled signature is: Task<int>? CallEntrypoint(char* mainAssemblyName, string[] args)
@@ -326,6 +329,49 @@ export function invoke_sync_jsexport (method: MonoMethod, args: JSMarshalerArgum
         } else {
             // this is blocking too
             twraps.mono_wasm_invoke_jsexport_sync_send(runtimeHelpers.managedThreadTID, method, args as any);
+        }
+    }
+
+    if (is_args_exception(args)) {
+        const exc = get_arg(args, 0);
+        throw marshal_exception_to_js(exc);
+    }
+}
+
+export function invoke_async_jsexport_by_handle (managedTID: PThreadPtr, handle: CSFnHandle, args: JSMarshalerArguments, size: number): void {
+    assert_js_interop();
+    if (!WasmEnableThreads || runtimeHelpers.isManagedRunningOnCurrentThread) {
+        cwraps.mono_wasm_invoke_jsexport_by_handle(handle, args);
+        if (is_args_exception(args)) {
+            const exc = get_arg(args, 0);
+            throw marshal_exception_to_js(exc);
+        }
+    } else {
+        set_receiver_should_free(args);
+        const bytes = JavaScriptMarshalerArgSize * size;
+        const cpy = malloc(bytes) as any;
+        copyBytes(args as any, cpy, bytes);
+        twraps.mono_wasm_invoke_jsexport_by_handle_async_post(managedTID, handle, cpy);
+    }
+}
+
+export function invoke_sync_jsexport_by_handle (handle: CSFnHandle, args: JSMarshalerArguments): void {
+    assert_js_interop();
+    if (!WasmEnableThreads) {
+        cwraps.mono_wasm_invoke_jsexport_by_handle(handle, args);
+    } else {
+        if (monoThreadInfo.isUI) {
+            if (runtimeHelpers.config.jsThreadBlockingMode == JSThreadBlockingMode.PreventSynchronousJSExport) {
+                throw new Error("Cannot call synchronous C# methods.");
+            } else if (runtimeHelpers.isPendingSynchronousCall) {
+                throw new Error("Cannot call synchronous C# method from inside a synchronous call to a JS method.");
+            }
+        }
+        if (runtimeHelpers.isManagedRunningOnCurrentThread) {
+            twraps.mono_wasm_invoke_jsexport_by_handle_sync(handle, args as any);
+        } else {
+            // this is blocking too
+            twraps.mono_wasm_invoke_jsexport_by_handle_sync_send(runtimeHelpers.managedThreadTID, handle, args as any);
         }
     }
 
