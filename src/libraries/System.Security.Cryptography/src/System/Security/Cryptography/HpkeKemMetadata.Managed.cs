@@ -79,14 +79,22 @@ namespace System.Security.Cryptography
                     case HpkeKem.DHKEM_X25519_HKDF_SHA256:
                         return X25519DiffieHellman.IsSupported;
                     case HpkeKem.MLKEM_512:
-                        return MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem512);
+                        return Shake256.IsSupported &&
+                            MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem512);
                     case HpkeKem.MLKEM_768:
-                        return MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem768);
+                        return Shake256.IsSupported &&
+                            MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem768);
                     case HpkeKem.MLKEM_1024:
-                        return MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem1024);
+                        return Shake256.IsSupported &&
+                            MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem1024);
                     case HpkeKem.MLKEM768_P256:
+                        return Shake256.IsSupported &&
+                            SHA3_256.IsSupported &&
+                            MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem768);
                     case HpkeKem.MLKEM1024_P384:
-                        return false;
+                        return Shake256.IsSupported &&
+                            SHA3_256.IsSupported &&
+                            MLKemImplementation.IsAlgorithmSupported(MLKemAlgorithm.MLKem1024);
                     default:
                         Debug.Fail($"Kem ${Kem}'s support is unknown.");
                         return false;

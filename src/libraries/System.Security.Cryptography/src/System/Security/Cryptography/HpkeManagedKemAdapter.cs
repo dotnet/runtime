@@ -41,6 +41,9 @@ namespace System.Security.Cryptography
                 case HpkeKem.MLKEM_768:
                 case HpkeKem.MLKEM_1024:
                     return new HpkeMLKemAdapter(suite);
+                case HpkeKem.MLKEM768_P256:
+                case HpkeKem.MLKEM1024_P384:
+                    return new HpkeHybridMLKemAdapter(suite);
                 default:
                     throw new PlatformNotSupportedException();
             }
@@ -160,6 +163,41 @@ namespace System.Security.Cryptography
             info.CopyTo(destination.Slice(offset));
 
             HKDF.Expand(KeyDerivationKdf.HkdfHashAlgorithm, prk, output, destination);
+        }
+
+        protected void LabeledDeriveWithShake256(
+            ReadOnlySpan<byte> ikm,
+            ReadOnlySpan<byte> label,
+            ReadOnlySpan<byte> context,
+            Span<byte> output)
+        {
+            Debug.Assert(KeyDerivationKdf.Kdf == HpkeKdf.SHAKE256);
+            Debug.Assert(!KeyDerivationKdf.IsTwoStage);
+            Debug.Assert(ikm.Length <= ushort.MaxValue);
+            Debug.Assert(context.Length <= ushort.MaxValue);
+            Debug.Assert(output.Length <= ushort.MaxValue);
+
+            using (Shake256 shake = new())
+            {
+                shake.AppendData(ikm);
+                shake.AppendData(VersionLabel);
+                shake.AppendData(Suite.KemMetadata.SuiteId);
+                AppendLengthPrefixed(shake, label);
+
+                Span<byte> lengthBytes = stackalloc byte[sizeof(ushort)];
+                BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, checked((ushort)output.Length));
+                shake.AppendData(lengthBytes);
+                shake.AppendData(context);
+                shake.GetHashAndReset(output);
+            }
+
+            static void AppendLengthPrefixed(Shake256 shake, ReadOnlySpan<byte> value)
+            {
+                Span<byte> lengthBytes = stackalloc byte[sizeof(ushort)];
+                BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, checked((ushort)value.Length));
+                shake.AppendData(lengthBytes);
+                shake.AppendData(value);
+            }
         }
 
         internal abstract void DeriveKeyPair(ReadOnlySpan<byte> ikm);

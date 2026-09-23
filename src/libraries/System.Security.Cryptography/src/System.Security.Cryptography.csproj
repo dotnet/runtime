@@ -392,6 +392,8 @@
              Link="Common\System\Security\Cryptography\CompositeMLKemAlgorithm.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCng.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemCng.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemCombiner.cs"
+             Link="Common\System\Security\Cryptography\CompositeMLKemCombiner.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CompositeMLKemImplementation.cs"
              Link="Common\System\Security\Cryptography\CompositeMLKemImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\CryptographicAttributeObject.cs"
@@ -2123,6 +2125,7 @@
   <ItemGroup Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == '' and '$(TargetPlatformIdentifier)' != 'browser'">
     <Compile Include="System\Security\Cryptography\HpkeAeadMetadata.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeECDiffieHellmanKemAdapter.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeHybridMLKemAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeImplementation.Managed.cs" />
     <Compile Include="System\Security\Cryptography\HpkeManagedAeadAdapter.cs" />
     <Compile Include="System\Security\Cryptography\HpkeManagedAesAeadAdapter.cs" />

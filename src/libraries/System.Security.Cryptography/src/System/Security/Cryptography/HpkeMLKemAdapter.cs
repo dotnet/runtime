@@ -1,15 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Diagnostics;
 
 namespace System.Security.Cryptography
 {
     internal sealed class HpkeMLKemAdapter : HpkeManagedKemAdapter
     {
-        private static ReadOnlySpan<byte> VersionLabel => "HPKE-v1"u8;
-
         private readonly MLKemAlgorithm _algorithm;
         private MLKem? _mlKem;
 
@@ -80,29 +77,8 @@ namespace System.Security.Cryptography
 
         private void DerivePrivateSeed(ReadOnlySpan<byte> ikm, Span<byte> privateSeed)
         {
-            Debug.Assert(ikm.Length <= ushort.MaxValue);
             Debug.Assert(privateSeed.Length == _algorithm.PrivateSeedSizeInBytes);
-
-            using (Shake256 shake = new())
-            {
-                shake.AppendData(ikm);
-                shake.AppendData(VersionLabel);
-                shake.AppendData(Suite.KemMetadata.SuiteId);
-                AppendLengthPrefixed(shake, "DeriveKeyPair"u8);
-
-                Span<byte> lengthBytes = stackalloc byte[sizeof(ushort)];
-                BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, checked((ushort)privateSeed.Length));
-                shake.AppendData(lengthBytes);
-                shake.GetHashAndReset(privateSeed);
-            }
-        }
-
-        private static void AppendLengthPrefixed(Shake256 shake, ReadOnlySpan<byte> value)
-        {
-            Span<byte> lengthBytes = stackalloc byte[sizeof(ushort)];
-            BinaryPrimitives.WriteUInt16BigEndian(lengthBytes, checked((ushort)value.Length));
-            shake.AppendData(lengthBytes);
-            shake.AppendData(value);
+            LabeledDeriveWithShake256(ikm, "DeriveKeyPair"u8, ReadOnlySpan<byte>.Empty, privateSeed);
         }
 
         private static MLKemAlgorithm GetAlgorithm(HpkeKem kem) => kem switch
