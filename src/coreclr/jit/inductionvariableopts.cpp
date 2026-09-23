@@ -2056,6 +2056,13 @@ static T Gcd(T a, T b)
 {
     while (a != 0)
     {
+        if (a == -1)
+        {
+            // Avoid signed remainder overflow for MinValue % -1. Return positive 1
+            // so that callers do not divide MinValue by -1 either.
+            return 1;
+        }
+
         T newA = b % a;
         T newB = a;
         a      = newA;
