@@ -1250,6 +1250,22 @@ public unsafe class PointerArrayFieldTests
     [InlineData(true)]
     public static void CopyFixedArrays(bool nullFields)
     {
+        // ActiveIssue https://github.com/dotnet/runtime/issues/124219
+        // The shared wasm host lacks the test's UnmanagedCallersOnly reverse thunk.
+        if (!PlatformDetection.IsWasm)
+        {
+            CopyFixedArraysCore(nullFields);
+        }
+        else
+        {
+            Console.WriteLine("Skipping fixed pointer-array tests on wasm: https://github.com/dotnet/runtime/issues/124219");
+        }
+    }
+
+    // The interpreter resolves ldftn while compiling, so keep it out of the guarded method.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CopyFixedArraysCore(bool nullFields)
+    {
         nuint sentinel = IntPtr.Size == 8 ? unchecked((nuint)0x123456789ABCDEF0UL) : 0x9ABCDEF0u;
         PointerFields value = new PointerFields
         {
