@@ -136,6 +136,18 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
     }
 #endif // RLIMIT_FSIZE
 
+    // The clipping above can leave nothing to map - RLIMIT_FSIZE of zero is the plain case,
+    // and it is a realistic one for a process that is not allowed to create files at all.
+    // A zero sized mapper cannot back a single executable allocation, so reporting success
+    // here only hides the problem from ExecutableAllocator::Initialize(), which already knows
+    // how to continue with W^X disabled when this function fails. Failing here instead lets
+    // the process run single mapped rather than fail to start.
+    if (maxDoubleMappedMemorySize == 0)
+    {
+        close(fd);
+        return false;
+    }
+
     if (ftruncate(fd, maxDoubleMappedMemorySize) == -1)
     {
         close(fd);
