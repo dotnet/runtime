@@ -807,6 +807,7 @@ namespace System.Net.Http.Functional.Tests
                 using SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
 
                 handler.Proxy = new UseSpecifiedUriWebProxy(uri, new NetworkCredential("abc", "password"));
+                handler.SslOptions.AllowTlsResume = false;
                 handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, error) =>
                 {
                     validationCalled = true;
@@ -6444,6 +6445,7 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient(handler);
                 GetUnderlyingSocketsHttpHandler(handler).SslOptions = new SslClientAuthenticationOptions()
                 {
+                    AllowTlsResume = false,
                     RemoteCertificateValidationCallback = delegate { return false; },
                 };
                 using HttpRequestMessage message = new(HttpMethod.Get, uri)

@@ -318,6 +318,7 @@ namespace System.Net.Security.Tests
                     SslClientAuthenticationOptions clientOptions = new SslClientAuthenticationOptions
                     {
                         TargetHost = "localhost",
+                        AllowTlsResume = false,
                         RemoteCertificateValidationCallback = (sender, cert, chain, errors) =>
                         {
                             connectionCount++;
