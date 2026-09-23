@@ -87,13 +87,28 @@ function libCoreRunFactory() {
             }
 
             function readPassiveDataSegment(bytes, offset, limit) {
+                return readWebcilDataSegment(bytes, offset, limit, false);
+            }
+
+            function readWebcilDataSegment(bytes, offset, limit, allowActive) {
                 if (offset >= limit) {
                     throw new RangeError("Unexpected end of input while reading data segment");
                 }
 
                 const mode = bytes[offset++];
-                if (mode !== 1) {
-                    throw new Error("Data segment is not passive");
+                switch (mode) {
+                    case 0:
+                        if (!allowActive) {
+                            throw new Error("Data segment is not passive");
+                        }
+                        offset = skipActiveDataSegmentOffsetExpression(bytes, offset, limit);
+                        break;
+
+                    case 1:
+                        break;
+
+                    default:
+                        throw new Error(`Unsupported Webcil data segment mode ${mode}`);
                 }
 
                 const lenInfo = readULEB128(bytes, offset, limit);
@@ -110,6 +125,29 @@ function libCoreRunFactory() {
                     dataLength,
                     offset: dataEnd
                 };
+            }
+
+            function skipActiveDataSegmentOffsetExpression(bytes, offset, limit) {
+                if (offset >= limit) {
+                    throw new RangeError("Unexpected end of input while reading active data segment offset expression");
+                }
+
+                const opcode = bytes[offset++];
+                switch (opcode) {
+                    case 0x23: // global.get
+                    case 0x41: // i32.const
+                        offset = readULEB128(bytes, offset, limit).offset;
+                        break;
+
+                    default:
+                        throw new Error(`Unsupported active data segment offset opcode ${opcode}`);
+                }
+
+                if (offset >= limit || bytes[offset++] !== 0x0b) {
+                    throw new Error("Active data segment offset expression is missing end opcode");
+                }
+
+                return offset;
             }
 
             function readPayloadSizeAndTableSize(bufferSource) {
@@ -149,8 +187,8 @@ function libCoreRunFactory() {
                         const countInfo = readULEB128(bytes, sectionStart, sectionEnd);
                         const segmentCount = countInfo.value;
 
-                        if (segmentCount < 1) {
-                            throw new Error("Wasm data section has no segments");
+                        if (segmentCount !== 2) {
+                            throw new Error(`Wasm data section has ${segmentCount} segments; expected 2`);
                         }
 
                         const segment0 = readPassiveDataSegment(bytes, countInfo.offset, sectionEnd);
@@ -162,6 +200,13 @@ function libCoreRunFactory() {
                         const valueView = new DataView(bytes.buffer, bytes.byteOffset + segment0.dataStart, segment0.dataLength);
                         const payloadSize = valueView.getUint32(0, true);
                         const tableSize = segment0.dataLength >= 8 ? valueView.getUint32(4, true) : 0;
+                        const payloadSegment = readWebcilDataSegment(bytes, segment0.offset, sectionEnd, true);
+                        if (payloadSegment.dataLength !== payloadSize) {
+                            throw new Error(`Webcil payload segment length mismatch: expected ${payloadSize}, found ${payloadSegment.dataLength}`);
+                        }
+                        if (payloadSegment.offset !== sectionEnd) {
+                            throw new Error("Unexpected data after Webcil payload segment");
+                        }
 
                         return {
                             payloadSize,

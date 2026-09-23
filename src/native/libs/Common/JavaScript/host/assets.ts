@@ -8,6 +8,12 @@ import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
+const WasmSectionData = 11;
+const WasmDataSegmentActive = 0;
+const WasmDataSegmentPassive = 1;
+const WasmOpcodeGlobalGet = 0x23;
+const WasmOpcodeI32Const = 0x41;
+const WasmOpcodeEnd = 0x0B;
 
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
     const lastSlash = virtualPath.lastIndexOf("/");
@@ -48,36 +54,195 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
 
 export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
     // The boot config carries payloadSize for every webcil asset (and tableSize for R2R images), so
-    // the loader never buffers the bytes, parses the data section or calls getWebcilSize. Assets
-    // without a tableSize are plain (Webcil wrapper version 0) images.
+    // the loader validates the data section against the boot config rather than calling
+    // getWebcilSize. Assets without a tableSize are plain (Webcil wrapper version 0) images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
         throw new Error(`Webcil asset '${virtualPath}' is missing payloadSize in the boot config.`);
     }
     const tableEntries = typeof tableSize === "number" ? tableSize : 0;
 
     const res = await checkWebcilResponse(webcilPromise, virtualPath);
-    const payloadPtr = allocWebcilPayload(payloadSize);
-    const imports: WebAssembly.Imports = { webcil: buildWebcilImports(memory, payloadPtr, tableEntries) };
-
+    let payloadPtr = 0;
     try {
-        let instance: WebAssembly.Instance;
+        let instantiateBuffer: ArrayBuffer | undefined;
         const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
         const streamingOk = hasInstantiateStreaming && typeof globalThis.Response === "function" && res instanceof globalThis.Response && contentType === "application/wasm";
+        if (streamingOk) {
+            const data = await res.clone().arrayBuffer();
+            validateWebcilInWasmDataSegments(data, payloadSize, tableEntries, virtualPath);
+        } else {
+            instantiateBuffer = await res.arrayBuffer();
+            validateWebcilInWasmDataSegments(instantiateBuffer, payloadSize, tableEntries, virtualPath);
+        }
+
+        payloadPtr = allocWebcilPayload(payloadSize);
+        const imports: WebAssembly.Imports = { webcil: buildWebcilImports(memory, payloadPtr, tableEntries) };
+        let instance: WebAssembly.Instance;
         if (streamingOk) {
             const instantiated = await WebAssembly.instantiateStreaming(res, imports);
             instance = instantiated.instance;
         } else {
-            const data = await res.arrayBuffer();
-            const instantiated = await WebAssembly.instantiate(data, imports);
+            const instantiated = await WebAssembly.instantiate(instantiateBuffer!, imports);
             instance = instantiated.instance;
         }
         finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
-        _ems_._free(payloadPtr as any);
+        if (payloadPtr !== 0) {
+            _ems_._free(payloadPtr as any);
+        }
         throw err;
     }
+}
+
+function validateWebcilInWasmDataSegments(bufferSource: BufferSource, expectedPayloadSize: number, expectedTableSize: number, virtualPath: string): void {
+    const bytes = asUint8Array(bufferSource);
+    const headerView = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    if (bytes.length < 8 || headerView.getUint32(0, true) !== 0x6d736100 || headerView.getUint32(4, true) !== 1) {
+        throw new Error(`Webcil asset '${virtualPath}' is not a valid WebAssembly module.`);
+    }
+
+    let offset = 8;
+    while (offset < bytes.length) {
+        const sectionCode = bytes[offset++];
+        const sectionSizeInfo = readULEB128(bytes, offset);
+        const sectionStart = sectionSizeInfo.offset;
+        const sectionEnd = checkedAdd(sectionStart, sectionSizeInfo.value, bytes.length, "section");
+        if (sectionCode !== WasmSectionData) {
+            offset = sectionEnd;
+            continue;
+        }
+
+        const segmentCountInfo = readULEB128(bytes, sectionStart, sectionEnd);
+        if (segmentCountInfo.value !== 2) {
+            throw new Error(`Webcil asset '${virtualPath}' has ${segmentCountInfo.value} data segments; expected 2.`);
+        }
+
+        const sizeSegment = readWebcilDataSegment(bytes, segmentCountInfo.offset, sectionEnd, false);
+        if (sizeSegment.dataLength < 4) {
+            throw new Error(`Webcil asset '${virtualPath}' data segment 0 is too small to hold payloadSize.`);
+        }
+
+        const sizeView = new DataView(bytes.buffer, bytes.byteOffset + sizeSegment.dataStart, sizeSegment.dataLength);
+        const actualPayloadSize = sizeView.getUint32(0, true);
+        const actualTableSize = sizeSegment.dataLength >= 8 ? sizeView.getUint32(4, true) : 0;
+        if (actualPayloadSize !== expectedPayloadSize) {
+            throw new Error(`Webcil asset '${virtualPath}' payloadSize mismatch: boot config has ${expectedPayloadSize}, wrapper has ${actualPayloadSize}.`);
+        }
+        if (actualTableSize !== expectedTableSize) {
+            throw new Error(`Webcil asset '${virtualPath}' tableSize mismatch: boot config has ${expectedTableSize}, wrapper has ${actualTableSize}.`);
+        }
+
+        const payloadSegment = readWebcilDataSegment(bytes, sizeSegment.offset, sectionEnd, true);
+        if (payloadSegment.dataLength !== expectedPayloadSize) {
+            throw new Error(`Webcil asset '${virtualPath}' payload segment length mismatch: expected ${expectedPayloadSize}, found ${payloadSegment.dataLength}.`);
+        }
+        if (payloadSegment.offset !== sectionEnd) {
+            throw new Error(`Webcil asset '${virtualPath}' has unexpected data after the payload segment.`);
+        }
+        return;
+    }
+
+    throw new Error(`Webcil asset '${virtualPath}' has no data section.`);
+}
+
+function asUint8Array(bufferSource: BufferSource): Uint8Array {
+    if (bufferSource instanceof ArrayBuffer) {
+        return new Uint8Array(bufferSource);
+    }
+
+    if (ArrayBuffer.isView(bufferSource)) {
+        return new Uint8Array(bufferSource.buffer, bufferSource.byteOffset, bufferSource.byteLength);
+    }
+
+    throw new TypeError("Expected a BufferSource");
+}
+
+function readULEB128(bytes: Uint8Array, offset: number, limit: number = bytes.length): { value: number, offset: number } {
+    let value = 0;
+    let shift = 0;
+
+    for (; ;) {
+        if (offset >= limit) {
+            throw new RangeError("Unexpected end of input while reading ULEB128.");
+        }
+
+        const b = bytes[offset++];
+        value |= (b & 0x7f) << shift;
+
+        if ((b & 0x80) === 0) {
+            return { value, offset };
+        }
+
+        shift += 7;
+        if (shift >= 35) {
+            throw new RangeError("ULEB128 is too large for a u32.");
+        }
+    }
+}
+
+function readWebcilDataSegment(bytes: Uint8Array, offset: number, limit: number, allowActive: boolean): { dataStart: number, dataLength: number, offset: number } {
+    if (offset >= limit) {
+        throw new RangeError("Unexpected end of input while reading data segment.");
+    }
+
+    const mode = bytes[offset++];
+    switch (mode) {
+        case WasmDataSegmentActive:
+            if (!allowActive) {
+                throw new Error("Expected a passive data segment.");
+            }
+            offset = skipActiveDataSegmentOffsetExpression(bytes, offset, limit);
+            break;
+
+        case WasmDataSegmentPassive:
+            break;
+
+        default:
+            throw new Error(`Unsupported Webcil data segment mode ${mode}.`);
+    }
+
+    const lengthInfo = readULEB128(bytes, offset, limit);
+    const dataStart = lengthInfo.offset;
+    const dataEnd = checkedAdd(dataStart, lengthInfo.value, limit, "data segment");
+    return {
+        dataStart,
+        dataLength: lengthInfo.value,
+        offset: dataEnd
+    };
+}
+
+function skipActiveDataSegmentOffsetExpression(bytes: Uint8Array, offset: number, limit: number): number {
+    if (offset >= limit) {
+        throw new RangeError("Unexpected end of input while reading active data segment offset expression.");
+    }
+
+    const opcode = bytes[offset++];
+    switch (opcode) {
+        case WasmOpcodeGlobalGet:
+        case WasmOpcodeI32Const:
+            offset = readULEB128(bytes, offset, limit).offset;
+            break;
+
+        default:
+            throw new Error(`Unsupported active data segment offset opcode ${opcode}.`);
+    }
+
+    if (offset >= limit || bytes[offset++] !== WasmOpcodeEnd) {
+        throw new Error("Active data segment offset expression is missing end opcode.");
+    }
+
+    return offset;
+}
+
+function checkedAdd(start: number, size: number, limit: number, description: string): number {
+    const end = start + size;
+    if (end < start || end > limit) {
+        throw new RangeError(`${description} extends past its enclosing bounds.`);
+    }
+
+    return end;
 }
 
 async function checkWebcilResponse(webcilPromise: Promise<Response>, virtualPath: string): Promise<Response> {
@@ -109,8 +274,8 @@ function allocWebcilPayload(payloadSize: number): number {
 // handshake in finishWebcilInstance are the R2R Webcil-in-Wasm host ABI defined by crossgen's
 // WasmObjectWriter (src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs,
 // CreateDefaultGlobalImports/WriteExports). Keep in sync with the corerun host
-// (src/coreclr/hosts/corerun/wasm/libCorerun.js, BrowserHost_ExternalAssemblyProbe). Unlike corerun,
-// which parses data segment 0 for payloadSize/tableSize, this loader receives them from boot config.
+// (src/coreclr/hosts/corerun/wasm/libCorerun.js, BrowserHost_ExternalAssemblyProbe). The browser
+// loader receives payloadSize/tableSize from boot config and validates the wrapper against them.
 function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tableSize: number): Record<string, WebAssembly.ImportValue> {
     const webcilImports: Record<string, WebAssembly.ImportValue> = { memory };
     if (tableSize > 0) {

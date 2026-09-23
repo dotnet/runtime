@@ -282,8 +282,11 @@ base reloc section.
     uint16_t Reserved0; // 0, or 1-based index of .reloc webcil section
 ```
 
-The header structure has an additional `uint32_t` field called TableBase which is filled in with the
-value of the tableBase global value during execution of `getWebcilPayload`.
+The header structure has an additional `uint32_t` field called TableBase. A host-installed wrapper
+fills this field while executing `getWebcilPayload`. A self-installing wrapper has no
+`getWebcilPayload` export; its active data segment installs the payload at `__memory_base`, and the
+host must call `patchWebcilHeader` after instantiation to write the `__table_base` value into this
+field before the runtime consumes the image.
 
 #### Section header table
 
