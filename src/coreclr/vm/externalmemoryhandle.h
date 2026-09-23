@@ -14,6 +14,7 @@ typedef DPTR(ExternalMemoryHandle) PTR_ExternalMemoryHandle;
 class ExternalMemoryHandle final
 {
     friend struct cdac_data<ExternalMemoryHandle>;
+    friend struct _DacGlobals;
 
 public:
     // Create a reference to external memory. The memory should point to a value that represents PTR_MethodTable.
@@ -42,7 +43,7 @@ private:
     UINT m_gcFlags;
 
     static CrstStatic s_crst;
-    static SListTail<ExternalMemoryHandle> s_handles;
+    SVAL_DECL(SListTail<ExternalMemoryHandle>, s_handles);
 };
 
 template<>
@@ -52,7 +53,13 @@ struct cdac_data<ExternalMemoryHandle>
     static constexpr size_t MethodTable = offsetof(ExternalMemoryHandle, m_pMT);
     static constexpr size_t Memory = offsetof(ExternalMemoryHandle, m_pMemory);
     static constexpr size_t GCFlags = offsetof(ExternalMemoryHandle, m_gcFlags);
+#ifndef DACCESS_COMPILE
+    // s_handles is exported to the classic DAC via SVAL_DECL, so under DACCESS_COMPILE it is wrapped
+    // in __GlobalVal<T>, which does not support taking the address of a member. This is only used by
+    // the (non-DAC) cDAC contract descriptor generator, so it is unneeded -- and would not compile -- when
+    // DACCESS_COMPILE is defined.
     static constexpr PTR_ExternalMemoryHandle* HandlesHead = &ExternalMemoryHandle::s_handles.m_pHead;
+#endif
 };
 
 #endif // EXTERNALMEMORYHANDLE_HPP

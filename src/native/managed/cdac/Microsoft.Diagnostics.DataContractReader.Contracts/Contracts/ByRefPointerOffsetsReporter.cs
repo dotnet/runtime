@@ -31,6 +31,10 @@ internal sealed class ByRefPointerOffsetsReporter
         {
             return [];
         }
+        catch (VirtualReadException)
+        {
+            return [];
+        }
 
         return offsets;
     }

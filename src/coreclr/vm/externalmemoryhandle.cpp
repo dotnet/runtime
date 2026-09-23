@@ -5,7 +5,7 @@
 #include "siginfo.hpp"
 
 CrstStatic ExternalMemoryHandle::s_crst;
-SListTail<ExternalMemoryHandle> ExternalMemoryHandle::s_handles;
+SVAL_IMPL(SListTail<ExternalMemoryHandle>, ExternalMemoryHandle, s_handles);
 
 #ifndef DACCESS_COMPILE
 
@@ -79,7 +79,10 @@ void ExternalMemoryHandle::GCScanRoots(promote_func *fn, ScanContext *sc)
     // The caller (GCToEEInterface::GcScanRoots) only invokes this outside the concurrent mark phase of
     // a background GC, so the EE is always suspended for a GC (or, for the DAC, the target process is
     // stopped) whenever this list is walked, and the list cannot be mutated concurrently with this scan.
-    for (ExternalMemoryHandle* handle = s_handles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
+    // s_handles is read through the DAC global table (SVAL_DECL), so materialize a local copy of the
+    // list head/tail before traversing -- the DAC __GlobalVal wrapper does not proxy member calls.
+    SListTail<ExternalMemoryHandle> handles = s_handles;
+    for (ExternalMemoryHandle* handle = handles.GetHead(); handle != nullptr; handle = SListTail<ExternalMemoryHandle>::GetNext(handle))
     {
         handle->GCScanRoot(fn, sc);
     }

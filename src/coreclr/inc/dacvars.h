@@ -112,6 +112,8 @@ DEFINE_DACVAR(PTR_GcDacVars, dac__g_gcDacGlobals, g_gcDacGlobals)
 DEFINE_DACVAR(PTR_AppDomain, AppDomain__m_pTheAppDomain, AppDomain::m_pTheAppDomain)
 DEFINE_DACVAR(PTR_SystemDomain, SystemDomain__m_pSystemDomain, SystemDomain::m_pSystemDomain)
 
+DEFINE_DACVAR(SListTail<ExternalMemoryHandle>, ExternalMemoryHandle__s_handles, ExternalMemoryHandle::s_handles)
+
 #ifdef FEATURE_INTEROP_DEBUGGING
 DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
