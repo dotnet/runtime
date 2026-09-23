@@ -442,6 +442,6 @@
     <value>An entry in ForwardRead mode can be opened only once.</value>
   </data>
   <data name="ForwardReadUnsupportedEntry" xml:space="preserve">
-    <value>This forward reader supports only unencrypted Stored entries with known, non-ZIP64 sizes and no optional flags other than UTF-8 names.</value>
+    <value>This forward reader supports only unencrypted Stored and Deflate entries with known, non-ZIP64 sizes and no optional flags other than UTF-8 names and Deflate compression options.</value>
   </data>
 </root>

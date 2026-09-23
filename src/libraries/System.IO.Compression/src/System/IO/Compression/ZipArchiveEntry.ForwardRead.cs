@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,8 +12,17 @@ namespace System.IO.Compression;
 public partial class ZipArchiveEntry
 {
     private ForwardReadEntryStream? _forwardStream;
-    private long _forwardRemaining;
+    private long _forwardCompressedRemaining;
     private uint _forwardCrc;
+    // Unlike DeflateStream, DeflateDecoder reports exact input consumption and completion,
+    // allowing us to verify that the Deflate stream ends at the declared compressed size.
+    private DeflateDecoder? _forwardDecoder;
+    // The caller's destination can fill before all compressed input is consumed.
+    // Keep the remaining input for the next read rather than discarding or rereading it.
+    private byte[]? _forwardInput;
+    private int _forwardInputOffset;
+    private int _forwardInputCount;
+    private long _forwardUncompressedRead;
 
     internal ZipArchiveEntry(ZipArchive archive, ReadOnlySpan<byte> header, byte[] name)
     {
@@ -29,19 +40,24 @@ public partial class ZipArchiveEntry
         _compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(header[ZipLocalFileHeader.FieldLocations.CompressedSize..]);
         _uncompressedSize = BinaryPrimitives.ReadUInt32LittleEndian(header[ZipLocalFileHeader.FieldLocations.UncompressedSize..]);
 
-        // Stored entries need no option flags other than the UTF-8 name marker.
-        if ((_generalPurposeBitFlag & ~BitFlagValues.UnicodeFileNameAndComment) != 0 ||
-            CompressionMethod != ZipCompressionMethod.Stored ||
+        // Bits 1 and 2 describe Deflate's compression level, but are not valid for Stored.
+        BitFlagValues allowedFlags = BitFlagValues.UnicodeFileNameAndComment;
+        if (CompressionMethod == ZipCompressionMethod.Deflate)
+        {
+            allowedFlags |= (BitFlagValues)0x6;
+        }
+        if ((_generalPurposeBitFlag & ~allowedFlags) != 0 ||
+            CompressionMethod is not (ZipCompressionMethod.Stored or ZipCompressionMethod.Deflate) ||
             _compressedSize == uint.MaxValue || _uncompressedSize == uint.MaxValue)
         {
             throw new NotSupportedException(SR.ForwardReadUnsupportedEntry);
         }
-        if (_compressedSize != _uncompressedSize)
+        if (CompressionMethod == ZipCompressionMethod.Stored && _compressedSize != _uncompressedSize)
         {
             throw new InvalidDataException(SR.UnexpectedStreamLength);
         }
-        _compressionLevel = CompressionLevel.NoCompression;
-        _forwardRemaining = _compressedSize;
+        _compressionLevel = MapCompressionLevel(_generalPurposeBitFlag, CompressionMethod);
+        _forwardCompressedRemaining = _compressedSize;
     }
 
     private Stream OpenForwardRead()
@@ -51,12 +67,19 @@ public partial class ZipArchiveEntry
         {
             throw new InvalidOperationException(SR.ForwardReadEntryAlreadyOpened);
         }
+        if (CompressionMethod == ZipCompressionMethod.Deflate)
+        {
+            // Opening allocates decoder state only; input is read by Read/ReadAsync.
+            _forwardInput = new byte[4096];
+            _forwardDecoder = new DeflateDecoder();
+        }
         return _forwardStream = new ForwardReadEntryStream(this);
     }
 
     internal async ValueTask DrainForwardEntryAsync(Memory<byte> buffer, bool useAsync, CancellationToken cancellationToken)
     {
-        // The entry, not its public stream handle, owns the remaining payload.
+        // The entry owns the decoder even after its public stream is disposed.
+        // Unopened entries have no decoder and skip the raw compressed payload.
         while ((useAsync
             ? await ReadForwardCoreAsync(buffer, cancellationToken).ConfigureAwait(false)
             : ReadForwardCore(buffer.Span)) != 0)
@@ -70,12 +93,23 @@ public partial class ZipArchiveEntry
         {
             return 0;
         }
-        if (_forwardRemaining == 0)
+        if (_forwardDecoder is not null)
+        {
+            int written;
+            while (!TryReadForwardDeflate(buffer, out written))
+            {
+                int compressedRead = _archive.ArchiveStream.Read(
+                    _forwardInput.AsSpan(0, (int)Math.Min(_forwardInput!.Length, _forwardCompressedRemaining)));
+                AccountForwardInput(compressedRead);
+            }
+            return written;
+        }
+        if (_forwardCompressedRemaining == 0)
         {
             ValidateForwardCrc();
             return 0;
         }
-        int read = _archive.ArchiveStream.Read(buffer[..(int)Math.Min(buffer.Length, _forwardRemaining)]);
+        int read = _archive.ArchiveStream.Read(buffer[..(int)Math.Min(buffer.Length, _forwardCompressedRemaining)]);
         AccountForwardBytes(buffer[..read]);
         return read;
     }
@@ -86,12 +120,24 @@ public partial class ZipArchiveEntry
         {
             return 0;
         }
-        if (_forwardRemaining == 0)
+        if (_forwardDecoder is not null)
+        {
+            int written;
+            while (!TryReadForwardDeflate(buffer.Span, out written))
+            {
+                int compressedRead = await _archive.ArchiveStream.ReadAsync(
+                    _forwardInput.AsMemory(0, (int)Math.Min(_forwardInput!.Length, _forwardCompressedRemaining)),
+                    cancellationToken).ConfigureAwait(false);
+                AccountForwardInput(compressedRead);
+            }
+            return written;
+        }
+        if (_forwardCompressedRemaining == 0)
         {
             ValidateForwardCrc();
             return 0;
         }
-        int read = await _archive.ArchiveStream.ReadAsync(buffer[..(int)Math.Min(buffer.Length, _forwardRemaining)], cancellationToken).ConfigureAwait(false);
+        int read = await _archive.ArchiveStream.ReadAsync(buffer[..(int)Math.Min(buffer.Length, _forwardCompressedRemaining)], cancellationToken).ConfigureAwait(false);
         AccountForwardBytes(buffer.Span[..read]);
         return read;
     }
@@ -102,10 +148,70 @@ public partial class ZipArchiveEntry
         {
             throw new InvalidDataException(SR.UnexpectedStreamLength);
         }
-        _forwardRemaining -= bytes.Length;
+        _forwardCompressedRemaining -= bytes.Length;
         if (_forwardStream is not null)
         {
             _forwardCrc = Crc32Helper.UpdateCrc32(_forwardCrc, bytes);
+        }
+    }
+
+    private void AccountForwardInput(int read)
+    {
+        if (read == 0)
+        {
+            throw new InvalidDataException(SR.UnexpectedStreamLength);
+        }
+        _forwardCompressedRemaining -= read;
+        _forwardInputOffset = 0;
+        _forwardInputCount = read;
+    }
+
+    // Returns false only when another bounded input read is needed.
+    private bool TryReadForwardDeflate(Span<byte> buffer, out int written)
+    {
+        Debug.Assert(_forwardDecoder is not null && !buffer.IsEmpty);
+        while (true)
+        {
+            // Try even with empty input: a full previous destination may have left buffered output.
+            OperationStatus status = _forwardDecoder.Decompress(
+                _forwardInput.AsSpan(_forwardInputOffset, _forwardInputCount), buffer, out int consumed, out written);
+            _forwardInputOffset += consumed;
+            _forwardInputCount -= consumed;
+            if (status == OperationStatus.InvalidData)
+            {
+                throw new InvalidDataException(SR.GenericInvalidData);
+            }
+            _forwardUncompressedRead += written;
+            if (_forwardUncompressedRead > _uncompressedSize ||
+                (status == OperationStatus.Done && (_forwardCompressedRemaining != 0 || _forwardInputCount != 0)))
+            {
+                // Completion must consume exactly the declared payload, without trailing junk.
+                throw new InvalidDataException(SR.UnexpectedStreamLength);
+            }
+            _forwardCrc = Crc32Helper.UpdateCrc32(_forwardCrc, buffer[..written]);
+            if (written != 0)
+            {
+                return true;
+            }
+            if (status == OperationStatus.Done)
+            {
+                if (_forwardUncompressedRead != _uncompressedSize)
+                {
+                    throw new InvalidDataException(SR.UnexpectedStreamLength);
+                }
+                ValidateForwardCrc();
+                return true;
+            }
+            if (consumed != 0)
+            {
+                continue;
+            }
+            if (_forwardInputCount != 0 || _forwardCompressedRemaining == 0)
+            {
+                // Producing all expected bytes is insufficient without the Deflate end marker.
+                throw new InvalidDataException(SR.UnexpectedStreamLength);
+            }
+            return false;
         }
     }
 
@@ -117,7 +223,13 @@ public partial class ZipArchiveEntry
         }
     }
 
-    internal void InvalidateForwardEntry() => _forwardStream?.Invalidate();
+    internal void InvalidateForwardEntry()
+    {
+        _forwardStream?.Invalidate();
+        _forwardDecoder?.Dispose();
+        _forwardDecoder = null;
+        _forwardInput = null;
+    }
 
     private sealed class ForwardReadEntryStream(ZipArchiveEntry entry) : Stream
     {
