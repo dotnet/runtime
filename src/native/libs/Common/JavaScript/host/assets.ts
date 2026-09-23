@@ -56,6 +56,13 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     // The boot config carries payloadSize for every webcil asset (and tableSize for R2R images), so
     // the loader validates the data section against the boot config rather than calling
     // getWebcilSize. Assets without a tableSize are plain (Webcil wrapper version 0) images.
+    //
+    // The active payload/table segments live in the data section, which is only reachable after
+    // walking past the (typically much larger) code section, so validating them requires the
+    // whole module body up front. That rules out WebAssembly.instantiateStreaming here: buffering
+    // the response ourselves and then also handing it to instantiateStreaming would make the
+    // engine fetch/decode the same bytes a second time instead of saving anything. Always
+    // validate-then-instantiate from the single buffered ArrayBuffer.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
         throw new Error(`Webcil asset '${virtualPath}' is missing payloadSize in the boot config.`);
     }
@@ -64,28 +71,13 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     const res = await checkWebcilResponse(webcilPromise, virtualPath);
     let payloadPtr = 0;
     try {
-        let instantiateBuffer: ArrayBuffer | undefined;
-        const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-        const streamingOk = hasInstantiateStreaming && typeof globalThis.Response === "function" && res instanceof globalThis.Response && contentType === "application/wasm";
-        if (streamingOk) {
-            const data = await res.clone().arrayBuffer();
-            validateWebcilInWasmDataSegments(data, payloadSize, tableEntries, virtualPath);
-        } else {
-            instantiateBuffer = await res.arrayBuffer();
-            validateWebcilInWasmDataSegments(instantiateBuffer, payloadSize, tableEntries, virtualPath);
-        }
+        const data = await res.arrayBuffer();
+        validateWebcilInWasmDataSegments(data, payloadSize, tableEntries, virtualPath);
 
         payloadPtr = allocWebcilPayload(payloadSize);
         const imports: WebAssembly.Imports = { webcil: buildWebcilImports(memory, payloadPtr, tableEntries) };
-        let instance: WebAssembly.Instance;
-        if (streamingOk) {
-            const instantiated = await WebAssembly.instantiateStreaming(res, imports);
-            instance = instantiated.instance;
-        } else {
-            const instantiated = await WebAssembly.instantiate(instantiateBuffer!, imports);
-            instance = instantiated.instance;
-        }
-        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+        const instantiated = await WebAssembly.instantiate(data, imports);
+        finishWebcilInstance(instantiated.instance, payloadPtr, payloadSize, tableEntries, virtualPath);
     } catch (err) {
         // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
         // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
