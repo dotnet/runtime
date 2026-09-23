@@ -1390,7 +1390,9 @@ bool ReplaceVisitor::TryStoreMultiRegValue(GenTree** use, Replacement* first, Re
     for (unsigned i = 0; i < count; i++)
     {
         var_types type = source->GetRegTypeByIndex(i);
-        if ((first[i].Offset != baseOffset + offset) || (genActualType(first[i].AccessType) != genActualType(type)) ||
+        // Small integer results may require normalization before defining the local.
+        if (varTypeIsSmall(type) || (first[i].Offset != baseOffset + offset) ||
+            (genActualType(first[i].AccessType) != genActualType(type)) ||
             (genTypeSize(first[i].AccessType) != genTypeSize(type)))
         {
             return false;
