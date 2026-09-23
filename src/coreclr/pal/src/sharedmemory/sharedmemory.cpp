@@ -413,56 +413,7 @@ int SharedMemoryHelpers::EnsureDirectoryExists(
             }
         }
 
-        struct stat statInfo;
-        int statResult;
-        do
-        {
-            statResult = fstat(directoryFileDescriptor, &statInfo);
-        } while (statResult != 0 && errno == EINTR);
-
-        if (statResult == 0 &&
-            (!id->IsUserScope() || statInfo.st_uid == id->GetUserScopeUid()) &&
-            (statInfo.st_mode & PermissionsMask_AllUsers_ReadWriteExecute) == permissionsMask)
-        {
-            return directoryFileDescriptor;
-        }
-
-        int errorCode = errno;
-        CloseFile(directoryFileDescriptor);
-        if (!created && transientRetryCount++ < TransientRetryCount)
-        {
-            usleep(1000);
-            continue;
-        }
-
-        if (created)
-        {
-            unlinkat(parentDirectoryFileDescriptor, directoryName, AT_REMOVEDIR);
-        }
-
-        if (errors != nullptr)
-        {
-            if (statResult != 0)
-            {
-                errors->Append(
-                    "fstat(directoryFileDescriptor for \"%s\", ...) == %d; errno == %s;",
-                    directoryPathForError,
-                    statResult,
-                    GetFriendlyErrorCodeString(errorCode));
-            }
-            else
-            {
-                errors->Append(
-                    "fstat(directoryFileDescriptor for \"%s\", &info) == 0; info.st_mode == 0x%x; info.st_uid == %u; "
-                    "expected mode == 0x%x, uid == %u;",
-                    directoryPathForError,
-                    (int)statInfo.st_mode,
-                    (unsigned int)statInfo.st_uid,
-                    (int)permissionsMask,
-                    (unsigned int)(id->IsUserScope() ? id->GetUserScopeUid() : statInfo.st_uid));
-            }
-        }
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
+        return directoryFileDescriptor;
     }
 }
 
@@ -1089,58 +1040,6 @@ void SharedMemoryHelpers::EnsurePersistedUserDirectoryExists(
         }
     } autoCleanup(homeDirectoryFileDescriptor);
 
-    auto validateDirectory = [errors, id](int fileDescriptor, LPCSTR directoryName, bool requireExactMode)
-    {
-        struct stat statInfo;
-        int statResult;
-        do
-        {
-            statResult = fstat(fileDescriptor, &statInfo);
-        } while (statResult != 0 && errno == EINTR);
-
-        mode_t permissions =
-            statResult == 0
-                ? statInfo.st_mode & PermissionsMask_AllUsers_ReadWriteExecute
-                : static_cast<mode_t>(0);
-        bool valid =
-            statResult == 0 &&
-            statInfo.st_uid == id->GetUserScopeUid() &&
-            (permissions & PermissionsMask_OwnerUser_ReadWriteExecute) ==
-                PermissionsMask_OwnerUser_ReadWriteExecute &&
-            (permissions & PermissionsMask_NonOwnerUsers_Write) == 0 &&
-            (!requireExactMode || permissions == PermissionsMask_OwnerUser_ReadWriteExecute);
-        if (valid)
-        {
-            return;
-        }
-
-        if (errors != nullptr)
-        {
-            if (statResult != 0)
-            {
-                int errorCode = errno;
-                errors->Append(
-                    "fstat(directoryFileDescriptor for \"%s\", ...) == %d; errno == %s;",
-                    directoryName,
-                    statResult,
-                    GetFriendlyErrorCodeString(errorCode));
-            }
-            else
-            {
-                errors->Append(
-                    "fstat(directoryFileDescriptor for \"%s\", &info) == 0; info.st_mode == 0x%x; "
-                    "info.st_uid == %u; expected uid == %u and safe owner permissions;",
-                    directoryName,
-                    (int)statInfo.st_mode,
-                    (unsigned int)statInfo.st_uid,
-                    (unsigned int)id->GetUserScopeUid());
-            }
-        }
-        throw SharedMemoryException(static_cast<DWORD>(SharedMemoryError::IO));
-    };
-
-    validateDirectory(homeDirectoryFileDescriptor, homeDirectoryPath, false);
-
     for (SIZE_T directoryIndex = 0; directoryIndex < ARRAY_SIZE(directoryNames); directoryIndex++)
     {
         int parentDirectoryFileDescriptor = autoCleanup.m_directoryFileDescriptors[directoryIndex];
@@ -1245,7 +1144,6 @@ void SharedMemoryHelpers::EnsurePersistedUserDirectoryExists(
         autoCleanup.m_directoryFileDescriptors[directoryIndex + 1] = directoryFileDescriptor;
         autoCleanup.m_createdDirectories[directoryIndex] = created;
         autoCleanup.m_directoryCount++;
-        validateDirectory(directoryFileDescriptor, directoryName, created);
     }
 
     autoCleanup.m_cancel = true;
