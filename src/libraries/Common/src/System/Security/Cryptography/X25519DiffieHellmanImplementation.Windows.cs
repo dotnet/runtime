@@ -21,12 +21,23 @@ namespace System.Security.Cryptography
         private readonly byte _privatePreservation;
         private readonly byte[]? _originalPublicKey;
 
-        private X25519DiffieHellmanImplementation(SafeBCryptKeyHandle key, bool hasPrivate, byte privatePreservation, byte[]? originalPublicKey = null)
+        // Older versions of Windows 10 incorrectly produce a shared secret when the peer's public key is zero that
+        // is itself not a zero shared secret. To be consistent with later versions of Windows and other platforms,
+        // reject a peer public key that reduces to all-zero during agreement.
+        private readonly bool _reducedZeroPublicKey;
+
+        private X25519DiffieHellmanImplementation(
+            SafeBCryptKeyHandle key,
+            bool hasPrivate,
+            byte privatePreservation,
+            byte[]? originalPublicKey = null,
+            bool reducedZeroPublicKey = false)
         {
             _key = key;
             _hasPrivate = hasPrivate;
             _privatePreservation = privatePreservation;
             _originalPublicKey = originalPublicKey;
+            _reducedZeroPublicKey = reducedZeroPublicKey;
             Debug.Assert(_hasPrivate || _privatePreservation == 0);
             Debug.Assert(!_hasPrivate || _originalPublicKey is null);
         }
@@ -41,6 +52,11 @@ namespace System.Security.Cryptography
 
             if (otherParty is X25519DiffieHellmanImplementation x25519impl)
             {
+                if (x25519impl._reducedZeroPublicKey)
+                {
+                    throw new CryptographicException();
+                }
+
                 DeriveRawSecretAgreementWithKey(x25519impl._key, destination);
             }
             else
@@ -59,13 +75,19 @@ namespace System.Security.Cryptography
             Debug.Assert(otherPartyPublicKey.Length == PublicKeySizeInBytes);
             Debug.Assert(destination.Length == SecretAgreementSizeInBytes);
             ThrowIfPrivateNeeded();
+
             DeriveRawSecretAgreementWithKey(otherPartyPublicKey, destination);
         }
 
         private void DeriveRawSecretAgreementWithKey(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
         {
-            using (SafeBCryptKeyHandle otherPartyKey = ImportPublicKey(otherPartyPublicKey, out _))
+            using (SafeBCryptKeyHandle otherPartyKey = ImportPublicKey(otherPartyPublicKey, out _, out bool reducedZeroPublicKey))
             {
+                if (reducedZeroPublicKey)
+                {
+                    throw new CryptographicException();
+                }
+
                 DeriveRawSecretAgreementWithKey(otherPartyKey, destination);
             }
         }
@@ -167,17 +189,21 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            SafeBCryptKeyHandle key = ImportPublicKey(source, out bool requiredReduction);
+            SafeBCryptKeyHandle key = ImportPublicKey(source, out bool requiredReduction, out bool reducedZeroPublicKey);
 
             Debug.Assert(!key.IsInvalid);
             return new X25519DiffieHellmanImplementation(
                 key,
                 hasPrivate: false,
                 privatePreservation: 0,
-                requiredReduction ? source.ToArray() : null);
+                requiredReduction ? source.ToArray() : null,
+                reducedZeroPublicKey);
         }
 
-        private static SafeBCryptKeyHandle ImportPublicKey(ReadOnlySpan<byte> source, out bool requiredReduction)
+        private static SafeBCryptKeyHandle ImportPublicKey(
+            ReadOnlySpan<byte> source,
+            out bool requiredReduction,
+            out bool reducedZeroPublicKey)
         {
             scoped Span<byte> reducedPublicKey;
 
@@ -187,6 +213,7 @@ namespace System.Security.Cryptography
             }
 
             requiredReduction = X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
+            reducedZeroPublicKey = reducedPublicKey.IndexOfAnyExcept((byte)0) < 0;
 
             return ImportKey(false, reducedPublicKey, out _);
         }
