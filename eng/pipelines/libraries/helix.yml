@@ -41,7 +41,8 @@ steps:
             ${{ parameters.extraHelixArguments }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
-    condition: and(succeeded(), ${{ parameters.condition }})
+    # Keep mobile builds, but disable mobile test execution on .NET 8.
+    condition: and(succeeded(), ${{ parameters.condition }}, ${{ notin(parameters.osGroup, 'android', 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst') }})
     continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops

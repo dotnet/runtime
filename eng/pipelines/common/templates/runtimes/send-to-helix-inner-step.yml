@@ -17,6 +17,7 @@ steps:
 - ${{ if ne(parameters.osGroup, 'windows') }}:
   - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --restore --ci --warnaserror false ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }} (Unix)
-    condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
+    # Keep mobile builds, but disable mobile test execution on .NET 8.
+    condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, ''), notin(parameters.osGroup, 'android', 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }})
     env: ${{ parameters.environment }}
     continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
