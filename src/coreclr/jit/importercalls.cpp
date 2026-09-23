@@ -1629,6 +1629,19 @@ DONE_CALL:
                 }
             }
 
+            if (JitConfig.JitProfileValues() && opts.IsOptimizedWithProfile() && !opts.IsInstrumented() &&
+                origCall->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
+            {
+                call = impDuplicateWithProfiledArg(origCall, rawILOffset);
+                if (call->OperIs(GT_QMARK))
+                {
+                    // QMARK has to be a root node
+                    unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
+                    impStoreToTemp(tmp, call, CHECK_SPILL_ALL);
+                    call = gtNewLclvNode(tmp, call->TypeGet());
+                }
+            }
+
             const bool isFatPointerCandidate              = origCall->IsFatPointerCandidate();
             const bool isInlineCandidate                  = origCall->IsInlineCandidate();
             const bool isGuardedDevirtualizationCandidate = origCall->IsGuardedDevirtualizationCandidate();
@@ -1725,22 +1738,6 @@ DONE_CALL:
                 if (spillStack)
                 {
                     impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("non-inline candidate call"));
-                }
-
-                if (JitConfig.JitProfileValues() && call->IsCall() &&
-                    call->AsCall()->IsSpecialIntrinsic(this, NI_System_SpanHelpers_SequenceEqual))
-                {
-                    if (opts.IsOptimizedWithProfile() && !opts.IsInstrumented())
-                    {
-                        call = impDuplicateWithProfiledArg(call->AsCall(), rawILOffset);
-                        if (call->OperIs(GT_QMARK))
-                        {
-                            // QMARK has to be a root node
-                            unsigned tmp = lvaGrabTemp(true DEBUGARG("Grabbing temp for Qmark"));
-                            impStoreToTemp(tmp, call, CHECK_SPILL_ALL);
-                            call = gtNewLclvNode(tmp, call->TypeGet());
-                        }
-                    }
                 }
             }
 
@@ -1918,12 +1915,6 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
     assert(call->IsSpecialIntrinsic());
     assert(opts.IsOptimizedWithProfile());
 
-    if (call->IsInlineCandidate())
-    {
-        // We decided to inline the whole thing? We won't be able to clone it then.
-        return call;
-    }
-
     const unsigned    MaxLikelyValues = 8;
     LikelyValueRecord likelyValues[MaxLikelyValues];
     UINT32            valuesCount =
@@ -1972,7 +1963,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
             argNum = 2;
 
             minValue = 1; // TODO: enable for 0 as well.
-            maxValue = (ssize_t)getUnrollThreshold(ProfiledMemcmp);
+            maxValue = (ssize_t)getUnrollThreshold(Memcmp);
         }
         else
         {
@@ -2006,6 +1997,13 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
                     argRef   = node;
                     argClone = cloned;
                 }
+            }
+
+            // Prefer the profiled fast path over inlining the variable-length implementation.
+            if (call->IsInlineCandidate())
+            {
+                assert(call->GetSingleInlineCandidateInfo()->retExpr == nullptr);
+                call->ClearInlineInfo();
             }
 
             GenTree* fallbackCall      = gtCloneExpr(call);
