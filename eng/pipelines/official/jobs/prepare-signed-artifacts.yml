@@ -36,6 +36,10 @@ jobs:
         fetchDepth: 20
       - input: pipelineArtifact
         artifactName: IntermediateArtifacts
+        itemPattern: |
+          IntermediateArtifacts/*/Shipping/**
+          IntermediateArtifacts/*/NonShipping/**
+          IntermediateArtifacts/*/Insertion/**
         targetPath: $(Build.SourcesDirectory)\artifacts\PackageDownload\IntermediateArtifacts
       outputs:
       - output: pipelineArtifact
