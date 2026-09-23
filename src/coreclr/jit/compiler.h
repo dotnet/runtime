@@ -6509,12 +6509,9 @@ public:
     // tree node).
     PhaseStatus fgValueNumber();
 
-    void fgValueNumberLocalStore(GenTree*             storeNode,
-                                 GenTreeLclVarCommon* lclDefNode,
-                                 ssize_t              offset,
-                                 ValueSize            storeSize,
-                                 ValueNumPair         value,
-                                 bool                 normalize = true);
+    template <typename TDef>
+    void fgValueNumberLocalStore(
+        GenTree* storeNode, const TDef& def, ValueNumPair value, bool normalize = true);
 
     void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
@@ -8070,7 +8067,10 @@ public:
                      LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
+    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+                            unsigned             lclNum,
+                            unsigned             ssaNum,
+                            LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
@@ -10735,16 +10735,16 @@ public:
         Memset,
         Memcpy,
         Memmove,
+        Memcmp,
         MemcmpU16,
-        ProfiledMemmove,
-        ProfiledMemcmp
+        ProfiledMemmove
     };
 
     //------------------------------------------------------------------------
     // getUnrollThreshold: Calculates the unrolling threshold for the given operation
     //
     // Arguments:
-    //    type       - kind of the operation (memset/memcpy)
+    //    type       - kind of memory operation
     //    canUseSimd - whether it is allowed to use SIMD or not
     //
     // Return Value:
@@ -10752,6 +10752,33 @@ public:
     //
     unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
+        if (type == UnrollKind::Memcmp)
+        {
+            // Match the unroller's supported ISA width, not the preferred vector width.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#ifdef FEATURE_SIMD
+            if (canUseSimd)
+            {
+#ifdef TARGET_AMD64
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    return 128;
+                }
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // 256-bit equality requires AVX2, not just AVX.
+                    return 64;
+                }
+#endif // TARGET_AMD64
+                return 32;
+            }
+#endif // FEATURE_SIMD
+            return 16;
+#else
+            return 0;
+#endif // TARGET_AMD64 || TARGET_ARM64
+        }
+
         unsigned maxRegSize = REGSIZE_BYTES;
         unsigned threshold  = maxRegSize;
 
@@ -10820,12 +10847,12 @@ public:
 #endif
         }
 
-        // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
+        // For profiled memmove we don't want to unroll too much as it's just a guess,
         // and it works better for small sizes.
-        if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
+        if (type == UnrollKind::ProfiledMemmove)
         {
 #ifdef TARGET_ARM64
-            threshold = maxRegSize * (type == UnrollKind::ProfiledMemmove ? 4 : 2);
+            threshold = maxRegSize * 4;
 #else
             threshold = maxRegSize * 2;
 #endif

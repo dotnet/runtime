@@ -8137,24 +8137,21 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
                 return WALK_SKIP_SUBTREES;
             }
 
-            auto visit = [&](GenTreeLclVarCommon* lclVar) {
-                if (lclVar->GetLclNum() == m_lclNum)
+            auto visit = [&](const auto& def) {
+                unsigned lclNum = def.GetLclNum();
+                if (lclNum == m_lclNum)
                 {
                     return GenTree::VisitResult::Abort;
                 }
-                if (m_lclDsc->lvIsStructField && (lclVar->GetLclNum() == m_lclDsc->lvParentLcl))
-                {
-                    return GenTree::VisitResult::Abort;
-                }
-                if (m_lclDsc->lvPromoted && (lclVar->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
-                    (lclVar->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                if (m_lclDsc->lvPromoted && (lclNum >= m_lclDsc->lvFieldLclStart) &&
+                    (lclNum < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
                 {
                     return GenTree::VisitResult::Abort;
                 }
                 return GenTree::VisitResult::Continue;
             };
 
-            if (node->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort)
+            if (node->VisitLogicalLocalDefs(m_compiler, visit) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -23011,12 +23008,16 @@ bool GenTree::isEmbeddedMaskingCompatible() const
 //   broadcastOpIndex   - A pointer to receive the position of the operand supporting broadcast
 //
 // Return Value:
-//   true if the node lowering instruction has a EVEX embedded masking support
+//   true if the node supports embedding the target mask without suppressing modeled exceptions
+//
+// Notes:
+//   Contained operands are checked in their current state. Callers must recheck compatibility
+//   after containment analysis before embedding the mask.
 //
 bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
                                           unsigned   tgtMaskSize,
                                           var_types& tgtSimdBaseType,
-                                          size_t*    broadcastOpIndex /* = nullptr */) const
+                                          size_t*    broadcastOpIndex /* = nullptr */)
 {
     if (!isEmbeddedMaskingCompatible())
     {
@@ -23030,6 +23031,13 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
 
     if (!comp->canUseEmbeddedMasking())
     {
+        return false;
+    }
+
+    if (NodeOrContainedOperandsMayThrow(comp))
+    {
+        // An embedded mask can suppress faults from contained loads, including
+        // those nested in broadcasts. Keep such operations unconditional.
         return false;
     }
 
