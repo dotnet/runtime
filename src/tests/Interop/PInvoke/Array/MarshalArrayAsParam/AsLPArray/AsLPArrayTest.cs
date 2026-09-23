@@ -656,6 +656,7 @@ public class ArrayMarshal
     }
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
 public unsafe class PointerArrayTests
 {
     private const string NativeLibraryName = "MarshalArrayLPArrayNative";
