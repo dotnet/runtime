@@ -2518,9 +2518,17 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     return VNBroadcastForSimdType(simdType, simdBaseType, oneVN);
 }
 
-ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType, var_types auxiliaryType)
 {
-    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
+    // Both types fit in a byte. Reserve zero in the upper byte for no auxiliary type,
+    // preserving the base-type constant for the common case.
+    unsigned encodedTypes = static_cast<unsigned>(simdBaseType);
+    if (auxiliaryType != TYP_UNKNOWN)
+    {
+        encodedTypes |= (static_cast<unsigned>(auxiliaryType) + 1) << SimdTypeBits;
+    }
+
+    ValueNum baseTypeVN = VNForIntCon(encodedTypes);
     ValueNum sizeVN     = VNForIntCon(simdSize);
     ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
 
@@ -10932,7 +10940,7 @@ uint32_t ValueNumStore::GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp
     assert(IsVNConstant(simdType.GetArg(0)));
     assert(IsVNConstant(simdType.GetArg(1)));
 
-    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)) & SimdTypeMask);
     return static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -11422,11 +11430,19 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
     assert(IsVNConstant(simdType->GetArg(0)));
     assert(IsVNConstant(simdType->GetArg(1)));
 
-    int       simdSize     = ConstantValue<int>(simdType->GetArg(0));
-    var_types simdBaseType = static_cast<var_types>(ConstantValue<int>(simdType->GetArg(1)));
+    int       simdSize      = ConstantValue<int>(simdType->GetArg(0));
+    unsigned  encodedTypes  = ConstantValue<unsigned>(simdType->GetArg(1));
+    var_types simdBaseType  = static_cast<var_types>(encodedTypes & SimdTypeMask);
+    unsigned  auxiliaryType = encodedTypes >> SimdTypeBits;
 
-    printf("%s(simd%d, %s)", VNFuncName(simdType->GetFunc()), simdSize,
+    printf("%s(simd%d, %s", VNFuncName(simdType->GetFunc()), simdSize,
            (simdBaseType == TYP_UNDEF) ? varTypeName(TYP_UNDEF) : varTypeName(simdBaseType));
+
+    if (auxiliaryType != 0)
+    {
+        printf(", aux %s", varTypeName(static_cast<var_types>(auxiliaryType - 1)));
+    }
+    printf(")");
 }
 #endif // FEATURE_SIMD
 
@@ -14188,8 +14204,10 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else
     {
-        VNFunc       func       = GetVNFuncForNode(tree);
-        ValueNum     simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
+        // The auxiliary type distinguishes overloads with the same operand bits, such as gather index widths.
+        VNFunc   func = GetVNFuncForNode(tree);
+        ValueNum simdTypeVN =
+            vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType(), tree->GetAuxiliaryType());
         ValueNumPair resultTypeVNPair(simdTypeVN, simdTypeVN);
 
         JITDUMP("    simdTypeVN is ");
