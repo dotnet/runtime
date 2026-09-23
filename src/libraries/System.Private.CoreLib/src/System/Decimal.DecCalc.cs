@@ -188,6 +188,24 @@ namespace System
                 }
             }
 
+            // Keep the limbs separate so x86/x64 can use them directly as the
+            // widening divide inputs. The incoming high limb must be below den.
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static (uint Quotient, uint Remainder) Div64By32(uint low, uint high, uint den)
+            {
+                if (X86.X86Base.IsSupported)
+                {
+                    return X86.X86Base.DivRem(low, high, den);
+                }
+
+                ulong dividend = ((ulong)high << 32) | low;
+                uint quotient = (uint)(dividend / den);
+                // high < den guarantees that the quotient fits in uint. The remainder is
+                // below den and fits in uint too, so computing dividend - quotient * den
+                // modulo 2^32 gives the exact remainder using only the low limb.
+                return (quotient, low - quotient * den);
+            }
+
             /// <summary>
             /// Do full divide, yielding 96-bit result and 32-bit remainder.
             /// </summary>
@@ -200,6 +218,7 @@ namespace System
                 if (X86.X86Base.IsSupported)
                 {
                     uint remainder = 0;
+                    uint quotient;
 
                     if (bufNum.U2 != 0)
                         goto Div3Word;
@@ -210,11 +229,14 @@ namespace System
                     bufNum.U1 = 0;
                     goto Div1Word;
 Div3Word:
-                    (bufNum.U2, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
+                    (quotient, remainder) = X86.X86Base.DivRem(bufNum.U2, remainder, den);
+                    bufNum.U2 = quotient;
 Div2Word:
-                    (bufNum.U1, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
+                    (quotient, remainder) = X86.X86Base.DivRem(bufNum.U1, remainder, den);
+                    bufNum.U1 = quotient;
 Div1Word:
-                    (bufNum.U0, remainder) = X86.X86Base.DivRem(bufNum.U0, remainder, den);
+                    (quotient, remainder) = X86.X86Base.DivRem(bufNum.U0, remainder, den);
+                    bufNum.U0 = quotient;
                     return remainder;
                 }
                 else
@@ -237,7 +259,8 @@ Div1Word:
                     tmp = bufNum.Low64;
                     if (tmp == 0)
                         return 0;
-                    (bufNum.Low64, rem) = Math.DivRem(tmp, den);
+                    (div, rem) = Math.DivRem(tmp, den);
+                    bufNum.Low64 = div;
                     return (uint)rem;
                 }
             }
@@ -2252,8 +2275,19 @@ RoundUp:
                     {
                         uint den = d2.Low;
                         ulong tmp = ((ulong)d1.High << 32) | d1.Mid;
-                        tmp = ((tmp % den) << 32) | d1.Low;
-                        d1.Low64 = tmp % den;
+                        if (X86.X86Base.IsSupported)
+                        {
+                            // The first remainder is below den, so the final quotient
+                            // fits in 32 bits and the limbs can feed a widening divide.
+                            uint remainder = (uint)(tmp % den);
+                            (_, remainder) = Div64By32(d1.Low, remainder, den);
+                            d1.Low64 = remainder;
+                        }
+                        else
+                        {
+                            tmp = ((tmp % den) << 32) | d1.Low;
+                            d1.Low64 = tmp % den;
+                        }
                         d1.High = 0;
                     }
                     else
@@ -2433,7 +2467,6 @@ RoundUp:
 
                 {
                     power = UInt32Powers10[(int)scale];
-                    // TODO: https://github.com/dotnet/runtime/issues/5213
                     uint n = d.uhi;
                     if (n == 0)
                     {
@@ -2445,25 +2478,34 @@ RoundUp:
                             remainder = 0;
                             goto checkRemainder;
                         }
+#if TARGET_64BIT
+                        (ulong quotient, ulong rem) = Math.DivRem(tmp, power);
+                        d.Low64 = quotient;
+                        remainder = (uint)rem;
+#else
+                        // Keep the remainder calculation narrow on 32-bit targets.
                         ulong div = tmp / power;
                         d.Low64 = div;
                         remainder = (uint)(tmp - div * power);
+#endif
                     }
                     else
                     {
-                        uint q;
-                        (d.uhi, remainder) = Math.DivRem(n, power);
+                        (uint highQuotient, remainder) = Math.DivRem(n, power);
+                        d.uhi = highQuotient;
+                        // Each remainder is less than power, so the next quotient
+                        // fits in 32 bits. Reuse the widening divide's remainder.
                         n = d.umid;
                         if ((n | remainder) != 0)
                         {
-                            d.umid = q = (uint)((((ulong)remainder << 32) | n) / power);
-                            remainder = n - q * power;
+                            (uint quotient, remainder) = Div64By32(n, remainder, power);
+                            d.umid = quotient;
                         }
                         n = d.ulo;
                         if ((n | remainder) != 0)
                         {
-                            d.ulo = q = (uint)((((ulong)remainder << 32) | n) / power);
-                            remainder = n - q * power;
+                            (uint quotient, remainder) = Div64By32(n, remainder, power);
+                            d.ulo = quotient;
                         }
                     }
                 }
