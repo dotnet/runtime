@@ -94,6 +94,13 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
             return InstructionSet_Dp;
         }
     }
+    else if (className[0] == 'L')
+    {
+        if (strcmp(className, "Lse") == 0)
+        {
+            return InstructionSet_Atomics;
+        }
+    }
     else if (className[0] == 'R')
     {
         if (strcmp(className, "Rdm") == 0)
@@ -703,7 +710,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
     const int                 numArgs  = sig->numArgs;
 
     // The vast majority of "special" intrinsics are Vector64/Vector128 methods.
-    // The only exception is ArmBase.Yield which should be treated differently.
+    // The only exceptions are ArmBase.Yield and the Lse atomics, which are treated differently.
     if (intrinsic == NI_ArmBase_Yield)
     {
         assert(sig->numArgs == 0);
@@ -711,6 +718,80 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         assert(simdSize == 0);
 
         return gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+    }
+
+    if (isa == InstructionSet_Atomics)
+    {
+        // The Armv8.1 atomics reuse the nodes that back the Interlocked APIs; GTF_ATOMIC_LSE is
+        // what tells lowering and codegen to use the single instruction forms unconditionally.
+        //
+        // Note we must use simdBaseType rather than retType here: the latter has been widened to
+        // TYP_INT for the byte and halfword forms, which would give us an access of the wrong size.
+        assert(simdSize == 0);
+
+        genTreeOps oper;
+        switch (intrinsic)
+        {
+            case NI_Atomics_CompareAndSwap:
+                oper = GT_CMPXCHG;
+                break;
+            case NI_Atomics_LoadAdd:
+                oper = GT_XADD;
+                break;
+            case NI_Atomics_LoadClear:
+                oper = GT_XAND;
+                break;
+            case NI_Atomics_LoadSet:
+                oper = GT_XORR;
+                break;
+            case NI_Atomics_Swap:
+                oper = GT_XCHG;
+                break;
+            default:
+                unreached();
+        }
+
+        // Only "cas" and "swp" have byte and halfword forms.
+        const bool hasSmallForms = (oper == GT_CMPXCHG) || (oper == GT_XCHG);
+
+        // These are generic, so the type argument has to be checked rather than assumed: only an
+        // integer no wider than a pointer can be encoded. Anything else (floating point, an object
+        // reference, a struct) throws instead of silently accessing memory at the wrong width.
+        //
+        // Note the call is made before any argument is popped, and asks for a throwing expansion
+        // unconditionally: the managed bodies are recursive stubs, so falling back to a real call
+        // would simply recurse forever.
+        if (!varTypeIsIntegral(simdBaseType) || (genTypeSize(simdBaseType) > TARGET_POINTER_SIZE) ||
+            (varTypeIsSmall(simdBaseType) && !hasSmallForms))
+        {
+            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig,
+                                                /* mustExpand */ true);
+        }
+
+        GenTree* comparand = nullptr;
+        if (oper == GT_CMPXCHG)
+        {
+            assert(sig->numArgs == 3);
+            comparand = impPopStack().val;
+
+            if (varTypeIsSmall(simdBaseType))
+            {
+                // Small types need the comparand to have its upper bits zeroed.
+                comparand = gtNewCastNode(genActualType(simdBaseType), comparand, /* uns */ false,
+                                          varTypeToUnsigned(simdBaseType));
+            }
+        }
+        else
+        {
+            assert(sig->numArgs == 2);
+        }
+
+        GenTree* value = impPopStack().val;
+        GenTree* addr  = impPopStack().val;
+
+        GenTree* node = gtNewAtomicNode(oper, simdBaseType, addr, value, comparand);
+        node->gtFlags |= GTF_ATOMIC_LSE;
+        return node;
     }
 
     bool isScalar = (category == HW_Category_Scalar);

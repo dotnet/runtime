@@ -1133,7 +1133,9 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount                    = cmpXchgNode->Comparand()->isContained() ? 2 : 3;
             assert(dstCount == 1);
 
-            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            const bool useLse = (m_compiler->compGetAtomicsImplForNode(tree) == Compiler::AtomicsImpl::Lse);
+
+            if (!useLse)
             {
                 // For ARMv8 exclusives requires a single internal register
                 buildInternalIntRegisterDefForNode(tree);
@@ -1155,7 +1157,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
                 // For ARMv8 exclusives the lifetime of the comparand must be extended because
                 // it may be used used multiple during retries
-                if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+                if (!useLse)
                 {
                     setDelayFree(comparandUse);
                 }
@@ -1177,7 +1179,9 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == (tree->TypeIs(TYP_VOID) ? 0 : 1));
             srcCount = tree->gtGetOp2()->isContained() ? 1 : 2;
 
-            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            const bool useLse = (m_compiler->compGetAtomicsImplForNode(tree) == Compiler::AtomicsImpl::Lse);
+
+            if (!useLse)
             {
                 // GT_XCHG requires a single internal register; the others require two.
                 buildInternalIntRegisterDefForNode(tree);
@@ -1202,7 +1206,7 @@ int LinearScan::BuildNode(GenTree* tree)
 
             // For ARMv8 exclusives the lifetime of the addr and data must be extended because
             // it may be used used multiple during retries
-            if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_Atomics))
+            if (!useLse)
             {
                 // Internals may not collide with target
                 if (dstCount == 1)
