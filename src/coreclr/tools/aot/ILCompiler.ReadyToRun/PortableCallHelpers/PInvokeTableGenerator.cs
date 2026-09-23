@@ -282,15 +282,15 @@ namespace ILCompiler.PortableCallHelpers
                 // those instead. Every other type this emits reaches the slot unchanged through a cast.
                 bool CarriesBits(int i) => parameterCTypes[i] is "float" or "double";
                 string argsDeclaration = parameterCount > 0
-                    ? $"\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};\n"
-                      + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));\n"))
+                    ? $"\n\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};"
+                      + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"\n    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));"))
                     : string.Empty;
                 string parametersDeclaration = string.Join(", ", parameterCTypes.Select((p, i) => $"{p} arg{i}"));
                 string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
                 // A partial R2R image can compile an UnmanagedCallersOnly callback to native code. That R2R code
                 // is the directly-callable native entrypoint (same ABI as this wrapper's parameters), so dispatch
                 // to it and skip the interpreter/interp->R2R path entirely.
-                string r2rVar = $"r2rCode_{cb.EntrySymbol}";
+                string r2rVar = $"R2RCode_{cb.EntrySymbol}";
                 string paramTypesOnly = string.Join(", ", parameterCTypes);
                 string r2rDispatch = cb.IsVoid
                     ? $"((void(*)({paramTypesOnly})){r2rVar})({arguments});{w.NewLine}        return;"
@@ -308,6 +308,7 @@ namespace ILCompiler.PortableCallHelpers
                     $$"""
 
                     static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;
+                    static void* {{r2rVar}} = (void*)(intptr_t)-1;
                     static {{
                     MapType(cb.ReturnType)}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
                     {
@@ -317,7 +318,11 @@ namespace ILCompiler.PortableCallHelpers
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
                         }
                         // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
-                        void* {{r2rVar}} = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{{cb.EntrySymbol}});
+                        // Cache the lookup: a method's native-code availability is fixed after first prepare.
+                        if ({{r2rVar}} == (void*)(intptr_t)-1)
+                        {
+                            {{r2rVar}} = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{{cb.EntrySymbol}});
+                        }
                         if ({{r2rVar}} != nullptr)
                         {
                             {{r2rDispatch}}
