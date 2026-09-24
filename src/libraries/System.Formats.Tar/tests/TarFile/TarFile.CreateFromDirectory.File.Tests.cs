@@ -86,7 +86,7 @@ namespace System.Formats.Tar.Tests
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
             await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory, async);
 
-            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using FileStream fileStream = OpenFileStreamForRead(destinationArchiveFileName, async);
             await using TarReaderHolder readerHolder = CreateTarReader(fileStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
@@ -141,7 +141,7 @@ namespace System.Formats.Tar.Tests
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
             await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: true, async);
 
-            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using FileStream fileStream = OpenFileStreamForRead(destinationArchiveFileName, async);
             await using TarReaderHolder readerHolder = CreateTarReader(fileStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
@@ -170,7 +170,7 @@ namespace System.Formats.Tar.Tests
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
             await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory, async);
 
-            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using FileStream fileStream = OpenFileStreamForRead(destinationArchiveFileName, async);
             await using TarReaderHolder readerHolder = CreateTarReader(fileStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
@@ -225,7 +225,7 @@ namespace System.Formats.Tar.Tests
 
             await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: false, async);
 
-            using FileStream archiveStream = File.OpenRead(destinationArchive);
+            using FileStream archiveStream = OpenFileStreamForRead(destinationArchive, async);
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
@@ -256,7 +256,7 @@ namespace System.Formats.Tar.Tests
 
             await CreateFromDirectory(sourceDirectoryName, destinationArchive, includeBaseDirectory: true, async); // Base directory is a symlink, do not recurse
 
-            using FileStream archiveStream = File.OpenRead(destinationArchive);
+            using FileStream archiveStream = OpenFileStreamForRead(destinationArchive, async);
             await using TarReaderHolder readerHolder = CreateTarReader(archiveStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
@@ -281,7 +281,7 @@ namespace System.Formats.Tar.Tests
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
             await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, format, async);
 
-            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using FileStream fileStream = OpenFileStreamForRead(destinationArchiveFileName, async);
             await using TarReaderHolder readerHolder = CreateTarReader(fileStream, async, leaveOpen: false);
             TarReader reader = readerHolder;
 
@@ -323,7 +323,7 @@ namespace System.Formats.Tar.Tests
             string destinationArchiveFileName = Path.Join(destination.Path, "output.tar");
             await CreateFromDirectory(source.Path, destinationArchiveFileName, includeBaseDirectory: false, options, async);
 
-            using FileStream fileStream = File.OpenRead(destinationArchiveFileName);
+            using FileStream fileStream = OpenFileStreamForRead(destinationArchiveFileName, async);
             await VerifyCreateFromDirectory_UsesWriterOptions(fileStream, preserveLinks, async);
         }
     }

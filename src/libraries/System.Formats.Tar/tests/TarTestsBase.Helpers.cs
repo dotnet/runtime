@@ -84,6 +84,19 @@ namespace System.Formats.Tar.Tests
             return new TarReader(archiveStream, leaveOpen);
         }
 
+        // Opens a FileStream for reading, using FileOptions.Asynchronous when 'async' is true so that
+        // async: true tests exercise the asynchronous FileStream I/O strategy, not just the async TarReader APIs.
+        protected static FileStream OpenFileStreamForRead(string path, bool async)
+        {
+            FileStreamOptions options = new()
+            {
+                Mode = FileMode.Open,
+                Access = FileAccess.Read,
+                Options = async ? FileOptions.Asynchronous : FileOptions.None
+            };
+            return File.Open(path, options);
+        }
+
         // Wraps a TarReader together with the sync/async flag that should be used to dispose it,
         // so tests can write "await using TarReaderHolder reader = CreateTarReader(...)" instead of
         // a manual try/finally block calling DisposeTarReader. Implicitly converts to TarReader so
