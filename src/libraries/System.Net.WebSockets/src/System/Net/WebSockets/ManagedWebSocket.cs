@@ -1676,40 +1676,50 @@ namespace System.Net.WebSockets
             BitConverter.ToInt32(buffer.Slice(maskOffset));
 
         /// <summary>Copies a payload to a separate buffer, applying the four-byte mask as it copies.</summary>
-        private static void CopyAndMask(ReadOnlySpan<byte> source, Span<byte> destination, int mask)
+        private static unsafe void CopyAndMask(ReadOnlySpan<byte> source, Span<byte> destination, int mask)
         {
             Debug.Assert(source.Length == destination.Length);
             Debug.Assert(!source.Overlaps(destination));
 
-            ref byte sourceRef = ref MemoryMarshal.GetReference(source);
-            ref byte destinationRef = ref MemoryMarshal.GetReference(destination);
-            nuint offset = 0;
-            nuint length = (uint)source.Length;
-
-            if (Vector.IsHardwareAccelerated && length >= (uint)Vector<byte>.Count)
+            fixed (byte* sourceBeg = &MemoryMarshal.GetReference(source))
+            fixed (byte* destinationBeg = &MemoryMarshal.GetReference(destination))
             {
-                Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(mask));
-                do
+                byte* sourcePtr = sourceBeg;
+                byte* destinationPtr = destinationBeg;
+                byte* sourceEnd = sourceBeg + source.Length;
+
+                if (sourceEnd - sourcePtr >= sizeof(int))
                 {
-                    (Vector.LoadUnsafe(ref sourceRef, offset) ^ maskVector).StoreUnsafe(ref destinationRef, offset);
-                    offset += (uint)Vector<byte>.Count;
+                    // Process Vector<byte>.Count bytes at a time.
+                    if (Vector.IsHardwareAccelerated && (sourceEnd - sourcePtr) >= Vector<byte>.Count)
+                    {
+                        Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(mask));
+                        do
+                        {
+                            *(Vector<byte>*)destinationPtr = *(Vector<byte>*)sourcePtr ^ maskVector;
+                            sourcePtr += Vector<byte>.Count;
+                            destinationPtr += Vector<byte>.Count;
+                        }
+                        while (sourceEnd - sourcePtr >= Vector<byte>.Count);
+                    }
+
+                    // Process 4 bytes at a time.
+                    while (sourceEnd - sourcePtr >= sizeof(int))
+                    {
+                        *(int*)destinationPtr = *(int*)sourcePtr ^ mask;
+                        sourcePtr += sizeof(int);
+                        destinationPtr += sizeof(int);
+                    }
                 }
-                while (length - offset >= (uint)Vector<byte>.Count);
-            }
 
-            while (length - offset >= sizeof(int))
-            {
-                int value = Unsafe.ReadUnaligned<int>(ref Unsafe.Add(ref sourceRef, offset));
-                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destinationRef, offset), value ^ mask);
-                offset += sizeof(int);
-            }
-
-            // Interpret the mask in native byte order, just as CombineMaskBytes does.
-            ref byte maskRef = ref Unsafe.As<int, byte>(ref mask);
-            while (offset < length)
-            {
-                Unsafe.Add(ref destinationRef, offset) = (byte)(Unsafe.Add(ref sourceRef, offset) ^ Unsafe.Add(ref maskRef, (int)(offset & 3)));
-                offset++;
+                // Process 1 byte at a time. Each outgoing frame starts at mask index zero.
+                byte* maskPtr = (byte*)&mask;
+                int maskIndex = 0;
+                while (sourcePtr != sourceEnd)
+                {
+                    *destinationPtr++ = (byte)(*sourcePtr++ ^ maskPtr[maskIndex]);
+                    maskIndex = (maskIndex + 1) & 3;
+                }
             }
         }
 
