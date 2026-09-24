@@ -27,29 +27,79 @@ namespace System.Reflection.Tests
 
         public static IEnumerable<object[]> Invoke_ReturnValueAcrossTiers_TestData()
         {
-            yield return new object[] { typeof(bool), true };
-            yield return new object[] { typeof(byte), (byte)42 };
-            yield return new object[] { typeof(sbyte), (sbyte)-42 };
-            yield return new object[] { typeof(char), 'x' };
-            yield return new object[] { typeof(short), (short)-1234 };
-            yield return new object[] { typeof(ushort), (ushort)1234 };
-            yield return new object[] { typeof(int), -12345 };
-            yield return new object[] { typeof(uint), 12345u };
-            yield return new object[] { typeof(long), -1234567890123L };
-            yield return new object[] { typeof(ulong), 1234567890123UL };
-            yield return new object[] { typeof(float), 12.5f };
-            yield return new object[] { typeof(double), -25.5 };
-            yield return new object[] { typeof(nint), (nint)12345 };
-            yield return new object[] { typeof(nuint), (nuint)54321 };
-            yield return new object[] { typeof(string), "returned value" };
-            yield return new object[] { typeof(object), new object() };
+            yield return new object[] { typeof(ReturnValueTarget<string>), "returned value" };
+            yield return new object[] { typeof(ReturnValueTarget<object>), new object() };
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
         [MemberData(nameof(Invoke_ReturnValueAcrossTiers_TestData))]
-        public void Invoke_ReturnValueAcrossTiers(Type returnType, object expected)
+        public void Invoke_ReturnValueAcrossTiers(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields |
+                DynamicallyAccessedMemberTypes.PublicMethods)] Type target,
+            object expected) =>
+            Verify_ReturnValueAcrossTiers(target, expected);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Boolean() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<bool>), true);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Byte() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<byte>), (byte)42);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_SByte() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<sbyte>), (sbyte)-42);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Char() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<char>), 'x');
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Int16() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<short>), (short)-1234);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_UInt16() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<ushort>), (ushort)1234);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Int32() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<int>), -12345);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_UInt32() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<uint>), 12345u);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Int64() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<long>), -1234567890123L);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_UInt64() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<ulong>), 1234567890123UL);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Single() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<float>), 12.5f);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_Double() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<double>), -25.5);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_IntPtr() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<nint>), (nint)12345);
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Invoke_ReturnValueAcrossTiers_UIntPtr() =>
+            Verify_ReturnValueAcrossTiers(typeof(ReturnValueTarget<nuint>), (nuint)54321);
+
+        private static void Verify_ReturnValueAcrossTiers(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields |
+                DynamicallyAccessedMemberTypes.PublicMethods)] Type target,
+            object expected)
         {
-            Type target = typeof(ReturnValueTarget<>).MakeGenericType(returnType);
             target.GetField(nameof(ReturnValueTarget<int>.Value)).SetValue(null, expected);
             MethodInfo method = target.GetMethod(nameof(ReturnValueTarget<int>.GetValue));
             MethodInvoker invoker = MethodInvoker.Create(method);
@@ -154,59 +204,59 @@ namespace System.Reflection.Tests
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Boolean() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(bool)), true);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<bool>), true);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Byte() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(byte)), (byte)42);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<byte>), (byte)42);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_SByte() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(sbyte)), (sbyte)-42);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<sbyte>), (sbyte)-42);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Char() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(char)), 'x');
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<char>), 'x');
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Int16() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(short)), (short)-1234);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<short>), (short)-1234);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_UInt16() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(ushort)), (ushort)1234);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<ushort>), (ushort)1234);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Int32() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(int)), -12345);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<int>), -12345);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_UInt32() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(uint)), 12345u);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<uint>), 12345u);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Int64() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(long)), -1234567890123L);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<long>), -1234567890123L);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_UInt64() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(ulong)), 1234567890123UL);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<ulong>), 1234567890123UL);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Single() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(float)), 12.5f);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<float>), 12.5f);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_Double() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(double)), -25.5);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<double>), -25.5);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_IntPtr() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(nint)), (nint)12345);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<nint>), (nint)12345);
 
         [Fact]
         public void Invoke_InstancePrimitiveReturn_SharedThunk_UIntPtr() =>
-            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<>).MakeGenericType(typeof(nuint)), (nuint)54321);
+            Invoke_InstancePrimitiveReturn_SharedThunk(typeof(IntrinsicInvokePrimitiveReturnTarget<nuint>), (nuint)54321);
 
         private static void Invoke_InstancePrimitiveReturn_SharedThunk(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
@@ -227,91 +277,91 @@ namespace System.Reflection.Tests
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Boolean() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(bool)), true);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<bool>), true);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Byte() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(byte)), (byte)42);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<byte>), (byte)42);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_SByte() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(sbyte)), (sbyte)-42);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<sbyte>), (sbyte)-42);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Char() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(char)), 'x');
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<char>), 'x');
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Int16() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(short)), (short)-1234);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<short>), (short)-1234);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UInt16() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(ushort)), (ushort)1234);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<ushort>), (ushort)1234);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Int32() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(int)), -12345);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<int>), -12345);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UInt32() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(uint)), 12345u);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<uint>), 12345u);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Int64() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(long)), -1234567890123L);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<long>), -1234567890123L);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UInt64() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(ulong)), 1234567890123UL);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<ulong>), 1234567890123UL);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Single() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(float)), 12.5f);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<float>), 12.5f);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Double() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(double)), -25.5);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<double>), -25.5);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_IntPtr() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(nint)), (nint)12345);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<nint>), (nint)12345);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UIntPtr() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(nuint)), (nuint)54321);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<nuint>), (nuint)54321);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_ByteEnum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeByteEnum)), IntrinsicInvokeByteEnum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeByteEnum>), IntrinsicInvokeByteEnum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_SByteEnum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeSByteEnum)), IntrinsicInvokeSByteEnum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeSByteEnum>), IntrinsicInvokeSByteEnum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Int16Enum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt16Enum)), IntrinsicInvokeInt16Enum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeInt16Enum>), IntrinsicInvokeInt16Enum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UInt16Enum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt16Enum)), IntrinsicInvokeUInt16Enum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeUInt16Enum>), IntrinsicInvokeUInt16Enum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Int32Enum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt32Enum)), IntrinsicInvokeInt32Enum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeInt32Enum>), IntrinsicInvokeInt32Enum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UInt32Enum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt32Enum)), IntrinsicInvokeUInt32Enum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeUInt32Enum>), IntrinsicInvokeUInt32Enum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_Int64Enum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt64Enum)), IntrinsicInvokeInt64Enum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeInt64Enum>), IntrinsicInvokeInt64Enum.Value);
 
         [Fact]
         public void Invoke_InstancePrimitiveArgument_SharedThunk_UInt64Enum() =>
-            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt64Enum)), IntrinsicInvokeUInt64Enum.Value);
+            Invoke_InstancePrimitiveArgument_SharedThunk(typeof(IntrinsicInvokePrimitiveArgumentTarget<IntrinsicInvokeUInt64Enum>), IntrinsicInvokeUInt64Enum.Value);
 
         private static void Invoke_InstancePrimitiveArgument_SharedThunk(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
