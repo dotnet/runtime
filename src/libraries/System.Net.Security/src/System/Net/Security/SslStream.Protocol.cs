@@ -1194,7 +1194,8 @@ namespace System.Net.Security
                 trust,
                 ref alertToken,
                 ref sslPolicyErrors,
-                out chainStatus);
+                out chainStatus,
+                peerCertificateChain: null);
         }
 
         internal static bool VerifyRemoteCertificateCore(
@@ -1212,7 +1213,8 @@ namespace System.Net.Security
             SslCertificateTrust? trust,
             ref ProtocolToken alertToken,
             ref SslPolicyErrors sslPolicyErrors,
-            out X509ChainStatusFlags chainStatus)
+            out X509ChainStatusFlags chainStatus,
+            X509Certificate2Collection? peerCertificateChain)
         {
             chainStatus = X509ChainStatusFlags.NoError;
 
@@ -1248,7 +1250,9 @@ namespace System.Net.Security
 
                 if (sslAuthenticationOptions.CertificateChainPolicy != null)
                 {
-                    chain.ChainPolicy = sslAuthenticationOptions.CertificateChainPolicy;
+                    chain.ChainPolicy = peerCertificateChain is null
+                        ? sslAuthenticationOptions.CertificateChainPolicy
+                        : sslAuthenticationOptions.CertificateChainPolicy.Clone();
                 }
                 else
                 {
@@ -1272,6 +1276,11 @@ namespace System.Net.Security
                             chain.ChainPolicy.CustomTrustStore.AddRange(trust._trustList);
                         }
                     }
+                }
+
+                if (peerCertificateChain is { Count: > 0 })
+                {
+                    chain.ChainPolicy.ExtraStore.AddRange(peerCertificateChain);
                 }
 
                 // set ApplicationPolicy unless already provided.
