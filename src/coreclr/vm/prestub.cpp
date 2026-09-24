@@ -520,15 +520,14 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint(
-    CallerGCMode callerGCMode,
-    bool needsMulticoreJitNotification)
+bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
 {
     STANDARD_VM_CONTRACT;
+    _ASSERTE(HasUnmanagedCallersOnlyAttribute());
 
 #ifdef FEATURE_READYTORUN
-    PrepareCodeConfig config(NativeCodeVersion(this), needsMulticoreJitNotification, TRUE);
-    config.SetCallerGCMode(callerGCMode);
+    PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
+    config.SetCallerGCMode(CallerGCMode::Preemptive);
 
     // GetPrecompiledR2RCode resolves the R2R entrypoint and, on portable-entrypoint (wasm) targets,
     // publishes it into this method's portable entrypoint as a side effect (PortableEntryPoint::SetActualCode).
@@ -536,6 +535,19 @@ bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint(
     // are left unprepared for lazy byte code generation on first call.
     PCODE pCode = GetPrecompiledR2RCode(&config);
     return pCode != (PCODE)NULL;
+#else // !FEATURE_READYTORUN
+    return false;
+#endif // FEATURE_READYTORUN
+}
+
+bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint()
+{
+    STANDARD_VM_CONTRACT;
+
+#ifdef FEATURE_READYTORUN
+    PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
+    config.SetCallerGCMode(CallerGCMode::Coop);
+    return GetPrecompiledR2RCode(&config) != (PCODE)NULL;
 #else // !FEATURE_READYTORUN
     return false;
 #endif // FEATURE_READYTORUN
@@ -3168,9 +3180,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
             if (!PortableEntryPoint::HasNativeEntryPoint(pCode) &&
-                pMD->TryPublishR2RCodeForPortableEntryPoint(
-                    CallerGCMode::Coop,
-                    false /* needsMulticoreJitNotification */))
+                pMD->TryPublishR2RCodeForPortableEntryPoint())
             {
                 pCode = pMD->GetMethodEntryPoint();
             }

@@ -2358,11 +2358,13 @@ public:
     PCODE PrepareCode(PrepareCodeConfig* pConfig);
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Probe for precompiled R2R native code and, if present, publish it into this method's
-    // portable entrypoint without compiling interpreter byte code.
-    bool TryPublishR2RCodeForPortableEntryPoint(
-        CallerGCMode callerGCMode,
-        bool needsMulticoreJitNotification);
+    // Probe for precompiled R2R native code for an UnmanagedCallersOnly method and, if present,
+    // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
+    // Returns true if native code was found and published, false otherwise.
+    bool TryPublishR2RCodeForUnmanagedCallersOnly();
+
+    // Probe for precompiled R2R code before a managed portable-entrypoint call falls back to the interpreter.
+    bool TryPublishR2RCodeForPortableEntryPoint();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 private:

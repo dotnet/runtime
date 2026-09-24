@@ -1724,9 +1724,7 @@ void* GetUnmanagedCallersOnlyThunk(MethodDesc* pMD)
         // lazily on first call through the reverse thunk below (better for startup). For R2R methods we
         // run the prestub to perform the canonical full preparation; it finds the R2R code first and never
         // falls back to compiling byte code.
-        if (pMD->TryPublishR2RCodeForPortableEntryPoint(
-            CallerGCMode::Preemptive,
-            true /* needsMulticoreJitNotification */))
+        if (pMD->TryPublishR2RCodeForUnmanagedCallersOnly())
         {
             (void)pMD->DoPrestub(NULL /* MethodTable */, CallerGCMode::Preemptive);
         }
