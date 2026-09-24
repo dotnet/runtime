@@ -255,6 +255,7 @@ namespace Internal.ReadyToRunConstants
         CheckedWriteBarrier         = 0x31,
         ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
+        BulkWriteBarrierSmall       = 0x34,
 
         // Array helpers
         Stelem_Ref                  = 0x38,

@@ -1087,7 +1087,8 @@ namespace System
 
             // Copy each of the strings into the result buffer, interleaving with the separator.
             string result = FastAllocateString(totalLength);
-            int copiedLength = 0;
+            Span<char> resultSpan = new Span<char>(ref result._firstChar, result.Length);
+            bool copyFailed = false;
 
             for (int i = 0; i < values.Length; i++)
             {
@@ -1095,40 +1096,41 @@ namespace System
                 // such that our second read of an index will not be the same string
                 // we got during the first read.
 
-                // We range check again to avoid buffer overflows if this happens.
+                // We range check each value and separator to avoid buffer overflows if this happens.
 
                 if (values[i] is string value)
                 {
-                    int valueLen = value.Length;
-                    if (valueLen > totalLength - copiedLength)
+                    if (!value.TryCopyTo(resultSpan))
                     {
-                        copiedLength = -1;
+                        copyFailed = true;
                         break;
                     }
 
-                    // Fill in the value.
-                    CopyStringContent(result, copiedLength, value);
-                    copiedLength += valueLen;
+                    resultSpan = resultSpan[value.Length..];
                 }
 
                 if (i < values.Length - 1)
                 {
+                    if (separator.Length > resultSpan.Length)
+                    {
+                        copyFailed = true;
+                        break;
+                    }
+
                     // Fill in the separator.
                     // Special-case length 1 to avoid additional overheads of CopyTo.
                     // This is common due to the char separator overload.
 
-                    ref char dest = ref Unsafe.Add(ref result._firstChar, copiedLength);
-
                     if (separator.Length == 1)
                     {
-                        dest = separator[0];
+                        resultSpan[0] = separator[0];
                     }
                     else
                     {
-                        separator.CopyTo(new Span<char>(ref dest, separator.Length));
+                        separator.CopyTo(resultSpan);
                     }
 
-                    copiedLength += separator.Length;
+                    resultSpan = resultSpan[separator.Length..];
                 }
             }
 
@@ -1136,7 +1138,7 @@ namespace System
             // something changed concurrently to mutate the input array: fall back to
             // doing the concatenation again, but this time with a defensive copy. This
             // fall back should be extremely rare.
-            return copiedLength == totalLength ?
+            return !copyFailed && resultSpan.IsEmpty ?
                 result :
                 JoinCore(separator, values.ToArray().AsSpan());
         }

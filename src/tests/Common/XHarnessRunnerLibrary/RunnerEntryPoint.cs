@@ -11,7 +11,7 @@ public static class RunnerEntryPoint
 {
     public static async Task<int> RunTests(
         Func<TestFilter?,
-        TestSummary> runTestsCallback,
+        Task<TestSummary>> runTestsCallback,
         string assemblyName,
         string? filter)
     {
@@ -48,13 +48,13 @@ public static class RunnerEntryPoint
 
     sealed class AppleEntryPoint : iOSApplicationEntryPointBase
     {
-        private readonly Func<TestFilter?, TestSummary> _runTestsCallback;
+        private readonly Func<TestFilter?, Task<TestSummary>> _runTestsCallback;
         private readonly string _assemblyName;
         private readonly string? _methodNameToRun;
 
         public AppleEntryPoint(
             IDevice device,
-            Func<TestFilter?, TestSummary> runTestsCallback,
+            Func<TestFilter?, Task<TestSummary>> runTestsCallback,
             string assemblyName,
             string? methodNameToRun)
         {
@@ -83,13 +83,13 @@ public static class RunnerEntryPoint
 
     sealed class AndroidEntryPoint : AndroidApplicationEntryPointBase
     {
-        private readonly Func<TestFilter?, TestSummary> _runTestsCallback;
+        private readonly Func<TestFilter?, Task<TestSummary>> _runTestsCallback;
         private readonly string _assemblyName;
         private readonly string? _methodNameToRun;
 
         public AndroidEntryPoint(
             IDevice device,
-            Func<TestFilter?, TestSummary> runTestsCallback,
+            Func<TestFilter?, Task<TestSummary>> runTestsCallback,
             string assemblyName,
             string? methodNameToRun)
         {
@@ -132,12 +132,12 @@ public static class RunnerEntryPoint
 
     sealed class WasmEntryPoint : WasmApplicationEntryPointBase
     {
-        private readonly Func<TestFilter?, TestSummary> _runTestsCallback;
+        private readonly Func<TestFilter?, Task<TestSummary>> _runTestsCallback;
         private readonly string _assemblyName;
         private readonly string? _methodNameToRun;
 
         public WasmEntryPoint(
-            Func<TestFilter?, TestSummary> runTestsCallback,
+            Func<TestFilter?, Task<TestSummary>> runTestsCallback,
             string assemblyName,
             string? methodNameToRun)
         {
