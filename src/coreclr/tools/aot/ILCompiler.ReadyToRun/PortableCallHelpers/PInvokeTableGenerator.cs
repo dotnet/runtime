@@ -305,11 +305,11 @@ namespace ILCompiler.PortableCallHelpers
                 string r2rSection =
                     w.NewLine + "    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R)."
                     + w.NewLine + "    // Resolve once and cache; a method's native-code availability is fixed after first prepare."
-                    + w.NewLine + $"    void* r2r = VolatileLoad(&{r2rVar});"
+                    + w.NewLine + $"    void* r2r = __atomic_load_n(&{r2rVar}, __ATOMIC_ACQUIRE);"
                     + w.NewLine + "    if (r2r == (void*)(intptr_t)-1)"
                     + w.NewLine + "    {"
                     + w.NewLine + $"        r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{cb.EntrySymbol});"
-                    + w.NewLine + $"        VolatileStore(&{r2rVar}, r2r);"
+                    + w.NewLine + $"        __atomic_store_n(&{r2rVar}, r2r, __ATOMIC_RELEASE);"
                     + w.NewLine + "    }"
                     + w.NewLine + "    if (r2r != nullptr)"
                     + w.NewLine + "    {"

@@ -778,6 +778,9 @@ public class WasmArgumentLayoutTests
             {
                 Assert.Equal(0, exitCode);
                 Assert.DoesNotContain("declares more than one", log.ToString());
+                string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+                Assert.Contains("__atomic_load_n", reverseHelpers);
+                Assert.Contains("__atomic_store_n", reverseHelpers);
             }
         }
         finally

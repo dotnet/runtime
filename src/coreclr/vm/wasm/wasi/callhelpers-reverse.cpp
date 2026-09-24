@@ -26,11 +26,11 @@ static void Call_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g_
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_GC__RegisterNoGCRegionCallback_g__Callback_7C_72_0_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -53,11 +53,11 @@ static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_InitHelpers_CallClassConstructor_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -80,11 +80,11 @@ static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeH
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallDefaultConstructor_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -107,11 +107,11 @@ static void Call_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I3
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Environment_CallEntryPoint_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -134,11 +134,11 @@ static void Call_System_Private_CoreLib_System_StartupHookProvider_CallStartupHo
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_CallStartupHook_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -161,11 +161,11 @@ static void Call_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeH
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_CompilerServices_RuntimeHelpers_CallToString_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -188,11 +188,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearManaged_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -215,11 +215,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ClearNative_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -242,11 +242,11 @@ static void Call_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_GC_ConfigCallback_I32_I32_I32_I32_I64_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -269,11 +269,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToManaged_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -296,11 +296,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_ConvertContentsToNative_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -323,11 +323,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_Convert
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToManaged_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -350,11 +350,11 @@ static void * Call_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_Conve
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_BSTRMarshaler_ConvertToNative_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -378,11 +378,11 @@ static void Call_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Reflection_LoaderAllocator_Create_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -405,11 +405,11 @@ static void Call_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_TypeLoadException_Create_I32_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -432,11 +432,11 @@ static void Call_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_IO_FileLoadException_Create_I32_I32_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -459,11 +459,11 @@ static void Call_System_Private_CoreLib_System_Exception_CreateArgumentException
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateArgumentException_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -486,11 +486,11 @@ static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAss
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_CreateAssemblyName_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -513,11 +513,11 @@ static void Call_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedExc
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateRuntimeWrappedException_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -540,11 +540,11 @@ static void Call_System_Private_CoreLib_System_Exception_CreateTargetInvocationE
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateTargetInvocationException_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -567,11 +567,11 @@ static void Call_System_Private_CoreLib_System_Exception_CreateTypeInitializatio
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Exception_CreateTypeInitializationException_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -594,11 +594,11 @@ static void Call_System_Private_CoreLib_System_Globalization_CalendarData_EnumCa
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Globalization_CalendarData_EnumCalendarInfoCallback_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -621,11 +621,11 @@ static int32_t Call_System_Private_CoreLib_System_Environment_ExecuteInDefaultAp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Environment_ExecuteInDefaultAppDomain_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -649,11 +649,11 @@ static void Call_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetCodeInfo_I32_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -676,11 +676,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshale
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_MngdRefCustomMarshaler_GetCustomMarshalerInstance_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -703,11 +703,11 @@ static void Call_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I3
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetEHInfo_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -730,11 +730,11 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_GetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -758,11 +758,11 @@ static void Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicIn
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_GetInterfaceImplementation_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -785,11 +785,11 @@ static void Call_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I3
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetJitContext_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -812,11 +812,11 @@ static void Call_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetLocalsSignature_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -839,11 +839,11 @@ static void Call_System_Private_CoreLib_System_Environment_GetResourceString_I32
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Environment_GetResourceString_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -866,11 +866,11 @@ static void Call_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_GetStringLiteral_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -893,11 +893,11 @@ static void Call_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTy
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Reflection_TypeNameResolver_GetTypeHelper_I32_I32_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -920,11 +920,11 @@ static void Call_System_Private_CoreLib_System_Environment_InitializeCommandLine
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Environment_InitializeCommandLineArgs_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -947,11 +947,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_InitializeDefaultContext_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -974,11 +974,11 @@ static void Call_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_I
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Diagnostics_Tracing_EventSource_InitializeDefaultEventSources_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1001,11 +1001,11 @@ static void Call_System_Private_CoreLib_System_Threading_Lock_InitializeForMonit
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_Lock_InitializeForMonitor_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1028,11 +1028,11 @@ static void Call_System_Private_CoreLib_System_Exception_InternalPreserveStackTr
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Exception_InternalPreserveStackTrace_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1055,11 +1055,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArr
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_InvokeArrayContentsConverter_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1082,11 +1082,11 @@ static void Call_System_Private_CoreLib_System_Runtime_InteropServices_DynamicIn
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_DynamicInterfaceCastableHelpers_IsInterfaceImplemented_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1109,11 +1109,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTyp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToManaged_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1136,11 +1136,11 @@ static void Call_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTyp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StubHelpers_StubHelpers_LayoutTypeConvertToUnmanaged_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1163,11 +1163,11 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssembly_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1191,11 +1191,11 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyAndGetFunctionPointer_I32_I32_I32_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1219,11 +1219,11 @@ static int32_t Call_System_Private_CoreLib_Internal_Runtime_InteropServices_Comp
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_Internal_Runtime_InteropServices_ComponentActivator_LoadAssemblyBytes_I32_I32_I32_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1247,11 +1247,11 @@ static void * Call_System_Private_CoreLib_System_Runtime_InteropServices_NativeL
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_NativeLibrary_LoadLibraryCallbackStub_I32_I32_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1275,11 +1275,11 @@ static void Call_System_Private_CoreLib_System_StartupHookProvider_ManagedStartu
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_StartupHookProvider_ManagedStartup_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1302,11 +1302,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewExternalTypeEntry_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1330,11 +1330,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedExternalTypeMap_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1358,11 +1358,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewPrecachedProxyTypeMap_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1386,11 +1386,11 @@ static int32_t Call_System_Private_CoreLib_System_Runtime_InteropServices_TypeMa
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_InteropServices_TypeMapLazyDictionary_NewProxyTypeEntry_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1414,11 +1414,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyLoad_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1441,11 +1441,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnAssemblyResolve_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1468,11 +1468,11 @@ static void Call_System_Private_CoreLib_System_AppContext_OnFirstChanceException
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_AppContext_OnFirstChanceException_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1495,11 +1495,11 @@ static void Call_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetV
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_AppContext_OnProcessExit_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1522,11 +1522,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnResourceResolve_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1549,11 +1549,11 @@ static void Call_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_Thread_OnThreadExited_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1576,11 +1576,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_OnTypeResolve_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1603,11 +1603,11 @@ static void Call_System_Private_CoreLib_System_AppContext_OnUnhandledException_I
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_AppContext_OnUnhandledException_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1630,11 +1630,11 @@ static void Call_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAs
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Reflection_AssemblyName_ParseAsAssemblySpec_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1657,11 +1657,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_Resolve_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1684,11 +1684,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveSatelliteAssembly_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1711,11 +1711,11 @@ static void Call_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveSignature_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1738,11 +1738,11 @@ static void Call_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Resolver_ResolveToken_I32_I32_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1765,11 +1765,11 @@ static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadCont
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDll_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1793,11 +1793,11 @@ static void * Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadCont
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUnmanagedDllUsingEvent_I32_I32_I32_I32_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1821,11 +1821,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_ResolveUsingEvent_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1848,11 +1848,11 @@ static void Call_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetV
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhRethrow_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1875,11 +1875,11 @@ static void Call_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetV
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowEx_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1902,11 +1902,11 @@ static void Call_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_Re
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_EH_RhThrowHwEx_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1929,11 +1929,11 @@ static uint32_t Call_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32(
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_GC_RunFinalizers_Void_RetI32, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1955,11 +1955,11 @@ static void Call_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_AppContext_Setup_I32_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -1982,11 +1982,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StartAssemblyLoad_I32_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -2009,11 +2009,11 @@ static void Call_System_Private_CoreLib_System_Threading_Thread_StartCallback_I3
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Threading_Thread_StartCallback_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
@@ -2036,11 +2036,11 @@ static void Call_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContex
     }
     // Prefer the R2R native entrypoint when this callback was compiled (partial R2R).
     // Resolve once and cache; a method's native-code availability is fixed after first prepare.
-    void* r2r = VolatileLoad(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
+    void* r2r = __atomic_load_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, __ATOMIC_ACQUIRE);
     if (r2r == (void*)(intptr_t)-1)
     {
         r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid);
-        VolatileStore(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, r2r);
+        __atomic_store_n(&R2RCode_System_Private_CoreLib_System_Runtime_Loader_AssemblyLoadContext_StopAssemblyLoad_I32_I32_RetVoid, r2r, __ATOMIC_RELEASE);
     }
     if (r2r != nullptr)
     {
