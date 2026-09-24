@@ -67,14 +67,21 @@ SDK_FX="<runtime-repo>/.dotnet/shared/Microsoft.NETCore.App/$SDK_VERSION"
 TESTHOST_FX="<runtime-repo>/artifacts/bin/testhost/<tfm>-<os>-Release-<arch>/shared/Microsoft.NETCore.App/$SDK_VERSION"
 
 # ALWAYS back up the original SDK framework files first, so they can be restored exactly.
-mkdir -p /tmp/netcoreapp_sdk_backup
-rsync -a --delete "$SDK_FX"/ /tmp/netcoreapp_sdk_backup/
+# Use a fresh, uniquely-named backup directory every time: a fixed, reused path is unsafe
+# if a previous run was interrupted before restoring — `mkdir -p` would silently succeed
+# and the overlay step below would overwrite the only pristine backup with mutated files.
+BACKUP_DIR="/tmp/netcoreapp_sdk_backup.$$"
+mkdir "$BACKUP_DIR"   # fails loudly (no -p) if this exact path somehow already exists
+rsync -a --delete "$SDK_FX"/ "$BACKUP_DIR"/
+
+# Record the pre-overlay checksum so Step 6's restore can be verified against it.
+md5sum "$SDK_FX"/System.Private.CoreLib.dll
 
 # Overlay with the local build.
 rsync -a --delete "$TESTHOST_FX"/ "$SDK_FX"/
 ```
 
-**This mutates the repo's own SDK shared framework in place.** Never skip the backup step, and always restore it when done (Step 6) — leaving it mutated will silently break every other use of that SDK on the machine.
+**This mutates the repo's own SDK shared framework in place.** Never skip the backup step, and always restore it when done (Step 6) — leaving it mutated will silently break every other use of that SDK on the machine. Keep `$BACKUP_DIR` and the recorded checksum around until Step 6 has verified the restore.
 
 ### Step 4: Run the App and Verify It's Serving Requests
 
@@ -84,6 +91,8 @@ cd Benchmarks/src/BenchmarksApps/TechEmpower/PlatformBenchmarks/bin/Release/<tfm
 sleep 5
 curl -sS http://127.0.0.1:5000/json
 ```
+
+This leaves the terminal's working directory inside `PlatformBenchmarks/bin/Release/<tfm>` for the rest of the session. Any later step that references a path relative to `<runtime-repo>` (such as copying `crossgen2` below) must either `cd` back to `<runtime-repo>` first or use an absolute/`<runtime-repo>`-anchored path — a bare relative path resolves under this benchmark output directory instead and the copy silently fails or copies nothing.
 
 Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_URING=1`/`=0`) *before* starting the process — it's read once at startup.
 
@@ -119,11 +128,11 @@ Repeat Steps 4-5 for each configuration being compared (e.g. once with the env v
 2. **Restore the SDK's shared framework from the backup** and verify it via checksum before considering the machine clean:
 
    ```bash
-   rsync -a --delete /tmp/netcoreapp_sdk_backup/ "$SDK_FX"/
-   md5sum "$SDK_FX"/System.Private.CoreLib.dll   # compare against the value recorded before overlaying
+   rsync -a --delete "$BACKUP_DIR"/ "$SDK_FX"/
+   md5sum "$SDK_FX"/System.Private.CoreLib.dll   # must match the checksum recorded in Step 3 before overlaying
    ```
 
-3. Remove the temporary backup and any log files once restoration is verified.
+3. Remove `$BACKUP_DIR` and any log files once restoration is verified.
 
 ### Profiling a Benchmark Run with `perfcollect`
 
@@ -163,7 +172,9 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
 - **Precompiled (R2R/crossgen) framework symbols are not resolved automatically.** `perfcollect` needs a `crossgen2` tool matching the exact runtime build to map native framework code back to method names; without it, framework frames show up unresolved/hex-only in the trace. When profiling a **locally-built** runtime you don't need to hunt one down — your own build already produced the exact matching binary at `artifacts/bin/crossgen2_publish/<arch>/<config>/crossgen2`. Copy (or symlink) it next to `libcoreclr.so` in the directory you're actually running from (e.g. the testhost/SDK-overlay shared framework folder from Step 3) before collecting:
 
   ```bash
-  cp artifacts/bin/crossgen2_publish/x64/Release/crossgen2 "$SDK_FX"/
+  # Use a path anchored to <runtime-repo> (or `cd` back there first) — a bare relative
+  # path resolves under the PlatformBenchmarks output directory left by Step 4 instead.
+  cp <runtime-repo>/artifacts/bin/crossgen2_publish/x64/Release/crossgen2 "$SDK_FX"/
   ```
 
   For a runtime you didn't build yourself, see the "Resolving Framework Symbols" section of [linux-performance-tracing.md](../../../docs/project/linux-performance-tracing.md) instead (it walks through obtaining a matching `crossgen2` via a self-contained publish).
@@ -253,9 +264,11 @@ Create the parent directory first if necessary. Extend the explicit copy list ac
 
 ### 3. Upload the Overlay and Run JSON
 
-Crank's `--application.options.outputFiles` uploads local files into the application's published output after its build. It is different from uploading source files or build inputs. Leave the controller's SDK/shared frameworks untouched; no in-place SDK replacement is needed.
+Crank's `--application.options.outputFiles` uploads local files into the application's published output (the `published/` folder produced by `dotnet publish` on the agent) *after* that build completes. It is different from uploading source files or build inputs. Leave the controller's SDK/shared frameworks untouched; no in-place SDK replacement is needed.
 
-Set the following variables to the chosen configuration, profile, and exact compatible versions. `CONFIG` can be a local configuration file or a URL; a pinned/local copy makes comparisons reproducible. The example uses Bash syntax:
+**`PlatformBenchmarks` publishes framework-dependent by default, and `outputFiles` alone does not override the shared framework for a framework-dependent app.** A framework-dependent publish's own `published/` output does not contain a private copy of `Microsoft.NETCore.App`/`Microsoft.AspNetCore.App` at all — the host resolves `System.Private.CoreLib.dll`, `libcoreclr.so`, `libclrjit.so`, and other framework assemblies (including `System.Net.Sockets.dll`) exclusively from the shared framework directory selected by `--application.runtimeVersion`/`--application.aspNetCoreVersion`, which Crank provisions separately and does not touch when applying `outputFiles`. Dropping same-named files into `published/` in this mode has no effect: the run silently benchmarks the stock shared-framework binaries instead of the uploaded ones, for every row in the table above except application-local, non-framework assemblies.
+
+To make the overlay actually take effect, publish the job **self-contained** instead, so the local runtime bits become part of `published/` itself and the later `outputFiles` copy overwrites them in place:
 
 ```bash
 CONFIG=/absolute/path/to/platform.benchmarks.yml
@@ -269,6 +282,7 @@ RUN=/absolute/path/to/results/json-candidate-a
 crank \
   --config "$CONFIG" --scenario json --profile "$PROFILE" \
   --application.framework "$TFM" \
+  --application.selfContained true \
   --application.sdkVersion "$SDK_VERSION" \
   --application.runtimeVersion "$RUNTIME_VERSION" \
   --application.aspNetCoreVersion "$ASPNET_VERSION" \
@@ -286,6 +300,8 @@ crank \
 ```
 
 Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded output with the local manifest.
+
+`--application.selfContained true` still needs `--application.runtimeVersion`/`--application.aspNetCoreVersion` pinned to the versions matching your overlay's ABI, since the self-contained publish step is what brings those shared-framework files into `published/` in the first place — `outputFiles` only replaces specific files afterward, it doesn't provision the rest of the runtime. Confirm the `beforeScript`'s `sha256sum` output in the build log matches the overlay's own manifest to prove the substitution actually landed, and check the downloaded build log for the `--self-contained` publish flag.
 
 The example's `published/` paths and `/bin/sh` command are for the standard Linux PlatformBenchmarks job; adapt them if the job uses a different layout or OS. Confirm the build logs show the intended framework versions and that the application uses the deployed replacements, not an incompatible or separately located shared framework. File presence alone is not proof that a module was loaded; use module paths/build IDs from a diagnostic trace when investigating binding.
 
