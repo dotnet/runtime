@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Reflection.Tests
@@ -67,6 +68,37 @@ namespace System.Reflection.Tests
             Assert.NotNull(new TypeDelegator(typeof(delegate*<void>)).GetFunctionPointerReturnType());
             Assert.NotNull(new TypeDelegator(typeof(delegate*<void>)).GetRequiredCustomModifiers());
             Assert.NotNull(new TypeDelegator(typeof(delegate*<void>)).GetOptionalCustomModifiers());
+        }
+
+        [Fact]
+        public void CustomModifiers()
+        {
+            Type modified = typeof(TypeWithVolatileField).GetField(nameof(TypeWithVolatileField.Field)).GetModifiedFieldType();
+            TypeDelegator td = new TypeDelegator(modified);
+            Assert.Equal(new[] { typeof(IsVolatile) }, td.GetRequiredCustomModifiers());
+            Assert.Empty(td.GetOptionalCustomModifiers());
+
+            td = new TypeDelegator(new TypeWithCustomModifiers());
+            Assert.Equal(new[] { typeof(IsVolatile) }, td.GetRequiredCustomModifiers());
+            Assert.Equal(new[] { typeof(IsConst) }, td.GetOptionalCustomModifiers());
+
+            td = new TypeDelegator(typeof(int));
+            Assert.Empty(td.GetRequiredCustomModifiers());
+            Assert.Empty(td.GetOptionalCustomModifiers());
+        }
+
+        private class TypeWithVolatileField
+        {
+#pragma warning disable 0649
+            public volatile int Field;
+#pragma warning restore 0649
+        }
+
+        private sealed class TypeWithCustomModifiers : TypeDelegator
+        {
+            public TypeWithCustomModifiers() : base(typeof(int)) { }
+            public override Type[] GetOptionalCustomModifiers() => new[] { typeof(IsConst) };
+            public override Type[] GetRequiredCustomModifiers() => new[] { typeof(IsVolatile) };
         }
 
         public static IEnumerable<object[]> SZArrayOrNotTypes()
