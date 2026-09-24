@@ -7046,13 +7046,13 @@ void CordbProcess::VerifyControlBlock()
         ThrowHR(CORDBG_E_DEBUGGING_NOT_POSSIBLE);
     }
 
-    // Fill in the protocol numbers for the Right Side and update the LS DCB.
-    GetDCB()->m_rightSideProtocolCurrent = CorDB_RightSideProtocolCurrent;
-    UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolCurrent), sizeof(GetDCB()->m_rightSideProtocolCurrent));
+    // Fill in the protocol numbers for the debugger and update the runtime DCB.
+    GetDCB()->m_debuggerProtocolCurrent      = CorDB_DebuggerProtocolCurrent;
+    UpdateLeftSideDCBField(&(GetDCB()->m_debuggerProtocolCurrent), sizeof(GetDCB()->m_debuggerProtocolCurrent));
 
-    GetDCB()->m_rightSideProtocolMinSupported = CorDB_RightSideProtocolMinSupported;
-    UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolMinSupported),
-                           sizeof(GetDCB()->m_rightSideProtocolMinSupported));
+    GetDCB()->m_debuggerProtocolMinSupported = CorDB_DebuggerProtocolMinSupported;
+    UpdateLeftSideDCBField(&(GetDCB()->m_debuggerProtocolMinSupported),
+                           sizeof(GetDCB()->m_debuggerProtocolMinSupported));
 
     // Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
     // Version Protocol String in DEBUGGER_PROTOCOL_STRING in DbgIpcEvents.h. This allows different build
@@ -7072,8 +7072,8 @@ void CordbProcess::VerifyControlBlock()
     }
 
     // The runtime protocol version must be within the range supported by the debugger.
-    ULONG leftSideProtocolCurrent = GetDCB()->m_leftSideProtocolCurrent;
-    if (leftSideProtocolCurrent < GetDCB()->m_rightSideProtocolMinSupported || leftSideProtocolCurrent > GetDCB()->m_rightSideProtocolCurrent)
+    ULONG runtimeProtocol = GetDCB()->m_runtimeProtocol;
+    if (runtimeProtocol < GetDCB()->m_debuggerProtocolMinSupported || runtimeProtocol > GetDCB()->m_debuggerProtocolCurrent)
     {
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
     }

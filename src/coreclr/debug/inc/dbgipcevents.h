@@ -114,9 +114,9 @@ or inserted between other fields in the same struct, without conditioning on the
 Note: Any DBI changes other than those to the IPC events that depend on runtime changes
 should be flowed through a COM interface on the DAC.
 */
-#define CorDB_LeftSideProtocolCurrent           2
-#define CorDB_RightSideProtocolCurrent          2
-#define CorDB_RightSideProtocolMinSupported     2
+#define CorDB_RuntimeProtocol                  2
+#define CorDB_DebuggerProtocolCurrent          2
+#define CorDB_DebuggerProtocolMinSupported     2
 
 //
 // The remaining data structures in this file can be shared between two processes and for network transport
@@ -220,11 +220,11 @@ struct MSLAYOUT DebuggerIPCControlBlock
     BYTE padding2;
     BYTE padding3;
 
-    ULONG                      m_leftSideProtocolCurrent;       // Current protocol version for the Left Side.
-    ULONG                      m_leftSideProtocolMinSupported;  // Minimum protocol the Left Side can support. Equal to m_leftSideProtocolCurrent.
+    ULONG                      m_runtimeProtocol;                  // Current protocol version for the Left Side.
+    ULONG                      m_runtimeProtocolMinSupported;      // Minimum protocol the Left Side can support. Equal to m_runtimeProtocol.
 
-    ULONG                      m_rightSideProtocolCurrent;      // Current protocol version for the Right Side.
-    ULONG                      m_rightSideProtocolMinSupported; // Minimum protocol the Right Side requires.
+    ULONG                      m_debuggerProtocolCurrent;          // Current protocol version for the Right Side.
+    ULONG                      m_debuggerProtocolMinSupported;     // Minimum protocol the Right Side requires.
 
     HRESULT                    m_errorHR;
     unsigned int               m_errorCode;
@@ -317,11 +317,11 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
     BYTE padding2;
     BYTE padding3;
 
-    ULONG                      m_leftSideProtocolCurrent;       // Current protocol version for the Left Side.
-    ULONG                      m_leftSideProtocolMinSupported;  // Minimum protocol the Left Side can support. Equal to m_leftSideProtocolCurrent.
+    ULONG                      m_runtimeProtocol;                  // Current protocol version for the Left Side.
+    ULONG                      m_runtimeProtocolMinSupported;     // Minimum protocol the Left Side can support. Equal to m_runtimeProtocol.
 
-    ULONG                      m_rightSideProtocolCurrent;      // Current protocol version for the Right Side.
-    ULONG                      m_rightSideProtocolMinSupported; // Minimum protocol the Right Side requires.
+    ULONG                      m_debuggerProtocolCurrent;          // Current protocol version for the Right Side.
+    ULONG                      m_debuggerProtocolMinSupported;     // Minimum protocol the Right Side requires.
 
     HRESULT                    m_errorHR;
     unsigned int               m_errorCode;
