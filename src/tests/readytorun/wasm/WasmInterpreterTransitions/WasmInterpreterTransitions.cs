@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
+[assembly: DisableRuntimeMarshalling]
+
 namespace System.Runtime
 {
     [AttributeUsage(AttributeTargets.Method)]
@@ -91,6 +93,9 @@ public class WasmInterpreterTransitions
     public static void TestEntryPoint()
     {
         WasmInterpreterTransitions self = new();
+
+        // R2R -> native P/Invoke -> generated native-to-managed export -> R2R UCO.
+        Assert.Equal(A + C, Echo(A));
 
         // Reverse-pinvoke (UnmanagedCallersOnly) entry that re-enters managed code. crossgen2 must
         // thread the UCO method's $sp (loaded from the __stack_pointer global in its prolog) into the
@@ -211,6 +216,12 @@ public class WasmInterpreterTransitions
     }
 
     private static int s_sideEffect;
+
+    [DllImport("echo", EntryPoint = "echo")]
+    private static extern int Echo(int value);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo")]
+    private static int ManagedEcho(int value) => value + C;
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
