@@ -75,7 +75,7 @@
       <SetScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set PREPEND_PATH=$([System.IO.Path]::GetDirectoryName($(GeckoDriverBinaryPath)))" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
+    <ItemGroup>
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
     </ItemGroup>

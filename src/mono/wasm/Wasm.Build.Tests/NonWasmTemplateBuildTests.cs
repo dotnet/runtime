@@ -52,7 +52,14 @@ public class NonWasmTemplateBuildTests : WasmTemplateTestsBase
             </Project>
         """;
 
-    private static string s_directoryBuildTargetsForCurrentTFM = "<Project />";
+    private static string s_directoryBuildTargetsForCurrentTFM =
+        $$"""
+            <Project>
+              <PropertyGroup>
+                <NETCoreAppMaximumVersion>{{TargetMajorVersion}}.0</NETCoreAppMaximumVersion>
+              </PropertyGroup>
+            </Project>
+        """;
 
     public static IEnumerable<object?[]> GetTestData() =>
         new IEnumerable<object?>[]
