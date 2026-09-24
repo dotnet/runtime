@@ -9,21 +9,33 @@ Use the TechEmpower `PlatformBenchmarks` app from the [`aspnet/Benchmarks`](http
 
 These benchmarks are useful for changes to the socket/IO stack, GC, JIT, and other components whose impact depends on application behavior. Both workflows below run the benchmark against a locally-built runtime: start with local measurements to validate ideas, then use external infrastructure for final validation when access is available.
 
+## Common Prerequisites
+
+Both workflows require a validated local dotnet/runtime build containing the change under test, targeting the benchmark machine's OS and architecture: the development machine for local runs, or the application agent for Crank runs. **Both the native runtime and managed libraries must be built in Release.**
+
+Reuse existing validated artifacts when available; do not rebuild merely to stage binaries. Consult the `build-and-test` skill before building, and never build when the user requested documentation or explicitly prohibited builds. If a build is needed, build runtime and libraries in Release with `-c release`, not just `-rc release`: the latter only forces the runtime to Release and leaves libraries at their default (`Debug`), producing a mismatched testhost.
+
+```bash
+./build.sh clr+libs -c release
+```
+
+Confirm the artifacts correspond to the intended source revision. Switching Git branches does not update existing build outputs. Record source commits, any uncommitted changes, configuration, and binary hashes.
+
+## Choosing a Benchmark
+
+For both workflows, prefer `/json` for representative maximum-throughput comparisons. The standard TechEmpower `/plaintext` scenario uses HTTP pipelining (16 requests batched per connection), whereas `/json` sends one request per round trip and better represents normal request/response traffic. Their throughput numbers are not directly comparable.
+
+Both `/json` and `/plaintext` can run locally without a database. Other benchmarks, such as fortunes, single/multiple queries, and updates, require setting up a database. These can also run locally, but database setup is outside the scope of this document.
+
 ## Benchmarking a Local Runtime Build Locally
 
-**Always validate ideas locally first.** This workflow provides quick verification on the development machine and requires no VPN or access to external infrastructure. Drive the application with `wrk`, or [`bombardier`](https://github.com/codesenberg/bombardier) on Windows because `wrk` is Linux/macOS-only.
+**Always validate ideas locally first.** This workflow provides quick verification on the development machine and requires no VPN or access to external infrastructure. Drive the application with `wrk`, or [`bombardier`](https://github.com/codesenberg/bombardier) on Windows (because `wrk` is Linux/macOS-only).
 
 Treat local results as an initial signal, not a definitive performance measurement: the application, load generator, and other processes share the same machine and compete for CPU, memory, and other resources. This contention can distort throughput and latency, so local results may not predict performance on dedicated benchmark machines.
 
 ### Prerequisites
 
-- A locally-built dotnet/runtime with the change under test (see the `build-and-test` skill). Build **everything** (runtime and libraries) in Release with `-c release`, not just `-rc release` — the latter only forces the runtime to Release and leaves libraries at their default (`Debug`), producing a mismatched testhost:
-
-  ```bash
-  ./build.sh clr+libs -c release
-  ```
-
-- A load-generation tool: on Linux, `wrk` (`sudo apt install wrk` or build from source — <https://github.com/wg/wrk>). `wrk` doesn't build/run on Windows; use [`bombardier`](https://github.com/codesenberg/bombardier) instead (`go install github.com/codesenberg/bombardier@latest`, or download a prebuilt binary from its releases page) — the examples below use `wrk` syntax, with the `bombardier` equivalent noted alongside.
+- A load-generation tool: on Linux, `wrk` (`sudo apt install wrk` or build from [source](https://github.com/wg/wrk)). `wrk` doesn't build/run on Windows; use [`bombardier`](https://github.com/codesenberg/bombardier) instead (`go install github.com/codesenberg/bombardier@latest`, or download a prebuilt binary from its [releases page](https://github.com/codesenberg/bombardier/releases)) - the examples below use `wrk` syntax, with the `bombardier` equivalent noted alongside.
 - The [`aspnet/Benchmarks`](https://github.com/aspnet/Benchmarks) repository, which contains the TechEmpower and other benchmark apps.
 
 ### Step 1: Clone the Benchmarks Repository
@@ -32,13 +44,9 @@ Treat local results as an initial signal, not a definitive performance measureme
 git clone https://github.com/aspnet/Benchmarks.git
 ```
 
-The relevant app is `src/BenchmarksApps/TechEmpower/PlatformBenchmarks` — a raw Kestrel `HttpApplication` implementation of the TechEmpower benchmark suite (JSON serialization, plaintext, fortunes, single/multiple queries, updates). It targets the latest `net*.0` TFM and does **not** require a database for the `/json` and `/plaintext` endpoints, which is normally all you need.
+The relevant app is `src/BenchmarksApps/TechEmpower/PlatformBenchmarks` — a raw Kestrel `HttpApplication` implementation of the TechEmpower benchmark suite (JSON serialization, plaintext, fortunes, single/multiple queries, updates). It targets the latest `net*.0` TFM.
 
-### Step 2: Prefer the `/json` Endpoint, Not `/plaintext`
-
-Use `/json` for a "realistic max throughput" measurement. `/plaintext` conventionally uses HTTP pipelining (16 requests batched per connection in the official TechEmpower harness/`wrk` scripts), which does not reflect normal request/response traffic and inflates throughput numbers in a way that isn't representative. `/json` sends one request per round trip and is the more realistic comparison point.
-
-### Step 3: Publish the App Against the Repo's Own SDK
+### Step 2: Publish the App Against the Repo's Own SDK
 
 Build/publish the app with the dotnet/runtime repo's own SDK (`<runtime-repo>/.dotnet/dotnet`), not a system-wide SDK, so the app targets the same TFM as your local build:
 
@@ -49,7 +57,7 @@ cd Benchmarks/src/BenchmarksApps/TechEmpower/PlatformBenchmarks
 
 This produces `bin/Release/<tfm>/PlatformBenchmarks.dll`.
 
-### Step 4: Make the Repo's SDK Run Against Your Local Runtime Build
+### Step 3: Make the Repo's SDK Run Against Your Local Runtime Build
 
 `PlatformBenchmarks` needs `Microsoft.AspNetCore.App`, which the freshly-built `artifacts/bin/testhost` does **not** contain (it only has `Microsoft.NETCore.App`) — running it directly via `testhost`'s `corerun`/`dotnet` fails with a "no framework found" error. The repo SDK's own `dotnet` (under `<runtime-repo>/.dotnet`) already has `Microsoft.AspNetCore.App`, so the simplest way to combine "the ASP.NET Core framework" with "your locally-built `Microsoft.NETCore.App`" is to temporarily overlay the SDK's shared `Microsoft.NETCore.App/<version>` folder with the testhost's freshly-built one:
 
@@ -67,7 +75,7 @@ rsync -a --delete "$TESTHOST_FX"/ "$SDK_FX"/
 
 **This mutates the repo's own SDK shared framework in place.** Never skip the backup step, and always restore it when done (Step 6) — leaving it mutated will silently break every other use of that SDK on the machine.
 
-### Step 5: Run the App and Verify It's Serving Requests
+### Step 4: Run the App and Verify It's Serving Requests
 
 ```bash
 cd Benchmarks/src/BenchmarksApps/TechEmpower/PlatformBenchmarks/bin/Release/<tfm>
@@ -78,7 +86,7 @@ curl -sS http://127.0.0.1:5000/json
 
 Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_URING=1`/`=0`) *before* starting the process — it's read once at startup.
 
-### Step 6: Run `wrk` (or `bombardier` on Windows) Against It
+### Step 5: Run `wrk` (or `bombardier` on Windows) Against It
 
 ```bash
 wrk -t12 -c256 -d15s --latency http://127.0.0.1:5000/json
@@ -102,9 +110,9 @@ bombardier -c 256 -d 15s -l http://127.0.0.1:5000/json
 
 Run **at least two** runs per configuration (there's meaningful run-to-run variance) and report both, along with p50/p99 latency, not just a single throughput number. Present the results in a table.
 
-Repeat Steps 5-6 for each configuration being compared (e.g. once with the env var on, once with it off), reusing the same overlay — only the running process needs to be restarted between configurations, not the overlay.
+Repeat Steps 4-5 for each configuration being compared (e.g. once with the env var on, once with it off), reusing the same overlay — only the running process needs to be restarted between configurations, not the overlay.
 
-### Step 7: Clean Up
+### Step 6: Clean Up
 
 1. Kill the server process(es) — find the actual `dotnet exec ... PlatformBenchmarks.dll` PID (not the shell that launched it) with `pgrep -af PlatformBenchmarks` and `kill <pid>`.
 2. **Restore the SDK's shared framework from the backup** and verify it via checksum before considering the machine clean:
@@ -151,7 +159,7 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
 
 #### ⚠️ Symbol Resolution Warnings
 
-- **Precompiled (R2R/crossgen) framework symbols are not resolved automatically.** `perfcollect` needs a `crossgen2` tool matching the exact runtime build to map native framework code back to method names; without it, framework frames show up unresolved/hex-only in the trace. When profiling a **locally-built** runtime you don't need to hunt one down — your own build already produced the exact matching binary at `artifacts/bin/crossgen2_publish/<arch>/<config>/crossgen2`. Copy (or symlink) it next to `libcoreclr.so` in the directory you're actually running from (e.g. the testhost/SDK-overlay shared framework folder from Step 4) before collecting:
+- **Precompiled (R2R/crossgen) framework symbols are not resolved automatically.** `perfcollect` needs a `crossgen2` tool matching the exact runtime build to map native framework code back to method names; without it, framework frames show up unresolved/hex-only in the trace. When profiling a **locally-built** runtime you don't need to hunt one down — your own build already produced the exact matching binary at `artifacts/bin/crossgen2_publish/<arch>/<config>/crossgen2`. Copy (or symlink) it next to `libcoreclr.so` in the directory you're actually running from (e.g. the testhost/SDK-overlay shared framework folder from Step 3) before collecting:
 
   ```bash
   cp artifacts/bin/crossgen2_publish/x64/Release/crossgen2 "$SDK_FX"/
@@ -165,18 +173,16 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
 
 ### Common Pitfalls
 
-- **Running via `artifacts/bin/testhost` directly fails** with "no framework found" — that layout only has `Microsoft.NETCore.App`, not `Microsoft.AspNetCore.App`. Use the SDK-overlay approach in Step 4 instead.
+- **Running via `artifacts/bin/testhost` directly fails** with "no framework found" — that layout only has `Microsoft.NETCore.App`, not `Microsoft.AspNetCore.App`. Use the SDK-overlay approach in Step 3 instead.
 - **Forgetting to set the env var before starting the process** — most feature switches (like `DOTNET_USE_IO_URING`) are read once at startup, so changing it and re-`curl`-ing the same running process has no effect.
 - **Comparing a single run per configuration** — throughput varies run to run; always do at least two runs per configuration.
-- **Leaving the SDK shared framework overlaid** — always restore it (Step 7) and verify via checksum; a stale/mismatched overlay silently breaks unrelated work on the same machine later.
+- **Leaving the SDK shared framework overlaid** — always restore it (Step 6) and verify via checksum; a stale/mismatched overlay silently breaks unrelated work on the same machine later.
 
 ## Benchmarking a Local Runtime Build on External Infrastructure with Crank
 
 **Use external infrastructure for final validation after testing locally.** The .NET benchmarking infrastructure described here requires VPN access and is unavailable to external contributors. Runs take substantially longer than local checks, and the infrastructure is not always available; do not depend on it for the initial iteration loop.
 
 Use [Crank](https://github.com/dotnet/crank) to deploy `PlatformBenchmarks` with selected locally-built runtime binaries to a remote application agent; a separate load agent drives HTTP requests without competing for the application's machine resources. These access restrictions apply to the shared infrastructure, not to Crank itself: external contributors can use Crank with their own agents.
-
-Prefer `/json` for representative maximum-throughput comparisons. The standard `/plaintext` scenario pipelines 16 requests per connection; its throughput is not directly comparable to non-pipelined JSON traffic. Neither scenario needs a database.
 
 References:
 
@@ -187,8 +193,6 @@ References:
 
 ### 1. Establish the Inputs
 
-- Use an existing, validated **Release** build for the agent's OS and architecture. Both native runtime and managed libraries must be Release. Consult the `build-and-test` skill if a build is needed; do not rebuild merely to stage binaries, and never build when the user requested documentation or explicitly prohibited builds.
-- Confirm the artifacts correspond to the intended source revision. Switching Git branches does not update existing build outputs. Record source commits, any uncommitted changes, configuration, and binary hashes.
 - Use an installed Crank controller and reachable application/load agents. Prefer separate machines for throughput measurements so load generation does not compete with the server for CPU.
 - Select a PlatformBenchmarks configuration and an authorized machine profile. The public configuration includes profiles for particular infrastructure; choose or define one for the actual agents rather than assuming those machines are accessible. The getting-started guide shows how profiles assign `application` and `load` endpoints.
 - Pin the benchmark source revision and exact SDK, runtime, and ASP.NET versions for comparisons. Do not allow `main`, `latest`, or `edge` to change dependencies between runs. Ensure the benchmark TFM and selected versions are compatible with the local runtime overlay.
