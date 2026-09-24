@@ -72,6 +72,23 @@ public class InterpreterStackDumpTests : DumpTestBase
 
     [ConditionalTheory]
     [MemberData(nameof(TestConfigurations))]
+    public void ExecutionManager_EnumeratesInterpreterCodeHeaps(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        SkipIfInterpreterNotAvailable();
+
+        IExecutionManager executionManager = Target.Contracts.ExecutionManager;
+        JitManagerInfo? managerInfo = executionManager.GetJitManagerInfo(JitManagerKind.Interpreter);
+
+        Assert.NotNull(managerInfo);
+        Assert.NotEqual(TargetPointer.Null, managerInfo.Value.ManagerAddress);
+        Assert.Equal(2u, managerInfo.Value.CodeType); // miManaged | miIL | miOPTIL
+        Assert.NotEqual(TargetPointer.Null, managerInfo.Value.HeapListAddress);
+        Assert.NotEmpty(executionManager.GetCodeHeapInfos(JitManagerKind.Interpreter));
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
     public void StackWalk_VerifyInterleavedStackLayout(TestConfiguration config)
     {
         InitializeDumpTest(config);

@@ -1468,6 +1468,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    // Zero initialization uses a 128-bit xor, which also clears the upper vector bits.
                     SetContainsAVXFlags(src->IsIntegralConst(0) ? XMM_REGSIZE_BYTES
                                                                 : m_compiler->roundDownSIMDSize(size));
                 }

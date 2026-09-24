@@ -6,7 +6,7 @@ import type { JSMarshalerArguments, GCHandle, MarshalerToCs, MarshalerToJs, CSFn
 import { dotnetAssert, dotnetBrowserUtilsExports, dotnetInteropJSExports, Module } from "./cross-module";
 import { allocStackFrame, getArg, isArgsException, setArgType, setGcHandle } from "./marshal";
 import { marshalExceptionToCs, marshalStringToCs } from "./marshal-to-cs";
-import { beginMarshalTaskToJs, endMarshalTaskToJs, marshalExceptionToJs, marshalInt32ToJs, marshalStringToJs } from "./marshal-to-js";
+import { beginMarshalTaskToJs, endMarshalTaskToJs, marshalExceptionToJs, marshalInt32ToJs, marshalStringToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, isRuntimeRunning } from "./utils";
 import { MarshalerType } from "./types";
 
@@ -167,10 +167,11 @@ export function bindAssemblyExports(assemblyName: string): Promise<void> {
             if (!error || typeof error.status !== "number") {
                 dotnetBrowserUtilsExports.abortPosix(1, error, true);
             }
+            releaseEagerTaskHolder(promise);
             throw error;
         }
         if (isArgsException(args)) {
-            // TODO free pre-created promise
+            releaseEagerTaskHolder(promise);
             const exc = getArg(args, 0);
             throw marshalExceptionToJs(exc);
         }

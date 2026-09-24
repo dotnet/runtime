@@ -1970,11 +1970,14 @@ void Compiler::compSetProcessor()
 #endif // TARGET_XARCH
 }
 
-bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                         bool                   supported,
+                                         bool                   preserveNegativeDependency) const
 {
     const char* isaString = InstructionSetToString(isa);
-    JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    JITDUMP("Notify VM instruction set (%s) %s be supported%s.\n", isaString, supported ? "must" : "must not",
+            preserveNegativeDependency ? " (preserve negative dependency)" : "");
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);
 }
 
 #ifdef PROFILING_SUPPORTED

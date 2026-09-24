@@ -8754,6 +8754,14 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* parentNode, GenTre
     // We shouldn't have called in here if parentNode doesn't support containment
     assert(HWIntrinsicInfo::SupportsContainment(parentIntrinsicId));
 
+    if ((parentIntrinsicId == NI_AVX512_BlendVariableMask) && childNode->NodeOrContainedOperandsMayThrow(m_compiler))
+    {
+        // The blend itself suppresses faults from unselected memory lanes, even
+        // when we are not embedding another operation under its mask.
+        *supportsRegOptional = false;
+        return false;
+    }
+
     // In general, we can mark the child regOptional as long as it is at least as large as the parent instruction's
     // memory operand size.
     //
