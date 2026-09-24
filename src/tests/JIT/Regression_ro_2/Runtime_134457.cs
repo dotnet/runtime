@@ -17,8 +17,16 @@ public class Runtime_134457
         Assert.Equal(6, s_sink);
 
         s_sink = -1;
+        Assert.Equal(0, Test(5, argumentException: true));
+        Assert.Equal(0, s_sink);
+
+        s_sink = -1;
         Assert.Equal(6, TestWithEnclosedFinally(5, argumentException: false));
         Assert.Equal(6, s_sink);
+
+        s_sink = -1;
+        Assert.Equal(0, TestWithEnclosedFinally(5, argumentException: true));
+        Assert.Equal(0, s_sink);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
