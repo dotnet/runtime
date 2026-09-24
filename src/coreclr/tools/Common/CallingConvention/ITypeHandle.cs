@@ -24,7 +24,7 @@ namespace Internal.CallingConvention
         int PointerSize { get; }
         int GetSize();
         CorElementType GetCorElementType();
-        bool RequiresAlign8();
+        bool RequiresAlign2xPtr();
 
         // HFA - ARM/ARM64
         bool IsHomogeneousAggregate();

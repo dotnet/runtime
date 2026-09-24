@@ -188,8 +188,8 @@ public interface IRuntimeTypeSystem : IContract
     // define FEATURE_HFA). Mirrors MethodTable::GetHFAType in
     // src/coreclr/vm/class.cpp.
     bool TryGetHFAElementSize(ITypeHandle typeHandle, out int elementSize) => throw new NotImplementedException();
-    // True if the type requires 8-byte alignment on platforms that don't 8-byte align by default (FEATURE_64BIT_ALIGNMENT)
-    bool RequiresAlign8(ITypeHandle typeHandle) => throw new NotImplementedException();
+    // True if the type requires 2 * pointer-size alignment on platforms that don't provide it by default (FEATURE_2XPTR_ALIGNMENT)
+    bool RequiresAlign2xPtr(ITypeHandle typeHandle) => throw new NotImplementedException();
     // Returns the unclamped alignment from CEEInfo::getClassAlignmentRequirementStatic.
     // This is optional functionality. Runtimes that don't support it return the target pointer size.
     int GetClassAlignmentRequirement(ITypeHandle typeHandle) => throw new NotImplementedException();

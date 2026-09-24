@@ -19,7 +19,7 @@
 
 // Some platforms have additional alignment requirements for arguments. This function adjusts the given arg
 // pointer to achieve such an alignment for the next argument on those platforms (otherwise it is a no-op).
-// NOTE: the debugger has its own implementation of this algorithm in Debug\DI\RsType.cpp, CordbType::RequiresAlign8()
+// NOTE: the debugger has its own implementation of this algorithm in Debug\DI\RsType.cpp, CordbType::RequiresAlign2xPtr()
 //       so if you change this implementation be sure to update the debugger's version as well.
 static void AdjustArgPtrForAlignment(VARARGS *pData, unsigned cbArg)
 {
@@ -41,7 +41,7 @@ static void AdjustArgPtrForAlignment(VARARGS *pData, unsigned cbArg)
     {
         SigPointer tempSig(pData->SigPtr);
         TypeHandle valueType = tempSig.GetTypeHandleThrowing(pData->ArgCookie->pModule, &typeContext);
-        if (!valueType.AsMethodTable()->RequiresAlign8())
+        if (!valueType.AsMethodTable()->RequiresAlign2xPtr())
             return;
     }
     else
