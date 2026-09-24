@@ -91,6 +91,49 @@ void CodeGen::genMarkLabelsForCodegen()
     //
     for (FuncInfoDsc* const func : m_compiler->Funcs())
     {
+        // Finalize call presence from the lowered IR before generating any code.
+        // BBF_HAS_CALL is a quick path, but funclet creation does not preserve it
+        // in every case, so inspect LIR for GT_CALL nodes too. Account separately
+        // for flow and codegen constructs that emit calls without a GT_CALL node.
+        //
+        for (BasicBlock* const block : func->Blocks(m_compiler))
+        {
+            if (block->HasFlag(BBF_HAS_CALL) || block->KindIs(BBJ_CALLFINALLY))
+            {
+                func->hasCalls = true;
+                break;
+            }
+
+            for (GenTree* const node : LIR::AsRange(block))
+            {
+                const bool hasCall = node->OperIs(GT_CALL);
+                const bool hasInlineThrowHelper =
+                    !m_compiler->fgUseThrowHelperBlocks() && ((node->gtFlags & GTF_EXCEPT) != 0);
+                const bool hasWriteBarrier =
+                    node->OperIs(GT_STOREIND) &&
+                    (gcInfo.gcIsWriteBarrierCandidate(node->AsStoreInd()) != GCInfo::WBF_NoBarrier);
+                const bool hasCpObjHelper = node->OperIs(GT_STORE_BLK) &&
+                                            (node->AsBlk()->gtBlkOpKind != GenTreeBlk::BlkOpKindNativeOpcode) &&
+                                            (node->AsBlk()->gtBlkOpKind != GenTreeBlk::BlkOpKindLoop);
+
+                if (hasCall || hasInlineThrowHelper || hasWriteBarrier || hasCpObjHelper)
+                {
+                    func->hasCalls = true;
+                    break;
+                }
+            }
+
+            if (func->hasCalls)
+            {
+                break;
+            }
+        }
+
+        if (func->hasCalls)
+        {
+            func->ensureUnwindableFrame(m_compiler);
+        }
+
         BasicBlock* const firstBlock = func->GetStartBlock(m_compiler);
         firstBlock->SetFlags(BBF_HAS_LABEL);
 
@@ -521,8 +564,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
     //
-    // If the funclet needs to be unwindable (contains any calls), set up
-    // what we need.
+    // If the funclet needs to be unwindable, set up what we need.
     //
     if (func->needsUnwindableFrame)
     {
@@ -540,9 +582,15 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns(INS_I_sub);
         GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, GetStackPointerRegIndex());
 
-        GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
-        GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
-        GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+        // A leaf funclet can require a frame for EH virtual IP tracking, but no
+        // suspended caller needs its function identity for stack walking.
+        //
+        if (func->hasCalls)
+        {
+            GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetStackPointerRegIndex());
+            GetEmitter()->emitFuncletAddressConstant((cnsval_ssize_t)funcletIndex);
+            GetEmitter()->emitIns_I(ins_Store(TYP_I_IMPL), EA_PTRSIZE, 0);
+        }
     }
 }
 
