@@ -5078,7 +5078,8 @@ namespace Internal.JitInterface
             {
                 // By policy we code review all changes into corelib, such that failing to use an instruction
                 // set is not a reason to not support usage of it. Except for functions which check if a given
-                // feature is supported or hardware accelerated, or the JIT explicitly requests the negative dependency.
+                // feature is supported or hardware accelerated, selected non-deterministic intrinsic methods,
+                // or when the JIT explicitly requests the negative dependency.
                 if (preserveNegativeDependency || !isMethodDefinedInCoreLib())
                 {
                     _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
@@ -5121,7 +5122,8 @@ namespace Internal.JitInterface
                     }
 
                     if (methodName.Equals("get_IsSupported", StringComparison.Ordinal) ||
-                        methodName.Equals("get_IsHardwareAccelerated", StringComparison.Ordinal))
+                        methodName.Equals("get_IsHardwareAccelerated", StringComparison.Ordinal) ||
+                        methodName.Equals("ShuffleNative", StringComparison.Ordinal))
                     {
                         _actualInstructionSetUnsupported.AddInstructionSet(instructionSet);
                     }

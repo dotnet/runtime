@@ -3521,17 +3521,6 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
-        // This method only exists so that ShuffleNative has the same behaviour when called directly or via
-        // reflection - reflecting into internal runtime methods is not supported, so we don't worry about others
-        // reflecting into these. TODO: figure out if this can be solved in a nicer way.
-
-        [Intrinsic]
-        private static Vector512<T> ShuffleNativeFallback<T, TIndex>(Vector512<T> vector, Vector512<TIndex> indices)
-            where TIndex : IBinaryInteger<TIndex>
-        {
-            return ShuffleFallback(vector, indices);
-        }
-
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
         /// <param name="vector">The input vector from which values are selected.</param>
         /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
@@ -3595,67 +3584,191 @@ namespace System.Runtime.Intrinsics
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, Count - 1].</remarks>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<byte> ShuffleNative(Vector512<byte> vector, Vector512<byte> indices) => ShuffleNativeFallback(vector, indices);
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        [CompHasFallback]
+        public static Vector512<byte> ShuffleNative(Vector512<byte> vector, Vector512<byte> indices)
+        {
+#if !MONO
+            if (Avx512Vbmi.IsSupported)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<double> ShuffleNative(Vector512<double> vector, Vector512<long> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<double> ShuffleNative(Vector512<double> vector, Vector512<long> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<short> ShuffleNative(Vector512<short> vector, Vector512<short> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<short> ShuffleNative(Vector512<short> vector, Vector512<short> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<int> ShuffleNative(Vector512<int> vector, Vector512<int> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<int> ShuffleNative(Vector512<int> vector, Vector512<int> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<long> ShuffleNative(Vector512<long> vector, Vector512<long> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<long> ShuffleNative(Vector512<long> vector, Vector512<long> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<nint> ShuffleNative(Vector512<nint> vector, Vector512<nint> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<nint> ShuffleNative(Vector512<nint> vector, Vector512<nint> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector512<sbyte> ShuffleNative(Vector512<sbyte> vector, Vector512<sbyte> indices) => ShuffleNativeFallback(vector, indices);
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        [CompHasFallback]
+        public static Vector512<sbyte> ShuffleNative(Vector512<sbyte> vector, Vector512<sbyte> indices)
+        {
+#if !MONO
+            if (Avx512Vbmi.IsSupported)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector512<float> ShuffleNative(Vector512<float> vector, Vector512<int> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<float> ShuffleNative(Vector512<float> vector, Vector512<int> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector512<ushort> ShuffleNative(Vector512<ushort> vector, Vector512<ushort> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<ushort> ShuffleNative(Vector512<ushort> vector, Vector512<ushort> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector512<uint> ShuffleNative(Vector512<uint> vector, Vector512<uint> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<uint> ShuffleNative(Vector512<uint> vector, Vector512<uint> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector512<ulong> ShuffleNative(Vector512<ulong> vector, Vector512<ulong> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<ulong> ShuffleNative(Vector512<ulong> vector, Vector512<ulong> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="ShuffleNative(Vector512{byte}, Vector512{byte})" />
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static Vector512<nuint> ShuffleNative(Vector512<nuint> vector, Vector512<nuint> indices) => ShuffleNativeFallback(vector, indices);
+        public static Vector512<nuint> ShuffleNative(Vector512<nuint> vector, Vector512<nuint> indices)
+        {
+#if !MONO
+            if (IsHardwareAccelerated)
+            {
+                return ShuffleNative(vector, indices);
+            }
+#endif
+
+            return ShuffleFallback(vector, indices);
+        }
 
         /// <inheritdoc cref="Vector256.Sin(Vector256{double})" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

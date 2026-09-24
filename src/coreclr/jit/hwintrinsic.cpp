@@ -1225,8 +1225,8 @@ NamedIntrinsic HWIntrinsicInfo::resolveId(Compiler*              comp,
 {
     assert(isa != InstructionSet_ILLEGAL);
 
-    bool preserveNegativeDependency = (id == NI_Vector_MaxNative) || (id == NI_Vector_MinNative) ||
-                                      (id == NI_Vector_ShuffleNative) || (id == NI_Vector_ShuffleNativeFallback);
+    bool preserveNegativeDependency =
+        (id == NI_Vector_MaxNative) || (id == NI_Vector_MinNative) || (id == NI_Vector_ShuffleNative);
 
     bool isHWIntrinsicEnabled = (JitConfig.EnableHWIntrinsic() != 0);
     bool isIsaSupported       = isHWIntrinsicEnabled && comp->compSupportsHWIntrinsic(isa, preserveNegativeDependency);
@@ -3028,7 +3028,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
             }
         }
 
-        bool isShuffleNative = (intrinsic == NI_Vector_ShuffleNative) || (intrinsic == NI_Vector_ShuffleNativeFallback);
+        bool isShuffleNative = intrinsic == NI_Vector_ShuffleNative;
 
         if (potentiallyNotSupported && !compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
         {
@@ -4878,7 +4878,6 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector_Shuffle:
         case NI_Vector_ShuffleNative:
-        case NI_Vector_ShuffleNativeFallback:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
 

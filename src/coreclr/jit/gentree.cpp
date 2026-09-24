@@ -4518,7 +4518,6 @@ unsigned Compiler::gtSetMultiOpOrder(GenTreeMultiOp* multiOp)
 
                     case NI_Vector_Shuffle:
                     case NI_Vector_ShuffleNative:
-                    case NI_Vector_ShuffleNativeFallback:
                     case NI_Vector_CreateGeometricSequence:
                     {
                         // These are likely becoming calls
@@ -28764,7 +28763,7 @@ GenTree* Compiler::gtNewSimdRoundNode(var_types type, GenTree* op1, var_types si
 
 //------------------------------------------------------------------------
 // gtNewSimdShuffleVariableNode: Creates a new simd shuffle node (with variable indices, or a case isn't handled in
-// gtNewSimdShuffleNode for ShuffleUnsafe with out of bounds indices) - this is a helper function for
+// gtNewSimdShuffleNode for ShuffleNative with out of bounds indices) - this is a helper function for
 // gtNewSimdShuffleNode & should just be invoked by it indirectly, instead of other callers using it
 //
 // Arguments:
@@ -34089,7 +34088,6 @@ bool GenTreeHWIntrinsic::ShouldConstantProp(GenTree* operand, GenTreeVecCon* vec
 
         case NI_Vector_Shuffle:
         case NI_Vector_ShuffleNative:
-        case NI_Vector_ShuffleNativeFallback:
         {
             // The shuffle indices ideally are constant so we can get the best
             // codegen possible. There are also some case/s where it would have

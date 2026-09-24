@@ -3408,6 +3408,28 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector512ByteShuffleNativeReflectionTest()
+        {
+            Vector512<byte> vector = Vector512<byte>.Zero;
+            Vector512<byte> indices = Vector512<byte>.Zero;
+
+            for (int index = 0; index < Vector512<byte>.Count; index++)
+            {
+                vector = vector.WithElement(index, (byte)(index + 1));
+                indices = indices.WithElement(index, (byte)(index + Vector512<byte>.Count));
+            }
+
+            Vector512<byte> expected = Vector512.ShuffleNative(vector, indices);
+            MethodInfo methodInfo = typeof(Vector512).GetMethod(nameof(Vector512.ShuffleNative), [typeof(Vector512<byte>), typeof(Vector512<byte>)]);
+            Vector512<byte> actual = (Vector512<byte>)methodInfo.Invoke(null, [vector, indices]);
+
+            for (int index = 0; index < Vector512<byte>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
+        [Fact]
         public void Vector512DoubleShuffleNativeOneInputTest()
         {
             Vector512<double> vector = Vector512.Create((double)1, 2, 3, 4, 5, 6, 7, 8);
