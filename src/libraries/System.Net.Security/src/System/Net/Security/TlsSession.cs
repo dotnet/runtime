@@ -1852,14 +1852,15 @@ namespace System.Net.Security
         // when AcceptWithDefaultValidation runs.
         private void CaptureRemoteCertificateForExternalValidation()
         {
-            int preexistingExtraCertsCount = _options.CertificateChainPolicy?.ExtraStore.Count ?? 0;
+            X509ChainPolicy? chainPolicy = _options.CertificateChainPolicy?.Clone();
+            int preexistingExtraCertsCount = chainPolicy?.ExtraStore.Count ?? 0;
             X509Chain? chain = null;
             X509Certificate2Collection? intermediates = null;
 
             try
             {
                 _externalPendingCert = CertificateValidationPal.GetRemoteCertificate(
-                    _securityContext, ref chain, _options.CertificateChainPolicy);
+                    _securityContext, ref chain, chainPolicy);
 
                 if (chain is not null)
                 {
