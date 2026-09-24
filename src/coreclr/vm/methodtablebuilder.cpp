@@ -3915,6 +3915,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG taskTypePrefixSize;
                 ULONG taskTypePrefixReplacementSize;
 
+                DWORD asyncMemberAttrs = dwMemberAttrs;
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
                 if (returnsValueTask && !isCovariantTaskOverride)
                 {
@@ -3935,6 +3936,8 @@ MethodTableBuilder::EnumerateClassMethods()
                     // variant and awaits the returned Task.
                     _ASSERTE(hasAsyncFlags(asyncFlags, AsyncMethodFlags::Thunk));
                     asyncFlags |= AsyncMethodFlags::CovariantForwardingThunk;
+                    // The forwarding thunk is concrete even when the ordinary variant is abstract.
+                    asyncMemberAttrs &= ~mdAbstract;
                 }
 
                 // Here we construct the signature of async call variant given its task-returning counterpart.
@@ -4054,7 +4057,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 pNewMethod = new (GetStackingAllocator()) bmtMDMethod(
                     bmtInternal->pType,
                     tok,
-                    dwMemberAttrs,
+                    asyncMemberAttrs,
                     dwImplFlags,
                     dwMethodRVA,
                     newMemberSig,
@@ -4084,7 +4087,7 @@ MethodTableBuilder::EnumerateClassMethods()
             bmtVT->dwMaxVtableSize++;
 
             // Increment the number of non-abstract declared methods
-            if (!IsMdAbstract(dwMemberAttrs))
+            if (!IsMdAbstract(pNewMethod->GetDeclAttrs()))
             {
                 bmtMethod->dwNumDeclaredNonAbstractMethods++;
             }

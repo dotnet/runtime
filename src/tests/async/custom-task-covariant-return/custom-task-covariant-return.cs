@@ -67,6 +67,24 @@ namespace CustomTaskCovariantReturn
             });
         }
 
+        public abstract class AbstractDerived : Base
+        {
+            public abstract override MyTask M1();
+
+            public abstract override MyTask<int> M2();
+        }
+
+        public class ConcreteDerived : AbstractDerived
+        {
+            public override MyTask M1() => new MyTask(() => Trace += "ConcreteDerived.M1;");
+
+            public override MyTask<int> M2() => new MyTask<int>(() =>
+            {
+                Trace += "ConcreteDerived.M2;";
+                return 42;
+            });
+        }
+
         // awaiting the result of the call directly
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task CallM1(Base b) => await b.M1();
@@ -135,6 +153,30 @@ namespace CustomTaskCovariantReturn
             Trace = null;
             Assert.Equal(43, CallM2(b).GetAwaiter().GetResult());
             Assert.Equal("Derived2.M2;Derived.M2;", Trace);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void TestAbstractCustomTaskOverride(bool viaTask)
+        {
+            Base b = DateTime.Now.Year > 0 ? new ConcreteDerived() : new Base();
+
+            Trace = null;
+            if (viaTask)
+            {
+                Assert.IsType<MyTask>(CallM1ViaTask(b).GetAwaiter().GetResult());
+            }
+            else
+            {
+                CallM1(b).GetAwaiter().GetResult();
+            }
+            Assert.Equal("ConcreteDerived.M1;", Trace);
+
+            Trace = null;
+            int result = (viaTask ? CallM2ViaTask(b) : CallM2(b)).GetAwaiter().GetResult();
+            Assert.Equal(42, result);
+            Assert.Equal("ConcreteDerived.M2;", Trace);
         }
 
         [Fact]

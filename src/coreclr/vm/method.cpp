@@ -1537,6 +1537,11 @@ DWORD MethodDesc::GetAttrs() const
         _ASSERTE(!"If this ever fires, then this method should return HRESULT");
         return 0;
     }
+    if (IsMdAbstract(dwAttributes) && IsCovariantForwardingThunk())
+    {
+        // The synthesized forwarding thunk has an implementation even if its metadata method does not.
+        dwAttributes &= ~mdAbstract;
+    }
     return dwAttributes;
 }
 
