@@ -519,13 +519,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
 #endif
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
-#if READYTORUN
-            _methodCodeNode.InitializeGCInfo(
-                _gcInfo,
-                _compilation.TypeSystemContext.Target.Architecture == TargetArchitecture.Wasm32);
-#else
             _methodCodeNode.InitializeGCInfo(_gcInfo);
-#endif
             _methodCodeNode.InitializeEHInfo(ehInfo);
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);

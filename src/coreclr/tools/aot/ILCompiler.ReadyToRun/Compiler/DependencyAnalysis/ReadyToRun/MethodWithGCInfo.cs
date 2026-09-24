@@ -31,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private List<ISymbolNode> _fixups;
         private MethodDesc[] _inlinedMethods;
         private bool _lateTriggeredCompilation;
-        private bool _hasShareableWasmGcInfo;
         private DependencyList _nonRelocationDependencies;
 
         public MethodWithGCInfo(MethodDesc methodDesc)
@@ -108,9 +107,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool ObjectWriter.IWasmFunctionBodyNode.IsShareableWasmFunctionBody =>
             ColdCodeNode is null
             && _ehInfo?.Data is not { Length: > 0 }
-            && GetFuncletKinds().Length == 0
-            && _gcInfo is not null
-            && _hasShareableWasmGcInfo;
+            && GetFuncletKinds().Length == 0;
 
         bool ObjectWriter.IWasmFunctionBodyNode.HasCompatibleWasmRuntimeMetadata(ObjectWriter.IWasmFunctionBodyNode other)
         {
@@ -404,13 +401,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // TODO: x86 (see InitializeFrameInfos())
         }
 
-        public void InitializeGCInfo(byte[] gcInfo, bool isWasm)
+        public void InitializeGCInfo(byte[] gcInfo)
         {
             Debug.Assert(_gcInfo == null);
             _gcInfo = gcInfo;
-            _hasShareableWasmGcInfo = isWasm
-                && gcInfo is not null
-                && WasmGcInfo.HasNoSafePointsInterruptibleRangesOrGcSlots(gcInfo);
         }
 
         public void InitializeEHInfo(ObjectData ehInfo)

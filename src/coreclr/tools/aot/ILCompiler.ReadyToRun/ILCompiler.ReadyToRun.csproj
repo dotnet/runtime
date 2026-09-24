@@ -305,7 +305,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodGCInfoNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\MethodWithGCInfo.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmGcInfo.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleToken.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ModuleTokenResolver.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewArrayFixupSignature.cs" />
