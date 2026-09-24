@@ -3920,6 +3920,61 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
     return tree;
 }
 
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// GetCompareSize: Get the operand size of a lowered xarch comparison.
+//
+// Return Value:
+//    The comparison width in bytes.
+//
+// Remarks:
+//    Requires completed containment checking. Mixed signed/unsigned small types
+//    use 4 bytes unless containment has proved that both values fit the memory
+//    operand's range, in which case its size is used (e.g. 2 bytes for a contained
+//    short compared with a byte). Without that proof, TYP_BYTE versus TYP_UBYTE
+//    uses 4 bytes, preserving sign/zero extension so -1 and 255 remain distinct.
+//    GTF_UNSIGNED, not this size, determines the comparison's signedness.
+//
+//    Codegen may further narrow TEST immediates when the allocated registers
+//    support a byte operation.
+//
+unsigned GenTreeOp::GetCompareSize() const
+{
+    assert(OperIsCompare() || OperIs(GT_CMP, GT_TEST, GT_BT));
+
+    var_types op1Type = gtOp1->TypeGet();
+    var_types op2Type = gtOp2->TypeGet();
+
+    if (OperIs(GT_BITTEST_EQ, GT_BITTEST_NE, GT_BT))
+    {
+        // BT uses the index modulo the operand width, so its type is independent
+        // of the index's type.
+        return genTypeSize(genActualType(op1Type));
+    }
+
+    if (gtOp1->isContained() && !gtOp1->IsCnsIntOrI())
+    {
+        return genTypeSize(op1Type);
+    }
+
+    if (gtOp2->isContained() && !gtOp2->IsCnsIntOrI())
+    {
+        return genTypeSize(op2Type);
+    }
+
+    if (op1Type == op2Type)
+    {
+        return genTypeSize(op1Type);
+    }
+
+    // Different small types must be extended before comparison. Mixes involving
+    // long operands must have been handled by lowering.
+    unsigned size = ((genTypeSize(op1Type) == 8) && (genTypeSize(op2Type) == 8)) ? 8 : 4;
+    assert(size >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
+    return size;
+}
+#endif // TARGET_XARCH
+
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------------
 // IsValidLongMul : Check for long multiplication with 32 bit operands.
@@ -15683,11 +15738,13 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 
             bool isArg0Exact;
             bool isArg1Exact;
-            bool isNonNull; // Unused here.
+            bool isArg0NonNull;
+            bool isArg1NonNull;
 
-            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
-            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
-            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isArg0NonNull);
+            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isArg1NonNull);
+            // A null receiver should throw, but a null argument must return false.
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
             {
                 break;
             }
