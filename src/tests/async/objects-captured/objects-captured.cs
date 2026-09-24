@@ -38,9 +38,9 @@ public class Async2ObjectsWithYields
         return (int)result - 90;
     }
 
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static int Test()
+    [Fact]
+    public static async Task<int> Test()
     {
-        return (int)AsyncEntry().Result;
+        return (int)(await AsyncEntry());
     }
 }

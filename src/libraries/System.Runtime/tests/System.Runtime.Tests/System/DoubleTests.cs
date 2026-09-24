@@ -1013,6 +1013,25 @@ namespace System.Tests
             Assert.Equal(expected.Replace('E', 'e'), d.ToString(format.ToLowerInvariant(), provider));
         }
 
+        [Theory]
+        [InlineData(3.141592653589793E-07, "F16", "0.0000003141592654")]
+        [InlineData(3.141592653589793E-07, "F17", "0.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "F18", "0.000000314159265359")]
+        [InlineData(-3.141592653589793E-07, "F17", "-0.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "C17", "\u00A40.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "N17", "0.00000031415926536")]
+        [InlineData(3.141592653589793E-07, "P15", "0.000031415926536 %")]
+        [InlineData(3.141592653589793E-07, "P17", "0.00003141592653590 %")]
+        [InlineData(double.Epsilon, "F17", "0.00000000000000000")]
+        [InlineData(-double.Epsilon, "F17", "-0.00000000000000000")]
+        [InlineData(0.0, "F17", "0.00000000000000000")]
+        [InlineData(-0.0, "F17", "-0.00000000000000000")]
+        public static void ToString_FractionalPrecision(double value, string format, string expected)
+        {
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
         [Fact]
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
