@@ -235,18 +235,18 @@ namespace System
 
             // Stores digits * 10^decimalExponent in NumberBuffer form. Formatting before
             // trimming avoids the repeated integer divisions that penalize powers of ten.
-            private static unsafe void StoreDigits(ref NumberBuffer number, ulong digits, int decimalExponent)
+            private static void StoreDigits(ref NumberBuffer number, ulong digits, int decimalExponent)
             {
                 Debug.Assert(digits != 0);
 
                 int digitCount = FormattingHelpers.CountDigits(digits);
-                Span<byte> destination = new(number.DigitsPtr, digitCount);
-                byte* start = UInt64ToDecChars(number.DigitsPtr + digitCount, digits);
-                Debug.Assert(start == number.DigitsPtr);
+                Span<byte> destination = number.Digits.Slice(0, digitCount);
+                int start = UInt64ToDecChars(destination, digitCount, digits);
+                Debug.Assert(start == 0);
 
                 number.Scale = digitCount + decimalExponent;
                 digitCount = destination.LastIndexOfAnyExcept((byte)'0') + 1;
-                number.DigitsPtr[digitCount] = (byte)'\0';
+                number.Digits[digitCount] = (byte)'\0';
                 number.DigitsCount = digitCount;
             }
 
