@@ -328,26 +328,6 @@ struct TransitionBlock
 #endif
     }
 
-    // Check if an argument has floating point register, that means that it is
-    // either a floating point argument or a struct passed in registers that
-    // has a floating point member.
-    static BOOL HasFloatRegister(int offset, ArgLocDesc* argLocDescForStructInRegs)
-    {
-        LIMITED_METHOD_CONTRACT;
-    #if defined(UNIX_AMD64_ABI)
-        if (offset == TransitionBlock::StructInRegsOffset)
-        {
-            return argLocDescForStructInRegs->m_cFloatReg > 0;
-        }
-    #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        if (argLocDescForStructInRegs != NULL)
-        {
-            return argLocDescForStructInRegs->m_cFloatReg > 0;
-        }
-    #endif
-        return offset < 0;
-    }
-
     static int GetOffsetOfFloatArgumentRegisters()
     {
         LIMITED_METHOD_CONTRACT;

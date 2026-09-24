@@ -78,7 +78,6 @@ class Thread;
 class Assembly;
 class AssemblyNative;
 class WaitHandleNative;
-class ArgDestination;
 
 struct RCW;
 
@@ -413,7 +412,6 @@ inline void ClearObjectReference(OBJECTREF* dst)
 // CopyValueClass sets a value class field
 
 void CopyValueClassUnchecked(void* dest, void* src, MethodTable *pMT);
-void CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, MethodTable *pMT, int destOffset);
 
 inline void InitValueClass(void *dest, MethodTable *pMT)
 {
@@ -421,12 +419,8 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
     ZeroMemoryInGCHeap(dest, pMT->GetNumInstanceFieldBytes());
 }
 
-// Initialize value class argument
-void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
-
 #define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
 #define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)
-#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)
 
 #include <pshpack4.h>
 
