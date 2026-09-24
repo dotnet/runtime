@@ -2811,10 +2811,10 @@ static bool CopyTypeSigWithSubstitution(
 
             while (nlbounds--)
             {
-                uint32_t lbound;
-                if (FAILED(pSrc->GetData(&lbound)))
+                PCCOR_SIGNATURE pLowerBound = pSrc->GetPtr();
+                if (FAILED(pSrc->GetData(NULL)))
                     return false;
-                pDst->AppendData(lbound);
+                pDst->AppendBlob((PVOID)pLowerBound, pSrc->GetPtr() - pLowerBound);
             }
         }
 
