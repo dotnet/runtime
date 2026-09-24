@@ -522,7 +522,7 @@ namespace System.Net.Http
                     {
                         if (NetEventSource.Log.IsEnabled())
                         {
-                            Trace($"MaxConnectionFailureRetries limit of {MaxConnectionFailureRetries} hit. Retryable request will not be retried. Exception: {e}");
+                            Trace($"MaxConnectionFailureRetries limit of {MaxConnectionFailureRetries} hit. Retryable request will not be retried. requestId={request.GetHashCode()}, connectionId={request.ConnectionId}. Exception: {e}");
                         }
 
                         throw;
@@ -532,7 +532,7 @@ namespace System.Net.Http
 
                     if (NetEventSource.Log.IsEnabled())
                     {
-                        Trace($"Retry attempt {retryCount} after connection failure. Connection exception: {e}");
+                        Trace($"Retry attempt {retryCount} after connection failure. requestId={request.GetHashCode()}, connectionId={request.ConnectionId}. Connection exception: {e}");
                     }
 
                     // Eat exception and try again.
