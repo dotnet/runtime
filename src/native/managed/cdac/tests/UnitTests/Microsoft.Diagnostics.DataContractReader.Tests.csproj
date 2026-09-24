@@ -1,8 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFramework>$(CDacTfm)</TargetFramework>
-    <RollForward Condition="'$(CDacTfm)' != '$(NetCoreAppToolCurrent)'">LatestMajor</RollForward>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
