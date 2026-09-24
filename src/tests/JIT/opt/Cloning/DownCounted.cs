@@ -141,11 +141,13 @@ public class DownCounted
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int UnsignedArrayGEConstUnsafe(int[] a)
     {
-        // init=7, limit=1, stride=3: remainder r=0 but limit < stride, so
-        // the loop visits "limit" (1) via GE and then underflows on the
-        // next decrement -- must not be proven safe.
+        // init=8, limit=2, stride=3: remainder r=0 but limit < stride, so
+        // the loop visits "limit" (2) via GE and then underflows on the
+        // next decrement -- must not be proven safe. (limit=2, not 1, so
+        // morph doesn't rewrite "i >= 1" into "i != 0" before this code
+        // reaches loop cloning.)
         int sum = 0;
-        for (uint i = 7; i >= 1; i -= 3)
+        for (uint i = 8; i >= 2; i -= 3)
         {
             sum += a[i];
         }
@@ -155,11 +157,27 @@ public class DownCounted
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     static int UnsignedArrayGTConstUnsafe(int[] a)
     {
-        // init=7, limit=0, stride=3: remainder r=1 != 0, so the loop visits
-        // "limit + r" (1) via GT, and limit + r < stride -- must not be
-        // proven safe.
+        // init=8, limit=1, stride=3: remainder r=1 != 0, so the loop visits
+        // "limit + r" (2) via GT, and limit + r < stride -- must not be
+        // proven safe. (limit=1, not 0, so morph doesn't rewrite "i > 0"
+        // into "i != 0" before this code reaches loop cloning.)
         int sum = 0;
-        for (uint i = 7; i > 0; i -= 3)
+        for (uint i = 8; i > 1; i -= 3)
+        {
+            sum += a[i];
+        }
+        return sum;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    static int UnsignedArrayGTUnitStrideConstSafe(int[] a)
+    {
+        // init=7, limit=0, stride=1: with unit stride, a GT test's
+        // remainder is always 0, so the loop can never visit "limit"
+        // itself -- always safe to clone, even though limit=0 would be
+        // unsafe for GE/NE with unit stride.
+        int sum = 0;
+        for (uint i = 7; i > 0; i--)
         {
             sum += a[i];
         }
@@ -218,5 +236,6 @@ public class DownCounted
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGEConstUnsafe(a));
         Assert.Throws<IndexOutOfRangeException>(() => UnsignedArrayGTConstUnsafe(a));
         Assert.Equal(28, UnsignedArrayGEUnitStrideConstSafe(a));
+        Assert.Equal(28, UnsignedArrayGTUnitStrideConstSafe(a));
     }
 }
