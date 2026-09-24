@@ -11168,7 +11168,10 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
                 return nullptr;
             }
 
-            commaThrow->gtOp2 = gtNewZeroConNode(parentType);
+            GenTree* zero = gtNewZeroConNode(parentType);
+            zero->SetMorphed(this);
+
+            commaThrow->gtOp2 = zero;
             commaThrow->ChangeType(parentType);
         }
 
