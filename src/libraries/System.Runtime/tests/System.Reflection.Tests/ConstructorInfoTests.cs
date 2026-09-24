@@ -248,35 +248,35 @@ namespace System.Reflection.Tests
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_Byte() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeByteEnum)), IntrinsicInvokeByteEnum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeByteEnum>), IntrinsicInvokeByteEnum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_SByte() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeSByteEnum)), IntrinsicInvokeSByteEnum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeSByteEnum>), IntrinsicInvokeSByteEnum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_Int16() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt16Enum)), IntrinsicInvokeInt16Enum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeInt16Enum>), IntrinsicInvokeInt16Enum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_UInt16() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt16Enum)), IntrinsicInvokeUInt16Enum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeUInt16Enum>), IntrinsicInvokeUInt16Enum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_Int32() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt32Enum)), IntrinsicInvokeInt32Enum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeInt32Enum>), IntrinsicInvokeInt32Enum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_UInt32() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt32Enum)), IntrinsicInvokeUInt32Enum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeUInt32Enum>), IntrinsicInvokeUInt32Enum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_Int64() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeInt64Enum)), IntrinsicInvokeInt64Enum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeInt64Enum>), IntrinsicInvokeInt64Enum.Value);
 
         [Fact]
         public void Invoke_EnumConstructors_MapActualUnderlyingType_UInt64() =>
-            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<>).MakeGenericType(typeof(IntrinsicInvokeUInt64Enum)), IntrinsicInvokeUInt64Enum.Value);
+            Invoke_EnumConstructors_MapActualUnderlyingType(typeof(IntrinsicInvokeEnumConstructorTarget<IntrinsicInvokeUInt64Enum>), IntrinsicInvokeUInt64Enum.Value);
 
         private static void Invoke_EnumConstructors_MapActualUnderlyingType(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
