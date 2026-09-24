@@ -152,11 +152,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             createMibcFromMethodListCommand.SetAction(result =>
             {
                 CreateMibcFromMethodList = true;
-#if DEBUG
                 ValidateOutputFile = true;
-#else
-                ValidateOutputFile = false;
-#endif
 
                 return ExecuteWithContext(result, true);
             });

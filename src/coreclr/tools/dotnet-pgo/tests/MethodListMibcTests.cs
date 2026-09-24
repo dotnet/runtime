@@ -41,7 +41,9 @@ namespace DotNetPgo.Tests
 
             string mibcPath = Path.Combine(directory.Path, "methods.mibc");
 
-            AssertSuccess(RunCreate(firstMethodList, mibcPath));
+            CommandResult firstCreate = RunCreate(firstMethodList, mibcPath);
+            AssertSuccess(firstCreate);
+            Assert.Contains($"Validated {mibcPath}", firstCreate.StandardOutput, StringComparison.Ordinal);
             byte[] firstMibc = File.ReadAllBytes(mibcPath);
             AssertSuccess(RunCreate(secondMethodList, mibcPath));
             Assert.Equal(firstMibc, File.ReadAllBytes(mibcPath));
