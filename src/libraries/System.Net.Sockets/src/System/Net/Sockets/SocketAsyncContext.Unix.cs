@@ -804,7 +804,7 @@ namespace System.Net.Sockets
                 // restore native blocking mode here unconditionally.
                 _socket.SetBlocking();
 
-                return errorCode;
+                return operation.ErrorCode;
             }
 
             return GetSocketErrorForNonCompleted(result);
