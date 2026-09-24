@@ -200,7 +200,7 @@ def build_and_run(coreclr_args, output_mch_name):
     # Start with a "dotnet --info" to see what we've got.
     run_command([dotnet_exe, "--info"])
 
-    tfm = "net11.0"
+    tfm = "net12.0"
     os.environ["PERFLAB_TARGET_FRAMEWORKS"] = tfm
 
     env_for_restore = os.environ.copy()

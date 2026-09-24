@@ -155,6 +155,15 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)/" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
+
+    </ItemGroup>
+
+    <ItemGroup>
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK=$(AspNetCoreAppCurrent)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK=$(AspNetCoreAppCurrent)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WBT_NETCOREAPP_MAXIMUM_VERSION=$(NetCoreAppCurrentVersion)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WBT_NETCOREAPP_MAXIMUM_VERSION=$(NetCoreAppCurrentVersion)" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -162,10 +171,13 @@
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
       <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
     </PropertyGroup>
-    <ItemGroup>
-      <!-- net11 Add new entry when adding major version -->
-      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" />
 
+    <ItemGroup>
+      <!-- net12 Add new entry when adding major version -->
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER12" />
+
+      <_RuntimePackVersions Include="$(PackageVersionNet11)" EnvVarName="RUNTIME_PACK_VER11" Condition="'$(PackageVersionNet11)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" Condition="'$(PackageVersionNet11)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet10)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' != ''" />
       <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />

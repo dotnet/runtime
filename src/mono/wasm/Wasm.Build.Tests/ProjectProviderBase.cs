@@ -447,8 +447,24 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
         string actualPath = match.Groups[1].Value;
-        if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
+        if (Directory.Exists(expectedRuntimePackDir) && string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
+
+        if (!Directory.Exists(expectedRuntimePackDir))
+        {
+            var expectedPackDirectory = new DirectoryInfo(expectedRuntimePackDir);
+            var actualPackDirectory = new DirectoryInfo(actualPath);
+            string expectedPackName = expectedPackDirectory.Parent!.Name;
+            string expectedPackVersion = expectedPackDirectory.Name;
+            string actualPackName = actualPackDirectory.Parent!.Name;
+            string actualPackVersion = actualPackDirectory.Name;
+
+            if (!string.Equals(actualPackName, expectedPackName, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(actualPackVersion, expectedPackVersion, StringComparison.Ordinal))
+            {
+                throw new XunitException($"Runtime pack doesn't match.{Environment.NewLine}Expected: '{expectedPackName}/{expectedPackVersion}'{Environment.NewLine}Actual:   '{actualPackName}/{actualPackVersion}'");
+            }
+        }
     }
 
     // Extract the runtime pack root that the build actually resolved (printed by

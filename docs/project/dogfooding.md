@@ -38,7 +38,7 @@ azure-feed://dnceng/public/dotnet11@Local
 
 1. Acquire the latest development .NET SDK by downloading and extracting a zip/tarball or using an installer from the [latest builds table in dotnet/sdk](https://github.com/dotnet/sdk#installing-the-sdk) (for example, https://aka.ms/dotnet/11.0/daily/dotnet-sdk-win-x64.zip).
 
-2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 11.0." then you may be executing an older `dotnet`.
+2. If you are using a local copy of the dotnet CLI, take care that when you type `dotnet` you do not inadvertently pick up a different copy that you may have in your path. On Windows, for example, if you use a Command Prompt, a global copy may be in the path, so use the fully qualified path to your local `dotnet` (e.g. `C:\dotnet\dotnet.exe`). If you receive an error "error NETSDK1045:  The current .NET SDK does not support targeting .NET 12.0." then you may be executing an older `dotnet`.
 
 After setting up dotnet you can verify you are using the current preview version by executing `dotnet --info`. Here is an example output:
 ```
@@ -58,7 +58,7 @@ global.json file:
   Not found
 
 Host:
-  Version:      11.0.0-alpha.1.24556.3
+  Version:      12.0.0-alpha.1.24556.3
   Architecture: x64
   Commit:       47d9c43ab1
 
@@ -66,7 +66,7 @@ Host:
   11.0.100-alpha.1.24556.7 [C:\Program Files\dotnet\sdk]
 
 .NET runtimes installed:
-  Microsoft.NETCore.App 11.0.0-alpha.1.24556.7 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+  Microsoft.NETCore.App 12.0.0-alpha.1.24556.7 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
 
 Download .NET:
   https://aka.ms/dotnet-download
@@ -124,10 +124,10 @@ This is the default case for applications - running against an installed .NET ru
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'net11.0' -->
-    <TargetFramework>net11.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net12.0' -->
+    <TargetFramework>net12.0</TargetFramework>
     <!-- modify version in this line with one reported by `dotnet --info` under ".NET runtimes installed" -> Microsoft.NETCore.App -->
-    <RuntimeFrameworkVersion>11.0.0-alpha.1.24556.3</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>12.0.0-alpha.1.24556.3</RuntimeFrameworkVersion>
   </PropertyGroup>
 ```
 
@@ -147,11 +147,11 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```XML
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- Ensure that the target framework is correct e.g. 'net11.0' -->
-    <TargetFramework>net11.0</TargetFramework>
+    <!-- Ensure that the target framework is correct e.g. 'net12.0' -->
+    <TargetFramework>net12.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET runtimes installed" -> Microsoft.NETCore.App -->
     <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet11/nuget/v3/index.json -->
-    <RuntimeFrameworkVersion>11.0.0-alpha.1.24556.3</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>12.0.0-alpha.1.24556.3</RuntimeFrameworkVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- RID to make it self-contained -->
   </PropertyGroup>
 ```
@@ -159,5 +159,5 @@ make it self-contained by adding a RuntimeIdentifier (RID).
 ```
 $ dotnet restore
 $ dotnet publish
-$ bin\Debug\net11.0\win-x64\publish\App.exe
+$ bin\Debug\net12.0\win-x64\publish\App.exe
 ```

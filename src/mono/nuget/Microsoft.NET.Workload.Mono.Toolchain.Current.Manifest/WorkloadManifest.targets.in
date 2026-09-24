@@ -2,6 +2,7 @@
 <Project>
   <PropertyGroup>
     <_RuntimePackInWorkloadVersionCurrent>${PackageVersion}</_RuntimePackInWorkloadVersionCurrent>
+    <_RuntimePackInWorkloadVersion11>${PackageVersionNet11}</_RuntimePackInWorkloadVersion11>
     <_RuntimePackInWorkloadVersion10>${PackageVersionNet10}</_RuntimePackInWorkloadVersion10>
     <_RuntimePackInWorkloadVersion9>${PackageVersionNet9}</_RuntimePackInWorkloadVersion9>
     <_RuntimePackInWorkloadVersion8>${PackageVersionNet8}</_RuntimePackInWorkloadVersion8>
@@ -10,13 +11,14 @@
 
     <TargetsCurrent Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '${FrameworkVersionCurrent}'))">true</TargetsCurrent>
 
-    <!-- Disabled until next release: force net10.0 to use the current targets until the SDK can target net11.0 -->
+    <!-- Disabled until next release: force net11.0 to use the current targets until the SDK can target net12.0 -->
     <!--
     <TreatPreviousAsCurrent Condition="'$(TreatPreviousAsCurrent)' == ''">true</TreatPreviousAsCurrent>
-    <TargetsCurrent Condition="'$(TreatPreviousAsCurrent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsCurrent>
+    <TargetsCurrent Condition="'$(TreatPreviousAsCurrent)' == 'true' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '11.0'))">true</TargetsCurrent>
     -->
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsCurrent)' != 'true'">
+    <TargetsNet11   Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '11.0'))">true</TargetsNet11>
     <TargetsNet10   Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '10.0'))">true</TargetsNet10>
     <TargetsNet9    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '9.0'))">true</TargetsNet9>
     <TargetsNet8    Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and $([MSBuild]::VersionEquals('$(TargetFrameworkVersion)', '8.0'))">true</TargetsNet8>
@@ -37,7 +39,8 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm'">
-    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsCurrent)' == 'true'">$(WasmNativeWorkload12)</WasmNativeWorkloadAvailable>
+    <WasmNativeWorkloadAvailable Condition="'$(TargetsNet11)' == 'true'">$(WasmNativeWorkload11)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet10)' == 'true'">$(WasmNativeWorkload10)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet9)' == 'true'">$(WasmNativeWorkload9)</WasmNativeWorkloadAvailable>
     <WasmNativeWorkloadAvailable Condition="'$(TargetsNet8)' == 'true'">$(WasmNativeWorkload8)</WasmNativeWorkloadAvailable>
