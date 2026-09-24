@@ -648,6 +648,33 @@ public class WasmArgumentLayoutTests
             }
             """;
 
+        AssertPortableCallHelpersGeneratorRejects(source, "has multi-slot signature token 'l2'");
+    }
+
+    [Fact]
+    public void PortableCallHelpersGeneratorRejectsHiddenReturnBufferCallbacks()
+    {
+        string source = """
+            using System.Runtime.InteropServices;
+
+            public struct Pair
+            {
+                public int First;
+                public int Second;
+            }
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly(EntryPoint = "callback")]
+                public static Pair Handle(int value) => default;
+            }
+            """;
+
+        AssertPortableCallHelpersGeneratorRejects(source, "uses a hidden return buffer");
+    }
+
+    private void AssertPortableCallHelpersGeneratorRejects(string source, string expectedError)
+    {
         string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
         Directory.CreateDirectory(workingDirectory);
 
@@ -666,7 +693,7 @@ public class WasmArgumentLayoutTests
                 CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
 
             Assert.Equal(1, exitCode);
-            Assert.Contains("has multi-slot signature token 'l2'", log.ToString());
+            Assert.Contains(expectedError, log.ToString());
         }
         finally
         {
