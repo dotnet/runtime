@@ -545,6 +545,14 @@ bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint()
     STANDARD_VM_CONTRACT;
 
 #ifdef FEATURE_READYTORUN
+    // Only probe the ordinary IL methods that DoPrestub would resolve through PrepareInitialCode.
+    // Unboxing and instantiating stubs require extra portable-entrypoint state that is initialized
+    // only by their dedicated DoPrestub paths.
+    if (!IsIL() || IsWrapperStub())
+    {
+        return false;
+    }
+
     PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
     config.SetCallerGCMode(CallerGCMode::Coop);
     return GetPrecompiledR2RCode(&config) != (PCODE)NULL;
