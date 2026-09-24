@@ -633,9 +633,12 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData("int", "System.Int128")]
-    [InlineData("System.Int128", "int")]
-    public void PortableCallHelpersGeneratorRejectsMultiSlotCallbacks(string returnType, string parameterType)
+    [InlineData("int", "System.Int128", "l2")]
+    [InlineData("System.Int128", "int", "l2")]
+    [InlineData("int", "System.Runtime.Intrinsics.Vector128<int>", "V")]
+    [InlineData("System.Runtime.Intrinsics.Vector128<int>", "int", "V")]
+    public void PortableCallHelpersGeneratorRejectsUnsupportedSignatureTokens(
+        string returnType, string parameterType, string expectedToken)
     {
         string source = $$"""
             using System;
@@ -648,7 +651,7 @@ public class WasmArgumentLayoutTests
             }
             """;
 
-        AssertPortableCallHelpersGeneratorRejects(source, "has multi-slot signature token 'l2'");
+        AssertPortableCallHelpersGeneratorRejects(source, $"has unsupported signature token '{expectedToken}'");
     }
 
     [Fact]

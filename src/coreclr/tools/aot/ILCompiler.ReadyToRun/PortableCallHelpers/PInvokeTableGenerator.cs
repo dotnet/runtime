@@ -387,7 +387,7 @@ namespace ILCompiler.PortableCallHelpers
                 string token = null;
                 for (int i = 1; i < loweredTokens.Count; i++)
                 {
-                    if (InteropSignature.IsMultiSlotToken(loweredTokens[i]))
+                    if (IsUnsupportedToken(loweredTokens[i]))
                     {
                         token = loweredTokens[i];
                         break;
@@ -397,14 +397,14 @@ namespace ILCompiler.PortableCallHelpers
                 if (token is null && !cb.IsVoid)
                 {
                     string returnToken = InteropSignature.GetAbiToken(cb.ReturnType);
-                    if (InteropSignature.IsMultiSlotToken(returnToken))
+                    if (IsUnsupportedToken(returnToken))
                         token = returnToken;
                 }
 
                 if (token is not null)
                 {
                     throw new LogAsErrorException(
-                        $"UnmanagedCallersOnly callback '{cb.Method}' has multi-slot signature token '{token}', which the generated native wrapper does not support.");
+                        $"UnmanagedCallersOnly callback '{cb.Method}' has unsupported signature token '{token}', which the generated native wrapper does not support.");
                 }
 
                 if (!cb.IsVoid && IsPassedByReference(cb.ReturnType))
@@ -412,6 +412,9 @@ namespace ILCompiler.PortableCallHelpers
                     throw new LogAsErrorException(
                         $"UnmanagedCallersOnly callback '{cb.Method}' has return type '{cb.ReturnType}' that uses a hidden return buffer, which the generated native wrapper does not support.");
                 }
+
+                static bool IsUnsupportedToken(string token) =>
+                    token is "V" || InteropSignature.IsMultiSlotToken(token);
             }
         }
 
