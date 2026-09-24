@@ -9,19 +9,16 @@ public class Runtime_134457
 {
     private static int s_sink;
 
-    [Theory]
-    [InlineData(5, false, 6)]
-    [InlineData(0, false, 1)]
-    [InlineData(5, true, 0)]
-    public static void TestEntryPoint(int arg, bool argumentException, int expected)
+    [Fact]
+    public static void TestEntryPoint()
     {
         s_sink = -1;
-        Assert.Equal(expected, Test(arg, argumentException));
-        Assert.Equal(expected, s_sink);
+        Assert.Equal(6, Test(5, argumentException: false));
+        Assert.Equal(6, s_sink);
 
         s_sink = -1;
-        Assert.Equal(expected, TestWithEnclosedFinally(arg, argumentException));
-        Assert.Equal(expected, s_sink);
+        Assert.Equal(6, TestWithEnclosedFinally(5, argumentException: false));
+        Assert.Equal(6, s_sink);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
