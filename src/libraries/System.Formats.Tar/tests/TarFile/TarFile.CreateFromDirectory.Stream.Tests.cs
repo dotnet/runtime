@@ -68,7 +68,8 @@ namespace System.Formats.Tar.Tests
             await CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, format, async);
 
             archive.Position = 0;
-            using TarReader reader = new TarReader(archive);
+            await using TarReaderHolder readerHolder = CreateTarReader(archive, async, leaveOpen: false);
+            TarReader reader = readerHolder;
 
             TarEntry entry = await GetNextEntry(reader, async);
             Assert.NotNull(entry);
@@ -106,7 +107,7 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             await CreateFromDirectory(source.Path, archive, includeBaseDirectory: false, options, async);
 
-            VerifyCreateFromDirectory_UsesWriterOptions(archive, preserveLinks);
+            await VerifyCreateFromDirectory_UsesWriterOptions(archive, preserveLinks, async);
         }
     }
 }
