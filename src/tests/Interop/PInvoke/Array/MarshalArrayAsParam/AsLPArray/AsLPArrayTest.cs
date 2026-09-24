@@ -656,6 +656,239 @@ public class ArrayMarshal
     }
 }
 
+public unsafe class ArrayPinningTests
+{
+    private const string NativeLibraryName = "MarshalArrayLPArrayNative";
+
+    private enum SByteEnum : sbyte { }
+    private enum ByteEnum : byte { }
+    private enum Int16Enum : short { }
+    private enum UInt16Enum : ushort { }
+    private enum Int32Enum : int { }
+    private enum UInt32Enum : uint { }
+    private enum Int64Enum : long { }
+    private enum UInt64Enum : ulong { }
+
+    public enum CharacterMarshalling
+    {
+        Unicode,
+        AnsiAsInt16,
+        AnsiAsUInt16,
+        Ansi,
+        UnicodeAsInt8,
+        UnicodeAsUInt8
+    }
+
+    public static bool IsSupported => !PlatformDetection.PlatformDoesNotSupportNativeTestAssets;
+
+    public static IEnumerable<object[]> ArrayCases()
+    {
+        foreach (int length in new[] { -1, 0, 1, 5, 21 })
+        {
+            yield return new object[] { length, false };
+            yield return new object[] { length, true };
+        }
+    }
+
+    public static IEnumerable<object[]> CharacterCases()
+    {
+        foreach (CharacterMarshalling kind in Enum.GetValues<CharacterMarshalling>())
+        {
+            foreach (object[] testCase in ArrayCases())
+            {
+                yield return new object[] { kind, testCase[0], testCase[1] };
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
+    [MemberData(nameof(ArrayCases))]
+    public static void EnumArraysArePinned(int length, bool useDelegate)
+    {
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        VerifyArrayPinning(CreateEnumArray<SByteEnum>(length), sizeof(sbyte), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<SByteEnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<ByteEnum>(length), sizeof(byte), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<ByteEnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<Int16Enum>(length), sizeof(short), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<Int16EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<UInt16Enum>(length), sizeof(ushort), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt16EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<Int32Enum>(length), sizeof(int), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<Int32EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<UInt32Enum>(length), sizeof(uint), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt32EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<Int64Enum>(length), sizeof(long), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<Int64EnumReverser>(target).Invoke : ReverseArrayElements);
+        VerifyArrayPinning(CreateEnumArray<UInt64Enum>(length), sizeof(ulong), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt64EnumReverser>(target).Invoke : ReverseArrayElements);
+    }
+
+    [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
+    [MemberData(nameof(CharacterCases))]
+    [SkipOnMono("Mono character-array marshalling uses different pinning semantics.")]
+    public static void CharacterArraysUseSelectedRepresentation(CharacterMarshalling kind, int length, bool useDelegate)
+    {
+        bool pinned = kind is CharacterMarshalling.Unicode or CharacterMarshalling.AnsiAsInt16 or CharacterMarshalling.AnsiAsUInt16;
+        char[] values = length < 0 ? null : new char[length];
+        if (values is not null)
+        {
+            ReadOnlySpan<char> pattern = pinned ? ['A', '\u03A9', '\uD83D', '\uDE00', '\0'] : ['A', 'B', 'C', 'D', 'E'];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = pattern[i % pattern.Length];
+            }
+        }
+
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        Func<char[], int, int, nint> reverse = kind switch
+        {
+            CharacterMarshalling.Unicode => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharReverser>(target).Invoke : ReverseUnicodeChars,
+            CharacterMarshalling.AnsiAsInt16 => useDelegate ? Marshal.GetDelegateForFunctionPointer<AnsiCharAsInt16Reverser>(target).Invoke : ReverseAnsiCharsAsInt16,
+            CharacterMarshalling.AnsiAsUInt16 => useDelegate ? Marshal.GetDelegateForFunctionPointer<AnsiCharAsUInt16Reverser>(target).Invoke : ReverseAnsiCharsAsUInt16,
+            CharacterMarshalling.Ansi => useDelegate ? Marshal.GetDelegateForFunctionPointer<AnsiCharReverser>(target).Invoke : ReverseAnsiChars,
+            CharacterMarshalling.UnicodeAsInt8 => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharAsInt8Reverser>(target).Invoke : ReverseUnicodeCharsAsInt8,
+            CharacterMarshalling.UnicodeAsUInt8 => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharAsUInt8Reverser>(target).Invoke : ReverseUnicodeCharsAsUInt8,
+            _ => throw new ArgumentOutOfRangeException(nameof(kind))
+        };
+        VerifyArrayPinning(values, pinned ? sizeof(char) : sizeof(byte), pinned, reverse);
+    }
+
+    [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void BooleanArraysAreNotPinned(bool oneByte, bool useDelegate)
+    {
+        bool[] values = [true, false, true, false, false];
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        Func<bool[], int, int, nint> reverse = oneByte
+            ? (useDelegate ? Marshal.GetDelegateForFunctionPointer<ByteBoolReverser>(target).Invoke : ReverseByteBooleans)
+            : (useDelegate ? Marshal.GetDelegateForFunctionPointer<BoolReverser>(target).Invoke : ReverseBooleans);
+        VerifyArrayPinning(values, oneByte ? sizeof(byte) : sizeof(int), false, reverse);
+    }
+
+    private static T[] CreateEnumArray<T>(int length) where T : unmanaged, Enum
+    {
+        if (length < 0)
+        {
+            return null;
+        }
+
+        T[] values = new T[length];
+        Span<byte> bytes = MemoryMarshal.AsBytes(values.AsSpan());
+        for (int i = 0; i < bytes.Length; i++)
+        {
+            bytes[i] = unchecked((byte)(0x81 + i * 17));
+        }
+
+        return values;
+    }
+
+    private static void VerifyArrayPinning<T>(T[] values, int nativeElementSize, bool pinned, Func<T[], int, int, nint> reverse) where T : unmanaged
+    {
+        if (values is null)
+        {
+            Assert.Equal(nint.Zero, reverse(null, 0, nativeElementSize));
+            return;
+        }
+
+        T[] expected = (T[])values.Clone();
+        if (pinned)
+        {
+            Array.Reverse(expected);
+        }
+
+        fixed (T* address = &MemoryMarshal.GetArrayDataReference(values))
+        {
+            nint actual = reverse(values, values.Length, nativeElementSize);
+            if (pinned)
+            {
+                Assert.Equal((nint)address, actual);
+            }
+            else
+            {
+                Assert.NotEqual((nint)address, actual);
+            }
+        }
+
+        Assert.Equal(expected, values);
+    }
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint GetArrayElementReverser();
+
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(SByteEnum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(ByteEnum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(Int16Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(UInt16Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(Int32Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(UInt32Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(Int64Enum[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseArrayElements(UInt64Enum[] values, int count, int elementSize);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint SByteEnumReverser(SByteEnum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint ByteEnumReverser(ByteEnum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint Int16EnumReverser(Int16Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UInt16EnumReverser(UInt16Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint Int32EnumReverser(Int32Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UInt32EnumReverser(UInt32Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint Int64EnumReverser(Int64Enum[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint UInt64EnumReverser(UInt64Enum[] values, int count, int elementSize);
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint ReverseUnicodeChars(char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern nint ReverseAnsiCharsAsInt16([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I2)] char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern nint ReverseAnsiCharsAsUInt16([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private static extern nint ReverseAnsiChars(char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint ReverseUnicodeCharsAsInt8([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] char[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private static extern nint ReverseUnicodeCharsAsUInt8([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] char[] values, int count, int elementSize);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private delegate nint UnicodeCharReverser(char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate nint AnsiCharAsInt16Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I2)] char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate nint AnsiCharAsUInt16Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U2)] char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate nint AnsiCharReverser(char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private delegate nint UnicodeCharAsInt8Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] char[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
+    private delegate nint UnicodeCharAsUInt8Reverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] char[] values, int count, int elementSize);
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseBooleans(bool[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseByteBooleans([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] bool[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint BoolReverser(bool[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint ByteBoolReverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] bool[] values, int count, int elementSize);
+}
+
 [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
 public unsafe class PointerArrayTests
 {
@@ -685,7 +918,7 @@ public unsafe class PointerArrayTests
     {
     }
 
-    public static bool IsSupported => PlatformDetection.IsCoreCLR && !PlatformDetection.PlatformDoesNotSupportNativeTestAssets;
+    public static bool IsSupported => !PlatformDetection.PlatformDoesNotSupportNativeTestAssets;
 
     public static IEnumerable<object[]> ArrayCases()
     {
@@ -781,6 +1014,7 @@ public unsafe class PointerArrayTests
 
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
     [MemberData(nameof(ArrayCases))]
+    [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
     public static void CopyArrayByRef(ElementKind kind, int length)
     {
         Array values = CreateArray(kind, length);
@@ -805,6 +1039,7 @@ public unsafe class PointerArrayTests
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
     [InlineData(false)]
     [InlineData(true)]
+    [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
     public static void CopyInOnlyArrayByRef(bool functionPointers)
     {
         ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;
@@ -836,6 +1071,7 @@ public unsafe class PointerArrayTests
 
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
     [MemberData(nameof(DelegateCases))]
+    [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
     public static void CopyOutArray(ElementKind kind, int length)
     {
         nuint[] expected = CreateValues(kind, length);
@@ -911,6 +1147,7 @@ public unsafe class PointerArrayTests
     [InlineData(true, 4)]
     [InlineData(true, ArrayLength)]
     [InlineData(true, 21)]
+    [SkipOnMono("Reverse pointer-array marshalling, including function-pointer layout, has not been validated on Mono.")]
     public static void CopyArrayInReversePInvoke(bool functionPointers, int length)
     {
         ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;

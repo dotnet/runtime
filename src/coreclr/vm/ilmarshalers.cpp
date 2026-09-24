@@ -3867,9 +3867,14 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
     }
 
     TypeHandle elementTypeHandle = mops.elementTypeHandle;
+    if (elementTypeHandle.IsEnum())
+    {
+        elementTypeHandle = TypeHandle(CoreLibBinder::GetElementType(elementTypeHandle.GetInternalCorElementType()));
+    }
 
     return elementTypeHandle.IsPointer()
         || elementTypeHandle.IsFnPtrType()
+        || (elementTypeHandle.GetSignatureCorElementType() == ELEMENT_TYPE_CHAR && mops.elementType == VT_UI2)
         || (elementTypeHandle.IsBlittable() && elementTypeHandle.GetMethodTable()->IsValueType());
 }
 

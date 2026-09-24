@@ -1245,9 +1245,10 @@ public unsafe class PointerArrayFieldTests
         public nuint After;
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    [SkipOnMono("Native layout of fixed function-pointer arrays has not been validated on Mono.")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
     public static void CopyFixedArrays(bool nullFields)
     {

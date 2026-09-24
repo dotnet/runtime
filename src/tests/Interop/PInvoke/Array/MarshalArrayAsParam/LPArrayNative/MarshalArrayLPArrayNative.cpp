@@ -125,6 +125,28 @@ extern "C" DLL_EXPORT BOOL __cdecl CallPointerArrayCallback(PointerArrayCallback
     return TRUE;
 }
 
+extern "C" DLL_EXPORT uint8_t* __cdecl ReverseArrayElements(uint8_t* values, int32_t count, int32_t elementSize)
+{
+    for (int32_t i = 0; i < count / 2; i++)
+    {
+        for (int32_t j = 0; j < elementSize; j++)
+        {
+            uint8_t temporary = values[i * elementSize + j];
+            values[i * elementSize + j] = values[(count - i - 1) * elementSize + j];
+            values[(count - i - 1) * elementSize + j] = temporary;
+        }
+    }
+
+    return values;
+}
+
+using ArrayElementReverser = uint8_t* (__cdecl *)(uint8_t*, int32_t, int32_t);
+
+extern "C" DLL_EXPORT ArrayElementReverser __cdecl GetArrayElementReverser()
+{
+    return &ReverseArrayElements;
+}
+
 #define EQUALS(__actual, __cActual, __expected) Equals((__actual), (__cActual), (__expected), (int)sizeof(__expected) / sizeof(__expected[0]))
 #define INIT_EXPECTED(__type, __size) 	\
     __type expected[(__size)]; \
