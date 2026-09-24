@@ -81,9 +81,33 @@ public static unsafe class AvxState
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallUnmanaged(ref Vector128<float> destination, delegate* unmanaged<int> callback)
     {
-        // X64: {{vzeroupper| xorps }}
+        // X64-NOT: vzeroupper
         destination = Vector128<float>.Zero;
         return callback();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallUnmanagedScalar(delegate* unmanaged<int> callback)
+    {
+        // X64-NOT: vzeroupper
+        return callback();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallUnmanagedWide(ref Vector256<int> destination, int value, delegate* unmanaged<int> callback)
+    {
+        // X64: {{vzeroupper| movups }}
+        // X64: call
+        destination = Vector256.Create(value);
+        return callback();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector128<int> InitializeLocal()
+    {
+        // X64-NOT: vzeroupper
+        Vector256<int> vector = Vector256<int>.Zero;
+        return Lower128(ref vector);
     }
 
     [UnmanagedCallersOnly]
@@ -130,6 +154,10 @@ public static unsafe class AvxState
         Vector128<float> floats = Vector128.Create(1.0f);
         Assert.Equal(123, CallUnmanaged(ref floats, &Callback));
         Assert.Equal(Vector128<float>.Zero, floats);
+        Assert.Equal(123, CallUnmanagedScalar(&Callback));
+        Assert.Equal(123, CallUnmanagedWide(ref vector256, 123, &Callback));
+        Assert.Equal(Vector256.Create(123), vector256);
+        Assert.Equal(Vector128<int>.Zero, InitializeLocal());
         Assert.Equal(40, Divide256(Vector256.Create(120), Vector256.Create(3)));
     }
 }

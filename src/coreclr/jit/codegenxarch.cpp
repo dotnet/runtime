@@ -5869,7 +5869,9 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 #endif // defined(DEBUG) && defined(TARGET_X86)
 
-    if (GetEmitter()->Contains256bitOrMoreAVX() && call->NeedsVzeroupper(m_compiler))
+    // Unmanaged calli also needs clearing when this method dirties upper state, but does not
+    // require a prolog clear in methods that only forward a scalar or narrow-vector call.
+    if (GetEmitter()->Contains256bitOrMoreAVX() && (call->IsUnmanaged() || call->NeedsVzeroupper(m_compiler)))
     {
         // The Intel optimization manual guidance in `3.11.5.3 Fixing Instruction Slowdowns` states:
         //   Insert a VZEROUPPER to tell the hardware that the state of the higher registers is clean

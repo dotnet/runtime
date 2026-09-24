@@ -74,7 +74,8 @@ int LinearScan::BuildNode(GenTree* tree)
 #ifdef FEATURE_SIMD
         // Track producers and possible register copies rather than memory stores. Intrinsics
         // account for their actual instruction widths in BuildHWIntrinsic.
-        if (varTypeIsSIMD(tree) && !tree->OperIs(GT_STOREIND) && !tree->OperIsHWIntrinsic() && !tree->IsVectorZero())
+        if (varTypeIsSIMD(tree) && !tree->OperIs(GT_STOREIND, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) &&
+            !tree->OperIsHWIntrinsic() && !tree->IsVectorZero())
         {
             simdSize = genTypeSize(tree->TypeGet());
         }

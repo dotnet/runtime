@@ -1938,10 +1938,10 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
         case CT_USER_FUNC:
         case CT_INDIRECT:
         {
-            // P/Invokes and unmanaged calli targets are typically "unknown" and may use the legacy
-            // encoding. This includes both CT_USER_FUNC and CT_INDIRECT.
+            // Since P/Invokes are not compiled by the runtime, they are typically "unknown" since they
+            // may use the legacy encoding. This includes both CT_USER_FUNC and CT_INDIRECT
 
-            if (IsPInvoke() || IsUnmanaged())
+            if (IsPInvoke())
             {
                 needsVzeroupper = true;
             }

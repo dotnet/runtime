@@ -8216,6 +8216,19 @@ void LinearScan::resolveRegisters()
                         unreached();
                     }
                 }
+
+#ifdef TARGET_XARCH
+                // A local store only dirties upper state when it copies to a different register.
+                // Its final destination is not known until local reference resolution above.
+                if (varTypeIsSIMD(treeNode) && treeNode->OperIsLocalStore() && (treeNode->GetRegNum() != REG_NA))
+                {
+                    GenTree* source = treeNode->AsLclVarCommon()->Data();
+                    if (!source->isContained() && (source->GetRegNum() != treeNode->GetRegNum()))
+                    {
+                        SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                    }
+                }
+#endif // TARGET_XARCH
             }
         }
 
