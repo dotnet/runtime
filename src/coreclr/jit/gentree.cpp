@@ -25357,16 +25357,6 @@ GenTree* Compiler::gtNewSimdCreateSequenceNode(
             }
             else
             {
-                if (!gtCanReorderWithoutTemp(op1, op2))
-                {
-                    TempInfo temp      = fgMakeTemp(op1);
-                    GenTree* intrinsic = gtNewSimdHWIntrinsicNode(type, temp.load, op2, NI_Vector_CreateSequence,
-                                                                  simdBaseType, simdSize);
-
-                    // Keep the store outside the intrinsic so the start is captured before the step.
-                    return gtNewOperNode(GT_COMMA, type, temp.store, intrinsic);
-                }
-
                 return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_Vector_CreateSequence, simdBaseType, simdSize);
             }
         }
