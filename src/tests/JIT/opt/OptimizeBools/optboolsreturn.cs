@@ -4,11 +4,72 @@
 // unit test for boolean optimization
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
 
 public class CBoolTest
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool IsIntFamily(object value) => value is int || value is uint || value is long;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ConsumeInlinedTypeTest(object value)
+    {
+        // ARM64: ccmp
+        int acc = 5;
+        if (IsIntFamily(value))
+        {
+            acc += 17;
+        }
+        else
+        {
+            acc -= 3;
+        }
+
+        return acc * 2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ConsumeInlinedTypeTestWithLiveResult(object value, out bool result)
+    {
+        bool matches = IsIntFamily(value);
+        int acc = 5;
+        if (matches)
+        {
+            acc += 17;
+        }
+        else
+        {
+            acc -= 3;
+        }
+
+        result = matches;
+        return acc * 2;
+    }
+
+    public static IEnumerable<object[]> IntFamilyCases()
+    {
+        yield return [null, 4];
+        yield return [1, 44];
+        yield return [1u, 44];
+        yield return [1L, 44];
+        yield return [(byte)1, 4];
+        yield return [(short)1, 4];
+        yield return [1UL, 4];
+        yield return [1.0, 4];
+        yield return ["x", 4];
+    }
+
+    [Theory]
+    [MemberData(nameof(IntFamilyCases))]
+    public static void TestInlinedTypeTest(object value, int expected)
+    {
+        Assert.Equal(expected, ConsumeInlinedTypeTest(value));
+        Assert.Equal(expected, ConsumeInlinedTypeTestWithLiveResult(value, out bool result));
+        Assert.Equal(expected == 44, result);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static bool AreZero(int x, int y)
     {
