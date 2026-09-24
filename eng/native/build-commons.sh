@@ -281,7 +281,8 @@ usage()
     echo "-ci: indicates if this is a CI build."
     echo "-clang: optional argument to build using clang in PATH (default)."
     echo "-clangx.y: optional argument to build using clang version x.y."
-    echo "-cmakeargs: user-settable additional arguments passed to CMake."
+    echo "-cmakeargs: one literal argument passed to CMake; may be repeated."
+    echo "--: pass all remaining arguments to CMake in the given order."
     echo "-configureonly: do not perform any builds; just configure the build."
     echo "-cross: optional argument to signify cross compilation,"
     echo "        will use ROOTFS_DIR environment variable if set."
@@ -332,6 +333,12 @@ __UseNinja=1
 
 while :; do
     if [[ "$#" -le 0 ]]; then
+        break
+    fi
+
+    if [[ "$1" == "--" ]]; then
+        shift
+        __CMakeArgs=(${__CMakeArgs[@]+"${__CMakeArgs[@]}"} "$@")
         break
     fi
 

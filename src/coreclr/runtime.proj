@@ -22,8 +22,7 @@
           DependsOnTargets="$(BuildRuntimeDependsOnTargets)"
           BeforeTargets="Build">
     <ItemGroup>
-      <_CMakeArgs Include="$([MSBuild]::Unescape($(CMakeArgs.Trim().Replace(' ', ';'))))" />
-      <_CoreClrBuildArg Include="@(_CMakeArgs->'-cmakeargs &quot;%(Identity)&quot;')" />
+      <_CoreClrBuildArg Condition="$([MSBuild]::IsOsPlatform(Windows))" Include="-cmakeargs &quot;$(CMakeArgs)&quot;" />
       <_CoreClrBuildArg Condition="'$(TargetArchitecture)' != ''" Include="-$(TargetArchitecture)" />
       <_CoreClrBuildArg Include="-$(Configuration.ToLower())" />
       <_CoreClrBuildArg Include="$(CppCompilerAndLinker)" />
@@ -53,7 +52,7 @@
       <_CoreClrBuildArg Include="-targetrid $(TargetRid)" />
       <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_RID=$(PortableTargetRid)&quot;" />
       <_CoreClrBuildArg Condition="'$(BuildSubdirectory)' != ''" Include="-subdir $(BuildSubdirectory)" />
-      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH='$(DOTNET_HOST_PATH)'&quot;" />
+      <_CoreClrBuildArg Include="-cmakeargs &quot;-DCLR_DOTNET_HOST_PATH=$(DOTNET_HOST_PATH)&quot;" />
       <_CoreClrBuildArg Condition="'$(HasCdacBuildTool)' == 'true'" Include="-cmakeargs &quot;-DCDAC_BUILD_TOOL_BINARY_PATH=$(RuntimeBinDir)cdac-build-tool\cdac-build-tool.dll&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureXplatEventSource)' == 'false'" Include="-cmakeargs &quot;-DFEATURE_EVENTSOURCE_XPLAT=0&quot;" />
       <_CoreClrBuildArg Condition="'$(FeatureInterpreter)' == 'true'" Include="-cmakeargs &quot;-DFEATURE_INTERPRETER=1&quot;" />
@@ -116,6 +115,7 @@
       <_CoreClrBuildScript Condition="$([MSBuild]::IsOsPlatform(Windows))">build-runtime.cmd</_CoreClrBuildScript>
       <_CoreClrBuildScript Condition="!$([MSBuild]::IsOsPlatform(Windows))">build-runtime.sh</_CoreClrBuildScript>
       <_CoreClrBuildCommand>&quot;$(MSBuildThisFileDirectory)$(_CoreClrBuildScript)&quot; @(_CoreClrBuildArg, ' ') @(NativeCMakeArg, ' ')</_CoreClrBuildCommand>
+      <_CoreClrBuildCommand Condition="!$([MSBuild]::IsOsPlatform(Windows))">$(_CoreClrBuildCommand) -- $(CMakeArgs)</_CoreClrBuildCommand>
     </PropertyGroup>
 
     <!-- Use IgnoreStandardErrorWarningFormat because Arcade sets WarnAsError and we want to avoid upgrading compiler warnings to errors in release branches -->

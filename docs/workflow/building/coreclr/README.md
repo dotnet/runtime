@@ -121,6 +121,20 @@ To use *Ninja* instead of *Make* on non-Windows:
 
 You can also pass some extra compiler/linker flags to the CoreCLR build. Set the `EXTRA_CFLAGS`, `EXTRA_CXXFLAGS`, and `EXTRA_LDFLAGS` as you see fit for this purpose. The build script will consume them and then set the environment variables that will ultimately affect your build (i.e. those same ones without the `EXTRA_` prefix). Don't set the final ones directly yourself, as that is known to lead to potential failures in configure-time tests.
 
+### CMake Arguments
+
+On Unix, the top-level `build.sh` accepts a shell-quoted command fragment with `--cmakeargs`. Quote values containing spaces inside that fragment. Multiple options, including repeated `--cmakeargs` fragments, reach CMake in their original order:
+
+```bash
+./build.sh clr --cmakeargs "-DFIRST=1 -DSECOND=2" --cmakeargs "-DCMAKE_C_FLAGS='-O2 -g'"
+```
+
+When invoking `src/coreclr/build-runtime.sh`, `src/native/corehost/build.sh`, or `src/native/libs/build-native.sh` directly, each `-cmakeargs` accepts one literal argument. Alternatively, put `--` after all build-script options and follow it with CMake arguments using normal shell quoting. Arguments after `--` retain their order and override earlier definitions:
+
+```bash
+./src/coreclr/build-runtime.sh -component jit -- -DFIRST=1 -DFIRST=2 "-DCMAKE_C_FLAGS=-O2 -g"
+```
+
 ### Native ARM64 Building on Windows
 
 Currently, the runtime repo supports building CoreCLR directly on Windows ARM64 without the need to cross-compile, albeit it is still in an experimental phase. To do this, you need to install the ARM64 build tools and Windows SDK for Visual Studio, in addition to all the requirements outlined in the [Windows Requirements doc](/docs/workflow/requirements/windows-requirements.md).
