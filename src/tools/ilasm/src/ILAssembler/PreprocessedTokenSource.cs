@@ -119,7 +119,7 @@ namespace ILAssembler
                 }
 
                 _includeSourceStack.Pop();
-                errorOnEof = ActiveIfDefBlocksInCurrentSource != 0;
+                errorOnEof = activeIfDefBlocks == 0 && ActiveIfDefBlocksInCurrentSource != 0;
             }
         }
 

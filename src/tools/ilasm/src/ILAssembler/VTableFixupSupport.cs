@@ -41,7 +41,10 @@ internal static class VTableFixupSupport
         {
             Machine.I386 => sizeof(int),
             Machine.Amd64 or
-            Machine.Arm64 => sizeof(long),
+            Machine.IA64 or
+            Machine.Arm64 or
+            Machine.LoongArch64 or
+            Machine.RiscV64 => sizeof(long),
             _ => throw new UnreachableException($"VTable fixups are not supported for architecture {machine}"),
         };
 }

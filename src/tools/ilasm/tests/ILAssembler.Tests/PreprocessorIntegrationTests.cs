@@ -97,11 +97,10 @@ namespace ILAssembler.Tests
                 .assembly extern System.Runtime { }
                 .assembly test { }
                 #define ROOT
-                #ifndef ROOT
-                #else
+                #ifdef ROOT
                 #include "child.il"
                 #else
-                .class public auto ansi beforefieldinit SecondElse extends [System.Runtime]System.Object { }
+                .class public auto ansi beforefieldinit WrongType extends [System.Runtime]System.Object { }
                 #endif
                 """;
 
@@ -117,8 +116,7 @@ namespace ILAssembler.Tests
 
             var preprocessorDiagnostics = diagnostics.Where(diagnostic => diagnostic.Id == "Preprocessor").ToArray();
             Assert.Single(preprocessorDiagnostics);
-            Assert.Equal("root.il", preprocessorDiagnostics[0].Location.Source.Path);
-            Assert.Contains("#else", preprocessorDiagnostics[0].Message);
+            Assert.Equal("child.il", preprocessorDiagnostics[0].Location.Source.Path);
             Assert.NotNull(result);
         }
 
