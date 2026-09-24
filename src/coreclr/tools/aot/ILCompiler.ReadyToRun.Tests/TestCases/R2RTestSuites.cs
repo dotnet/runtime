@@ -86,16 +86,19 @@ public class R2RTestSuites
                 Assert.NotEmpty(method.RuntimeFunctions);
                 Assert.True(method.Fixups is not null, $"No fixups for {method.SignatureString}");
 
-                var signatures = method.Fixups.Select(f => (Kind: f.Signature.FixupKind, Text: f.Signature.ToString(new()))).ToArray();
-                string resolvedTarget = Assert.Single(signatures, s => s.Kind == ReadyToRunFixupKind.Verify_VirtualFunctionOverride).Text;
-                Assert.Contains($"System.SZArrayHelper.{target}", resolvedTarget);
-                Assert.EndsWith($"<{(shared ? "__Canon" : typeArgument)}> (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)", resolvedTarget);
+                var resolvedTarget = R2RMethodSignature.FromFixup(reader,
+                    Assert.Single(method.Fixups, f => f.Signature.FixupKind == ReadyToRunFixupKind.Verify_VirtualFunctionOverride));
+                Assert.Equal("System.SZArrayHelper", resolvedTarget.DeclaringType);
+                Assert.Equal(target, resolvedTarget.Name);
+                Assert.Equal(shared ? "__Canon" : typeArgument, Assert.Single(resolvedTarget.TypeArguments));
 
                 if (shared)
                 {
-                    string dictionary = Assert.Single(signatures, s => s.Kind == ReadyToRunFixupKind.MethodDictionary).Text;
-                    Assert.Contains($"System.SZArrayHelper.{target}", dictionary);
-                    Assert.EndsWith($"<{typeArgument}> (METHOD_DICTIONARY)", dictionary);
+                    var dictionary = R2RMethodSignature.FromFixup(reader,
+                        Assert.Single(method.Fixups, f => f.Signature.FixupKind == ReadyToRunFixupKind.MethodDictionary));
+                    Assert.Equal("System.SZArrayHelper", dictionary.DeclaringType);
+                    Assert.Equal(target, dictionary.Name);
+                    Assert.Equal(typeArgument, Assert.Single(dictionary.TypeArguments));
                 }
             }
 
