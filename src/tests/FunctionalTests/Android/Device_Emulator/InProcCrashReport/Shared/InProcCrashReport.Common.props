@@ -50,6 +50,7 @@
       <ExtraAppLinkerArgs Include="$(CrashReportMinipalLibrary.Replace('\', '/'))" />
       <ExtraAppLinkerArgs Include="-lc++_static" />
       <ExtraAppLinkerArgs Include="-lc++abi" />
+      <ExtraAppLinkerArgs Include="-Wl,--wrap=__android_log_write" />
       <!-- Keep the test's PAL and C++ runtime private from the hosting CoreCLR. -->
       <ExtraAppLinkerArgs Include="-Wl,--exclude-libs,ALL" />
     </ItemGroup>

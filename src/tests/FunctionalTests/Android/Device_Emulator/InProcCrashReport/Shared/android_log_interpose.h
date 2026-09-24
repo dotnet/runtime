@@ -14,6 +14,8 @@ extern "C"
 {
 #endif
 
+int __wrap___android_log_write(int prio, const char* tag, const char* text);
+
 // Returns captured lines since the last reset, or NULL if the buffer overflowed.
 const char* InProcCrashReportTest_GetConsoleCapture(void);
 

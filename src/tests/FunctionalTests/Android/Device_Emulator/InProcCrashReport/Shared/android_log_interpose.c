@@ -7,16 +7,14 @@
 // CRASHREPORT_LOG_TAG ("DOTNET_CRASH"), routed to logcat rather than a file
 // descriptor -- so it cannot be captured by redirecting stdout/stderr. This
 // translation unit is linked into the same shared library (libmonodroid.so) as
-// the PAL-linked reporter, so the reporter's __android_log_write calls bind to
-// this definition. Lines tagged DOTNET_CRASH are accumulated for later
+// the PAL-linked reporter, with --wrap=__android_log_write redirecting its calls
+// to this wrapper. Lines tagged DOTNET_CRASH are accumulated for later
 // validation; every call is also forwarded to the real liblog implementation so
 // the report still appears in logcat for debugging.
 
-#define _GNU_SOURCE
 #include "android_log_interpose.h"
 
 #include <android/log.h>
-#include <dlfcn.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -30,9 +28,9 @@ static char s_capture[16 * 1024];
 static size_t s_captureLen;
 static bool s_overflowed;
 
-typedef int (*android_log_write_fn)(int prio, const char* tag, const char* text);
+extern int __real___android_log_write(int prio, const char* tag, const char* text);
 
-int __android_log_write(int prio, const char* tag, const char* text)
+int __wrap___android_log_write(int prio, const char* tag, const char* text)
 {
     if (tag != NULL && text != NULL && strcmp(tag, s_crashTag) == 0)
     {
@@ -50,16 +48,7 @@ int __android_log_write(int prio, const char* tag, const char* text)
         }
     }
 
-    static android_log_write_fn s_real = NULL;
-    if (s_real == NULL)
-    {
-        s_real = (android_log_write_fn)dlsym(RTLD_NEXT, "__android_log_write");
-    }
-    if (s_real != NULL)
-    {
-        return s_real(prio, tag, text);
-    }
-    return 0;
+    return __real___android_log_write(prio, tag, text);
 }
 
 const char* InProcCrashReportTest_GetConsoleCapture(void)

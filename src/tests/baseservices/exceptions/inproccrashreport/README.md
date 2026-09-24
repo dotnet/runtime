@@ -32,7 +32,7 @@ The projects under this directory run on desktop Unix CoreCLR. Matching projects
 
 The driver uses `PAL_InitializeDLL`, which does not install fatal-signal handlers. Reporter callback registration uses real PAL code, but the tests invoke the dispatcher themselves. The real watchdog is linked but disabled in the service settings; PAL and reporter state remain alive until the isolated process exits.
 
-The Android `Shared` directory contains `android_log_interpose.c/.h` to capture compact reports from Android logging, and `config.h` to supply CoreCLR platform/architecture definitions missing from AndroidAppBuilder. Desktop tests redirect stderr and get those definitions from the native test build, without a test-specific configuration header.
+The Android `Shared` directory contains `android_log_interpose.c/.h` to capture compact reports from Android logging using `--wrap=__android_log_write`, forwarding calls to liblog through `__real___android_log_write`. Its `config.h` supplies CoreCLR platform/architecture definitions missing from AndroidAppBuilder. Desktop tests redirect stderr and get those definitions from the native test build, without a test-specific configuration header.
 
 AndroidAppBuilder normally uses `ANDROID_STL=none` because its app-launcher sources are C. The Android test props explicitly add the NDK C++ headers and statically link `libc++_static` and `libc++abi`, keeping those symbols private. No replacement C++ runtime is needed, and no `libc++_shared.so` needs to be packaged. Desktop builds use the normal C++ runtime.
 

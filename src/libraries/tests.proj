@@ -220,7 +220,7 @@
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono'">
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' != 'CoreCLR'">
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InProcCrashReport\**\*.Test.csproj" />
   </ItemGroup>
 
