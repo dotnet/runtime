@@ -170,7 +170,7 @@ private:
             BYTE    nop;              // 90                       nop      ; aligns _implTarget
             BYTE    part1[2];         // 48 B8                    mov    rax,
             size_t  _implTarget;      // xx xx xx xx xx xx xx xx              64-bit address at +3
-            BYTE    part2[2];         // 0f 85                    jne
+            BYTE    part2[2];         // 0F 85                    jne
             DISPL   _failDispl;       // xx xx xx xx                     failEntry
             BYTE    part3[2];         // FF E0                    jmp    rax
         } _legacy;
@@ -775,7 +775,6 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
         // initialize the static data
         *shortStubRW = dispatchShortInit;
 
-#if defined(TARGET_AMD64)
         if (IsJmpAbsAvailable())
         {
             // APX encoding (19 bytes), every byte written here rather than patched into the
@@ -801,7 +800,6 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
             CONSISTENCY_CHECK((PCODE)&shortStubRX->_apx.jmpabsPrefix + shortStubRW->_apx._failDispl == failTarget);
         }
         else
-#endif
         {
             // Legacy encoding: fill in the dynamic data
             size_t displ = (failTarget - ((PCODE)&shortStubRX->_legacy._failDispl + sizeof(DISPL)));
@@ -820,7 +818,6 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
         // initialize the static data
         *longStubRW = dispatchLongInit;
 
-#if defined(TARGET_AMD64)
         if (IsJmpAbsAvailable())
         {
             // APX encoding (35 bytes), every byte written here rather than patched into the
@@ -856,7 +853,6 @@ void  DispatchHolder::Initialize(DispatchHolder* pDispatchHolderRX, PCODE implTa
                               == (PCODE)&longStubRX->_apx.failJmpabsPrefix);
         }
         else
-#endif
         {
             // fill in the dynamic data
             longStubRW->_legacy._implTarget = implTarget;
