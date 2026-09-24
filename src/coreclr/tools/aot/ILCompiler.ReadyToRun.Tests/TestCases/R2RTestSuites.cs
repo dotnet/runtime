@@ -190,11 +190,15 @@ public class R2RTestSuites
                 .Where(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor)
                 .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
                 .ToList();
-            Assert.Equal(2, delegateCtorSignatures.Count);
+            Assert.Equal(4, delegateCtorSignatures.Count);
             Assert.Contains(delegateCtorSignatures, signature =>
                 signature.Contains("StaticTarget", StringComparison.Ordinal));
             Assert.Contains(delegateCtorSignatures, signature =>
                 signature.Contains("InstanceTarget", StringComparison.Ordinal));
+            Assert.Contains(delegateCtorSignatures, signature =>
+                signature.Contains("ClosedStaticTarget", StringComparison.Ordinal));
+            Assert.Contains(delegateCtorSignatures, signature =>
+                signature.Contains("ClosedStaticRetBufTarget", StringComparison.Ordinal));
 
             ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
                 importEntries,

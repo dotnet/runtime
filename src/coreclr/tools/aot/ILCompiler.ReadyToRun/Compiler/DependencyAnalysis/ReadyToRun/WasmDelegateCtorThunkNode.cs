@@ -23,6 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private readonly TypeSystemContext _context;
         private readonly bool _hasShuffleThunk;
+        private readonly WasmSignature _constructorSignature;
         private readonly WasmTypeNode _constructorType;
 
         public static WasmSignature HelperSignature { get; } = CreateSignature(explicitArgumentCount: 1);
@@ -31,7 +32,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             _context = factory.TypeSystemContext;
             _hasShuffleThunk = hasShuffleThunk;
-            _constructorType = factory.WasmTypeNode(CreateSignature(explicitArgumentCount: hasShuffleThunk ? 3 : 2));
+            _constructorSignature = CreateSignature(explicitArgumentCount: hasShuffleThunk ? 3 : 2);
+            _constructorType = factory.WasmTypeNode(_constructorSignature);
         }
 
         public override string LookupString => _hasShuffleThunk ? "DC1" : "DC0";
@@ -62,6 +64,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DependencyList dependencies = base.ComputeNonRelocationBasedDependencies(factory);
             dependencies.Add(_constructorType, "Wasm delegate constructor thunk requires constructor type node");
+            dependencies.Add(
+                factory.WasmR2RToInterpreterThunk(_constructorSignature),
+                "Wasm delegate constructor thunk requires interpreter fallback");
             return dependencies;
         }
 

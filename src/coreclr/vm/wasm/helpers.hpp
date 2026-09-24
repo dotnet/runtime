@@ -17,6 +17,7 @@ void* GetPortableEntryPointToInterpreterThunk(MethodDesc *pMD);
 void* GetVirtualDispatchThunk(MethodDesc *pMD);
 
 // Returns true when the method's result uses the hidden return-buffer form of the Wasm ABI.
+// Delegate construction and closed-static invocation adapters must share this classification.
 bool WasmMethodReturnsViaRetBuf(MethodDesc* pMD);
 
 // Get a pregenerated unboxing stub for pMD, the MethodDesc used as its generic context,

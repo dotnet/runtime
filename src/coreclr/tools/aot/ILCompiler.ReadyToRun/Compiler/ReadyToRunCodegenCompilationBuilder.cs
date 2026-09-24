@@ -349,6 +349,10 @@ namespace ILCompiler
             if (_r2rContext.BubbleIncludesCoreModule)
             {
                 compilationRoots.Add(new ReadyToRunJitHelperRootProvider(_r2rContext));
+                if (_context.Target.IsWasm)
+                {
+                    compilationRoots.Add(new ReadyToRunDelegateCtorRootProvider(_r2rContext));
+                }
             }
 
             return new ReadyToRunCodegenCompilation(

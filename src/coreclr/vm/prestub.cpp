@@ -3940,9 +3940,9 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     {
                         pDelegateCtor = NULL;
                     }
-                    else if (!pDelegateCtor->TryPublishR2RCodeForDelegateCtor())
+                    else
                     {
-                        pDelegateCtor = NULL;
+                        (void)pDelegateCtor->TryPublishR2RCodeForDelegateCtor();
                     }
                 }
 
@@ -3959,7 +3959,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     ctorData.pArg3 = NULL;
                 }
 
-                if (!PortableEntryPoint::HasNativeEntryPoint(constructor))
+                if (!PortableEntryPoint::ToPortableEntryPoint(constructor)->HasNativeCode())
                 {
                     EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
                         COR_E_EXECUTIONENGINE,
