@@ -7,10 +7,6 @@
 #define THUMB_CODE 1
 #endif
 
-#ifndef __GLIBC__
-typedef int __ptrace_request;
-#endif
-
 extern CrashInfo* g_crashInfo;
 
 // Helper for UnwindNativeFrames
@@ -395,7 +391,7 @@ ThreadInfo::GetThreadStack()
 
             if (g_diagnostics)
             {
-                TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
+                TRACE("Thread %04x stack found in other mapping (size %08zx): ", Tid(), size);
                 region->Trace();
             }
         }
@@ -403,12 +399,12 @@ ThreadInfo::GetThreadStack()
     }
     else
     {
-        TRACE("Thread %04x null stack pointer\n", m_tid);
+        TRACE("Thread %04x null stack pointer\n", Tid());
     }
 }
 
 bool
 ThreadInfo::IsCrashThread() const
 {
-    return m_tid == m_crashInfo.CrashThread();
+    return Tid() == m_crashInfo.CrashThread();
 }

@@ -6,11 +6,9 @@
 int g_readProcessMemoryResult = KERN_SUCCESS;
 
 bool
-CrashInfo::Initialize()
+ProcessInfo::Initialize()
 {
-    m_ppid = 0;
-    m_tgid = 0;
-
+    m_pageSize = PAGE_SIZE;
     kern_return_t result = ::task_for_pid(mach_task_self(), m_pid, &m_task);
     if (result != KERN_SUCCESS)
     {
@@ -22,6 +20,26 @@ CrashInfo::Initialize()
     return true;
 }
 
+bool
+CrashInfo::Initialize()
+{
+    // On Apple platforms, all the initialization was done in the constructor of CrashInfo and ProcessInfo::Initialize().
+    return true;
+}
+
+void
+ProcessInfo::CleanupAndResumeProcess()
+{
+    for (const ThreadSnapshot& thread : m_threads)
+    {
+        kern_return_t result = ::mach_port_deallocate(mach_task_self(), thread.Port());
+        if (result != KERN_SUCCESS)
+        {
+            printf_error("Internal error: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
+        }
+    }
+}
+
 void
 CrashInfo::CleanupAndResumeProcess()
 {
@@ -29,23 +47,20 @@ CrashInfo::CleanupAndResumeProcess()
     ::task_resume(Task());
 }
 
-//
-// Suspends all the threads and creating a list of them. Should be the before gathering any info about the process.
-//
 bool
-CrashInfo::EnumerateAndSuspendThreads()
+ProcessInfo::EnumerateAndSuspendThreads()
 {
     thread_act_port_array_t threadList;
     mach_msg_type_number_t threadCount;
 
-    kern_return_t result = ::task_suspend(Task());
+    kern_return_t result = ::task_suspend(m_task);
     if (result != KERN_SUCCESS)
     {
         printf_error("Problem suspending process: task_suspend(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
         return false;
     }
 
-    result = ::task_threads(Task(), &threadList, &threadCount);
+    result = ::task_threads(m_task, &threadList, &threadCount);
     if (result != KERN_SUCCESS)
     {
         printf_error("Problem enumerating threads: task_threads(%d) FAILED %s (%x)\n", m_pid, mach_error_string(result), result);
@@ -69,9 +84,16 @@ CrashInfo::EnumerateAndSuspendThreads()
             tid = tident.thread_id;
         }
 
-        // Add to the list of threads
-        ThreadInfo* thread = new ThreadInfo(*this, tid, threadList[i]);
-        m_threads.push_back(thread);
+        ThreadSnapshot thread(tid, threadList[i]);
+        if (!m_threads.Add(thread))
+        {
+            for (mach_msg_type_number_t remaining = i; remaining < threadCount; remaining++)
+            {
+                ::mach_port_deallocate(mach_task_self(), threadList[remaining]);
+            }
+            ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
+            return false;
+        }
     }
 
     result = ::vm_deallocate(mach_task_self(), reinterpret_cast<vm_address_t>(threadList), threadCount * sizeof(thread_act_t));
@@ -168,7 +190,7 @@ CrashInfo::EnumerateMemoryRegions()
     return true;
 }
 
-void
+bool
 CrashInfo::InitializeOtherMappings()
 {
     uint64_t cbOtherMappings = 0;
@@ -219,6 +241,22 @@ CrashInfo::InitializeOtherMappings()
         }
     }
     TRACE("OtherMappings: %06llx\n", cbOtherMappings / PAGE_SIZE);
+
+    for (const ModuleRegion& mapping : m_moduleMappings)
+    {
+        if (!m_processInfo.AddMapping(mapping, mapping.FileName(), true))
+        {
+            return false;
+        }
+    }
+    for (const MemoryRegion& mapping : m_otherMappings)
+    {
+        if (!m_processInfo.AddMapping(mapping, nullptr, false))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
 void CrashInfo::VisitModule(MachOModule& module)
@@ -226,9 +264,9 @@ void CrashInfo::VisitModule(MachOModule& module)
     AddModuleInfo(false, module.BaseAddress(), nullptr, module.Name());
 
     // Get the process name from the executable module file type
-    if (m_name.empty() && module.Header().filetype == MH_EXECUTE)
+    if (*Name() == '\0' && module.Header().filetype == MH_EXECUTE)
     {
-        m_name = GetFileName(module.Name());
+        m_processInfo.SetName(GetFileName(module.Name()).c_str());
     }
     // Save the runtime module path
     if (m_coreclrPath.empty())
@@ -380,7 +418,7 @@ CrashInfo::GetMemoryRegionFlags(uint64_t start)
 // Read raw memory
 //
 bool
-CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
+ProcessInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
 {
     assert(buffer != nullptr);
     assert(read != nullptr);
@@ -398,7 +436,7 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
     while (bytesLeft > 0)
     {
         vm_size_t bytesRead = PAGE_SIZE;
-        kern_return_t result = ::vm_read_overwrite(Task(), addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
+        kern_return_t result = ::vm_read_overwrite(m_task, addressAligned, PAGE_SIZE, (vm_address_t)data, &bytesRead);
         if (result != KERN_SUCCESS || bytesRead != PAGE_SIZE)
         {
             g_readProcessMemoryResult = result;
@@ -419,6 +457,12 @@ CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t
     }
     *read = numberOfBytesRead;
     return size == 0 || numberOfBytesRead > 0;
+}
+
+bool
+CrashInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
+{
+    return m_processInfo.ReadProcessMemory(address, buffer, size, read);
 }
 
 const struct dyld_all_image_infos* g_image_infos = nullptr;

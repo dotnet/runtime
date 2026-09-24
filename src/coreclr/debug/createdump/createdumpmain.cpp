@@ -4,45 +4,24 @@
 #include "createdump.h"
 #include "minipal/time.h"
 
-#ifdef HOST_WINDOWS
-#define DEFAULT_DUMP_PATH "%TEMP%\\"
-#define DEFAULT_DUMP_TEMPLATE "dump.%p.dmp"
-#else
-#define DEFAULT_DUMP_PATH "/tmp/"
-#define DEFAULT_DUMP_TEMPLATE "coredump.%p"
-#endif
-
-const char* g_help = "createdump [options]\n"
-"createdump writes a dump of its parent process; a target PID cannot be specified.\n"
-"-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
-"   %p  PID of dumped process.\n"
-"   %e  The process executable filename.\n"
-"   %h  Hostname return by gethostname().\n"
-"   %t  Time of dump, expressed as seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).\n"
-"-n, --normal - create minidump.\n"
-"-h, --withheap - create minidump with heap (default).\n"
-"-t, --triage - create triage minidump.\n"
-"-u, --full - create full core dump.\n"
-"-d, --diag - enable diagnostic messages.\n"
-"-v, --verbose - enable verbose diagnostic messages.\n"
-"-l, --logtofile - file path and name to log diagnostic messages.\n"
-#ifdef HOST_UNIX
-"--crashreport - write crash report file (dump file path + .crashreport.json).\n"
-"--crashreportonly - write crash report file only (no dump).\n"
-"--crashthread <id> - the thread id of the crashing thread.\n"
-"--signal <code> - the signal code of the crash.\n"
-"--singlefile - single-file app model.\n"
-"--nativeaot - native AOT app model.\n"
-#endif
-;
-
-
-FILE *g_logfile = nullptr;
-FILE *g_stdout = stdout;
-bool g_diagnostics = false;
-bool g_diagnosticsVerbose = false;
+bool linkedCreateDump = false;
 uint64_t g_ticksPerMS = 0;
 uint64_t g_startTime = 0;
+
+bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
+{
+    if (GetTempPathWrapper(bufferSize, buffer) == 0)
+    {
+        return false;
+    }
+    int exitCode = strcat_s(buffer, bufferSize, DEFAULT_DUMP_TEMPLATE);
+    if (exitCode != 0)
+    {
+        printf_error("strcat_s failed (%d)", exitCode);
+        return false;
+    }
+    return true;
+}
 
 //
 // Common entry point
@@ -58,154 +37,28 @@ int createdump_main(const int argc, const char* argv[])
         fgetc(stdin);
     }
 #endif
-    CreateDumpOptions options;
-    options.DumpType = DumpType::Heap;
-    options.DumpPathTemplate = nullptr;
-    options.AppModel = AppModelType::Normal;
-    options.CrashReport = false;
-    options.CreateDump = true;
-    options.Signal = 0;
-    options.CrashThread = 0;
-#ifdef HOST_UNIX
-    options.Pid = static_cast<int>(getppid());
-#else
-    options.Pid = 0;
-#endif
-    options.SignalCode = 0;
-    options.SignalErrno = 0;
-    options.SignalAddress = 0;
-    options.ExceptionRecord = 0;
-    bool help = false;
-    int exitCode = 0;
 
-    // Parse the command line options
-    argv++;
-    for (int i = 1; i < argc; i++)
+    CreateDumpOptions options;
+    int exitCode = ParseCreateDumpOptions(argc, (char**)argv, &options);
+    if (exitCode != 0)
     {
-        if (*argv != nullptr)
-        {
-            if ((strcmp(*argv, "-f") == 0) || (strcmp(*argv, "--name") == 0))
-            {
-                options.DumpPathTemplate = *++argv;
-            }
-            else if ((strcmp(*argv, "-n") == 0) || (strcmp(*argv, "--normal") == 0))
-            {
-                options.DumpType = DumpType::Mini;
-            }
-            else if ((strcmp(*argv, "-h") == 0) || (strcmp(*argv, "--withheap") == 0))
-            {
-                options.DumpType = DumpType::Heap;
-            }
-            else if ((strcmp(*argv, "-t") == 0) || (strcmp(*argv, "--triage") == 0))
-            {
-                options.DumpType = DumpType::Triage;
-            }
-            else if ((strcmp(*argv, "-u") == 0) || (strcmp(*argv, "--full") == 0))
-            {
-                options.DumpType = DumpType::Full;
-            }
-#ifdef HOST_UNIX
-            else if (strcmp(*argv, "--crashreport") == 0)
-            {
-                options.CrashReport = true;
-            }
-            else if (strcmp(*argv, "--crashreportonly") == 0)
-            {
-                options.CrashReport = true;
-                options.CreateDump = false;
-            }
-            else if (strcmp(*argv, "--crashthread") == 0)
-            {
-                options.CrashThread = atoi(*++argv);
-            }
-            else if (strcmp(*argv, "--signal") == 0)
-            {
-                options.Signal = atoi(*++argv);
-            }
-            else if (strcmp(*argv, "--singlefile") == 0)
-            {
-                options.AppModel = AppModelType::SingleFile;
-            }
-            else if (strcmp(*argv, "--nativeaot") == 0)
-            {
-                options.AppModel = AppModelType::NativeAOT;
-            }
-            else if (strcmp(*argv, "--code") == 0)
-            {
-                options.SignalCode = atoi(*++argv);
-            }
-            else if (strcmp(*argv, "--errno") == 0)
-            {
-                options.SignalErrno = atoi(*++argv);
-            }
-            else if (strcmp(*argv, "--address") == 0)
-            {
-                options.SignalAddress = atoll(*++argv);
-            }
-            else if (strcmp(*argv, "--exception-record") == 0)
-            {
-                options.ExceptionRecord = atoll(*++argv);
-            }
-#endif
-            else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))
-            {
-                g_diagnostics = true;
-            }
-            else if ((strcmp(*argv, "-v") == 0) || (strcmp(*argv, "--verbose") == 0))
-            {
-                g_diagnostics = true;
-                g_diagnosticsVerbose = true;
-            }
-            else if ((strcmp(*argv, "-l") == 0) || (strcmp(*argv, "--logtofile") == 0))
-            {
-                const char* logFilePath = *++argv;
-                g_logfile = fopen(logFilePath, "w");
-                if (g_logfile == nullptr)
-                {
-                    printf_error("Can not create log file '%s': %s (%d)\n", logFilePath, strerror(errno), errno);
-                    return errno;
-                }
-                g_stdout = g_logfile;
-            }
-            else if ((strcmp(*argv, "-?") == 0) || (strcmp(*argv, "--help") == 0))
-            {
-                help = true;
-            }
-            else
-            {
-                printf_error("Unrecognized argument '%s'\n", *argv);
-                return -1;
-            }
-            argv++;
-        }
+        return exitCode;
     }
 
-    if (help)
+    char defaultDumpPath[MAX_LONGPATH];
+    if (options.DumpPathTemplate == NULL)
     {
-        printf_error("%s", g_help);
-        return -1;
+        if (!GetDefaultDumpPath(defaultDumpPath, MAX_LONGPATH))
+        {
+            printf_error("Could not get default dump path\n");
+            return -1;
+        }
+        options.DumpPathTemplate = defaultDumpPath;
     }
 
     g_ticksPerMS = minipal_hires_tick_frequency() / 1000UL;
     g_startTime = minipal_hires_ticks();
     TRACE("TickFrequency: %" PRIu64 " ticks per ms\n", g_ticksPerMS);
-
-    AStringHolder tmpPath = new char[MAX_LONGPATH];
-    if (options.DumpPathTemplate == nullptr)
-    {
-        if (GetTempPathWrapper(MAX_LONGPATH, tmpPath) == 0)
-        {
-            printf_error("GetTempPath failed\n");
-            return -1;
-        }
-        exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
-        if (exitCode != 0)
-        {
-            printf_error("strcat_s failed (%d)", exitCode);
-            return exitCode;
-        }
-        options.DumpPathTemplate = tmpPath;
-    }
 
     if (CreateDump(options))
     {
@@ -285,79 +138,7 @@ GetMiniDumpType(DumpType dumpType)
     }
 }
 
-void
-printf_status(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-    if (g_logfile == nullptr)
-    {
-        fprintf(g_stdout, "[createdump] ");
-    }
-    vfprintf(g_stdout, format, args);
-    fflush(g_stdout);
-    va_end(args);
-}
-
-void
-printf_error(const char* format, ...)
-{
-    va_list args;
-    va_start(args, format);
-
-    // Log error message to file
-    if (g_logfile != nullptr)
-    {
-        va_list args2;
-        va_copy(args2, args);
-        vfprintf(g_logfile, format, args2);
-        fflush(g_logfile);
-    }
-    // Always print errors on stderr
-    fprintf(stderr, "[createdump] ");
-    vfprintf(stderr, format, args);
-    fflush(stderr);
-    va_end(args);
-}
-
 #ifdef HOST_UNIX
-
-static void
-trace_prefix(const char* format, va_list args)
-{
-    // Only add this prefix if logging to the console
-    if (g_logfile == nullptr)
-    {
-        fprintf(g_stdout, "[createdump] ");
-    }
-    fprintf(g_stdout, "%08" PRIx64 " ", minipal_hires_ticks() / g_ticksPerMS);
-    vfprintf(g_stdout, format, args);
-    fflush(g_stdout);
-}
-
-void
-trace_printf(const char* format, ...)
-{
-    if (g_diagnostics)
-    {
-        va_list args;
-        va_start(args, format);
-        trace_prefix(format, args);
-        va_end(args);
-    }
-}
-
-void
-trace_verbose_printf(const char* format, ...)
-{
-    if (g_diagnosticsVerbose)
-    {
-        va_list args;
-        va_start(args, format);
-        trace_prefix(format, args);
-        va_end(args);
-    }
-}
 
 void
 CrashInfo::Trace(const char* format, ...)

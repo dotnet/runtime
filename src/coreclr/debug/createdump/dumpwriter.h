@@ -4,6 +4,6 @@
 #ifdef __APPLE__
 #include "dumpwritermacho.h"
 #else
-#include "dumpwriterelf.h"
+#include "shared/dumpwriterelf.h"
 #endif
 

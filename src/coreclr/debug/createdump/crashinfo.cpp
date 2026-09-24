@@ -11,18 +11,15 @@ CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
-CrashInfo::CrashInfo(const CreateDumpOptions& options) :
+CrashInfo::CrashInfo(const CreateDumpOptions& options, ProcessInfo& processInfo) :
     m_ref(1),
-    m_pid(options.Pid),
-    m_ppid(-1),
+    m_processInfo(processInfo),
     m_dacModule(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
     m_appModel(options.AppModel),
     m_gatherFrames(options.CrashReport),
-    m_crashThread(options.CrashThread),
-    m_signal(options.Signal),
-    m_exceptionRecord(options.ExceptionRecord),
+    m_dumpRegionStore(&m_memoryRegions, &CrashInfo::FindMemoryRegionOverlap, &CrashInfo::InsertDumpRegion),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -31,17 +28,41 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
 {
     g_crashInfo = this;
     m_runtimeBaseAddress = 0;
-#ifdef __APPLE__
-    m_task = 0;
-#else
-    m_auxvValues.fill(0);
-    m_fdMem = -1;
-#endif
     memset(&m_siginfo, 0, sizeof(m_siginfo));
     m_siginfo.si_signo = options.Signal;
     m_siginfo.si_code = options.SignalCode;
     m_siginfo.si_errno = options.SignalErrno;
     m_siginfo.si_addr = (void*)options.SignalAddress;
+}
+
+bool
+CrashInfo::PopulateFromProcessInfo()
+{
+    for (const ThreadSnapshot& snapshot : m_processInfo.Threads())
+    {
+        m_threads.push_back(new ThreadInfo(*this, snapshot));
+    }
+
+    for (const ModuleRegion& mapping : m_processInfo.Mappings())
+    {
+        if (mapping.IncludeInNtFile())
+        {
+            ModuleRegion moduleRegion(mapping.Flags(), mapping.StartAddress(), mapping.EndAddress(), mapping.Offset());
+            moduleRegion.SetIncludeInNtFile(true);
+            if (!moduleRegion.SetFileName(mapping.FileName()))
+            {
+                return false;
+            }
+            m_cbModuleMappings += moduleRegion.Size();
+            m_moduleMappings.insert(Move(moduleRegion));
+        }
+        else
+        {
+            m_otherMappings.insert(MemoryRegion(mapping));
+        }
+    }
+
+    return true;
 }
 
 CrashInfo::~CrashInfo()
@@ -76,15 +97,42 @@ CrashInfo::~CrashInfo()
         m_dacModule = nullptr;
     }
 #ifdef __APPLE__
-    if (m_task != 0)
+    if (Task() != 0)
     {
-        kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_task);
+        kern_return_t result = ::mach_port_deallocate(mach_task_self(), Task());
         if (result != KERN_SUCCESS)
         {
             printf_error("Internal error: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
         }
     }
 #endif
+}
+
+bool
+CrashInfo::FindMemoryRegionOverlap(
+    void* container,
+    uint64_t startAddress,
+    uint64_t endAddress,
+    MemoryRegion* result)
+{
+    std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(container);
+    MemoryRegion search(0, startAddress, endAddress, 0);
+    std::set<MemoryRegion>::const_iterator found = regions->find(search);
+    if (found == regions->end())
+    {
+        return false;
+    }
+
+    *result = *found;
+    return true;
+}
+
+bool
+CrashInfo::InsertDumpRegion(void* container, const MemoryRegion* region)
+{
+    std::set<MemoryRegion>* regions = static_cast<std::set<MemoryRegion>*>(container);
+    regions->insert(*region);
+    return true;
 }
 
 STDMETHODIMP
@@ -154,30 +202,12 @@ CrashInfo::LogMessage(
 bool
 CrashInfo::GatherCrashInfo(DumpType dumpType)
 {
-    // Get the info about the threads (registers, etc.)
-    for (ThreadInfo* thread : m_threads)
-    {
-        if (!thread->Initialize())
-        {
-            return false;
-        }
-    }
 #ifdef __APPLE__
     if (!EnumerateMemoryRegions())
     {
         return false;
     }
 #else
-    // Get the auxv data
-    if (!GetAuxvEntries())
-    {
-        return false;
-    }
-    // Gather all the module memory mappings (from /dev/$pid/maps)
-    if (!EnumerateMemoryRegions())
-    {
-        return false;
-    }
     // Get shared module debug info
     if (!GetDSOInfo())
     {
@@ -196,11 +226,11 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
     {
         return false;
     }
-    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
-    MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
-    m_memoryRegions.insert(special);
 #ifdef __APPLE__
-    InitializeOtherMappings();
+    if (!InitializeOtherMappings())
+    {
+        return false;
+    }
 #endif
     if (!UnwindAllThreads())
     {
@@ -214,49 +244,15 @@ CrashInfo::GatherCrashInfo(DumpType dumpType)
             region.Trace();
         }
     }
-    // If full memory dump, include everything regardless of permissions
-    if (dumpType == DumpType::Full)
-    {
-        for (const MemoryRegion& region : m_moduleMappings)
-        {
-            InsertMemoryRegion(region);
-        }
-        for (const MemoryRegion& region : m_otherMappings)
-        {
-            // Don't add uncommitted pages to the full dump
-            if ((region.Permissions() & (PF_R | PF_W | PF_X)) != 0)
-            {
-                InsertMemoryRegion(region);
-            }
-        }
-    }
-    else
-    {
-        // Add all the heap read/write memory regions (m_otherMappings contains the heaps). On Alpine
-        // the heap regions are marked RWX instead of just RW.
-        if (dumpType == DumpType::Heap)
-        {
-            for (const MemoryRegion& region : m_otherMappings)
-            {
-                uint32_t permissions = region.Permissions();
-#ifdef __APPLE__
-                if (permissions == (PF_R | PF_W))
-#else
-                if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
-#endif
-                {
-                    InsertMemoryRegion(region);
-                }
-            }
-        }
-        // Add the thread's stack and some code memory to core
-        for (ThreadInfo* thread : m_threads)
-        {
-            // Add the thread's stack
-            thread->GetThreadStack();
-        }
-    }
     return true;
+}
+
+void CrashInfo::AddThreadStacks()
+{
+    for (ThreadInfo* thread : m_threads)
+    {
+        thread->GetThreadStack();
+    }
 }
 
 static const char*
@@ -707,115 +703,6 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
     assert(end > 0);
 
     return InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start), start, end));
-}
-
-//
-// Add a memory region to the list. Returns the number of pages actually added.
-//
-int
-CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
-{
-    // Check if the new region overlaps with the previously added ones
-    const auto& conflictingRegion = m_memoryRegions.find(region);
-    const bool hasConflict = conflictingRegion != m_memoryRegions.end();
-    if (hasConflict && conflictingRegion->Contains(region))
-    {
-        // The region is contained in the one we added before
-        // Nothing to do
-        return 0;
-    }
-
-    // Go page by page and split the region into valid sub-regions
-    uint64_t pageStart = region.StartAddress();
-    uint64_t numberPages = region.Size() / PAGE_SIZE;
-    uint64_t subRegionStart, subRegionEnd;
-    int pagesAdded = 0;
-    subRegionStart = subRegionEnd = pageStart;
-    for (size_t p = 0; p < numberPages; p++, pageStart += PAGE_SIZE)
-    {
-        MemoryRegion page(region.Flags(), pageStart, pageStart + PAGE_SIZE);
-
-        // avoid searching for conflicts if we know we don't have one
-        const bool pageHasConflicts = hasConflict && m_memoryRegions.find(page) != m_memoryRegions.end();
-        // avoid validating the page if it conflicts: we won't add it in any case
-        const bool pageIsValid = !pageHasConflicts && PageMappedToPhysicalMemory(pageStart) && PageCanBeRead(pageStart);
-
-        if (pageIsValid)
-        {
-            subRegionEnd = page.EndAddress();
-            pagesAdded++;
-        }
-        else
-        {
-            // the next page is not valid thus sub-region is complete
-            if (subRegionStart != subRegionEnd)
-            {
-                m_memoryRegions.insert(MemoryRegion(region.Flags(), subRegionStart, subRegionEnd));
-            }
-            subRegionStart = subRegionEnd = page.EndAddress();
-        }
-    }
-    // add the last sub-region if it's not empty
-    if (subRegionStart != subRegionEnd)
-    {
-        m_memoryRegions.insert(MemoryRegion(region.Flags(), subRegionStart, subRegionEnd));
-    }
-
-    return pagesAdded;
-}
-
-//
-// Check the page is really used by the application before adding it to the dump
-// On some kernels reading a region from createdump results in committing this region in the parent application
-// That leads to OOM in container environment and unnecesserally increses the size of the dump file
-// However this is an optimization: if it fails we still try to add the page to the dump
-//
-bool
-CrashInfo::PageMappedToPhysicalMemory(uint64_t start)
-{
-    #if !defined(__linux__)
-        // this check has not been implemented yet for other unix systems
-        return true;
-    #else
-        // https://www.kernel.org/doc/Documentation/vm/pagemap.txt
-        if (m_fdPagemap == -1)
-        {
-            // Weren't able to open pagemap file, so don't run this check
-            // Expected on kernels 4.0 and 4.1 as we need CAP_SYS_ADMIN to open /proc/pid/pagemap
-            // On kernels after 4.2 we only need PTRACE_MODE_READ_FSCREDS as we are ok with zeroed PFNs
-            return true;
-        }
-
-        uint64_t pagemapOffset = (start / PAGE_SIZE) * sizeof(uint64_t);
-        uint64_t seekResult = lseek(m_fdPagemap, (off_t) pagemapOffset, SEEK_SET);
-        if (seekResult != pagemapOffset)
-        {
-            int seekErrno = errno;
-            TRACE("Seeking in pagemap file FAILED, addr: %" PRIA PRIx64 ", pagemap offset: %" PRIA PRIx64 ", ERRNO %d: %s\n", start, pagemapOffset, seekErrno, strerror(seekErrno));
-            return true;
-        }
-        uint64_t value;
-        size_t readResult = read(m_fdPagemap, (void*)&value, sizeof(value));
-        if (readResult == (size_t) -1)
-        {
-            int readErrno = errno;
-            TRACE("Reading of pagemap file FAILED, addr: %" PRIA PRIx64 ", pagemap offset: %" PRIA PRIx64 ", size: %zu, ERRNO %d: %s\n", start, pagemapOffset, sizeof(value), readErrno, strerror(readErrno));
-            return true;
-        }
-
-        bool is_page_present = (value & ((uint64_t)1 << 63)) != 0;
-        bool is_page_swapped = (value & ((uint64_t)1 << 62)) != 0;
-        TRACE_VERBOSE("Pagemap value for %" PRIA PRIx64 ", pagemap offset %" PRIA PRIx64 " is %" PRIA PRIx64 " -> %s\n", start, pagemapOffset, value, is_page_present ? "in memory" : (is_page_swapped ? "in swap" : "NOT in memory"));
-        return is_page_present || is_page_swapped;
-    #endif
-}
-
-bool
-CrashInfo::PageCanBeRead(uint64_t start)
-{
-    BYTE buffer[1];
-    size_t read;
-    return ReadProcessMemory(start, buffer, 1, &read);
 }
 
 //

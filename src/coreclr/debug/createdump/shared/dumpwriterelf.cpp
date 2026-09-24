@@ -223,7 +223,7 @@ DumpWriter::WriteProcessInfo()
     processInfo.pr_pid = m_crashInfo.Pid();
     processInfo.pr_ppid = m_crashInfo.Ppid();
     processInfo.pr_pgrp = m_crashInfo.Tgid();
-    m_crashInfo.Name().copy(processInfo.pr_fname, sizeof(processInfo.pr_fname));
+    strncpy(processInfo.pr_fname, m_crashInfo.Name(), sizeof(processInfo.pr_fname));
 
     Nhdr nhdr;
     memset(&nhdr, 0, sizeof(nhdr));
@@ -251,7 +251,7 @@ DumpWriter::WriteAuxv()
     nhdr.n_descsz = m_crashInfo.GetAuxvSize();
     nhdr.n_type = NT_AUXV;
 
-    TRACE("Writing %zd auxv entries to core file\n", m_crashInfo.AuxvEntries().size());
+    TRACE("Writing %zd auxv entries to core file\n", m_crashInfo.AuxvEntries().Count());
 
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
         !WriteData("CORE\0AUX", 8)) {
@@ -291,7 +291,7 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
 
     // File name storage needed
     for (const ModuleRegion& image : m_crashInfo.ModuleMappings()) {
-        size += image.FileName().length();
+        size += image.FileNameLength();
     }
     // Notes must end on 4 byte alignment
     size_t alignmentBytesNeeded = 4 - (size % 4);
@@ -348,7 +348,7 @@ DumpWriter::WriteNTFileInfo()
 
     for (const ModuleRegion& image : m_crashInfo.ModuleMappings())
     {
-        if (!WriteData(image.FileName().c_str(), image.FileName().length()) ||
+        if (!WriteData(image.FileName(), image.FileNameLength()) ||
             !WriteData("\0", 1)) {
             return false;
         }

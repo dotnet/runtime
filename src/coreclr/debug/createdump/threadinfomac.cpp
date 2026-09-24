@@ -3,16 +3,13 @@
 
 #include "createdump.h"
 
-ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port) :
+ThreadInfo::ThreadInfo(CrashInfo& crashInfo, const ThreadSnapshot& snapshot) :
     m_crashInfo(crashInfo),
-    m_tid(tid),
-    m_ppid(0),
-    m_tgid(0),
+    m_snapshot(snapshot),
     m_managed(false),
     m_exceptionObject(0),
     m_exceptionHResult(0),
-    m_repeatedFrames(0),
-    m_port(port)
+    m_repeatedFrames(0)
 {
     m_beginRepeat = m_frames.end();
     m_endRepeat = m_frames.end();
@@ -20,18 +17,11 @@ ThreadInfo::ThreadInfo(CrashInfo& crashInfo, pid_t tid, mach_port_t port) :
 
 ThreadInfo::~ThreadInfo()
 {
-    kern_return_t result = ::mach_port_deallocate(mach_task_self(), m_port);
-    if (result != KERN_SUCCESS)
-    {
-        printf_error("Internal error: ~ThreadInfo: mach_port_deallocate FAILED %s (%x)\n", mach_error_string(result), result);
-    }
 }
 
 bool
-ThreadInfo::Initialize()
+ThreadSnapshot::Initialize()
 {
-    m_ppid = 0;
-    m_tgid = 0;
 
 #if defined(__x86_64__)
     mach_msg_type_number_t stateCount = x86_THREAD_STATE64_COUNT;
@@ -72,7 +62,7 @@ ThreadInfo::Initialize()
 }
 
 void
-ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
+ThreadSnapshot::GetThreadContext(uint32_t flags, CONTEXT* context) const
 {
     context->ContextFlags = flags;
 #if defined(__x86_64__)

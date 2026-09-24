@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "specialdiaginfo.h"
+#include "coreutils.h"
 
 #if !defined(PAGE_SIZE) && (defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)) || defined(__riscv)
 extern long g_pageSize;
@@ -32,6 +33,14 @@ private:
     uint64_t m_offset;
 
 public:
+    MemoryRegion() noexcept :
+        m_flags(0),
+        m_startAddress(0),
+        m_endAddress(0),
+        m_offset(0)
+    {
+    }
+
     MemoryRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset) :
         m_flags(flags),
         m_startAddress(start),
@@ -119,46 +128,72 @@ public:
 struct ModuleRegion : MemoryRegion
 {
 private:
-    std::string m_fileName;
+    OwnedString m_fileName;
+    bool m_includeInNtFile = false;
 
 public:
-    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset, char* filename) : MemoryRegion(flags, start, end, offset),
-        m_fileName(filename != nullptr ? filename : "")
+    ModuleRegion() noexcept : MemoryRegion(0, 0, 0, 0)
     {
     }
 
-    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset, const std::string& filename) : MemoryRegion(flags, start, end, offset),
-        m_fileName(filename)
+    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset) :
+        MemoryRegion(flags, start, end, offset)
     {
     }
 
-    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end, uint64_t offset) : MemoryRegion(flags, start, end, offset)
+    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end) :
+        MemoryRegion(flags, start, end)
     {
     }
 
-    ModuleRegion(uint32_t flags, uint64_t start, uint64_t end) : MemoryRegion(flags, start, end)
+    ModuleRegion(const MemoryRegion& region) :
+        MemoryRegion(region)
     {
     }
 
-    // copy with new file name constructor
-    ModuleRegion(const ModuleRegion& region, const std::string& fileName) : MemoryRegion(region),
-        m_fileName(fileName)
+    ModuleRegion(ModuleRegion&&) noexcept = default;
+    ModuleRegion& operator=(ModuleRegion&&) noexcept = default;
+
+    ModuleRegion(const ModuleRegion&) = delete;
+    ModuleRegion& operator=(const ModuleRegion&) = delete;
+
+    const char* FileName() const noexcept
     {
+        return m_fileName.CStr();
     }
 
-    // copy constructor from MemoryRegion
-    ModuleRegion(const MemoryRegion& region) : MemoryRegion(region)
+    size_t FileNameLength() const noexcept
     {
+        return m_fileName.Length();
     }
 
-    ~ModuleRegion()
+    bool FileNameEquals(const char* value) const noexcept
     {
+        return strcmp(m_fileName.CStr(), value != nullptr ? value : "") == 0;
     }
 
-    inline const std::string& FileName() const { return m_fileName; }
+    bool IncludeInNtFile() const noexcept
+    {
+        return m_includeInNtFile;
+    }
+
+    void SetIncludeInNtFile(bool includeInNtFile) noexcept
+    {
+        m_includeInNtFile = includeInNtFile;
+    }
+
+    bool SetFileName(const char* value) noexcept
+    {
+        return m_fileName.Assign(value);
+    }
+
+    void TakeFileNameOwnership(char* value) noexcept
+    {
+        m_fileName.TakeOwnership(value);
+    }
 
     void Trace(const char* prefix = "") const
     {
-        MemoryRegion::Trace(prefix, m_fileName.c_str());
+        MemoryRegion::Trace(prefix, m_fileName.CStr());
     }
 };

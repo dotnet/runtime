@@ -4,19 +4,17 @@
 #include "createdump.h"
 #include <minipal/ospagesize.h>
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
-long g_pageSize = 0;
-#endif
-
 //
 // The Linux/MacOS create dump code
 //
 bool
 CreateDump(const CreateDumpOptions& options)
 {
-    ReleaseHolder<CrashInfo> crashInfo{ new CrashInfo(options) };
+    ProcessInfo processInfo(options);
+    ReleaseHolder<CrashInfo> crashInfo{ new CrashInfo(options, processInfo) };
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
+    bool processInitialized = false;
     bool result = false;
 
     // Initialize PAGE_SIZE
@@ -25,45 +23,68 @@ CreateDump(const CreateDumpOptions& options)
 #endif
     TRACE("PAGE_SIZE %lu\n", (unsigned long)PAGE_SIZE);
 
-    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel == AppModelType::NativeAOT))
+    if (!ValidateDumpOptions(&options))
     {
-        printf_error("The app model does not support crash report generation\n");
         goto exit;
     }
 
-    if (options.DumpType != DumpType::Full && options.AppModel == AppModelType::NativeAOT)
+    if (!processInfo.Initialize())
     {
-        printf_error("The app model only supports full dump generation\n");
         goto exit;
     }
 
-    // Initialize the crash info 
+    processInitialized = true;
+
+    // Initialize the crash info
     if (!crashInfo->Initialize())
     {
         goto exit;
     }
-    printf_status("Gathering state for process %d %s\n", options.Pid, crashInfo->Name().c_str());
+    printf_status("Gathering state for process %d %s\n", options.Pid, crashInfo->Name());
 
     if (options.Signal != 0 || options.CrashThread != 0)
     {
         printf_status("Crashing thread %04x signal %d (%04x)\n", options.CrashThread, options.Signal, options.Signal);
     }
 
-    // Suspend all the threads in the target process and build the list of threads
-    if (!crashInfo->EnumerateAndSuspendThreads())
+    if (!processInfo.EnumerateAndSuspendThreads())
     {
         goto exit;
     }
-    // Gather all the info about the process, threads (registers, etc.) and memory regions
+    if (!processInfo.GatherCrashInfo(*crashInfo->GetDumpRegionStore()))
+    {
+        goto exit;
+    }
+    if (!crashInfo->PopulateFromProcessInfo())
+    {
+        goto exit;
+    }
+    // Gather external-only DAC, unwind, and managed module information.
     if (!crashInfo->GatherCrashInfo(options.DumpType))
     {
         goto exit;
     }
-    // Format the dump pattern template now that the process name on MacOS has been obtained
-    if (!FormatDumpName(dumpPath, options.DumpPathTemplate, crashInfo->Name().c_str(), options.Pid))
+
+    if (!AddSpecialDiagInfoRegion(crashInfo->GetDumpRegionStore()))
     {
         goto exit;
     }
+
+    if (!processInfo.SelectDumpRegions(*crashInfo->GetDumpRegionStore(), options.DumpType))
+    {
+        goto exit;
+    }
+
+    crashInfo->AddThreadStacks();
+
+    char pathName[MAX_LONGPATH + 1];
+    // Format the dump pattern template now that the process name on MacOS has been obtained
+    if (!FormatDumpName(pathName, MAX_LONGPATH, options.DumpPathTemplate, crashInfo->Name(), options.Pid))
+    {
+        goto exit;
+    }
+
+    dumpPath = pathName;
     // Write the crash report json file if enabled
     if (options.CrashReport)
     {
@@ -115,5 +136,10 @@ exit:
         }
     }
     crashInfo->CleanupAndResumeProcess();
+    if (processInitialized)
+    {
+        processInfo.CleanupAndResumeProcess();
+    }
+
     return result;
 }
