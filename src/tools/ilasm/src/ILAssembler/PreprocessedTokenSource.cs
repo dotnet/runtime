@@ -107,6 +107,12 @@ namespace ILAssembler
                     return nextToken;
                 }
 
+                int activeIfDefBlocks = ActiveIfDefBlocksInCurrentSource;
+                for (int i = 0; i < activeIfDefBlocks; i++)
+                {
+                    _activeIfDefBlocks.Pop();
+                }
+
                 _includeSourceStack.Pop();
                 errorOnEof = ActiveIfDefBlocksInCurrentSource != 0;
             }

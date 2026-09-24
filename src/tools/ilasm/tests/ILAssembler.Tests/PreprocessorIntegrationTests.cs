@@ -4,9 +4,11 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
+using Antlr4.Runtime;
 using Xunit;
 using DocumentCompilerTestHelpers = ILAssembler.Tests.DocumentCompilerTestHelpers;
 
@@ -86,6 +88,38 @@ namespace ILAssembler.Tests
 
             Assert.Contains("IncludedType", typeNames);
             Assert.Contains("AfterInclude", typeNames);
+        }
+
+        [Fact]
+        public void IncludedUnterminatedConditional_PreservesParentConditionalState()
+        {
+            string source = """
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                #define ROOT
+                #ifndef ROOT
+                #else
+                #include "child.il"
+                #else
+                .class public auto ansi beforefieldinit SecondElse extends [System.Runtime]System.Object { }
+                #endif
+                """;
+
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                new SourceText(source, "root.il"),
+                path => new SourceText("""
+                    #define CHILD
+                    #ifdef CHILD
+                    """, path),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            var preprocessorDiagnostics = diagnostics.Where(diagnostic => diagnostic.Id == "Preprocessor").ToArray();
+            Assert.Single(preprocessorDiagnostics);
+            Assert.Equal("root.il", preprocessorDiagnostics[0].Location.Source.Path);
+            Assert.Contains("#else", preprocessorDiagnostics[0].Message);
+            Assert.NotNull(result);
         }
 
         [Fact]
