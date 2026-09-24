@@ -103,4 +103,5 @@ When the .NET runtime team wants to signal that an update is recommended we upda
 value returned by `GetCurrentReaderVersion()` in the cDAC implementation and the `RecommendedReaderVersion`
 global value in the runtime. This causes older tools on older cDAC versions to observe
 `GetRecommendedReaderVersion()` > `GetCurrentReaderVersion()`. The tool can notify the user that an update
-is recommended.
+is recommended. Changes associated with each reader version are recorded in the
+[cDAC reader version history](reader-version-history.md).

@@ -2560,25 +2560,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = 16;
-
-#ifdef FEATURE_SIMD
-#ifdef TARGET_XARCH
-            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
-            {
-                MaxUnrollSize = 128;
-            }
-            else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // We need AVX2 for TYP_SIMD32 based op_Equality, fallback to Vector128 if only AVX is available
-                MaxUnrollSize = 64;
-            }
-            else
-#endif // TARGET_XARCH
-            {
-                MaxUnrollSize = 32;
-            }
-#endif // FEATURE_SIMD
+            const ssize_t MaxUnrollSize = m_compiler->getUnrollThreshold(Compiler::Memcmp);
 
             if (cnsSize <= MaxUnrollSize)
             {
@@ -6807,7 +6789,10 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(m_compiler->info.compUnmanagedCallCountWithGCTransition);
     noway_assert(m_compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (!m_compiler->info.compPublishStubParam && m_compiler->opts.ShouldUsePInvokeHelpers())
+    const bool hasMDContextArg =
+        m_compiler->info.compIsVarArgs && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
+
+    if (!hasMDContextArg && m_compiler->opts.ShouldUsePInvokeHelpers())
     {
         return;
     }
@@ -6827,9 +6812,10 @@ void Lowering::InsertPInvokeMethodProlog()
     // call to the init helper below, which links the frame into the thread
     // list on 32-bit platforms.
     // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
-    if (m_compiler->info.compPublishStubParam)
+    if (hasMDContextArg)
     {
-        GenTree* value = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
+        assert(m_compiler->compHasSecretStubArgument());
+        GenTree* value = m_compiler->gtNewLclvNode(m_compiler->lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
         GenTree* store = m_compiler->gtNewStoreLclFldNode(m_compiler->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
                                                           callFrameInfo.offsetOfSecretStubArg, value);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(m_compiler, store));
