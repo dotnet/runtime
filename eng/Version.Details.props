@@ -97,21 +97,21 @@ This file should be imported by eng/Versions.props
     <optimizationwindows_ntx64MIBCRuntimePackageVersion>1.0.0-prerelease.26080.1</optimizationwindows_ntx64MIBCRuntimePackageVersion>
     <optimizationwindows_ntx86MIBCRuntimePackageVersion>1.0.0-prerelease.26080.1</optimizationwindows_ntx86MIBCRuntimePackageVersion>
     <!-- dotnet-runtime-assets dependencies -->
-    <MicrosoftDotNetCilStripSourcesPackageVersion>10.0.0-beta.26462.2</MicrosoftDotNetCilStripSourcesPackageVersion>
-    <MicrosoftNETHostModelTestDataPackageVersion>10.0.0-beta.26462.2</MicrosoftNETHostModelTestDataPackageVersion>
-    <SystemComponentModelTypeConverterTestDataPackageVersion>10.0.0-beta.26462.2</SystemComponentModelTypeConverterTestDataPackageVersion>
-    <SystemDataCommonTestDataPackageVersion>10.0.0-beta.26462.2</SystemDataCommonTestDataPackageVersion>
-    <SystemDrawingCommonTestDataPackageVersion>10.0.0-beta.26462.2</SystemDrawingCommonTestDataPackageVersion>
-    <SystemFormatsTarTestDataPackageVersion>10.0.0-beta.26462.2</SystemFormatsTarTestDataPackageVersion>
-    <SystemIOCompressionTestDataPackageVersion>10.0.0-beta.26462.2</SystemIOCompressionTestDataPackageVersion>
-    <SystemIOPackagingTestDataPackageVersion>10.0.0-beta.26462.2</SystemIOPackagingTestDataPackageVersion>
-    <SystemNetTestDataPackageVersion>10.0.0-beta.26462.2</SystemNetTestDataPackageVersion>
-    <SystemPrivateRuntimeUnicodeDataPackageVersion>10.0.0-beta.26462.2</SystemPrivateRuntimeUnicodeDataPackageVersion>
-    <SystemRuntimeNumericsTestDataPackageVersion>10.0.0-beta.26462.2</SystemRuntimeNumericsTestDataPackageVersion>
-    <SystemRuntimeTimeZoneDataPackageVersion>10.0.0-beta.26462.2</SystemRuntimeTimeZoneDataPackageVersion>
-    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>10.0.0-beta.26462.2</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
-    <SystemTextRegularExpressionsTestDataPackageVersion>10.0.0-beta.26462.2</SystemTextRegularExpressionsTestDataPackageVersion>
-    <SystemWindowsExtensionsTestDataPackageVersion>10.0.0-beta.26462.2</SystemWindowsExtensionsTestDataPackageVersion>
+    <MicrosoftDotNetCilStripSourcesPackageVersion>10.0.0-beta.26473.3</MicrosoftDotNetCilStripSourcesPackageVersion>
+    <MicrosoftNETHostModelTestDataPackageVersion>10.0.0-beta.26473.3</MicrosoftNETHostModelTestDataPackageVersion>
+    <SystemComponentModelTypeConverterTestDataPackageVersion>10.0.0-beta.26473.3</SystemComponentModelTypeConverterTestDataPackageVersion>
+    <SystemDataCommonTestDataPackageVersion>10.0.0-beta.26473.3</SystemDataCommonTestDataPackageVersion>
+    <SystemDrawingCommonTestDataPackageVersion>10.0.0-beta.26473.3</SystemDrawingCommonTestDataPackageVersion>
+    <SystemFormatsTarTestDataPackageVersion>10.0.0-beta.26473.3</SystemFormatsTarTestDataPackageVersion>
+    <SystemIOCompressionTestDataPackageVersion>10.0.0-beta.26473.3</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOPackagingTestDataPackageVersion>10.0.0-beta.26473.3</SystemIOPackagingTestDataPackageVersion>
+    <SystemNetTestDataPackageVersion>10.0.0-beta.26473.3</SystemNetTestDataPackageVersion>
+    <SystemPrivateRuntimeUnicodeDataPackageVersion>10.0.0-beta.26473.3</SystemPrivateRuntimeUnicodeDataPackageVersion>
+    <SystemRuntimeNumericsTestDataPackageVersion>10.0.0-beta.26473.3</SystemRuntimeNumericsTestDataPackageVersion>
+    <SystemRuntimeTimeZoneDataPackageVersion>10.0.0-beta.26473.3</SystemRuntimeTimeZoneDataPackageVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>10.0.0-beta.26473.3</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
+    <SystemTextRegularExpressionsTestDataPackageVersion>10.0.0-beta.26473.3</SystemTextRegularExpressionsTestDataPackageVersion>
+    <SystemWindowsExtensionsTestDataPackageVersion>10.0.0-beta.26473.3</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- dotnet-wcf dependencies -->
     <SystemServiceModelPrimitivesPackageVersion>4.9.0-rc2.21473.1</SystemServiceModelPrimitivesPackageVersion>
     <!-- dotnet-xharness dependencies -->
