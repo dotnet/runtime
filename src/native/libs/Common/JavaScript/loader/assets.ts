@@ -168,7 +168,11 @@ async function fetchAssemblyInternal(asset: AssemblyAsset, isCoreAssembly: boole
     }
 
     const isWebcilInWasm = assetInternal.virtualPath?.endsWith(".wasm") ?? false;
-    normalizeVirtualPath(assetInternal, isCoreAssembly && assetInternal.virtualPath.endsWith(".r2r.wasm"));
+    // The SDK places only System.Private.CoreLib and the composite R2R owner in coreAssembly. Crossgen2 names
+    // the owner <entry>.r2r.wasm and every component stub probes for it by that exact name, so it keeps its
+    // .wasm virtual path and is not a managed assembly (see initializeCoreCLR's TPA).
+    assetInternal.isCompositeImage = isCoreAssembly && assetInternal.virtualPath.endsWith(".r2r.wasm");
+    normalizeVirtualPath(assetInternal);
 
     if (isWebcilInWasm) {
         await fetchWebcil(assetInternal);
@@ -571,10 +575,9 @@ export function verifyAllAssetsDownloaded(): void {
     dotnetAssert.check(downloadedAssetsCount === totalAssetsToDownload, `Not all assets were downloaded. Downloaded ${downloadedAssetsCount} out of ${totalAssetsToDownload}`);
 }
 
-function normalizeVirtualPath(asset: AssetEntryInternal, preserveWasmExtension: boolean = false): void {
+function normalizeVirtualPath(asset: AssetEntryInternal): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
-    // Composite R2R images are probed by their .r2r.wasm name, not as managed .dll assemblies.
-    if (!preserveWasmExtension) {
+    if (!asset.isCompositeImage) {
         asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
     }
     asset.virtualPath = asset.virtualPath.startsWith("/")

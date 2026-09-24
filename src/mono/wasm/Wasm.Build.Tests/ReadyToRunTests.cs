@@ -80,7 +80,7 @@ namespace Wasm.Build.Tests
             // is a per-app image, not the runtime pack's. nativeRelink also relinks dotnet.native.wasm.
             string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}{(composite ? "_composite" : "")}";
             string extraItems = composite
-                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" /><TrimmerRootAssembly Include="R2rSuffixLibrary.r2r" />"""
+                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
                 : string.Empty;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
                 extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{(composite ? "true" : "false")}</PublishReadyToRunComposite><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
@@ -118,9 +118,13 @@ namespace Wasm.Build.Tests
                 AssertNoDuplicateAssemblies(frameworkDir);
             }
 
+            bool suffixLibraryLoaded = false;
             await RunForPublishWithWebServer(new BlazorRunOptions(config,
                 CheckCounter: false,
+                OnConsoleMessage: (_, msg) => suffixLibraryLoaded |= msg.Contains(SuffixLibraryLoadedMessage),
                 ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+            if (composite)
+                Assert.True(suffixLibraryLoaded, $"'{SuffixLibraryLoadedMessage}' was not logged; R2rSuffixLibrary.r2r did not load as a component assembly.");
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
@@ -332,8 +336,16 @@ namespace Wasm.Build.Tests
                 $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
         }
 
-        private static void AddR2RSuffixLibrary(ProjectInfo info)
+        private const string SuffixLibraryLoadedMessage = "Loaded R2rSuffixLibrary.r2r: 42";
+
+        // An ordinary library whose name ends in .r2r must still load as a managed component assembly,
+        // not be mistaken for the composite owner image (<entry>.r2r.wasm).
+        private void AddR2RSuffixLibrary(ProjectInfo info)
         {
+            UpdateFile("Program.cs", new Dictionary<string, string>
+            {
+                { "var builder", "System.Console.WriteLine($\"Loaded {typeof(R2rSuffixLibraryMarker).Assembly.GetName().Name}: {R2rSuffixLibraryMarker.Value}\");\nvar builder" }
+            });
             string appDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
             string libraryDirectory = Path.GetFullPath(Path.Combine(appDirectory, "..", "R2rSuffixLibrary"));
             Directory.CreateDirectory(libraryDirectory);
