@@ -3,7 +3,7 @@ parameters:
 
 jobs:
 # Build Mono only for explicitly selected performance builds.
-- ${{ if parameters.runMono }}:
+- ${{ if eq(parameters.runMono, true) }}:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
       jobTemplate: /eng/pipelines/common/global-build-job.yml
