@@ -670,59 +670,68 @@ namespace System.Reflection.Tests
             typeof(IntrinsicInvokeThresholdCachedTarget),
             nameof(IntrinsicInvokeThresholdCachedTarget.Echo),
             typeof(IntrinsicInvokeThresholdCachedTarget),
-            false,
             IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold,
             false)]
         [InlineData(
             typeof(IntrinsicInvokeThresholdVirtualBase),
             nameof(IntrinsicInvokeThresholdVirtualBase.Echo),
             typeof(IntrinsicInvokeThresholdVirtualDerived),
-            false,
             IntrinsicInvokeSelectionAssertions.ClassVirtualSpecializationThreshold,
             true)]
         [InlineData(
             typeof(IIntrinsicInvokeThresholdInterface),
             nameof(IIntrinsicInvokeThresholdInterface.Echo),
             typeof(IntrinsicInvokeThresholdInterfaceTarget),
-            false,
-            IntrinsicInvokeSelectionAssertions.InterfaceOrGenericVirtualSpecializationThreshold,
-            true)]
-        [InlineData(
-            typeof(IntrinsicInvokeThresholdGenericMethodBase),
-            nameof(IntrinsicInvokeThresholdGenericMethodBase.Echo),
-            typeof(IntrinsicInvokeThresholdGenericMethodDerived),
-            true,
             IntrinsicInvokeSelectionAssertions.InterfaceOrGenericVirtualSpecializationThreshold,
             true)]
         [InlineData(
             typeof(IntrinsicInvokeThresholdGenericTypeBase<string>),
             nameof(IntrinsicInvokeThresholdGenericTypeBase<string>.Echo),
             typeof(IntrinsicInvokeThresholdGenericTypeDerived),
-            false,
             IntrinsicInvokeSelectionAssertions.ClassVirtualSpecializationThreshold,
             true)]
-        [InlineData(
-            typeof(IntrinsicInvokeThresholdFinalGenericMethodDerived),
-            nameof(IntrinsicInvokeThresholdFinalGenericMethodDerived.Echo),
-            typeof(IntrinsicInvokeThresholdFinalGenericMethodDerived),
-            true,
-            IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold,
-            false)]
         public void Invoke_SharedThunkPromotesAtDispatchPathThreshold(
             Type declaringType,
             string methodName,
             Type targetType,
-            bool makeGenericMethod,
             int threshold,
             bool useVirtualResolution)
         {
             MethodInfo method = declaringType.GetMethod(methodName)!;
-            if (makeGenericMethod)
-            {
-                method = method.MakeGenericMethod(typeof(int));
-            }
-
             object target = Activator.CreateInstance(targetType)!;
+            AssertSharedThunkPromotesAtDispatchPathThreshold(method, target, threshold, useVirtualResolution);
+        }
+
+        [Fact]
+        public void Invoke_GenericMethodSharedThunkPromotesAtDispatchPathThreshold()
+        {
+            MethodInfo method = typeof(IntrinsicInvokeThresholdGenericMethodBase)
+                .GetMethod(nameof(IntrinsicInvokeThresholdGenericMethodBase.Echo))!.MakeGenericMethod(typeof(int));
+            AssertSharedThunkPromotesAtDispatchPathThreshold(
+                method,
+                new IntrinsicInvokeThresholdGenericMethodDerived(),
+                IntrinsicInvokeSelectionAssertions.InterfaceOrGenericVirtualSpecializationThreshold,
+                true);
+        }
+
+        [Fact]
+        public void Invoke_FinalGenericMethodSharedThunkPromotesAtDispatchPathThreshold()
+        {
+            MethodInfo method = typeof(IntrinsicInvokeThresholdFinalGenericMethodDerived)
+                .GetMethod(nameof(IntrinsicInvokeThresholdFinalGenericMethodDerived.Echo))!.MakeGenericMethod(typeof(int));
+            AssertSharedThunkPromotesAtDispatchPathThreshold(
+                method,
+                new IntrinsicInvokeThresholdFinalGenericMethodDerived(),
+                IntrinsicInvokeSelectionAssertions.CachedTargetSpecializationThreshold,
+                false);
+        }
+
+        private static void AssertSharedThunkPromotesAtDispatchPathThreshold(
+            MethodInfo method,
+            object target,
+            int threshold,
+            bool useVirtualResolution)
+        {
             MethodInvoker invoker = MethodInvoker.Create(method);
             object argument = new object();
             object?[] arguments = { argument };
@@ -1204,8 +1213,8 @@ namespace System.Reflection.Tests
 
             MethodInfo miMethod1String = GetMethod(typeGenericClassString, nameof(MI_GenericClass<string>.GenericMethod1));
             MethodInfo miMethod2String = GetMethod(typeGenericClassString, nameof(MI_GenericClass<string>.GenericMethod3));
-            MethodInfo miMethod2IntGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(int) });
-            MethodInfo miMethod2StringGeneric = miMethod2String.MakeGenericMethod(new Type[] { typeof(string) });
+            MethodInfo miMethod2IntGeneric = miMethod2String.MakeGenericMethod(typeof(int));
+            MethodInfo miMethod2StringGeneric = miMethod2String.MakeGenericMethod(typeof(string));
 
             Delegate methodDelegate = miMethod1String.CreateDelegate(typeof(Delegate_GC_T_T<string>));
             object returnValue = ((Delegate_GC_T_T<string>)methodDelegate).DynamicInvoke(new object[] { genericClass, "TestGeneric" });
@@ -1582,13 +1591,24 @@ namespace System.Reflection.Tests
             Assert.Equal("10", Assert.IsType<string>(args[0]));
         }
 
-        [Theory]
-        [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1), new Type[] { typeof(int) })]
-        [InlineData(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2), new Type[] { typeof(string), typeof(int) })]
-        public void MakeGenericMethod(Type type, string name, Type[] typeArguments)
+        [Fact]
+        public void MakeGenericMethod_OneArgument()
         {
-            MethodInfo methodInfo = GetMethod(type, name);
-            MethodInfo genericMethodInfo = methodInfo.MakeGenericMethod(typeArguments);
+            MethodInfo methodInfo = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod1));
+            MethodInfo genericMethodInfo = methodInfo.MakeGenericMethod(typeof(int));
+            AssertConstructedGenericMethod(methodInfo, genericMethodInfo);
+        }
+
+        [Fact]
+        public void MakeGenericMethod_TwoArguments()
+        {
+            MethodInfo methodInfo = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.GenericMethod2));
+            MethodInfo genericMethodInfo = methodInfo.MakeGenericMethod(typeof(string), typeof(int));
+            AssertConstructedGenericMethod(methodInfo, genericMethodInfo);
+        }
+
+        private static void AssertConstructedGenericMethod(MethodInfo methodInfo, MethodInfo genericMethodInfo)
+        {
             Assert.True(genericMethodInfo.IsGenericMethod);
             Assert.False(genericMethodInfo.IsGenericMethodDefinition);
 
@@ -1797,17 +1817,11 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, methodInfo.ToString());
         }
 
-        public static IEnumerable<object[]> ToString_TestData()
+        [Fact]
+        public void ToStringTest_ByConstructedGenericMethodInfo()
         {
-            MethodInfo genericMethodInfo = GetMethod(typeof(MI_GenericClass<string>), nameof(MI_GenericClass<string>.GenericMethod2)).MakeGenericMethod(new Type[] { typeof(DateTime) });
-            yield return new object[] { genericMethodInfo, "System.String GenericMethod2[DateTime](System.DateTime, System.String, System.String)" };
-        }
-
-        [Theory]
-        [MemberData(nameof(ToString_TestData))]
-        public void ToStringTest_ByMethodInfo(MethodInfo methodInfo, string expected)
-        {
-            Assert.Equal(expected, methodInfo.ToString());
+            MethodInfo genericMethodInfo = GetMethod(typeof(MI_GenericClass<string>), nameof(MI_GenericClass<string>.GenericMethod2)).MakeGenericMethod(typeof(DateTime));
+            Assert.Equal("System.String GenericMethod2[DateTime](System.DateTime, System.String, System.String)", genericMethodInfo.ToString());
         }
 
         public static IEnumerable<object[]> MethodNameAndArguments()
