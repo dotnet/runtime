@@ -32,15 +32,15 @@ parameters:
 
   - name: run_mono_micro
     type: boolean
-    default: true
+    default: false
 
   - name: run_mono_interpreter
     type: boolean
-    default: true
+    default: false
 
   - name: run_mono_aot
     type: boolean
-    default: true
+    default: false
 
   - name: run_android_coreclr_jit
     type: boolean
@@ -79,6 +79,7 @@ extends:
       - ${{ if eq(parameters.run_wasm, true) }}:
         - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
           parameters:
+            runMono: false
             ${{ if eq(variables['System.TeamProject'], 'internal') }}:
               runProfile: 'v8'
             runtimeRepoAlias: self
@@ -89,6 +90,13 @@ extends:
             jobParameters:
               ${{ if parameters.onlySanityCheck }}:
                 onlySanityCheck: true
+
+      # Explicit Mono source runs need their own producers; the default runtime build is CoreCLR-only.
+      - ${{ if and(eq(parameters.downloadSpecificBuildId, 0), or(parameters.run_mono_micro, parameters.run_mono_interpreter, parameters.run_mono_aot)) }}:
+        - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml
+          parameters:
+            mono_x64: ${{ or(parameters.run_mono_micro, parameters.run_mono_interpreter) }}
+            monoAot_x64: ${{ parameters.run_mono_aot }}
 
       # Runtime perf jobs (non-WASM) — included when any non-WASM group is enabled.
       # Per-job-group toggles are forwarded to runtime-perf-jobs.yml as parameter overrides.
