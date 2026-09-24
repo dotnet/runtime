@@ -1195,7 +1195,8 @@ namespace System.Net.Security
                 ref alertToken,
                 ref sslPolicyErrors,
                 out chainStatus,
-                peerCertificateChain: null);
+                peerCertificateChain: null,
+                cloneCertificateChainPolicy: false);
         }
 
         internal static bool VerifyRemoteCertificateCore(
@@ -1214,7 +1215,8 @@ namespace System.Net.Security
             ref ProtocolToken alertToken,
             ref SslPolicyErrors sslPolicyErrors,
             out X509ChainStatusFlags chainStatus,
-            X509Certificate2Collection? peerCertificateChain)
+            X509Certificate2Collection? peerCertificateChain,
+            bool cloneCertificateChainPolicy)
         {
             chainStatus = X509ChainStatusFlags.NoError;
 
@@ -1250,9 +1252,9 @@ namespace System.Net.Security
 
                 if (sslAuthenticationOptions.CertificateChainPolicy != null)
                 {
-                    chain.ChainPolicy = peerCertificateChain is null
-                        ? sslAuthenticationOptions.CertificateChainPolicy
-                        : sslAuthenticationOptions.CertificateChainPolicy.Clone();
+                    chain.ChainPolicy = cloneCertificateChainPolicy
+                        ? sslAuthenticationOptions.CertificateChainPolicy.Clone()
+                        : sslAuthenticationOptions.CertificateChainPolicy;
                 }
                 else
                 {

@@ -385,7 +385,8 @@ namespace System.Net.Security
                     ref alertToken,
                     ref sslPolicyErrors,
                     out _,
-                    _externalRemoteCertificates);
+                    _externalRemoteCertificates,
+                    cloneCertificateChainPolicy: true);
             }
             finally
             {
