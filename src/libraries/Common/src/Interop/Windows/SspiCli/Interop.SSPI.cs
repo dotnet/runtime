@@ -206,6 +206,7 @@ internal static partial class Interop
                 SCH_CRED_IGNORE_NO_REVOCATION_CHECK = 0x800,
                 SCH_CRED_IGNORE_REVOCATION_OFFLINE = 0x1000,
                 SCH_CRED_CACHE_ONLY_URL_RETRIEVAL = 0x8000,
+                SCH_CRED_CACHE_ONLY_URL_RETRIEVAL_ON_CREATE = 0x20000,
                 SCH_SEND_AUX_RECORD = 0x00200000,
                 SCH_USE_STRONG_CRYPTO = 0x00400000,
             }
