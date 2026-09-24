@@ -854,9 +854,9 @@ namespace System.Runtime.InteropServices
             int hr = Marshal.QueryInterface(unknown, in interfaceId, out IntPtr result);
             Marshal.Release(unknown);
 
-            if (Marshal.GetExceptionForHR(hr, new IntPtr(-1)) is Exception exception)
+            if (hr < 0)
             {
-                throw exception;
+                Marshal.ThrowExceptionForHR(hr);
             }
 
             return result;
