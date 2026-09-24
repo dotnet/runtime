@@ -520,14 +520,15 @@ PCODE MethodDesc::GetPrecompiledR2RCode(PrepareCodeConfig* pConfig)
 }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
+bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint(
+    CallerGCMode callerGCMode,
+    bool needsMulticoreJitNotification)
 {
     STANDARD_VM_CONTRACT;
-    _ASSERTE(HasUnmanagedCallersOnlyAttribute());
 
 #ifdef FEATURE_READYTORUN
-    PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
-    config.SetCallerGCMode(CallerGCMode::Preemptive);
+    PrepareCodeConfig config(NativeCodeVersion(this), needsMulticoreJitNotification, TRUE);
+    config.SetCallerGCMode(callerGCMode);
 
     // GetPrecompiledR2RCode resolves the R2R entrypoint and, on portable-entrypoint (wasm) targets,
     // publishes it into this method's portable entrypoint as a side effect (PortableEntryPoint::SetActualCode).
@@ -3164,6 +3165,16 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
             }
 
             pCode = pMD->GetMethodEntryPoint();
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            if (!PortableEntryPoint::HasNativeEntryPoint(pCode) &&
+                pMD->TryPublishR2RCodeForPortableEntryPoint(
+                    CallerGCMode::Coop,
+                    false /* needsMulticoreJitNotification */))
+            {
+                pCode = pMD->GetMethodEntryPoint();
+            }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #if _DEBUG
             if (pEMFrame->GetGCRefMap() != NULL)
