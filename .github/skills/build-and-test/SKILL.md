@@ -5,7 +5,7 @@ description: >
   per-component build and test commands, Windows/PowerShell equivalents, running
   individual tests, and troubleshooting. USE FOR: any build or test invocation in
   this repo, and before making code changes under CCA. DO NOT USE FOR: CI pipeline
-  triage (use ci-pipeline-monitor) or benchmarking (use performance-benchmark).
+  triage (use ci-pipeline-monitor) or benchmarking (use microbenchmark).
 ---
 
 # Building & Testing in dotnet/runtime

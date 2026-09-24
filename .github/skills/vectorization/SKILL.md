@@ -6,7 +6,7 @@ description: >
   code that uses Vector128/Vector256/Vector512, Vector<T>, or the platform
   intrinsics in System.Runtime.Intrinsics.X86/Arm/Wasm, and validating remainder
   handling, load/store safety, and hardware-acceleration fallbacks. DO NOT USE
-  FOR: general performance work unrelated to SIMD (use performance-benchmark),
+  FOR: general performance work unrelated to SIMD (use microbenchmark),
   or non-vectorized code review (use code-review).
 ---
 
@@ -93,7 +93,7 @@ and the same `DOTNET_Enable*` variables to compare scalar / `Vector128` / `Vecto
 in mind: larger inputs benefit more (small buffers can be *slower* due to setup), speedups are rarely
 the theoretical multiple (memory throughput, alignment, and latency all factor in), and randomized
 allocation alignment adds noise — allocate aligned memory or enable BenchmarkDotNet's randomization for
-stable/observable results. For non-trivial changes, use the `performance-benchmark` skill.
+stable/observable results. For non-trivial changes, use the `microbenchmark` skill.
 
 ## Review checklist
 

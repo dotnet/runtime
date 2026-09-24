@@ -5,7 +5,7 @@ description: Run the TechEmpower ASP.NET Core benchmarks (PlatformBenchmarks) lo
 
 # Running the TechEmpower (PlatformBenchmarks) Benchmark Locally
 
-When a runtime change needs to be validated under realistic HTTP server load (not just a BenchmarkDotNet microbenchmark — see the `performance-benchmark` skill for that), use the TechEmpower `PlatformBenchmarks` app from the [`aspnet/Benchmarks`](https://github.com/aspnet/Benchmarks) repository, driven by `wrk` (or [`bombardier`](https://github.com/codesenberg/bombardier) on Windows, since `wrk` is Linux/macOS-only), against a locally-built runtime.
+When a runtime change needs to be validated under realistic HTTP server load (not just a BenchmarkDotNet microbenchmark — see the `microbenchmark` skill for that), use the TechEmpower `PlatformBenchmarks` app from the [`aspnet/Benchmarks`](https://github.com/aspnet/Benchmarks) repository, driven by `wrk` (or [`bombardier`](https://github.com/codesenberg/bombardier) on Windows, since `wrk` is Linux/macOS-only), against a locally-built runtime.
 
 This is the right tool when the change affects the socket/IO stack, GC, JIT, or anything else only observable under many concurrent connections and real request/response processing.
 
