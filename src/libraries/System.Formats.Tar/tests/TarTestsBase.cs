@@ -961,12 +961,12 @@ namespace System.Formats.Tar.Tests
         internal static async Task VerifyCreateFromDirectory_UsesWriterOptions(Stream archive, bool preserveLinks, bool async)
         {
             archive.Position = 0;
-            using TarReader reader = new TarReader(archive);
+            TarReader reader = new TarReader(archive);
 
-            TarEntry entry1 = await GetNextEntry(reader, async);
+            TarEntry entry1 = async ? await reader.GetNextEntryAsync() : reader.GetNextEntry();
             Assert.NotNull(entry1);
 
-            TarEntry entry2 = await GetNextEntry(reader, async);
+            TarEntry entry2 = async ? await reader.GetNextEntryAsync() : reader.GetNextEntry();
             Assert.NotNull(entry2);
 
             if (preserveLinks)
@@ -979,7 +979,16 @@ namespace System.Formats.Tar.Tests
                 Assert.Equal(TarEntryType.RegularFile, entry2.EntryType);
             }
 
-            Assert.Null(await GetNextEntry(reader, async));
+            Assert.Null(async ? await reader.GetNextEntryAsync() : reader.GetNextEntry());
+
+            if (async)
+            {
+                await reader.DisposeAsync();
+            }
+            else
+            {
+                reader.Dispose();
+            }
         }
 
         protected static byte[] BuildRawPaxArchive(
