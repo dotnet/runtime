@@ -1956,7 +1956,8 @@ bool GenTreeCall::NeedsVzeroupper(Compiler* comp)
         {
             // A few special cases exist that can't be found by signature alone, so we handle
             // those explicitly here instead.
-            needsVzeroupper = IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER);
+            needsVzeroupper =
+                IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER) || IsHelperCall(CORINFO_HELP_BULK_WRITEBARRIER_SMALL);
 
             // Most other helpers are well known to not use any floating-point or SIMD logic internally, but
             // a few do exist so we need to ensure they are handled. They are identified by taking or
@@ -3918,6 +3919,61 @@ GenTree* Compiler::gtReverseCond(GenTree* tree)
 
     return tree;
 }
+
+#ifdef TARGET_XARCH
+//------------------------------------------------------------------------
+// GetCompareSize: Get the operand size of a lowered xarch comparison.
+//
+// Return Value:
+//    The comparison width in bytes.
+//
+// Remarks:
+//    Requires completed containment checking. Mixed signed/unsigned small types
+//    use 4 bytes unless containment has proved that both values fit the memory
+//    operand's range, in which case its size is used (e.g. 2 bytes for a contained
+//    short compared with a byte). Without that proof, TYP_BYTE versus TYP_UBYTE
+//    uses 4 bytes, preserving sign/zero extension so -1 and 255 remain distinct.
+//    GTF_UNSIGNED, not this size, determines the comparison's signedness.
+//
+//    Codegen may further narrow TEST immediates when the allocated registers
+//    support a byte operation.
+//
+unsigned GenTreeOp::GetCompareSize() const
+{
+    assert(OperIsCompare() || OperIs(GT_CMP, GT_TEST, GT_BT));
+
+    var_types op1Type = gtOp1->TypeGet();
+    var_types op2Type = gtOp2->TypeGet();
+
+    if (OperIs(GT_BITTEST_EQ, GT_BITTEST_NE, GT_BT))
+    {
+        // BT uses the index modulo the operand width, so its type is independent
+        // of the index's type.
+        return genTypeSize(genActualType(op1Type));
+    }
+
+    if (gtOp1->isContained() && !gtOp1->IsCnsIntOrI())
+    {
+        return genTypeSize(op1Type);
+    }
+
+    if (gtOp2->isContained() && !gtOp2->IsCnsIntOrI())
+    {
+        return genTypeSize(op2Type);
+    }
+
+    if (op1Type == op2Type)
+    {
+        return genTypeSize(op1Type);
+    }
+
+    // Different small types must be extended before comparison. Mixes involving
+    // long operands must have been handled by lowering.
+    unsigned size = ((genTypeSize(op1Type) == 8) && (genTypeSize(op2Type) == 8)) ? 8 : 4;
+    assert(size >= max(genTypeSize(op1Type), genTypeSize(op2Type)));
+    return size;
+}
+#endif // TARGET_XARCH
 
 #if !defined(TARGET_64BIT) || defined(TARGET_ARM64)
 //------------------------------------------------------------------------------
@@ -8136,24 +8192,21 @@ bool Compiler::gtTreeHasLocalStore(GenTree* tree, unsigned lclNum)
                 return WALK_SKIP_SUBTREES;
             }
 
-            auto visit = [&](GenTreeLclVarCommon* lclVar) {
-                if (lclVar->GetLclNum() == m_lclNum)
+            auto visit = [&](const auto& def) {
+                unsigned lclNum = def.GetLclNum();
+                if (lclNum == m_lclNum)
                 {
                     return GenTree::VisitResult::Abort;
                 }
-                if (m_lclDsc->lvIsStructField && (lclVar->GetLclNum() == m_lclDsc->lvParentLcl))
-                {
-                    return GenTree::VisitResult::Abort;
-                }
-                if (m_lclDsc->lvPromoted && (lclVar->GetLclNum() >= m_lclDsc->lvFieldLclStart) &&
-                    (lclVar->GetLclNum() < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
+                if (m_lclDsc->lvPromoted && (lclNum >= m_lclDsc->lvFieldLclStart) &&
+                    (lclNum < m_lclDsc->lvFieldLclStart + m_lclDsc->lvFieldCnt))
                 {
                     return GenTree::VisitResult::Abort;
                 }
                 return GenTree::VisitResult::Continue;
             };
 
-            if (node->VisitLocalDefNodes(m_compiler, visit) == GenTree::VisitResult::Abort)
+            if (node->VisitLogicalLocalDefs(m_compiler, visit) == GenTree::VisitResult::Abort)
             {
                 return WALK_ABORT;
             }
@@ -8237,9 +8290,9 @@ unsigned GenTree::GetScaleIndexShf()
 
 /*****************************************************************************
  *
- *  If the given tree is a scaled index (i.e. "op * 4" or "op << 2"), returns
- *  the multiplier: 2, 4, or 8; otherwise returns 0. Note that "1" is never
- *  returned.
+ *  If the given tree is a scaled index (i.e. "op * 4" or "op << 2") that does
+ *  not require an overflow check, returns the multiplier: 2, 4, or 8; otherwise
+ *  returns 0. Note that "1" is never returned.
  */
 
 unsigned GenTree::GetScaledIndex()
@@ -8252,7 +8305,7 @@ unsigned GenTree::GetScaledIndex()
     switch (gtOper)
     {
         case GT_MUL:
-            return AsOp()->gtOp2->GetScaleIndexMul();
+            return gtOverflow() ? 0 : AsOp()->gtOp2->GetScaleIndexMul();
 
 #ifdef TARGET_RISCV64
         case GT_SLLI_UW:
@@ -15685,11 +15738,13 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 
             bool isArg0Exact;
             bool isArg1Exact;
-            bool isNonNull; // Unused here.
+            bool isArg0NonNull;
+            bool isArg1NonNull;
 
-            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
-            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
-            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isArg0NonNull);
+            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isArg1NonNull);
+            // A null receiver should throw, but a null argument must return false.
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
             {
                 break;
             }
@@ -20644,7 +20699,7 @@ bool Compiler::IsValidForShuffle(
 
     if (simdSize == 32)
     {
-        if (!compOpportunisticallyDependsOn(InstructionSet_AVX2))
+        if (!compOpportunisticallyDependsOn(InstructionSet_AVX2, isShuffleNative))
         {
             // While we could accelerate some functions on hardware with only AVX support
             // it's likely not worth it overall given that IsHardwareAccelerated reports false
@@ -20653,7 +20708,7 @@ bool Compiler::IsValidForShuffle(
     }
     else if (simdSize == 64)
     {
-        if (varTypeIsByte(simdBaseType) && (!compOpportunisticallyDependsOn(InstructionSet_AVX512v2)))
+        if (varTypeIsByte(simdBaseType) && !compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
         {
             // TYP_BYTE, TYP_UBYTE need AVX512v2.
             return false;
@@ -22321,7 +22376,8 @@ bool GenTree::SupportsSettingZeroFlag()
     }
 
 #ifdef FEATURE_HW_INTRINSICS
-    if (OperIs(GT_HWINTRINSIC) && emitter::DoesWriteZeroFlag(HWIntrinsicInfo::lookupIns(AsHWIntrinsic(), nullptr)))
+    if (OperIs(GT_HWINTRINSIC) &&
+        emitter::DoesWriteZeroFlagForResult(HWIntrinsicInfo::lookupIns(AsHWIntrinsic(), nullptr)))
     {
         return true;
     }
@@ -23009,12 +23065,16 @@ bool GenTree::isEmbeddedMaskingCompatible() const
 //   broadcastOpIndex   - A pointer to receive the position of the operand supporting broadcast
 //
 // Return Value:
-//   true if the node lowering instruction has a EVEX embedded masking support
+//   true if the node supports embedding the target mask without suppressing modeled exceptions
+//
+// Notes:
+//   Contained operands are checked in their current state. Callers must recheck compatibility
+//   after containment analysis before embedding the mask.
 //
 bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
                                           unsigned   tgtMaskSize,
                                           var_types& tgtSimdBaseType,
-                                          size_t*    broadcastOpIndex /* = nullptr */) const
+                                          size_t*    broadcastOpIndex /* = nullptr */)
 {
     if (!isEmbeddedMaskingCompatible())
     {
@@ -23028,6 +23088,13 @@ bool GenTree::isEmbeddedMaskingCompatible(Compiler*  comp,
 
     if (!comp->canUseEmbeddedMasking())
     {
+        return false;
+    }
+
+    if (NodeOrContainedOperandsMayThrow(comp))
+    {
+        // An embedded mask can suppress faults from contained loads, including
+        // those nested in broadcasts. Keep such operations unconditional.
         return false;
     }
 
@@ -28794,7 +28861,8 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         // high bit on index gives 0 already
         canUseSignedComparisonHint = true;
     }
-    else if ((elementSize == 1) && (simdSize == 32) && compOpportunisticallyDependsOn(InstructionSet_AVX512v2))
+    else if ((elementSize == 1) && (simdSize == 32) &&
+             compOpportunisticallyDependsOn(InstructionSet_AVX512v2, isShuffleNative))
     {
         NamedIntrinsic intrinsic = NI_AVX512v2_PermuteVar32x8;
 
@@ -28802,7 +28870,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
         retNode->SetReverseOp();
     }
-    else if ((elementSize == 2) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
+    else if ((elementSize == 2) && compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative))
     {
         NamedIntrinsic intrinsic = (simdSize == 16) ? NI_AVX512_PermuteVar8x16 : NI_AVX512_PermuteVar16x16;
 
@@ -28810,7 +28878,8 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
         retNode->SetReverseOp();
     }
-    else if ((elementSize == 4) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+    else if ((elementSize == 4) &&
+             ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
     {
         assert((simdSize == 16) || (simdSize == 32));
 
@@ -28848,7 +28917,8 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         assert(((elementSize == 1) && (simdSize == 32)) || (elementSize == 2) ||
                ((elementSize == 4) && (simdSize == 16)) || (elementSize == 8));
 
-        if ((elementSize == 8) && ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX)))
+        if ((elementSize == 8) &&
+            ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
         {
             assert((simdSize == 16) || (simdSize == 32));
             if (simdSize == 32)

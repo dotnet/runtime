@@ -12,10 +12,10 @@ using Xunit;
 public class Async2Pgo
 {
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void EntryPoint()
+    [Fact]
+    public static async Task EntryPoint()
     {
-        AsyncEntryPoint().Wait();
+        await AsyncEntryPoint();
     }
 
     internal static async Task<int> AsyncEntryPoint()

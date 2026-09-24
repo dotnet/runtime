@@ -1,4 +1,9 @@
 <Project>
+  <PropertyGroup>
+    <WasmPInvokeModulesPropsPath Condition="'$(WasmPInvokeModulesPropsPath)' == ''">$(MSBuildThisFileDirectory)WasmPInvokeModules.props</WasmPInvokeModulesPropsPath>
+  </PropertyGroup>
+  <Import Project="$(WasmPInvokeModulesPropsPath)" />
+
   <!--
     CoreCLR WASM native re-link targets.
 
@@ -102,6 +107,10 @@
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
              TaskFactory="TaskHostFactory"
              Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ComputeWasmPInvokeModules"
+             AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory"
+             Condition="'$(WasmAppBuilderTasksAssemblyPath)' != ''" />
 
   <!-- Fallback exported runtime methods and functions for the emcc link step.
        Used when the workload path is active and native.wasm.targets is not available.
@@ -176,6 +185,39 @@
   </ItemGroup>
 
   <!-- ======================== Entry Points ======================== -->
+
+  <Target Name="_WasmConfigureReadyToRunPInvokes"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasmReadyToRunPInvokeModule Remove="@(_WasmReadyToRunPInvokeModule)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasmIncludeCustomPInvokeModules>false</_WasmIncludeCustomPInvokeModules>
+      <_WasmIncludeCustomPInvokeModules Condition="'$(WasmBuildNative)' != 'false'">true</_WasmIncludeCustomPInvokeModules>
+    </PropertyGroup>
+    <ComputeWasmPInvokeModules TargetOS="browser"
+                               IncludeCustomModules="$(_WasmIncludeCustomPInvokeModules)"
+                               InvariantGlobalization="$(InvariantGlobalization)"
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
+                               NativeFileReferences="@(NativeFileReference)"
+                               NativeLibraries="@(NativeLibrary)">
+      <Output TaskParameter="Modules" ItemName="_WasmReadyToRunPInvokeModule" />
+    </ComputeWasmPInvokeModules>
+    <PropertyGroup>
+      <_WasmReadyToRunPInvokeManifest>$([MSBuild]::NormalizePath('$(IntermediateOutputPath)', 'R2R', 'pinvoke-modules.txt'))</_WasmReadyToRunPInvokeManifest>
+      <_PublishReadyToRunCrossgen2ExtraArgs>$(_PublishReadyToRunCrossgen2ExtraArgs);@(_WasmReadyToRunPInvokeModule->'--directpinvoke:%(Identity)', ';')</_PublishReadyToRunCrossgen2ExtraArgs>
+    </PropertyGroup>
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(_WasmReadyToRunPInvokeManifest)'))" />
+    <WriteLinesToFile File="$(_WasmReadyToRunPInvokeManifest)"
+                      Lines="@(_WasmReadyToRunPInvokeModule)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunPInvokeManifest)" />
+      <FileWrites Include="$(_WasmReadyToRunPInvokeManifest)" />
+    </ItemGroup>
+  </Target>
 
   <!-- Auto-enable native relink based on project configuration. Mirrors the semantics of
        the Mono path's _SetWasmBuildNativeDefaults (WasmApp.Common.targets): a property whose
@@ -662,14 +704,15 @@
 
     <!-- P/Invoke modules: user native libraries + system native libraries -->
     <ItemGroup>
-      <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
-      <_WasmPInvokeModules Include="%(_WasmSourceFileToCompile.FileName)" Condition="'%(_WasmSourceFileToCompile.ScanForPInvokes)' != 'false'" />
-      <_WasmPInvokeModules Include="libSystem.Native" />
-      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
-      <_WasmPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' != 'true'" />
-      <_WasmPInvokeModules Include="libSystem.Native.Browser" />
-      <_WasmPInvokeModules Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasmPInvokeModules Remove="@(_WasmPInvokeModules)" />
     </ItemGroup>
+    <ComputeWasmPInvokeModules TargetOS="browser"
+                               IncludeCustomModules="true"
+                               InvariantGlobalization="$(InvariantGlobalization)"
+                               FrameworkModules="@(WasmCoreClrFrameworkPInvokeModule)"
+                               NativeFileReferences="@(_WasmNativeFileForLinking);@(_WasmSourceFileToCompile)">
+      <Output TaskParameter="Modules" ItemName="_WasmPInvokeModules" />
+    </ComputeWasmPInvokeModules>
 
     <!-- Managed assemblies to scan. An app bundle legitimately carries native payloads named .dll -
          per-architecture content shipped by a NuGet package is the usual case - and the generator

@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 1
+#define CDAC_RECOMMENDED_READER_VERSION 2
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
@@ -1827,6 +1827,9 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+#ifdef FEATURE_INTERPRETER
+CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM
