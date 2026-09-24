@@ -8330,6 +8330,27 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
     // TODO-XArch-CQ: factor out cmp optimization in 'genCondSetFlags' to be used here
     // or in other backend.
 
+    auto canCompareAtMemoryWidth = [this, cmp](GenTree* memoryOp, GenTree* otherOp) {
+        if (memoryOp->TypeGet() == otherOp->TypeGet())
+        {
+            return true;
+        }
+
+        if (!cmp->OperIsCmpCompare() || !m_compiler->opts.OptimizationEnabled() || !varTypeIsSmall(memoryOp) ||
+            !varTypeIsIntegral(otherOp))
+        {
+            return false;
+        }
+
+        IntegralRange range = IntegralRange::ForType(memoryOp->TypeGet());
+        if (otherOp->IsIntegralConst())
+        {
+            return range.Contains(otherOp->AsIntConCommon()->IntegralValue());
+        }
+
+        return range.Contains(IntegralRange::ForNode(otherOp, m_compiler));
+    };
+
     if (CheckImmedAndMakeContained(cmp, op2))
     {
         // If the types are the same, or if the constant is of the correct size,
@@ -8338,8 +8359,12 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         {
             TryMakeSrcContainedOrRegOptional(cmp, op1);
         }
+        else if (IsContainableMemoryOp(op1) && canCompareAtMemoryWidth(op1, op2) && IsSafeToContainMem(cmp, op1))
+        {
+            MakeSrcContained(cmp, op1);
+        }
     }
-    else if (op1Type == op2Type)
+    else
     {
         // Note that TEST does not have a r,rm encoding like CMP has but we can still
         // contain the second operand because the emitter maps both r,rm and rm,r to
@@ -8348,7 +8373,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         bool isSafeToContainOp1 = true;
         bool isSafeToContainOp2 = true;
 
-        if (IsContainableMemoryOp(op2))
+        if (IsContainableMemoryOp(op2) && canCompareAtMemoryWidth(op2, op1))
         {
             isSafeToContainOp2 = IsSafeToContainMem(cmp, op2);
             if (isSafeToContainOp2)
@@ -8357,7 +8382,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             }
         }
 
-        if (!op2->isContained() && IsContainableMemoryOp(op1))
+        if (!op2->isContained() && IsContainableMemoryOp(op1) && canCompareAtMemoryWidth(op1, op2))
         {
             isSafeToContainOp1 = IsSafeToContainMem(cmp, op1);
             if (isSafeToContainOp1)
@@ -8366,7 +8391,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
             }
         }
 
-        if (!op1->isContained() && !op2->isContained())
+        if ((op1Type == op2Type) && !op1->isContained() && !op2->isContained())
         {
             // One of op1 or op2 could be marked as reg optional
             // to indicate that codegen can still generate code
@@ -8380,6 +8405,17 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
                 MakeSrcRegOptional(cmp, regOptionalCandidate);
             }
         }
+    }
+
+    // A contained memory operand bounds both values; otherwise small compares
+    // have matching operand types.
+    GenTree* rangeSource = (op2->isContained() && !op2->IsCnsIntOrI()) ? op2 : op1;
+    if (cmp->OperIsCompare() && (cmp->GetCompareSize() < genTypeSize(TYP_INT)) && varTypeIsUnsigned(rangeSource))
+    {
+        // A small compare uses a lower-numbered sign bit. Use unsigned conditions
+        // when zero extension would have made the wider sign bit zero.
+        // For example, byte 200 < 100 is false, but signed byte -56 < 100 is true.
+        cmp->SetUnsigned();
     }
 }
 

@@ -4180,7 +4180,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 //    longer needed.
 //
 // Notes:
-//    - Narrow operands to enable memory operand containment (XARCH specific).
 //    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH/Arm64 specific but could
 //      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
 //    - Transform TEST(x, LSH(1, y)) into BT(x, y) (XARCH specific)
@@ -4256,22 +4255,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
     INT64 op2Value = op2->IntegralValue();
 
-#ifdef TARGET_XARCH
-    var_types op1Type = op1->TypeGet();
-    if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
-    {
-        //
-        // If op1's type is small then try to narrow op2 so it has the same type as op1.
-        // Small types are usually used by memory loads and if both compare operands have
-        // the same type then the memory load can be contained. In certain situations
-        // (e.g "cmp ubyte, 200") we also get a smaller instruction encoding.
-        //
-
-        op2->gtType = op1Type;
-    }
-    else
-#endif
-        if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+    if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
     {
         GenTreeCast* cast       = op1->AsCast();
         var_types    castToType = cast->CastToType();
@@ -4669,23 +4653,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 
-#ifdef TARGET_XARCH
-    if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
-    {
-        if (varTypeIsSmall(cmp->gtGetOp1()->TypeGet()) && varTypeIsUnsigned(cmp->gtGetOp1()->TypeGet()))
-        {
-            //
-            // If both operands have the same type then codegen will use the common operand type to
-            // determine the instruction type. For small types this would result in performing a
-            // signed comparison of two small unsigned values without zero extending them to TYP_INT
-            // which is incorrect. Note that making the comparison unsigned doesn't imply that codegen
-            // has to generate a small comparison, it can still correctly generate a TYP_INT comparison.
-            //
-
-            cmp->SetUnsigned();
-        }
-    }
-#elif defined(TARGET_RISCV64)
+#ifdef TARGET_RISCV64
     if (varTypeUsesIntReg(cmp->gtGetOp1()))
     {
         if (GenTree* next = LowerSavedIntegerCompare(cmp); next != cmp)
