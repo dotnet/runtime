@@ -8131,6 +8131,15 @@ void LinearScan::resolveRegisters()
                 {
                     if (treeNode != nullptr)
                     {
+#ifdef TARGET_XARCH
+                        // A narrow producer can still need a full-width reload or register copy.
+                        // Record it before codegen decides where calls need vzeroupper.
+                        if (varTypeIsSIMD(treeNode))
+                        {
+                            SetContainsAVXFlags(genTypeSize(treeNode->TypeGet()));
+                        }
+#endif // TARGET_XARCH
+
                         if (currentRefPosition->spillAfter)
                         {
                             treeNode->gtFlags |= GTF_SPILL;
