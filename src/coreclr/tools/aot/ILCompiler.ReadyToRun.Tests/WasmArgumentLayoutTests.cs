@@ -632,6 +632,57 @@ public class WasmArgumentLayoutTests
         Assert.Equal(tokens[1], InteropSignature.GetAbiToken(type));
     }
 
+    [Theory]
+    [InlineData("int", "System.Int128")]
+    [InlineData("System.Int128", "int")]
+    public void PortableCallHelpersGeneratorRejectsMultiSlotCallbacks(string returnType, string parameterType)
+    {
+        string source = $$"""
+            using System;
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly(EntryPoint = "callback")]
+                public static {{returnType}} Handle({{parameterType}} value) => default;
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains("has multi-slot signature token 'l2'", log.ToString());
+        }
+        finally
+        {
+            // The type system maps an input assembly with FileShare.Read and never releases it - the
+            // context is not disposable - so on Windows the compiled input cannot be deleted while
+            // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     private const string CoreLibSimpleName = "System.Private.CoreLib";
 
     /// <summary>

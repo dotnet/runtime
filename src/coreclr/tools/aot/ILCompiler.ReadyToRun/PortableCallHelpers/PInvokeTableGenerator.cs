@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using ILCompiler.DependencyAnalysis.Wasm;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -255,6 +257,7 @@ namespace ILCompiler.PortableCallHelpers
             callbacks.Sort(new PInvokeCallbackComparer());
             foreach (PInvokeCallback cb in callbacks)
             {
+                RejectMultiSlotCallback(cb);
                 cb.EntrySymbol = FixedSymbolName(cb);
 
                 if (!callbackNames.Add(cb.EntrySymbol))
@@ -381,6 +384,34 @@ namespace ILCompiler.PortableCallHelpers
 
                 throw new LogAsErrorException(
                     $"Exported callback '{cb.EntryPoint}' cannot be resolved at run time: '{cb.TypeFullName}' declares more than one [UnmanagedCallersOnly] method named '{cb.MethodName}', and the runtime looks them up by name alone. Give them distinct names: {string.Join(", ", ambiguous)}");
+            }
+
+            static void RejectMultiSlotCallback(PInvokeCallback cb)
+            {
+                List<string> loweredTokens = InteropSignature.ParseSignatureTokens(
+                    InteropSignature.GetMethodSignature(cb.Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly));
+                string token = null;
+                for (int i = 1; i < loweredTokens.Count; i++)
+                {
+                    if (InteropSignature.IsMultiSlotToken(loweredTokens[i]))
+                    {
+                        token = loweredTokens[i];
+                        break;
+                    }
+                }
+
+                if (token is null && !cb.IsVoid)
+                {
+                    string returnToken = InteropSignature.GetAbiToken(cb.ReturnType);
+                    if (InteropSignature.IsMultiSlotToken(returnToken))
+                        token = returnToken;
+                }
+
+                if (token is not null)
+                {
+                    throw new LogAsErrorException(
+                        $"UnmanagedCallersOnly callback '{cb.Method}' has multi-slot signature token '{token}', which the generated native wrapper does not support.");
+                }
             }
         }
 

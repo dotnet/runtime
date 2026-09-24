@@ -21,8 +21,7 @@
 //     primitives used by callhelpers-pinvoke.cpp.
 //   * VolatileLoad/VolatileStore -- declared in inc/volatile.h in-tree; the
 //     reverse-thunk file uses them to publish its cached R2R entrypoint but
-//     does not include that header. wasm is single-threaded, so the in-tree
-//     memory-barrier machinery collapses to a plain volatile access here.
+//     does not include that header.
 //
 // Definitions for symbols declared by <callhelpers.hpp> (g_portableCallHelperThunks,
 // g_ReverseThunks, ...) live in libcoreclr_static.a or in the same generated
@@ -45,19 +44,19 @@ typedef uint32_t ULONG;
 #define INTERP_STACK_SLOT_SIZE 8u
 #endif
 
-// CoreCLR volatile access helpers (inc/volatile.h). wasm is single-threaded,
-// so these reduce to a plain volatile load/store with no memory barrier.
+// CoreCLR volatile access helpers (inc/volatile.h). App native code can be
+// built with wasm threads, so preserve acquire/release publication semantics.
 #ifdef __cplusplus
 template<typename T>
 inline T VolatileLoad(T const * pt)
 {
-    return *(T volatile const *)pt;
+    return __atomic_load_n(pt, __ATOMIC_ACQUIRE);
 }
 
 template<typename T>
 inline void VolatileStore(T* pt, T val)
 {
-    *(T volatile *)pt = val;
+    __atomic_store_n(pt, val, __ATOMIC_RELEASE);
 }
 #endif // __cplusplus
 

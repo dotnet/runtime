@@ -1731,6 +1731,9 @@ extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD)
     }
     if (PortableEntryPoint::HasNativeEntryPoint(entryPoint))
     {
+        // HasNativeEntryPoint excludes interpreter-preferred entrypoints. In particular, it rejects
+        // the generated reverse thunk that EnsureCodeForUnmanagedCallersOnly installs for an
+        // interpreted method, so returning it here cannot recurse back into this lookup.
         return PortableEntryPoint::GetActualCode(entryPoint);
     }
     return nullptr;
