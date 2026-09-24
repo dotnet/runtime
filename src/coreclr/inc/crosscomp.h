@@ -737,6 +737,10 @@ typedef struct _KNONVOLATILE_CONTEXT_POINTERS_EX
 #else
 #define DAC_MUTEX_MAX_SIZE 24
 #endif // TARGET_64BIT
+#elif defined(TARGET_WASM)
+// There is no supported cross-targeting configuration for the fragile/legacy DAC on WASM,
+// so this only needs to match the size of pthread_mutex_t for the current wasm32 target.
+#define DAC_MUTEX_MAX_SIZE 24
 #else
 // Fallback to a conservative default value
 #define DAC_MUTEX_MAX_SIZE 128
