@@ -73,7 +73,7 @@ public static class Program
         string consolePath, ReportCallback beforeEnumerate);
 #endif
 
-#if INPROC_ANDROID
+#if INPROC_ANDROID || INPROC_APPLE
     public static int Main()
 #else
     [Xunit.Fact]
@@ -89,15 +89,17 @@ public static class Program
 
     private static int RunTest(Action<string> scenario)
     {
-#if INPROC_ANDROID
+#if INPROC_ANDROID || INPROC_APPLE
         string outputRoot = Path.GetTempPath();
-        string? archivePath = null;
 #else
         string? outputRoot = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
         if (string.IsNullOrEmpty(outputRoot))
         {
             outputRoot = Path.GetTempPath();
         }
+#endif
+#if INPROC_ANDROID
+        string? archivePath = null;
 #endif
         string outputDirectory = Directory.CreateDirectory(
             Path.Combine(outputRoot, $"inproccrashreport-{Guid.NewGuid():N}")).FullName;

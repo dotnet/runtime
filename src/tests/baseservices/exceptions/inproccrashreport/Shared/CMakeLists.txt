@@ -1,10 +1,9 @@
 project(InProcCrashReportNative)
 
-# Android builds these sources through AndroidAppBuilder instead.
-# Apple mobile does not yet have an adapter for these tests.
+# Mobile builds use their functional-test adapters instead of native discovery.
 if(CLR_CMAKE_TARGET_WIN32 OR
    CLR_CMAKE_TARGET_ANDROID OR
-   CLR_CMAKE_TARGET_APPLE_MOBILE OR
+   (CLR_CMAKE_TARGET_APPLE_MOBILE AND NOT CRASH_REPORT_APPLE_APP) OR
    CLR_CMAKE_TARGET_ARCH_WASM)
     return()
 endif()
@@ -51,7 +50,7 @@ target_link_libraries(InProcCrashReportNative PRIVATE
 # Keep these dependencies in sync with src/coreclr/pal/src/CMakeLists.txt.
 # Pass CLR_CMAKE_USE_SYSTEM_LIBUNWIND when the product was built with it.
 
-if(CLR_CMAKE_TARGET_APPLE)
+if(CLR_CMAKE_TARGET_OSX)
     foreach(framework IN ITEMS CoreFoundation CoreServices Security System)
         find_library(CRASH_REPORT_${framework} NAMES ${framework} REQUIRED)
         target_link_libraries(InProcCrashReportNative PRIVATE "${CRASH_REPORT_${framework}}")
