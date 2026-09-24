@@ -853,6 +853,9 @@ namespace ILCompiler.ObjectWriter
                     case RelocType.WASM_TABLE_INDEX_SLEB:
                     case RelocType.WASM_TABLE_INDEX_REL_I32:
                     case RelocType.WASM_FUNCTION_INDEX_LEB:
+                    // A code-section address names a function index, not an offset into the WebCIL payload.
+                    case RelocType.WASM_MEMORY_ADDR_REL_SLEB when
+                        _sections[definedSymbol.SectionIndex] is WasmSection { Type: WasmSectionType.Code }:
                     {
                         // These relocations reference a wasm structural index (function, type,
                         // table entry, or well-known global). For R2R we self-resolve them here to
@@ -860,6 +863,10 @@ namespace ILCompiler.ObjectWriter
                         if (!_wasmSymbolManager.TryGetSymbol(reloc.SymbolName, out WasmSymbol symbol))
                         {
                             throw new InvalidOperationException($"Symbol '{reloc.SymbolName}' was not registered. Relocation type {reloc.Type}.");
+                        }
+                        if (reloc.Type == RelocType.WASM_MEMORY_ADDR_REL_SLEB && symbol.IndexSpace != WasmIndexSpace.Function)
+                        {
+                            throw new InvalidDataException($"Code-section relocation for '{reloc.SymbolName}' does not reference a function.");
                         }
 
                         if (shrink && Relocation.IsVariableLength(reloc.Type))

@@ -149,6 +149,14 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
 }
 
 export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
+    return fetchAssemblyInternal(asset, false);
+}
+
+export async function fetchCoreAssembly(asset: AssemblyAsset): Promise<void> {
+    return fetchAssemblyInternal(asset, true);
+}
+
+async function fetchAssemblyInternal(asset: AssemblyAsset, isCoreAssembly: boolean): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
     totalAssetsToDownload++;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
@@ -160,7 +168,7 @@ export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
     }
 
     const isWebcilInWasm = assetInternal.virtualPath?.endsWith(".wasm") ?? false;
-    normalizeVirtualPath(assetInternal);
+    normalizeVirtualPath(assetInternal, isCoreAssembly && assetInternal.virtualPath.endsWith(".r2r.wasm"));
 
     if (isWebcilInWasm) {
         await fetchWebcil(assetInternal);
@@ -563,9 +571,12 @@ export function verifyAllAssetsDownloaded(): void {
     dotnetAssert.check(downloadedAssetsCount === totalAssetsToDownload, `Not all assets were downloaded. Downloaded ${downloadedAssetsCount} out of ${totalAssetsToDownload}`);
 }
 
-function normalizeVirtualPath(asset: AssetEntryInternal): void {
+function normalizeVirtualPath(asset: AssetEntryInternal, preserveWasmExtension: boolean = false): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
-    asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    // Composite R2R images are probed by their .r2r.wasm name, not as managed .dll assemblies.
+    if (!preserveWasmExtension) {
+        asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
+    }
     asset.virtualPath = asset.virtualPath.startsWith("/")
         ? asset.virtualPath
         : asset.culture

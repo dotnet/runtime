@@ -292,6 +292,13 @@ public class GenerateWasmBootJson : Task
                         }
                     }
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals("core", assetTraitValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a core assembly.", resource.ItemSpec);
+                    resourceList = resourceData.coreAssembly;
+                }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
                     MapFingerprintedAsset(resourceData, resourceRoute, resourceName);

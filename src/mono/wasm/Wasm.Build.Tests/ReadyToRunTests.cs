@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
@@ -53,7 +54,15 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
         public Task PublishRunAllPages(Configuration config, bool trimmed)
-            => PublishRunAllPagesCore(config, trimmed, nativeRelink: false);
+            => PublishRunAllPagesCore(config, trimmed, nativeRelink: false, composite: false);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ false)]
+        [InlineData(Configuration.Release, /*trimmed*/ false, /*nativeRelink*/ false)]
+        [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ true)]
+        [TestCategory("no-workload")]
+        public Task PublishRunAllPagesComposite(Configuration config, bool trimmed, bool nativeRelink)
+            => PublishRunAllPagesCore(config, trimmed, nativeRelink, composite: true);
 
         // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true; the relink is driven by the
         // IsBrowserWasmProject triggers in BrowserWasmApp.CoreCLR.targets. AssertBundle(isNativeBuild: true)
@@ -63,15 +72,21 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
-            => PublishRunAllPagesCore(config, trimmed, nativeRelink: true);
+            => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
-        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink)
+        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
         {
             // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib
             // is a per-app image, not the runtime pack's. nativeRelink also relinks dotnet.native.wasm.
-            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}";
+            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}{(composite ? "_composite" : "")}";
+            string extraItems = composite
+                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" /><TrimmerRootAssembly Include="R2rSuffixLibrary.r2r" />"""
+                : string.Empty;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
-                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>");
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{(composite ? "true" : "false")}</PublishReadyToRunComposite><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
+                extraItems: extraItems);
+            if (composite)
+                AddR2RSuffixLibrary(info);
             string extraArgs = GetR2RBuildArgs(config);
             if (nativeRelink)
             {
@@ -86,11 +101,22 @@ namespace Wasm.Build.Tests
                 isNativeBuild: nativeRelink ? true : (bool?)null);
 
             string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
-            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            if (composite)
+                AssertCompositeReadyToRun(frameworkDir);
+            else
+                AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
             AssertNoDuplicateAssemblies(frameworkDir);
             AssertNoManagedAssembliesOutsideFramework(frameworkDir);
             AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
             AssertPerAppCrossgenRan(config, expected: true);
+
+            if (trimmed && !nativeRelink)
+            {
+                BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+                if (composite)
+                    AssertCompositeReadyToRun(frameworkDir);
+                AssertNoDuplicateAssemblies(frameworkDir);
+            }
 
             await RunForPublishWithWebServer(new BlazorRunOptions(config,
                 CheckCounter: false,
@@ -108,6 +134,19 @@ namespace Wasm.Build.Tests
 
             AssertCoreLibReadyToRun(GetBuildWebcilDir(config), expectReadyToRun: false);
             AssertPerAppCrossgenRan(config, expected: false);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release)]
+        [TestCategory("no-workload")]
+        public void CompositeRequiresWebcil(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_composite_no_webcil",
+                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite><WasmEnableWebcil>false</WasmEnableWebcil>");
+            (string _, string output) = BlazorPublish(info, config,
+                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config)));
+
+            Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);
         }
 
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
@@ -259,6 +298,55 @@ namespace Wasm.Build.Tests
                 Assert.True(tableSize > 0, $"Expected a ReadyToRun table in '{coreLib}', but the R2R table size was 0.");
             else
                 Assert.Equal(0, tableSize);
+        }
+
+        private void AssertCompositeReadyToRun(string frameworkDir)
+        {
+            string bootConfigPath = _provider.GetBootConfigPath(frameworkDir);
+            if (EnvironmentVariables.UseFingerprinting)
+            {
+                string indexPath = Path.Combine(Path.GetDirectoryName(frameworkDir)!, "index.html");
+                Match activeBoot = Regex.Match(File.ReadAllText(indexPath),
+                    @"""./_framework/dotnet\.js"": ""./_framework/(?<name>dotnet\.[a-z0-9]{10}\.js)""");
+                Assert.True(activeBoot.Success, $"Missing active dotnet.js import in '{indexPath}'.");
+                bootConfigPath = Path.Combine(frameworkDir, activeBoot.Groups["name"].Value);
+            }
+            AssetsData assets = (AssetsData)_provider.GetBootJson(bootConfigPath).resources;
+            GeneralAsset composite = Assert.Single(assets.coreAssembly,
+                asset => asset.virtualPath?.EndsWith(".r2r.wasm", System.StringComparison.Ordinal) == true);
+            Assert.Equal("BlazorBasicTestApp.r2r.wasm", composite.virtualPath);
+            if (EnvironmentVariables.UseFingerprinting)
+                Assert.Matches(@"^BlazorBasicTestApp\.r2r\.[a-z0-9]{10}\.wasm$", composite.name);
+            Assert.Contains(assets.coreAssembly,
+                asset => asset.virtualPath?.StartsWith("System.Private.CoreLib", System.StringComparison.Ordinal) == true);
+            Assert.Contains(assets.assembly,
+                asset => asset.virtualPath == "R2rSuffixLibrary.r2r.wasm");
+            Assert.DoesNotContain(assets.assembly,
+                asset => asset.virtualPath == composite.virtualPath);
+
+            string compositePath = Path.Combine(frameworkDir, composite.name);
+            using FileStream stream = File.OpenRead(compositePath);
+            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? failureReason), failureReason);
+            Assert.True(tableSize > 0, $"Expected compiled methods in '{compositePath}'.");
+            Assert.True(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").Any(),
+                $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
+        }
+
+        private static void AddR2RSuffixLibrary(ProjectInfo info)
+        {
+            string appDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
+            string libraryDirectory = Path.GetFullPath(Path.Combine(appDirectory, "..", "R2rSuffixLibrary"));
+            Directory.CreateDirectory(libraryDirectory);
+            File.WriteAllText(Path.Combine(libraryDirectory, "R2rSuffixLibrary.csproj"), $$"""
+                <Project Sdk="Microsoft.NET.Sdk">
+                  <PropertyGroup>
+                    <TargetFramework>{{DefaultTargetFrameworkForBlazor}}</TargetFramework>
+                    <AssemblyName>R2rSuffixLibrary.r2r</AssemblyName>
+                  </PropertyGroup>
+                </Project>
+                """);
+            File.WriteAllText(Path.Combine(libraryDirectory, "Marker.cs"),
+                "public static class R2rSuffixLibraryMarker { public static int Value => 42; }");
         }
     }
 }

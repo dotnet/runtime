@@ -24,7 +24,9 @@ export function initializeCoreCLR(): number {
     }
 
     const assemblyPaths = loaderConfig.resources!.assembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
-    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly.map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
+    const coreAssemblyPaths = loaderConfig.resources!.coreAssembly
+        .filter(asset => !asset.virtualPath.endsWith(".r2r.wasm"))
+        .map(asset => asset.virtualPath.replace(/\.wasm$/, ".dll"));
     const tpa = [...coreAssemblyPaths, ...assemblyPaths].join(":");
     runtimeConfigProperties.set(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, tpa);
     runtimeConfigProperties.set(HOST_PROPERTY_NATIVE_DLL_SEARCH_DIRECTORIES, loaderConfig.virtualWorkingDirectory!);

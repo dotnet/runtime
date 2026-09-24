@@ -8,7 +8,7 @@ import { exit, runtimeState } from "./exit";
 import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
-import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
+import { fetchAssembly, fetchCoreAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
 import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
@@ -117,7 +117,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const runtimeModulePromise: Promise<JsModuleExports> = loadDotnetModule(resources.jsModuleRuntime[0]);
         const wasmNativePromise: Promise<Response> = fetchMainWasm(resources.wasmNative[0]);
 
-        const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchAssembly);
+        const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchCoreAssembly);
 
         const icuResourceName = getIcuResourceName();
         const icuDataPromise = forEachResource(resources.icu, fetchIcu, asset => asset.name === icuResourceName);
