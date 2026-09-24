@@ -373,7 +373,7 @@ HRESULT DebuggerRCThread::Init(void)
         m_pDCB->m_helperThreadStartAddr = (void *) DebuggerRCThread::ThreadProcStatic;
         m_pDCB->m_helperRemoteStartAddr = (void *) DebuggerRCThread::ThreadProcRemote;
         m_pDCB->m_leftSideProtocolCurrent = CorDB_LeftSideProtocolCurrent;
-        m_pDCB->m_leftSideProtocolMinSupported = CorDB_LeftSideProtocolMinSupported;
+        m_pDCB->m_leftSideProtocolMinSupported = CorDB_LeftSideProtocolCurrent;
 
         LOG((LF_CORDB, LL_INFO10,
              "DRCT::I: version info: %d.%d.%d current protocol=%d, min protocol=%d\n",

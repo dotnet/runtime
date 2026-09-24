@@ -97,11 +97,24 @@ typedef enum
 //
 #define CorDB_Short_Circuit_First_Chance_Ownership 1
 
-//
-// Defines for current version numbers for the left and right sides
-//
+/*
+Defines for current version numbers for the runtime and debugger.
+Runtime version must be bumped when:
+1. Any change to IPC events is made, except an addition of a runtime->debugger IPC notification.
+2. Layout of DebuggerIPCEvent is changed.
+Debugger version must be bumped when:
+1. Any change to IPC events is made, except an addition of a runtime->debugger IPC notification.
+2. Layout of DebuggerIPCEvent is changed.
+Debugger min supported version must be bumped when:
+1. Layout of DebuggerIPCEvent is changed in a non-additive manner - e.g., a field is removed, reordered,
+or inserted between other fields in the same struct, without conditioning on the runtime protocol version.
+2. A new runtime->debugger IPC response is awaited without conditioning on the runtime protocol version.
+3. A debugger->runtime IPC event is dropped without conditioning on the runtime protocol version.
+4. Handling of an existing runtime->debugger IPC notification is dropped without conditioning on the runtime protocol version.
+Note: Any DBI changes other than those to the IPC events that depend on runtime changes
+should be flowed through a COM interface on the DAC.
+*/
 #define CorDB_LeftSideProtocolCurrent           2
-#define CorDB_LeftSideProtocolMinSupported      2
 #define CorDB_RightSideProtocolCurrent          2
 #define CorDB_RightSideProtocolMinSupported     2
 
@@ -208,7 +221,7 @@ struct MSLAYOUT DebuggerIPCControlBlock
     BYTE padding3;
 
     ULONG                      m_leftSideProtocolCurrent;       // Current protocol version for the Left Side.
-    ULONG                      m_leftSideProtocolMinSupported;  // Minimum protocol the Left Side can support.
+    ULONG                      m_leftSideProtocolMinSupported;  // Minimum protocol the Left Side can support. Equal to m_leftSideProtocolCurrent.
 
     ULONG                      m_rightSideProtocolCurrent;      // Current protocol version for the Right Side.
     ULONG                      m_rightSideProtocolMinSupported; // Minimum protocol the Right Side requires.
@@ -305,7 +318,7 @@ struct MSLAYOUT DebuggerIPCControlBlockTransport
     BYTE padding3;
 
     ULONG                      m_leftSideProtocolCurrent;       // Current protocol version for the Left Side.
-    ULONG                      m_leftSideProtocolMinSupported;  // Minimum protocol the Left Side can support.
+    ULONG                      m_leftSideProtocolMinSupported;  // Minimum protocol the Left Side can support. Equal to m_leftSideProtocolCurrent.
 
     ULONG                      m_rightSideProtocolCurrent;      // Current protocol version for the Right Side.
     ULONG                      m_rightSideProtocolMinSupported; // Minimum protocol the Right Side requires.

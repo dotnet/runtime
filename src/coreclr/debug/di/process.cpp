@@ -7033,8 +7033,7 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
 
 //
 // Verify that the version info in the control block matches what we expect. The minimum supported protocol from the
-// Left Side must be greater or equal to the minimum required protocol of the Right Side. Note: its the Left Side's job
-// to conform to whatever protocol the Right Side requires, so long as minimum is supported.
+// Runtime must be greater or equal to the minimum required protocol of the debugger.
 //
 void CordbProcess::VerifyControlBlock()
 {
@@ -7072,17 +7071,10 @@ void CordbProcess::VerifyControlBlock()
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
     }
 
-    // The Left Side has to support at least our minimum required protocol.
-    if (GetDCB()->m_leftSideProtocolCurrent < GetDCB()->m_rightSideProtocolMinSupported)
+    // The runtime protocol version must be within the range supported by the debugger.
+    ULONG leftSideProtocolCurrent = GetDCB()->m_leftSideProtocolCurrent;
+    if (leftSideProtocolCurrent < GetDCB()->m_rightSideProtocolMinSupported || leftSideProtocolCurrent > GetDCB()->m_rightSideProtocolCurrent)
     {
-        _ASSERTE(GetDCB()->m_leftSideProtocolCurrent >= GetDCB()->m_rightSideProtocolMinSupported);
-        ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
-    }
-
-    // The Left Side has to be able to emulate at least our minimum required protocol.
-    if (GetDCB()->m_leftSideProtocolMinSupported > GetDCB()->m_rightSideProtocolCurrent)
-    {
-        _ASSERTE(GetDCB()->m_leftSideProtocolMinSupported <= GetDCB()->m_rightSideProtocolCurrent);
         ThrowHR(CORDBG_E_INCOMPATIBLE_PROTOCOL);
     }
 
