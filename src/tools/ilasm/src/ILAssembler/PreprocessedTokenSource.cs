@@ -108,6 +108,11 @@ namespace ILAssembler
                 }
 
                 int activeIfDefBlocks = ActiveIfDefBlocksInCurrentSource;
+                if (activeIfDefBlocks != 0 && !errorOnEof)
+                {
+                    ReportPreprocessorSyntaxError(nextToken);
+                }
+
                 for (int i = 0; i < activeIfDefBlocks; i++)
                 {
                     _activeIfDefBlocks.Pop();

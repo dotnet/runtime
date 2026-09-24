@@ -123,6 +123,28 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void IncludedUnterminatedConditional_ReportsEofDiagnostic()
+        {
+            var compiler = new DocumentCompiler();
+            (ImmutableArray<Diagnostic> diagnostics, CompilationResult? result) = compiler.Compile(
+                new SourceText("""
+                    .assembly extern System.Runtime { }
+                    .assembly test { }
+                    #include "child.il"
+                    """, "root.il"),
+                path => new SourceText("""
+                    #define CHILD
+                    #ifdef CHILD
+                    """, path),
+                _ => throw new InvalidOperationException("Unexpected resource"),
+                new Options { ErrorTolerant = true });
+
+            var preprocessorDiagnostic = Assert.Single(diagnostics.Where(diagnostic => diagnostic.Id == "Preprocessor"));
+            Assert.Equal("child.il", preprocessorDiagnostic.Location.Source.Path);
+            Assert.NotNull(result);
+        }
+
+        [Fact]
         public void ConditionalCompilation_EmitsOnlyActiveTypes()
         {
             string source = """
