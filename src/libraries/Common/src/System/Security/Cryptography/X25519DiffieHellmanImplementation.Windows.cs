@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     {
         private static readonly SafeBCryptAlgorithmHandle? s_algHandle = OpenAlgorithmHandle();
 
-        private readonly SafeBCryptKeyHandle _key;
+        private readonly SafeBCryptKeyHandle? _key;
         private readonly bool _hasPrivate;
         private readonly byte _privatePreservation;
         private readonly byte[]? _originalPublicKey;
@@ -24,10 +24,11 @@ namespace System.Security.Cryptography
         // Older versions of Windows 10 incorrectly produce a shared secret when the peer's public key is zero that
         // is itself not a zero shared secret. To be consistent with later versions of Windows and other platforms,
         // reject a peer public key that reduces to all-zero during agreement.
-        private readonly bool _reducedZeroPublicKey;
+        [MemberNotNullWhen(false, nameof(_key))]
+        private bool ReducedZeroPublicKey { get; }
 
         private X25519DiffieHellmanImplementation(
-            SafeBCryptKeyHandle key,
+            SafeBCryptKeyHandle? key,
             bool hasPrivate,
             byte privatePreservation,
             byte[]? originalPublicKey = null,
@@ -37,9 +38,10 @@ namespace System.Security.Cryptography
             _hasPrivate = hasPrivate;
             _privatePreservation = privatePreservation;
             _originalPublicKey = originalPublicKey;
-            _reducedZeroPublicKey = reducedZeroPublicKey;
+            ReducedZeroPublicKey = reducedZeroPublicKey;
             Debug.Assert(_hasPrivate || _privatePreservation == 0);
             Debug.Assert(!_hasPrivate || _originalPublicKey is null);
+            Debug.Assert(key is null == reducedZeroPublicKey);
         }
 
         [MemberNotNullWhen(true, nameof(s_algHandle))]
@@ -52,7 +54,7 @@ namespace System.Security.Cryptography
 
             if (otherParty is X25519DiffieHellmanImplementation x25519impl)
             {
-                if (x25519impl._reducedZeroPublicKey)
+                if (x25519impl.ReducedZeroPublicKey)
                 {
                     throw new CryptographicException();
                 }
@@ -81,12 +83,14 @@ namespace System.Security.Cryptography
 
         private void DeriveRawSecretAgreementWithKey(ReadOnlySpan<byte> otherPartyPublicKey, Span<byte> destination)
         {
-            using (SafeBCryptKeyHandle otherPartyKey = ImportPublicKey(otherPartyPublicKey, out _, out bool reducedZeroPublicKey))
+            using (SafeBCryptKeyHandle? otherPartyKey = ImportPublicKey(otherPartyPublicKey, out _, out bool reducedZeroPublicKey))
             {
                 if (reducedZeroPublicKey)
                 {
                     throw new CryptographicException();
                 }
+
+                Debug.Assert(otherPartyKey is not null);
 
                 DeriveRawSecretAgreementWithKey(otherPartyKey, destination);
             }
@@ -94,6 +98,7 @@ namespace System.Security.Cryptography
 
         private void DeriveRawSecretAgreementWithKey(SafeBCryptKeyHandle otherPartyKey, Span<byte> destination)
         {
+            Debug.Assert(_key is not null); // _key is a private key in this case, can only be null for public keys
             using (SafeBCryptSecretHandle secret = Interop.BCrypt.BCryptSecretAgreement(_key, otherPartyKey))
             {
                 Interop.BCrypt.BCryptDeriveKey(
@@ -156,7 +161,7 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                _key.Dispose();
+                _key?.Dispose();
             }
 
             base.Dispose(disposing);
@@ -189,9 +194,8 @@ namespace System.Security.Cryptography
 
         internal static X25519DiffieHellmanImplementation ImportPublicKeyImpl(ReadOnlySpan<byte> source)
         {
-            SafeBCryptKeyHandle key = ImportPublicKey(source, out bool requiredReduction, out bool reducedZeroPublicKey);
+            SafeBCryptKeyHandle? key = ImportPublicKey(source, out bool requiredReduction, out bool reducedZeroPublicKey);
 
-            Debug.Assert(!key.IsInvalid);
             return new X25519DiffieHellmanImplementation(
                 key,
                 hasPrivate: false,
@@ -200,7 +204,7 @@ namespace System.Security.Cryptography
                 reducedZeroPublicKey);
         }
 
-        private static SafeBCryptKeyHandle ImportPublicKey(
+        private static SafeBCryptKeyHandle? ImportPublicKey(
             ReadOnlySpan<byte> source,
             out bool requiredReduction,
             out bool reducedZeroPublicKey)
@@ -215,6 +219,11 @@ namespace System.Security.Cryptography
             requiredReduction = X25519WindowsHelpers.ReducePublicKey(source, reducedPublicKey);
             reducedZeroPublicKey = reducedPublicKey.IndexOfAnyExcept((byte)0) < 0;
 
+            if (reducedZeroPublicKey)
+            {
+                return null;
+            }
+
             return ImportKey(false, reducedPublicKey, out _);
         }
 
@@ -223,6 +232,16 @@ namespace System.Security.Cryptography
             string blobType = privateKey ?
                 Interop.BCrypt.KeyBlobType.BCRYPT_ECCPRIVATE_BLOB :
                 Interop.BCrypt.KeyBlobType.BCRYPT_ECCPUBLIC_BLOB;
+
+            if (ReducedZeroPublicKey)
+            {
+                // If the public key required reduction, then it should have been retained as an original and copied
+                // before reaching this, so the only zero key that should be known here is a true zero.
+                Debug.Assert(!privateKey);
+                Debug.Assert(_originalPublicKey is null);
+                destination.Clear();
+                return;
+            }
 
             ArraySegment<byte> key = Interop.BCrypt.BCryptExportKey(_key, blobType);
 
