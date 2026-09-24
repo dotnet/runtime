@@ -36,6 +36,16 @@ namespace Internal.TypeSystem
             }.Resolve(parsed);
         }
 
+        /// <summary>
+        /// Determines whether <paramref name="name"/> is a valid assembly-qualified type name,
+        /// including assembly qualification for constructed generic arguments.
+        /// </summary>
+        public static bool IsAssemblyQualifiedTypeName(string name)
+        {
+            return TypeName.TryParse(name.AsSpan(), out TypeName parsed, s_typeNameParseOptions)
+                && IsFullyQualified(parsed);
+        }
+
         public static TypeDesc GetTypeByCustomAttributeTypeNameForDataFlow(string name, ModuleDesc callingModule,
             TypeSystemContext context, List<ModuleDesc> referencedModules, bool needsAssemblyName, bool fallbackToCoreLib, out bool failedBecauseNotFullyQualified)
         {
@@ -65,32 +75,32 @@ namespace Internal.TypeSystem
             TypeDesc type = resolver.Resolve(parsed);
 
             return type;
+        }
 
-            static bool IsFullyQualified(TypeName typeName)
+        private static bool IsFullyQualified(TypeName typeName)
+        {
+            if (typeName.AssemblyName is null)
             {
-                if (typeName.AssemblyName is null)
-                {
-                    return false;
-                }
+                return false;
+            }
 
-                if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
-                {
-                    return IsFullyQualified(typeName.GetElementType());
-                }
+            if (typeName.IsArray || typeName.IsPointer || typeName.IsByRef)
+            {
+                return IsFullyQualified(typeName.GetElementType());
+            }
 
-                if (typeName.IsConstructedGenericType)
+            if (typeName.IsConstructedGenericType)
+            {
+                foreach (TypeName typeArgument in typeName.GetGenericArguments())
                 {
-                    foreach (var typeArgument in typeName.GetGenericArguments())
+                    if (!IsFullyQualified(typeArgument))
                     {
-                        if (!IsFullyQualified(typeArgument))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
-
-                return true;
             }
+
+            return true;
         }
 
         private struct TypeNameResolver
