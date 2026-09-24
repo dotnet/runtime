@@ -15942,7 +15942,8 @@ void CEEInfo::GetProfilingHandle(bool                      *pbHookFunction,
 }
 
 bool CEEInfo::notifyInstructionSetUsage(CORINFO_InstructionSet instructionSet,
-                                        bool supportEnabled)
+                                        bool supportEnabled,
+                                        bool preserveNegativeDependency)
 {
     LIMITED_METHOD_CONTRACT;
     // Do nothing. This api does not provide value in JIT scenarios and

@@ -148,7 +148,10 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 *Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
-*Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
+*Secret stub argument* - An explicit `native int` parameter with a required `System.Runtime.CompilerServices.SecretStubArgument` modifier tells the JIT to bind the parameter to (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` / (LoongArch64, RISC-V) `T2` (in the JIT: `REG_SECRET_STUB_PARAM`). Interop IL stubs use this parameter for the following values:
+- Unmanaged CALLI stubs pass the unmanaged target address.
+- Shared vararg PInvoke stubs pass the MethodDesc for the exact PInvoke.
+- Native-to-managed method and delegate stubs pass the `UMEntryThunkData` used to recover the managed target or delegate.
 
 ## Small primitive returns
 
