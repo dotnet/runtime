@@ -345,7 +345,7 @@ namespace System.Net.Security
             if (!isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
@@ -362,7 +362,7 @@ namespace System.Net.Security
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 if (!allowTlsResume)
@@ -420,7 +420,7 @@ namespace System.Net.Security
             if (isServer)
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_INBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 if (!allowTlsResume)
@@ -432,7 +432,7 @@ namespace System.Net.Security
             else
             {
                 direction = Interop.SspiCli.CredentialUse.SECPKG_CRED_OUTBOUND;
-                flags =
+                flags |=
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_SEND_AUX_RECORD;
