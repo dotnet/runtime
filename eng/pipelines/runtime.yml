@@ -219,6 +219,12 @@ extends:
                 parameters:
                   publishArtifactsForWorkload: true
                   publishWBT: true
+              # Runtime tests use Checked tasks, while the product build produces Release tasks.
+              # Build the matching WasmAppBuilder and ensure Emscripten is provisioned first.
+              - template: /eng/pipelines/common/templates/global-build-step.yml
+                parameters:
+                  buildArgs: -s provision.emsdk+tasks -c $(buildConfigUpper)
+                  displayName: Provision Emscripten SDK and build tasks
               - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
                 parameters:
                   creator: dotnet-bot
