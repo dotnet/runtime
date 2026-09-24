@@ -15738,11 +15738,13 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 
             bool isArg0Exact;
             bool isArg1Exact;
-            bool isNonNull; // Unused here.
+            bool isArg0NonNull;
+            bool isArg1NonNull;
 
-            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isNonNull);
-            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isNonNull);
-            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact)
+            CORINFO_CLASS_HANDLE cls0 = gtGetClassHandle(arg0, &isArg0Exact, &isArg0NonNull);
+            CORINFO_CLASS_HANDLE cls1 = gtGetClassHandle(arg1, &isArg1Exact, &isArg1NonNull);
+            // A null receiver should throw, but a null argument must return false.
+            if ((cls0 != cls1) || (cls0 == NO_CLASS_HANDLE) || !isArg0Exact || !isArg1Exact || !isArg1NonNull)
             {
                 break;
             }
