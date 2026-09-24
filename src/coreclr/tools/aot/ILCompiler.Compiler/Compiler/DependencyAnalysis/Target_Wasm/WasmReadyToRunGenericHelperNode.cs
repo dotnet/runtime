@@ -89,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         expressions.Add(Local.Get(0));
                         EmitDictionaryLookup(factory, expressions, contextLocalIndex, resultLocalIndex, LookupSignature, relocsOnly);
-                        expressions.Add(Local.Set(resultLocalIndex));
+                        expressions.Add(Local.Tee(resultLocalIndex));
                         expressions.Add(I32.Const(NonGCStaticsNode.GetClassConstructorContextSize(factory.Target)));
                         expressions.Add(I32.Sub);
                         expressions.Add(Local.Get(resultLocalIndex));
