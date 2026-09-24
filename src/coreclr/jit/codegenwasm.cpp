@@ -3313,24 +3313,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
     params.wasmSignature = m_compiler->info.compCompHnd->getWasmTypeSymbol(typeStack.Data(), typeStack.Height());
 
-    CallArg* const pepArg = call->gtArgs.FindWellKnownArg(WellKnownArg::WasmPortableEntryPoint);
-    if (pepArg != nullptr)
-    {
-        assert(target != nullptr);
-        // The control expression was emitted after the explicit arguments. Since lowering marked it multiply used,
-        // WasmProduceReg left the PEP on the operand stack as the final argument and tee'd it into this local. Reload
-        // the local and dereference the PEP to obtain the call_indirect table index.
-        regNumber pepReg = GetMultiUseOperandReg(target);
-        genConsumeReg(target);
-
-        genEmitLocalGet(pepReg, WasmValueType::I);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
-
-        params.callType = EC_INDIR_R;
-        genEmitCallWithCurrentGC(params);
-        return;
-    }
-
     // R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale; the PInvoke
     // prolog (JIT_PInvokeBegin) normally publishes the current SP to __stack_pointer before native
     // code runs, but that prolog/epilog is skipped for SuppressGCTransition calls (see Lowering).
