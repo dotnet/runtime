@@ -5038,9 +5038,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->Run();
 
     // Set stack levels and analyze throw helper usage.
+    // This may create throw helper calls that get lowered.
+    //
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
+
+    // Run the final liveness pass after adding throw helper calls.
+    //
+    DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
     // Determine if a Virtual IP is needed and add code as needed to

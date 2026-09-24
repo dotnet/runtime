@@ -7418,6 +7418,7 @@ public:
     void fgAsyncLiveness();
     void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+    PhaseStatus fgLateLiveness();
 
     void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 

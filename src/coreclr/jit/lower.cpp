@@ -8946,6 +8946,12 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #endif // FEATURE_SIMD
 }
 
+//------------------------------------------------------------------------
+// Lowering::DoPhase -- lower the IR
+//
+// Returns:
+//    suitable phase status
+//
 PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
@@ -9002,54 +9008,58 @@ PhaseStatus Lowering::DoPhase()
 
     AfterLowerBlocks();
 
-#ifdef DEBUG
-    JITDUMP("Lower has completed modifying nodes.\n");
-    if (VERBOSE)
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        m_compiler->fgDispBasicBlocks(true);
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere.
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
     }
-#endif
 
+    // Remove dead blocks before stack level setting analyzes throw helper usage.
+    //
+    m_compiler->fgRemoveBlocksOutsideDfsTree();
+    m_compiler->fgInvalidateDfsTree();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgLateLiveness -- rerun liveness after lower / stacklevelsetter
+//
+// Returns:
+//    suitable phase status
+//
+PhaseStatus Compiler::fgLateLiveness()
+{
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
     const bool setSlotNumbers = false;
-    m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->m_dfsTree == nullptr)
+    if (backendRequiresLocalVarLifetimes())
     {
-        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
-        // do this everywhere. The dead blocks are removed below, however, some of
-        // lowering may use the DFS tree, so we compute that here.
-        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
-    }
+        assert(opts.OptimizationEnabled());
 
-    // Remove dead blocks. We want to remove unreachable blocks even in
-    // MinOpts.
-    m_compiler->fgRemoveBlocksOutsideDfsTree();
-
-    if (m_compiler->backendRequiresLocalVarLifetimes())
-    {
-        assert(m_compiler->opts.OptimizationEnabled());
-
-        m_compiler->fgPostLowerLiveness();
+        m_dfsTree = fgComputeDfs();
+        fgPostLowerLiveness();
         // local var liveness can delete code, which may create empty blocks
-        bool modified = m_compiler->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+        bool modified = fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
 
         if (modified)
         {
-            m_compiler->fgDfsBlocksAndRemove();
+            fgDfsBlocksAndRemove();
             JITDUMP("had to run another liveness pass:\n");
-            m_compiler->fgPostLowerLiveness();
+            fgPostLowerLiveness();
         }
 
         // Recompute local var ref counts again after liveness to reflect
         // impact of any dead code removal. Note this may leave us with
         // tracked vars that have zero refs.
-        m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+        lvaComputeRefCounts(isRecompute, setSlotNumbers);
     }
 
-    m_compiler->fgInvalidateDfsTree();
+    fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
