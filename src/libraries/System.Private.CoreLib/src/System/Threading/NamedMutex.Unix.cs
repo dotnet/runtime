@@ -70,7 +70,8 @@ namespace System.Threading
     internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> header) : ISharedMemoryProcessData
     {
         // The shared data layout must stay compatible with the CoreCLR PAL implementation used by .NET 10 and earlier
-        // (src/coreclr/pal/src/synchobj/mutex.cpp), which uses the same shared memory files and the same SyncSystemVersion.
+        // https://github.com/dotnet/runtime/blob/release/10.0/src/coreclr/pal/src/synchobj/mutex.cpp, which
+        // uses the same shared memory files and the same SyncSystemVersion.
         // Processes from both implementations may open the same named mutex at the same time.
         private const byte SyncSystemVersion = 1;
         protected const int PollLoopMaximumSleepMilliseconds = 100;
