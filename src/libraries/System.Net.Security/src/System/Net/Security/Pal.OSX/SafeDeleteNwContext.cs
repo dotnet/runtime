@@ -113,6 +113,11 @@ namespace System.Net.Security
 
         private TaskCompletionSource? _currentWriteCompletionSource;
 
+        // Guards admission of application sends against disposal. Both the publication of
+        // _pendingSendCompletion and the native send itself happen under this, so Dispose cannot
+        // observe "no send in flight" for a send that is about to call into native code.
+        private readonly object _sendGate = new();
+
         // Completed once an application send has observed every native callback it triggered
         // (the nw_connection_send completion and the framer output write). Both resolve the
         // GCHandle, so Dispose must not free it while one is outstanding.
@@ -286,24 +291,34 @@ namespace System.Net.Security
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"App sending {buffer.Length} bytes");
 
-            // Published before the native send is issued so a concurrent Dispose can see that
-            // callbacks resolving the GCHandle are still outstanding.
+            // Published before the native send is issued, under the same lock Dispose takes, so a
+            // concurrent Dispose either sees this send and waits for it or refuses it outright.
+            // Publishing without the lock leaves a window where Dispose reads the field as null,
+            // frees the GCHandle, and the send completion then resolves a freed handle.
             TaskCompletionSource sendCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            _pendingSendCompletion = sendCompletion;
 
             try
             {
                 TaskCompletionSource transportWriteCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-                _currentWriteCompletionSource = transportWriteCompletion;
-
-                bool success = _appWriteTcs.TryGetValueTask(out ValueTask valueTask, this, CancellationToken.None);
-                Debug.Assert(success, "Concurrent WriteAsync detected");
+                ValueTask valueTask;
 
                 using MemoryHandle memoryHandle = buffer.Pin();
-                unsafe
+                lock (_sendGate)
                 {
-                    Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
+                    ObjectDisposedException.ThrowIf(_disposed, _sslStream);
+
+                    _pendingSendCompletion = sendCompletion;
+                    _currentWriteCompletionSource = transportWriteCompletion;
+
+                    bool success = _appWriteTcs.TryGetValueTask(out valueTask, this, CancellationToken.None);
+                    Debug.Assert(success, "Concurrent WriteAsync detected");
+
+                    unsafe
+                    {
+                        Interop.NetworkFramework.Tls.NwConnectionSend(ConnectionHandle, StateHandle, memoryHandle.Pointer, buffer.Length, &CompletionCallback);
+                    }
                 }
+
                 try
                 {
                     await valueTask.ConfigureAwait(false);
@@ -321,7 +336,14 @@ namespace System.Net.Security
             {
                 // Never faulted: this only reports that the native callbacks are done with the
                 // handle, so Dispose can wait on it without observing a write failure.
-                _pendingSendCompletion = null;
+                lock (_sendGate)
+                {
+                    if (ReferenceEquals(_pendingSendCompletion, sendCompletion))
+                    {
+                        _pendingSendCompletion = null;
+                    }
+                }
+
                 sendCompletion.TrySetResult();
             }
 
@@ -630,7 +652,14 @@ namespace System.Net.Security
         {
             if (disposing && !_disposed)
             {
-                _disposed = true;
+                Task? admittedSend;
+                lock (_sendGate)
+                {
+                    // Closes the admission window: once this is set no further send can be
+                    // issued, and any send already issued has published itself here.
+                    _disposed = true;
+                    admittedSend = _pendingSendCompletion?.Task;
+                }
 
                 Shutdown();
 
@@ -692,7 +721,7 @@ namespace System.Net.Security
                 // resolves it has been observed. The send wait deliberately happens here, after
                 // the pending write above was faulted: an application write parked on that source
                 // would otherwise never release, and Dispose would wait on itself.
-                Task? pendingSend = _pendingSendCompletion?.Task;
+                Task? pendingSend = admittedSend;
                 bool sendCompleted = true;
                 if (pendingSend is not null)
                 {
