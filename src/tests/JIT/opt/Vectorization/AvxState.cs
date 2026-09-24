@@ -70,6 +70,15 @@ public static unsafe class AvxState
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Extract128(ref Vector128<int> destination, ref Vector512<int> source, int value)
+    {
+        // X64-NOT: vmovaps {{zmm[0-9]+}}, {{zmm[0-9]+}}
+        Vector512<int> vector = Vector512.Create(value);
+        destination = vector.AsVector().AsVector128();
+        source = vector;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
     private static int CallUnmanaged(ref Vector128<float> destination, delegate* unmanaged<int> callback)
     {
         // X64: {{vzeroupper| xorps }}
@@ -114,6 +123,9 @@ public static unsafe class AvxState
         Assert.Equal(Vector256.Create(456), vector256);
         Assert.Equal(vector256, vector512.GetLower());
         Assert.Equal(Vector128.Create(456), Lower128(ref vector256));
+        Extract128(ref vector128, ref vector512, 789);
+        Assert.Equal(Vector128.Create(789), vector128);
+        Assert.Equal(Vector512.Create(789), vector512);
 
         Vector128<float> floats = Vector128.Create(1.0f);
         Assert.Equal(123, CallUnmanaged(ref floats, &Callback));

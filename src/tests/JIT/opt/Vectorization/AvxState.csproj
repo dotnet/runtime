@@ -10,5 +10,7 @@
     <Compile Include="$(MSBuildProjectName).cs">
       <HasDisasmCheck>true</HasDisasmCheck>
     </Compile>
+    <!-- Exercise Vector512-to-Vector<T> narrowing through GetLower128. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_MaxVectorTBitWidth" Value="128" />
   </ItemGroup>
 </Project>
