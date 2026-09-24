@@ -29,7 +29,7 @@ public:
     ~ThreadInfo();
     bool UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pSos);
     void GetThreadStack();
-    void GetThreadContext(uint32_t flags, CONTEXT* context) const { m_snapshot.GetThreadContext(flags, context); }
+    void GetThreadContext(uint32_t flags, CONTEXT* context) const;
 
     inline pid_t Tid() const { return m_snapshot.Tid(); }
     inline pid_t Ppid() const { return m_snapshot.Ppid(); }

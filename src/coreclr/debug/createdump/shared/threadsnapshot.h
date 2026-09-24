@@ -60,9 +60,13 @@ struct user_vfpregs_struct
 #define user_fpregs_struct lasx_context
 #endif
 
+class ThreadInfo;
+
 // Thread info
 class ThreadSnapshot
 {
+    friend class ThreadInfo;
+
 private:
     pid_t m_tid;                                // thread id
     pid_t m_ppid;                               // parent process
@@ -109,7 +113,6 @@ public:
 #endif
 
     bool Initialize();
-    void GetThreadContext(uint32_t flags, CONTEXT* context) const;
 
     inline pid_t Tid() const { return m_tid; }
     inline pid_t Ppid() const { return m_ppid; }

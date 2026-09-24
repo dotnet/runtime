@@ -62,87 +62,87 @@ ThreadSnapshot::Initialize()
 }
 
 void
-ThreadSnapshot::GetThreadContext(uint32_t flags, CONTEXT* context) const
+ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
 {
     context->ContextFlags = flags;
 #if defined(__x86_64__)
     if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
-        context->Rbp = m_gpRegisters.__rbp;
-        context->Rip = m_gpRegisters.__rip;
-        context->SegCs = m_gpRegisters.__cs;
-        context->EFlags = m_gpRegisters.__rflags;
+        context->Rbp = m_snapshot.m_gpRegisters.__rbp;
+        context->Rip = m_snapshot.m_gpRegisters.__rip;
+        context->SegCs = m_snapshot.m_gpRegisters.__cs;
+        context->EFlags = m_snapshot.m_gpRegisters.__rflags;
         // TODO: get "full" register state for the segment regs
         context->SegSs = 0; // m_gpRegisters.__ss;
-        context->Rsp = m_gpRegisters.__rsp;
+        context->Rsp = m_snapshot.m_gpRegisters.__rsp;
     }
     if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
     {
-        context->Rdi = m_gpRegisters.__rdi;
-        context->Rsi = m_gpRegisters.__rsi;
-        context->Rbx = m_gpRegisters.__rbx;
-        context->Rdx = m_gpRegisters.__rdx;
-        context->Rcx = m_gpRegisters.__rcx;
-        context->Rax = m_gpRegisters.__rax;
-        context->R8 = m_gpRegisters.__r8;
-        context->R9 = m_gpRegisters.__r9;
-        context->R10 = m_gpRegisters.__r10;
-        context->R11 = m_gpRegisters.__r11;
-        context->R12 = m_gpRegisters.__r12;
-        context->R13 = m_gpRegisters.__r13;
-        context->R14 = m_gpRegisters.__r14;
-        context->R15 = m_gpRegisters.__r15;
+        context->Rdi = m_snapshot.m_gpRegisters.__rdi;
+        context->Rsi = m_snapshot.m_gpRegisters.__rsi;
+        context->Rbx = m_snapshot.m_gpRegisters.__rbx;
+        context->Rdx = m_snapshot.m_gpRegisters.__rdx;
+        context->Rcx = m_snapshot.m_gpRegisters.__rcx;
+        context->Rax = m_snapshot.m_gpRegisters.__rax;
+        context->R8 = m_snapshot.m_gpRegisters.__r8;
+        context->R9 = m_snapshot.m_gpRegisters.__r9;
+        context->R10 = m_snapshot.m_gpRegisters.__r10;
+        context->R11 = m_snapshot.m_gpRegisters.__r11;
+        context->R12 = m_snapshot.m_gpRegisters.__r12;
+        context->R13 = m_snapshot.m_gpRegisters.__r13;
+        context->R14 = m_snapshot.m_gpRegisters.__r14;
+        context->R15 = m_snapshot.m_gpRegisters.__r15;
     }
     if ((flags & CONTEXT_SEGMENTS) == CONTEXT_SEGMENTS)
     {
         // TODO: get "full" register state for the segment regs
         context->SegDs = 0; // m_gpRegisters.__ds;
         context->SegEs = 0; // m_gpRegisters.__es;
-        context->SegFs = m_gpRegisters.__fs;
-        context->SegGs = m_gpRegisters.__gs;
+        context->SegFs = m_snapshot.m_gpRegisters.__fs;
+        context->SegGs = m_snapshot.m_gpRegisters.__gs;
     }
     if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
-        context->FltSave.ControlWord = *((unsigned short *)&m_fpRegisters.__fpu_fcw);
-        context->FltSave.StatusWord = *((unsigned short *)&m_fpRegisters.__fpu_fsw);
-        context->FltSave.TagWord = m_fpRegisters.__fpu_ftw;
-        context->FltSave.ErrorOpcode = m_fpRegisters.__fpu_fop;
+        context->FltSave.ControlWord = *((unsigned short *)&m_snapshot.m_fpRegisters.__fpu_fcw);
+        context->FltSave.StatusWord = *((unsigned short *)&m_snapshot.m_fpRegisters.__fpu_fsw);
+        context->FltSave.TagWord = m_snapshot.m_fpRegisters.__fpu_ftw;
+        context->FltSave.ErrorOpcode = m_snapshot.m_fpRegisters.__fpu_fop;
 
-        context->FltSave.ErrorOffset = m_fpRegisters.__fpu_ip;
-        context->FltSave.ErrorSelector = m_fpRegisters.__fpu_cs;
-        context->FltSave.DataOffset = m_fpRegisters.__fpu_dp;
-        context->FltSave.DataSelector = m_fpRegisters.__fpu_ds;
+        context->FltSave.ErrorOffset = m_snapshot.m_fpRegisters.__fpu_ip;
+        context->FltSave.ErrorSelector = m_snapshot.m_fpRegisters.__fpu_cs;
+        context->FltSave.DataOffset = m_snapshot.m_fpRegisters.__fpu_dp;
+        context->FltSave.DataSelector = m_snapshot.m_fpRegisters.__fpu_ds;
 
-        context->FltSave.MxCsr = m_fpRegisters.__fpu_mxcsr;
-        context->FltSave.MxCsr_Mask = m_fpRegisters.__fpu_mxcsrmask;
+        context->FltSave.MxCsr = m_snapshot.m_fpRegisters.__fpu_mxcsr;
+        context->FltSave.MxCsr_Mask = m_snapshot.m_fpRegisters.__fpu_mxcsrmask;
 
-        assert(sizeof(context->FltSave.FloatRegisters) == sizeof(m_fpRegisters.__fpu_stmm0) * 8);
-        memcpy(context->FltSave.FloatRegisters, &m_fpRegisters.__fpu_stmm0, sizeof(context->FltSave.FloatRegisters));
+        assert(sizeof(context->FltSave.FloatRegisters) == sizeof(m_snapshot.m_fpRegisters.__fpu_stmm0) * 8);
+        memcpy(context->FltSave.FloatRegisters, &m_snapshot.m_fpRegisters.__fpu_stmm0, sizeof(context->FltSave.FloatRegisters));
 
-        assert(sizeof(context->FltSave.XmmRegisters) == sizeof(m_fpRegisters.__fpu_xmm0) * 16);
-        memcpy(context->FltSave.XmmRegisters, &m_fpRegisters.__fpu_xmm0, sizeof(context->FltSave.XmmRegisters));
+        assert(sizeof(context->FltSave.XmmRegisters) == sizeof(m_snapshot.m_fpRegisters.__fpu_xmm0) * 16);
+        memcpy(context->FltSave.XmmRegisters, &m_snapshot.m_fpRegisters.__fpu_xmm0, sizeof(context->FltSave.XmmRegisters));
     }
     // TODO: debug registers?
 #elif defined(__aarch64__)
     if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
-        context->Fp = arm_thread_state64_get_fp(m_gpRegisters);
-        context->Lr = (uint64_t)arm_thread_state64_get_lr_fptr(m_gpRegisters);
-        context->Sp = arm_thread_state64_get_sp(m_gpRegisters);
-        context->Pc = (uint64_t)arm_thread_state64_get_pc_fptr(m_gpRegisters);
-        context->Cpsr = m_gpRegisters.__cpsr;
+        context->Fp = arm_thread_state64_get_fp(m_snapshot.m_gpRegisters);
+        context->Lr = (uint64_t)arm_thread_state64_get_lr_fptr(m_snapshot.m_gpRegisters);
+        context->Sp = arm_thread_state64_get_sp(m_snapshot.m_gpRegisters);
+        context->Pc = (uint64_t)arm_thread_state64_get_pc_fptr(m_snapshot.m_gpRegisters);
+        context->Cpsr = m_snapshot.m_gpRegisters.__cpsr;
     }
     if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
     {
-        assert(sizeof(m_gpRegisters.__x) == (sizeof(context->X)));
-        memcpy(context->X, m_gpRegisters.__x, sizeof(context->X));
+        assert(sizeof(m_snapshot.m_gpRegisters.__x) == (sizeof(context->X)));
+        memcpy(context->X, m_snapshot.m_gpRegisters.__x, sizeof(context->X));
     }
     if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
     {
-        assert(sizeof(m_fpRegisters.__v) == sizeof(context->V));
-        memcpy(context->V, m_fpRegisters.__v, sizeof(context->V));
-        context->Fpcr = m_fpRegisters.__fpcr;
-        context->Fpsr = m_fpRegisters.__fpsr;
+        assert(sizeof(m_snapshot.m_fpRegisters.__v) == sizeof(context->V));
+        memcpy(context->V, m_snapshot.m_fpRegisters.__v, sizeof(context->V));
+        context->Fpcr = m_snapshot.m_fpRegisters.__fpcr;
+        context->Fpsr = m_snapshot.m_fpRegisters.__fpsr;
     }
 #else
 #error Platform not supported
