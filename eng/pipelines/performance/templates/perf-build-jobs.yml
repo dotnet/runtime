@@ -2,20 +2,8 @@ parameters:
   perfBranch: 'main' # Currently only used for building the BDN App
 
 jobs:
-  # build coreclr and libraries
+  # Temporarily build only macOS Arm64 while validating the M4 queue.
   - template: /eng/pipelines/performance/templates/perf-coreclr-build-jobs.yml
     parameters:
-      linux_x64: true
-      linux_arm64: true
-      windows_x64: true
-      windows_x86: true
-      android_arm64: true
-      coreclr_r2r_interpreter: true
       ${{ if not(startswith(variables['Build.SourceBranch'], 'refs/heads/release')) }}:
         osx_arm64: true
-
-  # build mono for AOT
-  - template: /eng/pipelines/performance/templates/perf-mono-build-jobs.yml
-    parameters:
-      mono_x64: true
-      monoAot_x64: true
