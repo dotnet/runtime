@@ -1683,6 +1683,7 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
     , m_liveness(liveness)
     , m_dfsTree(dfsTree)
     , m_postOrderTraits(dfsTree->PostOrderTraits())
+    , m_reconciliationReadBacks(prom->m_compiler->getAllocator(CMK_Promotion))
 {
     unsigned index = 0;
     for (AggregateInfo* agg : m_aggregates)
@@ -1715,6 +1716,209 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
             }
             return BasicBlockVisit::Continue;
         });
+    }
+}
+
+//------------------------------------------------------------------------
+// OptimizeReadBacks:
+//   Common surviving initial readbacks introduced by mixed-join reconciliation.
+//
+// Remarks:
+//   Keep single readbacks and independent paths in their original positions.
+//   Only consider reads of the incoming value, and leave forwarded or embedded
+//   readbacks alone. Placing a shared readback late in the common dominator
+//   avoids extending its lifetime over unrelated work in that block.
+//
+void ReplaceVisitor::OptimizeReadBacks()
+{
+    if (m_reconciliationReadBacks.empty())
+    {
+        return;
+    }
+
+    struct ReadBackSite
+    {
+        BasicBlock* Block;
+        Statement*  Stmt;
+    };
+
+    BasicBlock*                  entry        = m_compiler->fgFirstBB;
+    FlowGraphDfsTree*            placementDfs = m_dfsTree;
+    FlowGraphDominatorTree*      domTree      = m_compiler->m_domTree;
+    jitstd::vector<ReadBackSite> sites(m_compiler->getAllocator(CMK_Promotion));
+    ArrayStack<BasicBlock*>      worklist(m_compiler->getAllocator(CMK_Promotion));
+    BitVec                       modified = BitVecOps::MakeEmpty(&m_postOrderTraits);
+
+    for (AggregateInfo* agg : m_aggregates)
+    {
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
+        if (!dsc->lvIsParam && !dsc->lvIsOSRLocal)
+        {
+            continue;
+        }
+
+        for (unsigned i = 0; i < agg->Replacements.size(); i++)
+        {
+            Replacement& rep = agg->Replacements[i];
+            if (!rep.HasReconciledReadBack || !m_liveness->IsReplacementLiveIn(entry, agg->LclNum, i))
+            {
+                continue;
+            }
+
+            BitVecOps::ClearD(&m_postOrderTraits, modified);
+            auto markModified = [&](BasicBlock* block) {
+                if (m_dfsTree->Contains(block) &&
+                    BitVecOps::TryAddElemD(&m_postOrderTraits, modified, block->bbPostorderNum))
+                {
+                    worklist.Push(block);
+                }
+                return BasicBlockVisit::Continue;
+            };
+            for (unsigned j = 0; j < m_dfsTree->GetPostOrderCount(); j++)
+            {
+                BasicBlock* block = m_dfsTree->GetPostOrder(j);
+                if (m_liveness->IsReplacementPossiblyDefined(block, agg->LclNum, i))
+                {
+                    markModified(block);
+                }
+            }
+            while (!worklist.Empty())
+            {
+                worklist.Pop()->VisitAllSuccs(m_compiler, markModified);
+            }
+
+            sites.clear();
+            weight_t oldWeight         = 0;
+            bool     hasReconciliation = false;
+            for (unsigned j = 0; j < m_dfsTree->GetPostOrderCount(); j++)
+            {
+                BasicBlock* block = m_dfsTree->GetPostOrder(j);
+                if (BitVecOps::IsMember(&m_postOrderTraits, modified, block->bbPostorderNum))
+                {
+                    continue;
+                }
+
+                for (Statement* stmt : block->Statements())
+                {
+                    GenTree* store = stmt->GetRootNode();
+                    if (!store->OperIs(GT_STORE_LCL_VAR) || (store->AsLclVarCommon()->GetLclNum() != rep.LclNum))
+                    {
+                        continue;
+                    }
+
+                    GenTree* value = store->Data();
+                    if (!value->OperIs(GT_LCL_FLD) || (value->AsLclFld()->GetLclNum() != agg->LclNum) ||
+                        (value->AsLclFld()->GetLclOffs() != rep.Offset))
+                    {
+                        continue;
+                    }
+
+                    sites.push_back({block, stmt});
+                    oldWeight += block->getBBWeight(m_compiler);
+                    for (Statement* reconciliation : m_reconciliationReadBacks)
+                    {
+                        hasReconciliation |= stmt == reconciliation;
+                    }
+                }
+            }
+
+            if ((sites.size() < 2) || !hasReconciliation)
+            {
+                continue;
+            }
+
+            if (domTree == nullptr)
+            {
+                if (entry->bbPostorderNum + 1 != m_dfsTree->GetPostOrderCount())
+                {
+                    // Before global morph the DFS may also retain the original
+                    // OSR entry and a disconnected merged return. Dominators
+                    // require a single root; its subtree is a postorder prefix.
+                    placementDfs = new (m_compiler, CMK_Promotion)
+                        FlowGraphDfsTree(m_compiler, m_dfsTree->GetPostOrder(), entry->bbPostorderNum + 1,
+                                         m_dfsTree->HasCycle(), m_dfsTree->IsProfileAware());
+                }
+                domTree = FlowGraphDominatorTree::Build(placementDfs);
+                if (placementDfs == m_dfsTree)
+                {
+                    m_compiler->m_domTree = domTree;
+                }
+            }
+
+            BasicBlock* common = nullptr;
+            for (const ReadBackSite& site : sites)
+            {
+                if (!placementDfs->Contains(site.Block))
+                {
+                    common = nullptr;
+                    break;
+                }
+                common = common == nullptr ? site.Block : domTree->Intersect(common, site.Block);
+            }
+
+            if (common == nullptr)
+            {
+                continue;
+            }
+
+            weight_t commonWeight = common->getBBWeight(m_compiler);
+            // If the sites merely partition execution, commoning saves no
+            // dynamic work and can hurt allocation by extending live ranges.
+            if ((commonWeight >= oldWeight) ||
+                Compiler::fgProfileWeightsEqual(commonWeight, oldWeight, oldWeight * 1e-6))
+            {
+                continue;
+            }
+
+            assert(!BitVecOps::IsMember(&m_postOrderTraits, modified, common->bbPostorderNum));
+            Statement* insertBefore = nullptr;
+            bool       hasUse       = m_liveness->IsReplacementUsed(common, agg->LclNum, i);
+            for (Statement* stmt : common->Statements())
+            {
+                for (const ReadBackSite& site : sites)
+                {
+                    if (site.Stmt == stmt)
+                    {
+                        insertBefore = stmt;
+                        break;
+                    }
+                }
+                if (hasUse)
+                {
+                    for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+                    {
+                        if ((lcl->GetLclNum() == rep.LclNum) || (lcl->GetLclNum() == agg->LclNum))
+                        {
+                            insertBefore = stmt;
+                            break;
+                        }
+                    }
+                }
+                if (insertBefore != nullptr)
+                {
+                    break;
+                }
+            }
+
+            JITDUMP("Commoning %zu readbacks V%02u.[%03u..%03u) -> V%02u in " FMT_BB " (weight " FMT_WT
+                    ", previous total " FMT_WT ")\n",
+                    sites.size(), agg->LclNum, rep.Offset, rep.Offset + genTypeSize(rep.AccessType), rep.LclNum,
+                    common->bbNum, common->getBBWeight(m_compiler), oldWeight);
+            Statement* readBack =
+                m_compiler->fgNewStmtFromTree(Promotion::CreateReadBack(m_compiler, agg->LclNum, rep));
+            if (insertBefore != nullptr)
+            {
+                m_compiler->fgInsertStmtBefore(common, insertBefore, readBack);
+            }
+            else
+            {
+                m_compiler->fgInsertStmtNearEnd(common, readBack);
+            }
+            for (const ReadBackSite& site : sites)
+            {
+                m_compiler->fgRemoveStmt(site.Block, site.Stmt);
+            }
+        }
     }
 }
 
@@ -1815,7 +2019,7 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
                         BitVecOps::IsMember(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum],
                                             rep.ReadBackIndex))
                     {
-                        InsertReadBackAtEnd(pred, agg->LclNum, rep);
+                        InsertReadBackAtEnd(pred, agg->LclNum, rep, true);
                         BitVecOps::RemoveElemD(m_readBackTraits, m_pendingReadBacks[pred->bbPostorderNum],
                                                rep.ReadBackIndex);
                     }
@@ -1835,8 +2039,9 @@ Statement* ReplaceVisitor::StartBlock(BasicBlock* block)
 //   block        - Block in which the struct contains the current value.
 //   structLclNum - Struct local.
 //   rep          - Replacement to initialize.
+//   reconcile    - Whether this readback reconciles a mixed join.
 //
-void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, const Replacement& rep)
+void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep, bool reconcile)
 {
     JITDUMP("Reading back V%02u.[%03u..%03u) -> V%02u near the end of " FMT_BB "\n", structLclNum, rep.Offset,
             rep.Offset + genTypeSize(rep.AccessType), rep.LclNum, block->bbNum);
@@ -1844,6 +2049,11 @@ void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNu
     GenTree*   readBack = Promotion::CreateReadBack(m_compiler, structLclNum, rep);
     Statement* stmt     = m_compiler->fgNewStmtFromTree(readBack);
     m_compiler->fgInsertStmtNearEnd(block, stmt);
+    if (reconcile)
+    {
+        rep.HasReconciledReadBack = true;
+        m_reconciliationReadBacks.push_back(stmt);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -3088,6 +3298,8 @@ PhaseStatus Promotion::Run()
 
         replacer.EndBlock();
     }
+
+    replacer.OptimizeReadBacks();
 
     // Add necessary explicit zeroing for some locals.
     Statement* prevStmt = nullptr;

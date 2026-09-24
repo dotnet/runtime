@@ -27,7 +27,8 @@ struct Replacement
     // Is the value in the struct local fresher than the replacement local?
     // This may remain true across blocks when all incoming paths agree that
     // the struct local contains the current value.
-    bool NeedsReadBack = false;
+    bool NeedsReadBack         = false;
+    bool HasReconciledReadBack = false;
 #ifdef DEBUG
     const char* Description = "";
 #endif
@@ -214,12 +215,19 @@ public:
     }
 
     void         Run();
+    bool         IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    bool         IsReplacementPossiblyDefined(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
-    void     MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
+    void     MarkUseDef(Statement*           stmt,
+                        GenTreeLclVarCommon* lcl,
+                        BitVec&              useSet,
+                        BitVec&              defSet,
+                        BitVec&              mayDefSet,
+                        bool                 conditional = false);
     unsigned GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl);
     void     MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
     void     ComputeUseDefSets();
@@ -249,13 +257,14 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Statement*         m_currentStmt         = nullptr;
     BasicBlock*        m_currentBlock        = nullptr;
 
-    FlowGraphDfsTree* m_dfsTree;
-    BitVecTraits*     m_readBackTraits;
-    BitVecTraits      m_postOrderTraits;
-    BitVec*           m_pendingReadBacks;
-    BitVec*           m_currentStructFields;
-    BitVec            m_processedBlocks;
-    BitVec            m_requiresAlreadyReadBackOnEntry;
+    FlowGraphDfsTree*          m_dfsTree;
+    BitVecTraits*              m_readBackTraits;
+    BitVecTraits               m_postOrderTraits;
+    BitVec*                    m_pendingReadBacks;
+    BitVec*                    m_currentStructFields;
+    BitVec                     m_processedBlocks;
+    BitVec                     m_requiresAlreadyReadBackOnEntry;
+    jitstd::vector<Statement*> m_reconciliationReadBacks;
 
 public:
     enum
@@ -283,11 +292,12 @@ public:
     Statement* StartBlock(BasicBlock* block);
     void       EndBlock();
     void       StartStatement(Statement* stmt);
+    void       OptimizeReadBacks();
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
-    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, const Replacement& rep);
+    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep, bool reconcile = false);
 
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
