@@ -137,6 +137,7 @@ Structures (value types in IL parlance) that are declared to be passed by value 
 | Windows AMD64 | Not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes) |
 | ARM64 | Larger than 16 bytes, except HFAs/HVAs (unless passed as varargs) |
 | LoongArch64, RISC-V | Larger than 16 bytes |
+| WebAssembly | Non-unwrappable structures; see [Web Assembly ABI](#web-assembly-abi-r2r-and-jit) |
 
 System V AMD64, x86 and ARM32 do not use this convention. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack.
 
