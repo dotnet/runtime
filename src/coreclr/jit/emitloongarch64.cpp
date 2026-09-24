@@ -2602,9 +2602,13 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         }
     }
 
-    id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
-    id->idDebugOnlyInfo()->idCallSig   = params.sigInfo;
 #endif // DEBUG
+
+    if (m_debugInfoSize > 0)
+    {
+        INDEBUG(id->idDebugOnlyInfo()->idCallSig = params.sigInfo);
+        id->idDebugOnlyInfo()->idMemCookie = (size_t)params.methHnd; // method token
+    }
 
 #ifdef LATE_DISASM
     if (params.addr != nullptr)

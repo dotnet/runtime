@@ -2,6 +2,8 @@
 # These are run as part of runtime-extra-platforms by default.
 # But can also be triggered manually via `runtime-wasm` name
 #   /azp run runtime-wasm
+# Run the full trimmed CoreCLR ReadyToRun library tests with
+#   /azp run runtime-wasm-libtests
 
 parameters:
   isExtraPlatformsBuild: false
@@ -11,15 +13,32 @@ parameters:
   excludeNonLibTests: false
   excludeOptional: true
   debuggerTestsOnly: false
+  runFullR2RLibraryTests: false
 
 jobs:
 
 #
 # ************ Rolling builds: *************
-# - only run eat and aot tests
+# - only run full or expensive library-test configurations
 # - rest are covered by runtime
 #
 - ${{ if eq(variables.isRollingBuild, true) }}:
+  # Full trimmed CoreCLR ReadyToRun library tests
+  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      nameSuffix: _R2R
+      readyToRun: true
+      timeoutInMinutes: 480
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      scenarios:
+        - WasmTestOnChrome
+
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
@@ -79,6 +98,23 @@ jobs:
       useHelixMonitor: ${{ parameters.useHelixMonitor }}
       scenarios:
         - WasmTestOnChrome
+
+  # Full trimmed CoreCLR ReadyToRun library tests, available through runtime-wasm-libtests.
+  - ${{ if eq(parameters.runFullR2RLibraryTests, true) }}:
+    - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+      parameters:
+        platforms:
+          - browser_wasm
+        nameSuffix: _R2R
+        readyToRun: true
+        timeoutInMinutes: 480
+        extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+        isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+        alwaysRun: true
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
+        scenarios:
+          - WasmTestOnChrome
 
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml

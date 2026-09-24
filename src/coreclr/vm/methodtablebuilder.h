@@ -1090,7 +1090,21 @@ private:
         // Returns the metadata declaration attributes for this method.
         DWORD
         GetDeclAttrs() const
-            { LIMITED_METHOD_CONTRACT; return m_dwDeclAttrs; }
+            {
+                LIMITED_METHOD_CONTRACT;
+
+                DWORD dwDeclAttrs = m_dwDeclAttrs;
+                if (hasAsyncFlags(m_asyncMethodFlags, AsyncMethodFlags::ReturnDroppingThunk))
+                {
+                    // A return-dropping thunk is synthesized by the runtime and always has an implementation -
+                    // it calls the ordinary async variant virtually and drops the result.
+                    // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
+                    // override that needs the thunk is abstract), but the thunk itself never is.
+                    dwDeclAttrs &= ~mdAbstract;
+                }
+
+                return dwDeclAttrs;
+            }
 
         //-----------------------------------------------------------------------------------------
         // Returns the metadata implementation attributes for this method.
