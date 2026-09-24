@@ -398,19 +398,6 @@ namespace ILCompiler.ObjectWriter
                     currentSymbolName = GetMangledName(symbolNode);
                 }
 
-                ObjectNodeSection section = node.GetSection(_nodeFactory);
-                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
-                    GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
-                    GetOrCreateSection(section);
-
-                if (section.NeedsAlignment)
-                {
-                    sectionWriter.EmitAlignment(nodeContents.Alignment);
-                }
-
-                bool isMethod = node is IPCodeSymbolNode;
-                long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
@@ -425,6 +412,24 @@ namespace ILCompiler.ObjectWriter
                     // of this loop iteration.
                     RecordMethodDeclaration(codeNode);
                 }
+
+                if (TryRecordFoldedObjectNode(node, nodeContents, currentSymbolName))
+                {
+                    continue;
+                }
+
+                ObjectNodeSection section = node.GetSection(_nodeFactory);
+                SectionWriter sectionWriter = ShouldShareSymbol(node, section) ?
+                    GetOrCreateSection(section, currentSymbolName, currentSymbolName) :
+                    GetOrCreateSection(section);
+
+                if (section.NeedsAlignment)
+                {
+                    sectionWriter.EmitAlignment(nodeContents.Alignment);
+                }
+
+                bool isMethod = node is IPCodeSymbolNode;
+                long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
 
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
@@ -517,6 +522,8 @@ namespace ILCompiler.ObjectWriter
                 // Note that this has to be done last as not to advance the section writer position.
                 sectionWriter.EmitData(nodeContents.Data);
             }
+
+            RecordFoldedSymbolDefinitions(_definedSymbols);
 
             foreach (ISymbolRangeNode range in symbolRangeNodes)
             {
@@ -627,6 +634,16 @@ namespace ILCompiler.ObjectWriter
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
         }
 
+        private protected virtual bool TryRecordFoldedObjectNode(
+            ObjectNode node,
+            ObjectData nodeContents,
+            Utf8String currentSymbolName) => false;
+
+        private protected virtual void RecordFoldedSymbolDefinitions(
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols)
+        {
+        }
+
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
         {
         }
@@ -646,7 +663,7 @@ namespace ILCompiler.ObjectWriter
             EmitSymbolDefinition(startSymbol.SectionIndex, rangeNodeName, startSymbol.Value, checked((int)(endSymbol.Value - startSymbol.Value + endSymbol.Size)));
         }
 
-        private static string GetNodeTypeName(Type nodeType)
+        private protected static string GetNodeTypeName(Type nodeType)
         {
             string name = nodeType.ToString();
             int firstGeneric = name.IndexOf('[');

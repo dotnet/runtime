@@ -122,6 +122,60 @@ internal static class WasmR2RAssert
         return false;
     }
 
+    public static bool MethodsShareFunctionDefinitionButRetainTableSlots(
+        ReadyToRunReader reader,
+        string firstMethodName,
+        string secondMethodName,
+        out string diagnostic)
+    {
+        List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
+        ReadyToRunMethod firstMethod = methods.Single(method =>
+            method.SignatureString.Contains(firstMethodName, StringComparison.Ordinal));
+        ReadyToRunMethod secondMethod = methods.Single(method =>
+            method.SignatureString.Contains(secondMethodName, StringComparison.Ordinal));
+
+        int firstSlot = firstMethod.EntryPointRuntimeFunctionId;
+        int secondSlot = secondMethod.EntryPointRuntimeFunctionId;
+        if (firstSlot == secondSlot)
+        {
+            diagnostic = $"Methods unexpectedly share runtime-function/table slot {firstSlot}.";
+            return false;
+        }
+
+        var webcilReader = (WebcilImageReader)reader.CompositeReader;
+        uint[] functionIndices = ReadWasmElementFunctionIndices(webcilReader);
+        if ((uint)firstSlot >= (uint)functionIndices.Length || (uint)secondSlot >= (uint)functionIndices.Length)
+        {
+            diagnostic =
+                $"Method slots {firstSlot} and {secondSlot} are outside the {functionIndices.Length}-entry element segment.";
+            return false;
+        }
+
+        uint firstFunction = functionIndices[firstSlot];
+        uint secondFunction = functionIndices[secondSlot];
+        if (firstFunction != secondFunction)
+        {
+            diagnostic =
+                $"Method slots {firstSlot} and {secondSlot} reference different function definitions " +
+                $"{firstFunction} and {secondFunction}.";
+            return false;
+        }
+
+        uint functionCount = ReadWasmSectionEntryCount(webcilReader, WasmSectionKind.Function);
+        if (functionCount >= functionIndices.Length)
+        {
+            diagnostic =
+                $"Found {functionCount} function definitions for {functionIndices.Length} table slots; " +
+                "expected at least one folded definition.";
+            return false;
+        }
+
+        diagnostic =
+            $"Methods retain slots {firstSlot} and {secondSlot}, both referencing function definition {firstFunction}; " +
+            $"the image has {functionCount} definitions and {functionIndices.Length} slots.";
+        return true;
+    }
+
     /// <summary>
     /// Returns true if the default Webcil imports and defined section entries occupy the expected
     /// indices in their respective WASM external-kind index spaces.
@@ -434,6 +488,41 @@ internal static class WasmR2RAssert
             return 0;
 
         return ReadWasmUleb32(image, ref offset, sectionEnd);
+    }
+
+    private static uint[] ReadWasmElementFunctionIndices(WebcilImageReader reader)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Element, out int offset, out int sectionEnd))
+        {
+            throw new BadImageFormatException("WASM image does not contain an element section.");
+        }
+
+        uint segmentCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+        if (segmentCount != 1)
+        {
+            throw new BadImageFormatException($"Expected one WASM element segment; found {segmentCount}.");
+        }
+
+        uint flags = ReadWasmUleb32(image, ref offset, sectionEnd);
+        if (flags != 1 || offset >= sectionEnd || image[offset++] != 0)
+        {
+            throw new BadImageFormatException("Expected a passive funcref WASM element segment.");
+        }
+
+        uint elementCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+        var functionIndices = new uint[checked((int)elementCount)];
+        for (int i = 0; i < functionIndices.Length; i++)
+        {
+            functionIndices[i] = ReadWasmUleb32(image, ref offset, sectionEnd);
+        }
+
+        if (offset != sectionEnd)
+        {
+            throw new BadImageFormatException("Unexpected trailing data in the WASM element section.");
+        }
+
+        return functionIndices;
     }
 
     private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader)

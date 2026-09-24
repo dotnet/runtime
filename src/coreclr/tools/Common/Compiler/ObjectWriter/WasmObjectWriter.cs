@@ -58,6 +58,10 @@ namespace ILCompiler.ObjectWriter
         private protected readonly List<Utf8String> _wasmStubNames = new();
         private protected readonly WasmSections _sections = new();
         private protected readonly WasmSymbolManager _wasmSymbolManager = new();
+        private readonly WasmFunctionBodyDeduplicator _functionBodyDeduplicator = new();
+        private readonly Dictionary<Utf8String, int> _tableSlotIndices = [];
+        private readonly List<Utf8String> _tableSlotFunctions = [];
+        private readonly List<FoldedFunctionAlias> _foldedFunctionAliases = [];
         /// <summary>
         /// Maps symbol names to their location in the object file. These definitions do not encode
         /// logical WebAssembly indices and must not be used to resolve index relocations.
@@ -66,9 +70,34 @@ namespace ILCompiler.ObjectWriter
         private int[] _sectionEmitOrder;
 
         /// <summary>
-        /// The number of methods in the Function section.
+        /// The number of entries in the image's function pointer table.
         /// </summary>
-        private protected int MethodCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
+        private protected int MethodCount => _tableSlotFunctions.Count;
+
+        private int ActualFunctionCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
+
+        private readonly struct FoldedFunctionAlias
+        {
+            public FoldedFunctionAlias(
+                ObjectNode node,
+                ObjectNode.ObjectData data,
+                Utf8String name,
+                Utf8String alternateName,
+                Utf8String canonicalName)
+            {
+                Node = node;
+                Data = data;
+                Name = name;
+                AlternateName = alternateName;
+                CanonicalName = canonicalName;
+            }
+
+            public ObjectNode Node { get; }
+            public ObjectNode.ObjectData Data { get; }
+            public Utf8String Name { get; }
+            public Utf8String AlternateName { get; }
+            public Utf8String CanonicalName { get; }
+        }
 
         private protected int[] SectionEmitOrder
         {
@@ -86,6 +115,27 @@ namespace ILCompiler.ObjectWriter
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
+        }
+
+        public override void EmitObject(
+            Stream outputFileStream,
+            IReadOnlyCollection<DependencyNode> nodes,
+            IObjectDumper dumper,
+            Logger logger)
+        {
+            _functionBodyDeduplicator.Prepare(nodes, _nodeFactory, ShouldSkip);
+            base.EmitObject(outputFileStream, nodes, dumper, logger);
+
+            bool ShouldSkip(ObjectNode node)
+            {
+                if (node.ShouldSkipEmittingObjectNode(_nodeFactory))
+                {
+                    return true;
+                }
+
+                return node is ISymbolNode symbol
+                    && _nodeFactory.ObjectInterner.GetDeduplicatedSymbol(_nodeFactory, symbol) != symbol;
+            }
         }
 
         private protected static void EmitWasmHeader(Stream outputFileStream)
@@ -143,19 +193,92 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WriteSignatureIndexForFunction(node);
             Utf8String methodName = new(node.GetMangledName(_nodeFactory.NameMangler));
-            RegisterFunctionSymbol(methodName);
-
             Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+
+            if (_functionBodyDeduplicator.TryGetCanonicalBody((ObjectNode)node, out ObjectNode canonical))
+            {
+                Utf8String canonicalName = GetMangledName((ISymbolNode)canonical);
+                // A Wasm function index has only one name-section entry. Keep all managed aliases in
+                // diagnostic output, but engine-level samples necessarily use the canonical name.
+                _wasmSymbolManager.AddAlias(methodName, canonicalName);
+                RegisterTableSlot(methodName, canonicalName);
+
+                if (!alternateName.IsNull)
+                {
+                    Utf8String alternateCName = ExternCName(alternateName);
+                    _wasmSymbolManager.AddAlias(alternateCName, canonicalName);
+                    RegisterTableSlotAlias(alternateCName, methodName);
+                }
+                return;
+            }
+
+            WriteSignatureIndexForFunction(node);
+            RegisterFunctionSymbol(methodName);
+            RegisterTableSlot(methodName, methodName);
+
             if (!alternateName.IsNull)
             {
-                _wasmSymbolManager.AddAlias(ExternCName(alternateName), methodName);
+                Utf8String alternateCName = ExternCName(alternateName);
+                _wasmSymbolManager.AddAlias(alternateCName, methodName);
+                RegisterTableSlotAlias(alternateCName, methodName);
             }
 
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
+            }
+        }
+
+        private protected override bool TryRecordFoldedObjectNode(
+            ObjectNode node,
+            ObjectNode.ObjectData nodeContents,
+            Utf8String currentSymbolName)
+        {
+            if (!_functionBodyDeduplicator.TryGetCanonicalBody(node, out ObjectNode canonical))
+            {
+                return false;
+            }
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName((ISymbolNode)node, out _);
+            _foldedFunctionAliases.Add(new FoldedFunctionAlias(
+                node,
+                nodeContents,
+                currentSymbolName,
+                alternateName.IsNull ? default : ExternCName(alternateName),
+                GetMangledName((ISymbolNode)canonical)));
+            return true;
+        }
+
+        private protected override void RecordFoldedSymbolDefinitions(
+            IDictionary<Utf8String, SymbolDefinition> definedSymbols)
+        {
+            foreach (FoldedFunctionAlias alias in _foldedFunctionAliases)
+            {
+                SymbolDefinition canonical = definedSymbols[alias.CanonicalName];
+                definedSymbols.Add(alias.Name, canonical);
+                if (!alias.AlternateName.IsNull)
+                {
+                    definedSymbols.Add(alias.AlternateName, canonical);
+                }
+
+                if (_outputInfoBuilder is not null)
+                {
+                    OutputNode outputNode = new OutputNode(
+                        canonical.SectionIndex,
+                        checked((ulong)canonical.Value),
+                        canonical.Size,
+                        GetNodeTypeName(alias.Node.GetType()));
+                    _outputInfoBuilder.AddNode(outputNode, alias.Data.DefinedSymbols[0]);
+                    _outputInfoBuilder.AddSymbol(new OutputSymbol(canonical.SectionIndex, checked((ulong)canonical.Value), alias.Name));
+                    if (!alias.AlternateName.IsNull)
+                    {
+                        _outputInfoBuilder.AddSymbol(new OutputSymbol(
+                            canonical.SectionIndex,
+                            checked((ulong)canonical.Value),
+                            alias.AlternateName));
+                    }
+                }
             }
         }
 
@@ -173,7 +296,9 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < funcletKinds.Length; i++)
             {
                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
-                RegisterFunctionSymbol(new Utf8String($"{mangledNodeName}_funclet_{i}"));
+                Utf8String funcletName = new Utf8String($"{mangledNodeName}_funclet_{i}");
+                RegisterFunctionSymbol(funcletName);
+                RegisterTableSlot(funcletName, funcletName);
                 RegisterStubIndexAndSignature(funcletSignature);
             }
         }
@@ -321,6 +446,28 @@ namespace ILCompiler.ObjectWriter
         private protected void RegisterFunctionSymbol(Utf8String name) =>
             _wasmSymbolManager.AddDefinition(name, WasmIndexSpace.Function);
 
+        private void RegisterTableSlot(Utf8String name, Utf8String functionName)
+        {
+            int slot = _tableSlotFunctions.Count;
+            _tableSlotIndices.Add(name, slot);
+            _tableSlotFunctions.Add(functionName);
+        }
+
+        private void RegisterTableSlotAlias(Utf8String alias, Utf8String target) =>
+            _tableSlotIndices.Add(alias, _tableSlotIndices[target]);
+
+        private protected int GetTableSlot(Utf8String name) => _tableSlotIndices[name];
+
+        private protected int[] GetTableSlotFunctionIndices()
+        {
+            int[] functionIndices = new int[_tableSlotFunctions.Count];
+            for (int i = 0; i < functionIndices.Length; i++)
+            {
+                functionIndices[i] = _wasmSymbolManager.GetSymbol(_tableSlotFunctions[i]).Index;
+            }
+            return functionIndices;
+        }
+
         // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
@@ -342,6 +489,7 @@ namespace ILCompiler.ObjectWriter
             codeWriter.EmitData(data);
 
             RegisterFunctionSymbol(name);
+            RegisterTableSlot(name, name);
             RegisterStubIndexAndSignature(body.Signature);
             _wasmStubNames.Add(name);
         }
@@ -388,10 +536,10 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmTypeSection.Name)
                 .SetEntryCount(_wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Type));
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
-                .SetEntryCount(MethodCount);
+                .SetEntryCount(ActualFunctionCount);
 
             Debug.Assert(!_sections.Contains(WasmObjectNodeSection.FunctionSection.Name)
-                || _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
+                || _sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == ActualFunctionCount);
             Debug.Assert(!_sections.Contains(WasmObjectNodeSection.ImportSection.Name)
                 || _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
             Debug.Assert(!_sections.Contains(WasmObjectNodeSection.GlobalSection.Name)
