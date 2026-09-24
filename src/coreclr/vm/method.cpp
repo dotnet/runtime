@@ -1537,11 +1537,13 @@ DWORD MethodDesc::GetAttrs() const
         _ASSERTE(!"If this ever fires, then this method should return HRESULT");
         return 0;
     }
-    if (IsMdAbstract(dwAttributes) && IsCovariantForwardingThunk())
+    if (IsReturnDroppingThunk() || IsCovariantForwardingThunk())
     {
-        // The synthesized forwarding thunk has an implementation even if its metadata method does not.
+        // These thunks are synthesized by the runtime and always have an implementation,
+        // even when the covariant override that needs the thunk is abstract.
         dwAttributes &= ~mdAbstract;
     }
+
     return dwAttributes;
 }
 

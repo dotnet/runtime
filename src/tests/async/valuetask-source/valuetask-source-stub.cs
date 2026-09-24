@@ -9,20 +9,11 @@ using Xunit;
 
 public class ValueTaskSourceAndStubs
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void EntryPoint()
+    [Fact]
+    public static async Task EntryPoint()
     {
-        SynchronizationContext? original = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(new MySyncContext());
-
-        try
-        {
-            new ValueTaskSourceAndStubs().TestAsync(new C()).GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        await new ValueTaskSourceAndStubs().TestAsync(new C());
     }
 
     private async Task TestAsync(IFace i)

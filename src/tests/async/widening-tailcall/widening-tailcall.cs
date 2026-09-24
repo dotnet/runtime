@@ -8,10 +8,10 @@ using Xunit;
 
 public class Async2WideningTailcall
 {
-    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
-    public static void TestEntryPoint()
+    [Fact]
+    public static async Task TestEntryPoint()
     {
-        uint vr0 = (uint)M29().GetAwaiter().GetResult();
+        uint vr0 = (uint)(await M29());
         Assert.Equal(uint.MaxValue, vr0);
     }
 

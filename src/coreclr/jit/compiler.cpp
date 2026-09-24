@@ -1970,11 +1970,14 @@ void Compiler::compSetProcessor()
 #endif // TARGET_XARCH
 }
 
-bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                         bool                   supported,
+                                         bool                   preserveNegativeDependency) const
 {
     const char* isaString = InstructionSetToString(isa);
-    JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    JITDUMP("Notify VM instruction set (%s) %s be supported%s.\n", isaString, supported ? "must" : "must not",
+            preserveNegativeDependency ? " (preserve negative dependency)" : "");
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -4309,14 +4312,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         hashBv::Init(this);
 
         VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
-
-        // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-        if (info.compPublishStubParam)
-        {
-            assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-        }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
@@ -6796,8 +6791,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
-
-    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
     if (opts.IsReversePInvoke())
     {
