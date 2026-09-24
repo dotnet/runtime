@@ -1216,6 +1216,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
 {
     assert(node->GetOperandCount() == 3);
+    assert(varTypeIsFloating(node->GetSimdBaseType()));
 
     bool negated  = false;
     bool subtract = false;
@@ -1297,12 +1298,12 @@ void Lowering::LowerFusedMultiplyOp(GenTreeHWIntrinsic* node)
     {
         GenTree* arg = node->Op(i);
 
-        if (isScalar && arg->OperIs(GT_NEG))
+        if (isScalar && arg->OperIs(GT_NEG) && arg->TypeIs(node->GetSimdBaseType()))
         {
             // For scalar FMA the CreateScalarUnsafe wrapper around each argument has already been
             // removed during lowering (floating-point CreateScalarUnsafe is a no-op), so a negated
-            // scalar argument now appears as a bare GT_NEG. Fold that negation into the FMA variant
-            // and drop the GT_NEG node.
+            // scalar argument now appears as a bare GT_NEG. Only fold it if its type matches the FMA
+            // element type: a reinterpret can otherwise change which bit represents the sign.
 
             GenTree* negOp = arg->gtGetOp1();
             BlockRange().Remove(arg);
