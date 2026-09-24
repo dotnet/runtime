@@ -2554,12 +2554,11 @@ namespace Internal.JitInterface
                 // delegate supplies its generic context through 'this', which the Invoke method's own
                 // instantiation flags do not reflect.
                 WasmLowering.LoweringFlags loweringFlags = WasmLowering.GetLoweringFlags(&pResult->sig);
-                if (!loweringFlags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
-                {
-                    MethodSignature closedStaticSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(targetMethod.Signature);
-                    WasmSignature wasmSignature = WasmLowering.GetSignature(closedStaticSignature, loweringFlags);
-                    AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSignature), "R2R-to-interpreter thunk for closed-static delegate target");
-                }
+                Debug.Assert(!loweringFlags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly));
+
+                MethodSignature closedStaticSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(targetMethod.Signature);
+                WasmSignature wasmSignature = WasmLowering.GetSignature(closedStaticSignature, loweringFlags);
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSignature), "R2R-to-interpreter thunk for closed-static delegate target");
             }
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
