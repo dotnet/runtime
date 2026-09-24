@@ -36,18 +36,20 @@
     <FeaturePortableTimer>true</FeaturePortableTimer>
   </PropertyGroup>
   <PropertyGroup>
+    <FeatureThunkPool>true</FeatureThunkPool>
+  </PropertyGroup>
+  <PropertyGroup>
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
-    <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
-    <FeaturePortableHelpers>true</FeaturePortableHelpers>
+    <FeatureThunkPool>false</FeatureThunkPool>
+    <FeatureComWrappers>false</FeatureComWrappers>
 
     <!-- single thread -->
     <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
     <FeaturePortableThreadPool Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableThreadPool>
-    <ProfilingSupportedBuild>false</ProfilingSupportedBuild>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -216,8 +218,8 @@
     <Compile Include="System\Runtime\GCSettings.NativeAot.cs" />
     <Compile Include="System\Runtime\InteropServices\TypeMapLazyDictionary.NativeAot.cs" />
     <Compile Include="System\Runtime\TypeLoaderExports.cs" />
-    <Compile Include="System\Runtime\ThunkPool.cs" Condition="'$(TargetsWasm)' != 'true'" />
-    <Compile Include="System\Runtime\ThunkPool.NotSupported.cs" Condition="'$(TargetsWasm)' == 'true'" />
+    <Compile Include="System\Runtime\ThunkPool.cs" Condition="'$(FeatureThunkPool)' == 'true'" />
+    <Compile Include="System\Runtime\ThunkPool.NotSupported.cs" Condition="'$(FeatureThunkPool)' != 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComEventsHelper.NativeAot.cs" Condition="'$(FeatureCominterop)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\ComWrappers.NativeAot.cs" Condition="'$(FeatureComWrappers)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\GCHandle.NativeAot.cs" />
@@ -299,8 +301,7 @@
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true' or '$(TargetsWasm)'=='true'">
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" Condition="'$(TargetsWasm)' != 'true'" />
-    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Wasm.cs" Condition="'$(TargetsWasm)' == 'true'" />
+    <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Unix.cs" />
     <Compile Include="System\Environment.NativeAot.Unix.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
@@ -310,12 +311,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs" Condition="'$(TargetsWasm)' != 'true'">
+    <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.MProtect.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWasm)' == 'true'">
-    <Compile Include="System\Diagnostics\StackTrace.NativeAot.Wasm.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">

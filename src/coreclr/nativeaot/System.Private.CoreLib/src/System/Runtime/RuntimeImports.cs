@@ -28,7 +28,7 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadEntryPointAddress")]
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_WASM
         internal static extern unsafe delegate* unmanaged<nint, nint> RhGetThreadEntryPointAddress();
 #else
         internal static extern unsafe delegate* unmanaged<nint, uint> RhGetThreadEntryPointAddress();
@@ -38,7 +38,7 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
         internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_WASM
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]
         internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord);

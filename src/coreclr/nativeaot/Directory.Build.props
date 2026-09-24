@@ -102,8 +102,8 @@
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetsWindows)'=='true'">TARGET_WINDOWS;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(TargetsUnix)'=='true'">TARGET_UNIX;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(TargetsBrowser)'=='true'">TARGET_UNIX;TARGET_BROWSER;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(TargetsWasi)'=='true'">TARGET_UNIX;TARGET_WASI;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TargetsBrowser)'=='true'">TARGET_BROWSER;$(DefineConstants)</DefineConstants>
+    <DefineConstants Condition="'$(TargetsWasi)'=='true'">TARGET_WASI;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
   <!-- Configuration specific properties -->
