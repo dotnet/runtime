@@ -84,6 +84,7 @@ public class WasmInterpreterTransitions
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
+    private delegate S8 ReturnsS8Delegate(int value);
     private delegate int TransformDelegate(int value);
 
     private readonly int _state = C;
@@ -231,12 +232,20 @@ public class WasmInterpreterTransitions
         Assert.Throws<ArgumentException>(() => CreateClosedInstanceDelegate(null!));
         TransformDelegate virtualDelegate = self.CreateVirtualDelegate();
         Assert.Equal(A + C, virtualDelegate(A));
+
+        ReturnsS8Delegate staticRetBufDelegate = CreateStaticRetBufDelegate();
+        S8 staticRetBufResult = staticRetBufDelegate(A);
+        Assert.Equal(A, staticRetBufResult.A);
+        Assert.Equal(B, staticRetBufResult.B);
     }
 
     private static int s_sideEffect;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int StaticDelegateTarget(int value) => value + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S8 StaticRetBufDelegateTarget(int value) => new S8 { A = value, B = B };
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int InstanceDelegateTarget(int value) => value + _state;
@@ -246,6 +255,9 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static TransformDelegate CreateOpenStaticDelegate() => new(StaticDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsS8Delegate CreateStaticRetBufDelegate() => new(StaticRetBufDelegateTarget);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private TransformDelegate CreateClosedInstanceDelegate() => new(InstanceDelegateTarget);

@@ -3926,7 +3926,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 {
                     pDelegateCtor = COMDelegate::GetDelegateCtor(TypeHandle(pDelegateType), pMD, &ctorData);
 
-                    if (pMD->IsStatic() && pMD->HasRetBuffArg())
+                    if (pMD->IsStatic() && !pMD->IsAsyncMethod() && WasmMethodReturnsViaRetBuf(pMD))
                     {
                         pDelegateCtor = NULL;
                     }
@@ -3959,8 +3959,20 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                     ctorData.pArg3 = NULL;
                 }
 
+                if (!PortableEntryPoint::HasNativeEntryPoint(constructor))
+                {
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                        COR_E_EXECUTIONENGINE,
+                        W("A delegate constructor required by ReadyToRun code has no callable entrypoint."));
+                }
+
                 PCODE thunk = LookupPregeneratedThunkByString(ctorData.pArg3 != NULL ? "DC1" : "DC0");
-                _ASSERTE(thunk != (PCODE)NULL);
+                if (thunk == (PCODE)NULL)
+                {
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+                        COR_E_EXECUTIONENGINE,
+                        W("A pregenerated delegate constructor thunk required by ReadyToRun code was not found."));
+                }
 
                 DelegateCtorPortableEntryPoint* pEntry =
                     static_cast<DelegateCtorPortableEntryPoint*>(static_cast<void*>(
