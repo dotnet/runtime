@@ -11163,12 +11163,12 @@ GenTree* Compiler::fgPropagateCommaThrow(GenTree* parent, GenTreeOp* commaThrow,
         var_types parentType = genActualType(parent);
         if (parentType != genActualType(commaThrow))
         {
-            if (!GenTree::CanBashToZeroConst(parentType))
+            if (parentType == TYP_STRUCT)
             {
                 return nullptr;
             }
 
-            commaThrow->gtGetOp2()->BashToZeroConst(parentType);
+            commaThrow->gtOp2 = gtNewZeroConNode(parentType);
             commaThrow->ChangeType(parentType);
         }
 

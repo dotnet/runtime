@@ -2174,17 +2174,6 @@ void GenTree::BashToConst(T value, var_types type /* = TYP_UNDEF */)
 }
 
 //------------------------------------------------------------------------
-// CanBashToZeroConst: Check whether a node can be bashed to a zero constant of "type".
-//
-// Arguments:
-//    type - Type the bashed node will have.
-//
-inline bool GenTree::CanBashToZeroConst(var_types type)
-{
-    return varTypeIsFloating(type) || varTypeIsIntegral(type) || varTypeIsGC(type);
-}
-
-//------------------------------------------------------------------------
 // BashToZeroConst: Bash the node to a constant representing "zero" of "type".
 //
 // Arguments:
@@ -2193,14 +2182,14 @@ inline bool GenTree::CanBashToZeroConst(var_types type)
 //
 inline void GenTree::BashToZeroConst(var_types type)
 {
-    assert(CanBashToZeroConst(type));
-
     if (varTypeIsFloating(type))
     {
         BashToConst(0.0, type);
     }
     else
     {
+        assert(varTypeIsIntegral(type) || varTypeIsGC(type));
+
         // "genActualType" so that we do not create CNS_INT(small type).
         BashToConst(0, genActualType(type));
     }

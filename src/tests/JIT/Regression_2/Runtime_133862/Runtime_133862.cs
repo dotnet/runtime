@@ -18,7 +18,7 @@ public class Runtime_133862
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Index(long value) => checked((int)value);
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static S Load(S[] values) => values[Index(long.MaxValue)];
 
     [Fact]

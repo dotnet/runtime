@@ -2139,7 +2139,6 @@ public:
 
     template <typename T>
     void           BashToConst(T value, var_types type = TYP_UNDEF);
-    static bool    CanBashToZeroConst(var_types type);
     void           BashToZeroConst(var_types type);
     GenTreeLclVar* BashToLclVar(Compiler* comp, unsigned lclNum);
 
