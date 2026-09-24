@@ -54,18 +54,7 @@ extends:
     - stage: Build
       jobs:
 
-      - template: /eng/pipelines/runtime-wasm-perf-jobs.yml@performance
-        parameters:
-          #${{ and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')) }}:
-          #  runProfile: 'non-v8'
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            runProfile: 'v8'
-          runtimeRepoAlias: self
-          performanceRepoAlias: performance
-          jobParameters:
-            ${{ if parameters.onlySanityCheck }}:
-              onlySanityCheck: true
-
+      # Temporarily omit WASM builds and runs while validating the M4 queue.
       - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
         - template: /eng/pipelines/runtime-perf-jobs.yml@performance
           parameters:
