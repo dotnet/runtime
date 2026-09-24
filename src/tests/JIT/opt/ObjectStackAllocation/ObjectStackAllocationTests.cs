@@ -186,6 +186,7 @@ namespace ObjectStackAllocation
             // Stack allocation of boxed structs is now enabled
             CallTestAndVerifyAllocation(BoxSimpleStructAndAddFields, 12, expectedAllocationKind);
 
+            StoreStructWithStackObjectInNullable();
             CallTestAndVerifyAllocation(StoreStructWithStackObjectInNullable, 42, expectedAllocationKind);
 
             // Fixed-sized stack array cases
