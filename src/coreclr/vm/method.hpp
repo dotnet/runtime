@@ -2362,6 +2362,8 @@ public:
     // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
     // Returns true if native code was found and published, false otherwise.
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
+    // Publish a pregenerated delegate constructor body without compiling interpreter byte code.
+    bool TryPublishR2RCodeForDelegateCtor();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 private:

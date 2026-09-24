@@ -84,6 +84,7 @@ public class WasmInterpreterTransitions
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
+    private delegate int TransformDelegate(int value);
 
     private readonly int _state = C;
 
@@ -208,9 +209,52 @@ public class WasmInterpreterTransitions
         Assert.Equal(153, self.InterpretedIntFrom17Int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));           // IiTiiiiiiiiiiiiiiiip
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
+
+        // R2R delegate construction uses a DelegateCtor fixup whose portable-entrypoint thunk
+        // injects the target method and, for open delegates, the shuffle thunk.
+        TransformDelegate openStatic = CreateOpenStaticDelegate();
+        Assert.Equal(A + 1, openStatic(A));
+        Assert.Null(openStatic.Target);
+        Assert.Equal(nameof(StaticDelegateTarget), openStatic.Method.Name);
+
+        TransformDelegate closedInstance = self.CreateClosedInstanceDelegate();
+        Assert.Equal(A + C, closedInstance(A));
+        Assert.Same(self, closedInstance.Target);
+        Assert.Equal(nameof(InstanceDelegateTarget), closedInstance.Method.Name);
+
+        for (int i = 0; i < 100; i++)
+        {
+            Assert.Equal(A + 1, CreateOpenStaticDelegate()(A));
+            Assert.Equal(A + C, self.CreateClosedInstanceDelegate()(A));
+        }
+
+        Assert.Throws<ArgumentException>(() => CreateClosedInstanceDelegate(null!));
+        TransformDelegate virtualDelegate = self.CreateVirtualDelegate();
+        Assert.Equal(A + C, virtualDelegate(A));
     }
 
     private static int s_sideEffect;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int StaticDelegateTarget(int value) => value + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InstanceDelegateTarget(int value) => value + _state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    protected virtual int VirtualDelegateTarget(int value) => value + _state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateOpenStaticDelegate() => new(StaticDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateClosedInstanceDelegate() => new(InstanceDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateClosedInstanceDelegate(WasmInterpreterTransitions target) => new(target.InstanceDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateVirtualDelegate() => new(VirtualDelegateTarget);
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;

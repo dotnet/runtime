@@ -11,6 +11,14 @@ namespace ILCompiler
     {
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
+            if (context.Target.IsWasm)
+            {
+                RootMethod(rootProvider, "System"u8, "Delegate"u8, "CtorClosed");
+                RootMethod(rootProvider, "System"u8, "Delegate"u8, "CtorClosedStatic");
+                RootMethod(rootProvider, "System"u8, "Delegate"u8, "CtorOpen");
+                RootMethod(rootProvider, "System"u8, "Delegate"u8, "DelegateConstruct");
+            }
+
             RootMethod(rootProvider, "System"u8, "Math"u8, "ConvertToInt32Checked");
             RootMethod(rootProvider, "System"u8, "Math"u8, "ConvertToUInt32Checked");
             RootMethod(rootProvider, "System"u8, "Math"u8, "ConvertToInt64Checked");

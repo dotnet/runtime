@@ -1106,6 +1106,8 @@ void DynamicHelperFrame::GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
 #ifdef TARGET_X86
         // x86 is special as always
         pArgument += offsetof(ArgumentRegisters, EDX);
+#elif defined(TARGET_WASM)
+        pArgument += INTERP_STACK_SLOT_SIZE;
 #else
         pArgument += sizeof(TADDR);
 #endif

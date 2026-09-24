@@ -158,6 +158,70 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmDelegateConstructors()
+    {
+        var wasmDelegateConstructors = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmDelegateConstructors),
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmDelegateConstructors),
+            [
+                new(nameof(WasmDelegateConstructors), [new CrossgenAssembly(wasmDelegateConstructors)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+
+            List<string> delegateCtorSignatures = importEntries
+                .Where(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            Assert.Equal(2, delegateCtorSignatures.Count);
+            Assert.Contains(delegateCtorSignatures, signature =>
+                signature.Contains("StaticTarget", StringComparison.Ordinal));
+            Assert.Contains(delegateCtorSignatures, signature =>
+                signature.Contains("InstanceTarget", StringComparison.Ordinal));
+
+            ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
+                importEntries,
+                entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
+
+            ReadOnlySpan<byte> image = reader.Image;
+            int offset = reader.GetOffset(checked((int)injectStringThunks.SignatureRVA));
+            Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
+
+            bool foundClosedThunk = false;
+            bool foundOpenThunk = false;
+            while (image[offset] != 0)
+            {
+                int terminator = image[offset..].IndexOf((byte)0);
+                Assert.True(terminator >= 0, "Unterminated InjectStringThunks key.");
+                ReadOnlySpan<byte> candidateKey = image.Slice(offset, terminator);
+                foundClosedThunk |= candidateKey.SequenceEqual("DC0"u8);
+                foundOpenThunk |= candidateKey.SequenceEqual("DC1"u8);
+                offset += terminator + 1 + sizeof(uint);
+            }
+
+            Assert.True(foundClosedThunk, "Expected the closed delegate-constructor thunk.");
+            Assert.True(foundOpenThunk, "Expected the open delegate-constructor thunk.");
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmVirtualDispatch()
     {
         var wasmVirtualDispatch = new CompiledAssembly
