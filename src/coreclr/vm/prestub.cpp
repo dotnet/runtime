@@ -547,8 +547,10 @@ bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint()
 #ifdef FEATURE_READYTORUN
     // Only probe the ordinary IL methods that DoPrestub would resolve through PrepareInitialCode.
     // Unboxing and instantiating stubs require extra portable-entrypoint state that is initialized
-    // only by their dedicated DoPrestub paths.
-    if (!IsIL() || IsWrapperStub())
+    // only by their dedicated DoPrestub paths. UnmanagedCallersOnly R2R bodies use the unmanaged
+    // Wasm ABI, while managed import thunks always use the managed ABI, so leave them on the
+    // existing fallback path.
+    if (!IsIL() || IsWrapperStub() || HasUnmanagedCallersOnlyAttribute())
     {
         return false;
     }
