@@ -132,33 +132,23 @@ namespace System.Buffers.Text
 
             // This algorithm requires AVX512VBMI support.
             // Vbmi was first introduced in CannonLake and is available from IceLake on.
+            // Two blocks per iteration halve the span bookkeeping per block.
+            if (src.Length >= 48 + 64 && dest.Length >= 64 + 64)
+            {
+                do
+                {
+                    encoder.StoreVector512ToDestination(dest, Avx512EncodeBlock(Vector512.Create(src).AsSByte(), shuffleVecVbmi, vbmiLookup, maskAC, maskBB, shiftAC, shiftBB));
+                    encoder.StoreVector512ToDestination(dest.Slice(64), Avx512EncodeBlock(Vector512.Create(src.Slice(48)).AsSByte(), shuffleVecVbmi, vbmiLookup, maskAC, maskBB, shiftAC, shiftBB));
+
+                    src = src.Slice(96);
+                    dest = dest.Slice(128);
+                }
+                while (src.Length >= 48 + 64 && dest.Length >= 64 + 64);
+            }
+
             while (src.Length >= 64 && dest.Length >= 64)
             {
-                // str = [...|PONM|LKJI|HGFE|DCBA]
-                Vector512<sbyte> str = Vector512.Create(src).AsSByte();
-
-                // Step 1 : Split 48 bytes into 64 bytes with each byte using 6-bits from input
-                // str = [...|KLJK|HIGH|EFDE|BCAB]
-                str = Avx512Vbmi.PermuteVar64x8(str, shuffleVecVbmi);
-
-                // TO-DO- This can be achieved faster with multishift
-                // Consider the first 4 bytes - BCAB
-                // temp1    = [...|0000cccc|cc000000|aaaaaa00|00000000]
-                Vector512<ushort> temp1 = (str.AsUInt16() & maskAC);
-
-                // temp2    = [...|00000000|00cccccc|00000000|00aaaaaa]
-                Vector512<ushort> temp2 = Avx512BW.ShiftRightLogicalVariable(temp1, shiftAC).AsUInt16();
-
-                // temp3    = [...|ccdddddd|00000000|aabbbbbb|cccc0000]
-                Vector512<ushort> temp3 = Avx512BW.ShiftLeftLogicalVariable(str.AsUInt16(), shiftBB).AsUInt16();
-
-                // str      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
-                str = Vector512.ConditionalSelect(maskBB, temp3.AsUInt32(), temp2.AsUInt32()).AsSByte();
-
-                // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
-                str = Avx512Vbmi.PermuteVar64x8(vbmiLookup, str);
-
-                encoder.StoreVector512ToDestination(dest, str.AsByte());
+                encoder.StoreVector512ToDestination(dest, Avx512EncodeBlock(Vector512.Create(src).AsSByte(), shuffleVecVbmi, vbmiLookup, maskAC, maskBB, shiftAC, shiftBB));
 
                 src = src.Slice(48);
                 dest = dest.Slice(64);
@@ -166,6 +156,36 @@ namespace System.Buffers.Text
 
             srcRef = src;
             destRef = dest;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static Vector512<byte> Avx512EncodeBlock(Vector512<sbyte> str, Vector512<sbyte> shuffleVecVbmi, Vector512<sbyte> vbmiLookup,
+            Vector512<ushort> maskAC, Vector512<uint> maskBB, Vector512<ushort> shiftAC, Vector512<ushort> shiftBB)
+        {
+            // str = [...|PONM|LKJI|HGFE|DCBA]
+
+            // Step 1 : Split 48 bytes into 64 bytes with each byte using 6-bits from input
+            // str = [...|KLJK|HIGH|EFDE|BCAB]
+            str = Avx512Vbmi.PermuteVar64x8(str, shuffleVecVbmi);
+
+            // TO-DO- This can be achieved faster with multishift
+            // Consider the first 4 bytes - BCAB
+            // temp1    = [...|0000cccc|cc000000|aaaaaa00|00000000]
+            Vector512<ushort> temp1 = (str.AsUInt16() & maskAC);
+
+            // temp2    = [...|00000000|00cccccc|00000000|00aaaaaa]
+            Vector512<ushort> temp2 = Avx512BW.ShiftRightLogicalVariable(temp1, shiftAC).AsUInt16();
+
+            // temp3    = [...|ccdddddd|00000000|aabbbbbb|cccc0000]
+            Vector512<ushort> temp3 = Avx512BW.ShiftLeftLogicalVariable(str.AsUInt16(), shiftBB).AsUInt16();
+
+            // str      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
+            str = Vector512.ConditionalSelect(maskBB, temp3.AsUInt32(), temp2.AsUInt32()).AsSByte();
+
+            // Step 2: Now we have the indices calculated. Next step is to use these indices to translate.
+            return Avx512Vbmi.PermuteVar64x8(vbmiLookup, str).AsByte();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -616,10 +636,40 @@ namespace System.Buffers.Text
                 return OperationStatus.Done;
             }
 
-            // Too small for the vectorized paths, encode the blocks directly.
-            for (int srcIndex = sourceIndex - 3, destIndex = (int)((uint)sourceIndex / 3) * 4 - 4; srcIndex >= 0; srcIndex -= 3, destIndex -= 4)
+            // Too small for the vectorized paths. Read all (at most 15) source bytes into registers first, then encode forward.
+            if (sourceIndex != 0)
             {
-                BinaryPrimitives.WriteUInt32LittleEndian(buffer.Slice(destIndex, 4), Encode(buffer.Slice(srcIndex, 3), encodingMap));
+                ulong lo;
+                ulong hi = 0;
+                if (buffer.Length >= 16)
+                {
+                    lo = BinaryPrimitives.ReadUInt64LittleEndian(buffer);
+                    hi = BinaryPrimitives.ReadUInt64LittleEndian(buffer.Slice(8));
+                }
+                else if (buffer.Length >= 8)
+                {
+                    lo = BinaryPrimitives.ReadUInt64LittleEndian(buffer);
+                    if (buffer.Length >= 12)
+                    {
+                        hi = BinaryPrimitives.ReadUInt32LittleEndian(buffer.Slice(8));
+                    }
+                }
+                else
+                {
+                    // sourceIndex is 3 here, and the encoded output needs at least 4 bytes.
+                    lo = BinaryPrimitives.ReadUInt32LittleEndian(buffer);
+                }
+
+                Span<byte> dest = buffer.Slice(0, (int)((uint)sourceIndex / 3) * 4);
+                while (dest.Length >= 4)
+                {
+                    // The low 3 bytes of 'lo' are the next block, big-endian order gives the 24-bit value.
+                    uint i = BinaryPrimitives.ReverseEndianness((uint)lo) >> 8;
+                    BinaryPrimitives.WriteUInt32LittleEndian(dest, EncodeBlock(i, encodingMap));
+                    lo = (lo >> 24) | (hi << 40);
+                    hi >>= 24;
+                    dest = dest.Slice(4);
+                }
             }
 
             return OperationStatus.Done;
@@ -649,8 +699,22 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint Encode(ReadOnlySpan<byte> threeBytes, ReadOnlySpan<byte> encodingMap)
         {
-            uint i = ((uint)threeBytes[0] << 16) | ((uint)threeBytes[1] << 8) | threeBytes[2];
+            uint b0 = threeBytes[0];
+            uint b1 = threeBytes[1];
+            uint b2 = threeBytes[2];
 
+            uint i0 = encodingMap[(int)(b0 >> 2)];
+            uint i1 = encodingMap[(int)((b0 << 4) | (b1 >> 4)) & 0x3F];
+            uint i2 = encodingMap[(int)((b1 << 2) | (b2 >> 6)) & 0x3F];
+            uint i3 = encodingMap[(int)b2 & 0x3F];
+
+            return i0 | (i1 << 8) | (i2 << 16) | (i3 << 24);
+        }
+
+        /// <summary>Encodes a 24-bit block into four Base64 characters packed as a little-endian uint.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint EncodeBlock(uint i, ReadOnlySpan<byte> encodingMap)
+        {
             uint i0 = encodingMap[(int)(i >> 18) & 0x3F];
             uint i1 = encodingMap[(int)(i >> 12) & 0x3F];
             uint i2 = encodingMap[(int)(i >> 6) & 0x3F];
@@ -845,12 +909,14 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<ushort> destination, ReadOnlySpan<byte> encodingMap)
             {
-                uint i = ((uint)threeBytes[0] << 16) | ((uint)threeBytes[1] << 8) | threeBytes[2];
+                uint b0 = threeBytes[0];
+                uint b1 = threeBytes[1];
+                uint b2 = threeBytes[2];
 
-                destination[0] = encodingMap[(int)(i >> 18) & 0x3F];
-                destination[1] = encodingMap[(int)(i >> 12) & 0x3F];
-                destination[2] = encodingMap[(int)(i >> 6) & 0x3F];
-                destination[3] = encodingMap[(int)i & 0x3F];
+                destination[0] = encodingMap[(int)(b0 >> 2)];
+                destination[1] = encodingMap[(int)((b0 << 4) | (b1 >> 4)) & 0x3F];
+                destination[2] = encodingMap[(int)((b1 << 2) | (b2 >> 6)) & 0x3F];
+                destination[3] = encodingMap[(int)b2 & 0x3F];
             }
         }
     }

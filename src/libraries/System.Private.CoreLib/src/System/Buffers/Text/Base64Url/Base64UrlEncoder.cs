@@ -47,6 +47,7 @@ namespace System.Buffers.Text
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="bytesLength"/> is less than 0 or greater than 1610612733.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetEncodedLength(int bytesLength)
         {
             ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength);

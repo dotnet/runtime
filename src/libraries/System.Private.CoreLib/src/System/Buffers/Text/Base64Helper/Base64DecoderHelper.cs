@@ -345,6 +345,10 @@ namespace System.Buffers.Text
 
             ReadOnlySpan<sbyte> decodingMap = decoder.DecodingMap;
 
+            // The remaining source and destination, dest always trails src.
+            ReadOnlySpan<byte> src = buffer;
+            Span<byte> dest = buffer;
+
 #if NET
             // Decode in place using the same vectorized helpers as DecodeFrom. This is safe because the
             // write cursor (dest) always trails the read cursor (src) by 25%, so each vector store -- including
@@ -352,9 +356,6 @@ namespace System.Buffers.Text
             // that hasn't been read yet.
             if (bufferLength >= 24)
             {
-                ReadOnlySpan<byte> src = buffer;
-                Span<byte> dest = buffer;
-
                 if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && src.Length >= 88)
                 {
                     Avx512Decode(decoder, ref src, ref dest);
@@ -374,39 +375,34 @@ namespace System.Buffers.Text
                 {
                     Vector128Decode(decoder, ref src, ref dest);
                 }
-
-                sourceIndex = bufferLength - src.Length;
-                destIndex = bufferLength - dest.Length;
             }
 #endif
 
-            if (bufferLength - sourceIndex > 4)
+            if (src.Length > 4)
             {
-                // Decode all but the last (up to 4 bytes) block, sourceIndex is a multiple of 4.
-                int blockLength = (bufferLength - sourceIndex - 1) & ~0x3;
-                ReadOnlySpan<byte> src = buffer.Slice(sourceIndex, blockLength);
-                Span<byte> dest = buffer.Slice(destIndex);
+                // Decode all but the last (up to 4 bytes) block, the source consumed so far is a multiple of 4.
+                int blockLength = (src.Length - 1) & ~0x3;
+                ReadOnlySpan<byte> blocks = src.Slice(0, blockLength);
 
                 // dest always trails src, the dest check is only for bounds check elimination.
-                while (src.Length >= 4 && dest.Length >= 3)
+                while (blocks.Length >= 4 && dest.Length >= 3)
                 {
-                    int result = decoder.DecodeFourElements(src, decodingMap);
+                    int result = decoder.DecodeFourElements(blocks, decodingMap);
                     if (result < 0)
                     {
                         break;
                     }
 
                     WriteThreeLowOrderBytes(dest, result);
-                    src = src.Slice(4);
+                    blocks = blocks.Slice(4);
                     dest = dest.Slice(3);
                 }
 
-                sourceIndex += blockLength - src.Length;
-                destIndex = bufferLength - dest.Length;
+                src = src.Slice(blockLength - blocks.Length);
 
-                if (!src.IsEmpty)
+                if (!blocks.IsEmpty)
                 {
-                    goto InvalidExit;
+                    goto InvalidAtCurrentPosition;
                 }
             }
 
@@ -415,28 +411,28 @@ namespace System.Buffers.Text
             uint t2;
             uint t3;
 
-            switch (bufferLength - sourceIndex)
+            switch (src.Length)
             {
                 case 2:
-                    t0 = buffer[bufferLength - 2];
-                    t1 = buffer[bufferLength - 1];
+                    t0 = src[0];
+                    t1 = src[1];
                     t2 = EncodingPad;
                     t3 = EncodingPad;
                     break;
                 case 3:
-                    t0 = buffer[bufferLength - 3];
-                    t1 = buffer[bufferLength - 2];
-                    t2 = buffer[bufferLength - 1];
+                    t0 = src[0];
+                    t1 = src[1];
+                    t2 = src[2];
                     t3 = EncodingPad;
                     break;
                 case 4:
-                    t0 = buffer[bufferLength - 4];
-                    t1 = buffer[bufferLength - 3];
-                    t2 = buffer[bufferLength - 2];
-                    t3 = buffer[bufferLength - 1];
+                    t0 = src[0];
+                    t1 = src[1];
+                    t2 = src[2];
+                    t3 = src[3];
                     break;
                 default:
-                    goto InvalidExit;
+                    goto InvalidAtCurrentPosition;
             }
 
             int i0 = decodingMap[(byte)t0];
@@ -447,6 +443,7 @@ namespace System.Buffers.Text
 
             i0 |= i1;
 
+            int written;
             if (!decoder.IsValidPadding(t3))
             {
                 int i2 = decodingMap[(byte)t2];
@@ -459,11 +456,11 @@ namespace System.Buffers.Text
 
                 if (i0 < 0)
                 {
-                    goto InvalidExit;
+                    goto InvalidAtCurrentPosition;
                 }
 
-                WriteThreeLowOrderBytes(buffer.Slice(destIndex, 3), i0);
-                destIndex += 3;
+                WriteThreeLowOrderBytes(dest, i0);
+                written = 3;
             }
             else if (!decoder.IsValidPadding(t2))
             {
@@ -475,27 +472,30 @@ namespace System.Buffers.Text
 
                 if ((i0 & 0x800000c0) != 0) // if negative or 2 unused bits are not 0.
                 {
-                    goto InvalidExit;
+                    goto InvalidAtCurrentPosition;
                 }
 
-                buffer[destIndex + 1] = (byte)(i0 >> 8);
-                buffer[destIndex] = (byte)(i0 >> 16);
-                destIndex += 2;
+                dest[1] = (byte)(i0 >> 8);
+                dest[0] = (byte)(i0 >> 16);
+                written = 2;
             }
             else
             {
                 if ((i0 & 0x8000F000) != 0) // if negative or 4 unused bits are not 0.
                 {
-                    goto InvalidExit;
+                    goto InvalidAtCurrentPosition;
                 }
 
-                buffer[destIndex] = (byte)(i0 >> 16);
-                destIndex += 1;
+                dest[0] = (byte)(i0 >> 16);
+                written = 1;
             }
 
-            bytesWritten = destIndex;
+            bytesWritten = bufferLength - dest.Length + written;
             return OperationStatus.Done;
 
+        InvalidAtCurrentPosition:
+            sourceIndex = bufferLength - src.Length;
+            destIndex = bufferLength - dest.Length;
         InvalidExit:
             bytesWritten = destIndex;
             return ignoreWhiteSpace ?
@@ -859,40 +859,77 @@ namespace System.Buffers.Text
 
             // This algorithm requires AVX512VBMI support.
             // Vbmi was first introduced in CannonLake and is available from IceLake on.
+            // Two blocks per iteration halve the span bookkeeping per block.
+            while (src.Length >= 64 + 88 && dest.Length >= 48 + 64)
+            {
+                if (!Avx512DecodeBlock(decoder, src, dest, vbmiLookup0, vbmiLookup1, vbmiPackedLanesControl, mergeConstant0, mergeConstant1))
+                {
+                    goto Done;
+                }
+
+                if (!Avx512DecodeBlock(decoder, src.Slice(64), dest.Slice(48), vbmiLookup0, vbmiLookup1, vbmiPackedLanesControl, mergeConstant0, mergeConstant1))
+                {
+                    src = src.Slice(64);
+                    dest = dest.Slice(48);
+                    goto Done;
+                }
+
+                src = src.Slice(128);
+                dest = dest.Slice(96);
+            }
+
             while (src.Length >= 88 && dest.Length >= 64)
             {
-                if (!decoder.TryLoadVector512(src, out Vector512<sbyte> str))
+                if (!Avx512DecodeBlock(decoder, src, dest, vbmiLookup0, vbmiLookup1, vbmiPackedLanesControl, mergeConstant0, mergeConstant1))
                 {
                     break;
                 }
 
-                // Step 1: Translate encoded Base64 input to their original indices
-                // This step also checks for invalid inputs and exits.
-                // After this, we have indices which are verified to have upper 2 bits set to 0 in each byte.
-                // origIndex      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
-                Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
-                Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
-                if (errorVec.ExtractMostSignificantBits() != 0)
-                {
-                    break;
-                }
-
-                // Step 2: Now we need to reshuffle bits to remove the 0 bits.
-                // multiAdd1: [...|0000cccc|ccdddddd|0000aaaa|aabbbbbb]
-                Vector512<short> multiAdd1 = Avx512BW.MultiplyAddAdjacent(origIndex.AsByte(), mergeConstant0);
-                // multiAdd1: [...|00000000|aaaaaabb|bbbbcccc|ccdddddd]
-                Vector512<int> multiAdd2 = Avx512BW.MultiplyAddAdjacent(multiAdd1, mergeConstant1);
-
-                // Step 3: Pack 48 bytes
-                str = Avx512Vbmi.PermuteVar64x8(multiAdd2.AsByte(), vbmiPackedLanesControl).AsSByte();
-
-                str.AsByte().CopyTo(dest);
                 src = src.Slice(64);
                 dest = dest.Slice(48);
             }
 
+        Done:
             srcRef = src;
             destRef = dest;
+        }
+
+        /// <summary>Decodes 64 elements of <paramref name="src"/> into 48 bytes (plus 16 bytes of overshoot) of <paramref name="dest"/>.</summary>
+        /// <returns><see langword="false"/> without writing anything if the block contains invalid input.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(Avx512Vbmi))]
+        private static bool Avx512DecodeBlock<TBase64Decoder, T>(TBase64Decoder decoder, ReadOnlySpan<T> src, Span<byte> dest,
+            Vector512<sbyte> vbmiLookup0, Vector512<sbyte> vbmiLookup1, Vector512<byte> vbmiPackedLanesControl,
+            Vector512<sbyte> mergeConstant0, Vector512<short> mergeConstant1)
+            where TBase64Decoder : IBase64Decoder<T>
+            where T : unmanaged
+        {
+            if (!decoder.TryLoadVector512(src, out Vector512<sbyte> str))
+            {
+                return false;
+            }
+
+            // Step 1: Translate encoded Base64 input to their original indices
+            // This step also checks for invalid inputs and exits.
+            // After this, we have indices which are verified to have upper 2 bits set to 0 in each byte.
+            // origIndex      = [...|00dddddd|00cccccc|00bbbbbb|00aaaaaa]
+            Vector512<sbyte> origIndex = Avx512Vbmi.PermuteVar64x8x2(vbmiLookup0, str, vbmiLookup1);
+            Vector512<sbyte> errorVec = (origIndex.AsInt32() | str.AsInt32()).AsSByte();
+            if (errorVec.ExtractMostSignificantBits() != 0)
+            {
+                return false;
+            }
+
+            // Step 2: Now we need to reshuffle bits to remove the 0 bits.
+            // multiAdd1: [...|0000cccc|ccdddddd|0000aaaa|aabbbbbb]
+            Vector512<short> multiAdd1 = Avx512BW.MultiplyAddAdjacent(origIndex.AsByte(), mergeConstant0);
+            // multiAdd1: [...|00000000|aaaaaabb|bbbbcccc|ccdddddd]
+            Vector512<int> multiAdd2 = Avx512BW.MultiplyAddAdjacent(multiAdd1, mergeConstant1);
+
+            // Step 3: Pack 48 bytes
+            Avx512Vbmi.PermuteVar64x8(multiAdd2.AsByte(), vbmiPackedLanesControl).CopyTo(dest);
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1379,9 +1416,10 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteThreeLowOrderBytes(Span<byte> destination, int value)
         {
-            destination[0] = (byte)(value >> 16);
-            destination[1] = (byte)(value >> 8);
+            // Highest index first, so that a single bounds check covers all three writes.
             destination[2] = (byte)value;
+            destination[1] = (byte)(value >> 8);
+            destination[0] = (byte)(value >> 16);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

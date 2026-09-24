@@ -26,6 +26,7 @@ namespace System.Buffers.Text
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">The specified <paramref name="base64Length"/> is less than 0.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxDecodedLength(int base64Length)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(base64Length);
