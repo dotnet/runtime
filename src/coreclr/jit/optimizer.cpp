@@ -3628,6 +3628,23 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, FlowGr
     // Copy any loop memory dependence.
     optCopyLoopMemoryDependence(origExpr, hoistExpr);
 
+    // A load that was non-faulting only because an earlier dereference of its object precedes it in the loop
+    // is an ordinary possibly-faulting load in the preheader, where nothing has null-checked the object yet.
+    // Make the copy say so, so that it does not depend on that dereference and later phases order it like
+    // any other faulting load. The hoisting rules made sure this cannot change behavior: the copy faults only
+    // if the object is null, in which case the loop's first observable event was already that null reference.
+    // The copy keeps GTF_ORDER_SIDEEFF: if the preheader is inside an enclosing loop, that loop must hoist it
+    // under the same rule (HoistVisitor::CanHoistOrderingLoad) rather than as an ordinary faulting load. Its
+    // value number gets the null reference exception the original did not have, so that CSE sees the copy for
+    // what it is.
+    if (optIsOrderConstrainedFieldLoad(origExpr))
+    {
+        hoistExpr->gtFlags &= ~GTF_IND_NONFAULTING;
+        gtUpdateNodeSideEffects(hoistExpr);
+        assert((hoistExpr->gtFlags & (GTF_EXCEPT | GTF_ORDER_SIDEEFF)) == (GTF_EXCEPT | GTF_ORDER_SIDEEFF));
+        fgValueNumberAddExceptionSetForIndirection(hoistExpr, hoistExpr->AsIndir()->Addr());
+    }
+
     // At this point we should have a cloned expression
     hoistExpr->gtFlags |= GTF_MAKE_CSE;
     assert(hoistExpr != origExpr);
@@ -4045,6 +4062,115 @@ bool Compiler::optHoistThisLoop(FlowGraphNaturalLoop* loop, LoopHoistContext* ho
     return numHoisted > 0;
 }
 
+//------------------------------------------------------------------------
+// optIsObjectFieldAddress: is "addr" an object reference local, or such a local plus the offset of an
+//    instance field within the null page?
+//
+// Arguments:
+//    addr        - the address tree
+//    pBaseLclNum - [out] the object local
+//
+// Return Value:
+//    true if a load from "addr" throws NullReferenceException exactly when the object is null, and cannot
+//    fault otherwise. Byrefs and native pointers do not qualify ("not null" does not make base + offset
+//    addressable), nor do addresses carrying effects of their own (a byref formed after a bounds check or
+//    an unbox null check) or offsets beyond the null page (morph keeps an explicit NULLCHECK for those).
+//
+static bool optIsObjectFieldAddress(Compiler* comp, GenTree* addr, unsigned* pBaseLclNum)
+{
+    if ((addr->gtFlags & GTF_ALL_EFFECT) != GTF_EMPTY)
+    {
+        return false;
+    }
+
+    if (addr->OperIs(GT_ADD))
+    {
+        GenTree* const offset = addr->gtGetOp2();
+        if (!offset->IsCnsIntOrI() || offset->IsIconHandle() || (offset->AsIntCon()->IconValue() < 0) ||
+            comp->fgIsBigOffset((size_t)offset->AsIntCon()->IconValue()))
+        {
+            return false;
+        }
+
+        FieldSeq* const fieldSeq = offset->AsIntCon()->GetFieldSeq();
+        if ((fieldSeq == nullptr) || (fieldSeq->GetKind() != FieldSeq::FieldKind::Instance))
+        {
+            return false;
+        }
+
+        addr = addr->gtGetOp1();
+    }
+
+    if (!addr->OperIs(GT_LCL_VAR) || !addr->TypeIs(TYP_REF))
+    {
+        return false;
+    }
+
+    *pBaseLclNum = addr->AsLclVar()->GetLclNum();
+    return true;
+}
+
+//------------------------------------------------------------------------
+// optIsOrderConstrainedFieldLoad: is "tree" a field load whose GTF_ORDER_SIDEEFF stands for "may only be
+//    moved to where its object is known to be null-checked first"?
+//
+// Arguments:
+//    tree        - the tree to check
+//    pBaseLclNum - [out, optional] the object local the load dereferences
+//
+// Return Value:
+//    true if "tree" is a GT_IND from an object field address (see optIsObjectFieldAddress) marked
+//    GTF_ORDER_SIDEEFF and either GTF_IND_NONFAULTING (not GTF_EXCEPT) or GTF_EXCEPT (not GTF_IND_NONFAULTING).
+//
+// Notes:
+//    Local assertion prop produces the first shape when an earlier dereference of the same object proved
+//    the load cannot fault; the order side effect keeps it after that dereference. Loop hoisting produces
+//    the second: the copy of such a load placed in a preheader is a possibly-faulting load of the object,
+//    and keeps the order side effect so that an enclosing loop hoists it under the same rule (see
+//    optPerformHoistExpr and HoistVisitor::CanHoistOrderingLoad).
+//
+bool Compiler::optIsOrderConstrainedFieldLoad(GenTree* tree, unsigned* pBaseLclNum)
+{
+    if (!tree->OperIs(GT_IND) || ((tree->gtFlags & (GTF_ORDER_SIDEEFF | GTF_IND_VOLATILE)) != GTF_ORDER_SIDEEFF))
+    {
+        return false;
+    }
+
+    const bool nonFaulting = (tree->gtFlags & GTF_IND_NONFAULTING) != 0;
+    const bool mayFault    = (tree->gtFlags & GTF_EXCEPT) != 0;
+    if (nonFaulting == mayFault)
+    {
+        return false;
+    }
+
+    unsigned baseLclNum;
+    if (!optIsObjectFieldAddress(this, tree->AsIndir()->Addr(), &baseLclNum))
+    {
+        return false;
+    }
+
+    if (pBaseLclNum != nullptr)
+    {
+        *pBaseLclNum = baseLclNum;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// optIsNullCheckOfLocal: is "tree" a possibly-faulting dereference of an object field address, i.e. a tree
+//    whose only possible exception is a NullReferenceException for that object?
+//
+// Arguments:
+//    tree        - the tree to check
+//    pBaseLclNum - [out] the object local
+//
+bool Compiler::optIsNullCheckOfLocal(GenTree* tree, unsigned* pBaseLclNum)
+{
+    return tree->OperIsIndirOrArrMetaData() && ((tree->gtFlags & GTF_EXCEPT) != 0) &&
+           (tree->OperExceptions(this) == ExceptionSetFlags::NullReferenceException) &&
+           optIsObjectFieldAddress(this, tree->GetIndirOrArrMetaDataAddr(), pBaseLclNum);
+}
+
 bool Compiler::optIsProfitableToHoistTree(GenTree*              tree,
                                           FlowGraphNaturalLoop* loop,
                                           LoopHoistContext*     hoistCtxt,
@@ -4394,6 +4520,86 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
         BitVecTraits*         m_traits;
         BitVec                m_defExec;
 
+        // While hoisting from the header: whether a tree that could throw has been visited, and if every such
+        // tree so far was a null check of the same object local, that local (else BAD_VAR_NUM).
+        bool     m_seenMayThrow;
+        unsigned m_nullCheckedLclNum;
+
+        //------------------------------------------------------------------------
+        // CanHoistOrderingLoad: may an order-constrained field load be hoisted from here?
+        //
+        // Arguments:
+        //    tree - a tree for which optIsOrderConstrainedFieldLoad returned true
+        //
+        // Notes:
+        //    The copy in the preheader is a possibly-faulting load of the object (see optPerformHoistExpr): it
+        //    throws NullReferenceException exactly when the object is null. That must not move an exception
+        //    ahead of anything observable, so, as for a GTF_EXCEPT load, no side effect may precede the load in
+        //    the header; additionally nothing that could throw may precede it, other than null checks of the
+        //    same object. Then, when the object is null, the loop's first observable event was already that
+        //    NullReferenceException, and when it is not, the copy cannot fault.
+        //
+        bool CanHoistOrderingLoad(GenTree* tree)
+        {
+            if (!m_canHoistSideEffects)
+            {
+                return false;
+            }
+            if (!m_seenMayThrow)
+            {
+                return true;
+            }
+
+            unsigned baseLclNum;
+            return m_compiler->optIsOrderConstrainedFieldLoad(tree, &baseLclNum) && (baseLclNum == m_nullCheckedLclNum);
+        }
+
+        //------------------------------------------------------------------------
+        // IsHandlerVisibleLocalStore: can a store to this local be observed if a later tree throws?
+        //
+        // Arguments:
+        //    store - the local store
+        //
+        // Return Value:
+        //    true if the local is address exposed or live into a handler (conservatively, for untracked locals,
+        //    if the method has any handler at all). Mirrors AliasSet::NodeInfo::WritesAnyLocation.
+        //
+        bool IsHandlerVisibleLocalStore(GenTreeLclVarCommon* store)
+        {
+            LclVarDsc* const varDsc = m_compiler->lvaGetDesc(store);
+            if (varDsc->IsAddressExposed())
+            {
+                return true;
+            }
+            if (varDsc->lvTracked)
+            {
+                return varDsc->IsLiveInOutOfHandler();
+            }
+            return m_compiler->compHndBBtabCount > 0;
+        }
+
+        //------------------------------------------------------------------------
+        // RecordMayThrow: note that "tree", which could throw, has been visited in the header.
+        //
+        void RecordMayThrow(GenTree* tree)
+        {
+            unsigned baseLclNum;
+            if (!m_compiler->optIsNullCheckOfLocal(tree, &baseLclNum))
+            {
+                baseLclNum = BAD_VAR_NUM;
+            }
+
+            if (!m_seenMayThrow)
+            {
+                m_nullCheckedLclNum = baseLclNum;
+                m_seenMayThrow      = true;
+            }
+            else if (m_nullCheckedLclNum != baseLclNum)
+            {
+                m_nullCheckedLclNum = BAD_VAR_NUM;
+            }
+        }
+
         bool IsNodeHoistable(GenTree* node)
         {
             // TODO-CQ: This is a more restrictive version of a check that optIsCSEcandidate already does - it allows
@@ -4413,12 +4619,16 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             }
             else if ((node->gtFlags & GTF_ORDER_SIDEEFF) != 0)
             {
-                // If a node has an order side effect, we can't hoist it at all: we don't know what the order
-                // dependence actually is. For example, assertion prop might have determined a node can't throw
-                // an exception, and eliminated the GTF_EXCEPT flag, replacing it with GTF_ORDER_SIDEEFF. We
-                // can't hoist because we might then hoist above the expression that led assertion prop to make
-                // that decision. This can happen in JitOptRepeat, where hoisting can follow assertion prop.
-                return false;
+                // If a node has an order side effect, we can't hoist it: we don't know what the order dependence
+                // actually is. The one exception is a field load whose order dependence is on its object having
+                // been null-checked first: a load assertion prop marked non-faulting because an earlier
+                // dereference of the same object precedes it (the common shape of an invariant field load in a
+                // loop), or the copy of one hoisted into an enclosing loop. It is hoisted as a possibly-faulting
+                // load, subject to the rule in CanHoistOrderingLoad; see optIsOrderConstrainedFieldLoad.
+                if (!m_compiler->optIsOrderConstrainedFieldLoad(node))
+                {
+                    return false;
+                }
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
@@ -4528,6 +4738,8 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             , m_currentBlock(nullptr)
             , m_traits(traits)
             , m_defExec(defExec)
+            , m_seenMayThrow(false)
+            , m_nullCheckedLclNum(BAD_VAR_NUM)
         {
         }
 
@@ -4761,6 +4973,14 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                             treeIsHoistable = false;
                         }
                     }
+
+                    // An order-constrained field load (the only GTF_ORDER_SIDEEFF node IsNodeHoistable admits) is
+                    // a possibly-faulting load once hoisted; see CanHoistOrderingLoad.
+                    if (treeIsHoistable && ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0) && !CanHoistOrderingLoad(tree))
+                    {
+                        INDEBUG(failReason = "side effect ordering constraint";)
+                        treeIsHoistable = false;
+                    }
                 }
 
                 // Is the value of the whole tree loop invariant?
@@ -4781,6 +5001,11 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
             //
             if (m_canHoistSideEffects)
             {
+                if (tree->OperMayThrow(m_compiler))
+                {
+                    RecordMayThrow(tree);
+                }
+
                 // Is the value of the whole tree loop invariant?
                 if (!treeIsInvariant)
                 {
@@ -4840,10 +5065,12 @@ void Compiler::optHoistLoopBlocks(FlowGraphNaturalLoop* loop,
                 else if (tree->OperRequiresAsgFlag())
                 {
                     // Assume all stores except "STORE_LCL_VAR<non-addr-exposed lcl>(...)" are globally visible.
+                    // A store to a local that is live into a handler is visible too: the handler observes it if
+                    // a later tree throws, so nothing that can throw may be hoisted above it.
                     bool isGloballyVisibleStore;
                     if (tree->OperIsLocalStore())
                     {
-                        isGloballyVisibleStore = m_compiler->lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed();
+                        isGloballyVisibleStore = IsHandlerVisibleLocalStore(tree->AsLclVarCommon());
                     }
                     else
                     {
