@@ -197,7 +197,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         }
         else if (string.IsNullOrEmpty(buildOptions.NonDefaultFrameworkDir))
         {
-            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild);
+            AssertBuildBundle(config, buildOptions, isUsingWorkloads, isNativeBuild, runtimePackDir);
         }
         else
         {
@@ -219,7 +219,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
     ///   obj/{config}/{tfm}/webcil/                   → assembly .wasm files (webcil-converted)
     ///   obj/{config}/{tfm}/wasm/for-build/           → native assets only when native build (AOT/relink)
     /// </summary>
-    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild)
+    private void AssertBuildBundle(Configuration config, MSBuildOptions buildOptions, bool isUsingWorkloads, bool? isNativeBuild, string? runtimePackDir)
     {
         EnsureProjectDirIsSet();
 
@@ -303,7 +303,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         // --- Native file comparison against runtime pack ---
         if (isUsingWorkloads)
         {
-            string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(tfm, buildOptions.RuntimeType);
+            string runtimeNativeDir = Path.Combine(
+                runtimePackDir ?? BuildTestBase.s_buildEnv.GetRuntimePackDir(tfm, buildOptions.RuntimeType),
+                "runtimes",
+                BuildEnvironment.DefaultRuntimeIdentifier,
+                "native");
             foreach (string nativeFilename in nativeFiles)
             {
                 string actualPath = Path.Combine(nativeDir, nativeFilename);

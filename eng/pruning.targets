@@ -1,0 +1,19 @@
+<Project>
+  <!-- Temporarily use .NET 11 pruning data for .NET 12. -->
+  <PropertyGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net12.0'))">
+    <TargetFrameworkVersionForPruningData>11.0</TargetFrameworkVersionForPruningData>
+  </PropertyGroup>
+  <Target Name="UseNet11PruningData"
+          AfterTargets="AddPrunePackageReferences"
+          Condition="('$(RestoreEnablePackagePruning)' == 'true' OR '$(RestoreEnablePackagePruning)' == '') and '$(TargetFrameworkVersionForPruningData)' != ''">
+    <GetPackagesToPrune TargetFrameworkIdentifier="$(TargetFrameworkIdentifier)"
+                        TargetFrameworkVersion="$(TargetFrameworkVersionForPruningData)"
+                        FrameworkReferences="@(FrameworkReference)"
+                        TargetingPacks="@(TargetingPack)"
+                        TargetingPackRoots="$(PrunePackageTargetingPackRoots)"
+                        PrunePackageDataRoot="$(PrunePackageDataRoot)"
+                        AllowMissingPrunePackageData="$(AllowMissingPrunePackageData)">
+      <Output TaskParameter="PackagesToPrune" ItemName="PrunePackageReference" />
+    </GetPackagesToPrune>
+  </Target>
+</Project>

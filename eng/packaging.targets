@@ -41,6 +41,7 @@
   <ItemGroup>
     <PackageValidationBaselineFrameworkToIgnore Include="net8.0" />
     <PackageValidationBaselineFrameworkToIgnore Include="net9.0" />
+    <PackageValidationBaselineFrameworkToIgnore Include="net10.0" />
   </ItemGroup>
 
   <!-- Flow these properties to consuming projects. Used by i.e. Microsoft.Internal.Runtime.WindowsDesktop.Transport. -->
