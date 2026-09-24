@@ -39,6 +39,9 @@ namespace System
         // SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId APIs are experimental.
         internal const string SocketsHttpHandlerExperimentalDiagId = "SYSLIB5008";
 
+        // Types for HPKE (Hybrid Public Key Encryption) are experimental.
+        internal const string HpkeExperimentalDiagId = "SYSLIB5009";
+
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.
     }

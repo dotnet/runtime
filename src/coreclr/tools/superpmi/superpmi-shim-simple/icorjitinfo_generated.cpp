@@ -1163,9 +1163,10 @@ bool interceptor_ICJI::convertPInvokeCalliToCall(
 
 bool interceptor_ICJI::notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled)
+          bool supportEnabled,
+          bool preserveNegativeDependency)
 {
-    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled);
+    return original_ICorJitInfo->notifyInstructionSetUsage(instructionSet, supportEnabled, preserveNegativeDependency);
 }
 
 void interceptor_ICJI::updateEntryPointForTailCall(

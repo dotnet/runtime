@@ -1970,11 +1970,14 @@ void Compiler::compSetProcessor()
 #endif // TARGET_XARCH
 }
 
-bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                         bool                   supported,
+                                         bool                   preserveNegativeDependency) const
 {
     const char* isaString = InstructionSetToString(isa);
-    JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    JITDUMP("Notify VM instruction set (%s) %s be supported%s.\n", isaString, supported ? "must" : "must not",
+            preserveNegativeDependency ? " (preserve negative dependency)" : "");
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -3372,6 +3375,58 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// compAsyncInliningStress: determine if general runtime async inlining is being
+//   stressed, i.e. if async callees that may suspend are inlined with a decaying
+//   random probability.
+//
+// Returns:
+//   true if the stress is enabled
+//
+// Notes:
+//   The stress is enabled either explicitly via JitStressAsyncInlining, or for
+//   roughly 50% of async methods under JitStress. Only async methods are stressed
+//   since awaits cannot be inlined into non-async roots anyway.
+//
+//   See AsyncStressPolicy.
+//
+bool Compiler::compAsyncInliningStress()
+{
+    if (JitConfig.JitStressAsyncInlining() != 0)
+    {
+        return true;
+    }
+
+    return impInlineRoot()->compIsAsync() && compStressCompile(STRESS_ASYNC_INLINE, 50);
+}
+
+//------------------------------------------------------------------------
+// compAsyncInliningStressSeed: get the external seed for the random decisions
+//   made when stressing general async inlining.
+//
+// Returns:
+//   Non-zero seed value.
+//
+int Compiler::compAsyncInliningStressSeed()
+{
+    int seed = JitConfig.JitStressAsyncInlining();
+
+    if (seed == 0)
+    {
+        // The stress kicked in via JitStress, so use its value as the seed. It can be
+        // zero when the stress mode was enabled via DOTNET_JitStressModeNames, in which
+        // case any non-zero seed will do.
+        seed = getJitStressLevel();
+
+        if (seed == 0)
+        {
+            seed = 2;
+        }
+    }
+
+    return seed;
+}
+
+//------------------------------------------------------------------------
 // dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
 // a potentially large number of registers.
 //
@@ -4257,14 +4312,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         hashBv::Init(this);
 
         VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
-
-        // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-        if (info.compPublishStubParam)
-        {
-            assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-        }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
@@ -6744,8 +6791,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
-
-    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
     if (opts.IsReversePInvoke())
     {

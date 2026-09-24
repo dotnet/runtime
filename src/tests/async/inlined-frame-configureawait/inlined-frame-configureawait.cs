@@ -66,20 +66,14 @@ public class Async2InlinedFrameConfigureAwait
     }
 
     [Fact]
-    public static void ConfiguredAwaitDoesNotReturnToContext()
+    public static async Task ConfiguredAwaitDoesNotReturnToContext()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         TrackingContext tracking = new TrackingContext();
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(tracking);
-            OuterConfigured().GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        SynchronizationContext.SetSynchronizationContext(tracking);
 
+#pragma warning disable xUnit1030 // Capturing the test context would add a post and invalidate the assertion.
+        await OuterConfigured().ConfigureAwait(false);
+#pragma warning restore xUnit1030
         Assert.Equal(0, tracking.Posts);
     }
 
@@ -101,20 +95,14 @@ public class Async2InlinedFrameConfigureAwait
     }
 
     [Fact]
-    public static void ConfiguredAwaitInLoopDoesNotReturnToContext()
+    public static async Task ConfiguredAwaitInLoopDoesNotReturnToContext()
     {
-        SynchronizationContext original = SynchronizationContext.Current;
         TrackingContext tracking = new TrackingContext();
-        try
-        {
-            SynchronizationContext.SetSynchronizationContext(tracking);
-            LoopOuterConfigured(5).GetAwaiter().GetResult();
-        }
-        finally
-        {
-            SynchronizationContext.SetSynchronizationContext(original);
-        }
+        SynchronizationContext.SetSynchronizationContext(tracking);
 
+#pragma warning disable xUnit1030 // Capturing the test context would add a post and invalidate the assertion.
+        await LoopOuterConfigured(5).ConfigureAwait(false);
+#pragma warning restore xUnit1030
         Assert.Equal(0, tracking.Posts);
     }
 }

@@ -314,7 +314,7 @@ public:
                 // for an OS event on a managed thread.
                 // But we are not sure if this plays well in the hosting
                 // environment.
-                //join_struct.joined_event[i].CreateOSManualEventNoThrow(FALSE);
+                //join_struct.joined_event[i].CreateManualEventNoThrow(FALSE);
                 if (!join_struct.joined_event[i].CreateManualEventNoThrow(FALSE))
                     return FALSE;
             }

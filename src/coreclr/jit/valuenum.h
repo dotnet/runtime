@@ -396,6 +396,12 @@ private:
         VCA_ReservedBits = 0x01, // i.e. (VCA_UnsignedSrc)
     };
 
+#ifdef FEATURE_SIMD
+    static constexpr unsigned SimdTypeBits = 8;
+    static constexpr unsigned SimdTypeMask = (1 << SimdTypeBits) - 1;
+    static_assert(TYP_COUNT <= SimdTypeMask);
+#endif
+
     // Helpers and an array of length GT_COUNT, mapping genTreeOp values to their VNFOpAttrib.
     static constexpr uint8_t GetOpAttribsForArity(genTreeOps oper, GenTreeOperKind kind);
     static constexpr uint8_t GetOpAttribsForGenTree(genTreeOps      oper,
@@ -792,7 +798,7 @@ public:
     ValueNum VNOneForSimdType(var_types simdType, var_types simdBaseType);
 
     // A helper function for constructing VNF_SimdType VNs.
-    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType);
+    ValueNum VNForSimdType(unsigned simdSize, var_types simdBaseType, var_types auxiliaryType);
 
     // Returns if a value number represents NaN in all elements
     bool VNIsVectorNaN(var_types simdType, var_types simdBaseType, ValueNum valVN);
@@ -1153,12 +1159,15 @@ public:
     // of the length argument to a GT_BOUNDS_CHECK node.
     bool IsVNCheckedBound(ValueNum vn);
 
+    // Returns true if the VN appears as the index argument to a GT_BOUNDS_CHECK node.
+    bool IsVNCheckedBoundIndex(ValueNum vn);
+
     // Returns true if the VN is known to be a cast to ulong
     bool IsVNCastToULong(ValueNum vn, ValueNum* castedOp);
 
-    // Record that a VN is known to appear as the conservative value number of the length
-    // argument to a GT_BOUNDS_CHECK node.
-    void SetVNIsCheckedBound(ValueNum vn);
+    // Record that a VN is known to appear as the conservative value number of an argument
+    // to a GT_BOUNDS_CHECK node.
+    void SetVNIsCheckedBound(ValueNum vn, bool isIndex = false);
 
     // Information about the individual components of a value number representing an unsigned
     // comparison of some value against a checked bound VN.
@@ -1711,8 +1720,9 @@ private:
     // Returns true if "sel(map, ind)" is a member of "m_fixedPointMapSels".
     bool SelectIsBeingEvaluatedRecursively(ValueNum map, ValueNum ind);
 
-    // This is the set of value numbers that have been flagged as arguments to bounds checks, in the length position.
+    // These are the value numbers flagged as length and index arguments to bounds checks.
     CheckedBoundVNSet m_checkedBoundVNs;
+    CheckedBoundVNSet m_checkedBoundIndexVNs;
 
     // This is a map from "chunk number" to the attributes of the chunk.
     JitExpandArrayStack<Chunk*> m_chunks;
