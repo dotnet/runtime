@@ -64,6 +64,10 @@ export interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -281,6 +285,7 @@ export type JsAsset = Asset & {
 };
 export type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
 };
 export type VfsAsset = Asset & {
     virtualPath: string;
@@ -737,5 +742,4 @@ export declare function exit(exitCode: number, reason?: any): void;
 export declare const dotnet: DotnetHostBuilder;
 
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
-
 

@@ -222,97 +222,20 @@ bool Compiler::fgForwardSubMultiUse(Statement* nextStmt, unsigned lclNum, GenTre
         return false;
     }
 
-    // Pre-allocate every clone up front so we can bail without mutating the IR if
-    // gtCloneExpr ever refuses to duplicate the tree.
-    int const            lastIdx = useCount - 1;
-    ArrayStack<GenTree*> clones(getAllocator(CMK_Generic));
+    int const lastIdx = useCount - 1;
     for (int i = 0; i < lastIdx; i++)
     {
-        GenTree* const clone = gtCloneExpr(fwdSubNode);
-        if (clone == nullptr)
-        {
-            return false;
-        }
-        clones.Push(clone);
-    }
-
-    // Replace all-but-last use sites with a clone; the last use site gets the original tree.
-    for (int i = 0; i < lastIdx; i++)
-    {
-        *v.m_useSlots.BottomRef(i) = clones.Bottom(i);
+        *v.m_useSlots.BottomRef(i) = gtCloneExpr(fwdSubNode);
     }
     *v.m_useSlots.BottomRef(lastIdx) = fwdSubNode;
 
-    // After substitution we have N clones inserted at the original use sites
-    // of `lclNum`, each potentially referencing locals that already appeared
-    // elsewhere in `nextStmt`. Two correctness fixups are required:
-    //
-    //   (a) GTF_VAR_DEATH_MASK was copied from the def position by gtCloneExpr;
-    //       any one (or all) copies may have death bits that are no longer
-    //       semantically valid now that there are multiple copies.
-    //   (b) Earlier LCL_VAR references in nextStmt to one of the locals appearing
-    //       inside fwdSubNode may have been a "last use" of that local; the new
-    //       copies make them no longer last.
-    //
-    // Be conservative: clear GTF_VAR_DEATH_MASK on every LCL_VAR in nextStmt
-    // whose lclNum appears anywhere in fwdSubNode. This is the multi-use analogue
-    // of fgForwardSubUpdateLiveness.
-    struct CollectLclNumsVisitor : public GenTreeVisitor<CollectLclNumsVisitor>
-    {
-        enum
-        {
-            DoPreOrder = true,
-        };
-
-        ArrayStack<unsigned> m_lclNums;
-
-        CollectLclNumsVisitor(Compiler* comp)
-            : GenTreeVisitor<CollectLclNumsVisitor>(comp)
-            , m_lclNums(comp->getAllocator(CMK_Generic))
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-            if (node->OperIsLocal())
-            {
-                unsigned const ln   = node->AsLclVarCommon()->GetLclNum();
-                bool           seen = false;
-                for (int i = 0; i < m_lclNums.Height(); i++)
-                {
-                    if (m_lclNums.Bottom(i) == ln)
-                    {
-                        seen = true;
-                        break;
-                    }
-                }
-                if (!seen)
-                {
-                    m_lclNums.Push(ln);
-                }
-            }
-            return fgWalkResult::WALK_CONTINUE;
-        }
-    };
-
-    CollectLclNumsVisitor cnv(this);
-    cnv.WalkTree(&fwdSubNode, nullptr);
-
+    GenTreeLclVarCommon* const lastUseLcl = gtPeelFieldAddrs(fwdSubNode)->AsLclVarCommon();
     fgSequenceLocals(nextStmt);
 
-    for (GenTreeLclVarCommon* lcl : nextStmt->LocalsTreeList())
-    {
-        unsigned const ln = lcl->GetLclNum();
-        for (int i = 0; i < cnv.m_lclNums.Height(); i++)
-        {
-            if (cnv.m_lclNums.Bottom(i) == ln)
-            {
-                lcl->gtFlags &= ~GTF_VAR_DEATH_MASK;
-                break;
-            }
-        }
-    }
+    // The inserted subtree has exactly one local node, which serves as both the
+    // start and end of the inserted locals segment. This call walks backward
+    // from this point, properly adjusting any earlier clone and promoted parent flags.
+    fgForwardSubUpdateLiveness(lastUseLcl, lastUseLcl);
 
     gtUpdateStmtSideEffects(nextStmt);
     return true;
@@ -1112,7 +1035,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     {
         if (!fgForwardSubMultiUse(nextStmt, lclNum, fwdSubNode))
         {
-            JITDUMP(" multi-use sub failed (count out of range, indirect-call context, or clone failed)\n");
+            JITDUMP(" multi-use sub failed (count out of range or indirect-call context)\n");
             return false;
         }
 

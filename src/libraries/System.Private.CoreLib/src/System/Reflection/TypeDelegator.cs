@@ -94,6 +94,9 @@ namespace System.Reflection
         public override Type[] GetFunctionPointerParameterTypes() => typeImpl.GetFunctionPointerParameterTypes();
         public override Type GetFunctionPointerReturnType() => typeImpl.GetFunctionPointerReturnType();
 
+        public override Type[] GetOptionalCustomModifiers() => typeImpl.GetOptionalCustomModifiers();
+        public override Type[] GetRequiredCustomModifiers() => typeImpl.GetRequiredCustomModifiers();
+
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         public override Type? GetInterface(string name, bool ignoreCase) => typeImpl.GetInterface(name, ignoreCase);

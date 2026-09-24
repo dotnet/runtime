@@ -12,6 +12,7 @@ using Xunit;
 // to get back onto the caller's continuation context. If that means switching contexts the
 // transition itself suspends, so everything the caller still needs afterwards has to
 // survive that suspension -- including the record of which frames have resumed.
+[ConditionalClass(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsMultithreadingSupported))]
 public class Async2InlinedFrameTransitionSuspends
 {
     // Never runs the callback inline: every Post goes to a dedicated thread, so getting
@@ -99,14 +100,14 @@ public class Async2InlinedFrameTransitionSuspends
     }
 
     [Fact]
-    public static void ContextsRestoredWhenFrameTransitionSuspends()
+    public static async Task ContextsRestoredWhenFrameTransitionSuspends()
     {
         s_innerLocalAfterAwait = 0;
         s_middleAfterAwait = "";
         s_outerAfterAwait = "";
         s_suspensions = 0;
 
-        RunOn(s_ctx1, Outer);
+        await RunOn(s_ctx1, Outer);
 
         Assert.Equal(1, s_suspensions);
         Assert.Equal(3, s_innerLocalAfterAwait);
@@ -152,18 +153,18 @@ public class Async2InlinedFrameTransitionSuspends
     }
 
     [Fact]
-    public static void ContextsSurviveRepeatedSuspendingTransitions()
+    public static async Task ContextsSurviveRepeatedSuspendingTransitions()
     {
         s_outerAfterAwait = "";
         s_suspensions = 0;
 
-        RunOn(s_ctx1, () => LoopOuter(3));
+        await RunOn(s_ctx1, () => LoopOuter(3));
 
         Assert.Equal(27, s_suspensions);
         Assert.Equal("ctx1", s_outerAfterAwait);
     }
 
-    private static void RunOn(SynchronizationContext ctx, Func<Task> body)
+    private static Task RunOn(SynchronizationContext ctx, Func<Task> body)
     {
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         ctx.Post(async _ =>
@@ -179,6 +180,6 @@ public class Async2InlinedFrameTransitionSuspends
             }
         }, null);
 
-        tcs.Task.GetAwaiter().GetResult();
+        return tcs.Task;
     }
 }

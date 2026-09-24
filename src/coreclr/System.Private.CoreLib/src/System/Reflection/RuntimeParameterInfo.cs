@@ -234,6 +234,14 @@ namespace System.Reflection
         #endregion
 
         #region Public Methods
+        public override bool Equals(object? obj) =>
+            obj is RuntimeParameterInfo other &&
+            PositionImpl == other.PositionImpl &&
+            MemberImpl.Equals(other.MemberImpl);
+
+        public override int GetHashCode() =>
+            HashCode.Combine(MemberImpl, PositionImpl);
+
         public override Type ParameterType
         {
             get
