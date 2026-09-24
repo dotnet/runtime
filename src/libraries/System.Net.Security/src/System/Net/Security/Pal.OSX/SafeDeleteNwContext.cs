@@ -179,6 +179,21 @@ namespace System.Net.Security
                                 // framing. Network.framework never asks for input, so this read has to be
                                 // speculative; it is cancelled the moment the handshake completes, which
                                 // abandons it before it can consume a re-framed record.
+                                //
+                                // That makes cancellation load bearing for re-framing transports, and it
+                                // cannot be avoided here: the other PALs read on demand because the
+                                // handshake tells them when it needs more input, while Network.framework
+                                // offers no equivalent signal. A framer input handler is edge triggered on
+                                // data arriving from the layer below, not on TLS wanting bytes, and the
+                                // transport below cannot be removed, so there is nothing to wait on.
+                                //
+                                // A transport that both re-frames after the handshake and ignores read
+                                // cancellation is therefore not supported: the abandoned read stays
+                                // outstanding and consumes application bytes under the old framing.
+                                // Transports that re-frame must honour cancellation (SslOverTdsStream
+                                // forwards it to the socket); transports that ignore cancellation are
+                                // fine as long as they do not re-frame, since the late read then just
+                                // returns an ordinary TLS record.
                                 try
                                 {
                                     bytesRead = await ReadSingleTlsRecordAsync(readBuffer, handshakeReadCts.Token).ConfigureAwait(false);
