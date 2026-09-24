@@ -12388,7 +12388,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     // N == bitsize(x)
     // M is const
     // M & (N - 1) == N - 1
-    // op is either | or ^
+    // op is | for variable counts, and either | or ^ for constant counts
 
     if (((tree->gtFlags & GTF_PERSISTENT_SIDE_EFFECTS) != 0) || ((tree->gtFlags & GTF_ORDER_SIDEEFF) != 0))
     {
@@ -12496,6 +12496,13 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
 
         if ((shiftIndexWithAdd != nullptr) && !shiftIndexWithAdd->gtOverflow())
         {
+            if (oper == GT_XOR)
+            {
+                // When the effective shift count is zero, both shifts yield the original value,
+                // so XOR yields zero rather than the value produced by a rotation.
+                return nullptr;
+            }
+
             if (shiftIndexWithAdd->gtGetOp2()->IsCnsIntOrI())
             {
                 if (shiftIndexWithAdd->gtGetOp2()->AsIntCon()->IconValue() == rotatedValueBitSize)
