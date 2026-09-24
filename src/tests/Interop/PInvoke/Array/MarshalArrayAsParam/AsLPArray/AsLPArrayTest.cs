@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using TestLibrary;
@@ -703,24 +704,24 @@ public unsafe class ArrayPinningTests
 
     [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
     [MemberData(nameof(ArrayCases))]
-    public static void EnumArraysArePinned(int length, bool useDelegate)
+    public static void EnumArrayPassesManagedContentsDirectly(int length, bool useDelegate)
     {
         nint target = useDelegate ? GetArrayElementReverser() : 0;
-        VerifyArrayPinning(CreateEnumArray<SByteEnum>(length), sizeof(sbyte), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<SByteEnum>(length), sizeof(sbyte), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<SByteEnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<ByteEnum>(length), sizeof(byte), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<ByteEnum>(length), sizeof(byte), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<ByteEnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<Int16Enum>(length), sizeof(short), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<Int16Enum>(length), sizeof(short), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<Int16EnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<UInt16Enum>(length), sizeof(ushort), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<UInt16Enum>(length), sizeof(ushort), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt16EnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<Int32Enum>(length), sizeof(int), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<Int32Enum>(length), sizeof(int), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<Int32EnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<UInt32Enum>(length), sizeof(uint), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<UInt32Enum>(length), sizeof(uint), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt32EnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<Int64Enum>(length), sizeof(long), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<Int64Enum>(length), sizeof(long), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<Int64EnumReverser>(target).Invoke : ReverseArrayElements);
-        VerifyArrayPinning(CreateEnumArray<UInt64Enum>(length), sizeof(ulong), true,
+        VerifyArrayPassesManagedContentsDirectly(CreateEnumArray<UInt64Enum>(length), sizeof(ulong), true,
             useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt64EnumReverser>(target).Invoke : ReverseArrayElements);
     }
 
@@ -729,11 +730,11 @@ public unsafe class ArrayPinningTests
     [SkipOnMono("Mono character-array marshalling uses different pinning semantics.")]
     public static void CharacterArraysUseSelectedRepresentation(CharacterMarshalling kind, int length, bool useDelegate)
     {
-        bool pinned = kind is CharacterMarshalling.Unicode or CharacterMarshalling.AnsiAsInt16 or CharacterMarshalling.AnsiAsUInt16;
+        bool passesManagedContentsDirectly = kind is CharacterMarshalling.Unicode or CharacterMarshalling.AnsiAsInt16 or CharacterMarshalling.AnsiAsUInt16;
         char[] values = length < 0 ? null : new char[length];
         if (values is not null)
         {
-            ReadOnlySpan<char> pattern = pinned ? ['A', '\u03A9', '\uD83D', '\uDE00', '\0'] : ['A', 'B', 'C', 'D', 'E'];
+            ReadOnlySpan<char> pattern = passesManagedContentsDirectly ? ['A', '\u03A9', '\uD83D', '\uDE00', '\0'] : ['A', 'B', 'C', 'D', 'E'];
             for (int i = 0; i < values.Length; i++)
             {
                 values[i] = pattern[i % pattern.Length];
@@ -751,7 +752,7 @@ public unsafe class ArrayPinningTests
             CharacterMarshalling.UnicodeAsUInt8 => useDelegate ? Marshal.GetDelegateForFunctionPointer<UnicodeCharAsUInt8Reverser>(target).Invoke : ReverseUnicodeCharsAsUInt8,
             _ => throw new ArgumentOutOfRangeException(nameof(kind))
         };
-        VerifyArrayPinning(values, pinned ? sizeof(char) : sizeof(byte), pinned, reverse);
+        VerifyArrayPassesManagedContentsDirectly(values, passesManagedContentsDirectly ? sizeof(char) : sizeof(byte), passesManagedContentsDirectly, reverse);
     }
 
     [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
@@ -759,14 +760,14 @@ public unsafe class ArrayPinningTests
     [InlineData(false, true)]
     [InlineData(true, false)]
     [InlineData(true, true)]
-    public static void BooleanArraysAreNotPinned(bool oneByte, bool useDelegate)
+    public static void BooleanArrayDoesNotPassManagedContentsDirectly(bool oneByte, bool useDelegate)
     {
         bool[] values = [true, false, true, false, false];
         nint target = useDelegate ? GetArrayElementReverser() : 0;
         Func<bool[], int, int, nint> reverse = oneByte
             ? (useDelegate ? Marshal.GetDelegateForFunctionPointer<ByteBoolReverser>(target).Invoke : ReverseByteBooleans)
             : (useDelegate ? Marshal.GetDelegateForFunctionPointer<BoolReverser>(target).Invoke : ReverseBooleans);
-        VerifyArrayPinning(values, oneByte ? sizeof(byte) : sizeof(int), false, reverse);
+        VerifyArrayPassesManagedContentsDirectly(values, oneByte ? sizeof(byte) : sizeof(int), false, reverse);
     }
 
     private static T[] CreateEnumArray<T>(int length) where T : unmanaged, Enum
@@ -786,7 +787,7 @@ public unsafe class ArrayPinningTests
         return values;
     }
 
-    private static void VerifyArrayPinning<T>(T[] values, int nativeElementSize, bool pinned, Func<T[], int, int, nint> reverse) where T : unmanaged
+    private static void VerifyArrayPassesManagedContentsDirectly<T>(T[] values, int nativeElementSize, bool passesManagedContentsDirectly, Func<T[], int, int, nint> reverse) where T : unmanaged
     {
         if (values is null)
         {
@@ -795,7 +796,7 @@ public unsafe class ArrayPinningTests
         }
 
         T[] expected = (T[])values.Clone();
-        if (pinned)
+        if (passesManagedContentsDirectly)
         {
             Array.Reverse(expected);
         }
@@ -803,7 +804,7 @@ public unsafe class ArrayPinningTests
         fixed (T* address = &MemoryMarshal.GetArrayDataReference(values))
         {
             nint actual = reverse(values, values.Length, nativeElementSize);
-            if (pinned)
+            if (passesManagedContentsDirectly)
             {
                 Assert.Equal((nint)address, actual);
             }
@@ -919,6 +920,7 @@ public unsafe class PointerArrayTests
     }
 
     public static bool IsSupported => !PlatformDetection.PlatformDoesNotSupportNativeTestAssets;
+    public static bool IsMonoCompiled => PlatformDetection.IsMonoRuntime && !PlatformDetection.IsMonoInterpreter;
 
     public static IEnumerable<object[]> ArrayCases()
     {
@@ -950,9 +952,48 @@ public unsafe class PointerArrayTests
         }
     }
 
+    public static IEnumerable<object[]> NonFunctionPointerArrayCases()
+        => ArrayCases().Where(static testCase => !IsNonNullFunctionPointerArrayCase(testCase));
+
+    public static IEnumerable<object[]> FunctionPointerArrayCases()
+        => ArrayCases().Where(IsNonNullFunctionPointerArrayCase);
+
+    public static IEnumerable<object[]> NonFunctionPointerDelegateCases()
+        => DelegateCases().Where(static testCase => !IsNonNullFunctionPointerArrayCase(testCase));
+
+    public static IEnumerable<object[]> FunctionPointerDelegateCases()
+        => DelegateCases().Where(IsNonNullFunctionPointerArrayCase);
+
+    public static IEnumerable<object[]> NonFunctionPointerElementKinds()
+        => ElementKinds().Where(static testCase => (ElementKind)testCase[0] is not (ElementKind.UnmanagedFunction or ElementKind.ManagedFunction));
+
+    public static IEnumerable<object[]> NonNullArrayCases()
+        => ArrayCases().Where(static testCase => (int)testCase[1] >= 0);
+
+    public static IEnumerable<object[]> NullArrayCases()
+        => ArrayCases().Where(static testCase => (int)testCase[1] == -1);
+
+    public static IEnumerable<object[]> NonNullDelegateCases()
+        => DelegateCases().Where(static testCase => (int)testCase[1] >= 0);
+
+    public static IEnumerable<object[]> NullDelegateCases()
+        => DelegateCases().Where(static testCase => (int)testCase[1] == -1);
+
+    private static bool IsNonNullFunctionPointerArrayCase(object[] testCase)
+        => (int)testCase[1] >= 0 && (ElementKind)testCase[0] is ElementKind.UnmanagedFunction or ElementKind.ManagedFunction;
+
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
-    [MemberData(nameof(ArrayCases))]
+    [MemberData(nameof(NonFunctionPointerArrayCases))]
     public static void PinArray(ElementKind kind, int length)
+        => PinArrayCore(kind, length);
+
+    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [MemberData(nameof(FunctionPointerArrayCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
+    public static void PinFunctionPointerArray(ElementKind kind, int length)
+        => PinArrayCore(kind, length);
+
+    private static void PinArrayCore(ElementKind kind, int length)
     {
         Array values = CreateArray(kind, length);
         nuint[] expected = CreateValues(kind, length);
@@ -971,8 +1012,17 @@ public unsafe class PointerArrayTests
     }
 
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
-    [MemberData(nameof(DelegateCases))]
+    [MemberData(nameof(NonFunctionPointerDelegateCases))]
     public static void PinArrayThroughDelegate(ElementKind kind, int length)
+        => PinArrayThroughDelegateCore(kind, length);
+
+    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [MemberData(nameof(FunctionPointerDelegateCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
+    public static void PinFunctionPointerArrayThroughDelegate(ElementKind kind, int length)
+        => PinArrayThroughDelegateCore(kind, length);
+
+    private static void PinArrayThroughDelegateCore(ElementKind kind, int length)
     {
         Array values = CreateArray(kind, length);
         Initialize(values, CreateValues(kind, length));
@@ -999,8 +1049,18 @@ public unsafe class PointerArrayTests
     }
 
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
-    [MemberData(nameof(ElementKinds))]
+    [MemberData(nameof(NonFunctionPointerElementKinds))]
     public static void PinArrayAcrossCollection(ElementKind kind)
+        => PinArrayAcrossCollectionCore(kind);
+
+    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [InlineData(ElementKind.UnmanagedFunction)]
+    [InlineData(ElementKind.ManagedFunction)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
+    public static void PinFunctionPointerArrayAcrossCollection(ElementKind kind)
+        => PinArrayAcrossCollectionCore(kind);
+
+    private static void PinArrayAcrossCollectionCore(ElementKind kind)
     {
         Array values = CreateArray(kind, ArrayLength);
         nuint[] expected = CreateValues(kind, values.Length);
@@ -1013,9 +1073,19 @@ public unsafe class PointerArrayTests
     }
 
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
-    [MemberData(nameof(ArrayCases))]
+    [MemberData(nameof(NonNullArrayCases))]
     [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
     public static void CopyArrayByRef(ElementKind kind, int length)
+        => CopyArrayByRefCore(kind, length);
+
+    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [MemberData(nameof(NullArrayCases))]
+    [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNullArrayByRef(ElementKind kind, int length)
+        => CopyArrayByRefCore(kind, length);
+
+    private static void CopyArrayByRefCore(ElementKind kind, int length)
     {
         Array values = CreateArray(kind, length);
         nuint[] expected = CreateValues(kind, length);
@@ -1070,9 +1140,19 @@ public unsafe class PointerArrayTests
     }
 
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
-    [MemberData(nameof(DelegateCases))]
+    [MemberData(nameof(NonNullDelegateCases))]
     [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
     public static void CopyOutArray(ElementKind kind, int length)
+        => CopyOutArrayCore(kind, length);
+
+    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [MemberData(nameof(NullDelegateCases))]
+    [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNullOutArray(ElementKind kind, int length)
+        => CopyOutArrayCore(kind, length);
+
+    private static void CopyOutArrayCore(ElementKind kind, int length)
     {
         nuint[] expected = CreateValues(kind, length);
         Array values;
@@ -1137,18 +1217,27 @@ public unsafe class PointerArrayTests
     [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
     [InlineData(false, -1)]
     [InlineData(false, 0)]
+    [InlineData(true, -1)]
+    [InlineData(true, 0)]
+    [SkipOnMono("Reverse pointer-array marshalling, including function-pointer layout, has not been validated on Mono.")]
+    public static void CopyArrayInReversePInvoke(bool functionPointers, int length)
+        => CopyArrayInReversePInvokeCore(functionPointers, length);
+
+    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
     [InlineData(false, 1)]
     [InlineData(false, 4)]
     [InlineData(false, ArrayLength)]
     [InlineData(false, 21)]
-    [InlineData(true, -1)]
-    [InlineData(true, 0)]
     [InlineData(true, 1)]
     [InlineData(true, 4)]
     [InlineData(true, ArrayLength)]
     [InlineData(true, 21)]
     [SkipOnMono("Reverse pointer-array marshalling, including function-pointer layout, has not been validated on Mono.")]
-    public static void CopyArrayInReversePInvoke(bool functionPointers, int length)
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNonEmptyArrayInReversePInvoke(bool functionPointers, int length)
+        => CopyArrayInReversePInvokeCore(functionPointers, length);
+
+    private static void CopyArrayInReversePInvokeCore(bool functionPointers, int length)
     {
         ElementKind kind = functionPointers ? ElementKind.UnmanagedFunction : ElementKind.Byte;
         nuint[] expected = CreateValues(kind, length);

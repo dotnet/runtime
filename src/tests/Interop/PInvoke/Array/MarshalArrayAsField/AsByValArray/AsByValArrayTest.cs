@@ -1245,12 +1245,18 @@ public unsafe class PointerArrayFieldTests
         public nuint After;
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
+    [Fact]
     [SkipOnMono("Native layout of fixed function-pointer arrays has not been validated on Mono.")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
-    public static void CopyFixedArrays(bool nullFields)
+    public static void CopyFixedArrays() => CopyFixedArraysCore(nullFields: false);
+
+    [Fact]
+    [SkipOnMono("Native layout of fixed function-pointer arrays has not been validated on Mono.")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    public static void CopyNullFixedArrays() => CopyFixedArraysCore(nullFields: true);
+
+    private static void CopyFixedArraysCore(bool nullFields)
     {
         nuint sentinel = IntPtr.Size == 8 ? unchecked((nuint)0x123456789ABCDEF0UL) : 0x9ABCDEF0u;
         PointerFields value = new PointerFields
