@@ -33,6 +33,82 @@ public class R2RTestSuites
         _output = output;
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ArrayInterfaceDevirtualization(bool composite)
+    {
+        var arrayInterfaces = new CompiledAssembly
+        {
+            AssemblyName = "ArrayInterfaces",
+            SourceResourceNames = ["Devirtualization/ArrayInterfaces.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(ArrayInterfaceDevirtualization),
+            [
+                new(arrayInterfaces.AssemblyName, [new CrossgenAssembly(arrayInterfaces)])
+                {
+                    Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    // Array interfaces and SZArrayHelper must be in the version bubble to devirtualize.
+                    // Record the resolved targets and keep their instantiation arguments visible.
+                    AdditionalArgs =
+                    [
+                        "--inputbubble",
+                        "--inputbubbleref", TestPaths.SystemPrivateCoreLibPath,
+                        "--verify-type-and-field-layout",
+                        "--codegenopt", "JitNoInline=1",
+                    ],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            var methods = R2RAssert.GetAllMethods(reader);
+            (string Caller, string Target, string TypeArgument, bool Shared)[] cases =
+            [
+                ("ListValueType", "get_Item", "int", false),
+                ("ListReferenceType", "get_Item", "object", true),
+                ("CovariantList", "get_Item", "object", true),
+                ("CollectionCount", "get_Count", "int", false),
+                ("ReadOnlyCollectionCount", "get_Count", "object", true),
+                ("ReadOnlyList", "get_Item", "int", false),
+                ("EnumerableValueType", "GetEnumerator", "int", false),
+                ("EnumerableReferenceType", "GetEnumerator", "string", true),
+                // GetEnumerator must use the interface element type, not the array element type.
+                ("CovariantEnumerable", "GetEnumerator", "object", true),
+            ];
+
+            foreach (var (caller, target, typeArgument, shared) in cases)
+            {
+                ReadyToRunMethod method = Assert.Single(methods, m => m.DeclaringType == "ArrayInterfaces" && m.Name == caller);
+                Assert.NotEmpty(method.RuntimeFunctions);
+                Assert.True(method.Fixups is not null, $"No fixups for {method.SignatureString}");
+
+                var signatures = method.Fixups.Select(f => (Kind: f.Signature.FixupKind, Text: f.Signature.ToString(new()))).ToArray();
+                string resolvedTarget = Assert.Single(signatures, s => s.Kind == ReadyToRunFixupKind.Verify_VirtualFunctionOverride).Text;
+                Assert.Contains($"System.SZArrayHelper.{target}", resolvedTarget);
+                Assert.EndsWith($"<{(shared ? "__Canon" : typeArgument)}> (VERIFY_VIRTUAL_FUNCTION_OVERRIDE)", resolvedTarget);
+
+                if (shared)
+                {
+                    string dictionary = Assert.Single(signatures, s => s.Kind == ReadyToRunFixupKind.MethodDictionary).Text;
+                    Assert.Contains($"System.SZArrayHelper.{target}", dictionary);
+                    Assert.EndsWith($"<{typeArgument}> (METHOD_DICTIONARY)", dictionary);
+                }
+            }
+
+            // A shared interface instantiation cannot supply an exact SZArrayHelper instantiation.
+            string diag;
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ArrayInterfaces", "SharedGeneric", out diag, ["__Canon"]), diag);
+            Assert.False(R2RAssert.HasFixupKindOnMethod(reader, ReadyToRunFixupKind.Verify_VirtualFunctionOverride, ".SharedGeneric<", out diag), diag);
+
+            // Non-generic array interfaces must still compile through the existing resolution path.
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "ArrayInterfaces", "NonGenericCollectionCount", out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void BasicCrossModuleInlining()
     {
