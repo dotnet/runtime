@@ -259,6 +259,12 @@ namespace System.Net.Security.Tests
             // AuthenticateAsClient returns. Nothing may be read from the transport between the
             // final handshake record and the first application operation, or the bytes that
             // follow are consumed with the handshake framing still applied.
+            //
+            // This covers the supported shape, where the transport forwards read cancellation to
+            // the socket underneath as SslOverTdsStream does. A transport that re-frames and also
+            // ignores cancellation is not supported - see the handshake read loop in
+            // SafeDeleteNwContext for why the read cannot be avoided - so there is deliberately no
+            // case for it here.
             var psi = new ProcessStartInfo();
             psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_USENETWORKFRAMEWORK", "1");
 
