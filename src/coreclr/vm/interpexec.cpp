@@ -868,22 +868,19 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             EX_END_CATCH
             pThread->SetFilterContext(NULL);
 
-            // The debugger may have moved execution via SetIP. Preserve a bypass
-            // created for the destination before resuming at the new context.
-            if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
+            // Function evaluation can move the IP or change the destination breakpoint.
+            // Rebuild the bypass for the final context instead of restoring stale state.
+            pThreadContext->ClearBypass();
+            PRD_TYPE bypassOpcode;
+            if (g_pDebugInterface->CheckGetPatchedOpcode((CORDB_ADDRESS_TYPE *)GetIP(&ctx), &bypassOpcode))
             {
-                if (GetIP(&ctx) == (PCODE)savedBypassAddress)
-                {
-                    pThreadContext->m_bypassAddress = savedBypassAddress;
-                    pThreadContext->m_bypassOpcode = savedBypassOpcode;
-                }
-
-                ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
+                pThreadContext->SetBypass((const int32_t *)GetIP(&ctx), (int32_t)bypassOpcode);
             }
 
-            // No SetIP change — restore the bypass so the original opcode runs once.
-            pThreadContext->m_bypassAddress = savedBypassAddress;
-            pThreadContext->m_bypassOpcode = savedBypassOpcode;
+            if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
+            {
+                ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
+            }
         }
     }
 }
