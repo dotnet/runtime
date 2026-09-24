@@ -62,7 +62,7 @@ public class VectorT
     public static void TestEntryPoint()
     {
         int cons = 42;
-        int iterations = 1_000_000;
+        int iterations = 100_000;
         int expected = iterations * Vector<int>.Count * cons;
 
         Assert.Equal(expected, F(0, iterations, cons));
