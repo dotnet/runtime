@@ -696,6 +696,14 @@
                                  '$(TestNativeAOT)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
                       BuildInParallel="false" />
 
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\InProcCrashReport\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(ArchiveTests)' == 'true' and
+                                 ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst') and
+                                 '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'CoreCLR' and
+                                 '$(TestNativeAOT)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+                      BuildInParallel="false" />
+
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />
 
