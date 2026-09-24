@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using System.Text.Json;
@@ -202,12 +203,13 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
         private static TypeDesc ResolveClosedType(MethodListTypeSystemContext context, string typeName, string description)
         {
-            int assemblySeparator = GetAssemblySeparator(typeName);
-            if (assemblySeparator < 0)
+            if (!CustomAttributeTypeNameParser.IsAssemblyQualifiedTypeName(typeName))
             {
                 throw new InvalidDataException($"Type '{typeName}' in {description} must be assembly-qualified.");
             }
 
+            int assemblySeparator = GetAssemblySeparator(typeName);
+            Debug.Assert(assemblySeparator >= 0);
             AssemblyNameInfo assemblyName = AssemblyNameInfo.Parse(typeName.AsSpan(assemblySeparator + 1).Trim());
             if (!context.HasAssembly(assemblyName))
             {

@@ -150,6 +150,25 @@ namespace DotNetPgo.Tests
             AssertFailure(RunCreate(methodList, Path.Combine(directory.Path, "output.bin")), "must end with '.mibc'");
         }
 
+        [Fact]
+        public void RejectsUnqualifiedConstructedGenericArgument()
+        {
+            using var directory = new TemporaryDirectory();
+            string methodList = directory.WriteJson(
+                "unqualified-generic-argument.json",
+                CreateDocument(
+                    new Dictionary<string, object>
+                    {
+                        ["type"] = "System.Collections.Generic.List`1[[System.String]], System.Private.CoreLib",
+                        ["name"] = "Add",
+                        ["parameterTypes"] = new[] { QualifiedName(typeof(string)) },
+                    }));
+
+            AssertFailure(
+                RunCreate(methodList, Path.Combine(directory.Path, "unqualified-generic-argument.mibc")),
+                "must be assembly-qualified");
+        }
+
         private static void AssertFailure(CommandResult result, string expectedError)
         {
             Assert.NotEqual(0, result.ExitCode);
@@ -214,7 +233,6 @@ namespace DotNetPgo.Tests
             arguments.AddRange(
             [
                 "--output", output,
-                "--compressed", "false",
             ]);
 
             return Run(arguments.ToArray());

@@ -35,7 +35,8 @@ The input is a JSON object with the following properties:
 
 - `runtime`, `os`, and `architecture`: non-empty strings written to the MIBC configuration.
 - `methods`: a non-empty array of method entries.
-- `methods[].type`: the assembly-qualified declaring type name.
+- `methods[].type`: the assembly-qualified declaring type name. Constructed generic types must also
+  use assembly-qualified generic arguments.
 - `methods[].name`: the metadata method name.
 - `methods[].parameterTypes`: optional assembly-qualified parameter type names used to select an
   overload. Omit only when the name and generic arity identify exactly one method.
