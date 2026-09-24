@@ -62,8 +62,9 @@ This produces `bin/Release/<tfm>/PlatformBenchmarks.dll`.
 `PlatformBenchmarks` needs `Microsoft.AspNetCore.App`, which the freshly-built `artifacts/bin/testhost` does **not** contain (it only has `Microsoft.NETCore.App`) — running it directly via `testhost`'s `corerun`/`dotnet` fails with a "no framework found" error. The repo SDK's own `dotnet` (under `<runtime-repo>/.dotnet`) already has `Microsoft.AspNetCore.App`, so the simplest way to combine "the ASP.NET Core framework" with "your locally-built `Microsoft.NETCore.App`" is to temporarily overlay the SDK's shared `Microsoft.NETCore.App/<version>` folder with the testhost's freshly-built one:
 
 ```bash
-SDK_FX=$(find <runtime-repo>/.dotnet/shared/Microsoft.NETCore.App -maxdepth 1 -type d | tail -1)
-TESTHOST_FX="<runtime-repo>/artifacts/bin/testhost/<tfm>-<os>-Release-<arch>/shared/Microsoft.NETCore.App/<version>"
+SDK_VERSION='<version>'
+SDK_FX="<runtime-repo>/.dotnet/shared/Microsoft.NETCore.App/$SDK_VERSION"
+TESTHOST_FX="<runtime-repo>/artifacts/bin/testhost/<tfm>-<os>-Release-<arch>/shared/Microsoft.NETCore.App/$SDK_VERSION"
 
 # ALWAYS back up the original SDK framework files first, so they can be restored exactly.
 mkdir -p /tmp/netcoreapp_sdk_backup
