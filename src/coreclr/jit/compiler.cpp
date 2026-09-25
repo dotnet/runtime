@@ -4312,14 +4312,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         hashBv::Init(this);
 
         VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
-
-        // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-        if (info.compPublishStubParam)
-        {
-            assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-        }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
@@ -5041,9 +5033,15 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     m_pLowering->Run();
 
     // Set stack levels and analyze throw helper usage.
+    // This may create throw helper calls that get lowered.
+    //
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
+
+    // Run the final liveness pass after adding throw helper calls.
+    //
+    DoPhase(this, PHASE_LCLVARLIVENESS, &Compiler::fgLateLiveness);
 
 #ifdef TARGET_WASM
     // Determine if a Virtual IP is needed and add code as needed to
@@ -6799,8 +6797,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
-
-    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
     if (opts.IsReversePInvoke())
     {

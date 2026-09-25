@@ -659,7 +659,13 @@ public class TestPlaceholderTarget : Target
             return true;
         }
 
-        public override void Flush(FlushScope scope) { }
+        public override void Flush(FlushScope scope)
+        {
+            foreach (IContract contract in _resolved.Values)
+            {
+                contract.Flush(scope);
+            }
+        }
     }
 
 }

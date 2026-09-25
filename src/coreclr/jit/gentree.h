@@ -375,6 +375,7 @@ enum GenTreeFlags : unsigned
 
     GTF_PERSISTENT_SIDE_EFFECTS = GTF_ASG | GTF_CALL,
     GTF_SIDE_EFFECT             = GTF_PERSISTENT_SIDE_EFFECTS | GTF_EXCEPT,
+    GTF_OBS_EFFECT              = GTF_SIDE_EFFECT | GTF_ORDER_SIDEEFF,
     GTF_GLOB_EFFECT             = GTF_SIDE_EFFECT | GTF_GLOB_REF,
     GTF_ALL_EFFECT              = GTF_GLOB_EFFECT | GTF_ORDER_SIDEEFF,
 
@@ -3243,6 +3244,10 @@ struct GenTreeOp : public GenTreeUnOp
     // checks if we will use the division by constant optimization this node
     // then sets the flag GTF_DIV_BY_CNS_OPT and GTF_DONT_CSE on the constant
     void CheckDivideByConstOptimized(Compiler* comp);
+
+#ifdef TARGET_XARCH
+    unsigned GetCompareSize() const;
+#endif // TARGET_XARCH
 
     GenTree*& ReturnValueRef()
     {

@@ -31,12 +31,7 @@ public class Runtime_125042
     }
 
     [Fact]
-    public static void TestEntryPoint()
-    {
-        M0().GetAwaiter().GetResult();
-    }
-
-    private static async Task M0()
+    public static async Task M0()
     {
         var vr3 = (sbyte)0;
         var vr2 = Vector128.CreateScalar(vr3);

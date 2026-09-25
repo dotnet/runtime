@@ -51,6 +51,7 @@ bool InterpCompiler::s_samplingProfilerEnabled = false;
 bool InterpCompiler::s_browserProfilerEnabled = false;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
+bool InterpCompiler::s_interpPgoEnabled = false;
 
 #if MEASURE_MEM_ALLOC
 #include <minipal/mutex.h>
@@ -1960,7 +1961,7 @@ void InterpCompiler::PrepareInterpMethod()
     // Store method data for later finalization
     m_initLocals = (m_methodInfo->options & CORINFO_OPT_INIT_LOCALS) != 0;
     m_unmanagedCallersOnly = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE);
-    m_publishSecretStubParam = m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
+    m_publishSecretStubParam = (m_hiddenArgumentVar >= 0) && m_unmanagedCallersOnly;
 
     // Reserve space in the builder for each section
     // Bytecode section
@@ -2246,6 +2247,10 @@ InterpCompiler::InterpCompiler(COMP_HANDLE compHnd,
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
+    m_emitInterpPGO = s_interpPgoEnabled
+        && (InterpConfig.InterpPGOMethods().isEmpty()
+            || InterpConfig.InterpPGOMethods().contains(compHnd, m_methodHnd, m_classHnd, &m_methodInfo->args));
+
 #ifdef DEBUG
     m_methodName = ::PrintMethodName(compHnd, m_classHnd, m_methodHnd, &m_methodInfo->args,
                             /* includeAssembly */ false,
@@ -2347,6 +2352,9 @@ bool InterpCompiler::CompileMethod()
         PrintCode();
     }
 #endif
+
+    if (m_emitInterpPGO)
+        InstrumentBlockCounts();
 
     AllocOffsets();
     PatchInitLocals(m_methodInfo);
@@ -2547,7 +2555,22 @@ void InterpCompiler::CreateILVars()
     for (int i = argIndexOffset; i < numArgs; i++)
     {
         CORINFO_CLASS_HANDLE argClass;
-        CorInfoType argCorType = strip(m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass));
+        CorInfoTypeWithMod argCorTypeWithMod = m_compHnd->getArgType(&m_methodInfo->args, sigArg, &argClass);
+        CorInfoType argCorType = strip(argCorTypeWithMod);
+        if ((argCorTypeWithMod & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (argCorType != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (m_hiddenArgumentVar >= 0)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            m_hiddenArgumentVar = i;
+        }
         InterpType interpType = GetInterpType(argCorType);
         sigArg = m_compHnd->getArgNext(sigArg);
         CreateNextLocalVar(i, argClass, interpType, &offset);
@@ -3002,6 +3025,9 @@ void InterpCompiler::EmitBranch(InterpOpcode opcode, int32_t ilOffset)
     if (pTargetBB == NULL)
         BADCODE("code jumps to invalid offset");
 
+    if (ilOffset < 0)
+        pTargetBB->isBackwardBranchTarget = true;
+
     EmitBranchToBB(opcode, pTargetBB);
 }
 
@@ -3163,6 +3189,11 @@ void InterpCompiler::EmitLeave(int32_t ilOffset, int32_t target)
         BADCODE("Invalid leave target");
     }
     InterpBasicBlock *pTargetBB = m_ppOffsetToBB[target];
+
+    // Mark a backward leave target as a loop head here, while pTargetBB is still the real IL block: below it
+    // may be redirected to a finally call island, which shares its IL offset with another block.
+    if (target < ilOffset && pTargetBB != NULL)
+        pTargetBB->isBackwardBranchTarget = true;
 
     m_pStackPointer = m_pStackBase;
 
@@ -3881,16 +3912,6 @@ bool InterpCompiler::EmitNamedIntrinsicCall(NamedIntrinsic ni, bool nonVirtualCa
             AddIns(INTOP_THROW_PNSE);
             return true;
         }
-        case NI_System_StubHelpers_GetStubContext:
-        {
-            assert(m_hiddenArgumentVar >= 0);
-            AddIns(INTOP_MOV_P);
-            PushStackType(StackTypeI, NULL);
-            m_pLastNewIns->SetSVar(m_hiddenArgumentVar);
-            m_pLastNewIns->SetDVar(m_pStackPointer[-1].var);
-            return true;
-        }
-
         case NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref:
         {
             CHECK_STACK(1);
@@ -5204,7 +5225,6 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
             //  This expansion can produce value that is inconsistent with the value seen by JIT/R2R code that can
             //  cause user code to misbehave. This is by design. One-off method Interpretation is for internal use only.
             bool isMustExpand = (callInfo.hMethod == m_methodHnd) || (
-                    ni == NI_System_StubHelpers_GetStubContext ||
                     ni == NI_System_StubHelpers_NextCallReturnAddress ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext ||
                     ni == NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallAsyncContinuation ||
@@ -8701,6 +8721,64 @@ void InterpCompiler::CreateSynchronizedRetValVar()
     INTERP_DUMP("Created ret val var V%d\n", m_synchronizedOrAsyncRetValVarIndex);
 }
 
+// Instrument the method entry and loop heads with block-count PGO probes. The counters are allocated by
+// allocPgoInstrumentationBySchema (native PgoManager memory), so they persist independently of
+// EventPipe session lifetime; the accumulated profile is flushed to the trace as
+// JitInstrumentationDataVerbose events, which dotnet-pgo consumes to build an .mibc.
+void InterpCompiler::InstrumentBlockCounts()
+{
+    // Probe the same points as the sampling profiler - method entry and loop heads (targets of backward
+    // branches) - but with an exact counter rather than a sample. This yields exact method invocation and
+    // loop trip counts; acyclic branch structure is deliberately not profiled here, since mapping the
+    // interpreter's blocks onto the JIT's is approximate at best (#130517).
+    // Clones (funclet / leave-chain islands) and blocks removed by optimization are skipped, so every schema
+    // entry carries a unique IL offset, matching what getPgoInstrumentationResults and dotnet-pgo expect.
+    TArray<InterpBasicBlock*, MemPoolAllocator> blocks(GetMemPoolAllocator(IMK_DataItem));
+    for (InterpBasicBlock *bb = m_pEntryBB; bb != NULL; bb = bb->pNextBB)
+    {
+        if (bb->ilOffset < 0 || bb->ilOffset >= m_ILCodeSizeFromILHeader || m_ppOffsetToBB[bb->ilOffset] != bb)
+            continue;
+        if (bb->ilOffset == 0 || bb->isBackwardBranchTarget)
+            blocks.Add(bb);
+    }
+
+    int32_t numBlocks = blocks.GetSize();
+    if (numBlocks == 0)
+        return;
+
+    // One 4-byte block counter per block.
+    TArray<ICorJitInfo::PgoInstrumentationSchema, MemPoolAllocator> schema(GetMemPoolAllocator(IMK_DataItem));
+    for (int32_t i = 0; i < numBlocks; i++)
+    {
+        ICorJitInfo::PgoInstrumentationSchema schemaElem;
+        schemaElem.Offset = 0;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::BasicBlockIntCount;
+        schemaElem.ILOffset = blocks.Get(i)->ilOffset;
+        schemaElem.Count = 1;
+        schemaElem.Other = 0;
+        schema.Add(schemaElem);
+    }
+
+    ICorJitInfo::PgoInstrumentationSchema *pSchema = schema.GetUnderlyingArray();
+    uint8_t *pInstrumentationData = NULL;
+    HRESULT hr = m_compHnd->allocPgoInstrumentationBySchema(m_methodHnd, pSchema, (uint32_t)numBlocks, &pInstrumentationData);
+    if (FAILED(hr) || pInstrumentationData == NULL)
+    {
+        INTERP_DUMP("InstrumentBlockCounts: allocPgoInstrumentationBySchema failed (hr=0x%08x)\n", hr);
+        return;
+    }
+
+    // Insert an INTOP_PGO_COUNT probe at the start of each block, pointing at its counter.
+    for (int32_t i = 0; i < numBlocks; i++)
+    {
+        uint32_t *pCounter = (uint32_t*)(pInstrumentationData + pSchema[i].Offset);
+        InterpInst *ins = InsertInsBB(blocks.Get(i), NULL, INTOP_PGO_COUNT);
+        // Probe is a pure counter increment with no IL mapping; keep it out of the debug maps.
+        ins->ilOffset = -1;
+        ins->data[0] = GetDataItemIndex((void*)pCounter);
+    }
+}
+
 void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
 {
     bool readonly = false;
@@ -8862,12 +8940,12 @@ void InterpCompiler::GenerateCode(CORINFO_METHOD_INFO* methodInfo)
         m_pLastNewIns->SetSVar(m_continuationArgIndex);
     }
 
-    if (m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM))
+    if ((m_hiddenArgumentVar >= 0) &&
+        m_corJitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_REVERSE_PINVOKE))
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         assert(!"Generating INTOP_STORESTUBCONTEXT on invalid platform");
 #else
-        m_hiddenArgumentVar = CreateVarExplicit(InterpTypeI, NULL, sizeof(void *));
         AddIns(INTOP_STORESTUBCONTEXT);
         m_pLastNewIns->SetDVar(m_hiddenArgumentVar);
 #endif
@@ -10267,6 +10345,10 @@ retry_emit:
                     uint32_t target = (uint32_t)(nextIp - m_pILCode + offset);
                     InterpBasicBlock *targetBB = m_ppOffsetToBB[target];
                     assert(targetBB);
+                    // Offsets are relative to the instruction after the switch, so a negative one is a
+                    // backward branch, i.e. a loop head.
+                    if (offset < 0)
+                        targetBB->isBackwardBranchTarget = true;
                     targetOffsets[i] = target;
                     targetBBTable[i] = targetBB;
                     m_ip += 4;
