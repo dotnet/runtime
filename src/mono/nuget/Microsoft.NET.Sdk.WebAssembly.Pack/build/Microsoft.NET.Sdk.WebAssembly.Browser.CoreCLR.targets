@@ -19,7 +19,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
-         An explicit unsupported value is left as-is and rejected by _WasmCoreClrSelectR2RDirectories. -->
+         An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
     <!-- Keep the existing per-assembly behavior unless composite is explicitly requested. -->
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
