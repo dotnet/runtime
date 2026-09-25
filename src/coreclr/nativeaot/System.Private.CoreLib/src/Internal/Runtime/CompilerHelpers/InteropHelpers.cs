@@ -275,7 +275,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         internal static unsafe void FreeLibrary(IntPtr hModule)
         {
-#if !(TARGET_UNIX || TARGET_WASM)
+#if TARGET_WINDOWS
             Interop.Kernel32.FreeLibrary(hModule);
 #else
             Interop.Sys.FreeLibrary(hModule);

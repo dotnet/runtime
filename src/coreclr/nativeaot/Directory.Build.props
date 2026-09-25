@@ -56,6 +56,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <FeatureComWrappers>true</FeatureComWrappers>
+    <FeatureComWrappers Condition="'$(TargetsWasm)' == 'true'">false</FeatureComWrappers>
     <DefineConstants Condition="'$(FeatureComWrappers)' == 'true'">FEATURE_COMWRAPPERS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup>

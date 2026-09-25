@@ -144,7 +144,7 @@ namespace System.Runtime
         // StackFrameIterator
         //
 
-        // Browser-WASM does not have the native register context required by this iterator.
+        // WASM does not have the native register context required by this iterator.
 #if !TARGET_WASM
         [RuntimeImport(RuntimeLibrary, "RhpSfiInit")]
         [MethodImpl(MethodImplOptions.InternalCall)]

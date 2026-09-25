@@ -45,7 +45,6 @@
 
   <PropertyGroup Condition="'$(TargetsWasm)' == 'true'">
     <FeatureThunkPool>false</FeatureThunkPool>
-    <FeatureComWrappers>false</FeatureComWrappers>
 
     <!-- single thread -->
     <FeaturePortableTimer Condition="'$(WasmEnableThreads)' != 'true'">false</FeaturePortableTimer>
