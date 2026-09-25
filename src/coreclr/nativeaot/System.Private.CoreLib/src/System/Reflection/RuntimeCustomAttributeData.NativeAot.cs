@@ -13,7 +13,6 @@ using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.MethodInfos.NativeFormat;
 using System.Reflection.Runtime.Modules;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.PropertyInfos;
 using System.Reflection.Runtime.TypeInfos;
 using System.Reflection.Runtime.TypeInfos.NativeFormat;
@@ -231,8 +230,6 @@ namespace System.Reflection
                 _reader = reader;
             }
 
-            public CustomAttribute Attribute => _attribute;
-
             public bool ValidateProlog()
             {
                 if (_reader is null)
@@ -241,6 +238,8 @@ namespace System.Reflection
                 _fixedArguments = _attribute.FixedArguments.GetEnumerator();
                 return true;
             }
+
+            public int GetNamedArgumentCount() => _attribute.NamedArguments.Count;
 
             public NamedArgument GetNamedArgument()
             {

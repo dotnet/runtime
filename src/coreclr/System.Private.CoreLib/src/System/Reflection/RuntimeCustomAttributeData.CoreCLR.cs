@@ -328,6 +328,8 @@ namespace System.Reflection
                 return val == 0x0001;
             }
 
+            public int GetNamedArgumentCount() => GetI2();
+
             public string? GetString()
             {
                 byte packedLengthBegin = PeekData(sizeof(byte))[0];

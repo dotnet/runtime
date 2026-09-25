@@ -700,12 +700,7 @@ namespace System.Reflection
             CustomAttributeNamedParameter[] customAttributeNamedParameters,
             ResolutionScope module)
         {
-            // Parse the named arguments in the custom attribute.
-#if NATIVEAOT
-            int argCount = parser.Attribute.NamedArguments.Count;
-#else
-            int argCount = parser.GetI2();
-#endif
+            int argCount = parser.GetNamedArgumentCount();
 
             for (int i = 0; i < argCount; ++i)
             {
