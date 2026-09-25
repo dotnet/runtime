@@ -25,7 +25,7 @@ namespace ILCompiler.DependencyAnalysis
             _typeDefinition = typeDefinition;
         }
 
-        public static void GetDependencies(ref DependencyList dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
+        public static void AddDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, FlowAnnotations flowAnnotations, TypeDesc type)
         {
             bool needsDataflowAnalysis = false;
 
@@ -58,14 +58,13 @@ namespace ILCompiler.DependencyAnalysis
 
             if (needsDataflowAnalysis)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.DataflowAnalyzedTypeDefinition(type), "Dataflow for type definition");
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = null;
+            DependencySink<NodeFactory> dependencies = sink;
 
             if (_typeDefinition is MetadataType metadataType)
             {
@@ -79,7 +78,7 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(
-                        ref dependencies,
+                        dependencies,
                         factory,
                         new MessageOrigin(_typeDefinition),
                         interfaceType,
@@ -89,7 +88,6 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            return dependencies;
         }
 
         protected override string GetName(NodeFactory factory)
@@ -101,7 +99,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
     }
 }

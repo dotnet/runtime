@@ -9,7 +9,7 @@ using ILCompiler.DependencyAnalysisFramework;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
 using Debug = System.Diagnostics.Debug;
 
 namespace ILCompiler.DependencyAnalysis
@@ -76,17 +76,66 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.GetMangledMethodName(_method));
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             Debug.Assert(_dependencies != null);
-            return _dependencies;
+            foreach (DependencyListEntry dependency in _dependencies)
+            {
+                sink.Add(dependency);
+            }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => _conditionalDependencies;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
+        {
+            foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
+            {
+                sink.Add(dependency);
+            }
+        }
+
+#nullable enable
+
+        public void AddRuntimeDeterminedStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+            foreach (DependencyListEntry dependency in _dependencies)
+            {
+                AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node, otherReasonNode: null);
+            }
+        }
+
+        public void AddRuntimeDeterminedConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory, MethodDesc concreteMethod)
+        {
+            foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
+            {
+                Debug.Assert(dependency.OtherReasonNode is not INodeWithRuntimeDeterminedDependencies);
+                AddRuntimeDeterminedDependency(sink, factory, concreteMethod, dependency.Node, dependency.OtherReasonNode);
+            }
+        }
+
+        private static void AddRuntimeDeterminedDependency(
+            DependencySink<NodeFactory> sink,
+            NodeFactory factory,
+            MethodDesc concreteMethod,
+            DependencyNodeCore<NodeFactory> dependency,
+            DependencyNodeCore<NodeFactory>? otherReasonNode)
+        {
+            if (dependency is INodeWithRuntimeDeterminedDependencies runtimeDeterminedDependency)
+            {
+                runtimeDeterminedDependency.AddDependencies(
+                    sink,
+                    factory,
+                    concreteMethod.OwningType.Instantiation,
+                    concreteMethod.Instantiation,
+                    isConcreteInstantiation: !concreteMethod.IsSharedByGenericInstantiations,
+                    otherReasonNode);
+            }
+        }
+
+#nullable restore
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
         public override bool InterestingForDynamicDependencyAnalysis => _method.HasInstantiation || _method.OwningType.HasInstantiation;
         public override bool HasDynamicDependencies => false;
 

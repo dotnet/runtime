@@ -28,23 +28,26 @@ namespace ILCompiler.DependencyAnalysis
             _methodIL = methodIL;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             var mdManager = (UsageBasedMetadataManager)factory.MetadataManager;
             try
             {
-                return Dataflow.ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, mdManager.FlowAnnotations, mdManager.Logger, _methodIL, out _runtimeDependencies);
+                foreach (DependencyListEntry dependency in Dataflow.ReflectionMethodBodyScanner.ScanAndProcessReturnValue(factory, mdManager.FlowAnnotations, mdManager.Logger, _methodIL, out _runtimeDependencies))
+                {
+                    sink.Add(dependency);
+                }
             }
             catch (TypeSystemException)
             {
                 // Something wrong with the input - missing references, etc.
                 // The method body likely won't compile either, so we don't care.
                 _runtimeDependencies = new List<(MethodDesc, INodeWithRuntimeDeterminedDependencies)>();
-                return Array.Empty<DependencyListEntry>();
+                return;
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory)
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // Look for any generic specialization of this method or its compiler-generated callees (local methods, lambdas).
             // If any are found, specialize the dataflow dependencies that originated from that method.
@@ -62,10 +65,13 @@ namespace ILCompiler.DependencyAnalysis
                     if (n.OwningMethod != typicalMethod)
                         continue;
 
-                    foreach (var d in n.Dependency.InstantiateDependencies(factory, method.OwningType.Instantiation, method.Instantiation, isConcreteInstantiation: !method.IsSharedByGenericInstantiations))
-                    {
-                        yield return new CombinedDependencyListEntry(d.Node, null, d.Reason);
-                    }
+                    n.Dependency.AddDependencies(
+                        sink,
+                        factory,
+                        method.OwningType.Instantiation,
+                        method.Instantiation,
+                        isConcreteInstantiation: !method.IsSharedByGenericInstantiations,
+                        otherReasonNode: null);
                 }
             }
         }
@@ -79,6 +85,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => _runtimeDependencies.Count > 0;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
     }
 }

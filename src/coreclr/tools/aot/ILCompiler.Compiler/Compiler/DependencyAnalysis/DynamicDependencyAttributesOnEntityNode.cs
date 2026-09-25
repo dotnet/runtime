@@ -34,27 +34,25 @@ namespace ILCompiler.DependencyAnalysis
             _entity = entity;
         }
 
-        public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaMethod method)
+        public static void AddDependenciesDueToDynamicDependencyAttribute(IDependencySink<NodeFactory> dependencies, NodeFactory factory, EcmaMethod method)
         {
             if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.DynamicDependencyAttributesOnEntity(method), "DynamicDependencyAttribute present");
             }
         }
 
-        public static void AddDependenciesDueToDynamicDependencyAttribute(ref DependencyList dependencies, NodeFactory factory, EcmaField field)
+        public static void AddDependenciesDueToDynamicDependencyAttribute(IDependencySink<NodeFactory> dependencies, NodeFactory factory, EcmaField field)
         {
             if (field.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "DynamicDependencyAttribute"))
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.DynamicDependencyAttributesOnEntity(field), "DynamicDependencyAttribute present");
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = null;
+            DependencySink<NodeFactory> dependencies = sink;
             try
             {
                 (TypeDesc owningType, IEnumerable<CustomAttributeValue<TypeDesc>> attributes) = _entity switch
@@ -65,7 +63,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (CustomAttributeValue<TypeDesc> attribute in attributes)
                 {
-                    AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, _entity, owningType, attribute);
+                    AddDependenciesDueToDynamicDependencyAttribute(dependencies, factory, _entity, owningType, attribute);
                 }
             }
             catch (TypeSystemException)
@@ -73,11 +71,10 @@ namespace ILCompiler.DependencyAnalysis
                 // Ignore entities with custom attributes that don't work.
             }
 
-            return dependencies;
         }
 
         private static void AddDependenciesDueToDynamicDependencyAttribute(
-            ref DependencyList dependencies,
+            IDependencySink<NodeFactory> dependencies,
             NodeFactory factory,
             TypeSystemEntity entity,
             TypeDesc owningType,
@@ -231,8 +228,10 @@ namespace ILCompiler.DependencyAnalysis
                 reflectionMarker.MarkTypeSystemEntity(new MessageOrigin(entity), member, reason);
             }
 
-            dependencies ??= new DependencyList();
-            dependencies.AddRange(reflectionMarker.Dependencies);
+            foreach (DependencyListEntry dependency in reflectionMarker.Dependencies)
+            {
+                dependencies.Add(dependency);
+            }
         }
 
         protected override string GetName(NodeFactory factory)
@@ -244,7 +243,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
     }
 }

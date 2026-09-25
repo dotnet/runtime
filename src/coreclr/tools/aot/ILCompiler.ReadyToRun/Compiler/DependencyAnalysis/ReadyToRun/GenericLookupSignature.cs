@@ -9,6 +9,7 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.ReadyToRunConstants;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -130,23 +131,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return dataBuilder.ToObjectData();
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = null;
+            DependencySink<NodeFactory> dependencies = sink;
 
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
-                TypeFixupSignature.AddDependenciesForAsyncStateMachineBox(ref dependencies, factory, _typeArgument);
+                TypeFixupSignature.AddDependenciesForAsyncStateMachineBox(dependencies, factory, _typeArgument);
 
                 // In shared generic code, newobj uses a generic dictionary lookup for the type handle
                 // rather than a direct READYTORUN_FIXUP_TypeHandle (TypeFixupSignature). Mirror the
                 // creation of InheritedVirtualMethodsNode as it is done in TypeFixupSignature, so we
                 // scan the virtual methods on this type for dependency analysis.
                 if (_typeArgument != null)
-                    factory.AddVirtualMethodDiscoveryDependencies(ref dependencies, _typeArgument);
+                    factory.AddVirtualMethodDiscoveryDependencies(dependencies, _typeArgument);
             }
-
-            return dependencies;
         }
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)

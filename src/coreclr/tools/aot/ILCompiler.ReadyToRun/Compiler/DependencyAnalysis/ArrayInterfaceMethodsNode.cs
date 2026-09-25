@@ -37,16 +37,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => null;
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
+            DependencySink<NodeFactory> result = sink;
 
             MetadataType szArrayHelper = factory.TypeSystemContext.SystemModule.GetType("System"u8, "SZArrayHelper"u8, throwIfNotFound: false);
             if (szArrayHelper == null)
-                return result;
+                return;
 
             TypeDesc elementType = _arrayType.ElementType;
 
@@ -75,8 +75,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         "Array generic interface method implemented by SZArrayHelper"));
                 }
             }
-
-            return result;
         }
 
         protected override string GetName(NodeFactory factory) => $"Array interface methods on {_arrayType}";

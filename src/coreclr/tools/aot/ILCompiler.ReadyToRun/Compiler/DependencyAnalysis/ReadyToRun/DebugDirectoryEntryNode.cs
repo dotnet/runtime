@@ -271,9 +271,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 sb.Append($"__RSDSChecksum");
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context) => [];
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => [];
-            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => [];
+            public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
             protected override string GetName(NodeFactory context)
             {
                 return "RSDSChecksum";

@@ -30,9 +30,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public ModuleDesc Module => _module;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             // Global module type always generates metadata because it's really convenient to
             // have something in an assembly that always generates metadata.
@@ -50,15 +50,12 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
             }
-
-            return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            var dependencies = new List<CombinedDependencyListEntry>();
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, (EcmaAssembly)_module);
-            return dependencies;
+            DependencySink<NodeFactory> dependencies = sink;
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, (EcmaAssembly)_module);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -70,6 +67,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => true;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

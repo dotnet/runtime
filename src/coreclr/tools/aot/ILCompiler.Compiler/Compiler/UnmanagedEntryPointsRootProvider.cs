@@ -107,14 +107,13 @@ namespace ILCompiler
                 }
             }
 
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
                     if (!method.IsUnmanagedCallersOnly)
                     {
-                        foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Runtime export", new Utf8String(method.GetRuntimeExportName())))
-                            yield return dependency;
+                        AddMethodStaticDependencies(sink, context, method, "Runtime export", new Utf8String(method.GetRuntimeExportName()));
 
                         continue;
                     }
@@ -122,14 +121,13 @@ namespace ILCompiler
                     if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType) || associatedSourceType is not null)
                         continue;
 
-                    foreach (DependencyListEntry dependency in GetMethodStaticDependencies(context, method, "Native callable", new Utf8String(method.GetUnmanagedCallersOnlyExportName())))
-                        yield return dependency;
+                    AddMethodStaticDependencies(sink, context, method, "Native callable", new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
                 }
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+            public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
-                List<CombinedDependencyListEntry> dependencies = [];
+                DependencySink<NodeFactory> dependencies = sink;
 
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
@@ -148,16 +146,15 @@ namespace ILCompiler
                     RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "Associated source type that could be loaded at runtime");
                 }
 
-                return dependencies;
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
 
-            private IEnumerable<DependencyListEntry> GetMethodStaticDependencies(NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
+            private void AddMethodStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context, EcmaMethod method, string reason, Utf8String exportName)
             {
                 IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, exportName);
 
-                yield return new DependencyListEntry(methodEntryPoint, reason);
+                sink.Add(methodEntryPoint, reason);
             }
 
             private IMethodNode GetMethodEntrypointAndAddAlias(NodeFactory context, EcmaMethod method, Utf8String exportName)

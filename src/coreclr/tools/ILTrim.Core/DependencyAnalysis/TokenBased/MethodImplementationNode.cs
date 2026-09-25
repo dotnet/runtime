@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Reflection.Metadata;
 
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -20,12 +21,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private MethodImplementationHandle Handle => (MethodImplementationHandle)_handle;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             var methodImpl = _module.MetadataReader.GetMethodImplementation(Handle);
-            yield return new(factory.GetNodeForMethodToken(_module, methodImpl.MethodBody), "MethodImpl body");
-            yield return new(factory.GetNodeForMethodToken(_module, methodImpl.MethodDeclaration), "MethodImpl decl");
-            yield return new(factory.GetNodeForTypeToken(_module, methodImpl.Type), "MethodImpl type");
+            sink.Add(new DependencyListEntry(factory.GetNodeForMethodToken(_module, methodImpl.MethodBody), "MethodImpl body"));
+            sink.Add(new DependencyListEntry(factory.GetNodeForMethodToken(_module, methodImpl.MethodDeclaration), "MethodImpl decl"));
+            sink.Add(new DependencyListEntry(factory.GetNodeForTypeToken(_module, methodImpl.Type), "MethodImpl type"));
         }
 
         public override string ToString()

@@ -30,12 +30,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method => _method;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             Debug.Assert(!factory.MetadataManager.IsReflectionBlocked(_method.GetTypicalMethodDefinition()));
 
-            DependencyList dependencies = new DependencyList();
-            factory.MetadataManager.GetDependenciesDueToReflectability(ref dependencies, factory, _method);
+            DependencySink<NodeFactory> dependencies = sink;
+            factory.MetadataManager.GetDependenciesDueToReflectability(dependencies, factory, _method);
 
             // Ensure we consistently apply reflectability to all methods sharing the same definition.
             // Different instantiations of the method have a conditional dependency on the definition node that
@@ -45,8 +45,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 dependencies.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
             }
-
-            return dependencies;
         }
         protected override string GetName(NodeFactory factory)
         {
@@ -57,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => false;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

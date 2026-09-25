@@ -7,6 +7,7 @@ using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -26,7 +27,7 @@ namespace ILCompiler.DependencyAnalysis
         //         typeof(MyStruct).InvokeMember(nameof(Count), BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static, null, null, new object[] { default(MyStruct) });
         //     }
         // }
-        public static void GetDependenciesFromParamsArray(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public static void GetDependenciesFromParamsArray(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             MethodSignature sig = method.Signature;
             if (sig.Length < 1 || !sig[sig.Length - 1].IsArray)
@@ -45,7 +46,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (!reader.GetCustomAttributeHandle(param.GetCustomAttributes(), "System", "ParamArrayAttribute").IsNil)
                     {
-                        dependencies ??= new DependencyList();
                         dependencies.Add(
                             factory.ConstructedTypeSymbol(sig[sig.Length - 1].NormalizeInstantiation()),
                             "Reflection invoke");

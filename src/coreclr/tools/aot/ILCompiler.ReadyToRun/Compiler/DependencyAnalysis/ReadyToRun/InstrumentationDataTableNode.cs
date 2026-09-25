@@ -17,6 +17,7 @@ using Internal.Runtime;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -186,7 +187,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         // Register some MDs that had synthesized PGO data created to be physically embedded by this node, and add
         // the appropriate dependencies of the embedding to a dependency list.
-        public void EmbedSynthesizedPgoDataForMethods(ref DependencyList dependencies, IEnumerable<MethodDesc> mds)
+        public void EmbedSynthesizedPgoDataForMethods(IDependencySink<NodeFactory> dependencies, IEnumerable<MethodDesc> mds)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
             foreach (MethodDesc md in mds)
@@ -204,12 +205,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (Import imp in pgoEmitter.ReferencedImports)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(imp, "Dependency of synthesized PGO data");
             }
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             PgoValueEmitter pgoEmitter = new PgoValueEmitter(_factory.CompilationModuleGroup, _symbolNodeFactory, false);
             foreach (EcmaModule inputModule in _factory.CompilationModuleGroup.CompilationModuleSet)
@@ -223,13 +223,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
             }
-            DependencyListEntry[] symbols = new DependencyListEntry[pgoEmitter.ReferencedImports.Count];
-            for (int i = 0; i < symbols.Length; i++)
+            for (int i = 0; i < pgoEmitter.ReferencedImports.Count; i++)
             {
-                symbols[i] = new DependencyListEntry(pgoEmitter.ReferencedImports[i], "Pgo Instrumentation Data");
+                sink.Add(pgoEmitter.ReferencedImports[i], "Pgo Instrumentation Data");
             }
-
-            return new DependencyList(symbols);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)

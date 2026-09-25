@@ -35,11 +35,11 @@ namespace ILCompiler.DependencyAnalysisFramework
             get;
         }
 
-        IEnumerable<DependencyNodeCore<DependencyContextType>.DependencyListEntry> GetStaticDependencies(DependencyContextType context);
+        void AddStaticDependencies(DependencySink<DependencyContextType> sink, DependencyContextType context);
 
-        IEnumerable<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> GetConditionalStaticDependencies(DependencyContextType context);
+        void AddConditionalDependencies(DependencySink<DependencyContextType> sink, DependencyContextType context);
 
-        IEnumerable<DependencyNodeCore<DependencyContextType>.CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencyContextType context);
+        void SearchDynamicDependencies(List<DependencyNodeCore<DependencyContextType>> markedNodes, int firstNode, DependencySink<DependencyContextType> sink, DependencyContextType context);
 
         string GetName(DependencyContextType context);
     }

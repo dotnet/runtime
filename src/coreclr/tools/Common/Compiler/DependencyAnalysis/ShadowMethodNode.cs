@@ -24,7 +24,7 @@ namespace ILCompiler.DependencyAnalysis
         /// <summary>
         /// Gets the canonical method body that defines the dependencies of this node.
         /// </summary>
-        public IMethodNode CanonicalMethodNode { get; }
+        public IMethodBodyNode CanonicalMethodNode { get; }
 
         /// <summary>
         /// Gets the generic method represented by this node.
@@ -42,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed
             => CanonicalMethodNode.StaticDependenciesAreComputed;
 
-        public ShadowMethodNode(MethodDesc method, IMethodNode canonicalMethod)
+        public ShadowMethodNode(MethodDesc method, IMethodBodyNode canonicalMethod)
         {
             Debug.Assert(!method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(canonicalMethod.Method == method.GetCanonMethodTarget(CanonicalFormKind.Specific));
@@ -56,56 +56,17 @@ namespace ILCompiler.DependencyAnalysis
             return CanonicalMethodNode;
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
-
             // Make sure the canonical body gets generated
-            dependencies.Add(new DependencyListEntry(CanonicalMethodNode, "Canonical body"));
+            sink.Add(new DependencyListEntry(CanonicalMethodNode, "Canonical body"));
 
-            // Instantiate the runtime determined dependencies of the canonical method body
-            // with the concrete instantiation of the method to get concrete dependencies.
-            Instantiation typeInst = Method.OwningType.Instantiation;
-            Instantiation methodInst = Method.Instantiation;
-            IEnumerable<DependencyListEntry> staticDependencies = CanonicalMethodNode.GetStaticDependencies(factory);
-
-            if (staticDependencies != null)
-            {
-                foreach (DependencyListEntry canonDep in staticDependencies)
-                {
-                    var runtimeDep = canonDep.Node as INodeWithRuntimeDeterminedDependencies;
-                    if (runtimeDep != null)
-                    {
-                        dependencies.AddRange(runtimeDep.InstantiateDependencies(factory, typeInst, methodInst, isConcreteInstantiation: !Method.IsSharedByGenericInstantiations));
-                    }
-                }
-            }
-
-            return dependencies;
+            CanonicalMethodNode.AddRuntimeDeterminedStaticDependencies(sink, factory, Method);
         }
 
-        public sealed override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public sealed override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            // Instantiate the runtime determined dependencies of the canonical method body
-            // with the concrete instantiation of the method to get concrete dependencies.
-            Instantiation typeInst = Method.OwningType.Instantiation;
-            Instantiation methodInst = Method.Instantiation;
-            IEnumerable<CombinedDependencyListEntry> staticDependencies = CanonicalMethodNode.GetConditionalStaticDependencies(factory);
-
-            if (staticDependencies != null)
-            {
-                foreach (CombinedDependencyListEntry canonDep in staticDependencies)
-                {
-                    Debug.Assert(canonDep.OtherReasonNode is not INodeWithRuntimeDeterminedDependencies);
-
-                    var node = canonDep.Node;
-                    if (node is INodeWithRuntimeDeterminedDependencies runtimeDeterminedNode)
-                    {
-                        foreach (var nodeInner in runtimeDeterminedNode.InstantiateDependencies(factory, typeInst, methodInst, isConcreteInstantiation: !Method.IsSharedByGenericInstantiations))
-                            yield return new CombinedDependencyListEntry(nodeInner.Node, canonDep.OtherReasonNode, nodeInner.Reason);
-                    }
-                }
-            }
+            CanonicalMethodNode.AddRuntimeDeterminedConditionalDependencies(sink, factory, Method);
         }
 
 
@@ -115,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
         public sealed override bool HasDynamicDependencies => false;
         public sealed override bool InterestingForDynamicDependencyAnalysis => false;
 
-        public sealed override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public sealed override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
 
         int ISortableNode.ClassCode => ClassCode;
 

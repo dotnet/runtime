@@ -16,7 +16,7 @@ using Debug = System.Diagnostics.Debug;
 using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
 using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
 using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry;
 using MethodIL = Internal.IL.MethodIL;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
@@ -467,35 +467,34 @@ namespace ILCompiler
             return true;
         }
 
-        public void GetDependenciesDueToGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public void GetDependenciesDueToGenericDictionary(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             if (method.Signature.IsStatic && method.IsSynchronized)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Will need to look up owning type from dictionary");
             }
         }
 
-        public IEnumerable<CombinedDependencyListEntry> GetConditionalDependenciesDueToGenericDictionary(NodeFactory factory, MethodDesc method)
+        public void AddConditionalDependenciesDueToGenericDictionary(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             // If there's a template for this method, we need to keep track of the dictionary so that we
             // don't accidentally create a new dictionary for the same method at runtime.
-            yield return new CombinedDependencyListEntry(
+            dependencies.Add(new CombinedDependencyListEntry(
                 factory.GenericMethodsHashtableEntry(method),
                 factory.NativeLayout.TemplateMethodEntry(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                "Runtime-constructable dictionary");
+                "Runtime-constructable dictionary"));
         }
 
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to compiled method bodies.
         /// </summary>
-        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public void GetDependenciesDueToReflectability(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             MetadataCategory category = GetMetadataCategory(method);
 
             if ((category & MetadataCategory.Description) != 0)
             {
-                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, method);
+                GetMetadataDependenciesDueToReflectability(dependencies, factory, method);
             }
 
             if ((category & MetadataCategory.RuntimeMapping) != 0)
@@ -503,62 +502,67 @@ namespace ILCompiler
                 if (IsReflectionInvokable(method))
                 {
                     // We're going to generate a mapping table entry for this. Collect dependencies.
-                    ReflectionInvokeMapNode.AddDependenciesDueToReflectability(ref dependencies, factory, method);
+                    ReflectionInvokeMapNode.AddDependenciesDueToReflectability(dependencies, factory, method);
 
-                    ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(ref dependencies, factory, method);
+                    ReflectionInvokeSupportDependencyAlgorithm.GetDependenciesFromParamsArray(dependencies, factory, method);
                 }
 
                 if (!method.IsCanonicalMethod(CanonicalFormKind.Any) && method.IsStaticConstructor)
                 {
                     // Information about the static constructor prefixes the non-GC static base
-                    dependencies ??= new DependencyList();
                     dependencies.Add(factory.TypeNonGCStaticsSymbol((MetadataType)method.OwningType), "Static constructor is reflection-callable");
                 }
 
-                GenericMethodsTemplateMap.GetTemplateMethodDependencies(ref dependencies, factory, method);
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, method.OwningType);
+                GenericMethodsTemplateMap.AddTemplateMethodDependencies(dependencies, factory, method);
+                GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, method.OwningType);
             }
         }
 
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated fields.
         /// </summary>
-        public void GetDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        public void GetDependenciesDueToReflectability(DependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field)
         {
             MetadataCategory category = GetMetadataCategory(field);
 
             if ((category & MetadataCategory.Description) != 0)
             {
-                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, field);
+                GetMetadataDependenciesDueToReflectability(dependencies, factory, field);
             }
 
             if ((category & MetadataCategory.RuntimeMapping) != 0)
             {
                 TypeDesc owningCanonicalType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, owningCanonicalType);
+                GenericTypesTemplateMap.AddTemplateTypeDependencies(dependencies, factory, owningCanonicalType);
             }
         }
 
+#nullable enable
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies on a virtual method.
         /// </summary>
-        public virtual void GetDependenciesDueToVirtualMethodReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void AddDependenciesDueToVirtualMethodReflectability(
+            DependencySink<NodeFactory> dependencies,
+            NodeFactory factory,
+            MethodDesc method,
+            DependencyNodeCore<NodeFactory>? otherReasonNode = null)
         {
         }
+#nullable restore
 
-        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        protected virtual void GetMetadataDependenciesDueToReflectability(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the method having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
         }
 
-        public virtual void GetNativeLayoutMetadataDependencies(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void AddNativeLayoutMetadataDependencies(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
         }
 
-        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        protected virtual void GetMetadataDependenciesDueToReflectability(DependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the field having custom attributes applied to it: making sure we compile the attribute constructor
@@ -568,29 +572,29 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated EETypes.
         /// </summary>
-        public virtual void GetDependenciesDueToEETypePresence(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        public virtual void GetDependenciesDueToEETypePresence(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
         {
             MetadataCategory category = GetMetadataCategory(type);
 
             if ((category & MetadataCategory.Description) != 0)
             {
-                GetMetadataDependenciesDueToReflectability(ref dependencies, factory, type);
+                GetMetadataDependenciesDueToReflectability(dependencies, factory, type);
             }
         }
 
-        internal virtual void GetDependenciesDueToModuleUse(ref DependencyList dependencies, NodeFactory factory, ModuleDesc module)
+        internal virtual void GetDependenciesDueToModuleUse(IDependencySink<NodeFactory> dependencies, NodeFactory factory, ModuleDesc module)
         {
             // MetadataManagers can override this to provide additional dependencies caused by using a module
         }
 
-        protected virtual void GetMetadataDependenciesDueToReflectability(ref DependencyList dependencies, NodeFactory factory, TypeDesc type)
+        protected virtual void GetMetadataDependenciesDueToReflectability(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the emission of metadata
             // (E.g. dependencies caused by the type having custom attributes applied to it: making sure we compile the attribute constructor
             // and property setters)
         }
 
-        public virtual void GetConditionalDependenciesDueToEETypePresence(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc type, bool allocated)
+        public virtual void GetConditionalDependenciesDueToEETypePresence(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc type, bool allocated)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of
             // an MethodTable.
@@ -604,7 +608,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated RuntimeMethodHandles.
         /// </summary>
-        public virtual void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void GetDependenciesDueToLdToken(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // RuntimeMethodHandle data structure.
@@ -613,17 +617,16 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated RuntimeFieldHandles.
         /// </summary>
-        public virtual void GetDependenciesDueToLdToken(ref DependencyList dependencies, NodeFactory factory, FieldDesc field)
+        public virtual void GetDependenciesDueToLdToken(DependencySink<NodeFactory> dependencies, NodeFactory factory, FieldDesc field)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // RuntimeFieldHandle data structure.
         }
 
-        public void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
+        public void GetDependenciesDueToDelegateCreation(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
         {
             if (target.IsVirtual)
             {
-                dependencies ??= new DependencyList();
                 dependencies.Add(factory.DelegateTargetVirtualMethod(target), "Delegate to a virtual method created");
             }
         }
@@ -631,7 +634,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to delegate targets.
         /// </summary>
-        public virtual void GetDependenciesDueToDelegateCreation(ref CombinedDependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
+        public virtual void GetConditionalDependenciesDueToDelegateCreation(DependencySink<NodeFactory> dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the construction
             // of a delegate to a method.
@@ -640,7 +643,7 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional dependencies for overridden methods on constructed types.
         /// </summary>
-        public virtual void GetDependenciesForOverridingMethod(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
+        public virtual void GetDependenciesForOverridingMethod(DependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc decl, MethodDesc impl)
         {
         }
 
@@ -653,20 +656,20 @@ namespace ILCompiler
         /// <summary>
         /// This method is an extension point that can provide additional metadata-based dependencies to generated method bodies.
         /// </summary>
-        public void GetDependenciesDueToMethodCodePresence(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
+        public void GetDependenciesDueToMethodCodePresence(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
-            InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(ref dependencies, factory, method);
+            InlineableStringsResourceNode.AddDependenciesDueToResourceStringUse(dependencies, factory, method);
 
-            GetDependenciesDueToMethodCodePresenceInternal(ref dependencies, factory, method, methodIL);
+            GetDependenciesDueToMethodCodePresenceInternal(dependencies, factory, method, methodIL);
         }
 
-        public virtual void GetConditionalDependenciesDueToMethodCodePresence(ref CombinedDependencyList dependencies, NodeFactory factory, MethodDesc method)
+        public virtual void GetConditionalDependenciesDueToMethodCodePresence(IConditionalDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of
             // method code.
         }
 
-        protected virtual void GetDependenciesDueToMethodCodePresenceInternal(ref DependencyList dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
+        protected virtual void GetDependenciesDueToMethodCodePresenceInternal(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodDesc method, MethodIL methodIL)
         {
             // MetadataManagers can override this to provide additional dependencies caused by the presence of a
             // compiled method body.
@@ -1296,15 +1299,15 @@ namespace ILCompiler
         protected abstract MetadataCategory GetMetadataCategory(TypeDesc type);
         protected abstract MetadataCategory GetMetadataCategory(FieldDesc field);
 
-        public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
+        public virtual void GetDependenciesDueToAccess(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodIL methodIL, TypeDesc accessedType)
         {
         }
 
-        public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, MethodDesc calledMethod)
+        public virtual void GetDependenciesDueToAccess(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodIL methodIL, MethodDesc calledMethod)
         {
         }
 
-        public virtual void GetDependenciesDueToAccess(ref DependencyList dependencies, NodeFactory factory, MethodIL methodIL, FieldDesc writtenField)
+        public virtual void GetDependenciesDueToAccess(IDependencySink<NodeFactory> dependencies, NodeFactory factory, MethodIL methodIL, FieldDesc writtenField)
         {
         }
 

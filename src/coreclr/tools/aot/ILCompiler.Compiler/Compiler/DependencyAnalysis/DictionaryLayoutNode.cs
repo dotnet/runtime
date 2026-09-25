@@ -137,7 +137,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             if (HasFixedSlots)
             {
@@ -145,13 +145,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     foreach (DependencyNodeCore<NodeFactory> dependency in lookupResult.NonRelocDependenciesFromUsage(factory))
                     {
-                        yield return new DependencyListEntry(dependency, "GenericLookupResultDependency");
+                        sink.Add(dependency, "GenericLookupResultDependency");
                     }
                 }
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             Debug.Assert(HasFixedSlots);
 
@@ -165,7 +165,7 @@ namespace ILCompiler.DependencyAnalysis
                 templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_owningMethodOrType);
             }
 
-            List<CombinedDependencyListEntry> conditionalDependencies = new List<CombinedDependencyListEntry>();
+            DependencySink<NodeFactory> conditionalDependencies = sink;
 
             foreach (var lookupSignature in FixedEntries)
             {
@@ -173,8 +173,6 @@ namespace ILCompiler.DependencyAnalysis
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
-
-            return conditionalDependencies;
         }
 
         protected override string GetName(NodeFactory factory) => $"Dictionary layout for {_owningMethodOrType}";
@@ -184,7 +182,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 
     public class PrecomputedDictionaryLayoutNode : DictionaryLayoutNode

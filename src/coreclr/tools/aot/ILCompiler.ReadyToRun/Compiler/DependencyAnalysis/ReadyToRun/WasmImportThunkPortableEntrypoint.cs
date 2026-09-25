@@ -55,18 +55,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return comparer.Compare(_import, otherNode._import);
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
+
             if (!UseVirtualCall)
             {
-                return null;
+                return;
             }
 
-            return new DependencyList(
-                new DependencyListEntry[]
-                {
-                    new DependencyListEntry(factory.WasmVirtualDispatchThunk(GetWasmSignature(factory)), "Wasm virtual dispatch thunk for call site")
-                });
+            sink.Add(factory.WasmVirtualDispatchThunk(GetWasmSignature(factory)), "Wasm virtual dispatch thunk for call site");
         }
 
         private static readonly WasmSignature _genericLookupSignature32Bit = new WasmSignature(

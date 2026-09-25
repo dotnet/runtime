@@ -1306,7 +1306,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowConcreteMethodNode value1, ShadowConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowConcreteMethodNode value) => value.Method.GetHashCode();
         }
@@ -1324,7 +1324,7 @@ namespace ILCompiler.DependencyAnalysis
             protected override bool CompareKeyToValue(MethodDesc key, ShadowNonConcreteMethodNode value) => key == value.Method;
             protected override bool CompareValueToValue(ShadowNonConcreteMethodNode value1, ShadowNonConcreteMethodNode value2) => value1.Method == value2.Method;
             protected override ShadowNonConcreteMethodNode CreateValueFromKey(MethodDesc key) =>
-                new ShadowNonConcreteMethodNode(key, _factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
+                new ShadowNonConcreteMethodNode(key, (IMethodBodyNode)_factory.MethodEntrypoint(key.GetCanonMethodTarget(CanonicalFormKind.Specific)));
             protected override int GetKeyHashCode(MethodDesc key) => key.GetHashCode();
             protected override int GetValueHashCode(ShadowNonConcreteMethodNode value) => value.Method.GetHashCode();
         }

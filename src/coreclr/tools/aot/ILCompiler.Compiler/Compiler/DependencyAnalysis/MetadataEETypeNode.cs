@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 using Internal.Runtime;
 using Internal.TypeSystem;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -28,9 +29,10 @@ namespace ILCompiler.DependencyAnalysis
             return false;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencyList = base.ComputeNonRelocationBasedDependencies(factory);
+            DependencySink<NodeFactory> dependencyList = sink;
+            base.ComputeNonRelocationBasedDependencies(sink, factory);
 
             // Ensure that we track the necessary type symbol if we are working with a metadata type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
@@ -38,10 +40,10 @@ namespace ILCompiler.DependencyAnalysis
             dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for metadata type");
 
             if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencyList, factory, mdType.Module);
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencyList, factory, mdType.Module);
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencyList, factory, _type);
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(dependencyList, factory, _type);
 
             // Reflection-visible valuetypes are considered constructed due to APIs like RuntimeHelpers.Box,
             // or Enum.ToObject.
@@ -73,8 +75,6 @@ namespace ILCompiler.DependencyAnalysis
             }
             if (hasStaticVirtuals)
                 dependencyList.Add(factory.MaximallyConstructableType(_type), "Has static virtual methods");
-
-            return dependencyList;
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

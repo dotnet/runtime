@@ -7,7 +7,8 @@ using System.Collections.Generic;
 using Internal.Text;
 using Internal.TypeSystem;
 
-using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyList;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -59,11 +60,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool HasConditionalStaticDependencies => _data.HasConditionalDependencies;
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            CombinedDependencyList result = null;
-            _data.GetConditionalDependencies(ref result, factory);
-            return result;
+            _data.AddConditionalDependencies(sink, factory);
         }
 
         public override int ClassCode => 1789429316;

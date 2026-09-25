@@ -40,9 +40,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public MethodDesc Method => _method;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             var owningType = (MetadataType)_method.OwningType;
             dependencies.Add(factory.TypeMetadata(owningType), "Owning type metadata");
@@ -57,30 +57,30 @@ namespace ILCompiler.DependencyAnalysis
 
             MethodSignature sig = _method.Signature;
             const string reason = "Method signature metadata";
-            TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sig.ReturnType, reason);
+            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sig.ReturnType, reason);
             foreach (TypeDesc paramType in sig)
             {
-                TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, paramType, reason);
+                TypeMetadataNode.AddMetadataDependencies(dependencies, factory, paramType, reason);
             }
 
             if (sig.HasEmbeddedSignatureData)
             {
                 foreach (var sigData in sig.GetEmbeddedSignatureData())
                     if (sigData.type != null)
-                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a method signature");
+                        TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a method signature");
             }
 
             if (!_isMinimal)
             {
-                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(ref dependencies, factory, _method);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(dependencies, factory, _method);
 
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_method), _method.Signature.ReturnType, _method);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dependencies, factory, new MessageOrigin(_method), _method.Signature.ReturnType, _method);
 
                 foreach (TypeDesc parameterType in _method.Signature)
                 {
-                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_method), parameterType, _method);
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dependencies, factory, new MessageOrigin(_method), parameterType, _method);
                 }
 
                 if (_method.HasCustomAttribute("System.Diagnostics", "StackTraceHiddenAttribute")
@@ -121,15 +121,12 @@ namespace ILCompiler.DependencyAnalysis
                     }
                 }
             }
-
-            return dependencies;
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            var dependencies = new List<CombinedDependencyListEntry>();
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(ref dependencies, factory, _method);
-            return dependencies;
+            DependencySink<NodeFactory> dependencies = sink;
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, _method);
         }
 
         protected override string GetName(NodeFactory factory)
@@ -147,6 +144,6 @@ namespace ILCompiler.DependencyAnalysis
         public override bool HasDynamicDependencies => false;
         public override bool HasConditionalStaticDependencies => !_isMinimal;
         public override bool StaticDependenciesAreComputed => true;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

@@ -5,6 +5,7 @@ using System.Diagnostics;
 
 using Internal.TypeSystem;
 using Internal.Runtime;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -18,7 +19,7 @@ namespace ILCompiler.DependencyAnalysis
         public override bool ShouldSkipEmittingObjectNode(NodeFactory factory) => false;
         public override bool StaticDependenciesAreComputed => true;
         public override bool IsShareable => true;
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory) => null;
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
         protected override int GCDescSize => 0;
 
         // Canonical definition types will have their base size set to the minimum

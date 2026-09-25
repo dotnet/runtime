@@ -37,6 +37,9 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 #endif
 
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+using DependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyListEntry;
+using DependencyNode = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>;
+using IDependencySink = ILCompiler.DependencyAnalysisFramework.IDependencySink<ILCompiler.DependencyAnalysis.NodeFactory>;
 
 #pragma warning disable IDE0060
 
@@ -595,11 +598,11 @@ namespace Internal.JitInterface
             if (_synthesizedPgoDependencies != null)
             {
                 Debug.Assert(_compilation.NodeFactory.InstrumentationDataTable != null, "Expected InstrumentationDataTable to be non-null with synthesized PGO data to embed");
-                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(ref _additionalDependencies, _synthesizedPgoDependencies);
+                _compilation.NodeFactory.InstrumentationDataTable.EmbedSynthesizedPgoDataForMethods(_additionalDependencies, _synthesizedPgoDependencies);
             }
 #else
             var methodIL = (MethodIL)HandleToObject((void*)_methodScope);
-            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(ref _additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
+            CodeBasedDependencyAlgorithm.AddDependenciesDueToMethodCodePresence(_additionalDependencies, _compilation.NodeFactory, MethodBeingCompiled, methodIL);
             _methodCodeNode.InitializeDebugInfo(_debugInfo);
 
             LocalVariableDefinition[] locals = methodIL.GetLocals();
@@ -610,7 +613,7 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeLocalTypes(localTypes);
 #endif
 
-            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies);
+            _methodCodeNode.InitializeNonRelocationDependencies(_additionalDependencies.TakeDependencies());
         }
 
         private void PublishROData()
@@ -723,7 +726,7 @@ namespace Internal.JitInterface
 
             _gcInfo = null;
             _ehClauses = null;
-            _additionalDependencies = null;
+            _additionalDependencies.Clear();
 
 #if !READYTORUN
             _debugInfo = null;
@@ -2037,7 +2040,7 @@ namespace Internal.JitInterface
                     ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
 #endif
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
@@ -2078,7 +2081,7 @@ namespace Internal.JitInterface
 #endif
 
 #if !READYTORUN
-                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
+                _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(_additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
 #else
                 ValidateSafetyOfUsingTypeEquivalenceOfType(field.FieldType);
 #endif
@@ -4272,7 +4275,47 @@ namespace Internal.JitInterface
         private byte[] _gcInfo;
         private CORINFO_EH_CLAUSE[] _ehClauses;
 
-        private DependencyList _additionalDependencies;
+        private sealed class AdditionalDependencyList : IDependencySink
+        {
+            private DependencyList _dependencies;
+
+            public void Add(DependencyNode node, string reason)
+            {
+                (_dependencies ??= new DependencyList()).Add(node, reason);
+            }
+
+            public void Add(object node, string reason)
+            {
+                (_dependencies ??= new DependencyList()).Add(node, reason);
+            }
+
+            public void Add(DependencyListEntry dependency)
+            {
+                (_dependencies ??= new DependencyList()).Add(dependency);
+            }
+
+            public void AddRange(params ReadOnlySpan<DependencyListEntry> dependencies)
+            {
+                foreach (DependencyListEntry dependency in dependencies)
+                {
+                    Add(dependency);
+                }
+            }
+
+            public DependencyList TakeDependencies()
+            {
+                DependencyList dependencies = _dependencies;
+                _dependencies = null;
+                return dependencies;
+            }
+
+            public void Clear()
+            {
+                _dependencies = null;
+            }
+        }
+
+        private readonly AdditionalDependencyList _additionalDependencies = new AdditionalDependencyList();
 
         private void allocMem(ref AllocMemArgs args)
         {

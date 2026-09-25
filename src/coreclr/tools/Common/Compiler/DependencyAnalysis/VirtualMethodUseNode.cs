@@ -60,9 +60,9 @@ namespace ILCompiler.DependencyAnalysis
         public override bool StaticDependenciesAreComputed => true;
 
 #if !READYTORUN
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (canonDecl != _decl)
@@ -72,18 +72,16 @@ namespace ILCompiler.DependencyAnalysis
 
             // Do not report things like Foo<object, __Canon>.Frob().
             if (!_decl.IsCanonicalMethod(CanonicalFormKind.Any) || canonDecl == _decl)
-                factory.MetadataManager.GetDependenciesDueToVirtualMethodReflectability(ref dependencies, factory, _decl);
+                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, _decl);
 
             if (VariantInterfaceMethodUseNode.IsVariantMethodCall(factory, _decl))
                 dependencies.Add(factory.VariantInterfaceMethodUse(_decl.GetTypicalMethodDefinition()), "Variant interface call");
-
-            return dependencies;
         }
 #else
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory) => null;
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
 #endif
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
     }
 }

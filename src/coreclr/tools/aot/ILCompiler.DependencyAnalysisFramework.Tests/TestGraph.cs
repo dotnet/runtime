@@ -3,19 +3,18 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics;
 using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysisFramework.Tests
 {
     class TestGraph
     {
-        public class TestNode : ComputedStaticDependencyNode<TestGraph>
+        public class TestNode : DependencyNodeCore<TestGraph>
         {
             private readonly string _data;
-            private static readonly CombinedDependencyListEntry[] s_emptyDynamicList = new CombinedDependencyListEntry[0];
+            private IEnumerable<DependencyListEntry> _dependencies;
+            private IEnumerable<CombinedDependencyListEntry> _conditionalDependencies;
 
             public TestNode(string data)
             {
@@ -35,6 +34,20 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 return _data;
             }
 
+            public void SetStaticDependencies(
+                IEnumerable<DependencyListEntry> dependencies,
+                IEnumerable<CombinedDependencyListEntry> conditionalDependencies)
+            {
+                Debug.Assert(_dependencies == null);
+                Debug.Assert(_conditionalDependencies == null);
+                Debug.Assert(dependencies != null);
+
+                _dependencies = dependencies;
+                _conditionalDependencies = conditionalDependencies;
+            }
+
+            public override bool HasConditionalStaticDependencies => _conditionalDependencies != null;
+
             public override bool HasDynamicDependencies
             {
                 get
@@ -43,30 +56,47 @@ namespace ILCompiler.DependencyAnalysisFramework.Tests
                 }
             }
 
-            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<TestGraph>> markedNodes, int firstNode, TestGraph context)
+            public override bool InterestingForDynamicDependencyAnalysis => true;
+
+            public override bool StaticDependenciesAreComputed => _dependencies != null;
+
+            public override void AddStaticDependencies(DependencySink<TestGraph> sink, TestGraph context)
+            {
+                foreach (DependencyListEntry dependency in _dependencies)
+                {
+                    sink.Add(dependency);
+                }
+            }
+
+            public override void AddConditionalDependencies(DependencySink<TestGraph> sink, TestGraph context)
+            {
+                if (_conditionalDependencies != null)
+                {
+                    foreach (CombinedDependencyListEntry dependency in _conditionalDependencies)
+                    {
+                        sink.Add(dependency);
+                    }
+                }
+            }
+
+            public override void SearchDynamicDependencies(
+                List<DependencyNodeCore<TestGraph>> markedNodes,
+                int firstNode,
+                DependencySink<TestGraph> sink,
+                TestGraph context)
             {
                 if (context._dynamicDependencyComputer == null)
-                    return s_emptyDynamicList;
+                    return;
 
-                IEnumerable<CombinedDependencyListEntry> returnValue = s_emptyDynamicList;
-                List<CombinedDependencyListEntry> returnValueWithData = null;
                 for (int i = firstNode; i < markedNodes.Count; i++)
                 {
                     Tuple<string,string> nextResult = context._dynamicDependencyComputer(this.Data, ((TestNode)markedNodes[i]).Data);
 
                     if (nextResult != null)
                     {
-                        if (returnValueWithData == null)
-                        {
-                            returnValueWithData = new List<DependencyNodeCore<TestGraph>.CombinedDependencyListEntry>();
-                            returnValue = returnValueWithData;
-                        }
-
-                        returnValueWithData.Add(new CombinedDependencyListEntry(context.GetNode(nextResult.Item1), markedNodes[i], nextResult.Item2));
+                        sink.Add(new CombinedDependencyListEntry(context.GetNode(nextResult.Item1), markedNodes[i], nextResult.Item2));
                     }
                 }
-
-                return returnValue;
             }
         }
 

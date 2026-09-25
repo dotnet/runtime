@@ -26,20 +26,18 @@ namespace ILCompiler
 
             public override bool StaticDependenciesAreComputed => true;
 
-            public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory context)
+            public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
-                List<CombinedDependencyListEntry> entries = [];
+                DependencySink<NodeFactory> entries = sink;
                 foreach ((TypeDesc typeMapGroup, TypeMapMetadata.Map typeMap) in typeMapState.Maps)
                 {
                     entries.Add(new CombinedDependencyListEntry(GetExternalTypeMapNode(typeMapGroup, typeMap), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
                     entries.Add(new CombinedDependencyListEntry(GetProxyTypeMapNode(typeMapGroup, typeMap), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
                 }
-
-                return entries;
             }
 
-            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context) => Array.Empty<DependencyListEntry>();
-            public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory context) => Array.Empty<CombinedDependencyListEntry>();
+            public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context) { }
+            public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory context) { }
             protected override string GetName(NodeFactory context) => $"Type maps root node: {typeMapState.DiagnosticName}";
 
             private static IExternalTypeMapNode GetExternalTypeMapNode(TypeDesc typeMapGroup, IExternalTypeMap map)

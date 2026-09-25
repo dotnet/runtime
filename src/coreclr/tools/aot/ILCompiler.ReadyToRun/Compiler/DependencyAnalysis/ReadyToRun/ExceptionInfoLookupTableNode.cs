@@ -154,9 +154,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _methodNodes.Count == 0;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            return new DependencyNodeCore<NodeFactory>.DependencyList(new DependencyListEntry[] { new DependencyListEntry(_ehInfoNode, "EH info array") });
+            sink.Add(_ehInfoNode, "EH info array");
         }
 
         public override int ClassCode => 582513248;

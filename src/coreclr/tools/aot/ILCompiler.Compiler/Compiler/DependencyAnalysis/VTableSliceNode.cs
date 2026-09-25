@@ -77,22 +77,22 @@ namespace ILCompiler.DependencyAnalysis
 
         public override bool StaticDependenciesAreComputed => true;
 
-        public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
+        public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             if (_type.HasBaseType)
             {
-                yield return new DependencyListEntry(factory.VTable(_type.BaseType), "Base type VTable");
+                sink.Add(factory.VTable(_type.BaseType), "Base type VTable");
             }
 
             TypeDesc canonType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (_type != canonType)
             {
-                yield return new DependencyListEntry(factory.VTable(canonType), "Canonical type VTable");
+                sink.Add(factory.VTable(canonType), "Canonical type VTable");
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory) => null;
-        public override IEnumerable<CombinedDependencyListEntry> SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, NodeFactory factory) => null;
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }
+        public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory) { }
 
         public override bool InterestingForDynamicDependencyAnalysis => false;
         public override bool HasDynamicDependencies => false;
@@ -217,7 +217,7 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
             // VirtualMethodUse of Foo<SomeType>.Method will bring in VirtualMethodUse
             // of Foo<__Canon>.Method. This in turn should bring in Foo<OtherType>.Method.
@@ -236,7 +236,7 @@ namespace ILCompiler.DependencyAnalysis
                     continue;
 
                 if (defType.Context.SupportsCanon)
-                    yield return new CombinedDependencyListEntry(
+                    sink.AddConditional(
                         factory.VirtualMethodUse(method),
                         factory.VirtualMethodUse(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
                         "Canonically equivalent virtual method use");

@@ -12,6 +12,7 @@ using Internal.TypeSystem;
 
 using Debug = System.Diagnostics.Debug;
 using GenericVariance = Internal.Runtime.GenericVariance;
+using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -312,13 +313,13 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
-        public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
+        public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            List<CombinedDependencyListEntry> result = new List<CombinedDependencyListEntry>();
+            DependencySink<NodeFactory> result = sink;
 
             if (IsReflectionVisible)
             {
-                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(ref result, factory, _type, allocated: EmitVirtualSlots);
+                factory.MetadataManager.GetConditionalDependenciesDueToEETypePresence(result, factory, _type, allocated: EmitVirtualSlots);
 
                 if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
                 {
@@ -344,7 +345,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     result.Add(new CombinedDependencyListEntry(maximallyConstructableType, factory.MaximallyConstructableType(_type.ConvertToCanonForm(CanonicalFormKind.Specific)), "Trigger full type generation if canonical form exists"));
                 }
-                return result;
+                return;
             }
 
             TypeDesc canonOwningType = _type.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -357,7 +358,7 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             if (!EmitVirtualSlots)
-                return result;
+                return;
 
             DefType defType = _type.GetClosestDefType();
 
@@ -415,7 +416,7 @@ namespace ILCompiler.DependencyAnalysis
                             factory.MetadataManager.NoteOverridingMethod(decl, impl);
                         }
 
-                        factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, decl, impl);
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(result, factory, decl, impl);
                     }
                 }
 
@@ -516,7 +517,7 @@ namespace ILCompiler.DependencyAnalysis
                             TypeSystemEntity origin = (implMethod.OwningType != defType) ? defType : null;
                             factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod, origin);
 
-                            factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
+                            factory.MetadataManager.GetDependenciesForOverridingMethod(result, factory, interfaceMethod, implMethod);
                         }
                         else
                         {
@@ -552,14 +553,12 @@ namespace ILCompiler.DependencyAnalysis
 
                                 factory.MetadataManager.NoteOverridingMethod(interfaceMethod, implMethod);
 
-                                factory.MetadataManager.GetDependenciesForOverridingMethod(ref result, factory, interfaceMethod, implMethod);
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(result, factory, interfaceMethod, implMethod);
                             }
                         }
                     }
                 }
             }
-
-            return result;
         }
 
         public static bool IsTypeNodeShareable(TypeDesc type)
@@ -589,9 +588,9 @@ namespace ILCompiler.DependencyAnalysis
             return true;
         }
 
-        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencyList dependencies = new DependencyList();
+            DependencySink<NodeFactory> dependencies = sink;
 
             if (_type.IsInterface)
                 dependencies.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
@@ -662,17 +661,16 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // If necessary MethodTable is the highest load level for this type, ask the metadata manager
                 // if we have any dependencies due to presence of the EEType.
-                factory.MetadataManager.GetDependenciesDueToEETypePresence(ref dependencies, factory, _type);
+                factory.MetadataManager.GetDependenciesDueToEETypePresence(dependencies, factory, _type);
 
                 // If necessary MethodTable is the highest load level, consider this a module use
                 if (_type is MetadataType mdType)
-                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref dependencies, factory, mdType.Module);
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencies, factory, mdType.Module);
             }
 
             if (_type.IsFunctionPointer)
-                FunctionPointerMapNode.GetHashtableDependencies(ref dependencies, factory, (FunctionPointerType)_type);
+                FunctionPointerMapNode.AddHashtableDependencies(dependencies, factory, (FunctionPointerType)_type);
 
-            return dependencies;
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly)
