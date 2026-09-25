@@ -403,7 +403,14 @@ namespace System.IO
                 return ApplicationContainerPath ?? "/tmp/";
             }
 
+#if TARGET_OPENHARMONY
+            // The OpenHarmony /tmp mount denies file locks (fcntl(F_SETLK) returns EACCES),
+            // which the shared memory lock files rely on, so use the process temp directory
+            // (which honors TMPDIR and falls back to /tmp) for the shared memory files.
+            return Path.GetTempPath();
+#else
             return "/tmp/";
+#endif
         }
 
         private static string? GetApplicationContainerPath()
