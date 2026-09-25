@@ -115,6 +115,8 @@
              Link="Common\System\Net\Security\SslClientAuthenticationOptionsExtensions.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="src\TlsFrameHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsSignatureAlgorithmHelper.cs"
+             Link="Common\System\Net\Security\TlsSignatureAlgorithmHelper.cs" />
     <Compile Include="..\..\src\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs"
              Link="ProductionCode\System\Net\Security\Pal.Managed\SafeChannelBindingHandle.cs"
              Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'" />

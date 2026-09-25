@@ -487,8 +487,9 @@ namespace System.Net.Security
 
                         if (_sslAuthenticationOptions.ServerOptionDelegate != null)
                         {
-                            // We need to process supported versions extension to pass it to user callback.
-                            options |= TlsFrameHelper.ProcessingOptions.Versions;
+                            // Process ClientHello information exposed to the user callback.
+                            options |= TlsFrameHelper.ProcessingOptions.Versions |
+                                TlsFrameHelper.ProcessingOptions.SignatureAlgorithms;
                         }
 
                         // Process SNI from Client Hello message
@@ -508,7 +509,10 @@ namespace System.Net.Security
                             if (_sslAuthenticationOptions.ServerOptionDelegate != null)
                             {
                                 SslServerAuthenticationOptions userOptions =
-                                    await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
+                                    await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(
+                                        _sslAuthenticationOptions.TargetHost,
+                                        _lastFrame.SupportedVersions,
+                                        _lastFrame.SignatureAlgorithmFamilies),
                                         _sslAuthenticationOptions.UserState, cancellationToken).ConfigureAwait(false);
                                 _sslAuthenticationOptions.UpdateOptions(userOptions);
                             }

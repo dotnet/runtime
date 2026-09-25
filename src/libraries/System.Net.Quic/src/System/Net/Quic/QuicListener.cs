@@ -343,7 +343,17 @@ public sealed partial class QuicListener : IAsyncDisposable
             NetEventSource.Info(this, $"{this} New inbound connection {connection}.");
         }
 
-        SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Encoding.UTF8.GetString((byte*)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
+        ReadOnlySpan<byte> cryptoBuffer = new ReadOnlySpan<byte>(
+            data.Info->CryptoBuffer,
+            checked((int)data.Info->CryptoBufferLength));
+        TlsSignatureAlgorithmHelper.TryGetFamiliesFromClientHello(
+            cryptoBuffer,
+            out TlsSignatureAlgorithmFamilies signatureAlgorithmFamilies);
+
+        SslClientHelloInfo clientHello = new SslClientHelloInfo(
+            data.Info->ServerNameLength > 0 ? Encoding.UTF8.GetString((byte*)data.Info->ServerName, data.Info->ServerNameLength) : "",
+            SslProtocols.Tls13,
+            signatureAlgorithmFamilies);
 
         // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
         StartConnectionHandshake(connection, clientHello);

@@ -78,6 +78,7 @@ namespace System.Net.Security
         TrustedCaKeys = 3,
         TruncatedHmac = 4,
         CertificateStatusRequest = 5,
+        SignatureAlgorithms = 13,
         ApplicationProtocols = 16,
         SupportedVersions = 43
     }
@@ -102,6 +103,7 @@ namespace System.Net.Security
             ApplicationProtocol = 0x2,
             Versions = 0x4,
             RawApplicationProtocol = 0x8,
+            SignatureAlgorithms = 0x10,
         }
 
         [Flags]
@@ -118,6 +120,7 @@ namespace System.Net.Security
             public TlsFrameHeader Header;
             public TlsHandshakeType HandshakeType;
             public SslProtocols SupportedVersions;
+            public TlsSignatureAlgorithmFamilies SignatureAlgorithmFamilies;
             public string TargetName;
             public ApplicationProtocolInfo ApplicationProtocols;
             public TlsAlertDescription AlertDescription;
@@ -129,7 +132,7 @@ namespace System.Net.Security
                 {
                     if (HandshakeType == TlsHandshakeType.ClientHello)
                     {
-                        return $"{Header.Version}:{HandshakeType}[{Header.Length}] TargetName='{TargetName}' SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}'";
+                        return $"{Header.Version}:{HandshakeType}[{Header.Length}] TargetName='{TargetName}' SupportedVersion='{SupportedVersions}' ApplicationProtocols='{ApplicationProtocols}' SignatureAlgorithmFamilies='{SignatureAlgorithmFamilies}'";
                     }
                     else if (HandshakeType == TlsHandshakeType.ServerHello)
                     {
@@ -535,6 +538,13 @@ namespace System.Net.Security
                     }
 
                     info.SupportedVersions |= versions;
+                }
+                else if (extensionType == ExtensionType.SignatureAlgorithms && (options & ProcessingOptions.SignatureAlgorithms) != 0)
+                {
+                    if (TlsSignatureAlgorithmHelper.TryGetFamiliesFromExtension(extensionData, out TlsSignatureAlgorithmFamilies signatureAlgorithmFamilies))
+                    {
+                        info.SignatureAlgorithmFamilies |= signatureAlgorithmFamilies;
+                    }
                 }
                 else if (extensionType == ExtensionType.ApplicationProtocols &&
                           (options & (ProcessingOptions.ApplicationProtocol | ProcessingOptions.RawApplicationProtocol)) != 0)

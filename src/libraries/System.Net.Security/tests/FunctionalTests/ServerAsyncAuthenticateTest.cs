@@ -126,6 +126,7 @@ namespace System.Net.Security.Tests
                     {
                         Assert.Equal(server, stream);
                         Assert.Equal(clientOptions.TargetHost, clientHelloInfo.ServerName);
+                        Assert.True((clientHelloInfo.SignatureAlgorithmFamilies & TlsSignatureAlgorithmFamilies.Rsa) != 0);
                         return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
                     },
                     null, CancellationToken.None);
@@ -153,6 +154,7 @@ namespace System.Net.Security.Tests
             clientOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true;
 
             SslProtocols observedProtocols = SslProtocols.None;
+            TlsSignatureAlgorithmFamilies observedSignatureAlgorithmFamilies = TlsSignatureAlgorithmFamilies.None;
 
             (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
             using (client)
@@ -163,6 +165,7 @@ namespace System.Net.Security.Tests
                     (stream, clientHelloInfo, userState, cancellationToken) =>
                     {
                         observedProtocols = clientHelloInfo.SslProtocols;
+                        observedSignatureAlgorithmFamilies = clientHelloInfo.SignatureAlgorithmFamilies;
                         return new ValueTask<SslServerAuthenticationOptions>(serverOptions);
                     },
                     null, CancellationToken.None);
@@ -172,6 +175,8 @@ namespace System.Net.Security.Tests
 
             Assert.True((observedProtocols & SslProtocols.Tls13) == SslProtocols.Tls13,
                 $"Expected SslClientHelloInfo.SslProtocols to include Tls13, got '{observedProtocols}'.");
+            Assert.True((observedSignatureAlgorithmFamilies & TlsSignatureAlgorithmFamilies.Rsa) != 0,
+                $"Expected SslClientHelloInfo.SignatureAlgorithmFamilies to include Rsa, got '{observedSignatureAlgorithmFamilies}'.");
         }
 
         private async Task<SslServerAuthenticationOptions> FailedTask()

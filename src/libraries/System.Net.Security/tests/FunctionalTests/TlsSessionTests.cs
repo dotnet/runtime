@@ -122,6 +122,7 @@ namespace System.Net.Security.Tests
 
             int factoryCalls = 0;
             string? observedSni = null;
+            TlsSignatureAlgorithmFamilies observedSignatureAlgorithmFamilies = TlsSignatureAlgorithmFamilies.None;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -147,6 +148,7 @@ namespace System.Net.Security.Tests
                 {
                     factoryCalls++;
                     observedSni = hello.ServerName;
+                    observedSignatureAlgorithmFamilies = hello.SignatureAlgorithmFamilies;
                     return hostCtx;
                 });
 
@@ -156,6 +158,7 @@ namespace System.Net.Security.Tests
                 Assert.True(clientSsl.IsAuthenticated);
                 Assert.Equal(1, factoryCalls);
                 Assert.Equal(serverName, observedSni);
+                Assert.True((observedSignatureAlgorithmFamilies & TlsSignatureAlgorithmFamilies.Rsa) != 0);
             }
         }
 

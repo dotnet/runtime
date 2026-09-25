@@ -57,7 +57,8 @@ namespace System.Net.Security.Tests
         private const TlsFrameHelper.ProcessingOptions AllExtensions =
             TlsFrameHelper.ProcessingOptions.ServerName |
             TlsFrameHelper.ProcessingOptions.ApplicationProtocol |
-            TlsFrameHelper.ProcessingOptions.Versions;
+            TlsFrameHelper.ProcessingOptions.Versions |
+            TlsFrameHelper.ProcessingOptions.SignatureAlgorithms;
 
         [Fact]
         public void TlsFrameHelper_ValidData_Ok()
@@ -69,6 +70,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(208, info.Header.Length);
             Assert.Equal(SslProtocols.Tls12, info.SupportedVersions);
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.None, info.ApplicationProtocols);
+            Assert.Equal(TlsSignatureAlgorithmFamilies.Rsa | TlsSignatureAlgorithmFamilies.ECDsa, info.SignatureAlgorithmFamilies);
         }
 
         [Fact]
@@ -82,6 +84,7 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslProtocols.Tls | SslProtocols.Tls12, info.SupportedVersions);
 #pragma warning restore SYSLIB0039
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Http11 | TlsFrameHelper.ApplicationProtocolInfo.Http2, info.ApplicationProtocols);
+            Assert.Equal(TlsSignatureAlgorithmFamilies.Rsa | TlsSignatureAlgorithmFamilies.ECDsa, info.SignatureAlgorithmFamilies);
         }
 
         [Fact]
@@ -95,6 +98,117 @@ namespace System.Net.Security.Tests
             Assert.Equal(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13, info.SupportedVersions);
 #pragma warning restore SYSLIB0039
             Assert.Equal(TlsFrameHelper.ApplicationProtocolInfo.Other, info.ApplicationProtocols);
+            Assert.Equal(TlsSignatureAlgorithmFamilies.Rsa | TlsSignatureAlgorithmFamilies.ECDsa, info.SignatureAlgorithmFamilies);
+        }
+
+        public static IEnumerable<object[]> SignatureAlgorithmFamilyData()
+        {
+            yield return new object[] { 0x0201, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0401, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0501, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0601, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0804, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0805, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0806, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0809, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x080A, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x080B, TlsSignatureAlgorithmFamilies.Rsa };
+            yield return new object[] { 0x0203, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x0403, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x0503, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x0603, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x081A, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x081B, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x081C, TlsSignatureAlgorithmFamilies.ECDsa };
+            yield return new object[] { 0x0807, TlsSignatureAlgorithmFamilies.EdDsa };
+            yield return new object[] { 0x0808, TlsSignatureAlgorithmFamilies.EdDsa };
+            yield return new object[] { 0x0904, TlsSignatureAlgorithmFamilies.MLDsa };
+            yield return new object[] { 0x0905, TlsSignatureAlgorithmFamilies.MLDsa };
+            yield return new object[] { 0x0906, TlsSignatureAlgorithmFamilies.MLDsa };
+
+            for (int scheme = 0x0911; scheme <= 0x091C; scheme++)
+            {
+                yield return new object[] { scheme, TlsSignatureAlgorithmFamilies.SlhDsa };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SignatureAlgorithmFamilyData))]
+        public void TlsFrameHelper_ClientHelloSignatureAlgorithm_MapsFamily(int signatureScheme, TlsSignatureAlgorithmFamilies expected)
+        {
+            byte[] clientHello = CreateClientHelloWithSignatureAlgorithms(checked((ushort)signatureScheme));
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(clientHello, ref info, AllExtensions));
+            Assert.Equal(expected, info.SignatureAlgorithmFamilies);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_ClientHelloSignatureAlgorithms_CombinesFamiliesAndIgnoresUnknownSchemes()
+        {
+            byte[] clientHello = CreateClientHelloWithSignatureAlgorithms(
+                0x0804,
+                0x0403,
+                0x0807,
+                0x0904,
+                0x0911,
+                0x0A0A);
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(clientHello, ref info, AllExtensions));
+            Assert.Equal(
+                TlsSignatureAlgorithmFamilies.Rsa |
+                    TlsSignatureAlgorithmFamilies.ECDsa |
+                    TlsSignatureAlgorithmFamilies.EdDsa |
+                    TlsSignatureAlgorithmFamilies.MLDsa |
+                    TlsSignatureAlgorithmFamilies.SlhDsa,
+                info.SignatureAlgorithmFamilies);
+        }
+
+        [Fact]
+        public void TlsSignatureAlgorithmHelper_HandshakeClientHello_ParsesFamilies()
+        {
+            byte[] clientHello = CreateClientHelloWithSignatureAlgorithms(0x0804, 0x0403, 0x0904);
+
+            Assert.True(TlsSignatureAlgorithmHelper.TryGetFamiliesFromClientHello(
+                clientHello.AsSpan(TlsFrameHelper.HeaderSize),
+                out TlsSignatureAlgorithmFamilies signatureAlgorithmFamilies));
+            Assert.Equal(
+                TlsSignatureAlgorithmFamilies.Rsa |
+                    TlsSignatureAlgorithmFamilies.ECDsa |
+                    TlsSignatureAlgorithmFamilies.MLDsa,
+                signatureAlgorithmFamilies);
+        }
+
+        public static IEnumerable<object[]> InvalidSignatureAlgorithmsData()
+        {
+            yield return new object[] { Array.Empty<byte>() };
+            yield return new object[] { new byte[] { 0x00 } };
+            yield return new object[] { new byte[] { 0x00, 0x00 } };
+            yield return new object[] { new byte[] { 0x00, 0x01, 0x04 } };
+            yield return new object[] { new byte[] { 0x00, 0x02, 0x04 } };
+            yield return new object[] { new byte[] { 0x00, 0x04, 0x04, 0x03 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidSignatureAlgorithmsData))]
+        public void TlsFrameHelper_InvalidClientHelloSignatureAlgorithms_IgnoresExtension(byte[] extensionData)
+        {
+            byte[] clientHello = CreateClientHelloWithSignatureAlgorithmsExtension(extensionData);
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(clientHello, ref info, AllExtensions));
+            Assert.Equal(TlsSignatureAlgorithmFamilies.None, info.SignatureAlgorithmFamilies);
+        }
+
+        [Fact]
+        public void TlsFrameHelper_UnknownClientHelloSignatureAlgorithms_ReturnsNone()
+        {
+            byte[] clientHello = CreateClientHelloWithSignatureAlgorithms(0x0A0A);
+            TlsFrameHelper.TlsFrameInfo info = default;
+
+            Assert.True(TlsFrameHelper.TryGetFrameInfo(clientHello, ref info, AllExtensions));
+            Assert.Equal(TlsSignatureAlgorithmFamilies.None, info.SignatureAlgorithmFamilies);
         }
 
         [Fact]
@@ -203,6 +317,51 @@ namespace System.Net.Security.Tests
             clientHello[58] = 0;
             BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(59), checked((ushort)hostNameLength));
             clientHello.AsSpan(HostNameOffset).Fill((byte)'a');
+
+            return clientHello;
+        }
+
+        private static byte[] CreateClientHelloWithSignatureAlgorithms(params ushort[] signatureSchemes)
+        {
+            byte[] extensionData = new byte[sizeof(ushort) + (signatureSchemes.Length * sizeof(ushort))];
+            BinaryPrimitives.WriteUInt16BigEndian(extensionData, checked((ushort)(extensionData.Length - sizeof(ushort))));
+
+            for (int i = 0; i < signatureSchemes.Length; i++)
+            {
+                BinaryPrimitives.WriteUInt16BigEndian(
+                    extensionData.AsSpan(sizeof(ushort) + (i * sizeof(ushort))),
+                    signatureSchemes[i]);
+            }
+
+            return CreateClientHelloWithSignatureAlgorithmsExtension(extensionData);
+        }
+
+        private static byte[] CreateClientHelloWithSignatureAlgorithmsExtension(byte[] extensionData)
+        {
+            const int ExtensionDataOffset = 56;
+            byte[] clientHello = new byte[ExtensionDataOffset + extensionData.Length];
+
+            clientHello[0] = (byte)TlsContentType.Handshake;
+            clientHello[1] = 3;
+            clientHello[2] = 3;
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(3), checked((ushort)(clientHello.Length - TlsFrameHelper.HeaderSize)));
+            clientHello[5] = (byte)TlsHandshakeType.ClientHello;
+            int handshakeLength = clientHello.Length - 9;
+            clientHello[6] = (byte)(handshakeLength >> 16);
+            clientHello[7] = (byte)(handshakeLength >> 8);
+            clientHello[8] = (byte)handshakeLength;
+            clientHello[9] = 3;
+            clientHello[10] = 3;
+            clientHello[43] = 0;
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(44), 2);
+            clientHello[46] = 0x13;
+            clientHello[47] = 0x01;
+            clientHello[48] = 1;
+            clientHello[49] = 0;
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(50), checked((ushort)(extensionData.Length + 4)));
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(52), (ushort)ExtensionType.SignatureAlgorithms);
+            BinaryPrimitives.WriteUInt16BigEndian(clientHello.AsSpan(54), checked((ushort)extensionData.Length));
+            extensionData.CopyTo(clientHello.AsSpan(ExtensionDataOffset));
 
             return clientHello;
         }

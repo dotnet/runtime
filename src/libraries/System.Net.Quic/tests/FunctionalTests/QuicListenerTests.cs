@@ -216,6 +216,26 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task ConnectionOptionsCallback_ReceivesSignatureAlgorithmFamilies()
+        {
+            TlsSignatureAlgorithmFamilies observedSignatureAlgorithmFamilies = TlsSignatureAlgorithmFamilies.None;
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (_, hello, _) =>
+            {
+                observedSignatureAlgorithmFamilies = hello.SignatureAlgorithmFamilies;
+                return ValueTask.FromResult(CreateQuicServerOptions());
+            };
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) =
+                await CreateConnectedQuicConnection(clientOptions: null, listenerOptions);
+            await using (clientConnection)
+            await using (serverConnection)
+            {
+                Assert.True((observedSignatureAlgorithmFamilies & TlsSignatureAlgorithmFamilies.Rsa) != 0);
+            }
+        }
+
+        [Fact]
         public async Task AcceptConnectionAsync_ListenerDisposed_Throws()
         {
             var serverDisposed = new TaskCompletionSource();

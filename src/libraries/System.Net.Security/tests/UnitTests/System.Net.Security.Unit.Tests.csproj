@@ -193,6 +193,8 @@
              Link="ProductionCode\Common\System\Net\TlsAlertType.cs" />
     <Compile Include="..\..\src\System\Net\Security\TlsFrameHelper.cs"
              Link="ProductionCode\Common\System\Net\TlsFrameHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsSignatureAlgorithmHelper.cs"
+             Link="ProductionCode\Common\System\Net\TlsSignatureAlgorithmHelper.cs" />
     <Compile Include="$(CommonPath)System\ReadWriteAdapter.cs"
              Link="Common\System\ReadWriteAdapter.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"

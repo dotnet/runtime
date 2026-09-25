@@ -92,6 +92,8 @@
     <Compile Include="System\Net\Security\StreamSizes.cs" />
     <Compile Include="System\Net\Security\TlsAlertType.cs" />
     <Compile Include="System\Net\Security\TlsFrameHelper.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\TlsSignatureAlgorithmHelper.cs"
+             Link="Common\System\Net\Security\TlsSignatureAlgorithmHelper.cs" />
     <!-- NegotiateStream -->
     <Compile Include="System\Net\SecurityStatusPal.cs" />
     <Compile Include="System\Net\StreamFramer.cs" />

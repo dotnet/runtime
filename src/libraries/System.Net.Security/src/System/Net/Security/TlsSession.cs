@@ -1674,7 +1674,12 @@ namespace System.Net.Security
         {
             frameLength = 0;
             TlsFrameHelper.TlsFrameInfo frameInfo = default;
-            if (!TlsFrameHelper.TryGetFrameInfo(input, ref frameInfo))
+            if (!TlsFrameHelper.TryGetFrameInfo(
+                input,
+                ref frameInfo,
+                TlsFrameHelper.ProcessingOptions.ServerName |
+                    TlsFrameHelper.ProcessingOptions.Versions |
+                    TlsFrameHelper.ProcessingOptions.SignatureAlgorithms))
             {
                 return null;
             }
@@ -1685,7 +1690,10 @@ namespace System.Net.Security
             }
 
             frameLength = frameInfo.Header.Length;
-            return new SslClientHelloInfo(frameInfo.TargetName ?? string.Empty, frameInfo.SupportedVersions);
+            return new SslClientHelloInfo(
+                frameInfo.TargetName ?? string.Empty,
+                frameInfo.SupportedVersions,
+                frameInfo.SignatureAlgorithmFamilies);
         }
 
         // Server-side SNI + certificate selection. Parses the ClientHello to

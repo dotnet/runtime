@@ -221,7 +221,9 @@ namespace System.Net.Security
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public SslClientHelloInfo(string serverName, System.Security.Authentication.SslProtocols sslProtocols) { throw null; }
+        public SslClientHelloInfo(string serverName, System.Security.Authentication.SslProtocols sslProtocols, System.Net.Security.TlsSignatureAlgorithmFamilies signatureAlgorithmFamilies) { throw null; }
         public string ServerName { get { throw null; } }
+        public System.Net.Security.TlsSignatureAlgorithmFamilies SignatureAlgorithmFamilies { get { throw null; } }
         public System.Security.Authentication.SslProtocols SslProtocols { get { throw null; } }
     }
     public partial class SslServerAuthenticationOptions
@@ -741,6 +743,16 @@ namespace System.Net.Security
         public System.Net.Security.TlsOperationStatus Shutdown(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus DrainPendingOutput(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public System.Net.Security.TlsOperationStatus RequestClientCertificate(System.Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+    [System.FlagsAttribute]
+    public enum TlsSignatureAlgorithmFamilies
+    {
+        None = 0,
+        Rsa = 1,
+        ECDsa = 2,
+        EdDsa = 4,
+        MLDsa = 8,
+        SlhDsa = 16,
     }
     [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5007", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class TlsSocketSession : System.Net.Security.TlsSession
