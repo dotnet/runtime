@@ -244,14 +244,14 @@ CrashInfo::InitializeOtherMappings()
 
     for (const ModuleRegion& mapping : m_moduleMappings)
     {
-        if (!m_processInfo.AddMapping(mapping, mapping.FileName(), true))
+        if (!m_processInfo.AddMapping(mapping))
         {
             return false;
         }
     }
     for (const MemoryRegion& mapping : m_otherMappings)
     {
-        if (!m_processInfo.AddMapping(mapping, nullptr, false))
+        if (!m_processInfo.AddMapping(mapping))
         {
             return false;
         }

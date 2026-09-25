@@ -7,6 +7,8 @@
 //
 // The Linux/MacOS create dump code
 //
+// There is a simplified version of the original CreateDump function available in nativeaot_createdump_main.cpp.
+// Consider updating the original CreateDump if changes are made to the simplified version.
 bool
 CreateDump(const CreateDumpOptions& options)
 {
@@ -75,7 +77,10 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
 
-    crashInfo->AddThreadStacks();
+    if (options.DumpType != DumpType::Full)
+    {
+        crashInfo->AddThreadStacks();
+    }
 
     char pathName[MAX_LONGPATH + 1];
     // Format the dump pattern template now that the process name on MacOS has been obtained

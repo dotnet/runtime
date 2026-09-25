@@ -43,4 +43,22 @@ typedef struct
     uint64_t ExceptionRecord;
 } CreateDumpOptions;
 
+inline const char*
+GetDumpTypeString(DumpType dumpType)
+{
+    switch (dumpType)
+    {
+        case DumpType::Mini:
+            return "minidump";
+        case DumpType::Heap:
+            return "minidump with heap";
+        case DumpType::Triage:
+            return "triage minidump";
+        case DumpType::Full:
+            return "full dump";
+        default:
+            return "unknown";
+    }
+}
+
 #endif // CREATEDUMP_OPTIONS_H

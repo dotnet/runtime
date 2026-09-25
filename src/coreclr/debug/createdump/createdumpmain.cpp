@@ -81,24 +81,6 @@ int createdump_main(const int argc, const char* argv[])
     return exitCode;
 }
 
-const char*
-GetDumpTypeString(DumpType dumpType)
-{
-    switch (dumpType)
-    {
-        case DumpType::Mini:
-            return "minidump";
-        case DumpType::Heap:
-            return "minidump with heap";
-        case DumpType::Triage:
-            return "triage minidump";
-        case DumpType::Full:
-            return "full dump";
-        default:
-            return "unknown";
-    }
-}
-
 MINIDUMP_TYPE
 GetMiniDumpType(DumpType dumpType)
 {

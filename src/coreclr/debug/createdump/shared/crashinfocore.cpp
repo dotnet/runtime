@@ -57,31 +57,42 @@ bool ProcessInfo::PageMappedToPhysicalMemory(uint64_t start)
 
 bool ProcessInfo::SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpType)
 {
-    for (const ModuleRegion& mapping : m_mappings)
+    // If full memory dump, include everything regardless of permissions
+    if (dumpType == DumpType::Full)
     {
-        uint32_t permissions = mapping.Permissions();
-        bool include = false;
-
-        if (dumpType == DumpType::Full)
+        for (const MemoryRegion& region : m_moduleMappings)
         {
-            // File-backed mappings are always candidates. Other mappings need at least one memory permission.
-            include = mapping.IncludeInNtFile() || permissions != 0;
-        }
-        else if (dumpType == DumpType::Heap && !mapping.IncludeInNtFile())
-        {
-            // On Alpine heap mappings can be RWX instead of RW.
-#ifdef __APPLE__
-            include = permissions == (PF_R | PF_W);
-#else
-            include = (permissions == (PF_R | PF_W)) || (permissions == (PF_R | PF_W | PF_X));
-#endif
-        }
-
-        if (include)
-        {
-            if (InsertMemoryRegion(regionStore, mapping) < 0)
-            {
+            if (InsertMemoryRegion(regionStore, region) < 0)
                 return false;
+        }
+        for (const MemoryRegion& region : m_otherMappings)
+        {
+            // Don't add uncommitted pages to the full dump
+            if ((region.Permissions() & (PF_R | PF_W | PF_X)) != 0)
+            {
+                if (InsertMemoryRegion(regionStore, region) < 0)
+                    return false;
+            }
+        }
+    }
+    else
+    {
+        // Add all the heap read/write memory regions (m_otherMappings contains the heaps). On Alpine
+        // the heap regions are marked RWX instead of just RW.
+        if (dumpType == DumpType::Heap)
+        {
+            for (const MemoryRegion& region : m_otherMappings)
+            {
+                uint32_t permissions = region.Permissions();
+#ifdef __APPLE__
+                if (permissions == (PF_R | PF_W))
+#else
+                if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
+#endif
+                {
+                    if (InsertMemoryRegion(regionStore, region) < 0)
+                        return false;
+                }
             }
         }
     }
@@ -89,15 +100,19 @@ bool ProcessInfo::SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpT
     return true;
 }
 
-bool ProcessInfo::AddMapping(const MemoryRegion& region, const char* fileName, bool includeInNtFile)
+bool ProcessInfo::AddMapping(const MemoryRegion& region)
 {
-    ModuleRegion mapping(region);
-    mapping.SetIncludeInNtFile(includeInNtFile);
-    if (fileName != nullptr && *fileName != '\0' && !mapping.SetFileName(fileName))
+    return m_otherMappings.Add(region);
+}
+
+bool ProcessInfo::AddMapping(const ModuleRegion& region)
+{
+    ModuleRegion mapping(static_cast<const MemoryRegion&>(region));
+    if (*region.FileName() != '\0' && !mapping.SetFileName(region.FileName()))
     {
         return false;
     }
-    return m_mappings.Add(Move(mapping));
+    return m_moduleMappings.Add(Move(mapping));
 }
 
 bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore)

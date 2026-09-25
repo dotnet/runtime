@@ -80,6 +80,8 @@ void print_trace_timestamp()
 
 }
 
+// This method is a simplified version of the original CreateDump function.
+// Consider updating the original CreateDump if changes are made to this simplified version.
 bool LinkedCreateDump(const CreateDumpOptions* options)
 {
     asserte(options->CreateDump);
@@ -149,17 +151,42 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
     }
     dumpRegions = Move(combinedRegions);
 
-    if (!WriteLinuxElfDump(
-            &processInfo,
-            &regionStore,
-            options))
+    printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath);
+
+    DumpWriter dumpWriter(processInfo, combinedRegions);
+    // Write the actual dump file
+    if (!dumpWriter.OpenDump(dumpPath))
     {
+        goto exit;
+    }
+    if (!dumpWriter.WriteDump())
+    {
+        printf_error("Writing dump FAILED\n");
+
+        // Delete the partial dump file on error
+        remove(dumpPath);
         goto exit;
     }
 
     result = true;
 
 exit:
+    if (kill(options.Pid, 0) == 0)
+    {
+        printf_status("Target process is alive\n");
+    }
+    else
+    {
+        int err = errno;
+        if (err == ESRCH)
+        {
+            printf_error("Target process terminated\n");
+        }
+        else
+        {
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", options.Pid, strerror(err), err);
+        }
+    } 
     if (initialized)
     {
         processInfo.CleanupAndResumeProcess();

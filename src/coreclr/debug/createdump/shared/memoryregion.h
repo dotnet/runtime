@@ -129,7 +129,6 @@ struct ModuleRegion : MemoryRegion
 {
 private:
     OwnedString m_fileName;
-    bool m_includeInNtFile = false;
 
 public:
     ModuleRegion() noexcept : MemoryRegion(0, 0, 0, 0)
@@ -170,16 +169,6 @@ public:
     bool FileNameEquals(const char* value) const noexcept
     {
         return strcmp(m_fileName.CStr(), value != nullptr ? value : "") == 0;
-    }
-
-    bool IncludeInNtFile() const noexcept
-    {
-        return m_includeInNtFile;
-    }
-
-    void SetIncludeInNtFile(bool includeInNtFile) noexcept
-    {
-        m_includeInNtFile = includeInNtFile;
     }
 
     bool SetFileName(const char* value) noexcept

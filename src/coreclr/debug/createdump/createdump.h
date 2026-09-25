@@ -108,7 +108,6 @@ typedef int T_CONTEXT;
 #include "specialdiaginfo.h"
 #endif
 
-extern const char* GetDumpTypeString(DumpType dumpType);
 extern MINIDUMP_TYPE GetMiniDumpType(DumpType dumpType);
 
 #ifdef HOST_WINDOWS

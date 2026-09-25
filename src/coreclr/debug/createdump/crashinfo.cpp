@@ -43,23 +43,20 @@ CrashInfo::PopulateFromProcessInfo()
         m_threads.push_back(new ThreadInfo(*this, snapshot));
     }
 
-    for (const ModuleRegion& mapping : m_processInfo.Mappings())
+    for (const ModuleRegion& mapping : m_processInfo.ModuleMappings())
     {
-        if (mapping.IncludeInNtFile())
+        ModuleRegion moduleRegion(mapping.Flags(), mapping.StartAddress(), mapping.EndAddress(), mapping.Offset());
+        if (!moduleRegion.SetFileName(mapping.FileName()))
         {
-            ModuleRegion moduleRegion(mapping.Flags(), mapping.StartAddress(), mapping.EndAddress(), mapping.Offset());
-            moduleRegion.SetIncludeInNtFile(true);
-            if (!moduleRegion.SetFileName(mapping.FileName()))
-            {
-                return false;
-            }
-            m_cbModuleMappings += moduleRegion.Size();
-            m_moduleMappings.insert(Move(moduleRegion));
+            return false;
         }
-        else
-        {
-            m_otherMappings.insert(MemoryRegion(mapping));
-        }
+        m_cbModuleMappings += moduleRegion.Size();
+        m_moduleMappings.insert(Move(moduleRegion));
+    }
+
+    for (const MemoryRegion& mapping : m_processInfo.OtherMappings())
+    {
+        m_otherMappings.insert(mapping);
     }
 
     return true;

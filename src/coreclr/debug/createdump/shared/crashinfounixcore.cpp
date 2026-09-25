@@ -145,7 +145,7 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
     char* line = NULL;
     size_t lineLen = 0;
     ssize_t read;
-    uint64_t moduleMappingBytes = 0;
+    uint64_t cbModuleMappings = 0;
 
     // Making something like: /proc/123/maps
     char mapPath[128];
@@ -202,22 +202,28 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
                 regionFlags |= MEMORY_REGION_FLAG_PRIVATE;
             }
             bool includeInNtFile = (moduleName != NULL && *moduleName == '/') && !HasDeletedSuffix(moduleName);
-            ModuleRegion moduleRegion(regionFlags, start, end, offset);
-            moduleRegion.SetIncludeInNtFile(includeInNtFile);
-            moduleRegion.TakeFileNameOwnership(moduleName);
-            moduleName = NULL;
-
-            if (!m_mappings.Add(Move(moduleRegion)))
+            if (includeInNtFile)
             {
+                ModuleRegion moduleRegion(regionFlags, start, end, offset);
+                moduleRegion.TakeFileNameOwnership(moduleName);
+                moduleName = NULL;
+
+                if (!m_moduleMappings.Add(Move(moduleRegion)))
+                {
+                    free(permissions);
+                    free(line);
+                    fclose(mapsFile);
+                    return false;
+                }
+                cbModuleMappings += moduleRegion.Size();
+            }
+            else if (!m_otherMappings.Add(MemoryRegion(regionFlags, start, end, offset)))
+            {
+                free(moduleName);
                 free(permissions);
                 free(line);
                 fclose(mapsFile);
                 return false;
-            }
-
-            if (includeInNtFile)
-            {
-                moduleMappingBytes += end - start;
             }
 
             if (linuxGateAddress != nullptr && reinterpret_cast<void*>(start) == linuxGateAddress)
@@ -238,21 +244,15 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings (%06" PRIx64 "):\n", moduleMappingBytes / m_pageSize);
-        for (const ModuleRegion& mapping : m_mappings)
+        TRACE("Module mappings (%06" PRIx64 "):\n", cbModuleMappings / m_pageSize);
+        for (const ModuleRegion& mapping : m_moduleMappings)
         {
-            if (mapping.IncludeInNtFile())
-            {
-                TraceModuleRegion(&mapping, "", mapping.FileName());
-            }
+            mapping.Trace();
         }
         TRACE("Other mappings:\n");
-        for (const ModuleRegion& mapping : m_mappings)
+        for (const MemoryRegion& mapping : m_otherMappings)
         {
-            if (!mapping.IncludeInNtFile())
-            {
-                TraceModuleRegion(&mapping);
-            }
+            mapping.Trace();
         }
     }
 

@@ -72,7 +72,8 @@ class ProcessInfo
     elf_aux_val_t m_auxvValues[AT_MAX]{};
 #endif
     DynamicArray<ThreadSnapshot> m_threads;
-    DynamicArray<ModuleRegion> m_mappings;
+    DynamicArray<ModuleRegion> m_moduleMappings;
+    DynamicArray<MemoryRegion> m_otherMappings;
 
 public:
     explicit ProcessInfo(const CreateDumpOptions& options) noexcept :
@@ -96,7 +97,8 @@ public:
     bool GatherCrashInfo(DumpRegionStore& regionStore);
     bool SelectDumpRegions(DumpRegionStore& regionStore, DumpType dumpType);
     bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);
-    bool AddMapping(const MemoryRegion& region, const char* fileName, bool includeInNtFile);
+    bool AddMapping(const MemoryRegion& region);
+    bool AddMapping(const ModuleRegion& region);
 
     pid_t Pid() const { return m_pid; }
     pid_t Ppid() const { return m_ppid; }
@@ -117,7 +119,8 @@ public:
 
     DynamicArray<ThreadSnapshot>& Threads() noexcept { return m_threads; }
     const DynamicArray<ThreadSnapshot>& Threads() const noexcept { return m_threads; }
-    const DynamicArray<ModuleRegion>& Mappings() const noexcept { return m_mappings; }
+    const DynamicArray<ModuleRegion>& ModuleMappings() const noexcept { return m_moduleMappings; }
+    const DynamicArray<MemoryRegion>& OtherMappings() const noexcept { return m_otherMappings; }
 #ifndef __APPLE__
     const DynamicArray<elf_aux_entry>& AuxvEntries() const noexcept { return m_auxvEntries; }
     elf_aux_val_t AuxvValue(size_t index) const { return m_auxvValues[index]; }
