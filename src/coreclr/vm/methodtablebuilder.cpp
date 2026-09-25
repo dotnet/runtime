@@ -1310,24 +1310,50 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
 
+    // Preserve StackingAllocator's 8-byte alignment for each record.
+    struct bmtInitialData
+    {
+        alignas(8) bmtErrorInfo error{};
+        alignas(8) bmtProperties properties{};
+        alignas(8) bmtVtable vtable{};
+        alignas(8) bmtParentInfo parent{};
+        alignas(8) bmtInterfaceInfo interfaces{};
+        alignas(8) bmtMetaDataInfo metadata{};
+        alignas(8) bmtMethodInfo methods{};
+        alignas(8) bmtMethAndFieldDescs descs{};
+        alignas(8) bmtFieldPlacement fieldPlacement{};
+        alignas(8) bmtInternalInfo internalInfo{};
+        alignas(8) bmtGCSeriesInfo gcSeries{};
+        alignas(8) bmtMethodImplInfo methodImpls{};
+        alignas(8) bmtEnumFieldInfo enumFields;
+        alignas(8) bmtLayoutInfo layout;
+
+        bmtInitialData(IMDInternalImport *pInternalImport, const bmtLayoutInfo &initialLayout)
+            : enumFields(pInternalImport), layout(initialLayout)
+        {
+        }
+    };
+
     StackingAllocator * const pStackingAllocator = GetStackingAllocator();
+    bmtInitialData *pData = new (pStackingAllocator)
+        bmtInitialData(pModule->GetMDImport(), *initialLayoutInfo);
     SetBMTData(
         pAllocator,
-        new (pStackingAllocator) bmtErrorInfo(),
-        new (pStackingAllocator) bmtProperties(),
-        new (pStackingAllocator) bmtVtable(),
-        new (pStackingAllocator) bmtParentInfo(),
-        new (pStackingAllocator) bmtInterfaceInfo(),
-        new (pStackingAllocator) bmtMetaDataInfo(),
-        new (pStackingAllocator) bmtMethodInfo(),
-        new (pStackingAllocator) bmtMethAndFieldDescs(),
-        new (pStackingAllocator) bmtFieldPlacement(),
-        new (pStackingAllocator) bmtInternalInfo(),
-        new (pStackingAllocator) bmtGCSeriesInfo(),
-        new (pStackingAllocator) bmtMethodImplInfo(),
+        &pData->error,
+        &pData->properties,
+        &pData->vtable,
+        &pData->parent,
+        &pData->interfaces,
+        &pData->metadata,
+        &pData->methods,
+        &pData->descs,
+        &pData->fieldPlacement,
+        &pData->internalInfo,
+        &pData->gcSeries,
+        &pData->methodImpls,
         bmtGenericsInfo,
-        new (pStackingAllocator) bmtEnumFieldInfo(pModule->GetMDImport()),
-        new (pStackingAllocator) bmtLayoutInfo(*initialLayoutInfo));
+        &pData->enumFields,
+        &pData->layout);
 
     //Initialize structs
 
