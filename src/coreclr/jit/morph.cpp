@@ -3356,8 +3356,8 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     {
         // The SIMD transformation to coalesce contiguous references to SIMD vector fields will re-invoke
         // the traversal to mark address-taken locals. So, we may encounter a tree that has already been
-        // transformed to TYP_I_IMPL. If we do, leave it as-is.
-        if (lclNode->OperIs(GT_LCL_VAR) && lclNode->TypeIs(TYP_I_IMPL))
+        // transformed. If we do, leave it as-is.
+        if (lclNode->OperIs(GT_LCL_VAR) && lclNode->TypeIs(varDsc->TypeGet()))
         {
             return nullptr;
         }
@@ -3419,7 +3419,10 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     JITDUMP("\nRewriting an implicit by-ref parameter reference:\n");
     DISPTREE(lclNode);
 
-    lclNode->ChangeType(TYP_I_IMPL);
+    const var_types ptrType = lvaGetImplicitByRefParamType();
+    assert(lvaGetDesc(newLclNum)->TypeIs(ptrType));
+
+    lclNode->ChangeType(ptrType);
     lclNode->ChangeOper(GT_LCL_VAR);
     lclNode->SetLclNum(newLclNum);
     lclNode->SetAllEffectsFlags(GTF_EMPTY); // Implicit by-ref parameters cannot be address-exposed.
@@ -3432,7 +3435,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     GenTree* addrNode = lclNode;
     if (offset != 0)
     {
-        addrNode = gtNewOperNode(GT_ADD, TYP_I_IMPL, addrNode, gtNewIconNode(offset, TYP_I_IMPL));
+        addrNode = gtNewOperNode(GT_ADD, ptrType, addrNode, gtNewIconNode(offset, TYP_I_IMPL));
     }
 
     // Note: currently, we have to conservatively treat all indirections off of implicit byrefs
@@ -15589,7 +15592,7 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                     // The first BB should already be a valid insertion point,
                     // which is a precondition for this phase when optimizing.
                     assert(fgFirstBB->bbPreds == nullptr);
-                    GenTree* addr  = gtNewLclvNode(lclNum, TYP_I_IMPL);
+                    GenTree* addr  = gtNewLclvNode(lclNum, lvaGetImplicitByRefParamType());
                     GenTree* data  = varDsc->TypeIs(TYP_STRUCT) ? gtNewBlkIndir(varDsc->GetLayout(), addr)
                                                                 : gtNewIndir(varDsc->TypeGet(), addr);
                     GenTree* store = gtNewStoreLclVarNode(newLclNum, data);
@@ -15660,9 +15663,8 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
                 assert(varDsc->lvFieldLclStart == 0);
             }
 
-            // The parameter in this position is really a pointer. Implicit byref storage is
-            // never on the GC heap (see clr-abi.md), so it does not need to be GC-reported.
-            varDsc->lvType = TYP_I_IMPL;
+            // The parameter in this position is really a pointer to storage outside the GC heap.
+            varDsc->lvType = lvaGetImplicitByRefParamType();
 
             // The struct parameter may have had its address taken, but the pointer parameter
             // cannot -- any uses of the struct parameter's address are uses of the pointer
@@ -15678,7 +15680,8 @@ PhaseStatus Compiler::fgRetypeImplicitByRefArgs()
 
             if (verbose)
             {
-                printf("Changing the lvType for struct parameter V%02d to TYP_I_IMPL.\n", lclNum);
+                printf("Changing the lvType for struct parameter V%02d to %s.\n", lclNum,
+                       varTypeName(varDsc->TypeGet()));
             }
 #endif // DEBUG
         }

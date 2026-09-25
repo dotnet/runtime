@@ -10340,7 +10340,7 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
         simd12ToSimd16Widening = (type == TYP_SIMD16) && (varDsc->lvType == TYP_SIMD12);
 #endif // FEATURE_SIMD
         assert((type == varDsc->lvType) || simd12ToSimd16Widening ||
-               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_I_IMPL)));
+               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == lvaGetImplicitByRefParamType())));
     }
     GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(offs));
 
@@ -10378,8 +10378,8 @@ GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL
         // Make an exception for implicit by-ref parameters during global morph, since
         // their lvType has been updated to a pointer but their appearances have not yet all
         // been rewritten and so may have struct type still.
-        assert(type == lvaTable[lnum].lvType ||
-               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_I_IMPL)));
+        assert(type == lvaTable[lnum].lvType || (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph &&
+                                                 (lvaTable[lnum].lvType == lvaGetImplicitByRefParamType())));
     }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);

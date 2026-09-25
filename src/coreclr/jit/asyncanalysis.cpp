@@ -790,7 +790,7 @@ bool AsyncAnalysis::IsLive(unsigned lclNum)
 
     LclVarDsc* dsc = m_compiler->lvaGetDesc(lclNum);
 
-    if (dsc->TypeIs(TYP_BYREF))
+    if (dsc->TypeIs(TYP_BYREF) && !dsc->IsImplicitByRef())
     {
         // Even if these are address exposed we expect them to be dead at
         // suspension points. TODO: It would be good to somehow verify these

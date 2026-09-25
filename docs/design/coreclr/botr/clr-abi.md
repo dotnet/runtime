@@ -141,7 +141,7 @@ Structures (value types in IL parlance) that are declared to be passed by value 
 
 System V AMD64, x86 and ARM32 do not use this convention. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack.
 
-Since .NET 12, implicit-byref argument storage must be outside the GC heap on all architectures that use this convention. Runtime callers may use explicitly GC-protected native memory instead of the stack. The caller is responsible for making a writable copy as required by by-value semantics and for reporting any GC references in that copy. Callees may omit write barriers when modifying the argument and do not report implicit-byref argument pointers to the GC. This does not apply to explicit byref parameters or the `this` pointer of a value type, and does not remove aliasing caused by taking the argument's address within the callee.
+Since .NET 12, implicit-byref argument storage must be outside the GC heap on all architectures that use this convention. Runtime callers may use explicitly GC-protected native memory instead of the stack. The caller is responsible for making a writable copy as required by by-value semantics and for reporting any GC references in that copy. Callees may omit write barriers when modifying the argument and need not report implicit-byref argument pointers to the GC. This does not apply to explicit byref parameters or the `this` pointer of a value type, and does not remove aliasing caused by taking the argument's address within the callee.
 
 ## RISC-V only: structs passed/returned according to hardware floating-point calling convention
 

@@ -1024,6 +1024,12 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
         return false;
     }
 
+    if (op->OperIs(GT_LCL_VAR) && lvaIsImplicitByRefLocal(op->AsLclVar()->GetLclNum()))
+    {
+        // Implicit byrefs are known to not be on the heap
+        return false;
+    }
+
     return true;
 }
 
