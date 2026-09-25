@@ -529,6 +529,12 @@ namespace System
                 }
                 goto HasTrailingChars;
             }
+
+            // Leading whitespace was already consumed, so whitespace here can only follow a sign.
+            if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
+            {
+                return TryParseBinaryIntegerNumber(value, styles, info, out result, out elementsConsumed);
+            }
             goto FalseExit;
 
         DoneAtEndButPotentialOverflow:
@@ -1249,6 +1255,15 @@ namespace System
                     {
                         index += positiveSign.Length;
                     }
+                }
+            }
+
+            // Skip whitespace between the sign and the "0x" prefix, mirroring TryParseNumber.
+            if ((styles & NumberStyles.AllowLeadingWhite) != 0)
+            {
+                while (index < value.Length && IsWhite(TChar.CastToUInt32(value[index])))
+                {
+                    index++;
                 }
             }
 
