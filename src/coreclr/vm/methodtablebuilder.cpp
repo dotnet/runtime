@@ -8627,7 +8627,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 // Avoid reordering of gcfields
                 if (i == LOG2SLOT) {
                     for ( ; j < bmtEnumFields->dwNumInstanceFields; j++) {
-                        if ((pFieldDescList[j].GetOffset() == FIELD_OFFSET_UNPLACED) &&
+                        if ((pFieldDescList[j].GetOffsetRaw() == FIELD_OFFSET_UNPLACED) &&
                             ((DWORD_PTR&)pFieldDescList[j].m_pMTOfEnclosingClass == (size_t)i))
                             break;
                     }
@@ -8705,7 +8705,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             DWORD dwFieldSize   = (DWORD)(DWORD_PTR&)pFieldDescList[i].m_pMTOfEnclosingClass;
             DWORD dwOffset;
 
-            dwOffset = pFieldDescList[i].GetOffset();
+            dwOffset = pFieldDescList[i].GetOffsetRaw();
 
             // Don't place already-placed fields
             if ((dwOffset == FIELD_OFFSET_UNPLACED || dwOffset == FIELD_OFFSET_UNPLACED_GC_PTR || dwOffset == FIELD_OFFSET_VALUE_CLASS))
