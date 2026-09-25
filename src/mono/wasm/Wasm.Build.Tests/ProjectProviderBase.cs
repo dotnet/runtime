@@ -443,7 +443,7 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         string buildOutput,
         string targetFramework,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
-        bool allowCompatibleRuntimePackVersion = false)
+        string? compatibleTargetFramework = null)
     {
         var match = s_runtimePackPathRegex.Match(buildOutput);
         if (!match.Success || match.Groups.Count != 2)
@@ -477,14 +477,14 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         bool IsCompatibleRuntimePack(string runtimePackPath)
         {
-            if (!allowCompatibleRuntimePackVersion)
+            if (compatibleTargetFramework is null)
                 return false;
 
             var expectedPackDirectory = new DirectoryInfo(expectedRuntimePackDir);
             var actualPackDirectory = new DirectoryInfo(runtimePackPath);
-            string targetFrameworkVersion = targetFramework["net".Length..];
+            string compatibleTargetFrameworkVersion = compatibleTargetFramework["net".Length..];
             return string.Equals(actualPackDirectory.Parent!.Name, expectedPackDirectory.Parent!.Name, StringComparison.OrdinalIgnoreCase) &&
-                actualPackDirectory.Name.StartsWith($"{targetFrameworkVersion}.", StringComparison.Ordinal);
+                actualPackDirectory.Name.StartsWith($"{compatibleTargetFrameworkVersion}.", StringComparison.Ordinal);
         }
     }
 
