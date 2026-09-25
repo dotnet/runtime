@@ -4102,6 +4102,11 @@ namespace Internal.JitInterface
         private Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)> _helperCache =
             new Dictionary<CorInfoHelpFunc, (ISymbolNode EntryPoint, MethodDesc Method)>();
 
+        internal void ClearHelperCache()
+        {
+            _helperCache.Clear();
+        }
+
         private void getHelperFtn(CorInfoHelpFunc ftnNum, CORINFO_CONST_LOOKUP *pNativeEntrypoint, CORINFO_METHOD_STRUCT_** pMethod)
         {
             if (!_helperCache.TryGetValue(ftnNum, out (ISymbolNode EntryPoint, MethodDesc Method) helper))

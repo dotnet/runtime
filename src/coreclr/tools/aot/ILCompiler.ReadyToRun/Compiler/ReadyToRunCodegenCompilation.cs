@@ -1026,6 +1026,10 @@ namespace ILCompiler
                     }
                 }
                 Volatile.Write(ref _directManagedHelpers, directManagedHelpers);
+
+                // Single-threaded compilation reuses its CorInfoImpl across probe passes.
+                // Helper entry points cached before a denial must be recomputed using the new eligibility set.
+                _singleThreadedWorkerState.CorInfoImpl?.ClearHelperCache();
             }
 
             bool HasInstructionSetSupportFixup(MethodWithGCInfo managedHelper)
