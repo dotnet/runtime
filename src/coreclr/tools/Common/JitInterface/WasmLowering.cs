@@ -512,7 +512,6 @@ namespace Internal.JitInterface
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
             bool isAsyncCall = false;
-            bool hasGenericContextBeforeAsync = false;
 
             if (pos < sig.Length && sig[pos] == 'T')
             {
@@ -523,9 +522,9 @@ namespace Internal.JitInterface
             // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
             // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
             char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
-            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync(wasmSignature, context);
+            if (hasGenericContextBeforeAsync)
             {
-                hasGenericContextBeforeAsync = true;
                 parameters.Add(RaiseSigChar(sig[pos], context));
                 pos++;
             }
