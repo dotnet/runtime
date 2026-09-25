@@ -27,8 +27,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
-    <!-- Match Apple mobile: strip R2R debug info (IL offset maps and variable locations) to minimize download
-         size. Set PublishReadyToRunStripDebugInfo=false to keep it for debugging R2R code. -->
+    <!-- Strip R2R debug info (IL offset maps and variable locations) to minimize download size.
+         Set PublishReadyToRunStripDebugInfo=false to keep it for debugging R2R code. -->
     <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false'">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
