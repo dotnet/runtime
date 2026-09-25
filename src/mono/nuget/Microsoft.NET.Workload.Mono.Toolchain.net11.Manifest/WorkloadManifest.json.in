@@ -181,7 +181,7 @@
     },
     "Microsoft.NET.Sdk.WebAssembly.Pack.net11": {
       "kind": "library",
-      "version": "${PackageVersionNet11}",
+      "version": "${WorkloadVersion}",
       "alias-to": {
         "any": "Microsoft.NET.Sdk.WebAssembly.Pack"
       }
