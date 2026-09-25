@@ -232,11 +232,46 @@ extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint3
         "return\n" ::);
 }
 
+#ifdef _DEBUG
+// Answers whether the code at handlerFrameControlPC lives in a ReadyToRun image compiled with
+// --verify-gc-mode-transitions, and so ends its catch resumption points with a call to
+// CORINFO_HELP_JIT_RESUME_AFTER_CATCH. Only such an image can lift a GC mode switch restriction
+// once managed code resumes; forbidding switches for any other resume target would leave them
+// forbidden for the rest of the thread's life.
+bool ResumeTargetVerifiesGCModeTransitions(PCODE handlerFrameControlPC)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    bool verifies = false;
+
+#ifdef FEATURE_READYTORUN
+    if (ExecutionManager::IsVirtualIP(handlerFrameControlPC))
+    {
+        VirtualIPRangeSection *pSection = ExecutionManager::FindVirtualIPRangeSection(handlerFrameControlPC);
+        if (pSection != NULL)
+        {
+            PTR_Module pModule = pSection->rangeSection._pR2RModule;
+            if (pModule != NULL)
+            {
+                ReadyToRunInfo *pInfo = pModule->GetReadyToRunInfo();
+                verifies = (pInfo != NULL) && pInfo->VerifiesGCModeTransitions();
+            }
+        }
+    }
+#endif // FEATURE_READYTORUN
+
+    return verifies;
+}
+#endif // _DEBUG
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
     UNREFERENCED_PARAMETER(ContextRecord);
     UNREFERENCED_PARAMETER(ExceptionRecord);
 
+    // Resuming managed code at a catch continuation is done by throwing a native exception tag.
+    // Any GC mode restriction for the duration of that unwind is installed by
+    // ClrRestoreNonvolatileContext, which is the only caller that resumes into managed code.
     ThrowRtlRestoreContextTag();
 
     __builtin_unreachable();
@@ -385,6 +420,7 @@ EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, Inl
     _ASSERTE(sp == stack_pointer_global_value);
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -415,6 +451,7 @@ extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 
     Thread* pThread = (Thread*)pFrame->m_pThread;
 
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {
@@ -438,6 +475,7 @@ EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
     JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
 
     Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    ASSERT_GC_MODE_SWITCH_PERMITTED();
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
     if (g_TrapReturningThreads)
     {

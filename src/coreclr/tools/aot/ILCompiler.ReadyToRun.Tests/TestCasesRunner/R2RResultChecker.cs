@@ -873,6 +873,119 @@ internal static class R2RAssert
     }
 
     /// <summary>
+    /// Returns true if each Wasm async resume target uses the RuntimeFunctions index immediately
+    /// following its parent async method and its funclets.
+    /// </summary>
+    public static bool WasmAsyncResumeTargetsMatchRuntimeFunctionOrder(ReadyToRunReader reader, out string diagnostic)
+    {
+        var failures = new List<string>();
+        var resumptionStubTargets = new HashSet<uint>();
+        var storeMultiTargets = new List<(string Owner, uint Target)>();
+        int checkedMethodCount = 0;
+
+        foreach (ReadyToRunMethod method in GetAllMethods(reader))
+        {
+            if (method.Fixups is null)
+                continue;
+
+            bool foundResumptionStub = false;
+            foreach (FixupCell cell in method.Fixups)
+            {
+                ReadyToRunImportSection importSection = reader.ImportSections[(int)cell.TableIndex];
+                ReadyToRunImportSection.ImportSectionEntry entry = importSection.Entries[(int)cell.CellOffset];
+                ReadyToRunFixupKind? kind = entry.Signature?.FixupKind;
+                if (kind is not (ReadyToRunFixupKind.ResumptionStubEntryPoint or ReadyToRunFixupKind.StoreMultiCallableAddrOfCode))
+                    continue;
+
+                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                uint targetIndex = BinaryPrimitives.ReadUInt32LittleEndian(reader.Image.AsSpan(offset, sizeof(uint)));
+
+                if (kind == ReadyToRunFixupKind.StoreMultiCallableAddrOfCode)
+                {
+                    storeMultiTargets.Add((method.SignatureString, targetIndex));
+                    continue;
+                }
+
+                foundResumptionStub = true;
+                resumptionStubTargets.Add(targetIndex);
+                uint expectedIndex = checked((uint)(method.EntryPointRuntimeFunctionId + method.RuntimeFunctionCount - 1));
+                if (targetIndex != expectedIndex)
+                {
+                    failures.Add(
+                        $"'{method.SignatureString}' has {kind} target {targetIndex}; " +
+                        $"expected RuntimeFunctions index {expectedIndex}.");
+                }
+            }
+
+            if (foundResumptionStub)
+                checkedMethodCount++;
+        }
+
+        foreach ((string owner, uint target) in storeMultiTargets)
+        {
+            if (!resumptionStubTargets.Contains(target))
+            {
+                failures.Add(
+                    $"'{owner}' has StoreMultiCallableAddrOfCode target {target}, " +
+                    "which is not registered by a ResumptionStubEntryPoint fixup.");
+            }
+        }
+
+        if (checkedMethodCount == 0)
+        {
+            diagnostic = "No methods with ResumptionStubEntryPoint fixups were found.";
+            return false;
+        }
+
+        if (storeMultiTargets.Count == 0)
+        {
+            diagnostic = "No StoreMultiCallableAddrOfCode fixups were found.";
+            return false;
+        }
+
+        if (!HasWasmVirtualDispatchThunk(reader))
+        {
+            diagnostic = "No virtual-dispatch thunk was found.";
+            return false;
+        }
+
+        diagnostic = failures.Count == 0
+            ? $"Found {checkedMethodCount} async method(s) and {storeMultiTargets.Count} StoreMultiCallableAddrOfCode fixup(s) whose resume targets match RuntimeFunctions ordering in an image containing a virtual-dispatch thunk."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
+    private static bool HasWasmVirtualDispatchThunk(ReadyToRunReader reader)
+    {
+        foreach (ReadyToRunImportSection section in reader.ImportSections)
+        {
+            if (section.Entries is null)
+                continue;
+
+            foreach (ReadyToRunImportSection.ImportSectionEntry entry in section.Entries)
+            {
+                if (entry.Signature?.FixupKind != ReadyToRunFixupKind.InjectStringThunks)
+                    continue;
+
+                int offset = reader.GetOffset(checked((int)entry.SignatureRVA)) + sizeof(byte);
+                while (reader.Image[offset] != 0)
+                {
+                    int terminator = reader.Image.AsSpan(offset).IndexOf((byte)0);
+                    if (terminator < 0)
+                        return false;
+
+                    if (reader.Image[offset] == (byte)'V')
+                        return true;
+
+                    offset += terminator + 1 + sizeof(uint);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Returns true if the R2R image contains at least one ContinuationLayout fixup.
     /// </summary>
     public static bool HasContinuationLayout(ReadyToRunReader reader, out string diagnostic)

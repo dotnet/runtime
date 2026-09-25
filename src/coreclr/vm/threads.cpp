@@ -127,6 +127,12 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
 
+// See the declaration in threads.h. Transitions are permitted by default; only the WebAssembly
+// restore-context unwind clears this.
+#ifdef _DEBUG
+thread_local bool t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
+
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
 SPTR_IMPL(ThreadStore, ThreadStore, s_pThreadStore);
@@ -604,6 +610,12 @@ Thread* SetupThread()
     Thread* pThread;
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
+
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
+    CheckThreadStateNotDestroyed();
+#endif
 
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
@@ -1517,7 +1529,6 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 

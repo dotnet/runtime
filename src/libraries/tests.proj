@@ -87,6 +87,14 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134200 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.CSharp\tests\Microsoft.CSharp.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Dynamic.Runtime.Tests\System.Dynamic.Runtime.Tests.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134261 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/66118 -->

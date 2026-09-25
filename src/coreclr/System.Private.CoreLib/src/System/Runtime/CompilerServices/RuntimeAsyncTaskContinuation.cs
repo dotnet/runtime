@@ -103,6 +103,7 @@ namespace System.Runtime.CompilerServices
             return false;
         }
 
+        [StackTraceHidden]
         public void GetResult(Continuation? next, ref byte taskResult)
         {
             Debug.Assert(Task != null);
@@ -126,11 +127,13 @@ namespace System.Runtime.CompilerServices
             _getResult = &GetResult<T>;
         }
 
+        [StackTraceHidden]
         private static void GetResult(Task task, Continuation? next, ref byte taskResult)
         {
             TaskAwaiter.ValidateEnd(task);
         }
 
+        [StackTraceHidden]
         private static void GetResult<T>(Task task, Continuation? next, ref byte taskResult)
         {
             Debug.Assert(task is Task<T>);

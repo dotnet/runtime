@@ -63,7 +63,7 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para> -or- </para>
         ///   <para>
-        ///     An error occured while performing a cryptographic operation.
+        ///     An error occurred while performing a cryptographic operation.
         ///   </para>
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
