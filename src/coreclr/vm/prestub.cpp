@@ -3178,7 +3178,9 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 (void)pMD->DoPrestub(NULL);
             }
 
-            pCode = PatchNonVirtualExternalMethod(pMD, pMD->GetMethodEntryPoint(), pImportSection, pIndirection);
+            PCODE pEntryPoint = pMD->GetMethodEntryPoint();
+            MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pEntryPoint);
+            pCode = PatchNonVirtualExternalMethod(pMD, pEntryPoint, pImportSection, pIndirection);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
             pCode = pMD->GetMethodEntryPoint();
 
@@ -3204,7 +3206,11 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
+    if (fVirtual)
+    {
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
+    }
+
     if (virtualDispatchTarget != nullptr)
     {
         READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
