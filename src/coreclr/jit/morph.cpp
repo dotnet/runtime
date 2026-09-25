@@ -11521,8 +11521,6 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree, bool* optAssertionPropD
 //
 GenTree* Compiler::fgMorphHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
-    assert(!tree->IsReverseOp());
-
     // It is important that this follows the general flow of fgMorphSmpOp
     // * Perform required preorder processing
     // * Process the operands, in order, if any

@@ -23,6 +23,7 @@ public class Runtime_134334
     }
 
     [Fact]
+    [SkipOnMono("CoreCLR JIT regression test")]
     public static void ConcatUpperUpperPreservesOrder()
     {
         s_calls = 0;
@@ -38,6 +39,7 @@ public class Runtime_134334
     }
 
     [Fact]
+    [SkipOnMono("CoreCLR JIT regression test")]
     public static void ShufflePreservesOrder()
     {
         s_calls = 0;
