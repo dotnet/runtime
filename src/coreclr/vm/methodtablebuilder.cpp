@@ -2778,6 +2778,18 @@ static bool CopyTypeSigWithSubstitution(
         pDst->AppendElementType((CorElementType)type);
         return CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs);
 
+    case ELEMENT_TYPE_CMOD_REQD:
+    case ELEMENT_TYPE_CMOD_OPT:
+    {
+        mdToken token;
+        if (FAILED(pSrc->GetToken(&token)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendToken(token);
+        return CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs);
+    }
+
     case ELEMENT_TYPE_ARRAY:
     {
         pDst->AppendElementType((CorElementType)type);
@@ -2853,7 +2865,7 @@ static bool CopyTypeSigWithSubstitution(
     }
 
     default:
-        // Anything else (function pointers, custom modifiers, ...) is not supported here.
+        // Anything else (function pointers, ...) is not supported here.
         return false;
     }
 }
