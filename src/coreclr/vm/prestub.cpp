@@ -2791,6 +2791,71 @@ static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_RE
     return pCode;
 }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+static void PatchExternalMethodWithVirtualDispatchPortableEntryPoint(MethodDesc * pMD, DWORD slot, Module * pModule, TADDR pIndirection)
+{
+    STANDARD_VM_CONTRACT;
+
+    DWORD offsetOfIndirection =
+        MethodTable::GetVtableOffset() +
+        MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
+    DWORD offsetAfterIndirection =
+        MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
+
+    // The virtual dispatch thunk decodes both byte offsets from 16-bit fields.
+    // Wasm32 offsets always fit because MethodTable supports at most 65,536 virtual
+    // slots grouped into chunks of eight. This code is FEATURE_PORTABLE_ENTRYPOINTS
+    // gated rather than Wasm-gated, so a future wider-pointer target may exceed this
+    // range. In that case, leave the import cell on its delay-load thunk so it continues
+    // resolving through ExternalMethodFixupWorker.
+    bool offsetsFit =
+        offsetOfIndirection <= UINT16_MAX && offsetAfterIndirection <= UINT16_MAX;
+#ifdef TARGET_32BIT
+    _ASSERTE(offsetsFit);
+#endif // TARGET_32BIT
+    if (!offsetsFit)
+    {
+        return;
+    }
+
+    void* virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
+    if (virtualDispatchTarget == nullptr)
+    {
+        // A missing thunk leaves the import cell on the correct, slower helper path.
+        // Crossgen2 emits the required thunk dependency, so this should not happen in practice.
+        _ASSERTE(!"ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
+        return;
+    }
+
+    READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
+        reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT**>(pIndirection);
+    READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pCurrentEntry = VolatileLoad(ppImportEntry);
+
+    if (pCurrentEntry->Target == virtualDispatchTarget)
+    {
+        return;
+    }
+
+    AllocMemHolder<VirtualDispatchPortableEntryPoint> pNewEntry(
+        pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
+            S_SIZE_T(sizeof(VirtualDispatchPortableEntryPoint))));
+    pNewEntry->Target = virtualDispatchTarget;
+    pNewEntry->PackedDispatchOffsets = offsetOfIndirection | (offsetAfterIndirection << 16);
+    pNewEntry->InitialEntry = pCurrentEntry;
+
+    READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pPublishedEntry =
+        InterlockedCompareExchangeT(
+            ppImportEntry,
+            reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT*>(
+                static_cast<VirtualDispatchPortableEntryPoint*>(pNewEntry)),
+            pCurrentEntry);
+    if (pPublishedEntry == pCurrentEntry)
+    {
+        pNewEntry.SuppressRelease();
+    }
+}
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 //==========================================================================================
 // In NGen images calls to external methods start out pointing to jump thunks.
 // These jump thunks initially point to the assembly code _ExternalMethodFixupStub
@@ -2830,10 +2895,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
     //
 
     PCODE         pCode   = (PCODE)NULL;
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    void* virtualDispatchTarget = nullptr;
-    DWORD packedVirtualDispatchOffsets = 0;
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     PreserveLastErrorHolder preserveLastError;
 
@@ -3117,38 +3178,10 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
             }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
             if (!pMT->IsInterface())
             {
-                DWORD offsetOfIndirection =
-                    MethodTable::GetVtableOffset() +
-                    MethodTable::GetIndexOfVtableIndirection(slot) * TARGET_POINTER_SIZE;
-                DWORD offsetAfterIndirection =
-                    MethodTable::GetIndexAfterVtableIndirection(slot) * TARGET_POINTER_SIZE;
-
-                // The virtual dispatch thunk decodes both byte offsets from 16-bit fields.
-                // Wasm32 offsets always fit because MethodTable supports at most 65,536 virtual
-                // slots grouped into chunks of eight. This code is FEATURE_PORTABLE_ENTRYPOINTS
-                // gated rather than Wasm-gated, so a future wider-pointer target may exceed this
-                // range. In that case, leave the import cell on its delay-load thunk so it continues
-                // resolving through ExternalMethodFixupWorker.
-                bool offsetsFit =
-                    offsetOfIndirection <= UINT16_MAX && offsetAfterIndirection <= UINT16_MAX;
-#ifdef TARGET_32BIT
-                _ASSERTE(offsetsFit);
-#endif // TARGET_32BIT
-                if (offsetsFit)
-                {
-                    virtualDispatchTarget = GetVirtualDispatchThunk(pMD);
-                    if (virtualDispatchTarget == nullptr)
-                    {
-                        // A missing thunk leaves the import cell on the correct, slower helper path.
-                        // Crossgen2 emits the required thunk dependency, so this should not happen in practice.
-                        _ASSERTE(!"ExternalMethodFixupWorker: missing Wasm virtual dispatch thunk");
-                    }
-
-                    packedVirtualDispatchOffsets =
-                        offsetOfIndirection | (offsetAfterIndirection << 16);
-                }
+                PatchExternalMethodWithVirtualDispatchPortableEntryPoint(pMD, slot, pModule, pIndirection);
             }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
             _ASSERTE(pCode != (PCODE)NULL);
@@ -3204,37 +3237,6 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
-    if (virtualDispatchTarget != nullptr)
-    {
-        READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
-            reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT**>(pIndirection);
-        READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pCurrentEntry = VolatileLoad(ppImportEntry);
-
-        if (pCurrentEntry->Target != virtualDispatchTarget)
-        {
-            AllocMemHolder<VirtualDispatchPortableEntryPoint> pNewEntry(
-                pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
-                    S_SIZE_T(sizeof(VirtualDispatchPortableEntryPoint))));
-            pNewEntry->Target = virtualDispatchTarget;
-            pNewEntry->PackedDispatchOffsets = packedVirtualDispatchOffsets;
-            pNewEntry->InitialEntry = pCurrentEntry;
-
-            READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pPublishedEntry =
-                InterlockedCompareExchangeT(
-                    ppImportEntry,
-                    reinterpret_cast<READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT*>(
-                        static_cast<VirtualDispatchPortableEntryPoint*>(pNewEntry)),
-                    pCurrentEntry);
-            if (pPublishedEntry == pCurrentEntry)
-            {
-                pNewEntry.SuppressRelease();
-            }
-        }
-    }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
 
     // Force a GC on every jit if the stress level is high enough
     GCStress<cfg_any>::MaybeTrigger();
