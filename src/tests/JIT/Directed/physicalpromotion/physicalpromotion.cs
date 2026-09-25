@@ -118,7 +118,8 @@ public class PhysicalPromotion
         S value = new S { A = 17, B = 29 };
         Assert.Equal(expected, path is 6 ? ReadbackAfterPartialWrite(value) : ReadbacksAcrossBranchesCore(value, path));
         Assert.Equal(path is 0 ? 0U : path is 1 ? 1U : 46U, ReadbackOnlyOnSelectedPath(value, path));
-        Assert.Equal(path switch { 0 => 29U, 1 => 63U, 2 => 80U, _ => 46U }, ReadbacksAtLiveJoin(value, path));
+        Assert.Equal(path switch { 0 => 29U, 1 => 63U, 2 => 80U, 3 => 70U, 4 => 120U, _ => 46U },
+            ReadbacksAtLiveJoin(value, path));
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -137,6 +138,14 @@ public class PhysicalPromotion
         else if (path == 2)
         {
             result = value.A * 2;
+        }
+        else if (path == 3)
+        {
+            value.A = 41;
+        }
+        else if (path == 4)
+        {
+            value = GetReadbackValue();
         }
 
         return result + value.A + value.B;

@@ -48,8 +48,6 @@ struct BasicBlockLiveness
     // Note that this differs from our normal liveness: partial definitions are
     // NOT marked but they are also not considered uses.
     BitVec VarDef;
-    // Any definitions, including partial and conditionally executed definitions.
-    BitVec VarMayDef;
     // Variables live-in to this basic block.
     BitVec LiveIn;
     // Variables live-out of this basic block.
@@ -110,7 +108,6 @@ void PromotionLiveness::ComputeUseDefSets()
         BasicBlockLiveness& bb = m_bbInfo[block->bbNum];
         BitVecOps::AssignNoCopy(m_bvTraits, bb.VarUse, BitVecOps::MakeEmpty(m_bvTraits));
         BitVecOps::AssignNoCopy(m_bvTraits, bb.VarDef, BitVecOps::MakeEmpty(m_bvTraits));
-        BitVecOps::AssignNoCopy(m_bvTraits, bb.VarMayDef, BitVecOps::MakeEmpty(m_bvTraits));
         BitVecOps::AssignNoCopy(m_bvTraits, bb.LiveIn, BitVecOps::MakeEmpty(m_bvTraits));
         BitVecOps::AssignNoCopy(m_bvTraits, bb.LiveOut, BitVecOps::MakeEmpty(m_bvTraits));
 
@@ -124,14 +121,18 @@ void PromotionLiveness::ComputeUseDefSets()
                 {
                     for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                     {
-                        MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef, bb.VarMayDef);
+                        MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
                     }
                 }
                 else
                 {
                     for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                     {
-                        MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef, bb.VarMayDef, true);
+                        // Skip liveness updates/marking for defs; they may be conditionally executed.
+                        if ((lcl->gtFlags & GTF_VAR_DEF) == 0)
+                        {
+                            MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
+                        }
                     }
                 }
             }
@@ -142,7 +143,7 @@ void PromotionLiveness::ComputeUseDefSets()
             {
                 for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
                 {
-                    MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef, bb.VarMayDef);
+                    MarkUseDef(stmt, lcl, bb.VarUse, bb.VarDef);
                 }
             }
         }
@@ -170,11 +171,8 @@ void PromotionLiveness::ComputeUseDefSets()
 //   lcl    - The local node
 //   useSet - The use set to mark in.
 //   defSet - The def set to mark in.
-//   mayDefSet - The set of all potentially modified fields.
-//   conditional - Whether definitions may be conditionally executed.
 //
-void PromotionLiveness::MarkUseDef(
-    Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet, BitVec& mayDefSet, bool conditional)
+void PromotionLiveness::MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet)
 {
     AggregateInfo* agg = m_aggregates.Lookup(lcl->GetLclNum());
     if (agg == nullptr)
@@ -188,24 +186,6 @@ void PromotionLiveness::MarkUseDef(
 
     unsigned  baseIndex  = m_structLclToTrackedIndex[lcl->GetLclNum()];
     var_types accessType = lcl->TypeGet();
-
-    if (isDef)
-    {
-        unsigned size = (accessType == TYP_STRUCT) || lcl->OperIs(GT_LCL_ADDR) ? GetSizeOfStructLocal(stmt, lcl)
-                                                                               : genTypeSize(accessType);
-        for (unsigned i = 0; i < reps.size(); i++)
-        {
-            if (reps[i].Overlaps(lcl->GetLclOffs(), size))
-            {
-                BitVecOps::AddElemD(m_bvTraits, mayDefSet, baseIndex + 1 + i);
-            }
-        }
-
-        if (conditional)
-        {
-            return;
-        }
-    }
 
     if ((accessType == TYP_STRUCT) || lcl->OperIs(GT_LCL_ADDR))
     {
@@ -685,8 +665,8 @@ bool PromotionLiveness::IsReplacementUsed(BasicBlock* bb, unsigned structLcl, un
 }
 
 //------------------------------------------------------------------------
-// IsReplacementPossiblyDefined:
-//   Check if any part of a replacement field may be defined in a block.
+// IsReplacementDefined:
+//   Check if a replacement field is fully defined in a block.
 //
 // Parameters:
 //   bb               - The block
@@ -694,12 +674,12 @@ bool PromotionLiveness::IsReplacementUsed(BasicBlock* bb, unsigned structLcl, un
 //   replacementIndex - Index of the replacement
 //
 // Returns:
-//   True if the field is in the may-definition set.
+//   True if the field is in the definition set.
 //
-bool PromotionLiveness::IsReplacementPossiblyDefined(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
+bool PromotionLiveness::IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacementIndex)
 {
     unsigned index = m_structLclToTrackedIndex[structLcl] + 1 + replacementIndex;
-    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarMayDef, index);
+    return BitVecOps::IsMember(m_bvTraits, m_bbInfo[bb->bbNum].VarDef, index);
 }
 
 //------------------------------------------------------------------------

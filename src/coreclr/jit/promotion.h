@@ -17,9 +17,10 @@ const int PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT = 64;
 // Represents a single replacement of a (field) access into a struct local.
 struct Replacement
 {
-    unsigned  Offset;
-    var_types AccessType;
-    unsigned  LclNum = BAD_VAR_NUM;
+    BasicBlock* ReadBackPlacement = nullptr;
+    unsigned    Offset;
+    var_types   AccessType;
+    unsigned    LclNum = BAD_VAR_NUM;
     // Dense index into the inter-block pending-readback sets.
     unsigned ReadBackIndex = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
@@ -27,8 +28,7 @@ struct Replacement
     // Is the value in the struct local fresher than the replacement local?
     // This may remain true across blocks when all incoming paths agree that
     // the struct local contains the current value.
-    bool NeedsReadBack         = false;
-    bool HasReconciledReadBack = false;
+    bool NeedsReadBack = false;
 #ifdef DEBUG
     const char* Description = "";
 #endif
@@ -216,18 +216,13 @@ public:
 
     void         Run();
     bool         IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacement);
-    bool         IsReplacementPossiblyDefined(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    bool         IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
 
 private:
-    void     MarkUseDef(Statement*           stmt,
-                        GenTreeLclVarCommon* lcl,
-                        BitVec&              useSet,
-                        BitVec&              defSet,
-                        BitVec&              mayDefSet,
-                        bool                 conditional = false);
+    void     MarkUseDef(Statement* stmt, GenTreeLclVarCommon* lcl, BitVec& useSet, BitVec& defSet);
     unsigned GetSizeOfStructLocal(Statement* stmt, GenTreeLclVarCommon* lcl);
     void     MarkIndex(unsigned index, bool isUse, bool isDef, BitVec& useSet, BitVec& defSet);
     void     ComputeUseDefSets();
@@ -257,14 +252,13 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Statement*         m_currentStmt         = nullptr;
     BasicBlock*        m_currentBlock        = nullptr;
 
-    FlowGraphDfsTree*          m_dfsTree;
-    BitVecTraits*              m_readBackTraits;
-    BitVecTraits               m_postOrderTraits;
-    BitVec*                    m_pendingReadBacks;
-    BitVec*                    m_currentStructFields;
-    BitVec                     m_processedBlocks;
-    BitVec                     m_requiresAlreadyReadBackOnEntry;
-    jitstd::vector<Statement*> m_reconciliationReadBacks;
+    FlowGraphDfsTree* m_dfsTree;
+    BitVecTraits*     m_readBackTraits;
+    BitVecTraits      m_postOrderTraits;
+    BitVec*           m_pendingReadBacks;
+    BitVec*           m_currentStructFields;
+    BitVec            m_processedBlocks;
+    BitVec            m_requiresAlreadyReadBackOnEntry;
 
 public:
     enum
@@ -292,12 +286,13 @@ public:
     Statement* StartBlock(BasicBlock* block);
     void       EndBlock();
     void       StartStatement(Statement* stmt);
-    void       OptimizeReadBacks();
 
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
-    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep, bool reconcile = false);
+    void PlanReadBacks();
+    bool MustMaterializeReadBacks(BasicBlock* block);
+    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep);
 
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
