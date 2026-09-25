@@ -187,14 +187,11 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             bool usesBootstrapBlazorTargetFramework =
                 buildOptions.TargetFramework == BuildTestBase.DefaultTargetFrameworkForBlazorTemplate &&
                 buildOptions.TargetFramework != BuildTestBase.DefaultTargetFramework;
-            string runtimePackTargetFramework = usesBootstrapBlazorTargetFramework
-                ? BuildTestBase.DefaultTargetFramework
-                : buildOptions.TargetFramework;
             ProjectProviderBase.AssertRuntimePackPath(
                 buildOutput,
-                runtimePackTargetFramework,
+                buildOptions.TargetFramework,
                 buildOptions.RuntimeType,
-                allowCompatibleRuntimePackVersion: usesBootstrapBlazorTargetFramework);
+                compatibleTargetFramework: usesBootstrapBlazorTargetFramework ? BuildTestBase.DefaultTargetFramework : null);
         }
 
         // Capture the runtime-pack root the build actually used so downstream asserts (e.g. ICU
