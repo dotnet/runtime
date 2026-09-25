@@ -1861,21 +1861,19 @@ void ReplaceVisitor::PlanReadBacks()
                 }
             }
 
-            BasicBlock*     common    = nullptr;
-            weight_t        oldWeight = 0;
-            BitVecOps::Iter iter(&m_postOrderTraits, sites);
-            unsigned        j;
-            while (iter.NextElem(&j))
-            {
+            BasicBlock* common    = nullptr;
+            weight_t    oldWeight = 0;
+            BitVecOps::VisitBits(&m_postOrderTraits, sites, [&](unsigned j) {
                 BasicBlock* block = m_dfsTree->GetPostOrder(j);
                 if (!placementDfs->Contains(block))
                 {
                     common = nullptr;
-                    break;
+                    return false;
                 }
                 common = common == nullptr ? block : domTree->Intersect(common, block);
                 oldWeight += block->getBBWeight(m_compiler);
-            }
+                return true;
+            });
 
             if (common == nullptr)
             {
