@@ -298,9 +298,9 @@ namespace ILCompiler.PortableCallHelpers
                 string r2rDispatch = cb.IsVoid
                     ? $"((void(*)({paramTypesOnly}))r2r)({arguments});{w.NewLine}        return;"
                     : $"return (({MapType(cb.ReturnType)}(*)({paramTypesOnly}))r2r)({arguments});";
-                // Cache the resolved entrypoint in a per-callback static, published with a volatile store:
-                // these are native entry points that can be entered concurrently, and the value is computed
-                // identically on every call, so the racing read/write is benign but must not tear.
+                // Cache the resolved entrypoint in a per-callback static, published with acquire/release
+                // atomics: these are native entry points that can be entered concurrently, and the value is
+                // computed identically on every call, so the racing read/write is benign but must not tear.
                 string r2rStaticDecl = $"{w.NewLine}static void* {r2rVar} = (void*)(intptr_t)-1;";
                 string r2rSection =
                     w.NewLine + "    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R)."

@@ -203,8 +203,13 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_Crossgen2GeneratorRsp>$(_WasmCorerunDir)callhelpers-generator.rsp</_Crossgen2GeneratorRsp>
 
       <!-- Consumed straight out of the kit: the paths in them are relative to the kit directory,
-           which is why both em++ invocations below run from there. -->
+           which is why both em++ invocations below run from there. The generated call tables use
+           the full compile rsp (force-includes coreclr_compat.h); user NativeFileReference sources
+           use the user rsp, which omits the generated-helper-only compat header/include path so a
+           raw .c/.cpp does not inherit CoreCLR typedefs/macros. This mirrors the app build's split
+           between _EmccCFlags and _EmccCFlagsGenerated. -->
       <_WasmCorerunCompileRsp>$(WasmCorerunKitDir)corerun-compile.rsp</_WasmCorerunCompileRsp>
+      <_WasmCorerunUserCompileRsp>$(WasmCorerunKitDir)corerun-compile-user.rsp</_WasmCorerunUserCompileRsp>
       <_WasmCorerunLinkRsp>$(WasmCorerunKitDir)corerun-link.rsp</_WasmCorerunLinkRsp>
 
       <_WasmCorerunJs>$(OutDir)corerun.js</_WasmCorerunJs>
@@ -372,7 +377,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <Target Name="_WasmCompileTestCallHelpers"
           DependsOnTargets="_WasmResolveTestCorerunInputs;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunGeneratedSource);@(_WasmCorerunNativeSource);@(_WasmCorerunKitInclude);$(_WasmCorerunCompileRsp);$(_WasmCorerunInputManifest)"
+          Inputs="@(_WasmCorerunGeneratedSource);@(_WasmCorerunNativeSource);@(_WasmCorerunKitInclude);$(_WasmCorerunCompileRsp);$(_WasmCorerunUserCompileRsp);$(_WasmCorerunInputManifest)"
           Outputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunNativeSource->'%(ObjectFile)')">
     <Message Importance="High" Text="$(MSBuildProjectName) -> compiling native sources and managed-to-native tables for a test-specific corerun" />
 
@@ -380,12 +385,12 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
           WorkingDirectory="$(WasmCorerunKitDir)"
           EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
 
-    <Exec Command="&quot;$(_WasmCorerunEmcc)&quot; &quot;@$(_WasmCorerunCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunEmcc)&quot; &quot;@$(_WasmCorerunUserCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
           Condition="'%(_WasmCorerunNativeSource.Extension)' == '.c'"
           WorkingDirectory="$(WasmCorerunKitDir)"
           EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
 
-    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; &quot;@$(_WasmCorerunCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
+    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; &quot;@$(_WasmCorerunUserCompileRsp)&quot; -c &quot;%(_WasmCorerunNativeSource.FullPath)&quot; -o &quot;%(_WasmCorerunNativeSource.ObjectFile)&quot;"
           Condition="'%(_WasmCorerunNativeSource.Extension)' == '.cpp'"
           WorkingDirectory="$(WasmCorerunKitDir)"
           EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />

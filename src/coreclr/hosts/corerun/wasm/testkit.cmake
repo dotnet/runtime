@@ -229,12 +229,24 @@ function(corerun_kit_export)
     # or, worse, hold per-configuration defaults the repo never actually uses.
     # corerun's include directories are likewise not exported: the generated
     # sources only need the headers shipped in the kit.
-    set(compileResponse "")
-    string(APPEND compileResponse "-O2\n")
-    string(APPEND compileResponse "-fwasm-exceptions\n")
-    string(APPEND compileResponse "-sWASM_LEGACY_EXCEPTIONS=0\n")
-    string(APPEND compileResponse "-msimd128\n")
-    string(APPEND compileResponse "-DGEN_PINVOKE=1\n")
+    # The user response is the flags every object linked into the test corerun must
+    # agree on -- the exception model above all, which wasm-ld rejects if it is
+    # mixed. It carries no generated-helper-only flags, mirroring the app build's
+    # split between user NativeFileReference sources and the crossgen2-emitted
+    # call tables (BrowserWasmApp.CoreCLR.targets: _EmccCFlags vs _EmccCFlagsGenerated).
+    set(userCompileResponse "")
+    string(APPEND userCompileResponse "-O2\n")
+    string(APPEND userCompileResponse "-fwasm-exceptions\n")
+    string(APPEND userCompileResponse "-sWASM_LEGACY_EXCEPTIONS=0\n")
+    string(APPEND userCompileResponse "-msimd128\n")
+    string(APPEND userCompileResponse "-DGEN_PINVOKE=1\n")
+
+    # The generated call tables additionally force-include coreclr_compat.h (which
+    # injects CoreCLR type/macro prereqs like MethodDesc/ULONG/LOG) and add the kit
+    # header search path. Those are deliberately kept off user sources: a raw .c/.cpp
+    # NativeFileReference must not inherit those typedefs/macros, which would collide
+    # with arbitrary user code.
+    set(compileResponse "${userCompileResponse}")
     string(APPEND compileResponse "-I\"include\"\n")
     string(APPEND compileResponse "-include\n\"include/coreclr_compat.h\"\n")
 
@@ -243,6 +255,8 @@ function(corerun_kit_export)
          TARGET corerun_static)
     file(GENERATE OUTPUT "${generatedDirectory}/corerun-compile.rsp" CONTENT "${compileResponse}"
          TARGET corerun_static)
+    file(GENERATE OUTPUT "${generatedDirectory}/corerun-compile-user.rsp" CONTENT "${userCompileResponse}"
+         TARGET corerun_static)
 
     foreach(library IN LISTS kitLibraries)
         install(FILES "$<TARGET_FILE:${library}>" DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
@@ -250,6 +264,7 @@ function(corerun_kit_export)
     install(FILES ${kitFiles} DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
     install(FILES ${KIT_JS_LIBRARIES} "${KIT_EXTERN_POST_JS}" DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
     install(FILES "${generatedDirectory}/corerun-link.rsp" "${generatedDirectory}/corerun-compile.rsp"
+                  "${generatedDirectory}/corerun-compile-user.rsp"
             DESTINATION ${kitDestination} COMPONENT ${KIT_COMPONENT})
 
     # Headers the generated call tables include, plus the compatibility header
