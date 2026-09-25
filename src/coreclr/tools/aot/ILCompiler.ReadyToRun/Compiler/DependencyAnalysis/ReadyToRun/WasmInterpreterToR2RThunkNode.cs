@@ -139,6 +139,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 argIndex++;
             }
 
+            if (hasGenericContextBeforeAsync)
+            {
+                // The raised signature models the generic context as explicit parameter 0, so ArgIterator
+                // places it after the async continuation. The interpreter passes the generic context
+                // before the async continuation, i.e. in the slot ArgIterator assigns to the continuation.
+                interpOffsets[0] = argit.GetAsyncContinuationArgOffset() - sizeOfTransitionBlock;
+            }
+
             WasmFuncType targetFuncType = _targetTypeNode.Type;
             bool hasWasmReturn = targetFuncType.Returns.Types.Length > 0;
 

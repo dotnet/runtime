@@ -159,6 +159,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 offsets[i] += transitionBlockOffset;
             }
             int asyncContinuationOffset = hasAsyncContinuation ? argit.GetAsyncContinuationArgOffset() + transitionBlockOffset : 0;
+            if (hasGenericContextBeforeAsync)
+            {
+                // The raised signature models the generic context as explicit parameter 0, so ArgIterator
+                // places it after the async continuation. The interpreter expects the generic context
+                // before the async continuation, so swap the two pointer-sized slots.
+                (offsets[0], asyncContinuationOffset) = (asyncContinuationOffset, offsets[0]);
+            }
             int sizeOfStoredLocals = argumentsOffset + AlignmentHelper.AlignUp(sizeOfArgumentArray, 16);
 
             bool hasWasmReturn = _typeNode.Type.Returns.Types.Length > 0;
