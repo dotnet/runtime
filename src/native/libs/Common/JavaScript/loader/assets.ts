@@ -149,14 +149,6 @@ export async function fetchIcu(asset: IcuAsset): Promise<void> {
 }
 
 export async function fetchAssembly(asset: AssemblyAsset): Promise<void> {
-    return fetchAssemblyInternal(asset, false);
-}
-
-export async function fetchCoreAssembly(asset: AssemblyAsset): Promise<void> {
-    return fetchAssemblyInternal(asset, true);
-}
-
-async function fetchAssemblyInternal(asset: AssemblyAsset, isCoreAssembly: boolean): Promise<void> {
     const assetInternal = asset as AssetEntryInternal;
     totalAssetsToDownload++;
     dotnetAssert.check(assetInternal.virtualPath, "Assembly asset must have virtualPath");
@@ -168,10 +160,6 @@ async function fetchAssemblyInternal(asset: AssemblyAsset, isCoreAssembly: boole
     }
 
     const isWebcilInWasm = assetInternal.virtualPath?.endsWith(".wasm") ?? false;
-    // The SDK places only System.Private.CoreLib and the composite R2R owner in coreAssembly. Crossgen2 names
-    // the owner <entry>.r2r.wasm and every component stub probes for it by that exact name, so it keeps its
-    // .wasm virtual path and is not a managed assembly (see initializeCoreCLR's TPA).
-    assetInternal.isCompositeImage = isCoreAssembly && assetInternal.virtualPath.endsWith(".r2r.wasm");
     normalizeVirtualPath(assetInternal);
 
     if (isWebcilInWasm) {
@@ -577,6 +565,8 @@ export function verifyAllAssetsDownloaded(): void {
 
 function normalizeVirtualPath(asset: AssetEntryInternal): void {
     dotnetAssert.check(asset.virtualPath, "Asset must have virtualPath");
+    // Component stubs probe for the composite owner by its crossgen2 name (<entry>.r2r.wasm), so it keeps
+    // its .wasm virtual path; it is not a managed assembly (see initializeCoreCLR's TPA).
     if (!asset.isCompositeImage) {
         asset.virtualPath = asset.virtualPath!.replace(/\.wasm$/, ".dll");
     }

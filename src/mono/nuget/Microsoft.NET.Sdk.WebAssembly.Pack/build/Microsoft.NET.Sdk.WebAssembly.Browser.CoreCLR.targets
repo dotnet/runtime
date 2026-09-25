@@ -243,10 +243,15 @@ Copyright (c) .NET Foundation. All rights reserved.
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           AfterTargets="_CreateR2RImages">
     <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
+      <!-- Keep what crossgen2 actually emitted, not the task's publish plan: every compiled image, plus in
+           composite mode a <name>.wasm component stub beside the owner for each composite input. -->
+      <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompositeBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm');@(_ReadyToRunCompositeUnrootedBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm')"
+                             Condition="'$(PublishReadyToRunComposite)' == 'true'" />
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
            R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
       <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm;$(_WasmPublishR2RDir)*.dll"
-                           Exclude="@(_ReadyToRunFilesToPublish)" />
+                           Exclude="@(_WasmEmittedPerAppR2R)" />
     </ItemGroup>
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>

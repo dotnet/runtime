@@ -560,9 +560,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         {
             string bootFileNameWithoutExtension = Path.GetFileNameWithoutExtension(bootConfigFileName);
             string bootFileExtension = Path.GetExtension(bootConfigFileName);
+            // A republish into an existing output leaves the previous fingerprinted copy beside the current one;
+            // pick the newest, as FindAndAssertDotnetFiles does, so assertions read the active boot config.
             string? fingerprintedBootJsonPath = Directory
                 .EnumerateFiles(binFrameworkDir)
-                .FirstOrDefault(f =>
+                .Where(f =>
                 {
                     if (Path.GetExtension(f) != bootFileExtension)
                         return false;
@@ -575,8 +577,10 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         return false;
 
                     return true;
-                });
-            
+                })
+                .OrderByDescending(File.GetLastWriteTimeUtc)
+                .FirstOrDefault();
+
             if (fingerprintedBootJsonPath == null)
                 throw new XunitException($"Could not find boot config '{bootConfigFileName}' with fingerprint in '{binFrameworkDir}'");
 

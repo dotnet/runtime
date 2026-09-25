@@ -86,7 +86,7 @@ namespace Wasm.Build.Tests
                 extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{(composite ? "true" : "false")}</PublishReadyToRunComposite><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
                 extraItems: extraItems);
             if (composite)
-                AddR2RSuffixLibrary(info);
+                LogR2RSuffixLibraryMarker();
             string extraArgs = GetR2RBuildArgs(config, composite);
             if (nativeRelink)
             {
@@ -290,76 +290,53 @@ namespace Wasm.Build.Tests
             return string.Join(" ", args);
         }
 
+        private static int GetReadyToRunTableSize(string webcilPath)
+        {
+            using FileStream stream = File.OpenRead(webcilPath);
+            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? failureReason), failureReason);
+            return tableSize;
+        }
+
         private static void AssertCoreLibReadyToRun(string frameworkDir, bool expectReadyToRun)
         {
             string? coreLib = Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").FirstOrDefault();
             Assert.True(coreLib is not null, $"Expected a System.Private.CoreLib webcil under '{frameworkDir}'.");
 
-            using FileStream stream = File.OpenRead(coreLib!);
-            bool ok = WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? failureReason);
-            Assert.True(ok, failureReason);
-
+            int tableSize = GetReadyToRunTableSize(coreLib!);
             if (expectReadyToRun)
                 Assert.True(tableSize > 0, $"Expected a ReadyToRun table in '{coreLib}', but the R2R table size was 0.");
             else
                 Assert.Equal(0, tableSize);
         }
 
+        // The boot config flags exactly the composite owner, delivered via coreAssembly under its crossgen2 name so
+        // component stubs can probe for it; an assembly merely named *.r2r stays an ordinary, unflagged assembly.
         private void AssertCompositeReadyToRun(string frameworkDir)
         {
-            string bootConfigPath = _provider.GetBootConfigPath(frameworkDir);
-            if (EnvironmentVariables.UseFingerprinting)
-            {
-                string indexPath = Path.Combine(Path.GetDirectoryName(frameworkDir)!, "index.html");
-                Match activeBoot = Regex.Match(File.ReadAllText(indexPath),
-                    @"""./_framework/dotnet\.js"": ""./_framework/(?<name>dotnet\.[a-z0-9]{10}\.js)""");
-                Assert.True(activeBoot.Success, $"Missing active dotnet.js import in '{indexPath}'.");
-                bootConfigPath = Path.Combine(frameworkDir, activeBoot.Groups["name"].Value);
-            }
-            AssetsData assets = (AssetsData)_provider.GetBootJson(bootConfigPath).resources;
-            GeneralAsset composite = Assert.Single(assets.coreAssembly,
-                asset => asset.virtualPath?.EndsWith(".r2r.wasm", System.StringComparison.Ordinal) == true);
+            AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+            WebcilAsset composite = Assert.Single(assets.coreAssembly, asset => asset.isCompositeImage == true);
             Assert.Equal("BlazorBasicTestApp.r2r.wasm", composite.virtualPath);
             if (EnvironmentVariables.UseFingerprinting)
                 Assert.Matches(@"^BlazorBasicTestApp\.r2r\.[a-z0-9]{10}\.wasm$", composite.name);
+            Assert.DoesNotContain(assets.assembly, asset => asset.isCompositeImage == true);
             Assert.Contains(assets.coreAssembly,
                 asset => asset.virtualPath?.StartsWith("System.Private.CoreLib", System.StringComparison.Ordinal) == true);
-            Assert.Contains(assets.assembly,
-                asset => asset.virtualPath == "R2rSuffixLibrary.r2r.wasm");
-            Assert.DoesNotContain(assets.assembly,
-                asset => asset.virtualPath == composite.virtualPath);
+            Assert.Contains(assets.assembly, asset => asset.virtualPath == "R2rSuffixLibrary.r2r.wasm");
 
             string compositePath = Path.Combine(frameworkDir, composite.name);
-            using FileStream stream = File.OpenRead(compositePath);
-            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? failureReason), failureReason);
-            Assert.True(tableSize > 0, $"Expected compiled methods in '{compositePath}'.");
+            Assert.True(GetReadyToRunTableSize(compositePath) > 0, $"Expected compiled methods in '{compositePath}'.");
             Assert.True(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").Any(),
                 $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
         }
 
         private const string SuffixLibraryLoadedMessage = "Loaded R2rSuffixLibrary.r2r: 42";
 
-        // An ordinary library whose name ends in .r2r must still load as a managed component assembly,
-        // not be mistaken for the composite owner image (<entry>.r2r.wasm).
-        private void AddR2RSuffixLibrary(ProjectInfo info)
-        {
-            UpdateFile("Program.cs", new Dictionary<string, string>
+        // Make the app call into the R2rSuffixLibrary test asset (referenced for composite runs) so the run proves
+        // it loaded as a component assembly rather than being mistaken for the composite owner.
+        private void LogR2RSuffixLibraryMarker()
+            => UpdateFile("Program.cs", new Dictionary<string, string>
             {
                 { "var builder", "System.Console.WriteLine($\"Loaded {typeof(R2rSuffixLibraryMarker).Assembly.GetName().Name}: {R2rSuffixLibraryMarker.Value}\");\nvar builder" }
             });
-            string appDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-            string libraryDirectory = Path.GetFullPath(Path.Combine(appDirectory, "..", "R2rSuffixLibrary"));
-            Directory.CreateDirectory(libraryDirectory);
-            File.WriteAllText(Path.Combine(libraryDirectory, "R2rSuffixLibrary.csproj"), $$"""
-                <Project Sdk="Microsoft.NET.Sdk">
-                  <PropertyGroup>
-                    <TargetFramework>{{DefaultTargetFrameworkForBlazor}}</TargetFramework>
-                    <AssemblyName>R2rSuffixLibrary.r2r</AssemblyName>
-                  </PropertyGroup>
-                </Project>
-                """);
-            File.WriteAllText(Path.Combine(libraryDirectory, "Marker.cs"),
-                "public static class R2rSuffixLibraryMarker { public static int Value => 42; }");
-        }
     }
 }

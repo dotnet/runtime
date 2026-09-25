@@ -130,6 +130,8 @@ public class GenerateWasmBootJson : Task
         // boot config, letting the loader stream-instantiate instead of buffering and parsing. The
         // AttachWebcilSizes task attaches these as PayloadSize/TableSize metadata on the resources.
         var webcilSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
+        // Routes of composite ReadyToRun owner images, flagged isCompositeImage in the boot config.
+        var compositeImages = new HashSet<string>(StringComparer.Ordinal);
 
         var result = new BootJsonData
         {
@@ -293,10 +295,11 @@ public class GenerateWasmBootJson : Task
                     }
                 }
                 else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase)
-                    && string.Equals("core", assetTraitValue, StringComparison.OrdinalIgnoreCase))
+                    && string.Equals("readyToRunComposite", assetTraitValue, StringComparison.OrdinalIgnoreCase))
                 {
                     MapFingerprintedAsset(resourceData, resourceRoute, resourceName);
-                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a core assembly.", resource.ItemSpec);
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a composite ReadyToRun image.", resource.ItemSpec);
+                    compositeImages.Add(resourceRoute);
                     resourceList = resourceData.coreAssembly;
                 }
                 else if (string.Equals("runtime", assetTraitValue, StringComparison.OrdinalIgnoreCase))
@@ -522,7 +525,7 @@ public class GenerateWasmBootJson : Task
 
         string? imports = null;
         if (IsTargeting100OrLater())
-            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes);
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes, compositeImages);
 
         helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 

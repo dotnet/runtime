@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The .r2r assembly-name suffix must not be mistaken for a composite ReadyToRun owner image. -->
+  <PropertyGroup>
+    <TargetFramework>net11.0</TargetFramework>
+    <AssemblyName>R2rSuffixLibrary.r2r</AssemblyName>
+  </PropertyGroup>
+
+</Project>

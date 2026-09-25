@@ -1062,25 +1062,32 @@ Copyright (c) .NET Foundation. All rights reserved.
     <ItemGroup Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'">
       <_WasmCompositeCompilation Include="@(_ReadyToRunCompileList)"
                                  Condition="'%(CreateCompositeImage)' == 'true'" />
-      <_WasmCompositePublishCandidate Include="@(_WasmCompositeCompilation->'%(OutputR2RImage)')">
-        <SourceId>$(PackageId)</SourceId>
-        <SourceType>Computed</SourceType>
-        <ContentRoot>$([MSBuild]::NormalizeDirectory($(PublishDir), 'wwwroot'))</ContentRoot>
-        <BasePath>$(StaticWebAssetBasePath)</BasePath>
-        <RelativePath Condition="'$(_WasmFingerprintAssets)' != 'true'">_framework/$([System.IO.Path]::GetFileName('%(OutputR2RImage)'))</RelativePath>
-        <RelativePath Condition="'$(_WasmFingerprintAssets)' == 'true'">_framework/$([System.IO.Path]::GetFileNameWithoutExtension('%(OutputR2RImage)'))#[.{fingerprint}]!.wasm</RelativePath>
-        <AssetKind>Publish</AssetKind>
-        <AssetMode>All</AssetMode>
-        <AssetRole>Primary</AssetRole>
-        <AssetTraitName>WasmResource</AssetTraitName>
-        <AssetTraitValue>core</AssetTraitValue>
-        <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        <OriginalItemSpec>%(OutputR2RImage)</OriginalItemSpec>
-      </_WasmCompositePublishCandidate>
+      <_WasmCompositePublishCandidate Include="@(_WasmCompositeCompilation->'%(OutputR2RImage)')" KeepMetadata="OutputR2RImage" />
+      <_WasmCompositePublishCandidate Update="@(_WasmCompositePublishCandidate)"
+                                      ContentRoot="%(RootDir)%(Directory)"
+                                      RelativePath="_framework/%(FileName)%(Extension)" />
+      <_WasmCompositeFingerprintPattern Include="WasmFiles" Pattern="*.wasm" Expression="#[.{fingerprint}]!" />
     </ItemGroup>
     <Error Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true' and '@(_WasmCompositePublishCandidate)' == ''"
            Text="Composite ReadyToRun compilation did not produce a composite WebAssembly image." />
+    <!-- The composite owner is not a managed assembly, so it bypasses ComputeWasmPublishAssets/ConvertDllsToWebcil.
+         The readyToRunComposite trait routes it to coreAssembly with isCompositeImage set in the boot config. -->
+    <DefineStaticWebAssets Condition="'@(_WasmCompositePublishCandidate)' != ''"
+      CandidateAssets="@(_WasmCompositePublishCandidate)"
+      SourceId="$(PackageId)"
+      SourceType="Computed"
+      BasePath="$(StaticWebAssetBasePath)"
+      AssetKind="Publish"
+      AssetMode="All"
+      AssetRole="Primary"
+      AssetTraitName="WasmResource"
+      AssetTraitValue="readyToRunComposite"
+      CopyToOutputDirectory="Never"
+      CopyToPublishDirectory="PreserveNewest"
+      FingerprintCandidates="$(_WasmFingerprintAssets)"
+      FingerprintPatterns="@(_WasmCompositeFingerprintPattern)">
+      <Output TaskParameter="Assets" ItemName="_WasmCompositePublishStaticWebAsset" />
+    </DefineStaticWebAssets>
 
     <ItemGroup Condition="'$(_WasmInlineBootConfig)' == 'true'">
       <_WasmDotnetJsForPublish Include="@(ResolvedFileToPublish)" Condition="'%(FileName)%(Extension)' == 'dotnet.js'" />
@@ -1126,7 +1133,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     -->
     <ItemGroup>
       <_NewWebcilPublishStaticWebAssetsCandidatesNoMetadata
-        Include="@(_NewWebcilPublishStaticWebAssetsCandidates);@(_WasmCompositePublishCandidate)"
+        Include="@(_NewWebcilPublishStaticWebAssetsCandidates)"
         RemoveMetadata="Integrity;Fingerprint" />
       <!-- Set per-item ContentRoot so each asset's Identity matches its actual file on disk.
            Clear stale Fingerprint/Integrity so DefineStaticWebAssets recomputes from the actual file. -->
@@ -1147,7 +1154,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </DefineStaticWebAssets>
 
     <DefineStaticWebAssetEndpoints
-      CandidateAssets="@(_NewWebcilPublishStaticWebAssets)"
+      CandidateAssets="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset)"
       ExistingEndpoints="@(StaticWebAssetEndpoint)"
       ContentTypeMappings="@(StaticWebAssetContentTypeMapping)"
     >
@@ -1156,7 +1163,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(_PublishResolvedFilesToRemove)" />
-      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets)" />
+      <StaticWebAsset Include="@(_NewWebcilPublishStaticWebAssets);@(_WasmCompositePublishStaticWebAsset)" />
       <StaticWebAssetEndpoint Include="@(_NewWebcilPublishStaticWebAssetsEndpoint)" />
 
       <!-- TODO: Probably doesn't do anything as of now, original https://github.com/dotnet/aspnetcore/pull/34798 -->
