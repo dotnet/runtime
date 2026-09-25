@@ -2052,7 +2052,6 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
-        EagerFixups();
         break;
 
     case FILE_LOAD_DELIVER_EVENTS:
@@ -2070,7 +2069,7 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_ACTIVE:
-        EagerActivationFixups();
+        EagerFixups();
         Activate();
         break;
 
@@ -2137,18 +2136,6 @@ void Assembly::EagerFixups()
     {
         GetModule()->RunEagerFixups();
 
-    }
-#endif // FEATURE_READYTORUN
-}
-
-void Assembly::EagerActivationFixups()
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef FEATURE_READYTORUN
-    if (GetModule()->IsReadyToRun())
-    {
-        GetModule()->RunEagerActivationFixups();
     }
 #endif // FEATURE_READYTORUN
 }

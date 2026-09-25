@@ -77,8 +77,8 @@
 // READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 // R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
-// R2R Version 30 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun and the EagerActivation
-// import section flag for initializing a method's ReadyToRun entry point and fixups.
+// R2R Version 30 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
+// method's ReadyToRun entry point and fixups.
 //     R2R 30 is not backward compatible with 29.x or earlier.
 
 struct READYTORUN_CORE_HEADER
@@ -177,10 +177,9 @@ enum class ReadyToRunImportSectionType : uint8_t
 
 enum class ReadyToRunImportSectionFlags : uint16_t
 {
-    None            = 0x0000,
-    Eager           = 0x0001, // Section at module load time.
-    EagerActivation = 0x0002, // Section after module load and before activation.
-    PCode           = 0x0004, // Section contains pointers to code
+    None  = 0x0000,
+    Eager = 0x0001, // Section before module activation.
+    PCode = 0x0004, // Section contains pointers to code
 };
 
 // All values in this enum should within a nibble (4 bits).

@@ -3545,7 +3545,7 @@ void Module::RunEagerFixups()
                 GetReadyToRunInfo()->DisableAllR2RCode();
             return;
         }
-        RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags::Eager);
+        RunEagerFixupsUnlocked();
         if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
             compositeNativeImage->DisableAllR2RCode();
         compositeNativeImage->SetEagerFixupsHaveRun();
@@ -3559,43 +3559,11 @@ void Module::RunEagerFixups()
             return;
 #endif // TARGET_WASM
 
-        RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags::Eager);
+        RunEagerFixupsUnlocked();
     }
 }
 
-void Module::RunEagerActivationFixups()
-{
-    STANDARD_VM_CONTRACT;
-
-    COUNT_T nSections;
-    GetImportSections(&nSections);
-    if (nSections == 0)
-        return;
-
-    NativeImage *compositeNativeImage = GetCompositeNativeImage();
-    if (compositeNativeImage != NULL)
-    {
-        CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
-
-        if (compositeNativeImage->EagerActivationFixupsHaveRun())
-        {
-            if (compositeNativeImage->ReadyToRunCodeDisabled())
-                GetReadyToRunInfo()->DisableAllR2RCode();
-            return;
-        }
-
-        RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags::EagerActivation);
-        if (GetReadyToRunInfo()->ReadyToRunCodeDisabled())
-            compositeNativeImage->DisableAllR2RCode();
-        compositeNativeImage->SetEagerActivationFixupsHaveRun();
-    }
-    else
-    {
-        RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags::EagerActivation);
-    }
-}
-
-void Module::RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags flag)
+void Module::RunEagerFixupsUnlocked()
 {
     COUNT_T nSections;
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
@@ -3605,7 +3573,7 @@ void Module::RunEagerFixupsUnlocked(ReadyToRunImportSectionFlags flag)
     {
         PTR_READYTORUN_IMPORT_SECTION pSection = pSections + iSection;
 
-        if ((pSection->Flags & flag) != flag)
+        if ((pSection->Flags & ReadyToRunImportSectionFlags::Eager) != ReadyToRunImportSectionFlags::Eager)
             continue;
 
         COUNT_T tableSize;

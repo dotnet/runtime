@@ -131,7 +131,6 @@ private:
     void Begin();
     void BeforeTypeLoad();
     void EagerFixups();
-    void EagerActivationFixups();
 #ifdef FEATURE_IJW
     void VtableFixups();
 #endif // FEATURE_IJW

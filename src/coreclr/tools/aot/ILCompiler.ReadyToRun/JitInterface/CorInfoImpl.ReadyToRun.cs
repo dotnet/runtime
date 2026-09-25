@@ -1003,7 +1003,7 @@ namespace Internal.JitInterface
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
-            helperMethod = GetManagedHelper(ftnNum);
+            helperMethod = _compilation.NodeFactory.Target.IsWasm ? GetManagedHelper(ftnNum) : null;
 
             if (helperMethod is not null &&
                 _compilation.CompilationModuleGroup.ContainsMethodBody(helperMethod, unboxingStub: false))
@@ -1016,8 +1016,8 @@ namespace Internal.JitInterface
                     unboxing: false,
                     genericContextObject: MethodBeingCompiled);
                 AddAdditionalDependency(
-                    _compilation.SymbolNodeFactory.EagerActivationReadyToRunMethodEntry(helperMethodWithToken),
-                    "Eager activation ReadyToRun method entry");
+                    _compilation.SymbolNodeFactory.EagerReadyToRunMethodEntry(helperMethodWithToken),
+                    "Eager ReadyToRun method entry");
                 return helperMethodNode;
             }
 

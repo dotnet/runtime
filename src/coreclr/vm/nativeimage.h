@@ -95,7 +95,6 @@ private:
 
     Crst m_eagerFixupsLock;
     bool m_eagerFixupsHaveRun;
-    bool m_eagerActivationFixupsHaveRun;
     bool m_readyToRunCodeDisabled;
 
 private:
@@ -117,8 +116,6 @@ public:
     Crst *EagerFixupsLock() { return &m_eagerFixupsLock; }
     bool EagerFixupsHaveRun() const { return m_eagerFixupsHaveRun; }
     void SetEagerFixupsHaveRun() { m_eagerFixupsHaveRun = true; }
-    bool EagerActivationFixupsHaveRun() const { return m_eagerActivationFixupsHaveRun; }
-    void SetEagerActivationFixupsHaveRun() { m_eagerActivationFixupsHaveRun = true; }
     LPCUTF8 GetFileName() const { return m_fileName; }
 
     uint32_t GetComponentAssemblyCount() const { return m_componentAssemblyCount; }
