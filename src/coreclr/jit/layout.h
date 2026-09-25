@@ -86,6 +86,13 @@ private:
     // The normalized type to use in IR for block nodes with this layout.
     const var_types m_type;
 
+    // Disjoint-set-union parent used to group class-based layouts with GC pointers into
+    // equivalence classes of compatible layouts (see ClassLayout::AreCompatible). It is
+    // either null (the layout does not participate in the DSU - custom, block or non-GC
+    // layouts), a pointer to itself (the layout is a class representative) or a pointer
+    // to the representative of the class the layout belongs to.
+    ClassLayout* m_dsuParent = nullptr;
+
     // Name of the layout
     INDEBUG(const char* m_name;)
 
@@ -272,6 +279,10 @@ public:
 
     static bool AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2);
 
+private:
+    static bool AreCompatibleSlow(const ClassLayout* layout1, const ClassLayout* layout2);
+
+public:
     bool CanAssignFrom(const ClassLayout* sourceLayout);
 
 private:
