@@ -168,6 +168,15 @@ namespace System.Diagnostics
                 return null;
             }
 
+            // ValidateTraceState also runs on the raw carrier value from an incoming (untrusted)
+            // request, via ExtractTraceIdAndState. Don't let an arbitrarily large or malformed
+            // value get rooted in per-thread state for the thread's lifetime just because it was
+            // seen once - only cache inputs already within a valid tracestate's own size limit.
+            if (traceState.Length > MaxTraceStateEncodedLength)
+            {
+                return ValidateTraceStateCore(traceState);
+            }
+
             if (ReferenceEquals(traceState, t_lastRawTraceState))
             {
                 return t_lastValidatedTraceState;
