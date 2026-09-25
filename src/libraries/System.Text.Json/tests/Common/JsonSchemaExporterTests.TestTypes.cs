@@ -1405,6 +1405,13 @@ namespace System.Text.Json.Schema.Tests
             public string? StringProperty { get; set; }
         }
 
+        [JsonNumberHandling(JsonNumberHandling.Strict)]
+        public union StrictIntOrStringUnion(int, string);
+
+        public union IntOrBoolUnion(int, bool);
+
+        public union NullableIntUnion(int?);
+
         [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
         public class PocoWithCustomNumberHandling
         {

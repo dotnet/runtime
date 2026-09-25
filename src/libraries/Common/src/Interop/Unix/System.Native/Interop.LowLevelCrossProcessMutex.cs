@@ -25,11 +25,11 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId", SetLastError = true)]
         [SuppressGCTransition]
-        internal static partial void LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(void* mutex, out uint processId, out uint threadId);
+        internal static partial void LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(void* mutex, out uint processId, out ulong threadId);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId", SetLastError = true)]
         [SuppressGCTransition]
-        internal static partial void LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(void* mutex, uint processId, uint threadId);
+        internal static partial void LowLevelCrossProcessMutex_SetOwnerProcessAndThreadId(void* mutex, uint processId, ulong threadId);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_LowLevelCrossProcessMutex_IsAbandoned", SetLastError = true)]
         [SuppressGCTransition]
