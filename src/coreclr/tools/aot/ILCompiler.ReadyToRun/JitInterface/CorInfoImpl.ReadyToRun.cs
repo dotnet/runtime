@@ -3603,12 +3603,15 @@ namespace Internal.JitInterface
                 }
                 _precodeFixups = previouslyStashedFixups;
 
-                // Inlining removes the call that would activate the inlinee's module.
-                // Preserve that dependency even if the module acquires an initializer in a later version.
+                // Static methods and constructors can be the first use of a module.
+                // Preserve activation if the module has, or outside the version bubble can gain, an initializer.
                 EcmaModule inlineeModule = (inlinee.OwningType as MetadataType)?.Module as EcmaModule;
-                if (inlineeModule is not null &&
+                if ((inlinee.Signature.IsStatic || inlinee.IsConstructor) &&
+                    inlineeModule is not null &&
                     inlineeModule != _compilation.TypeSystemContext.SystemModule &&
-                    inlineeModule != (MethodBeingCompiled.OwningType as MetadataType)?.Module)
+                    inlineeModule != (MethodBeingCompiled.OwningType as MetadataType)?.Module &&
+                    (!_compilation.CompilationModuleGroup.VersionsWithModule(inlineeModule) ||
+                        inlineeModule.GetGlobalModuleType().HasStaticConstructor))
                 {
                     classMustBeLoadedBeforeCodeIsRun(inlineeModule.GetGlobalModuleType());
                 }

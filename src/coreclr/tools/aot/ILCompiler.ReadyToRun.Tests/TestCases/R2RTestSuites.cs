@@ -106,16 +106,22 @@ public class R2RTestSuites
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        void Validate(ReadyToRunReader reader)
         {
-            Assert.True(R2RAssert.HasInlinedMethod(reader, "TestGetValue", "GetValue", out string diagnostic), diagnostic);
-            ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
-                method => method.SignatureString.Contains("BasicInlining.TestGetValue(", StringComparison.Ordinal));
-            Assert.NotNull(method.Fixups);
-            FixupCell fixup = Assert.Single(method.Fixups,
-                fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle);
-            string signature = fixup.Signature.ToString(new SignatureFormattingOptions());
-            Assert.Equal("<Module> (TYPE_HANDLE)", signature);
+            ValidateMethod("TestGetValue", "InlineableLib.GetValue", !composite || hasInitializer);
+            ValidateMethod("TestConstructor", "InlineableInstance..ctor", !composite || hasInitializer);
+            ValidateMethod("TestInstanceMethod", "InlineableInstance.GetValue", false);
+
+            void ValidateMethod(string callerName, string inlineeName, bool needsActivation)
+            {
+                Assert.True(R2RAssert.HasInlinedMethod(reader, callerName, inlineeName, out string diagnostic), diagnostic);
+                ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                    method => method.SignatureString.Contains($".{callerName}(", StringComparison.Ordinal));
+                int activationFixups = (method.Fixups ?? []).Count(
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        fixup.Signature.ToString(new SignatureFormattingOptions()) == "<Module> (TYPE_HANDLE)");
+                Assert.Equal(needsActivation ? 1 : 0, activationFixups);
+            }
         }
     }
 

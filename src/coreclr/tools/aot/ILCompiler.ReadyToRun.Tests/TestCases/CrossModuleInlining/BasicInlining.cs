@@ -23,4 +23,19 @@ public static class BasicInlining
     {
         return InlineableLib.Add(10, 32);
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static InlineableInstance TestConstructor()
+    {
+        return new InlineableInstance();
+    }
+}
+
+public sealed class InstanceInlining : InlineableInstance
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public int TestInstanceMethod()
+    {
+        return base.GetValue();
+    }
 }
