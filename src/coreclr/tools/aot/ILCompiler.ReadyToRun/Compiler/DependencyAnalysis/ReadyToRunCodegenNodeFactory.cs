@@ -471,11 +471,6 @@ namespace ILCompiler.DependencyAnalysis
                 return new WasmVirtualDispatchThunkNode(this, key.Signature);
             });
 
-            _wasmDelegateCtorThunks = new NodeCache<bool, WasmDelegateCtorThunkNode>(hasShuffleThunk =>
-            {
-                return new WasmDelegateCtorThunkNode(this, hasShuffleThunk);
-            });
-
             _wasmUnboxingStubs = new NodeCache<WasmUnboxingStubKey, WasmUnboxingStubNode>(key =>
             {
                 return new WasmUnboxingStubNode(this, key.Signature, key.TargetType, key.Kind, key.HasReturnBuffer);
@@ -1053,12 +1048,6 @@ namespace ILCompiler.DependencyAnalysis
         public WasmVirtualDispatchThunkNode WasmVirtualDispatchThunk(WasmSignature wasmSignature)
         {
             return _wasmVirtualDispatchThunks.GetOrAdd(new WasmVirtualDispatchThunkKey(wasmSignature));
-        }
-
-        private NodeCache<bool, WasmDelegateCtorThunkNode> _wasmDelegateCtorThunks;
-        public WasmDelegateCtorThunkNode WasmDelegateCtorThunk(bool hasShuffleThunk)
-        {
-            return _wasmDelegateCtorThunks.GetOrAdd(hasShuffleThunk);
         }
 
         public void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph, ILProvider ilProvider)

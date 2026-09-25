@@ -23,7 +23,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(import.HelperId != ReadyToRunHelper.GetString);
             _import = import;
-            Debug.Assert(import.Signature is MethodFixupSignature or GenericLookupSignature or DelegateCtorSignature);
+            Debug.Assert(import.Signature is MethodFixupSignature || import.Signature is GenericLookupSignature);
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -57,16 +57,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
         {
-            if (_import.Signature is DelegateCtorSignature)
-            {
-                return new DependencyList(
-                    new DependencyListEntry[]
-                    {
-                        new DependencyListEntry(factory.WasmDelegateCtorThunk(hasShuffleThunk: false), "Wasm delegate constructor thunk"),
-                        new DependencyListEntry(factory.WasmDelegateCtorThunk(hasShuffleThunk: true), "Wasm delegate constructor thunk with shuffle argument"),
-                    });
-            }
-
             if (!UseVirtualCall)
             {
                 return null;
@@ -112,11 +102,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private WasmSignature GetWasmSignature(NodeFactory factory)
         {
-            if (_import.Signature is DelegateCtorSignature)
-            {
-                return WasmDelegateCtorThunkNode.HelperSignature;
-            }
-
             if (_import.Signature is GenericLookupSignature)
             {
                 return factory.Target.PointerSize == 4 ? _genericLookupSignature32Bit : _genericLookupSignature64Bit;

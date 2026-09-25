@@ -190,38 +190,20 @@ public class R2RTestSuites
                 .Where(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor)
                 .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
                 .ToList();
-            Assert.Equal(4, delegateCtorSignatures.Count);
-            Assert.Contains(delegateCtorSignatures, signature =>
-                signature.Contains("StaticTarget", StringComparison.Ordinal));
-            Assert.Contains(delegateCtorSignatures, signature =>
-                signature.Contains("InstanceTarget", StringComparison.Ordinal));
-            Assert.Contains(delegateCtorSignatures, signature =>
-                signature.Contains("ClosedStaticTarget", StringComparison.Ordinal));
-            Assert.Contains(delegateCtorSignatures, signature =>
-                signature.Contains("ClosedStaticRetBufTarget", StringComparison.Ordinal));
+            Assert.Empty(delegateCtorSignatures);
 
-            ReadyToRunImportSection.ImportSectionEntry injectStringThunks = Assert.Single(
-                importEntries,
-                entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.InjectStringThunks);
-
-            ReadOnlySpan<byte> image = reader.Image;
-            int offset = reader.GetOffset(checked((int)injectStringThunks.SignatureRVA));
-            Assert.Equal((byte)ReadyToRunFixupKind.InjectStringThunks, image[offset++]);
-
-            bool foundClosedThunk = false;
-            bool foundOpenThunk = false;
-            while (image[offset] != 0)
-            {
-                int terminator = image[offset..].IndexOf((byte)0);
-                Assert.True(terminator >= 0, "Unterminated InjectStringThunks key.");
-                ReadOnlySpan<byte> candidateKey = image.Slice(offset, terminator);
-                foundClosedThunk |= candidateKey.SequenceEqual("DC0"u8);
-                foundOpenThunk |= candidateKey.SequenceEqual("DC1"u8);
-                offset += terminator + 1 + sizeof(uint);
-            }
-
-            Assert.True(foundClosedThunk, "Expected the closed delegate-constructor thunk.");
-            Assert.True(foundOpenThunk, "Expected the open delegate-constructor thunk.");
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            Assert.True(
+                importSignatures.Any(signature =>
+                    signature.Contains("System.Delegate.DelegateConstruct", StringComparison.Ordinal)),
+                string.Join(Environment.NewLine, importSignatures));
+            Assert.True(
+                importSignatures.Any(signature =>
+                    signature.Contains("System.Delegate.CtorClosed", StringComparison.Ordinal)),
+                string.Join(Environment.NewLine, importSignatures));
         }
     }
 

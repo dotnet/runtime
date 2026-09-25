@@ -1366,6 +1366,28 @@ namespace Internal.JitInterface
             pResult = CreateConstLookupToSymbol(entrypoint);
         }
 
+        private CORINFO_METHOD_STRUCT_* GetDelegateCtorForReadyToRun(
+            CORINFO_CLASS_STRUCT_* clsHnd,
+            CORINFO_METHOD_STRUCT_* targetMethodHnd)
+        {
+            MethodDesc targetMethod = HandleToObject(targetMethodHnd);
+            TypeDesc delegateType = HandleToObject(clsHnd);
+            MethodDesc delegateInvoke = delegateType.GetKnownMethod("Invoke"u8, null);
+            MetadataType systemDelegate = _compilation.TypeSystemContext.SystemModule.GetType("System"u8, "Delegate"u8);
+
+            MethodDesc delegateCtor = systemDelegate.GetKnownMethod("DelegateConstruct"u8, null);
+            if (!targetMethod.Signature.IsStatic &&
+                !targetMethod.OwningType.IsValueType &&
+                !targetMethod.HasInstantiation &&
+                !targetMethod.OwningType.HasInstantiation &&
+                delegateInvoke.Signature.Length == targetMethod.Signature.Length)
+            {
+                delegateCtor = systemDelegate.GetKnownMethod("CtorClosed"u8, null);
+            }
+
+            return ObjectToHandle(delegateCtor);
+        }
+
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)
         {
             ModuleToken token = HandleToModuleToken(ref pResolvedToken, out bool strippedInstantiation);

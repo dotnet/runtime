@@ -31,7 +31,6 @@
 
 #ifdef TARGET_WASM
 #include "wasmasynccontinuation.h"
-#include "pregeneratedstringthunks.h"
 #include "wasm/helpers.hpp"
 #endif
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
@@ -536,20 +535,6 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
     // are left unprepared for lazy byte code generation on first call.
     PCODE pCode = GetPrecompiledR2RCode(&config);
     return pCode != (PCODE)NULL;
-#else // !FEATURE_READYTORUN
-    return false;
-#endif // FEATURE_READYTORUN
-}
-
-bool MethodDesc::TryPublishR2RCodeForDelegateCtor()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_READYTORUN
-    PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
-    config.SetCallerGCMode(CallerGCMode::Preemptive);
-
-    return GetPrecompiledR2RCode(&config) != (PCODE)NULL;
 #else // !FEATURE_READYTORUN
     return false;
 #endif // FEATURE_READYTORUN
@@ -3676,7 +3661,6 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
     case READYTORUN_FIXUP_VirtualEntry:
         fReliable = true;
         FALLTHROUGH;
-#endif // !TARGET_WASM
     case READYTORUN_FIXUP_DelegateCtor:
         {
             pMD = ZapSig::DecodeMethod(pModule, pInfoModule, pBlob, &th);
@@ -3691,6 +3675,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
             pMD->EnsureActive();
         }
         break;
+#endif // !TARGET_WASM
     case READYTORUN_FIXUP_ThisObjDictionaryLookup:
     case READYTORUN_FIXUP_TypeDictionaryLookup:
     case READYTORUN_FIXUP_MethodDictionaryLookup:
@@ -3899,93 +3884,7 @@ PCODE DynamicHelperFixup(TransitionBlock * pTransitionBlock, TADDR * pCell, DWOR
                 }
             }
             break;
-#else // TARGET_WASM
-        case READYTORUN_FIXUP_DelegateCtor:
-            {
-                MethodTable* pDelegateType = NULL;
-
-                {
-                    GCX_COOP();
-
-                    TADDR pArgument = GetFirstArgumentRegisterValuePtr(pTransitionBlock);
-                    if (pArgument != (TADDR)NULL)
-                    {
-                        pDelegateType = (*(Object**)pArgument)->GetMethodTable();
-                        _ASSERTE(pDelegateType->IsDelegate());
-                    }
-                }
-
-                DelegateCtorArgs ctorData;
-                ctorData.pMethod = NULL;
-                ctorData.pArg3 = NULL;
-                ctorData.pArg4 = NULL;
-                ctorData.pArg5 = NULL;
-
-                MethodDesc* pDelegateCtor = NULL;
-                if (pDelegateType != NULL)
-                {
-                    pDelegateCtor = COMDelegate::GetDelegateCtor(TypeHandle(pDelegateType), pMD, &ctorData);
-
-                    if (pMD->IsStatic() && !pMD->IsAsyncMethod() && WasmMethodReturnsViaRetBuf(pMD))
-                    {
-                        pDelegateCtor = NULL;
-                    }
-
-                    MethodDesc* pCtorClosed = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_CLOSED);
-                    MethodDesc* pCtorClosedStatic = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_CLOSED_STATIC);
-                    MethodDesc* pCtorOpen = CoreLibBinder::GetMethod(METHOD__DELEGATE__CTOR_OPEN);
-                    if ((pDelegateCtor != pCtorClosed) &&
-                        (pDelegateCtor != pCtorClosedStatic) &&
-                        (pDelegateCtor != pCtorOpen))
-                    {
-                        pDelegateCtor = NULL;
-                    }
-                    else
-                    {
-                        (void)pDelegateCtor->TryPublishR2RCodeForDelegateCtor();
-                    }
-                }
-
-                PCODE constructor;
-                if (pDelegateCtor != NULL)
-                {
-                    constructor = pDelegateCtor->GetMultiCallableAddrOfCode();
-                }
-                else
-                {
-                    MethodDesc* pFallbackCtor = CoreLibBinder::GetMethod(METHOD__DELEGATE__CONSTRUCT_DELEGATE);
-                    (void)pFallbackCtor->TryPublishR2RCodeForDelegateCtor();
-                    constructor = pFallbackCtor->GetMultiCallableAddrOfCode();
-                    ctorData.pArg3 = NULL;
-                }
-
-                if (!PortableEntryPoint::ToPortableEntryPoint(constructor)->HasNativeCode())
-                {
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-                        COR_E_EXECUTIONENGINE,
-                        W("A delegate constructor required by ReadyToRun code has no callable entrypoint."));
-                }
-
-                PCODE thunk = LookupPregeneratedThunkByString(ctorData.pArg3 != NULL ? "DC1" : "DC0");
-                if (thunk == (PCODE)NULL)
-                {
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
-                        COR_E_EXECUTIONENGINE,
-                        W("A pregenerated delegate constructor thunk required by ReadyToRun code was not found."));
-                }
-
-                DelegateCtorPortableEntryPoint* pEntry =
-                    static_cast<DelegateCtorPortableEntryPoint*>(static_cast<void*>(
-                        pModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(
-                            S_SIZE_T(sizeof(DelegateCtorPortableEntryPoint)))));
-                pEntry->Target = (void*)thunk;
-                pEntry->TargetMethod = pMD->GetMultiCallableAddrOfCode();
-                pEntry->ShuffleThunk = (PCODE)ctorData.pArg3;
-                pEntry->Constructor = constructor;
-                pHelper = reinterpret_cast<PCODE>(pEntry);
-            }
-            break;
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
         case READYTORUN_FIXUP_ThisObjDictionaryLookup:
         case READYTORUN_FIXUP_TypeDictionaryLookup:
         case READYTORUN_FIXUP_MethodDictionaryLookup:

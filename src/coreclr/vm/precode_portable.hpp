@@ -142,20 +142,6 @@ static_assert(offsetof(VirtualDispatchPortableEntryPoint, Target) == 0);
 static_assert(offsetof(VirtualDispatchPortableEntryPoint, PackedDispatchOffsets) == TARGET_POINTER_SIZE);
 static_assert(offsetof(VirtualDispatchPortableEntryPoint, InitialEntry) == 2 * TARGET_POINTER_SIZE);
 
-struct DelegateCtorPortableEntryPoint
-{
-    void* Target;
-    PCODE TargetMethod;
-    PCODE ShuffleThunk;
-    PCODE Constructor;
-};
-
-// WasmDelegateCtorThunkNode accesses these fields at fixed offsets.
-static_assert(offsetof(DelegateCtorPortableEntryPoint, Target) == 0);
-static_assert(offsetof(DelegateCtorPortableEntryPoint, TargetMethod) == TARGET_POINTER_SIZE);
-static_assert(offsetof(DelegateCtorPortableEntryPoint, ShuffleThunk) == 2 * TARGET_POINTER_SIZE);
-static_assert(offsetof(DelegateCtorPortableEntryPoint, Constructor) == 3 * TARGET_POINTER_SIZE);
-
 class UnboxingStubPortableEntryPoint final
 {
 public:

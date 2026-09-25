@@ -70,12 +70,11 @@ extern "C" void STDCALL DelayLoad_MethodCall();
 
 #ifdef TARGET_WASM
 extern "C" SIZE_T STDCALL DelayLoad_Helper(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
-extern "C" SIZE_T STDCALL DelayLoad_Helper_ObjObj(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
 #else
 extern "C" void STDCALL DelayLoad_Helper();
-extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 extern "C" void STDCALL DelayLoad_Helper_Obj();
+extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif
 
 #ifdef DACCESS_COMPILE

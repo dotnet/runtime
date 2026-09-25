@@ -11,9 +11,6 @@
 
 extern "C" SIZE_T STDCALL DynamicHelperWorker(TransitionBlock * pTransitionBlock, TADDR * pCell, DWORD sectionIndex, Module * pModule, INT frameFlags);
 
-// Keep in sync with DynamicHelperFrameFlags_ObjectArg and DynamicHelperFrameFlags_ObjectArg2.
-static constexpr int ObjectArgumentFrameFlags = 1 | 2;
-
 extern "C" SIZE_T STDCALL DelayLoad_HelperImpl(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup, INT frameFlags)
 {
     Module** ppModule = (Module**)(moduleBase + rvaOfModuleFixup);
@@ -42,22 +39,9 @@ extern "C" void STDCALL DelayLoad_Helper_Obj()
     PORTABILITY_ASSERT("DelayLoad_Helper_Obj is not implemented on wasm");
 }
 
-extern "C" __attribute__((naked)) SIZE_T STDCALL DelayLoad_Helper_ObjObj(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup)
+extern "C" void STDCALL DelayLoad_Helper_ObjObj()
 {
-    asm ("local.get 0\n"
-         "local.get 0\n"
-         "global.get __stack_pointer\n"
-         "local.set 0\n"
-         "global.set __stack_pointer\n"
-         "local.get 1\n"
-         "local.get 2\n"
-         "local.get 3\n"
-         "i32.const %1\n"
-         "call %0\n"
-         "local.get 0\n"
-         "global.set __stack_pointer\n"
-         "return" :: "i" (DelayLoad_HelperImpl),
-                     "i" (ObjectArgumentFrameFlags));
+    PORTABILITY_ASSERT("DelayLoad_Helper_ObjObj is not implemented on wasm");
 }
 
 extern "C" void DynamicHelper_GenericDictionaryLookup_Class_SizeCheck_TestForNull();

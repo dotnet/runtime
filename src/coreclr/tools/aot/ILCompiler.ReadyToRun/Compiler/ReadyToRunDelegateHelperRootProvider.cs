@@ -5,21 +5,19 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    public sealed class ReadyToRunDelegateCtorRootProvider(ReadyToRunCompilerContext context) : ICompilationRootProvider
+    public sealed class ReadyToRunDelegateHelperRootProvider(ReadyToRunCompilerContext context) : ICompilationRootProvider
     {
         public void AddCompilationRoots(IRootingServiceProvider rootProvider)
         {
             MetadataType delegateType = context.SystemModule.GetType("System"u8, "Delegate"u8);
-
             foreach (MethodDesc method in delegateType.GetMethods())
             {
-                string methodName = method.GetName();
-                if (methodName is "CtorClosed" or "CtorClosedStatic" or "CtorOpen" or "DelegateConstruct")
+                if (method.GetName() is "CtorClosed" or "DelegateConstruct")
                 {
                     rootProvider.AddCompilationRoot(
                         method,
                         rootMinimalDependencies: false,
-                        $"Wasm ReadyToRun delegate constructor {delegateType}.{methodName}");
+                        $"Wasm ReadyToRun delegate helper {delegateType}.{method.GetName()}");
                 }
             }
         }

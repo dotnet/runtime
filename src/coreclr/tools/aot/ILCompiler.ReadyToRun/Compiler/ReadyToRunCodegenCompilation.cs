@@ -382,6 +382,24 @@ namespace ILCompiler
             _format = format;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
+            if (nodeFactory.Target.IsWasm)
+            {
+                MetadataType delegateType = nodeFactory.TypeSystemContext.SystemModule.GetType("System"u8, "Delegate"u8);
+                foreach (ModuleDesc compilationModule in nodeFactory.CompilationModuleGroup.CompilationModuleSet)
+                {
+                    foreach (MethodDesc method in delegateType.GetMethods())
+                    {
+                        if (method.GetName() is "CtorClosed" or "DelegateConstruct")
+                        {
+                            _tokenManager.EnsureDefTokensAreAvailable(
+                                method,
+                                compilationModule,
+                                referencesAreForAsyncMethod: false);
+                        }
+                    }
+                    break;
+                }
+            }
             if (nodeFactory.InstrumentationDataTable != null)
                 nodeFactory.InstrumentationDataTable.Initialize(SymbolNodeFactory);
             if (nodeFactory.CrossModuleInlningInfo != null)
