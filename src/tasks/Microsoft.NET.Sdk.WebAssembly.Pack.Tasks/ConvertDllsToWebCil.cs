@@ -4,8 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using Microsoft.NET.WebAssembly.Webcil;
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
@@ -22,6 +25,15 @@ public class ConvertDllsToWebcil : Task
 
     [Required]
     public bool IsEnabled { get; set; }
+
+    public string? ConversionStamp { get; set; }
+
+    /// <summary>
+    /// Directory holding prebuilt R2R webcil-in-wasm images (CoreCLR browser). For a managed non-culture
+    /// .dll candidate with empty <c>R2RWebcilPath</c>, the matching image is staged instead of
+    /// converting the IL. Empty for Mono.
+    /// </summary>
+    public string? PrebuiltR2RDirectory { get; set; }
 
     public int WebcilVersion { get; set; }
 
@@ -42,9 +54,13 @@ public class ConvertDllsToWebcil : Task
     public ITaskItem[] PassThroughCandidates { get; set; }
 
     protected readonly List<string> _fileWrites = new();
+    protected readonly List<string> _filesToTouch = new();
 
     [Output]
     public string[]? FileWrites => _fileWrites.ToArray();
+
+    [Output]
+    public string[]? FilesToTouch => _filesToTouch.ToArray();
 
     public override bool Execute()
     {
@@ -125,13 +141,70 @@ public class ConvertDllsToWebcil : Task
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
-        string candidatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
-            ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
+        bool isCulture = candidate.GetMetadata("AssetTraitName") == "Culture";
+        string culture = isCulture ? candidate.GetMetadata("AssetTraitValue") : null;
+        string candidatePath = isCulture
+            ? Path.Combine(OutputPath, culture)
             : OutputPath;
 
         string finalWebcil = Path.Combine(candidatePath, webcilFileName);
 
-        if (Utils.IsNewerThan(dllFilePath, finalWebcil))
+        // A prebuilt R2R webcil-in-wasm image from the runtime pack replaces conversion of the .dll:
+        // stage (copy) it into the webcil output so it flows through the same downstream metadata as a
+        // converted assembly, but carries native code. The .dll is kept only as the metadata source.
+        string r2rWebcilPath = candidate.GetMetadata("R2RWebcilPath");
+        bool forceWebcilConversion = !string.IsNullOrEmpty(ConversionStamp)
+            && File.Exists(ConversionStamp)
+            && Utils.IsNewerThan(ConversionStamp, finalWebcil);
+        if (string.IsNullOrEmpty(r2rWebcilPath) && !isCulture && !string.IsNullOrEmpty(PrebuiltR2RDirectory))
+        {
+            string assemblyName = Path.GetFileNameWithoutExtension(dllFilePath);
+
+            // Probe .dll before .wasm: per-app crossgen (--out:<name>.dll) writes the R2R image to
+            // <name>.dll and can leave a same-named <name>.wasm that is NOT it. Pack images are
+            // <name>.wasm with no sibling .dll, so they still resolve.
+            string candidateDll = Path.Combine(PrebuiltR2RDirectory, assemblyName + ".dll");
+            string candidateWasm = Path.Combine(PrebuiltR2RDirectory, assemblyName + Utils.WebcilInWasmExtension);
+            string prebuilt = File.Exists(candidateDll) ? candidateDll
+                            : File.Exists(candidateWasm) ? candidateWasm
+                            : null;
+
+            // Reuse the prebuilt image only for assemblies with IL and when its assembly version matches
+            // the candidate. No-IL assemblies and app-local assemblies that shadow a framework assembly
+            // fall through to regular WebCIL conversion.
+            if (prebuilt != null)
+            {
+                if (PrebuiltR2RMatchesCandidate(dllFilePath, prebuilt, out bool candidateHasILCode))
+                {
+                    r2rWebcilPath = prebuilt;
+                }
+                else if (candidateHasILCode)
+                {
+                    forceWebcilConversion = true;
+                }
+            }
+        }
+        bool outputHasExpectedFlavor = OutputHasExpectedWebcilFlavor(finalWebcil, useR2R: !string.IsNullOrEmpty(r2rWebcilPath));
+        if (!string.IsNullOrEmpty(r2rWebcilPath))
+        {
+            if (forceWebcilConversion || !outputHasExpectedFlavor || Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
+            {
+                if (!Directory.Exists(candidatePath))
+                    Directory.CreateDirectory(candidatePath);
+
+                // Copy (not move): the runtime pack's native/*.wasm is a shared source that must survive staging.
+                if (Utils.CopyIfDifferent(r2rWebcilPath, finalWebcil, useHash: false))
+                    Log.LogMessage(MessageImportance.Low, $"Staged prebuilt R2R webcil {finalWebcil} from {r2rWebcilPath} .");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipped staging {finalWebcil} as the contents are unchanged.");
+                _filesToTouch.Add(finalWebcil);
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping {r2rWebcilPath} as it is older than the output file {finalWebcil}");
+            }
+        }
+        else if (forceWebcilConversion || !outputHasExpectedFlavor || Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
@@ -145,6 +218,7 @@ public class ConvertDllsToWebcil : Task
                 Log.LogMessage(MessageImportance.Low, $"Generated {finalWebcil} .");
             else
                 Log.LogMessage(MessageImportance.Low, $"Skipped generating {finalWebcil} as the contents are unchanged.");
+            _filesToTouch.Add(finalWebcil);
         }
         else
         {
@@ -166,5 +240,119 @@ public class ConvertDllsToWebcil : Task
         }
 
         return webcilItem;
+    }
+
+    private static bool OutputHasExpectedWebcilFlavor(string path, bool useR2R)
+    {
+        if (!File.Exists(path))
+            return false;
+
+        using FileStream stream = File.OpenRead(path);
+        return WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out _)
+            && useR2R == (tableSize > 0);
+    }
+
+    private bool PrebuiltR2RMatchesCandidate(string candidateDllPath, string prebuiltImagePath, out bool candidateHasILCode)
+    {
+        if (IsR2RWebcil(candidateDllPath))
+        {
+            candidateHasILCode = true;
+            return true;
+        }
+
+        candidateHasILCode = AssemblyHasILCode(candidateDllPath, out Guid candidateMvid);
+        if (!candidateHasILCode)
+        {
+            Log.LogMessage(MessageImportance.Low,
+                $"Not staging prebuilt R2R image '{prebuiltImagePath}' for no-IL assembly '{candidateDllPath}'; converting it to WebCIL instead.");
+            return false;
+        }
+
+        Guid? prebuiltMvid = TryReadMvid(prebuiltImagePath);
+
+        // Compare MVIDs, not assembly versions: with cross-module inlining every image in the bundle shares one
+        // version bubble the runtime checks by MVID at load, and the assembly version rarely changes between
+        // incremental builds, so a stale prebuilt R2R would pass a version check yet fail-fast at startup.
+        // If the prebuilt identity is unreadable, keep it (prior behavior).
+        if (prebuiltMvid is null || candidateMvid.Equals(prebuiltMvid.Value))
+            return true;
+
+        Log.LogMessage(MessageImportance.Normal,
+            $"Not staging prebuilt R2R image '{prebuiltImagePath}' (MVID {prebuiltMvid}) for '{candidateDllPath}' (MVID {candidateMvid}): module version mismatch; converting IL instead.");
+        return false;
+    }
+
+    private static bool IsR2RWebcil(string path)
+    {
+        using FileStream stream = File.OpenRead(path);
+        return WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out _)
+            && tableSize > 0;
+    }
+
+    private static bool AssemblyHasILCode(string path, out Guid mvid)
+    {
+        using FileStream stream = File.OpenRead(path);
+        using var peReader = new PEReader(stream);
+        MetadataReader metadataReader = peReader.GetMetadataReader();
+        mvid = metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid);
+
+        foreach (MethodDefinitionHandle methodDefinitionHandle in metadataReader.MethodDefinitions)
+        {
+            if (metadataReader.GetMethodDefinition(methodDefinitionHandle).RelativeVirtualAddress > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Guid? TryReadMvid(string path)
+    {
+        try
+        {
+            using FileStream stream = File.OpenRead(path);
+            // Detect webcil-in-wasm by content (the '\0asm' magic), not by extension: a prebuilt R2R image
+            // may still be named *.dll, and a PEReader would throw on it, returning null and silently
+            // bypassing the MVID guard.
+            if (IsWebcilInWasm(stream))
+            {
+                using var webcilReader = new WebcilReader(stream, path);
+                MetadataReader webcilMetadata = webcilReader.GetMetadataReader();
+                return webcilMetadata.GetGuid(webcilMetadata.GetModuleDefinition().Mvid);
+            }
+
+            using var peReader = new PEReader(stream);
+            MetadataReader peMetadata = peReader.GetMetadataReader();
+            return peMetadata.GetGuid(peMetadata.GetModuleDefinition().Mvid);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // The WebAssembly module magic "\0asm" (0x00 0x61 0x73 0x6D). Leaves the stream position unchanged.
+    private static bool IsWebcilInWasm(Stream stream)
+    {
+        long position = stream.Position;
+        try
+        {
+            byte[] magic = new byte[4];
+            int read = 0;
+            while (read < magic.Length)
+            {
+                int n = stream.Read(magic, read, magic.Length - read);
+                if (n == 0)
+                    return false;
+                read += n;
+            }
+
+            return magic[0] == 0x00 && magic[1] == 0x61 && magic[2] == 0x73 && magic[3] == 0x6D;
+        }
+        finally
+        {
+            stream.Position = position;
+        }
     }
 }

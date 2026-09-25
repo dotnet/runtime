@@ -23,9 +23,41 @@ enum NamedIntrinsic : unsigned short
     NI_System_BitConverter_Int64BitsToDouble,
     NI_System_BitConverter_SingleToInt32Bits,
 
+    NI_System_Buffer_Memmove,
     NI_System_SpanHelpers_Memmove,
 
+    NI_System_Half_FusedMultiplyAdd,
+    NI_System_Half_ReciprocalEstimate,
+    NI_System_Half_ReciprocalSqrtEstimate,
+    NI_System_Half_Round,
+    NI_System_Half_Sqrt,
+
+    NI_System_Half_op_Addition,
+    NI_System_Half_op_Decrement,
+    NI_System_Half_op_Division,
+    NI_System_Half_op_Equality,
     NI_System_Half_op_Explicit,
+    NI_System_Half_op_GreaterThan,
+    NI_System_Half_op_GreaterThanOrEqual,
+    NI_System_Half_op_Increment,
+    NI_System_Half_op_Inequality,
+    NI_System_Half_op_LessThan,
+    NI_System_Half_op_LessThanOrEqual,
+    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Subtraction,
+
+    NI_System_Half_get_MinValue,
+    NI_System_Half_get_MaxValue,
+    NI_System_Half_get_Epsilon,
+    NI_System_Half_get_NaN,
+    NI_System_Half_get_PositiveInfinity,
+    NI_System_Half_get_NegativeInfinity,
+    NI_System_Half_get_One,
+    NI_System_Half_get_Zero,
+
+    NI_System_Half_Ceiling,
+    NI_System_Half_Floor,
+    NI_System_Half_Truncate,
 
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
@@ -109,7 +141,6 @@ enum NamedIntrinsic : unsigned short
     NI_System_Object_GetType,
     NI_System_RuntimeTypeHandle_ToIntPtr,
     NI_System_RuntimeType_get_TypeHandle,
-    NI_System_StubHelpers_GetStubContext,
     NI_System_StubHelpers_NextCallReturnAddress,
 
     NI_Array_Address,
@@ -184,9 +215,14 @@ enum NamedIntrinsic : unsigned short
     NI_System_Threading_Tasks_ValueTask_1__ctor,
     NI_System_Threading_Tasks_ValueTask_1_AsTask,
 
-    // These two are special marker IDs so that we still get the inlining profitability boost
+    // These are special marker IDs so that we still get the inlining profitability boost.
     NI_System_Numerics_Intrinsic,
     NI_System_Runtime_Intrinsics_Intrinsic,
+    NI_System_Runtime_Intrinsics_PlatformIntrinsic,
+
+    // Support-query identities; resolution determines their value for the target.
+    NI_IsSupported,
+    NI_IsHardwareAccelerated,
 
 #if defined(FEATURE_HW_INTRINSICS)
     NI_HW_INTRINSIC_START,

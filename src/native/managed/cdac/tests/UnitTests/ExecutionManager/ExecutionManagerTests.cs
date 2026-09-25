@@ -335,7 +335,6 @@ public class ExecutionManagerTests
     // R2R classification.
     [Theory]
     [InlineData("c1")]
-    [InlineData("c2")]
     public void GetMethodDesc_R2R_WasmVirtualIP(string version)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
@@ -558,14 +557,14 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetEEJitManagerInfo_ReturnsManagerAddress(string version, MockTarget.Architecture arch)
+    public void GetJitManagerInfo_EE_ReturnsManagerAddress(string version, MockTarget.Architecture arch)
     {
         ulong expectedManagerAddress = 0;
         IExecutionManager em = CreateExecutionManagerContract(
             version,
             arch,
             emBuilder => expectedManagerAddress = emBuilder.EEJitManagerAddress);
-        JitManagerInfo info = em.GetEEJitManagerInfo();
+        JitManagerInfo info = em.GetJitManagerInfo(JitManagerKind.EE)!.Value;
         Assert.Equal(new TargetPointer(expectedManagerAddress), info.ManagerAddress);
         Assert.Equal(0u, info.CodeType);
         Assert.Equal(TargetPointer.Null, info.HeapListAddress);
@@ -573,7 +572,7 @@ public class ExecutionManagerTests
 
     [Theory]
     [MemberData(nameof(StdArchAllVersions))]
-    public void GetEEJitManagerInfo_WithCodeHeaps(string version, MockTarget.Architecture arch)
+    public void GetJitManagerInfo_EE_WithCodeHeaps(string version, MockTarget.Architecture arch)
     {
         const ulong expectedHeapList = 0x0099_aa00;
         ulong expectedManagerAddress = 0;
@@ -582,7 +581,7 @@ public class ExecutionManagerTests
             arch,
             emBuilder => expectedManagerAddress = emBuilder.EEJitManagerAddress,
             allCodeHeaps: expectedHeapList);
-        JitManagerInfo info = em.GetEEJitManagerInfo();
+        JitManagerInfo info = em.GetJitManagerInfo(JitManagerKind.EE)!.Value;
         Assert.Equal(new TargetPointer(expectedManagerAddress), info.ManagerAddress);
         Assert.Equal(0u, info.CodeType);
         Assert.Equal(new TargetPointer(expectedHeapList), info.HeapListAddress);
@@ -598,7 +597,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        ICodeHeapInfo info = em.GetCodeHeapInfos().Single();
+        ICodeHeapInfo info = em.GetCodeHeapInfos(JitManagerKind.EE).Single();
         Assert.IsType<LoaderCodeHeapInfo>(info);
     }
 
@@ -614,7 +613,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        ICodeHeapInfo info = em.GetCodeHeapInfos().Single();
+        ICodeHeapInfo info = em.GetCodeHeapInfos(JitManagerKind.EE).Single();
         Assert.IsType<HostCodeHeapInfo>(info);
     }
 
@@ -628,7 +627,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfos().Single());
+        LoaderCodeHeapInfo loader = Assert.IsType<LoaderCodeHeapInfo>(em.GetCodeHeapInfos(JitManagerKind.EE).Single());
         Target.TypeInfo loaderCodeHeapType = TargetTestHelpers.CreateTypeInfo(emBuilder.LoaderCodeHeapLayout);
         ulong loaderHeapFieldOffset = (ulong)loaderCodeHeapType.Fields[nameof(Data.LoaderCodeHeap.LoaderHeap)].Offset;
         Assert.Equal(new TargetPointer(heap.Address + loaderHeapFieldOffset), loader.LoaderHeapAddress);
@@ -646,7 +645,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
 
         var em = target.Contracts.ExecutionManager;
-        HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(em.GetCodeHeapInfos().Single());
+        HostCodeHeapInfo host = Assert.IsType<HostCodeHeapInfo>(em.GetCodeHeapInfos(JitManagerKind.EE).Single());
         Assert.Equal(expectedBase, host.BaseAddress);
         Assert.Equal(expectedCurrent, host.CurrentAddress);
     }
@@ -676,7 +675,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
         var em = target.Contracts.ExecutionManager;
 
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
         Assert.Single(heapInfos);
         Assert.IsType<LoaderCodeHeapInfo>(heapInfos[0]);
     }
@@ -722,7 +721,7 @@ public class ExecutionManagerTests
         var target = CreateTarget(emBuilder);
         var em = target.Contracts.ExecutionManager;
 
-        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+        List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
         Assert.Equal(2, heapInfos.Count);
 
         // First heap (from node1) is a LoaderCodeHeap
@@ -737,6 +736,69 @@ public class ExecutionManagerTests
         Assert.Equal(hostHeap.Address, hostInfo.HeapAddress.Value);
         Assert.Equal(baseAddr, hostInfo.BaseAddress);
         Assert.Equal(currentAddr, hostInfo.CurrentAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetJitManagerInfo_Interpreter(string version, MockTarget.Architecture arch)
+    {
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        const ulong HeapListAddress = 0x0012_3400;
+        emBuilder.SetInterpreterCodeHeaps(HeapListAddress);
+
+        IExecutionManager executionManager = CreateTarget(emBuilder).Contracts.ExecutionManager;
+        JitManagerInfo info = Assert.IsType<JitManagerInfo>(
+            executionManager.GetJitManagerInfo(JitManagerKind.Interpreter));
+
+        Assert.Equal(new TargetPointer(emBuilder.InterpreterJitManagerAddress), info.ManagerAddress);
+        Assert.Equal(2u, info.CodeType);
+        Assert.Equal(new TargetPointer(HeapListAddress), info.HeapListAddress);
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetJitManagerInfo_NoInterpreter(string version, MockTarget.Architecture arch)
+    {
+        IExecutionManager executionManager = CreateExecutionManagerContract(version, arch);
+
+        Assert.Null(executionManager.GetJitManagerInfo(JitManagerKind.Interpreter));
+        Assert.Empty(executionManager.GetCodeHeapInfos(JitManagerKind.Interpreter));
+    }
+
+    [Theory]
+    [MemberData(nameof(StdArchAllVersions))]
+    public void GetCodeHeapInfos_SelectsJitManager(string version, MockTarget.Architecture arch)
+    {
+        MockExecutionManagerBuilder emBuilder = new(version, arch, MockExecutionManagerBuilder.DefaultAllocationRange);
+        MockLoaderCodeHeap eeHeap = emBuilder.AddLoaderCodeHeap();
+        MockHostCodeHeap interpreterHeap = emBuilder.AddHostCodeHeap(0x0005_0000, 0x0005_8000);
+
+        MockCodeHeapListNode eeNode = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: 0x1000_0000,
+            endAddress: 0x1000_1000,
+            mapBase: 0,
+            headerMap: 0,
+            heap: eeHeap.Address);
+        MockCodeHeapListNode interpreterNode = emBuilder.AddCodeHeapListNode(
+            next: 0,
+            startAddress: 0x2000_0000,
+            endAddress: 0x2000_1000,
+            mapBase: 0,
+            headerMap: 0,
+            heap: interpreterHeap.Address);
+        emBuilder.SetAllCodeHeaps(eeNode.Address);
+        emBuilder.SetInterpreterCodeHeaps(interpreterNode.Address);
+
+        IExecutionManager executionManager = CreateTarget(emBuilder).Contracts.ExecutionManager;
+
+        LoaderCodeHeapInfo eeHeapInfo = Assert.IsType<LoaderCodeHeapInfo>(
+            executionManager.GetCodeHeapInfos(JitManagerKind.EE).Single());
+        HostCodeHeapInfo interpreterHeapInfo = Assert.IsType<HostCodeHeapInfo>(
+            executionManager.GetCodeHeapInfos(JitManagerKind.Interpreter).Single());
+
+        Assert.Equal(eeHeap.Address, eeHeapInfo.HeapAddress.Value);
+        Assert.Equal(interpreterHeap.Address, interpreterHeapInfo.HeapAddress.Value);
     }
 
     [Theory]
@@ -774,7 +836,7 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u;
         const uint codeRangeSize = 0x4000u;
         const ulong jitManagerAddress = 0x000b_ff00;
-        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
+        const int stubCodeBlockKindPrecode = 3; // STUB_CODE_BLOCK_STUBPRECODE
 
         IExecutionManager em = CreateExecutionManagerContract(
             version,
@@ -799,7 +861,14 @@ public class ExecutionManagerTests
         const uint stubSize = 0x20;
         const ulong jitManagerAddress = 0x000b_ff00;
         const int stubCodeBlockKindJumpStub = 1; // STUB_CODE_BLOCK_JUMPSTUB
-        ulong stubCodeAddress = 0;
+        const int stubCodeBlockKindWrapperStub = 10; // STUB_CODE_BLOCK_WRAPPER_STUB
+        const int stubCodeBlockKindShuffleThunk = 11; // STUB_CODE_BLOCK_SHUFFLE_THUNK
+        (int StubCodeBlockKind, CodeKind CodeKind, ulong CodeAddress)[] stubs =
+        [
+            (stubCodeBlockKindJumpStub, CodeKind.JumpStub, 0),
+            (stubCodeBlockKindWrapperStub, CodeKind.WrapperStub, 0),
+            (stubCodeBlockKindShuffleThunk, CodeKind.ShuffleThunk, 0),
+        ];
 
         IExecutionManager em = CreateExecutionManagerContract(
             version,
@@ -807,18 +876,25 @@ public class ExecutionManagerTests
             emBuilder =>
             {
                 var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-                stubCodeAddress = emBuilder.AddStubCodeBlock(jittedCode, stubSize, stubCodeBlockKindJumpStub).CodeAddress;
 
                 NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-                nibBuilder.AllocateCodeChunk(new TargetCodePointer(stubCodeAddress), stubSize);
+                for (int i = 0; i < stubs.Length; i++)
+                {
+                    MockJittedMethod stub = emBuilder.AddStubCodeBlock(jittedCode, stubSize, stubs[i].StubCodeBlockKind);
+                    stubs[i].CodeAddress = stub.CodeAddress;
+                    nibBuilder.AllocateCodeChunk(new TargetCodePointer(stub.CodeAddress), stubSize);
+                }
 
                 MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
                 MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        CodeKind kind = em.GetCodeKind(new TargetCodePointer(stubCodeAddress));
-        Assert.Equal(CodeKind.JumpStub, kind);
+        foreach ((_, CodeKind expected, ulong codeAddress) in stubs)
+        {
+            CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeAddress));
+            Assert.Equal(expected, kind);
+        }
     }
 
     [Theory]
@@ -914,14 +990,10 @@ public class ExecutionManagerTests
 
     public static IEnumerable<object[]> StdArchAllVersions()
     {
-        const int highestVersion = 2;
         foreach (object[] arr in new MockTarget.StdArch())
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
-            for (int version = 1; version <= highestVersion; version++)
-            {
-                yield return new object[] { $"c{version}", arch };
-            }
+            yield return new object[] { "c1", arch };
         }
     }
 

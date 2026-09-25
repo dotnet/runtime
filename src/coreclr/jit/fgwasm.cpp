@@ -624,16 +624,37 @@ public:
             //
             const unsigned controlVarNum =
                 m_compiler->lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Scc control var"));
-            LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
-            controlVarDsc->lvType          = TYP_INT;
-            BasicBlock*      dispatcher    = nullptr;
-            BasicBlock*      tryHeader     = TryHeader();
-            FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
-            FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
-            unsigned         headerNumber  = 0;
-            BitVecOps::Iter  iterator(m_traits, m_entries);
-            unsigned int     poHeaderNumber = 0;
-            weight_t         netLikelihood  = 0.0;
+            LclVarDsc* const controlVarDsc         = m_compiler->lvaGetDesc(controlVarNum);
+            controlVarDsc->lvType                  = TYP_INT;
+            BasicBlock*                 dispatcher = nullptr;
+            BasicBlock*                 tryHeader  = TryHeader();
+            FlowEdge** const            succs      = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            FlowEdge** const            cases      = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
+            CompAllocator               allocator  = m_compiler->getAllocator(CMK_WasmSccTransform);
+            jitstd::vector<BasicBlock*> predBlocks(allocator);
+            jitstd::vector<unsigned>    predOffsets(allocator);
+            unsigned                    headerNumber = 0;
+            BitVecOps::Iter             iterator(m_traits, m_entries);
+            unsigned int                poHeaderNumber = 0;
+            weight_t                    netLikelihood  = 0.0;
+
+            // Snapshot the predecessor blocks before modifying any edges. Redirecting an edge for one
+            // header can create a new predecessor of another header, and that new edge must not be
+            // transformed as if it had originally targeted the other header.
+            //
+            while (iterator.NextElem(&poHeaderNumber))
+            {
+                BasicBlock* const header = m_dfsTree->GetPostOrder(poHeaderNumber);
+                predOffsets.push_back(static_cast<unsigned>(predBlocks.size()));
+
+                for (BasicBlock* const pred : header->PredBlocks())
+                {
+                    predBlocks.push_back(pred);
+                }
+            }
+            predOffsets.push_back(static_cast<unsigned>(predBlocks.size()));
+
+            iterator = BitVecOps::Iter(m_traits, m_entries);
 
             while (iterator.NextElem(&poHeaderNumber))
             {
@@ -711,11 +732,18 @@ public:
 
                 weight_t headerWeight = header->bbWeight;
 
-                for (FlowEdge* const f : header->PredEdgesEditing())
+                for (unsigned predIndex = predOffsets[headerNumber]; predIndex < predOffsets[headerNumber + 1];
+                     predIndex++)
                 {
-                    assert(f->getDestinationBlock() == header);
-                    BasicBlock* const pred          = f->getSourceBlock();
+                    BasicBlock* const pred          = predBlocks[predIndex];
                     BasicBlock*       transferBlock = nullptr;
+
+                    // Processing an earlier header may have removed this original edge.
+                    //
+                    if (m_compiler->fgGetPredForBlock(header, pred) == nullptr)
+                    {
+                        continue;
+                    }
 
                     // When the pred source is a BBJ_EHCATCHRET, the edge does not represent real
                     // control flow in Wasm, as any resume from catch flow is captured by the post-try
@@ -819,6 +847,12 @@ public:
                 cases[headerNumber] = dispatchToOutboundTargetEdge;
 
                 headerNumber++;
+            }
+
+            // All entry flow now passes through the try header before reaching the dispatcher.
+            if (tryHeader != nullptr)
+            {
+                tryHeader->setBBProfileWeight(TotalEntryWeight());
             }
 
             // Create the dispatch switch... really there should be no default but for now we'll have one.
@@ -2423,12 +2457,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             //  them. If we can somehow guarantee that all callees will spill their ref parameters
             //  immediately, we could do this before the block above.
 
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
-            tree->VisitOperands([&defs](GenTree* op) {
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
+            //  not itself on the operand stack, so look through it to the operands that are.
+            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
                 if (!op->IsValue())
-                    return GenTree::VisitResult::Continue;
+                    return;
+                if (op->isContained())
+                {
+                    op->VisitOperands([&recurse](GenTree* innerOp) {
+                        recurse(innerOp, recurse);
+                        return GenTree::VisitResult::Continue;
+                    });
+                    return;
+                }
                 if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return GenTree::VisitResult::Continue;
+                    return;
 
                 for (size_t i = defs.size(); i > 0; i--)
                 {
@@ -2439,7 +2482,16 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                         break;
                     }
                 }
+            };
 
+            // A contained node is part of its parent, so it is visited as part of the parent instead.
+            if (tree->isContained())
+            {
+                continue;
+            }
+
+            tree->VisitOperands([&removeUses](GenTree* op) {
+                removeUses(op, removeUses);
                 return GenTree::VisitResult::Continue;
             });
 
@@ -2907,10 +2959,9 @@ void Compiler::fgDumpWasmControlFlowDot()
 //        R: rethrow;
 //    K:
 //
-//    In the example above, if neither catch was supposed to handle the exception, the runtime
-//    will set cv to -1 (during the first pass, once it determines no try in the method will
-//    catch the exception) so that all try_table dispatches in the method will go to the rethrow
-//    block, which will then rethrow the exception to the next enclosing try.
+//    Before any catch funclet stores a continuation index, codegen initializes cv to zero.
+//    Continuation indices start at one, so all try_table dispatches in the method will go to
+//    the rethrow block, which will then rethrow the exception to the next enclosing try.
 //
 //    Note this setup does not handle the case where the continuation is within the dispatching try,
 //    because a try_table cannot branch within itself, and must cover the entire try body. Those cases
@@ -3202,14 +3253,16 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
         cases[i] = nullptr;
     }
 
-    // Track the unique edge per continuation block. When many cases share the
+    // Track the unique reset pad and edge per continuation block. When many cases share the
     // same continuation (e.g. a large mutual-protect catch set whose handlers
     // all `leave` to the same target) this avoids an O(N^2) cost in
     // fgAddRefPred (which must do an O(preds) scan of the destination's
     // pred list per call) -- we just bump dup counts directly for duplicates.
     //
-    BlockToFlowEdgeMap* const continuationEdges =
-        new (this, CMK_FlowEdge) BlockToFlowEdgeMap(getAllocator(CMK_FlowEdge));
+    BlockToBlockMap    resumePads(getAllocator(CMK_FlowEdge));
+    BlockToFlowEdgeMap continuationEdges(getAllocator(CMK_FlowEdge));
+    bool const         verifyGCModeTransitions =
+        IsReadyToRun() && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);
 
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
@@ -3222,23 +3275,62 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
 
         JITDUMP("  case %u: " FMT_BB "\n", biasedCaseIndex, continuation->bbNum);
 
-        FlowEdge* caseEdge;
-        if (continuationEdges->Lookup(continuation, &caseEdge))
+        BasicBlock* resumePad;
+        FlowEdge*   caseEdge;
+        if (resumePads.Lookup(continuation, &resumePad))
         {
             // Edge from switchBlock to this continuation already exists; just
             // bump the dup count (and the destination's ref count) instead of
             // doing another linear pred-list scan via fgAddRefPred.
             //
+            bool const found = continuationEdges.Lookup(continuation, &caseEdge);
+            assert(found);
             caseEdge->incrementDupCount();
-            continuation->bbRefs++;
+            resumePad->bbRefs++;
         }
         else
         {
-            caseEdge = fgAddRefPred(continuation, switchBlock);
-            continuationEdges->Set(continuation, caseEdge);
+            // Clear the resume IP only after this try has accepted the resumption.
+            // A nonmatching inner try must preserve the value for an enclosing try.
+            //
+            resumePad = fgNewBBafter(BBJ_ALWAYS, switchBlock, /* extendRegion */ false);
+            // Keep the pad in the switch's region; the edge into the continuation is
+            // repaired by fgWasmRepairTryEntries when it enters a try region.
+            resumePad->copyEHRegion(switchBlock);
+            resumePad->inheritWeightPercentage(switchBlock, 0);
+            if (bbInTryRegions(regionIndex, continuation))
+            {
+                resumePad->SetFlags(BBF_CATCH_RESUMPTION);
+            }
+
+            FlowEdge* const padEdge = fgAddRefPred(continuation, resumePad);
+            padEdge->setLikelihood(1.0);
+            resumePad->SetTargetEdge(padEdge);
+
+            GenTree* const zero  = gtNewIconNode(0, TYP_INT);
+            GenTree* const store = gtNewStoreLclVarNode(resumeIPLocalNum, zero);
+            LIR::Range     range = LIR::SeqTree(this, store);
+            LIR::AsRange(resumePad).InsertAtEnd(std::move(range));
+
+            if (verifyGCModeTransitions)
+            {
+                // Reaching this pad means this dispatcher accepted the resumption. A nonmatching
+                // inner dispatcher takes the rethrow edge and must leave transitions forbidden.
+                GenTree* resumeAfterCatch = gtNewHelperCallNode(CORINFO_HELP_JIT_RESUME_AFTER_CATCH, TYP_VOID);
+                resumeAfterCatch          = fgMorphCall(resumeAfterCatch->AsCall());
+                gtSetEvalOrder(resumeAfterCatch);
+                LIR::AsRange(resumePad).InsertAtEnd(LIR::SeqTree(this, resumeAfterCatch));
+            }
+
+            resumePads.Set(continuation, resumePad);
+
+            caseEdge = fgAddRefPred(resumePad, switchBlock);
+            continuationEdges.Set(continuation, caseEdge);
 
             // We only get here on exception
             caseEdge->setLikelihood(0);
+
+            JITDUMP("Resume pad " FMT_BB " for " FMT_BB "\n", resumePad->bbNum, continuation->bbNum);
         }
 
         assert(cases[biasedCaseIndex] == nullptr);
@@ -3267,7 +3359,10 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         BasicBlock* const continuation = catchRetBlock->GetTarget();
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+        BasicBlock*       resumePad;
+        bool const        found = resumePads.Lookup(continuation, &resumePad);
+        assert(found);
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, resumePad->bbNum))
         {
             succCount++;
         }
@@ -3288,10 +3383,13 @@ void Compiler::fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks,
     for (BasicBlock* const catchRetBlock : catchRetBlocks->TopDownOrder())
     {
         BasicBlock* const continuation = catchRetBlock->GetTarget();
-        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, continuation->bbNum))
+        BasicBlock*       resumePad;
+        bool const        foundPad = resumePads.Lookup(continuation, &resumePad);
+        assert(foundPad);
+        if (BitVecOps::TryAddElemD(&bitVecTraits, succBlocks, resumePad->bbNum))
         {
             FlowEdge*  edge  = nullptr;
-            bool const found = continuationEdges->Lookup(continuation, &edge);
+            bool const found = continuationEdges.Lookup(continuation, &edge);
             assert(found);
             succs[succNumber] = edge;
             succNumber++;
@@ -3413,9 +3511,10 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     // In the main method we update the VirtualIP local
     // (which will end up at $fp[4]).
     //
-    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, GenTree* beforeNode = nullptr) {
+    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, unsigned vipValue,
+                                      GenTree* beforeNode = nullptr) {
         const unsigned virtualIPlclNum = getVirtualIPLclNum();
-        GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
+        GenTree* const virtualIPValue  = gtNewIconNode(vipValue);
         GenTree*       setVirtualIP    = nullptr;
 
         if (func->IsFunclet())
@@ -3452,9 +3551,33 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         updatesAdded++;
     };
 
+    // Elide redundant Virtual IP stores: a store is redundant when the required value is
+    // already on the frame on every path into the block.
+    //
+    struct PerBlockData
+    {
+        enum : unsigned
+        {
+            VIP_UNSET = UINT_MAX,     // no value yet (meet identity)
+            VIP_MANY  = UINT_MAX - 1, // conflicting or unknown value
+        };
+
+        unsigned requiredVip  = 0;         // virtual IP this block requires on the frame
+        unsigned funcIndex    = 0;         // owning func index
+        unsigned availableIn  = VIP_UNSET; // virtual IP available on entry
+        unsigned availableOut = VIP_UNSET; // virtual IP available on exit
+        bool     isRequired   = false;     // block needs a correct value on the frame
+        bool     isFuncEntry  = false;     // first block of its func
+    };
+
+    const unsigned      numBlocks  = fgBBNumMax + 1;
+    PerBlockData* const blockData  = new (this, CMK_WasmEH) PerBlockData[numBlocks];
+    unsigned            vipFuncIdx = 0;
+
     for (FuncInfoDsc* const func : Funcs())
     {
         func->startVirtualIP = virtualIP;
+        bool vipFirstInFunc  = true;
 
         if (func->IsMethod())
         {
@@ -3511,21 +3634,19 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 //
                 const unsigned filterIndex             = block->getHndIndex();
                 const unsigned clauseIndex             = compEHTabOrderToVMClauseOrder[filterIndex];
-                clauses[clauseIndex].clause.ClassToken = virtualIP;
+                clauses[clauseIndex].clause.ClassToken = vipFirstInFunc ? func->startVirtualIP : virtualIP;
             }
 
-            // For now, just refresh the stack Virtual IP at the start of each non-empty
-            // block (later we can refine this to something like: blocks that have calls
-            // or will inspire calls during codegen).
+            // Record the required Virtual IP and store-site/entry flags for each block.
             //
-            // Also refresh BBJ_CALLFINALLY blocks: the implicit call_indirect to the
-            // finally funclet is emitted at codegen time and the runtime EH walker
-            // would otherwise see the stale try-region virtualIP and re-dispatch the
-            // same finally during unwind.
-            //
-            if (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY))
+            PerBlockData& data = blockData[block->bbNum];
+            data.requiredVip   = virtualIP;
+            data.funcIndex     = vipFuncIdx;
+            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            if (vipFirstInFunc)
             {
-                updateVirtualIPOnFrame(func, block);
+                data.isFuncEntry = true;
+                vipFirstInFunc   = false;
             }
 
             // If this is the end of the region, update its extent.
@@ -3578,6 +3699,98 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         }
 
         func->endVirtualIP = virtualIP;
+        vipFuncIdx++;
+    }
+
+    // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its
+    // in-func predecessors' outgoing values (cross-func edges and function entries are unknown).
+    //
+    class VirtualIPMerge
+    {
+        PerBlockData* const m_data;
+        unsigned            m_merge;
+
+        void MeetInto(unsigned value)
+        {
+            if (value == PerBlockData::VIP_UNSET)
+            {
+                return;
+            }
+            if (m_merge == PerBlockData::VIP_UNSET)
+            {
+                m_merge = value;
+            }
+            else if ((m_merge == PerBlockData::VIP_MANY) || (value == PerBlockData::VIP_MANY) || (m_merge != value))
+            {
+                m_merge = PerBlockData::VIP_MANY;
+            }
+        }
+
+    public:
+        VirtualIPMerge(PerBlockData* data)
+            : m_data(data)
+            , m_merge(PerBlockData::VIP_UNSET)
+        {
+        }
+
+        void StartMerge(BasicBlock* block)
+        {
+            m_merge = m_data[block->bbNum].isFuncEntry ? PerBlockData::VIP_MANY : PerBlockData::VIP_UNSET;
+        }
+
+        void Merge(BasicBlock* block, BasicBlock* pred, unsigned dupCount)
+        {
+            const bool crossFunc = m_data[pred->bbNum].funcIndex != m_data[block->bbNum].funcIndex;
+            MeetInto(crossFunc ? PerBlockData::VIP_MANY : m_data[pred->bbNum].availableOut);
+        }
+
+        void MergeHandler(BasicBlock* block, BasicBlock* tryBeg, BasicBlock* tryLast)
+        {
+            // Handler funclets have a fresh frame; nothing is available on entry.
+            //
+            MeetInto(PerBlockData::VIP_MANY);
+        }
+
+        bool EndMerge(BasicBlock* block)
+        {
+            PerBlockData& data = m_data[block->bbNum];
+            data.availableIn   = m_merge;
+            const unsigned out = data.isRequired ? data.requiredVip : m_merge;
+            if (out != data.availableOut)
+            {
+                data.availableOut = out;
+                return true;
+            }
+            return false;
+        }
+    };
+
+    VirtualIPMerge vipMerge(blockData);
+    DataFlow       vipFlow(this);
+    vipFlow.ForwardAnalysis(vipMerge);
+
+    // ForwardAnalysis builds the generic DFS tree; drop it so later wasm phases recompute theirs.
+    fgInvalidateDfsTree();
+
+    // Emit a store only where a required block's value is not already available on every path in.
+    //
+    for (FuncInfoDsc* const func : Funcs())
+    {
+        for (BasicBlock* const block : func->Blocks(this))
+        {
+            const PerBlockData& data = blockData[block->bbNum];
+
+            // A required block reached by the dataflow leaves its required value on the frame.
+            // Unreachable blocks are never visited, so their availableOut keeps its default.
+            //
+            assert(!data.isRequired || (data.availableOut == data.requiredVip) ||
+                   (data.availableOut == PerBlockData::VIP_UNSET));
+
+            if (data.isRequired && (data.availableIn != data.requiredVip))
+            {
+                updateVirtualIPOnFrame(func, block, data.requiredVip);
+            }
+        }
     }
 
 #ifdef DEBUG

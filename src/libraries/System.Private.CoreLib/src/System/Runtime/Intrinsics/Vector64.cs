@@ -1679,7 +1679,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector64<double>, double>(degrees);
+                return VectorMath.DegreesToRadiansDouble<Vector64<double>, Vector64<ulong>>(degrees);
             }
             else
             {
@@ -1696,7 +1696,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.DegreesToRadians<Vector64<float>, float>(degrees);
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector64<float>, Vector128<double>>(degrees);
+                }
+                else
+                {
+                    return VectorMath.DegreesToRadiansSingle<Vector64<float>, Vector64<double>>(degrees);
+                }
             }
             else
             {
@@ -2823,6 +2830,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MaxNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MaxNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(GreaterThan(left, right), left, right);
             }
             else
@@ -2938,6 +2955,16 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
+#if !MONO
+                if (typeof(T) == typeof(float))
+                {
+                    return MinNative(left.AsSingle(), right.AsSingle()).As<float, T>();
+                }
+                if (typeof(T) == typeof(double))
+                {
+                    return MinNative(left.AsDouble(), right.AsDouble()).As<double, T>();
+                }
+#endif
                 return ConditionalSelect(LessThan(left, right), left, right);
             }
             else
@@ -3277,7 +3304,7 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector64<double>, double>(radians);
+                return VectorMath.RadiansToDegreesDouble<Vector64<double>, Vector64<ulong>>(radians);
             }
             else
             {
@@ -3294,7 +3321,14 @@ namespace System.Runtime.Intrinsics
         {
             if (IsHardwareAccelerated)
             {
-                return VectorMath.RadiansToDegrees<Vector64<float>, float>(radians);
+                if (Vector128.IsHardwareAccelerated)
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector64<float>, Vector128<double>>(radians);
+                }
+                else
+                {
+                    return VectorMath.RadiansToDegreesSingle<Vector64<float>, Vector64<double>>(radians);
+                }
             }
             else
             {

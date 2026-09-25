@@ -82,6 +82,7 @@ class CrawlFrame;
 class IExecutionControl;
 struct EE_ILEXCEPTION;
 struct EE_ILEXCEPTION_CLAUSE;
+struct JumpStubBlockHeader;
 typedef struct
 {
     unsigned iCurrentPos;
@@ -98,19 +99,20 @@ enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
     STUB_CODE_BLOCK_JUMPSTUB = 1,
-    UNUSED = 2,
-    STUB_CODE_BLOCK_DYNAMICHELPER = 3,
-    STUB_CODE_BLOCK_STUBPRECODE = 4,
-    STUB_CODE_BLOCK_FIXUPPRECODE = 5,
+    STUB_CODE_BLOCK_DYNAMICHELPER = 2,
+    STUB_CODE_BLOCK_STUBPRECODE = 3,
+    STUB_CODE_BLOCK_FIXUPPRECODE = 4,
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 6,
-    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 7,
-    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
-    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 5,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 6,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 7,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 8,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_TIERED_COMPILATION
-    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+    STUB_CODE_BLOCK_CALLCOUNTING = 9,
 #endif // FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_WRAPPER_STUB = 0xA,
+    STUB_CODE_BLOCK_SHUFFLE_THUNK = 0xB,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholder used by ReadyToRun images
@@ -123,12 +125,6 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-        return "MethodCallThunk";
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-        return "CallCountingStub";
-#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return "MethodCallThunk";
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -143,8 +139,53 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return "VSD_VTableStub";
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return "CallCountingStub";
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return "WrapperStub";
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return "ShuffleThunk";
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return "MethodCallThunk";
     default:
         return "Unknown";
+    }
+}
+
+inline LPCWSTR GetStubCodeBlockKindStringW(StubCodeBlockKind kind)
+{
+    switch (kind)
+    {
+    case STUB_CODE_BLOCK_JUMPSTUB:
+        return W("JumpStub");
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+        return W("MethodCallThunk");
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return W("MethodCallThunk");
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return W("VSD_DispatchStub");
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return W("VSD_ResolveStub");
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return W("VSD_LookupStub");
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return W("VSD_VTableStub");
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("CallCountingStub");
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return W("WrapperStub");
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return W("ShuffleThunk");
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return W("MethodCallThunk");
+    default:
+        return W("Unknown");
     }
 }
 
@@ -159,7 +200,7 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
     }
     CONTRACTL_END;
 }
-#endif
+#endif // FEATURE_PERFMAP
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
@@ -417,6 +458,7 @@ class CodeHeapRequestInfo final
     bool         m_isCollectible;
     bool         m_isInterpreted;
     bool         m_throwOnOutOfMemoryWithinRange;
+    bool         m_isOptimizedCode;
 
 public:
     CodeHeapRequestInfo(MethodDesc* pMD);
@@ -435,6 +477,9 @@ public:
 
     bool   IsInterpreted()                      { return m_isInterpreted;      }
     void   SetInterpreted()                     { m_isInterpreted = true;      }
+
+    bool   IsOptimizedCode()                    { return m_isOptimizedCode;    }
+    void   SetOptimizedCode()                   { m_isOptimizedCode = true;    }
 
     size_t GetRequestSize()                     { return m_requestSize;        }
     void   SetRequestSize(size_t requestSize)   { m_requestSize = requestSize; }
@@ -537,6 +582,12 @@ struct HeapList
 #if defined(TARGET_64BIT)
     BYTE*               CLRPersonalityRoutine;  // jump thunk to personality routine, NULL if there is no personality routine (e.g. interpreter code heap)
 #endif
+
+    // Cached copy of the RANGE_SECTION_OPTIMIZEDCODE bit on the heap's
+    // RangeSection. Lets CanUseCodeHeap reject heap/request mismatches
+    // without a per-allocation FindCodeRange lookup. Set at heap creation
+    // time in NewCodeHeap; never changes afterwards.
+    bool                isOptimizedCode;
 
     TADDR GetModuleBase()
     {
@@ -737,6 +788,7 @@ struct RangeSection
         RANGE_SECTION_RANGELIST     = 0x4,
         RANGE_SECTION_INTERPRETER   = 0x8,
         RANGE_SECTION_VIRTUALIP     = 0x10, // This range section contains virtual IPs (e.g. for ReadyToRun code) instead of actual code addresses in linear memory
+        RANGE_SECTION_OPTIMIZEDCODE = 0x20,
     };
 
 #ifdef FEATURE_READYTORUN
@@ -1667,6 +1719,8 @@ class CodeFragmentHeap : public ILoaderHeapBackout
     void RemoveBlock(FreeBlock ** ppBlock);
 
 public:
+    static constexpr size_t SMALL_BLOCK_THRESHOLD = 0x100;
+
     CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind);
     virtual ~CodeFragmentHeap();
 
@@ -1847,6 +1901,7 @@ class CodeHeapIterator final
         void* MapBase;
         void* HdrMap;
         size_t MaxCodeHeapSize;
+        TADDR EndAddress;
     };
 
     class EECodeGenManagerReleaseIteratorHolder
@@ -1870,8 +1925,15 @@ class CodeHeapIterator final
     MethodSectionIterator m_Iterator;
     CUnorderedArray<HeapListState, 64> m_Heaps;
     int32_t m_HeapsIndexNext;
-    LoaderAllocator* m_pLoaderAllocatorFilter;
+    HeapList* m_pIteratorHeap;
+    TADDR m_iteratorHeapEnd;
+    BYTE* m_pNextCode;
+    HeapList* m_pNextCodeHeap;
+    TADDR m_nextCodeHeapEnd;
+    BYTE* m_pCurrentCode;
     MethodDesc* m_pCurrent;
+    StubCodeBlockKind m_stubCodeBlockKind;
+    DWORD m_codeSize;
     DWORD m_codeType;
 
 public:
@@ -1893,10 +1955,23 @@ public:
     TADDR GetMethodCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (TADDR)m_Iterator.GetMethodCode();
+        return (TADDR)m_pCurrentCode;
+    }
+
+    StubCodeBlockKind GetStubCodeBlockKind()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_stubCodeBlockKind;
+    }
+
+    DWORD GetCodeSize()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_codeSize;
     }
 
 private:
+    bool AdvanceIterator(BYTE** code, HeapList** heap, TADDR* heapEnd);
     bool NextMethodSectionIterator();
 };
 #endif // !DACCESS_COMPILE
@@ -1994,7 +2069,7 @@ public:
     void CleanupCodeHeaps();
 
     template<typename TCodeHeader>
-    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, void** ppCodeHeader, void** ppCodeHeaderRW,
+    void AllocCode(MethodDesc* pMD, size_t blockSize, size_t reserveForJumpStubs, unsigned alignment, bool isTier1Code, void** ppCodeHeader, void** ppCodeHeaderRW,
                    size_t* pAllocatedSize, HeapList** ppCodeHeap , BYTE** ppRealHeader
                  , UINT nUnwindInfos
                   );
@@ -2005,6 +2080,7 @@ public:
     void NibbleMapSet(HeapList * pHp, TADDR pCode, size_t codeSize);
     void AddToCleanupList(HostCodeHeap* pCodeHeap);
     bool TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* codeStart);
+    bool TryFreeJumpStubBlock(HostCodeHeap* pCodeHeap, JumpStubBlockHeader* pJumpStubBlock);
     CodeHeapIterator GetCodeHeapIterator(LoaderAllocator* pLoaderAllocatorFilter = NULL);
 
 private:
@@ -2067,6 +2143,13 @@ struct JumpStubBlockHeader
     JumpStubBlockHeader *  m_next;
     UINT32                 m_used;
     UINT32                 m_allocated;
+
+    size_t GetBlockSize() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return sizeof(JumpStubBlockHeader) +
+            static_cast<size_t>(m_allocated) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+    }
 
     LoaderAllocator* GetLoaderAllocator()
     {
@@ -2730,6 +2813,9 @@ struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
     static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
+#ifdef FEATURE_INTERPRETER
+    static constexpr PTR_InterpreterJitManager* InterpreterJitManagerAddress = &ExecutionManager::m_pInterpreterJitManager;
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
     static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
 #endif // TARGET_WASM

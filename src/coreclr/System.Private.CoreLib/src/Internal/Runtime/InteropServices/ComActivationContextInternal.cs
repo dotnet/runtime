@@ -12,8 +12,11 @@ namespace Internal.Runtime.InteropServices
     {
         public Guid ClassId;
         public Guid InterfaceId;
+        /// <safety>Holds only a pointer value addressing a caller-provided character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* AssemblyPathBuffer;
+        /// <safety>Holds only a pointer value addressing a caller-provided character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* AssemblyNameBuffer;
+        /// <safety>Holds only a pointer value addressing a caller-provided character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* TypeNameBuffer;
         public IntPtr ClassFactoryDest;
     }

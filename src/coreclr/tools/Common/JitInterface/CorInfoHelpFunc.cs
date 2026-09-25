@@ -131,6 +131,11 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_BULK_WRITEBARRIER,
 
+        // Same as CORINFO_HELP_BULK_WRITEBARRIER, but it is the raw worker: it does not split the copy
+        // into chunks and does not poll for GC afterwards. The JIT is only allowed to use it when the
+        // size is a small compile-time constant, so that the copy cannot starve the GC.
+        CORINFO_HELP_BULK_WRITEBARRIER_SMALL,
+
         /* Accessing fields */
 
         CORINFO_HELP_GETFIELDADDR,
@@ -179,7 +184,6 @@ namespace Internal.JitInterface
 
         /* Miscellaneous */
 
-        CORINFO_HELP_PINVOKE_CALLI,         // Indirect pinvoke call
         CORINFO_HELP_TAILCALL,              // Perform a tail call
 
         CORINFO_HELP_GETCURRENTMANAGEDTHREADID,
@@ -196,11 +200,9 @@ namespace Internal.JitInterface
         CORINFO_HELP_RUNTIMEHANDLE_CLASS,    // determine a type/field/method handle at run-time
 
         CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
-        CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time, the type may be null
         CORINFO_HELP_METHODDESC_TO_STUBRUNTIMEMETHOD, // Convert from a MethodDesc (native structure pointer) to RuntimeMethodHandle at run-time
         CORINFO_HELP_FIELDDESC_TO_STUBRUNTIMEFIELD, // Convert from a FieldDesc (native structure pointer) to RuntimeFieldHandle at run-time
-        CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeType at run-time
-        CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE_MAYBENULL, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time, handle might point to a null type
+        CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, // Convert from a TypeHandle (native structure pointer) to RuntimeTypeHandle at run-time
 
         CORINFO_HELP_VIRTUAL_FUNC_PTR,      // look up a virtual method at run-time
 
@@ -254,6 +256,7 @@ namespace Internal.JitInterface
 
         CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
         CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
+        CORINFO_HELP_JIT_RESUME_AFTER_CATCH, // Re-permit GC mode transitions before resuming managed code after a catch
 
         CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, // Transition to cooperative mode in reverse P/Invoke prolog, frame is the first argument
         CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER_TRACK_TRANSITIONS, // Transition to cooperative mode and track transitions in reverse P/Invoke prolog.

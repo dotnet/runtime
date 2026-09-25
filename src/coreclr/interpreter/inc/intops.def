@@ -15,6 +15,9 @@ OPDEF(INTOP_RET_I2, "ret.i2", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_U2, "ret.u2", 2, 0, 1, InterpOpNoArgs)
 OPDEF(INTOP_RET_VT, "ret.vt", 3, 0, 1, InterpOpInt)
 OPDEF(INTOP_RET_VOID, "ret.void", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_RET_LOCALLOC, "ret.localloc", 2, 0, 1, InterpOpNoArgs)
+OPDEF(INTOP_RET_VOID_LOCALLOC, "ret.void.localloc", 1, 0, 0, InterpOpNoArgs)
+OPDEF(INTOP_RET_VT_LOCALLOC, "ret.vt.localloc", 3, 0, 1, InterpOpInt)
 
 OPDEF(INTOP_INITLOCALS, "initlocals", 3, 0, 0, InterpOpTwoInts)
 OPDEF(INTOP_MEMBAR, "membar", 1, 0, 0, InterpOpNoArgs)
@@ -86,6 +89,8 @@ OPDEF(INTOP_PROF_SAMPLEPOINT, "prof.samplepoint", 1, 0, 0, InterpOpNoArgs)
 OPDEF(INTOP_PROF_ENTER, "prof.enter", 2, 0, 0, InterpOpMethodHandle)
 OPDEF(INTOP_PROF_LEAVE, "prof.leave", 1, 0, 0, InterpOpNoArgs)
 #endif
+
+OPDEF(INTOP_PGO_COUNT, "pgo.count", 2, 0, 0, InterpOpLdPtr)
 
 OPDEF(INTOP_BR, "br", 2, 0, 0, InterpOpBranch)
 
@@ -410,6 +415,7 @@ OPDEF(INTOP_CALLVIRT_TAIL, "callvirt.tail", 5, 1, 1, InterpOpMethodHandle)
 OPDEF(INTOP_CALL_HELPER_P_P, "call.helper.p.p", 4, 1, 0, InterpOpHelperFtn)
 OPDEF(INTOP_CALL_HELPER_P_G, "call.helper.p.g", 5, 1, 1, InterpOpGenericHelperFtn)
 OPDEF(INTOP_CALL_HELPER_P_S, "call.helper.p.s", 4, 1, 1, InterpOpHelperFtnNoArgs)
+OPDEF(INTOP_GET_RUNTIME_TYPE_FROM_HANDLE, "get.runtimetype.from.handle", 3, 1, 1, InterpOpNoArgs)
 
 // Call a helper function with a signature of PointerSizedDest helper(TypeOrGenericArg, SVar))
 OPDEF(INTOP_CALL_HELPER_P_PS, "call.helper.p.ps", 5, 1, 1, InterpOpHelperFtn)
@@ -483,6 +489,10 @@ OPDEF(INTOP_EXCHANGEADD_I4, "exchangeadd.i4", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_EXCHANGEADD_I8, "exchangeadd.i8", 4, 1, 2, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R4, "sqrt.r4", 3, 1, 1, InterpOpNoArgs)
 OPDEF(INTOP_SQRT_R8, "sqrt.r8", 3, 1, 1, InterpOpNoArgs)
+OPDEF(INTOP_MAX_NATIVE_R4, "max.native.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MAX_NATIVE_R8, "max.native.r8", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MIN_NATIVE_R4, "min.native.r4", 4, 1, 2, InterpOpNoArgs)
+OPDEF(INTOP_MIN_NATIVE_R8, "min.native.r8", 4, 1, 2, InterpOpNoArgs)
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 OPDEF(INTOP_STORESTUBCONTEXT, "storestubcontext", 2, 1, 0, InterpOpNoArgs)

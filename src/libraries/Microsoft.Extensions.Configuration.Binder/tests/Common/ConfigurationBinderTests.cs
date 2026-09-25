@@ -2710,7 +2710,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(CultureInfo.GetCultureInfoByIetfLanguageTag("yo-NG"), obj.Prop17);
             Assert.Equal(DateTime.Parse("2023-03-29T18:23:43.9977489+00:00", CultureInfo.InvariantCulture), obj.Prop19);
             Assert.Equal(DateTimeOffset.Parse("2023-03-29T18:21:22.8046981+00:00", CultureInfo.InvariantCulture), obj.Prop20);
-            Assert.Equal((decimal)5.3, obj.Prop21);
+            Assert.Equal(5.3m, obj.Prop21);
             Assert.Equal(TimeSpan.Parse("10675199.02:48:05.4775807", CultureInfo.InvariantCulture), obj.Prop23);
             Assert.Equal(Guid.Parse("e905a75b-d195-494d-8938-e55dcee44574"), obj.Prop24);
             Uri.TryCreate("https://microsoft.com", UriKind.RelativeOrAbsolute, out Uri? value);
@@ -3117,6 +3117,85 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             ClassWithAbstractProp c = new();
             c.AbstractProp = null;
             Assert.Throws<InvalidOperationException>(() => configuration.Bind(c));
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithNonNullValues_BindsExistingInstances()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Nested": { "Integer": 1 },
+                    "Collection": [ "item" ],
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: true);
+
+            configuration.Bind(instance);
+
+            Assert.NotNull(instance.Nested);
+            Assert.Equal(1, instance.Nested.Integer);
+            Assert.NotNull(instance.Collection);
+            Assert.Equal(["existing", "item"], instance.Collection);
+            Assert.NotNull(instance.Abstract);
+            Assert.Equal(2, instance.Abstract.Value);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithNullValues_IgnoresConfiguration()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Nested": { "Integer": 1 },
+                    "Collection": [ "item" ]
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
+
+            configuration.Bind(instance);
+
+            Assert.Null(instance.Nested);
+            Assert.Null(instance.Collection);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyProperties_WithMissingConfiguration_LeavesExistingInstancesUnchanged()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString("{}");
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: true);
+            Assert.NotNull(instance.Nested);
+            Assert.NotNull(instance.Collection);
+            Assert.NotNull(instance.Abstract);
+            NestedOptions nested = instance.Nested;
+            List<string> collection = instance.Collection;
+            AbstractBase abstractInstance = instance.Abstract;
+
+            configuration.Bind(instance);
+
+            Assert.Same(nested, instance.Nested);
+            Assert.Equal(0, nested.Integer);
+            Assert.Same(collection, instance.Collection);
+            Assert.Equal(["existing"], collection);
+            Assert.Same(abstractInstance, instance.Abstract);
+            Assert.Equal(0, abstractInstance.Value);
+        }
+
+        [Fact]
+        public static void Bind_GetterOnlyAbstractProperty_WithNullValue_IgnoresConfiguration()
+        {
+            IConfiguration configuration = TestHelpers.GetConfigurationFromJsonString(
+                """
+                {
+                    "Abstract": { "Value": 2 }
+                }
+                """);
+            ClassWithGetterOnlyProperties instance = new(initializeProperties: false);
+
+            configuration.Bind(instance);
+
+            Assert.Null(instance.Abstract);
         }
 
         [Fact]

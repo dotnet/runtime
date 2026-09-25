@@ -19,13 +19,14 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using TestLibrary;
 using Xunit;
 
 public class GetTotalMemoryConcurrent
 {
     private static volatile bool s_stop;
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         // A couple of seconds is far more than enough: the unfixed runtime fails almost immediately

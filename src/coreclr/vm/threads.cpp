@@ -6,6 +6,7 @@
 //
 
 #include "common.h"
+#include "CLREventBase.h"
 
 #include "frames.h"
 #include "threads.h"
@@ -125,6 +126,12 @@ TailCallArgBuffer* TailCallTls::AllocArgBuffer(int size)
 #if defined (_DEBUG_IMPL)
 thread_local int t_ForbidGCLoaderUseCount;
 #endif
+
+// See the declaration in threads.h. Transitions are permitted by default; only the WebAssembly
+// restore-context unwind clears this.
+#ifdef _DEBUG
+thread_local bool t_gcModeSwitchPermitted = true;
+#endif // _DEBUG
 
 uint64_t Thread::dead_threads_non_alloc_bytes = 0;
 
@@ -604,6 +611,12 @@ Thread* SetupThread()
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
+    CheckThreadStateNotDestroyed();
+#endif
+
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
     // We're especially fragile here b/c we don't have a Thread object yet
@@ -897,9 +910,9 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     {
         // Another thread is using the handle now.
         // We can not call __SwitchToThread since we can not go back to host.
-        ClrSleepEx(10, FALSE);
+        minipal_sleep(10);
     }
-    if (m_WeOwnThreadHandle && m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
+    if (m_ThreadHandleForClose == INVALID_HANDLE_VALUE)
     {
         m_ThreadHandleForClose = hThread;
     }
@@ -958,6 +971,14 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
+#ifdef TARGET_X86
+extern "C" void STDCALL JIT_PatchedWriteBarrierGroup_End();
+#else
+extern "C" void STDCALL JIT_WriteBarrier_End();
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+extern "C" void STDCALL JIT_CheckedWriteBarrier_End();
+#endif
+#endif // TARGET_X86
 
 static void* s_barrierCopy = NULL;
 
@@ -1032,7 +1053,127 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
-void InitThreadManagerPerfMapData()
+#ifndef FEATURE_PORTABLE_HELPERS
+template <typename TAction>
+static void ReportCopiedWriteBarrier(TAction action, PCODE address, size_t size, const char* name, LPCWSTR nameW)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(IsIPInWriteBarrierCodeCopy(address));
+    _ASSERTE(size != 0);
+    action(address, size, name, nameW);
+}
+
+template <typename TAction>
+static void EnumerateCopiedWriteBarriers(TAction action)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (IsWriteBarrierCopyEnabled())
+    {
+#ifdef TARGET_X86
+        struct WriteBarrierEntry
+        {
+            PCODE Address;
+            const char* Name;
+            LPCWSTR NameW;
+        };
+
+        // Use the configured helper targets as the source of truth for which register-specific
+        // barriers execute from the private copy.
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+        { VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF_##reg].pfnHelper), "WriteBarrier" #reg, W("WriteBarrier" #reg) },
+
+        WriteBarrierEntry writeBarriers[] =
+        {
+            ENUM_X86_WRITE_BARRIER_REGISTERS()
+        };
+
+#undef X86_WRITE_BARRIER_REGISTER
+
+        // The helper enumeration order is independent of the assembly layout. Sort by address so
+        // each barrier can be sized to the beginning of the next barrier.
+        for (size_t i = 1; i < ARRAY_SIZE(writeBarriers); i++)
+        {
+            WriteBarrierEntry current = writeBarriers[i];
+            size_t j = i;
+            while (j > 0 && writeBarriers[j - 1].Address > current.Address)
+            {
+                writeBarriers[j] = writeBarriers[j - 1];
+                j--;
+            }
+            writeBarriers[j] = current;
+        }
+
+        // The final barrier ends at the explicit end of the patched write-barrier group.
+        PCODE writeBarrierGroupEnd = reinterpret_cast<PCODE>(
+            GetWriteBarrierCodeLocation((void*)JIT_PatchedWriteBarrierGroup_End));
+        for (size_t i = 0; i < ARRAY_SIZE(writeBarriers); i++)
+        {
+            // Event tracing reports a start address and byte count, so end is exclusive.
+            PCODE end = i + 1 < ARRAY_SIZE(writeBarriers) ? writeBarriers[i + 1].Address : writeBarrierGroupEnd;
+            _ASSERTE(writeBarriers[i].Address < end);
+            ReportCopiedWriteBarrier(
+                action,
+                writeBarriers[i].Address,
+                end - writeBarriers[i].Address,
+                writeBarriers[i].Name,
+                writeBarriers[i].NameW);
+        }
+#else
+        // The configured helper target identifies the executable copy; the assembly end label
+        // provides the exact size without inspecting the copied instructions.
+        PCODE writeBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF].pfnHelper);
+        ReportCopiedWriteBarrier(
+            action,
+            writeBarrier,
+            (BYTE*)JIT_WriteBarrier_End - (BYTE*)JIT_WriteBarrier,
+            "WriteBarrier",
+            W("WriteBarrier"));
+
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        PCODE checkedWriteBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_CHECKED_ASSIGN_REF].pfnHelper);
+        // Some targets use a checked helper outside the copied region. Report it only when the
+        // configured helper actually points into the copy.
+        if (IsIPInWriteBarrierCodeCopy(checkedWriteBarrier))
+        {
+            ReportCopiedWriteBarrier(
+                action,
+                checkedWriteBarrier,
+                (BYTE*)JIT_CheckedWriteBarrier_End - (BYTE*)JIT_CheckedWriteBarrier,
+                "CheckedWriteBarrier",
+                W("CheckedWriteBarrier"));
+        }
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_X86
+    }
+}
+
+void ReportCopiedWriteBarriersToPerfMap()
+{
+    WRAPPER_NO_CONTRACT;
+
+    EnumerateCopiedWriteBarriers([](PCODE address, size_t size, const char* name, LPCWSTR)
+    {
+        PerfMap::LogStubs("WriteBarrier", name, address, size, PerfMapStubType::Individual);
+    });
+}
+
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions)
+{
+    WRAPPER_NO_CONTRACT;
+
+    EnumerateCopiedWriteBarriers([eventOptions](PCODE address, size_t size, const char*, LPCWSTR name)
+    {
+        _ASSERTE(FitsInU4(size));
+        ETW::MethodLog::SendCopiedWriteBarrierEvent(address, static_cast<ULONG>(size), name, eventOptions);
+    });
+}
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
+
+void InitThreadManagerTracingData()
 {
     CONTRACTL {
         THROWS;
@@ -1040,11 +1181,12 @@ void InitThreadManagerPerfMapData()
     }
     CONTRACTL_END;
 #ifndef FEATURE_PORTABLE_HELPERS
-    if (IsWriteBarrierCopyEnabled())
-    {
-        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
-        PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
-    }
+    ReportCopiedWriteBarriersToPerfMap();
+
+#ifdef FEATURE_EVENT_TRACE
+    ReportCopiedWriteBarriersToEventTracing(
+        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+#endif // FEATURE_EVENT_TRACE
 #endif // !FEATURE_PORTABLE_HELPERS
 }
 
@@ -1081,10 +1223,6 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
-#ifdef FEATURE_PERFMAP
-        // We would log the to the perfmap here, but its not yet initialized
-#endif
-
         // Store the JIT_WriteBarrier copy location to a global variable so that helpers
         // can jump to it.
 #ifdef TARGET_X86
@@ -1092,8 +1230,7 @@ void InitThreadManager()
 
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
-    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
-    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
+    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg);
 
         ENUM_X86_WRITE_BARRIER_REGISTERS()
 
@@ -1104,7 +1241,6 @@ void InitThreadManager()
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
@@ -1114,7 +1250,6 @@ void InitThreadManager()
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
@@ -1220,7 +1355,6 @@ Thread::Thread()
     m_ThreadHandle = INVALID_HANDLE_VALUE;
     m_ThreadHandleForClose = INVALID_HANDLE_VALUE;
     m_ThreadHandleForResume = INVALID_HANDLE_VALUE;
-    m_WeOwnThreadHandle = FALSE;
 
 #ifdef _DEBUG
     m_ThreadId = UNINITIALIZED_THREADID;
@@ -1395,7 +1529,6 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
@@ -1497,7 +1630,6 @@ void Thread::InitThread()
             _ASSERTE(hDup != INVALID_HANDLE_VALUE);
 
             SetThreadHandle(hDup);
-            m_WeOwnThreadHandle = TRUE;
         }
         else
         {
@@ -1539,18 +1671,29 @@ BOOL Thread::AllocHandles()
     WRAPPER_NO_CONTRACT;
 
     _ASSERTE(!m_DebugSuspendEvent.IsValid());
+#ifdef TARGET_UNIX
+    _ASSERTE(!m_ThreadExitedEvent.IsValid());
+#endif // TARGET_UNIX
 
     BOOL fOK = TRUE;
     EX_TRY {
         // create a manual reset event for getting the thread to a safe point
         m_DebugSuspendEvent.CreateManualEvent(FALSE);
+#ifdef TARGET_UNIX
+        m_ThreadExitedEvent.CreateManualEvent(FALSE);
+#endif // TARGET_UNIX
     }
     EX_CATCH {
         fOK = FALSE;
 
-        if (!m_DebugSuspendEvent.IsValid()) {
+        if (m_DebugSuspendEvent.IsValid()) {
             m_DebugSuspendEvent.CloseEvent();
         }
+#ifdef TARGET_UNIX
+        if (m_ThreadExitedEvent.IsValid()) {
+            m_ThreadExitedEvent.CloseEvent();
+        }
+#endif // TARGET_UNIX
 
         RethrowTerminalExceptions();
     }
@@ -1878,7 +2021,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         SetThreadName(hThread, pName);
 
@@ -1964,7 +2107,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     _ASSERTE(!m_fPreemptiveGCDisabled);     // leave in preemptive until HasStarted.
 
     SetThreadHandle(h);
-    m_WeOwnThreadHandle = TRUE;
 
     // Before we do the resume, we need to take note of the new ThreadId.  This
     // is necessary because -- before the thread starts executing at KickofThread --
@@ -2098,7 +2240,7 @@ int Thread::DecExternalCount(BOOL holdingLock)
         }
         // Can not assert like this.  We have already removed the Unstarted bit.
         //_ASSERTE (IsUnstarted() || h != INVALID_HANDLE_VALUE);
-        if (h != INVALID_HANDLE_VALUE && m_WeOwnThreadHandle)
+        if (h != INVALID_HANDLE_VALUE)
         {
             ::CloseHandle(h);
             SetThreadHandle(INVALID_HANDLE_VALUE);
@@ -2241,8 +2383,8 @@ Thread::~Thread()
 
     // Normally we shouldn't get here with a valid thread handle; however if SetupThread
     // failed (due to an OOM for example) then we need to CloseHandle the thread
-    // handle if we own it.
-    if (m_WeOwnThreadHandle && (GetThreadHandle() != INVALID_HANDLE_VALUE))
+    // handle.
+    if (GetThreadHandle() != INVALID_HANDLE_VALUE)
     {
         CloseHandle(GetThreadHandle());
     }
@@ -2251,6 +2393,13 @@ Thread::~Thread()
     {
         m_DebugSuspendEvent.CloseEvent();
     }
+
+#ifdef TARGET_UNIX
+    if (m_ThreadExitedEvent.IsValid())
+    {
+        m_ThreadExitedEvent.CloseEvent();
+    }
+#endif // TARGET_UNIX
 
     if (m_OSContext)
         delete m_OSContext;
@@ -2883,7 +3032,12 @@ DWORD Thread::DoReentrantWaitAny(int numWaiters, HANDLE* pHandles, DWORD timeout
     }
     CONTRACTL_END;
 
+#ifdef TARGET_WINDOWS
     return DoAppropriateAptStateWait(numWaiters, pHandles, FALSE, timeout, mode);
+#else
+    _ASSERTE(!"Reentrant waits are only supported on Windows");
+    return WAIT_FAILED;
+#endif
 }
 
 DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mode)
@@ -2896,8 +3050,10 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
     CONTRACTL_END;
 
 #ifdef TARGET_UNIX
-    return WaitForSingleObjectEx(handle, timeout, mode == WaitMode_Alertable);
+    _ASSERTE(handle == GetThreadHandle());
+    return m_ThreadExitedEvent.Wait(timeout, (mode & WaitMode_Alertable) != 0);
 #else
+
     ULONGLONG dwStart = 0, dwEnd;
     if (timeout != INFINITE)
     {
@@ -2931,6 +3087,7 @@ DWORD Thread::DoReentrantWaitWithRetry(HANDLE handle, DWORD timeout, WaitMode mo
 }
 
 
+#ifdef TARGET_WINDOWS
 //--------------------------------------------------------------------
 // Do appropriate wait based on apartment state (STA or MTA)
 DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL bWaitAll,
@@ -2953,6 +3110,7 @@ DWORD Thread::DoAppropriateAptStateWait(int numWaiters, HANDLE* pHandles, BOOL b
 
     return WaitForMultipleObjectsEx(numWaiters, pHandles, bWaitAll, timeout, alertable);
 }
+#endif // TARGET_WINDOWS
 
 #ifdef TARGET_WINDOWS
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
@@ -3642,7 +3800,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -4294,7 +4451,7 @@ BOOL CLREventWaitWithTry(CLREventBase *pEvent, DWORD timeout, BOOL fAlertable, D
     BOOL fLoop = TRUE;
     EX_TRY
     {
-        *pStatus = pEvent->Wait(timeout, fAlertable);
+        *pStatus = pEvent->Wait(timeout, fAlertable, false);
         fLoop = FALSE;
     }
     EX_CATCH
@@ -4853,7 +5010,6 @@ BOOL Thread::UniqueStack(void* stackStart)
         else
         {
             fUnique = TRUE;
-            FAULT_NOT_FATAL();
             UniqueStackHelper(stackTraceHash, stackTrace);
         }
 #ifdef _DEBUG
@@ -5186,7 +5342,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         if (sizeof(meminfo) != res)
         {
-            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", uStartOfThisRegion));
+            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", (void*)uStartOfThisRegion));
             break;
         }
 
@@ -5199,7 +5355,8 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         UINT_PTR uRegionSize = uStartOfNextRegion - uStartOfThisRegion;
 
-        LOG((LF_EH, LL_INFO1000, "0x%p -> 0x%p (%d pg)  ", uStartOfThisRegion, uStartOfNextRegion - 1, (int)(uRegionSize / minipal_getpagesize())));
+        LOG((LF_EH, LL_INFO1000, "%p -> %p (%d pg)  ", (void*)uStartOfThisRegion,
+             (void*)(uStartOfNextRegion - 1), (int)(uRegionSize / minipal_getpagesize())));
         DebugLogMBIFlags(meminfo.State, meminfo.Protect);
         LOG((LF_EH, LL_INFO1000, "\n"));
 
@@ -5237,10 +5394,12 @@ void Thread::DebugLogStackMBIs()
     UINT_PTR uStackSize         = uStackBase - uStackLimit;
 
     LOG((LF_EH, LL_INFO1000, "----------------------------------------------------------------------\n"));
-    LOG((LF_EH, LL_INFO1000, "Stack Snapshot 0x%p -> 0x%p (%d pg)\n", uStackLimit, uStackBase, (int)(uStackSize / minipal_getpagesize())));
+    LOG((LF_EH, LL_INFO1000, "Stack Snapshot %p -> %p (%d pg)\n", (void*)uStackLimit,
+         (void*)uStackBase, (int)(uStackSize / minipal_getpagesize())));
     if (pThread)
     {
-        LOG((LF_EH, LL_INFO1000, "Last normal addr: 0x%p\n", pThread->GetLastNormalStackAddress()));
+        LOG((LF_EH, LL_INFO1000, "Last normal addr: %p\n",
+             (void*)pThread->GetLastNormalStackAddress()));
     }
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
@@ -5909,7 +6068,7 @@ static void ManagedThreadBase_DispatchOuter(ManagedThreadCallState *pCallState)
     // The sole purpose of having this frame is to tell the debugger that we have a catch handler here
     // which may swallow managed exceptions.  The debugger needs this in order to send a
     // CatchHandlerFound (CHF) notification.
-    DebuggerU2MCatchHandlerFrame catchFrame(false /* catchesAllExceptions */);
+    DebuggerU2MCatchHandlerFrame catchFrame;
 
     TryParam param(pCallState);
     param.pFrame = &catchFrame;

@@ -94,14 +94,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         Unknown = 0,
         JumpStub = 1,
-        DynamicHelper = 3,
-        StubPrecode = 4,
-        FixupPrecode = 5,
-        VSDDispatchStub = 6,
-        VSDResolveStub = 7,
-        VSDLookupStub = 8,
-        VSDVTableStub = 9,
-        CallCountingStub = 10,
+        DynamicHelper = 2,
+        StubPrecode = 3,
+        FixupPrecode = 4,
+        VSDDispatchStub = 5,
+        VSDResolveStub = 6,
+        VSDLookupStub = 7,
+        VSDVTableStub = 8,
+        CallCountingStub = 9,
+        WrapperStub = 10,
+        ShuffleThunk = 11,
     }
 
     private abstract class JitManager
@@ -455,17 +457,43 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         return range.Data.R2RModule;
     }
 
-    JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
+    JitManagerInfo? IExecutionManager.GetJitManagerInfo(JitManagerKind kind)
     {
-        TargetPointer eeJitManagerPtr = _target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress);
-        TargetPointer eeJitManagerAddr = _target.ReadPointer(eeJitManagerPtr);
+        return kind switch
+        {
+            JitManagerKind.EE => GetJitManagerInfo(
+                _target.ReadPointer(_target.ReadGlobalPointer(Constants.Globals.EEJitManagerAddress)),
+                codeType: 0), // miManaged | miIL
+            JitManagerKind.Interpreter => GetInterpreterJitManagerInfo(),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
+        };
+    }
 
-        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(eeJitManagerAddr);
+    private JitManagerInfo? GetInterpreterJitManagerInfo()
+    {
+        if (!_target.TryReadGlobalPointer(
+                Constants.Globals.InterpreterJitManagerAddress,
+                out TargetPointer? interpreterJitManagerPointer)
+            || interpreterJitManagerPointer is not TargetPointer interpreterJitManagerPointerAddress)
+        {
+            return null;
+        }
 
+        TargetPointer interpreterJitManagerAddress = _target.ReadPointer(interpreterJitManagerPointerAddress);
+        return interpreterJitManagerAddress == TargetPointer.Null
+            ? null
+            : GetJitManagerInfo(
+                interpreterJitManagerAddress,
+                codeType: 2); // miManaged | miIL | miOPTIL
+    }
+
+    private JitManagerInfo GetJitManagerInfo(TargetPointer jitManagerAddress, uint codeType)
+    {
+        Data.EEJitManager jitManager = _target.ProcessedData.GetOrAdd<Data.EEJitManager>(jitManagerAddress);
         return new JitManagerInfo
         {
-            ManagerAddress = eeJitManagerAddr,
-            CodeType = 0, // miManaged | miIL
+            ManagerAddress = jitManagerAddress,
+            CodeType = codeType,
             HeapListAddress = jitManager.AllCodeHeaps,
         };
     }
@@ -484,10 +512,15 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         };
     }
 
-    IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
+    IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos(JitManagerKind kind)
     {
-        TargetPointer heapListAddress = ((IExecutionManager)this).GetEEJitManagerInfo().HeapListAddress;
-        TargetPointer nodeAddr = heapListAddress;
+        JitManagerInfo? jitManagerInfo = ((IExecutionManager)this).GetJitManagerInfo(kind);
+        if (jitManagerInfo is not JitManagerInfo info)
+        {
+            yield break;
+        }
+
+        TargetPointer nodeAddr = info.HeapListAddress;
         while (nodeAddr != TargetPointer.Null)
         {
             Data.CodeHeapListNode node = _target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(nodeAddr);
@@ -659,6 +692,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             StubKind.VSDLookupStub => CodeKind.VSD_LookupStub,
             StubKind.VSDVTableStub => CodeKind.VSD_VTableStub,
             StubKind.CallCountingStub => CodeKind.CallCountingStub,
+            StubKind.WrapperStub => CodeKind.WrapperStub,
+            StubKind.ShuffleThunk => CodeKind.ShuffleThunk,
             _ => CodeKind.Unknown,
         };
     }

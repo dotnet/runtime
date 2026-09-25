@@ -11,7 +11,6 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 using Serializer = System.Runtime.CompilerServices.AsyncProfiler.EventBuffer.Serializer;
 
 namespace System.Runtime.CompilerServices
@@ -194,7 +193,7 @@ namespace System.Runtime.CompilerServices
                         ActiveEventKeywords = eventKeywords;
                     }
 
-                    string? eventBufferSizeEnv = System.Environment.GetEnvironmentVariable("DOTNET_AsyncProfilerEventSource_EventBufferSize");
+                    string? eventBufferSizeEnv = System.Environment.GetEnvironmentVariable("DOTNET_AsyncProfiler_EventBufferSize");
                     if (eventBufferSizeEnv != null && uint.TryParse(eventBufferSizeEnv, out uint eventBufferSize))
                     {
                         eventBufferSize = Math.Max(eventBufferSize, 1024);

@@ -672,7 +672,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         // per-element mask, or we can simply use the equivalent-sized floating type.
         GenTree* maskVector = op3->AsHWIntrinsic()->Op(1);
 
-        if (!maskVector->IsVectorPerElementMask(simdBaseType, simdSize))
+        if (!maskVector->IsVectorPerElementMask(m_compiler, simdBaseType, simdSize))
         {
             switch (simdBaseType)
             {
@@ -1315,6 +1315,464 @@ bool Rationalizer::ShouldRewriteToNonMaskHWIntrinsic(GenTree* node)
 }
 #endif // TARGET_XARCH
 
+#if defined(TARGET_ARM64)
+//----------------------------------------------------------------------------------------------
+// IsHWIntrinsicCmpMaskExtractMsb: Checks if an ExtractMostSignificantBits node consumes a SIMD
+// comparison mask.
+//
+// Arguments:
+//    comp         - The compiler instance.
+//    node         - The hwintrinsic node.
+//    simdBaseType - On success, the unsigned SIMD base type of the reduction; otherwise unchanged.
+//
+// Return Value:
+//    True if the node is an ExtractMostSignificantBits over a SIMD comparison mask.
+//
+static bool IsHWIntrinsicCmpMaskExtractMsb(Compiler* comp, GenTreeHWIntrinsic* node, var_types* simdBaseType = nullptr)
+{
+    if (node->GetHWIntrinsicId() != NI_Vector_ExtractMostSignificantBits)
+    {
+        return false;
+    }
+
+    var_types unsignedSimdBaseType = Compiler::getUnsignedSimdBaseType(node->GetSimdBaseType());
+
+    // AdvSimd does not support across or pairwise reductions for 64-bit elements.
+    if (unsignedSimdBaseType == TYP_ULONG)
+    {
+        return false;
+    }
+
+    GenTree* op1 = node->Op(1);
+
+    if (!op1->IsVectorPerElementMask(comp, unsignedSimdBaseType, node->GetSimdSize()))
+    {
+        return false;
+    }
+
+    if (simdBaseType != nullptr)
+    {
+        *simdBaseType = unsignedSimdBaseType;
+    }
+
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
+// IsPrimitivePopCount: Checks if a node is a primitive PopCount intrinsic.
+//
+// Arguments:
+//    node - The node to check.
+//
+// Return Value:
+//    True if the node is a primitive PopCount intrinsic.
+//
+static bool IsPrimitivePopCount(GenTree* node)
+{
+    return node->OperIs(GT_INTRINSIC) && (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_PopCount);
+}
+
+//----------------------------------------------------------------------------------------------
+// IsZeroCount: Checks if a node is a scalar zero-count intrinsic.
+//
+// Arguments:
+//    node - The node to check.
+//
+// Return Value:
+//    True if the node is a TrailingZeroCount or LeadingZeroCount intrinsic.
+//
+static bool IsZeroCount(GenTree* node)
+{
+    if (node->OperIs(GT_INTRINSIC))
+    {
+        return (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount) ||
+               (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_LeadingZeroCount);
+    }
+
+    if (node->OperIsHWIntrinsic())
+    {
+        return node->AsHWIntrinsic()->GetHWIntrinsicId() == NI_ArmBase_LeadingZeroCount;
+    }
+
+    return false;
+}
+
+//----------------------------------------------------------------------------------------------
+// ReplaceHWIntrinsicCmpMaskExtractMsbUse: Replace a scalarized comparison mask extraction with
+// the specified replacement node.
+//
+// Arguments:
+//    use         - A pointer to the node being replaced
+//    parents     - A reference to tree walk data providing the context
+//    oldNode     - The node being replaced
+//    replacement - The node that replaces *use
+//
+static void ReplaceHWIntrinsicCmpMaskExtractMsbUse(GenTree**               use,
+                                                   Compiler::GenTreeStack& parents,
+                                                   GenTree*                oldNode,
+                                                   GenTree*                replacement)
+{
+    if (parents.Height() > 1)
+    {
+        parents.Top(1)->ReplaceOperand(use, replacement);
+    }
+    else
+    {
+        *use = replacement;
+    }
+
+    // Adjust the parent stack
+    assert(parents.Top() == oldNode);
+    (void)parents.Pop();
+    parents.Push(replacement);
+}
+
+//----------------------------------------------------------------------------------------------
+// ScalarizeHWIntrinsicCmpMaskReduction: Update an ExtractMostSignificantBits node so it scalarizes
+// a vector reduction result.
+//
+// Arguments:
+//    node         - The ExtractMostSignificantBits node to update
+//    reduction    - The vector reduction node
+//    simdBaseType - The SIMD base type of the reduction
+//    simdSize     - The SIMD size of the original input
+//
+static void ScalarizeHWIntrinsicCmpMaskReduction(GenTreeHWIntrinsic* node,
+                                                 GenTree*            reduction,
+                                                 var_types           simdBaseType,
+                                                 unsigned            simdSize)
+{
+    node->gtType = genActualType(simdBaseType);
+    node->ChangeHWIntrinsicId(NI_Vector_ToScalar);
+    node->SetSimdSize(8);
+    node->SetSimdBaseType(simdBaseType);
+    node->Op(1) = reduction;
+}
+
+//----------------------------------------------------------------------------------------------
+// CreateHWIntrinsicCmpMaskReduction: Create a horizontal reduction of a comparison mask.
+//
+// Arguments:
+//    comp              - The compiler instance
+//    blockRange        - The LIR range containing the input
+//    op1               - The vector to reduce
+//    acrossIntrinsic   - The horizontal reduction intrinsic
+//    pairwiseIntrinsic - The pairwise fallback intrinsic for Vector64<uint>
+//    simdBaseType      - The SIMD base type of the reduction
+//    simdSize          - The SIMD size of the input
+//
+static GenTree* CreateHWIntrinsicCmpMaskReduction(Compiler*      comp,
+                                                  LIR::Range&    blockRange,
+                                                  GenTree*       op1,
+                                                  NamedIntrinsic acrossIntrinsic,
+                                                  NamedIntrinsic pairwiseIntrinsic,
+                                                  var_types      simdBaseType,
+                                                  unsigned       simdSize)
+{
+    if ((simdSize == 8) && (simdBaseType == TYP_UINT))
+    {
+        // Vector64<uint> has only two lanes and AdvSimd does not provide a 2S across form.
+        // Use a pairwise reduction with the same vector as both operands instead.
+
+        LIR::Use op1Use;
+        LIR::Use::MakeDummyUse(blockRange, op1, &op1Use);
+
+        // The pairwise form consumes op1 twice, so spill it to a temp before cloning the use.
+        op1Use.ReplaceWithLclVar(comp);
+        op1 = op1Use.Def();
+
+        GenTree* op2 = comp->gtClone(op1);
+        blockRange.InsertAfter(op1, op2);
+
+        GenTree* reduction =
+            comp->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, op2, pairwiseIntrinsic, simdBaseType, simdSize);
+        blockRange.InsertAfter(op2, reduction);
+        return reduction;
+    }
+
+    GenTree* reduction = comp->gtNewSimdHWIntrinsicNode(TYP_SIMD8, op1, acrossIntrinsic, simdBaseType, simdSize);
+    blockRange.InsertAfter(op1, reduction);
+    return reduction;
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicCmpMaskExtractMsb:
+// Rewrites an ExtractMostSignificantBits operation when the input is known to be a SIMD comparison
+// mask and the result is only checked for zero.
+//
+// Matches:
+//    ExtractMostSignificantBits(cmpMask) == 0
+//    ExtractMostSignificantBits(cmpMask) != 0
+//
+// Replaces the ExtractMostSignificantBits with:
+//    MaxAcross(cmpMask)
+//
+// This computes whether any all-bits-set comparison element exists without materializing the full
+// bitmask. For Vector64<uint>, the reduction is implemented with MaxPairwise.
+//
+// Arguments:
+//    use     - A pointer to the hwintrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+// Return Value:
+//    True if the node was rewritten; otherwise false.
+//
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
+
+    var_types simdBaseType;
+    unsigned  simdSize = node->GetSimdSize();
+
+    if (parents.Height() <= 1)
+    {
+        return false;
+    }
+
+    GenTree* parent = parents.Top(1);
+
+    if (!parent->OperIs(GT_EQ, GT_NE))
+    {
+        return false;
+    }
+
+    GenTree* parentOp1 = parent->gtGetOp1();
+    GenTree* parentOp2 = parent->gtGetOp2();
+
+    if (!(((parentOp1 == node) && parentOp2->IsIntegralConst(0)) ||
+          ((parentOp2 == node) && parentOp1->IsIntegralConst(0))))
+    {
+        return false;
+    }
+
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, node, &simdBaseType))
+    {
+        return false;
+    }
+
+    GenTree* op1 = node->Op(1);
+
+    // A comparison produces elements whose value is either all-bits-set or zero. When the
+    // ExtractMostSignificantBits result is only being compared against zero, use a horizontal max
+    // reduction to determine if any element was all-bits-set without materializing the full mask.
+
+    op1 = CreateHWIntrinsicCmpMaskReduction(m_compiler, BlockRange(), op1, NI_AdvSimd_Arm64_MaxAcross,
+                                            NI_AdvSimd_MaxPairwise, simdBaseType, simdSize);
+
+    ScalarizeHWIntrinsicCmpMaskReduction(node, op1, simdBaseType, simdSize);
+
+    GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, node, /* isUnsigned */ true, TYP_INT);
+    BlockRange().InsertAfter(node, castNode);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, node, castNode);
+
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicCmpMaskExtractMsbPopCount:
+// Rewrites PopCount(ExtractMostSignificantBits(...)) when the input is known to be a SIMD
+// comparison mask.
+//
+// Matches:
+//    PopCount(ExtractMostSignificantBits(cmpMask))
+//
+// Replaces it with:
+//    AddAcross(ShiftRightLogical(cmpMask, elementBits - 1))
+//
+// This converts each all-bits-set comparison element to 1, each zero element to 0, then horizontally
+// sums those per-element counts. For Vector64<uint>, the reduction is implemented with AddPairwise.
+//
+// Arguments:
+//    use     - A pointer to the intrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+// Return Value:
+//    True if the node was rewritten; otherwise false.
+//
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTreeIntrinsic* popCount = (*use)->AsIntrinsic();
+    assert(popCount->gtIntrinsicName == NI_PRIMITIVE_PopCount);
+
+    GenTree* extract = popCount->gtGetOp1();
+
+    if (!extract->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    GenTreeHWIntrinsic* extractNode = extract->AsHWIntrinsic();
+    var_types           simdBaseType;
+
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode, &simdBaseType))
+    {
+        return false;
+    }
+
+    unsigned simdSize       = extractNode->GetSimdSize();
+    unsigned elementBitSize = genTypeSize(simdBaseType) * BITS_PER_BYTE;
+
+    // A comparison produces elements whose value is either all-bits-set or zero. For a Count-style
+    // consumer, normalize each element to one or zero and then horizontally sum the elements.
+
+    GenTree* op1 = extractNode->Op(1);
+
+    GenTree* shiftAmount = m_compiler->gtNewIconNode(elementBitSize - 1);
+    BlockRange().InsertAfter(op1, shiftAmount);
+
+    GenTree* shift = m_compiler->gtNewSimdHWIntrinsicNode(Compiler::getSIMDTypeForSize(simdSize), op1, shiftAmount,
+                                                          NI_AdvSimd_ShiftRightLogical, simdBaseType, simdSize);
+    BlockRange().InsertAfter(shiftAmount, shift);
+    op1 = shift;
+
+    op1 = CreateHWIntrinsicCmpMaskReduction(m_compiler, BlockRange(), op1, NI_AdvSimd_Arm64_AddAcross,
+                                            NI_AdvSimd_AddPairwise, simdBaseType, simdSize);
+
+    ScalarizeHWIntrinsicCmpMaskReduction(extractNode, op1, simdBaseType, simdSize);
+
+    GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, extractNode, /* isUnsigned */ true, TYP_INT);
+    BlockRange().InsertAfter(extractNode, castNode);
+
+    BlockRange().Remove(popCount);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, popCount, castNode);
+
+    return true;
+}
+
+//----------------------------------------------------------------------------------------------
+// RewriteHWIntrinsicCmpMaskExtractMsbZeroCount:
+// Rewrites TrailingZeroCount(ExtractMostSignificantBits(...)) and
+// LeadingZeroCount(ExtractMostSignificantBits(...)) when the input is known to be a SIMD comparison mask.
+//
+// Matches:
+//    TrailingZeroCount(ExtractMostSignificantBits(cmpMask))
+//    LeadingZeroCount(ExtractMostSignificantBits(cmpMask))
+//
+// Replaces it with:
+//    TrailingZeroCount: MinAcross(BitwiseSelect(cmpMask, IndexVector, SentinelVector)) - 1
+//    LeadingZeroCount:  MinAcross(BitwiseSelect(cmpMask, IndexVector, SentinelVector))
+//
+// For TrailingZeroCount, IndexVector holds one-based element indexes and SentinelVector holds 33.
+// The selected minimum is therefore the first matching element index plus one, or 33 if no element
+// matched. Subtracting one preserves the zero-mask result of 32.
+//
+// For LeadingZeroCount, IndexVector holds 31 minus the element index and SentinelVector holds 32.
+// The selected minimum is therefore the leading-zero-count result directly, including 32 for the
+// zero-mask case. For Vector64<uint>, the reduction is implemented with MinPairwise.
+//
+// Arguments:
+//    use     - A pointer to the intrinsic node
+//    parents - A reference to tree walk data providing the context
+//
+// Return Value:
+//    True if the node was rewritten; otherwise false.
+//
+bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, Compiler::GenTreeStack& parents)
+{
+    GenTree* zeroCount = *use;
+    assert(IsZeroCount(zeroCount));
+
+    const bool isTrailingZeroCount = zeroCount->OperIs(GT_INTRINSIC) &&
+                                     (zeroCount->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount);
+
+    GenTree* extract = zeroCount->OperIs(GT_INTRINSIC) ? zeroCount->gtGetOp1() : zeroCount->AsHWIntrinsic()->Op(1);
+
+    if (!extract->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    GenTreeHWIntrinsic* extractNode = extract->AsHWIntrinsic();
+    var_types           simdBaseType;
+
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode, &simdBaseType))
+    {
+        return false;
+    }
+
+    unsigned  simdSize = extractNode->GetSimdSize();
+    var_types simdType = Compiler::getSIMDTypeForSize(simdSize);
+
+    // A comparison produces elements whose value is either all-bits-set or zero. Select an element
+    // index value when the comparison is true and a sentinel when false. The horizontal min reduction
+    // then finds the zero-count result directly or with a final subtract, as described above.
+
+    GenTree* op1 = extractNode->Op(1);
+
+    GenTreeVecCon* indexVec = m_compiler->gtNewVconNode(simdType);
+    GenTreeVecCon* otherVec = m_compiler->gtNewVconNode(simdType);
+
+    const unsigned elementSize  = genTypeSize(simdBaseType);
+    const unsigned elementCount = simdSize / elementSize;
+
+    for (unsigned index = 0; index < elementCount; index++)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_UBYTE:
+            {
+                indexVec->gtSimdVal.u8[index] = static_cast<uint8_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                otherVec->gtSimdVal.u8[index] = static_cast<uint8_t>(isTrailingZeroCount ? 33 : 32);
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                indexVec->gtSimdVal.u16[index] = static_cast<uint16_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                otherVec->gtSimdVal.u16[index] = static_cast<uint16_t>(isTrailingZeroCount ? 33 : 32);
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                indexVec->gtSimdVal.u32[index] = static_cast<uint32_t>(isTrailingZeroCount ? index + 1 : 31 - index);
+                otherVec->gtSimdVal.u32[index] = static_cast<uint32_t>(isTrailingZeroCount ? 33 : 32);
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+
+    BlockRange().InsertAfter(op1, indexVec);
+    BlockRange().InsertAfter(indexVec, otherVec);
+
+    GenTree* select = m_compiler->gtNewSimdCndSelNode(simdType, op1, indexVec, otherVec, simdBaseType, simdSize);
+    BlockRange().InsertAfter(otherVec, select);
+    op1 = select;
+
+    op1 = CreateHWIntrinsicCmpMaskReduction(m_compiler, BlockRange(), op1, NI_AdvSimd_Arm64_MinAcross,
+                                            NI_AdvSimd_MinPairwise, simdBaseType, simdSize);
+
+    ScalarizeHWIntrinsicCmpMaskReduction(extractNode, op1, simdBaseType, simdSize);
+
+    GenTree* castNode = m_compiler->gtNewCastNode(TYP_INT, extractNode, /* isUnsigned */ true, TYP_INT);
+    BlockRange().InsertAfter(extractNode, castNode);
+
+    GenTree* result = castNode;
+
+    if (isTrailingZeroCount)
+    {
+        GenTree* one = m_compiler->gtNewIconNode(1);
+        BlockRange().InsertAfter(castNode, one);
+
+        result = m_compiler->gtNewOperNode(GT_SUB, TYP_INT, castNode, one);
+        BlockRange().InsertAfter(one, result);
+    }
+
+    BlockRange().Remove(zeroCount);
+
+    ReplaceHWIntrinsicCmpMaskExtractMsbUse(use, parents, zeroCount, result);
+
+    return true;
+}
+#endif // TARGET_ARM64
+
 //----------------------------------------------------------------------------------------------
 // RewriteHWIntrinsicExtractMsb: Rewrites a hwintrinsic ExtractMostSignificantBytes operation
 //
@@ -1334,6 +1792,17 @@ void Rationalizer::RewriteHWIntrinsicExtractMsb(GenTree** use, Compiler::GenTree
     GenTree* op1 = node->Op(1);
 
 #if defined(TARGET_ARM64)
+    if (RewriteHWIntrinsicCmpMaskExtractMsb(use, parents))
+    {
+        return;
+    }
+
+    if ((parents.Height() > 1) && (IsPrimitivePopCount(parents.Top(1)) || IsZeroCount(parents.Top(1))) &&
+        IsHWIntrinsicCmpMaskExtractMsb(m_compiler, node))
+    {
+        return;
+    }
+
     // ARM64 doesn't have a single instruction that performs the behavior so we'll emulate it instead.
     // To do this, we effectively perform the following steps:
     // 1. tmp = input & 0x80         ; and the input to clear all but the most significant bit
@@ -1715,6 +2184,24 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     assert(node == use.Def());
     switch (node->OperGet())
     {
+        case GT_LCL_FLD:
+            if (use.IsDummyUse())
+            {
+                // This read has not been recorded, so remove it without forgetting it.
+                BlockRange().Remove(node);
+                return Compiler::WALK_CONTINUE;
+            }
+            FALLTHROUGH;
+
+        case GT_STORE_LCL_VAR:
+        case GT_STORE_LCL_FLD:
+        case GT_LCL_ADDR:
+            if (m_parameterUses != nullptr)
+            {
+                RecordParameterUse(node);
+            }
+            break;
+
         case GT_CALL:
             // In linear order we no longer need to retain the stores in early
             // args as these have now been sequenced.
@@ -1772,6 +2259,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                 // and should not violate tree order.
                 assert(isClosed);
 
+                ForgetParameterUses(lhsRange);
                 BlockRange().Delete(m_compiler, m_block, std::move(lhsRange));
             }
             else if (op1->IsValue())
@@ -1801,6 +2289,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
                     // LIR and should not violate tree order.
                     assert(isClosed);
 
+                    ForgetParameterUses(rhsRange);
                     BlockRange().Delete(m_compiler, m_block, std::move(rhsRange));
                 }
                 else
@@ -1814,10 +2303,37 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_INTRINSIC:
             // Non-target intrinsics should have already been rewritten back into user calls.
             assert(m_compiler->IsTargetIntrinsic(node->AsIntrinsic()->gtIntrinsicName));
+#if defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+            if (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_PopCount)
+            {
+                if (RewriteHWIntrinsicCmpMaskExtractMsbPopCount(useEdge, parentStack))
+                {
+                    node = *useEdge;
+                }
+            }
+            else if ((node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_TrailingZeroCount) ||
+                     (node->AsIntrinsic()->gtIntrinsicName == NI_PRIMITIVE_LeadingZeroCount))
+            {
+                if (RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(useEdge, parentStack))
+                {
+                    node = *useEdge;
+                }
+            }
+#endif // TARGET_ARM64 && FEATURE_HW_INTRINSICS
             break;
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
+#if defined(TARGET_ARM64)
+            if (IsZeroCount(node))
+            {
+                if (RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(useEdge, parentStack))
+                {
+                    node = *useEdge;
+                    break;
+                }
+            }
+#endif // TARGET_ARM64
             RewriteHWIntrinsic(useEdge, parentStack);
             break;
 #endif // FEATURE_HW_INTRINSICS
@@ -1847,6 +2363,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
     {
         if (use.IsDummyUse())
         {
+            ForgetParameterUses(LIR::ReadOnlyRange(node, node));
             BlockRange().Remove(node);
         }
         else
@@ -1922,6 +2439,17 @@ PhaseStatus Rationalizer::DoPhase()
 {
     DBEXEC(TRUE, SanityCheck());
 
+    bool mapParameters =
+        m_compiler->opts.OptimizationEnabled() && !m_compiler->opts.IsOSR() && (m_compiler->info.compArgsCount > 0);
+#ifdef TARGET_ARM
+    // The profiler hook on arm32 does not preserve incoming argument registers.
+    mapParameters &= !m_compiler->compIsProfilerHookNeeded();
+#endif
+    if (mapParameters)
+    {
+        m_parameterUses = new (m_compiler, CMK_ABI) ParameterUses* [m_compiler->info.compArgsCount] {};
+    }
+
     m_compiler->compCurBB = nullptr;
     m_compiler->fgOrder   = Compiler::FGOrderLinear;
 
@@ -1975,11 +2503,406 @@ PhaseStatus Rationalizer::DoPhase()
         }
 
         block->SetFirstStmt(nullptr);
-
-        assert(BlockRange().CheckLIR(m_compiler, true));
     }
 
     m_compiler->compRationalIRForm = true;
 
+    if (mapParameters)
+    {
+        RewriteParameterUses();
+    }
+
     return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// ShouldRecordParameterUse:
+//   Check whether a local node reads or kills a register-passed parameter we track.
+//
+// Arguments:
+//   node - The node visited by rationalization.
+//
+// Returns:
+//   True if the node should be recorded.
+//
+bool Rationalizer::ShouldRecordParameterUse(GenTree* node)
+{
+    assert(node->OperIs(GT_LCL_FLD, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD, GT_LCL_ADDR));
+
+    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
+    unsigned             lclNum = lcl->GetLclNum();
+    if (lclNum >= m_compiler->info.compArgsCount)
+    {
+        return false;
+    }
+
+    LclVarDsc* param = m_compiler->lvaGetDesc(lclNum);
+    if (param->lvPromoted || (!param->TypeIs(TYP_STRUCT) && !param->lvDoNotEnregister) ||
+        !m_compiler->lvaGetParameterABIInfo(lclNum).HasAnyRegisterSegment())
+    {
+        return false;
+    }
+
+    if (node->OperIs(GT_LCL_FLD) && node->TypeIs(TYP_STRUCT))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// RecordParameterUse:
+//   Save a read or kill of a register-passed parameter in execution order.
+//
+// Arguments:
+//   node - The node visited by rationalization.
+//
+void Rationalizer::RecordParameterUse(GenTree* node)
+{
+    assert(m_parameterUses != nullptr);
+
+    if (!ShouldRecordParameterUse(node))
+    {
+        return;
+    }
+
+    GenTreeLclVarCommon* lcl    = node->AsLclVarCommon();
+    unsigned             lclNum = lcl->GetLclNum();
+    ParameterUses*&      uses   = m_parameterUses[lclNum];
+    if (uses == nullptr)
+    {
+        uses = new (m_compiler, CMK_ABI) ParameterUses(m_compiler->getAllocator(CMK_ABI));
+    }
+
+    uses->Uses.Push(ParameterUse{lcl, m_block});
+    uses->HasKills |= !node->OperIs(GT_LCL_FLD);
+    uses->HasReads |= node->OperIs(GT_LCL_FLD);
+}
+
+//------------------------------------------------------------------------
+// ForgetParameterUses:
+//   Invalidate recorded local uses before removing a discarded subtree.
+//
+// Arguments:
+//   range - The discarded subtree.
+//
+void Rationalizer::ForgetParameterUses(const LIR::ReadOnlyRange& range)
+{
+    if (m_parameterUses == nullptr)
+    {
+        return;
+    }
+
+    for (GenTree* node : range)
+    {
+        if (!node->OperIs(GT_LCL_FLD, GT_LCL_ADDR) || !ShouldRecordParameterUse(node))
+        {
+            continue;
+        }
+
+        ParameterUses* uses = m_parameterUses[node->AsLclVarCommon()->GetLclNum()];
+        assert(uses != nullptr);
+
+        INDEBUG(bool found = false);
+        for (ParameterUse& use : uses->Uses.TopDownOrder())
+        {
+            if (use.Node == node)
+            {
+                use.Node = nullptr;
+                INDEBUG(found = true);
+                break;
+            }
+        }
+        assert(found);
+    }
+}
+
+//------------------------------------------------------------------------
+// RewriteParameterUses:
+//   Replace field reads that must still observe the incoming parameter value.
+//
+void Rationalizer::RewriteParameterUses()
+{
+    BitVecTraits            traits(m_compiler->fgBBNumMax + 1, m_compiler);
+    BitVec                  killedOnEntry = BitVecOps::UninitVal();
+    bool                    haveKilledSet = false;
+    ArrayStack<BasicBlock*> worklist(m_compiler->getAllocator(CMK_ABI));
+
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    {
+        ParameterUses* uses = m_parameterUses[lclNum];
+        if ((uses == nullptr) || !uses->HasReads)
+        {
+            continue;
+        }
+
+        // If this parameter has any kills then compute the set of basic blocks
+        // where the local was killed on entry.
+        if (uses->HasKills)
+        {
+            if (!haveKilledSet)
+            {
+                killedOnEntry = BitVecOps::MakeEmpty(&traits);
+                haveKilledSet = true;
+            }
+            else
+            {
+                BitVecOps::ClearD(&traits, killedOnEntry);
+            }
+
+            auto queueSuccessor = [&](BasicBlock* successor) {
+                if (BitVecOps::TryAddElemD(&traits, killedOnEntry, successor->bbNum))
+                {
+                    worklist.Push(successor);
+                }
+                return BasicBlockVisit::Continue;
+            };
+
+            // A kill on any reaching path prevents using the incoming value. Include
+            // exceptional flow and backedges, even backedges into a block containing a kill.
+            BasicBlock* lastKillBlock = nullptr;
+            for (const ParameterUse& use : uses->Uses.BottomUpOrder())
+            {
+                if ((use.Node != nullptr) && !use.Node->OperIs(GT_LCL_FLD) && (use.Block != lastKillBlock))
+                {
+                    use.Block->VisitAllSuccs(m_compiler, queueSuccessor);
+                    lastKillBlock = use.Block;
+                }
+            }
+
+            while (!worklist.Empty())
+            {
+                worklist.Pop()->VisitAllSuccs(m_compiler, queueSuccessor);
+            }
+        }
+
+        BasicBlock* currentBlock = nullptr;
+        bool        killed       = false;
+        for (const ParameterUse& use : uses->Uses.BottomUpOrder())
+        {
+            if (use.Node == nullptr)
+            {
+                continue;
+            }
+
+            if (use.Block != currentBlock)
+            {
+                currentBlock = use.Block;
+                // When starting a new block use the "killed" state we computed
+                // by visiting blocks above
+                killed = uses->HasKills && BitVecOps::IsMember(&traits, killedOnEntry, currentBlock->bbNum);
+            }
+
+            if (!use.Node->OperIs(GT_LCL_FLD))
+            {
+                // Once we see a kill consider all subsequent uses killed
+                killed = true;
+            }
+            else if (!killed)
+            {
+                RewriteParameterField(currentBlock, use.Node->AsLclFld());
+            }
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// RewriteParameterField:
+//   Extract a field from a local initialized with its incoming parameter register.
+//
+// Arguments:
+//   block - Block containing the field read.
+//   fld   - Field read proven to observe the incoming parameter value.
+//
+void Rationalizer::RewriteParameterField(BasicBlock* block, GenTreeLclFld* fld)
+{
+    m_compiler->compCurBB                    = block;
+    const ABIPassingInformation& dataAbiInfo = m_compiler->lvaGetParameterABIInfo(fld->GetLclNum());
+    const ABIPassingSegment*     regSegment  = nullptr;
+    for (const ABIPassingSegment& segment : dataAbiInfo.Segments())
+    {
+        if (!segment.IsPassedInRegister())
+        {
+            continue;
+        }
+
+        assert(fld->GetLclOffs() <= m_compiler->lvaLclExactSize(fld->GetLclNum()));
+        unsigned structAccessedSize =
+            min(genTypeSize(fld), m_compiler->lvaLclExactSize(fld->GetLclNum()) - fld->GetLclOffs());
+        if ((fld->GetLclOffs() < segment.Offset) ||
+            (fld->GetLclOffs() + structAccessedSize > segment.Offset + segment.Size))
+        {
+            continue;
+        }
+
+        // TODO-CQ: Float -> !float extractions are not supported
+        // TODO-CQ: Float -> float extractions with non-zero offset is not supported
+        if (genIsValidFloatReg(segment.GetRegister()) &&
+            (!varTypeUsesFloatReg(fld) || (fld->GetLclOffs() != segment.Offset)))
+        {
+            continue;
+        }
+
+        // Found a register segment this field is contained in
+        regSegment = &segment;
+        break;
+    }
+
+    if (regSegment == nullptr)
+    {
+        return;
+    }
+
+    JITDUMP("LCL_FLD use [%06u] in " FMT_BB " of parameter V%02u is contained in ", Compiler::dspTreeID(fld),
+            block->bbNum, fld->GetLclNum());
+    DBEXEC(VERBOSE, regSegment->Dump());
+    JITDUMP("\n");
+
+    // Find the final LIR use after all statements have been rationalized.
+    LIR::Use use;
+    if (!LIR::AsRange(block).TryGetUse(fld, &use))
+    {
+        JITDUMP("  ..but no use was found\n");
+        return;
+    }
+
+    if (m_compiler->m_paramRegLocalMappings == nullptr)
+    {
+        m_compiler->m_paramRegLocalMappings =
+            new (m_compiler, CMK_ABI) ArrayStack<ParameterRegisterLocalMapping>(m_compiler->getAllocator(CMK_ABI));
+    }
+
+    const ParameterRegisterLocalMapping* existingMapping =
+        m_compiler->FindParameterRegisterLocalMappingByRegister(regSegment->GetRegister());
+
+    unsigned remappedLclNum = BAD_VAR_NUM;
+    if (existingMapping == nullptr)
+    {
+        LclVarDsc* param = m_compiler->lvaGetDesc(fld);
+        if (!param->lvDoNotEnregister)
+        {
+            m_compiler->lvaSetVarDoNotEnregister(fld->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
+        }
+
+        remappedLclNum = m_compiler->lvaGrabTemp(false DEBUGARG(
+            m_compiler->printfAlloc("V%02u.%s", fld->GetLclNum(), getRegName(regSegment->GetRegister()))));
+
+        // We always use the full width for integer registers even if the
+        // width is shorter, because various places in the JIT will type
+        // accesses larger to generate smaller code.
+
+#ifdef TARGET_WASM
+        var_types fullWidthType = genActualType(regSegment->GetRegisterType());
+#else
+        var_types fullWidthType = TYP_I_IMPL;
+#endif
+        var_types registerType =
+            genIsValidIntReg(regSegment->GetRegister()) ? fullWidthType : regSegment->GetRegisterType();
+        if ((registerType == TYP_I_IMPL) && varTypeIsGC(fld))
+        {
+            registerType = fld->TypeGet();
+        }
+
+        LclVarDsc* varDsc = m_compiler->lvaGetDesc(remappedLclNum);
+        varDsc->lvType    = genActualType(registerType);
+        JITDUMP("Created new local V%02u for the mapping\n", remappedLclNum);
+
+        m_compiler->m_paramRegLocalMappings->Emplace(regSegment, remappedLclNum, 0);
+        varDsc->lvIsParamRegTarget = true;
+
+        JITDUMP("New mapping: ");
+        DBEXEC(VERBOSE, regSegment->Dump());
+        JITDUMP(" -> V%02u\n", remappedLclNum);
+    }
+    else
+    {
+        remappedLclNum = existingMapping->LclNum;
+    }
+
+    GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
+
+#ifdef TARGET_WASM
+    if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+    {
+        // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+        const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+        const unsigned scalarSize = genTypeSize(fld);
+        assert((laneOffset % scalarSize) == 0);
+
+        const unsigned laneIndex = laneOffset / scalarSize;
+        value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                       m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                       fld->TypeGet(), genTypeSize(value));
+    }
+    else if (varTypeUsesFloatReg(value))
+#else
+    if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
+    {
+        assert(fld->GetLclOffs() == regSegment->Offset);
+
+        value->gtType = fld->TypeGet();
+
+#ifdef FEATURE_SIMD
+        // SIMD12s should be widened. We cannot do that with
+        // WidenSIMD12IfNecessary as it does not expect to see SIMD12
+        // accesses of SIMD16 locals here.
+        if (value->TypeIs(TYP_SIMD12))
+        {
+            value->gtType = TYP_SIMD16;
+        }
+#endif
+    }
+    else
+    {
+        var_types registerType = value->TypeGet();
+
+        if (fld->GetLclOffs() > regSegment->Offset)
+        {
+            assert(value->TypeIs(TYP_INT, TYP_LONG));
+            GenTree* shiftAmount = m_compiler->gtNewIconNode((fld->GetLclOffs() - regSegment->Offset) * 8, TYP_INT);
+            value = m_compiler->gtNewOperNode(varTypeIsSmall(fld) && varTypeIsSigned(fld) ? GT_RSH : GT_RSZ,
+                                              value->TypeGet(), value, shiftAmount);
+        }
+
+        // Insert explicit normalization for small types (the LCL_FLD we
+        // are replacing comes with this normalization). This is only required
+        // if we didn't get the normalization via a right shift.
+        if (varTypeIsSmall(fld) && (regSegment->Offset + genTypeSize(fld) != genTypeSize(registerType)))
+        {
+            value = m_compiler->gtNewCastNode(TYP_INT, value, false, fld->TypeGet());
+        }
+
+        // If the node is still too large then get it to the right size
+        if (genTypeSize(value) != genTypeSize(genActualType((fld))))
+        {
+            assert(genTypeSize(value) == 8);
+            assert(genTypeSize(genActualType(fld)) == 4);
+
+            if (value->OperIsScalarLocal())
+            {
+                // We can use lower bits directly
+                value->gtType = TYP_INT;
+            }
+            else
+            {
+                value = m_compiler->gtNewCastNode(TYP_INT, value, false, TYP_INT);
+            }
+        }
+
+        // Finally insert a bitcast if necessary
+        if (value->TypeGet() != genActualType(fld))
+        {
+            value = m_compiler->gtNewBitCastNode(genActualType(fld), value);
+        }
+    }
+
+    // Now replace the LCL_FLD.
+    LIR::AsRange(block).InsertAfter(fld, LIR::SeqTree(m_compiler, value));
+    use.ReplaceWith(value);
+    JITDUMP("New user tree range:\n");
+    DISPTREERANGE(LIR::AsRange(block), use.User());
+
+    LIR::AsRange(block).Remove(fld);
 }

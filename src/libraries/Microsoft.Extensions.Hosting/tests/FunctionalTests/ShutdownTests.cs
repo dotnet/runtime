@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting.IntegrationTesting;
@@ -22,21 +23,40 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                                                             "Stopped firing\n" +
                                                             "Stopped end";
         private static readonly TimeSpan s_shutdownExitTimeout = TimeSpan.FromSeconds(30);
+        private const string TestApplicationName = "Microsoft.Extensions.Hosting.TestApp";
         private readonly ITestOutputHelper _output;
+
+        // The deployer launches the test application as a portable application: that needs a muxer, plus the
+        // application's assembly and its dependency manifest sitting next to the tests. Legs that publish the
+        // tests (single file, NativeAOT, ReadyToRun) run from a self-contained publish layout which carries
+        // the assembly but no deps.json for it, so there is nothing there to launch portably.
+        public static bool CanDeployTestApplication
+        {
+            get
+            {
+                if (DotNetCommands.DotNetMuxerPath is null)
+                {
+                    return false;
+                }
+
+                var applicationPath = Path.Combine(AppContext.BaseDirectory, TestApplicationName);
+                return File.Exists(applicationPath + ".dll") && File.Exists(applicationPath + ".deps.json");
+            }
+        }
 
         public ShutdownTests(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ShutdownTests), nameof(CanDeployTestApplication))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestRun()
         {
             await ExecuteShutdownTest(nameof(ShutdownTestRun), "Run");
         }
 
-        [Fact]
+        [ConditionalFact(typeof(ShutdownTests), nameof(CanDeployTestApplication))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestWaitForShutdown()
         {
@@ -59,7 +79,7 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
                 RuntimeFlavor.CoreClr,
                 RuntimeArchitecture.x64)
             {
-                ApplicationName = "Microsoft.Extensions.Hosting.TestApp",
+                ApplicationName = TestApplicationName,
                 TargetFramework = $"net{version.Major}.{version.Minor}",
                 ApplicationType = ApplicationType.Portable,
                 PublishApplicationBeforeDeployment = true,

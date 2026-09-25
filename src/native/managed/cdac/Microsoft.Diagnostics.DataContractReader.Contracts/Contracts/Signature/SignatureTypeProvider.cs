@@ -55,6 +55,12 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<ITypeHandl
                 return null;
             return _runtimeTypeSystem.GetInstantiation(typeContext)[index];
         }
+        if (typeof(T) == typeof(MethodDescHandle))
+        {
+            MethodDescHandle methodContext = (MethodDescHandle)(object)context!;
+            ITypeHandle declaringType = _runtimeTypeSystem.GetTypeHandle(_runtimeTypeSystem.GetMethodTable(methodContext));
+            return _runtimeTypeSystem.GetInstantiation(declaringType)[index];
+        }
         throw new NotImplementedException();
     }
     public ITypeHandle? GetModifiedType(ITypeHandle? modifier, ITypeHandle? unmodifiedType, bool isRequired)

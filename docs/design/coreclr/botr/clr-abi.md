@@ -128,11 +128,20 @@ call(["this" pointer] [return buffer pointer] [generics context] [continuation] 
 call(["this" pointer] [return buffer pointer] [userargs] [continuation] [generics context])   // x86
 ```
 
-## AMD64-only: by-value value types
+## By-value value types passed by reference
 
-Just like native, AMD64 has implicit-byrefs. Any structure (value type in IL parlance) that is not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes in size) that is declared to be passed by value, is instead passed by reference. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack. However, there are some cases within remoting or reflection where apparently stackalloc is too hard, and so they pass in pointers within the GC heap, thus the JITed code must report these implicit byref parameters as interior pointers (BYREFs in JIT parlance), in case the callee is one of these reflection paths. Similarly, all writes must use checked write barriers.
+Structures (value types in IL parlance) that are declared to be passed by value are, above a certain size, passed by reference to a caller-allocated shadow copy instead. Just like native, the exact rule is architecture specific:
 
-The AMD64 native calling conventions (Windows 64 and System V) require return buffer address to be returned by callee in RAX. JIT also follows this rule.
+| Architecture | Structures passed by implicit reference |
+| --- | --- |
+| Windows AMD64 | Not 1, 2, 4, or 8 bytes in size (i.e., 3, 5, 6, 7, or >= 9 bytes) |
+| ARM64 | Larger than 16 bytes, except HFAs/HVAs (unless passed as varargs) |
+| LoongArch64, RISC-V | Larger than 16 bytes |
+| WebAssembly | Non-unwrappable structures; see [Web Assembly ABI](#web-assembly-abi-r2r-and-jit) |
+
+System V AMD64, x86 and ARM32 do not use this convention. For JIT generated code, it follows the native ABI where the passed-in reference is a pointer to a compiler generated temp local on the stack.
+
+Since .NET 12, implicit-byref argument storage must be outside the GC heap on all architectures that use this convention. Runtime callers may use explicitly GC-protected native memory instead of the stack. The caller is responsible for making a writable copy as required by by-value semantics and for reporting any GC references in that copy. Callees may omit write barriers when modifying the argument. This does not apply to explicit byref parameters or the `this` pointer of a value type, and does not remove aliasing caused by taking the argument's address within the callee. Implicit-byref argument pointers are still represented and reported as GC byrefs.
 
 ## RISC-V only: structs passed/returned according to hardware floating-point calling convention
 
@@ -142,15 +151,18 @@ Passing/returning structs according to hardware floating-point calling conventio
 
 Since .NET 10, return buffers must always be allocated on the stack by the caller. After the call, the caller is responsible for copying the return buffer to the final destination using write barriers if necessary. The JIT can assume that the return buffer is always on the stack and may optimize accordingly, such as by omitting write barriers when writing GC pointers to the return buffer. In addition, the buffer is allowed to be used for temporary storage within the method since its content must not be aliased or cross-thread visible.
 
+AMD64-only: The AMD64 native calling conventions (Windows 64 and System V) require the return buffer address to be returned by the callee in RAX. The JIT also follows this rule.
+
 ARM64-only: When a method returns a structure that is larger than 16 bytes the caller reserves a return buffer of sufficient size and alignment to hold the result. The address of the buffer is passed as an argument to the method in `R8` (defined in the JIT as `REG_ARG_RET_BUFF`). The callee isn't required to preserve the value stored in `R8`.
 
 ## Hidden parameters
 
 *Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (ARM) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
-*Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
-
-*Normal PInvoke* - The VM shares IL stubs based on signatures, but wants the right method to show up in call stack and exceptions, so the MethodDesc for the exact PInvoke is passed in the (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` (in the JIT: `REG_SECRET_STUB_PARAM`). Then in the IL stub, when the JIT gets `CORJIT_FLG_PUBLISH_SECRET_PARAM`, it must move the register into a compiler temp. The value is returned for the intrinsic `NI_System_StubHelpers_GetStubContext`.
+*Secret stub argument* - An explicit `native int` parameter with a required `System.Runtime.CompilerServices.SecretStubArgument` modifier tells the JIT to bind the parameter to (x86) `EAX` / (AMD64) `R10` / (ARM, ARM64) `R12` / (LoongArch64, RISC-V) `T2` (in the JIT: `REG_SECRET_STUB_PARAM`). Interop IL stubs use this parameter for the following values:
+- Unmanaged CALLI stubs pass the unmanaged target address.
+- Shared vararg PInvoke stubs pass the MethodDesc for the exact PInvoke.
+- Native-to-managed method and delegate stubs pass the `UMEntryThunkData` used to recover the managed target or delegate.
 
 ## Small primitive returns
 
@@ -717,9 +729,7 @@ A frame pointer, if used, points at the bottom of the "fixed" portion of the sta
 
 Arguments and return values are processed via the Type Lowering algorithm below.
 
-If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. But if the struct can be passed on the Wasm stack it is returned on the Wasm stack per the Type Lowering rules.
-
-(TBD: ABI for vector types)
+If a struct is returned via a hidden buffer, the address is supplied by the caller and passed just after the managed `this`, or after `$sp` argument when `this` is not present. In such cases the return value of the method is the address of the return value. Structs passed by value across multiple Wasm parameters are still returned through a hidden buffer.
 
 ### Type Lowering
 
@@ -735,22 +745,28 @@ Managed types are lowered to WebAssembly value types according to the following 
 | `nint`, `nuint`, pointer, byref, function pointer | `i32` (pointer-sized) |
 | Reference types (class, string, array, szarray, interface) | `i32` (pointer-sized) |
 | Value type (struct) — single primitive field, no padding | Unwrap recursively to the field's wasm type |
-| Value type (struct) — single field with padding, multiple fields, or SIMD type | Passed by reference (`i32` pointer) |
+| `Vector64<T>` | `i64` |
+| `Vector128<T>`, or a 16-byte `Vector<T>` | `v128` |
+| `Int128`, `UInt128`, `Decimal128` | Two `i64` parameters |
+| `Vector256<T>` | Two `v128` parameters |
+| `Vector512<T>` | Four `v128` parameters |
+| Value type (struct) — single field with padding, multiple fields, or another non-unwrappable SIMD type | Passed by reference (`i32` pointer) |
 | Empty struct (zero instance fields) | Not currently elided; since .NET empty structs have size 1, they are treated as non-unwrappable structs and passed by reference.|
 
 **Struct unwrapping** is recursive: a struct containing a single struct field, where the inner struct
 has the same size as the outer, is unwrapped until a primitive is reached or the rule no longer applies.
 For example, a struct `Wrapper { Inner value; }` where `Inner { int x; }` is unwrapped all the way
-to `i32`.
+to `i32`. A single-field struct wrapping one of the multi-parameter types above is passed the same
+way as the type it wraps.
 
 A struct is **not** unwrapped when:
 - It has more than one instance field.
 - It has exactly one instance field but the field's size differs from the struct's size (i.e., the
   struct has padding due to explicit layout or alignment attributes).
 
-Structs that cannot be unwrapped, including SIMD types for now, are passed by reference. The caller
-allocates space on the linear stack and passes a pointer. For return values, the caller provides a
-hidden return buffer pointer.
+Structs that cannot be unwrapped are passed by reference. The caller allocates space on the linear
+stack and passes a pointer. All multi-parameter types above, and structs that cannot be unwrapped,
+are returned through a hidden return buffer.
 
 ### Prolog
 

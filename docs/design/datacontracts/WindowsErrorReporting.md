@@ -54,7 +54,7 @@ byte[] GetWatsonBuckets(TargetPointer threadPointer)
         Data.Exception exception = target.ProcessedData.GetOrAdd<Data.Exception>(thrownObject);
         if (exception.WatsonBuckets != TargetPointer.Null)
         {
-            readFrom = target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _);
+            readFrom = target.Contracts.Object.GetArrayData(exception.WatsonBuckets, out _, out _, out _, out _, out _);
         }
         else
         {

@@ -15,12 +15,10 @@
 
 #include "pal.h"
 #include "volatile.h"
+#include "config.h"
 
 #include <fcntl.h>
 #include <errno.h>
-#if HAVE_POLL
-#include <poll.h>
-#endif
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
@@ -58,6 +56,10 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] =
     "riscv64";
 #elif defined(TARGET_LOONGARCH64)
     "loongarch64";
+#elif defined(TARGET_S390X)
+    "s390x";
+#elif defined(TARGET_POWERPC64)
+    "ppc64le";
 #else
 #error "Unsupported arch"
 #endif
@@ -364,10 +366,11 @@ public:
     void InitializeServices(const InProcCrashReporterServicesSettings& settings);
 
     // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
+    // Concurrent and recurrent crash diagnostics are serialized by the PAL's
+    // shared crash-dump gate before this is invoked.
     bool CreateReport(
         int signal,
-        void* context,
-        bool serialize);
+        void* context);
 
     // On-demand report generation. Runs the same emit core as the signal path
     // but without the watchdog or lifecycle/file management, routing the selected
@@ -587,37 +590,18 @@ public:
 bool
 InProcCrashReporter::CreateReport(
     int signal,
-    void* context,
-    bool serialize)
+    void* context)
 {
-    if (!serialize)
-    {
-        minipal_log_write_fatal("The in-proc crash reporter does not support recurrent invocations, so it is disabled for paths that may continue execution after signal handling, such as SIGTERM.\n");
-        return false;
-    }
-
+    // Concurrent and recurrent crash diagnostics are serialized by the PAL's
+    // shared crash-dump gate before this callback is invoked, so a signal-path
+    // report is only ever started once. This CAS additionally guards against
+    // overlap with the on-demand report path (which shares
+    // m_reportInFlightThreadId); on contention we bail out rather than block,
+    // since the PAL gate already owns waiting.
     LONGLONG currentThreadId = static_cast<LONGLONG>(minipal_get_current_thread_id());
-    LONGLONG previousThreadId = InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0);
-    if (previousThreadId != 0)
+    if (InterlockedCompareExchange64(&m_reportInFlightThreadId, currentThreadId, 0) != 0)
     {
-        if (previousThreadId == currentThreadId)
-        {
-            return false;
-        }
-
-#if HAVE_POLL
-        // INFTIM is not defined when including pal.h; -1 is the equivalent poll() "wait forever" timeout.
-        const int PollWaitForever = -1;
-#endif
-        while (true)
-        {
-#if HAVE_POLL
-            poll(nullptr, 0, PollWaitForever);
-#else
-            // fakepoll uses select() and is not suitable for this signal-handler path.
-            pause();
-#endif
-        }
+        return false;
     }
 
     CrashReportWatchdogScope watchdogScope;
@@ -917,7 +901,7 @@ InProcCrashReporter::EndStackOverflowTrace()
 }
 
 void
-InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool serialize)
+InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context)
 {
     (void)siginfo;
 
@@ -929,7 +913,7 @@ InProcCrashReportSignalDispatcher(int signal, void* siginfo, void* context, bool
 
     // Preserve the interrupted context's errno before the crash reporter uses syscalls.
     int savedErrno = errno;
-    reporter->CreateReport(signal, context, serialize);
+    reporter->CreateReport(signal, context);
     errno = savedErrno;
 }
 
@@ -1241,6 +1225,15 @@ CrashReportHelpers::WriteRegistersToJson(
     #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[2]))
     #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[8]))
 
+#elif defined(TARGET_S390X)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.psw.addr))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[15]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[11]))
+
+#elif defined(TARGET_POWERPC64)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gp_regs[32]))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gp_regs[1]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gp_regs[31]))
 #else
     #error "Unsupported arch"
 #endif

@@ -645,7 +645,7 @@ public:
 
             if (agg->Replacements.size() >= PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT)
             {
-                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size());
+                JITDUMP("  Promoted %zu fields in V%02u; will not promote more\n", agg->Replacements.size(), lclNum);
                 break;
             }
         }
@@ -778,7 +778,16 @@ public:
         else if (lcl->lvIsParam)
         {
             // For parameters, the backend may be able to map it directly from a register.
-            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType))
+            // Small fields can pack many values into each parameter register, so eagerly
+            // extracting rarely used fields can add substantial work and register pressure.
+            // Wider fields naturally limit the number of extractions per register.
+            // Restrict the credit for small fields with few accesses to target these cases.
+            const weight_t MIN_RELATIVE_ACCESS_WEIGHT = 0.10;
+            bool           allowBitwiseExtraction =
+                !varTypeIsSmall(access.AccessType) ||
+                (access.CountWtd + inducedCountWtd) >= MIN_RELATIVE_ACCESS_WEIGHT * comp->fgFirstBB->getBBWeight(comp);
+            if (Promotion::MapsToParameterRegister(comp, lclNum, access.Offset, access.AccessType,
+                                                   allowBitwiseExtraction))
             {
                 // No promotion will result in a store to stack in the prolog.
                 costWithout += COST_STRUCT_ACCESS_CYCLES * comp->fgFirstBB->getBBWeight(comp);
@@ -810,20 +819,6 @@ public:
         costWith += countReadBacksWtd * COST_STRUCT_ACCESS_CYCLES;
         sizeWith += countReadBacks * COST_STRUCT_ACCESS_SIZE;
 
-        // Write backs with TYP_REFs when the base local is an implicit byref
-        // involves checked write barriers, so they are very expensive. We cost that at 10 cycles.
-        const weight_t COST_WRITEBARRIER_CYCLES = 10;
-        const weight_t COST_WRITEBARRIER_SIZE   = 10;
-
-        // TODO-CQ: This should be adjusted once we type implicit byrefs as TYP_I_IMPL.
-        // Otherwise we cost it like a store to stack at 3 cycles.
-        weight_t writeBackCost = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF)
-                                     ? COST_WRITEBARRIER_CYCLES
-                                     : COST_STRUCT_ACCESS_CYCLES;
-        weight_t writeBackSize = comp->lvaIsImplicitByRefLocal(lclNum) && (access.AccessType == TYP_REF)
-                                     ? COST_WRITEBARRIER_SIZE
-                                     : COST_STRUCT_ACCESS_SIZE;
-
         // We write back before an overlapping struct use passed as an arg.
         // TODO-CQ: A store-forwarding optimization in lowering could get rid
         // of these copies; however, it requires lowering to be able to prove
@@ -839,8 +834,8 @@ public:
         // store-forwarding/forward sub to make the write backs "free".)
         weight_t countWriteBacksWtd = countOverlappedCallArgWtd;
         unsigned countWriteBacks    = countOverlappedCallArg;
-        costWith += countWriteBacksWtd * writeBackCost;
-        sizeWith += countWriteBacks * writeBackSize;
+        costWith += countWriteBacksWtd * COST_STRUCT_ACCESS_CYCLES;
+        sizeWith += countWriteBacks * COST_STRUCT_ACCESS_SIZE;
 
         // Overlapping stores are decomposable so we don't cost them as
         // being more expensive than their unpromoted counterparts (i.e. we
@@ -864,7 +859,7 @@ public:
         weight_t sizeImprovement          = sizeWithout - sizeWith;
 
         JITDUMP("  Evaluating access %s @ %03u\n", varTypeName(access.AccessType), access.Offset);
-        JITDUMP("    Single write-back cost: " FMT_WT "\n", writeBackCost);
+        JITDUMP("    Single write-back cost: " FMT_WT "\n", COST_STRUCT_ACCESS_CYCLES);
         JITDUMP("    Write backs: " FMT_WT "\n", countWriteBacksWtd);
         JITDUMP("    Read backs: " FMT_WT "\n", countReadBacksWtd);
         JITDUMP("    Estimated cycle improvement: " FMT_WT " cycles per invocation\n", cycleImprovementPerInvoc);
@@ -1116,6 +1111,15 @@ public:
                     accessFlags  = ClassifyLocalAccess(lcl, effectiveUser);
                 }
 
+#ifdef DEBUG
+                if ((accessFlags & (AccessKindFlags::IsCallRetBuf | AccessKindFlags::IsStoreDestination)) !=
+                    AccessKindFlags::None)
+                {
+                    assert(!IsInsideQmarkArm() &&
+                           "Stores to physical promotion candidates in QMARK arms must be expanded early");
+                }
+#endif
+
                 LocalUses* uses = GetOrCreateUses(lcl->GetLclNum());
                 unsigned   offs = lcl->GetLclOffs();
                 uses->RecordAccess(offs, accessType, accessLayout, accessFlags, m_curBB->getBBWeight(m_compiler));
@@ -1352,6 +1356,28 @@ public:
     }
 
 private:
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // IsInsideQmarkArm:
+    //   Check whether the current node is contained in a QMARK arm.
+    //
+    // Returns:
+    //   True if the current node is contained in a QMARK arm.
+    //
+    bool IsInsideQmarkArm()
+    {
+        for (int i = 1; i < m_ancestors.Height(); i++)
+        {
+            if (m_ancestors.Top(i)->OperIs(GT_COLON))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+#endif
+
     //------------------------------------------------------------------------
     // GetOrCreateUses:
     //   Get the uses information for a local. Create it if it does not already exist.
@@ -3032,15 +3058,17 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 //   expected to map to a register.
 //
 // Parameters:
-//   comp       - Compiler instance
-//   lclNum     - Local being accessed into
-//   offset     - Offset being accessed at
-//   accessType - Type of access
+//   comp                   - Compiler instance
+//   lclNum                 - Local being accessed into
+//   offset                 - Offset being accessed at
+//   accessType             - Type of access
+//   allowBitwiseExtraction - Whether to allow mappings requiring extraction or a register-class change
 //
 // Returns:
 //   True if the access can be efficiently done via a parameter register.
 //
-bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType)
+bool Promotion::MapsToParameterRegister(
+    Compiler* comp, unsigned lclNum, unsigned offset, var_types accessType, bool allowBitwiseExtraction)
 {
     assert(lclNum < comp->info.compArgsCount);
 
@@ -3057,7 +3085,7 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
 
     for (const ABIPassingSegment& seg : abiInfo.Segments())
     {
-        // This code corresponds to code in Lower::FindInducedParameterRegisterLocals
+        // This code corresponds to code in Rationalizer::RewriteParameterField.
         if ((offset < seg.Offset) || (offset + genTypeSize(accessType) > seg.Offset + seg.Size))
         {
             continue;
@@ -3069,6 +3097,12 @@ bool Promotion::MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigne
         }
 
         if (genIsValidFloatReg(seg.GetRegister()) && (offset != seg.Offset))
+        {
+            continue;
+        }
+
+        if (!allowBitwiseExtraction && ((offset != seg.Offset) || (genTypeSize(accessType) != seg.Size) ||
+                                        (varTypeUsesIntReg(accessType) != genIsValidIntReg(seg.GetRegister()))))
         {
             continue;
         }

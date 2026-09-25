@@ -2,6 +2,9 @@
   <PropertyGroup>
     <!-- Needed for others -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- TODO: Re-enable when browser OOP host actions can run configuration variants and import their results.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
     <DefineConstants>$(DefineConstants);IS_TESTER_APP</DefineConstants>

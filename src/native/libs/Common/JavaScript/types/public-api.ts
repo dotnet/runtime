@@ -64,6 +64,10 @@ export interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -252,6 +256,20 @@ export type AssemblyAsset = Asset & {
     name: string;
     hash?: string | null | "";
 };
+export type WebcilAsset = AssemblyAsset & {
+    /**
+     * The size in bytes of the Webcil payload to allocate. Present for every Webcil-in-wasm
+     * assembly; the runtime uses it to instantiate the image without buffering its bytes or parsing
+     * the wasm data section.
+     */
+    payloadSize?: number;
+    /**
+     * For ReadyToRun (R2R) webcil-in-wasm images only: the number of table entries the module needs.
+     * The runtime grows the indirect-call table by this amount before instantiation. Absent for
+     * plain (non-R2R) webcil.
+     */
+    tableSize?: number;
+};
 export type PdbAsset = Asset & {
     virtualPath: string;
     name: string;
@@ -267,6 +285,7 @@ export type JsAsset = Asset & {
 };
 export type SymbolsAsset = Asset & {
     name: string;
+    hash?: string | null | "";
 };
 export type VfsAsset = Asset & {
     virtualPath: string;
@@ -631,22 +650,28 @@ export type MemoryAPIType = {
 
 export type DiagnosticsAPIType = {
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      */
     collectCpuSamples: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file. Default is 60 seconds.
+     * Creates diagnostic trace file. Default is 60 seconds.
      * It could be opened in PerfView or Visual Studio as is.
      * It could be summarized by `dotnet-trace report xxx.nettrace topN -n 10`
      */
     collectMetrics: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
-     * creates diagnostic trace file.
+     * Creates diagnostic trace file.
      * It could be opened in PerfView as is.
      * It could be converted for Visual Studio using `dotnet-gcdump convert`.
      */
     collectGcDump: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
+    /**
+     * Creates a startup PGO trace file (method list, and block counts when the interpreter is instrumented).
+     * The trace stops and downloads automatically after `durationSeconds` (default 10s).
+     * Convert it with `dotnet-pgo create-mibc --trace xxx.nettrace ...` to drive a profile-guided crossgen2 build.
+     */
+    collectPgoTrace: (options?: DiagnosticCommandOptions) => Promise<Uint8Array[]>;
     /**
      * changes DOTNET_DiagnosticPorts and makes a new connection to WebSocket on that URL.
      */
@@ -723,5 +748,4 @@ export declare function exit(exitCode: number, reason?: any): void;
 export declare const dotnet: DotnetHostBuilder;
 
 export declare const createDotnetRuntime: CreateDotnetRuntimeType;
-
 

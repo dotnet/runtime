@@ -12,6 +12,7 @@ public static class OptionsHelper
     private const string CLRTestPriorityToBuildOption = "build_property.CLRTestPriorityToBuild";
     private const string TestBuildModeOption = "build_property.TestBuildMode";
     private const string RuntimeFlavorOption = "build_property.RuntimeFlavor";
+    private const string RequiresProcessIsolationOption = "build_property.RequiresProcessIsolation";
     private const string IsOutOfProcessTestAssemblyOption = "build_metadata.AdditionalFiles.IsOutOfProcessTestAssembly";
     private const string TestFilterOption = "build_property.TestFilter";
     private const string TestAssemblyRelativePathOption = "build_metadata.AdditionalFiles.TestAssemblyRelativePath";
@@ -41,6 +42,8 @@ public static class OptionsHelper
     internal static int? CLRTestPriorityToBuild(this AnalyzerConfigOptions options) => options.GetIntOption(CLRTestPriorityToBuildOption);
 
     internal static string RuntimeFlavor(this AnalyzerConfigOptions options) => options.TryGetValue(RuntimeFlavorOption, out string? flavor) ? flavor : "CoreCLR";
+
+    internal static bool RequiresProcessIsolation(this AnalyzerConfigOptions options) => options.GetBoolOption(RequiresProcessIsolationOption);
 
     internal static string? TestBuildMode(this AnalyzerConfigOptions options) => options.TryGetValue(TestBuildModeOption, out string? option) ? option : null;
 

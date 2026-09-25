@@ -13,7 +13,7 @@ ValueNumFuncDef(MapPhysicalStore, 3, false, false)   // Args: 0: map, 1: "physic
 ValueNumFuncDef(BitCast, 2, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
 ValueNumFuncDef(ZeroObj, 1, false, false)            // Args: 0: VN of the class handle.
 
-ValueNumFuncDef(PtrToLoc, 2, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
+ValueNumFuncDef(PtrToLoc, 3, false, true)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset, 2: frame version.
 ValueNumFuncDef(PtrToArrElem, 4, false, true)        // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
                                                                    // Args: 0: (VN of) the box's address if the static is "boxed",
@@ -41,6 +41,7 @@ ValueNumFuncDef(TypeHandleToRuntimeTypeHandle, 1, false, false)      // Args: 0:
 ValueNumFuncDef(LdElemA, 3, false, false)            // Args: 0: array value; 1: index value; 2: type handle of element.
 
 ValueNumFuncDef(ByrefExposedLoad, 3, false, false)      // Args: 0: type handle/id, 1: pointer value; 2: ByrefExposed heap value
+ValueNumFuncDef(ByrefExposedLocalLoad, 4, false, false) // Args: 0: type handle/id, 1: local's number, 2: offset; 3: ByrefExposed heap value
 
 ValueNumFuncDef(GetRefanyVal, 2, false, false)       // Args: 0: type handle; 1: typedref value.  Returns the value (asserting that the type is right).
 
@@ -198,7 +199,7 @@ ValueNumFuncDef(SimdType, 2, false, false)  // A value number function to compos
 ValueNumFuncDef(HWI_INTRINSIC_START, -1, false, false)
 
 #define HARDWARE_INTRINSIC(isa, name, simdSize, numArgs, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, intCost, fltCost, category, flag) \
-ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS for x86/x64
+ValueNumFuncDef(HWI_##isa##_##name, ((numArgs == -1) ? -1 : (numArgs + 1)), ((flag) & HW_Flag_Commutative) >> 0, false)   // All of the HARDWARE_INTRINSICS
 #include "hwintrinsiclist.h"
 
 ValueNumFuncDef(HWI_INTRINSIC_END, -1, false, false)

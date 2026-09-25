@@ -15,6 +15,37 @@
     <PackageReference Condition="'$(GenerateInstallers)' == 'true'" Include="Microsoft.WixToolset.Heat" Version="$(MicrosoftWixToolsetHeatVersion)" />
   </ItemGroup>
 
+  <!--
+    Generate a catalog (.cat) file covering the .js files that ship in a runtime pack. These
+    .js files are customer-modifiable runtime/toolchain files that cannot be directly
+    Authenticode-signed; the .cat provides integrity verification without preventing
+    modification. -->
+  <Target Name="GenerateJsFileCatalog"
+          AfterTargets="_GenerateFrameworkList"
+          Condition="'$(PlatformPackageType)' == 'RuntimePack'">
+    <PropertyGroup>
+      <_JsCatalogOutputPath>$(IntermediateOutputPath)runtime-js.cat</_JsCatalogOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_JsCatalogFile Include="@(FilesToPackage)" Condition="'%(Extension)' == '.js'" />
+    </ItemGroup>
+
+    <!-- Remove a stale catalog from a previous build so a pack without .js can't ship one. -->
+    <Delete Condition="'@(_JsCatalogFile)' == '' and Exists('$(_JsCatalogOutputPath)')"
+            Files="$(_JsCatalogOutputPath)" />
+
+    <GenerateFileCatalog Condition="'@(_JsCatalogFile)' != ''"
+                         Files="@(_JsCatalogFile)"
+                         OutputPath="$(_JsCatalogOutputPath)" />
+
+    <ItemGroup Condition="'@(_JsCatalogFile)' != '' and Exists('$(_JsCatalogOutputPath)')">
+      <FilesToPackage Include="$(_JsCatalogOutputPath)"
+                      TargetPath="data/runtime-js.cat" />
+    </ItemGroup>
+    <Message Condition="'@(_JsCatalogFile)' != '' and Exists('$(_JsCatalogOutputPath)')" Importance="High" Text="Generated JS catalog file: $(_JsCatalogOutputPath)" />
+  </Target>
+
   <Target Name="AddLongNameDacToPlatformManifest" DependsOnTargets="GetAssemblyVersion" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <PlatformManifestFileEntry Include="mscordaccore_$(_hostArch)_$(_longNameTargetArch)_$(FileVersion).dll" />

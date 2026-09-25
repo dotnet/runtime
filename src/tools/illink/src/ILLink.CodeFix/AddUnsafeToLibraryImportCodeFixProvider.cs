@@ -27,8 +27,14 @@ namespace ILLink.CodeFix
                 Resources.ResourceManager,
                 typeof(Resources));
 
+        /// <summary>
+        /// The generator diagnostic reported for the same methods once the assembly is on the updated memory
+        /// safety rules, at which point <c>IL5007</c> stands down.
+        /// </summary>
+        private const string RequiresExplicitSafetyModifierDiagnosticId = "SYSLIB1064";
+
         public override ImmutableArray<string> FixableDiagnosticIds =>
-            [DiagnosticId.LibraryImportRequiresExplicitSafety.AsString()];
+            [DiagnosticId.LibraryImportRequiresExplicitSafety.AsString(), RequiresExplicitSafetyModifierDiagnosticId];
 
         public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 

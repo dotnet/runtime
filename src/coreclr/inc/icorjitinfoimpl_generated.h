@@ -506,6 +506,13 @@ CORINFO_METHOD_HANDLE getAwaitReturnCall(
           CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg) override;
 
+CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
@@ -597,10 +604,6 @@ void getAddressOfPInvokeTarget(
           CORINFO_METHOD_HANDLE method,
           CORINFO_CONST_LOOKUP* pLookup) override;
 
-void* GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection) override;
-
 void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig) override;
 
@@ -683,7 +686,8 @@ bool convertPInvokeCalliToCall(
 
 bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled) override;
+          bool supportEnabled,
+          bool preserveNegativeDependency) override;
 
 void updateEntryPointForTailCall(
           CORINFO_CONST_LOOKUP* entryPoint) override;

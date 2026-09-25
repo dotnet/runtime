@@ -220,6 +220,8 @@ protected:
     unsigned                   findTargetDepth(BasicBlock* target);
     void                       WasmProduceReg(GenTree* node);
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
+    void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
+    void                       genEmitLocalGet(regNumber reg, var_types expectedType);
     void                       genEmitNullCheck(regNumber reg);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
@@ -237,14 +239,16 @@ protected:
     void genEmitEndBlock(BasicBlock* block);
 
 public:
+#if HAS_FIXED_REGISTER_SET
     void genSpillVar(GenTree* tree);
+#endif // HAS_FIXED_REGISTER_SET
 
     void genEmitCallWithCurrentGC(EmitCallParams& callParams);
 
 protected:
     void genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, regNumber callTarget = REG_NA);
 
-    void genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf);
+    void genGCWriteBarrier(GCInfo::WriteBarrierForm wbf);
 
     BasicBlock* genCreateTempLabel();
 
@@ -353,7 +357,6 @@ protected:
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
     void      genSpillOrAddRegisterParam(
              unsigned lclNum, unsigned offset, unsigned paramLclNum, const ABIPassingSegment& seg, class RegGraph* graph);
-    void genSpillOrAddNonStandardRegisterParam(unsigned lclNum, regNumber sourceReg, class RegGraph* graph);
     void genEnregisterIncomingStackArgs();
     void genEnregisterOSRArgsAndLocals(regNumber initReg, bool* pInitRegZeroed);
 
@@ -619,9 +622,6 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
     void genBeginFnProlog();
-#ifdef TARGET_WASM
-    void genInitImageBaseLocal(FuncInfoDsc* func);
-#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -640,6 +640,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsFp16();
     void genArm64EmitterUnitTestsSve();
     void genArm64EmitterUnitTestsPac();
 #endif
@@ -816,6 +817,7 @@ protected:
 
     void genCodeForDivMod(GenTreeOp* treeNode);
     void genCodeForMul(GenTreeOp* treeNode);
+    void genCodeForBitOp(GenTreeOp* treeNode);
     void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
     void genLeaInstruction(GenTreeAddrMode* lea);
@@ -954,7 +956,7 @@ protected:
     void genCompareFloat(GenTreeOp* treeNode);
     void genCompareInt(GenTreeOp* treeNode);
 #ifdef TARGET_XARCH
-    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, var_types opType);
+    bool     genCanAvoidEmittingCompareAgainstZero(GenTree* tree, emitAttr opSize);
     GenTree* genTryFindFlagsConsumer(GenTree* flagsProducer, GenCondition** condition);
 #endif
 
@@ -1010,6 +1012,7 @@ protected:
     void genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
+    void ClearUnusedMaskBits(regNumber maskReg, uint32_t count);
     void genFmaIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genPermuteVar2x(GenTreeHWIntrinsic* node, insOpts instOptions);
     void genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins);
@@ -1174,6 +1177,9 @@ protected:
 #if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
     void genConsumeMultiOpOperands(GenTreeMultiOp* tree);
 #endif
+#ifdef DEBUG
+    void genCheckTailCallEpilogRegisters(GenTreeCall* call);
+#endif
     void genEmitGSCookieCheck(bool tailCall);
     void genCodeForShift(GenTree* tree);
 
@@ -1203,7 +1209,8 @@ protected:
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef TARGET_WASM
-    void genCodeForFrameSize(GenTree* tree);
+    void           genCodeForFrameSize(GenTree* tree);
+    cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
@@ -1669,6 +1676,7 @@ public:
 
     void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
+#ifdef HAS_FIXED_REGISTER_SET
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
     void instGen_Set_Reg_To_Base_Plus_Imm(emitAttr  size,
@@ -1683,6 +1691,7 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_AMD64)
     void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);

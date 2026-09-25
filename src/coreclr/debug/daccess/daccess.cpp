@@ -5335,6 +5335,18 @@ ClrDataAccess::RawGetMethodName(
     PTR_StubManager pStubManager;
     MethodDesc* methodDesc = NULL;
 
+    EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(taddr));
+    if (codeInfo.IsValid())
+    {
+        if (displacement)
+        {
+            *displacement = codeInfo.GetRelOffset();
+        }
+
+        methodDesc = codeInfo.GetMethodDesc();
+        return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
+    }
+
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
     {
@@ -6546,7 +6558,9 @@ CLRDataCreateInstance(REFIID iid,
     if (enable.IsSet())
     {
         DWORD val;
-        if (enable.TryAsInteger(10, val) && val == 1)
+        // cDAC does not yet support the memory enumeration used to create debugger dumps.
+        if (enable.TryAsInteger(10, val) && val == 1 &&
+            !(IsEqualIID(iid, __uuidof(ICLRDataEnumMemoryRegions))))
         {
             // TODO: [cdac] TryGetSymbol is only implemented for Linux, OSX, and Windows.
             uint64_t contractDescriptorAddr = 0;
@@ -6560,11 +6574,11 @@ CLRDataCreateInstance(REFIID iid,
                 if (cdac.IsValid())
                 {
                     // Get SOS interfaces from the cDAC if available.
-                    cdac.CreateSosInterface(&cdacInterface);
-                    _ASSERTE(cdacInterface != nullptr);
-
-                    // Lifetime is now managed by cDAC implementation of SOS interfaces
-                    pClrDataAccess->Release();
+                    if (cdac.CreateSosInterface(&cdacInterface) == S_OK && cdacInterface != nullptr)
+                    {
+                        // Lifetime is now managed by cDAC implementation of SOS interfaces.
+                        pClrDataAccess->Release();
+                    }
                 }
 
                 // Release the AddRef from the QI.

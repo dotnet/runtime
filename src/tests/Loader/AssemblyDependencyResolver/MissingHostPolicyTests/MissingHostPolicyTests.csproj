@@ -3,6 +3,7 @@
     <!-- Needed for NativeAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <!-- AssemblyDependencyResolver is not supported -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

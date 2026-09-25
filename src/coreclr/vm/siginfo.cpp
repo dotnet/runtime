@@ -626,7 +626,6 @@ void MetaSig::Init(
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         PRECONDITION(CheckPointer(szMetaSig));
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(CheckPointer(pTypeContext, NULL_OK));
@@ -779,7 +778,6 @@ static BOOL MethodDescMatchesSig(MethodDesc* pMD, PCCOR_SIGNATURE pSig, DWORD cS
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -800,7 +798,6 @@ MetaSig::MetaSig(BinderMethodID id)
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -819,7 +816,6 @@ MetaSig::MetaSig(LPHARDCODEDMETASIG pwzMetaSig)
         THROWS;
         MODE_ANY;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -901,7 +897,6 @@ MetaSig::NextArg()
         NOTHROW;
         MODE_ANY;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -972,7 +967,6 @@ IsTypeRefOrDef(
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -1109,7 +1103,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != ClassLoader::LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         PRECONDITION(CheckPointer(pModule));
         PRECONDITION(level > CLASS_LOAD_BEGIN && level <= CLASS_LOADED);
@@ -1965,7 +1958,6 @@ TypeHandle SigPointer::GetGenericInstType(ModuleBase *        pModule,
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(return TypeHandle();); }
         if (FORBIDGC_LOADER_USE_ENABLED() || fLoadTypes != ClassLoader::LoadTypes) { LOADS_TYPE(CLASS_LOAD_BEGIN); } else { LOADS_TYPE(level); }
         SUPPORTS_DAC;
     }
@@ -2067,7 +2059,6 @@ TypeHandle SigPointer::GetTypeVariableThrowing(ModuleBase *pModule, // unused - 
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         MODE_ANY;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         SUPPORTS_DAC;
     }
     CONTRACTL_END
@@ -2396,7 +2387,6 @@ BOOL SigPointer::HasCustomModifier(Module *pModule, LPCSTR szModName, CorElement
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -2478,7 +2468,6 @@ BOOL SigPointer::IsTypeDef(mdTypeDef* pTypeDef) const
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -2514,7 +2503,6 @@ CorElementType SigPointer::PeekElemTypeNormalized(Module* pModule, const SigType
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -2563,7 +2551,6 @@ SigPointer::PeekElemTypeClosed(
         INSTANCE_CHECK;
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -2649,7 +2636,6 @@ mdTypeRef SigPointer::PeekValueTypeTokenClosed(Module *pModule, const SigTypeCon
         NOTHROW;
         GC_NOTRIGGER;
         PRECONDITION(PeekElemTypeClosed(NULL, pTypeContext) == ELEMENT_TYPE_VALUETYPE);
-        FORBID_FAULT;
         MODE_ANY;
     }
     CONTRACTL_END
@@ -2725,7 +2711,6 @@ UINT MetaSig::GetElemSize(CorElementType etype, TypeHandle thValueType)
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
     }
@@ -2763,7 +2748,6 @@ UINT SigPointer::SizeOf(Module* pModule, const SigTypeContext *pTypeContext, Typ
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         UNCHECKED(PRECONDITION(CheckPointer(pModule)));
         UNCHECKED(PRECONDITION(CheckPointer(pTypeContext, NULL_OK)));
@@ -2814,7 +2798,6 @@ CorElementType MetaSig::GetByRefType(TypeHandle *pTy) const
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -3251,7 +3234,6 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3368,7 +3350,6 @@ BOOL CompareTypeDefsForEquivalence(mdToken tk1, mdToken tk2, Module *pModule1, M
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END;
@@ -3543,7 +3524,6 @@ BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, ModuleBase *pModule1, ModuleBas
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -3788,7 +3768,6 @@ MetaSig::CompareElementType(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4394,7 +4373,6 @@ MetaSig::CompareTypeDefsUnderSubstitutions(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4467,7 +4445,6 @@ TypeHandleCompareHelper(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4492,7 +4469,6 @@ MetaSig::CompareMethodSigs(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4557,7 +4533,6 @@ MetaSig::CompareMethodSigs(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4774,7 +4749,6 @@ MetaSig::CompareElementTypeToToken(
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4927,7 +4901,6 @@ BOOL MetaSig::CompareTypeSpecToToken(mdTypeSpec tk1,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -4959,7 +4932,6 @@ BOOL MetaSig::CompareTypeDefOrRefOrSpec(ModuleBase *pModule1, mdToken tok1,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -5008,7 +4980,6 @@ BOOL MetaSig::CompareVariableConstraints(const Substitution *pSubst1,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -5111,7 +5082,6 @@ BOOL MetaSig::CompareMethodConstraints(const Substitution *pSubst1,
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_ANY;
     }
     CONTRACTL_END
@@ -5353,7 +5323,6 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
     }
     CONTRACTL_END

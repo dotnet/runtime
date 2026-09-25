@@ -133,6 +133,7 @@ struct JitInterfaceCallbacks
     void (* getEEInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_EE_INFO* pEEInfoOut);
     void (* getAsyncInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_ASYNC_INFO* pAsyncInfoOut);
     CORINFO_METHOD_HANDLE (* getAwaitReturnCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
+    CORINFO_METHOD_HANDLE (* getAwaitAwaiterInContinuationCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isUnsafe, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
     mdMethodDef (* getMethodDefFromMethod)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE hMethod);
     size_t (* printMethodName)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, char* buffer, size_t bufferSize, size_t* pRequiredBufferSize);
     const char* (* getMethodNameFromMetadata)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, const char** className, const char** namespaceName, const char** enclosingClassNames, size_t maxEnclosingClassNames);
@@ -155,7 +156,6 @@ struct JitInterfaceCallbacks
     void (* embedGenericHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool fEmbedParent, CORINFO_METHOD_HANDLE callerHandle, CORINFO_GENERICHANDLE_RESULT* pResult);
     void (* getLocationOfThisType)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE context, CORINFO_LOOKUP_KIND* pLookupKind);
     void (* getAddressOfPInvokeTarget)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_CONST_LOOKUP* pLookup);
-    void* (* GetCookieForPInvokeCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig, void** ppIndirection);
     void* (* GetCookieForInterpreterCalliSig)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_SIG_INFO* szMetaSig);
     CORINFO_JUST_MY_CODE_HANDLE (* getJustMyCodeHandle)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE method, CORINFO_JUST_MY_CODE_HANDLE** ppIndirection);
     void (* GetProfilingHandle)(void * thisHandle, CorInfoExceptionClass** ppException, bool* pbHookFunction, void** pProfilerHandle, bool* pbIndirectedHandles);
@@ -173,7 +173,7 @@ struct JitInterfaceCallbacks
     CORINFO_CLASS_HANDLE (* getContinuationType)(void * thisHandle, CorInfoExceptionClass** ppException, size_t dataSize, bool* objRefs, size_t objRefsSize);
     CORINFO_METHOD_HANDLE (* getAsyncResumptionStub)(void * thisHandle, CorInfoExceptionClass** ppException, void** entryPoint);
     bool (* convertPInvokeCalliToCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool mustConvert);
-    bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_InstructionSet instructionSet, bool supportEnabled);
+    bool (* notifyInstructionSetUsage)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_InstructionSet instructionSet, bool supportEnabled, bool preserveNegativeDependency);
     void (* updateEntryPointForTailCall)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* entryPoint);
     void (* allocMem)(void * thisHandle, CorInfoExceptionClass** ppException, AllocMemArgs* pArgs);
     void (* reserveUnwindInfo)(void * thisHandle, CorInfoExceptionClass** ppException, bool isFunclet, bool isColdCode, uint32_t unwindSize);
@@ -1384,6 +1384,19 @@ public:
     return temp;
 }
 
+    virtual CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    CorInfoExceptionClass* pException = nullptr;
+    CORINFO_METHOD_HANDLE temp = _callbacks->getAwaitAwaiterInContinuationCall(_thisHandle, &pException, callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    if (pException != nullptr) throw pException;
+    return temp;
+}
+
     virtual mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod)
 {
@@ -1598,16 +1611,6 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual void* GetCookieForPInvokeCalliSig(
-          CORINFO_SIG_INFO* szMetaSig,
-          void** ppIndirection)
-{
-    CorInfoExceptionClass* pException = nullptr;
-    void* temp = _callbacks->GetCookieForPInvokeCalliSig(_thisHandle, &pException, szMetaSig, ppIndirection);
-    if (pException != nullptr) throw pException;
-    return temp;
-}
-
     virtual void* GetCookieForInterpreterCalliSig(
           CORINFO_SIG_INFO* szMetaSig)
 {
@@ -1789,10 +1792,11 @@ public:
 
     virtual bool notifyInstructionSetUsage(
           CORINFO_InstructionSet instructionSet,
-          bool supportEnabled)
+          bool supportEnabled,
+          bool preserveNegativeDependency)
 {
     CorInfoExceptionClass* pException = nullptr;
-    bool temp = _callbacks->notifyInstructionSetUsage(_thisHandle, &pException, instructionSet, supportEnabled);
+    bool temp = _callbacks->notifyInstructionSetUsage(_thisHandle, &pException, instructionSet, supportEnabled, preserveNegativeDependency);
     if (pException != nullptr) throw pException;
     return temp;
 }

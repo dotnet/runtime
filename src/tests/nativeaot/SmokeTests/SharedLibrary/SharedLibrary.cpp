@@ -77,8 +77,7 @@ int main(int argc, char* argv[])
 #ifdef TARGET_WINDOWS
     FreeLibrary(handle);
 #else
-    // TODO: How to pin the library in memory on Unix?
-    // dlclose(handle);
+    dlclose(handle);
 #endif
 
     return 100;

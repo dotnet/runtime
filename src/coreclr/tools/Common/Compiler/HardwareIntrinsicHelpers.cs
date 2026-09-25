@@ -233,6 +233,7 @@ namespace ILCompiler
             public const int SveSha3 = (1 << 14);
             public const int SveSm4 = (1 << 15);
             public const int Cssc = (1 << 16);
+            public const int Fp16 = (1 << 17);
 
             public static void AddToBuilder(InstructionSetSupportBuilder builder, int flags)
             {
@@ -270,6 +271,8 @@ namespace ILCompiler
                     builder.AddSupportedInstructionSet("sve_sm4");
                 if ((flags & Cssc) != 0)
                     builder.AddSupportedInstructionSet("cssc");
+                if ((flags & Fp16) != 0)
+                    builder.AddSupportedInstructionSet("fp16");
             }
 
             public static int FromInstructionSet(InstructionSet instructionSet)
@@ -292,6 +295,8 @@ namespace ILCompiler
                     InstructionSet.ARM64_Dp_Arm64 => Dp,
                     InstructionSet.ARM64_Rdm => Rdm,
                     InstructionSet.ARM64_Rdm_Arm64 => Rdm,
+                    InstructionSet.ARM64_Fp16 => Fp16,
+                    InstructionSet.ARM64_Fp16_Arm64 => Fp16,
                     InstructionSet.ARM64_Sha1 => Sha1,
                     InstructionSet.ARM64_Sha1_Arm64 => Sha1,
                     InstructionSet.ARM64_Sha256 => Sha256,

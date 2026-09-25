@@ -12,6 +12,11 @@
 void BridgeResetData();
 MarkCrossReferencesArgs* ProcessBridgeObjects();
 
+// Decides whether this collection should hand a fresh set of cross references to the client.
+// Returns false when the client is still processing a previous set, since the new one would
+// just be discarded.
+bool ShouldProcessBridgeObjects();
+
 void RegisterBridgeObject(Object *object, uintptr_t context);
 uint8_t** GetRegisteredBridges(size_t *pNumBridges);
 

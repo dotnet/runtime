@@ -7,8 +7,10 @@
     <Compile Include="EncoderFallbackBufferHelper.cs" />
     <Compile Include="EncodingCodePages.cs" />
     <Compile Include="EncodingCodePages.netcoreapp.cs" Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
+    <Compile Include="GB18030\EncodingTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <ProjectReference Include="..\src\System.Text.Encoding.CodePages.csproj" />
   </ItemGroup>
+  <Import Project="$(CommonTestPath)ComplianceTests\GB18030\GB18030.Shared.projitems" />
 </Project>

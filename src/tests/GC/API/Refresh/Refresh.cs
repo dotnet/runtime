@@ -8,8 +8,24 @@ namespace Refresh
 {
     public static class Program
     {
+        public static bool UsesGcWithRegions 
+        {
+            get
+            {
+                // This is a way to guess if the runtime is using GC with regions, since we have no precise way to query that.
+                // It works for this test since we don't set the GCRegionRange explicitly, and the default value is 0 
+                // for non-GC with regions runtimes, and non-zero for GC with regions runtimes.
+                if (GC.GetConfigurationVariables().TryGetValue("GCRegionRange", out object? value) &&
+                    value is long range && range != 0)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
         [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
-        [Fact]
+        [ConditionalFact(typeof(Program), nameof(UsesGcWithRegions))]
         public static int TestEntryPoint()
         {
             long hundred_mb = 100 * 1024 * 1024;

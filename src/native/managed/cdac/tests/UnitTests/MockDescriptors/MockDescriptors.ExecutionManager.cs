@@ -667,8 +667,9 @@ internal sealed class MockExecutionManagerBuilder
     internal Layout<MockImageDataDirectory> ImageDataDirectoryLayout { get; }
     internal Layout<MockRuntimeFunction> RuntimeFunctionLayout => _runtimeFunctions.RuntimeFunctionLayout;
     internal Layout<MockUnwindInfo> UnwindInfoLayout => _runtimeFunctions.UnwindInfoLayout;
-    internal (string Name, ulong Value)[] Globals { get; }
+    internal (string Name, ulong Value)[] Globals { get; private set; }
     internal ulong EEJitManagerAddress { get; }
+    internal ulong InterpreterJitManagerAddress { get; private set; }
     internal ulong RangeSectionMapTopLevelAddress => _rangeSectionMapTopLevelAddress;
 
     private readonly MockRuntimeFunctionsBuilder _runtimeFunctions;
@@ -743,12 +744,27 @@ internal sealed class MockExecutionManagerBuilder
     public void SetAllCodeHeaps(ulong headNodeAddress)
         => _eeJitManager.AllCodeHeaps = headNodeAddress;
 
+    public void SetInterpreterCodeHeaps(ulong headNodeAddress)
+    {
+        MockEEJitManager interpreterJitManager = AllocateAndCreate(EEJitManagerLayout, "InterpreterJitManager");
+        interpreterJitManager.AllCodeHeaps = headNodeAddress;
+        InterpreterJitManagerAddress = interpreterJitManager.Address;
+
+        ulong interpreterJitManagerGlobalAddress = AddPointerGlobal(
+            InterpreterJitManagerAddress,
+            "InterpreterJitManagerGlobalPointer");
+        Globals =
+        [
+            .. Globals,
+            (nameof(Constants.Globals.InterpreterJitManagerAddress), interpreterJitManagerGlobalAddress),
+        ];
+    }
+
     internal NibbleMapTestBuilderBase CreateNibbleMap(ulong codeRangeStart, uint codeRangeSize)
     {
         NibbleMapTestBuilderBase nibBuilder = Version switch
         {
             "c1" => new NibbleMapTestBuilder_1(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
-            "c2" => new NibbleMapTestBuilder_2(codeRangeStart, codeRangeSize, _nibbleMapAllocator, Builder.TargetTestHelpers.Arch),
             _ => throw new InvalidOperationException($"Unknown version '{Version}'"),
         };
 

@@ -188,7 +188,6 @@ namespace
         const fx_reference_t & fx_ref,
         const pal::string_t & oldest_requested_version,
         const pal::string_t & dotnet_dir,
-        const bool disable_multilevel_lookup,
         const std::vector<pal::string_t>& disabled_versions)
     {
 #if defined(DEBUG)
@@ -203,107 +202,88 @@ namespace
         trace::verbose(_X("--- Resolving FX directory, name '%s' version '%s'"),
             fx_ref.get_fx_name().c_str(), fx_ref.get_fx_version().c_str());
 
-        std::vector<pal::string_t> hive_dir;
-        get_framework_locations(dotnet_dir, disable_multilevel_lookup, &hive_dir);
-
         pal::string_t selected_fx_dir;
         pal::string_t selected_fx_version;
-        fx_ver_t selected_ver;
 
         pal::string_t deps_file_name = fx_ref.get_fx_name() + _X(".deps.json");
-        for (pal::string_t& dir : hive_dir)
+        pal::string_t fx_dir = dotnet_dir;
+        trace::verbose(_X("Searching FX directory in [%s]"), fx_dir.c_str());
+
+        append_path(&fx_dir, _X("shared"));
+        append_path(&fx_dir, fx_ref.get_fx_name().c_str());
+
+        // Roll forward is disabled when:
+        //   roll_forward is set to Disable
+        //   roll_forward is set to LatestPatch AND
+        //     apply_patches is false AND
+        //     release framework reference (this is for backward compat with pre-release rolling over pre-release portion of version ignoring apply_patches)
+        //   use exact version is set (this is when --fx-version was used on the command line)
+        if ((fx_ref.get_version_compatibility_range() == version_compatibility_range_t::exact) ||
+            ((fx_ref.get_version_compatibility_range() == version_compatibility_range_t::patch) && (!fx_ref.get_apply_patches() && !fx_ref.get_fx_version_number().is_prerelease())))
         {
-            auto fx_dir = dir;
-            trace::verbose(_X("Searching FX directory in [%s]"), fx_dir.c_str());
+            trace::verbose(
+                _X("Did not roll forward because apply_patches=%d, version_compatibility_range=%s chose [%s]"),
+                fx_ref.get_apply_patches(),
+                version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
+                fx_ref.get_fx_version().c_str());
 
-            append_path(&fx_dir, _X("shared"));
-            append_path(&fx_dir, fx_ref.get_fx_name().c_str());
-
-            // Roll forward is disabled when:
-            //   roll_forward is set to Disable
-            //   roll_forward is set to LatestPatch AND
-            //     apply_patches is false AND
-            //     release framework reference (this is for backward compat with pre-release rolling over pre-release portion of version ignoring apply_patches)
-            //   use exact version is set (this is when --fx-version was used on the command line)
-            if ((fx_ref.get_version_compatibility_range() == version_compatibility_range_t::exact) ||
-                ((fx_ref.get_version_compatibility_range() == version_compatibility_range_t::patch) && (!fx_ref.get_apply_patches() && !fx_ref.get_fx_version_number().is_prerelease())))
+            append_path(&fx_dir, fx_ref.get_fx_version().c_str());
+            if (file_exists_in_dir(fx_dir, deps_file_name.c_str(), nullptr))
             {
-                trace::verbose(
-                    _X("Did not roll forward because apply_patches=%d, version_compatibility_range=%s chose [%s]"),
-                    fx_ref.get_apply_patches(),
-                    version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
-                    fx_ref.get_fx_version().c_str());
-
-                append_path(&fx_dir, fx_ref.get_fx_version().c_str());
-                if (file_exists_in_dir(fx_dir, deps_file_name.c_str(), nullptr))
+                if (std::find(disabled_versions.begin(), disabled_versions.end(), fx_ref.get_fx_version()) == disabled_versions.end())
                 {
-                    if (std::find(disabled_versions.begin(), disabled_versions.end(), fx_ref.get_fx_version()) != disabled_versions.end())
+                    selected_fx_dir = fx_dir;
+                    selected_fx_version = fx_ref.get_fx_version();
+                }
+                else
+                {
+                    trace::verbose(_X("Ignoring disabled version [%s]"), fx_ref.get_fx_version().c_str());
+                }
+            }
+        }
+        else
+        {
+            std::vector<pal::string_t> list;
+            std::vector<fx_ver_t> version_list;
+            pal::readdir_onlydirectories(fx_dir, &list);
+
+            for (const auto& version : list)
+            {
+                fx_ver_t ver;
+                if (fx_ver_t::parse(version, &ver))
+                {
+                    if (std::find(disabled_versions.begin(), disabled_versions.end(), version) != disabled_versions.end())
                     {
-                        trace::verbose(_X("Ignoring disabled version [%s]"), fx_ref.get_fx_version().c_str());
+                        trace::verbose(_X("Ignoring disabled version [%s]"), version.c_str());
                         continue;
                     }
 
-                    selected_fx_dir = fx_dir;
-                    selected_fx_version = fx_ref.get_fx_version();
-                    break;
+                    version_list.push_back(ver);
                 }
             }
-            else
+
+            fx_ver_t resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
+            while (resolved_ver != fx_ver_t())
             {
-                std::vector<pal::string_t> list;
-                std::vector<fx_ver_t> version_list;
-                pal::readdir_onlydirectories(fx_dir, &list);
+                pal::string_t resolved_ver_str = resolved_ver.as_str();
+                pal::string_t resolved_fx_dir = fx_dir;
+                append_path(&resolved_fx_dir, resolved_ver_str.c_str());
 
-                for (const auto& version : list)
+                // Check that the framework's .deps.json exists. To minimize the file checks done in the most common
+                // scenario (.deps.json exists), only check after resolving the version and if the .deps.json doesn't
+                // exist, attempt resolving again without that version.
+                if (!file_exists_in_dir(resolved_fx_dir, deps_file_name.c_str(), nullptr))
                 {
-                    fx_ver_t ver;
-                    if (fx_ver_t::parse(version, &ver))
-                    {
-                        if (std::find(disabled_versions.begin(), disabled_versions.end(), version) != disabled_versions.end())
-                        {
-                            trace::verbose(_X("Ignoring disabled version [%s]"), version.c_str());
-                            continue;
-                        }
-
-                        version_list.push_back(ver);
-                    }
+                    // Remove the version and try resolving again
+                    trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), resolved_ver_str.c_str());
+                    version_list.erase(std::find(version_list.cbegin(), version_list.cend(), resolved_ver));
+                    resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
                 }
-
-                fx_ver_t resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
-                while (resolved_ver != fx_ver_t())
+                else
                 {
-                    pal::string_t resolved_ver_str = resolved_ver.as_str();
-                    pal::string_t resolved_fx_dir = fx_dir;
-                    append_path(&resolved_fx_dir, resolved_ver_str.c_str());
-
-                    // Check that the framework's .deps.json exists. To minimize the file checks done in the most common
-                    // scenario (.deps.json exists), only check after resolving the version and if the .deps.json doesn't
-                    // exist, attempt resolving again without that version.
-                    if (!file_exists_in_dir(resolved_fx_dir, deps_file_name.c_str(), nullptr))
-                    {
-                        // Remove the version and try resolving again
-                        trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), resolved_ver_str.c_str());
-                        version_list.erase(std::find(version_list.cbegin(), version_list.cend(), resolved_ver));
-                        resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
-                    }
-                    else
-                    {
-                        if (selected_ver != fx_ver_t())
-                        {
-                            // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
-                            resolved_ver = resolve_framework_reference_from_version_list({ resolved_ver, selected_ver }, fx_ref);
-                        }
-
-                        if (resolved_ver != selected_ver)
-                        {
-                            trace::verbose(_X("Changing Selected FX version from [%s] to [%s]"), selected_fx_dir.c_str(), resolved_fx_dir.c_str());
-                            selected_ver = resolved_ver;
-                            selected_fx_dir = resolved_fx_dir;
-                            selected_fx_version = resolved_ver_str;
-                        }
-
-                        break;
-                    }
+                    selected_fx_dir = resolved_fx_dir;
+                    selected_fx_version = resolved_ver_str;
+                    break;
                 }
             }
         }
@@ -348,9 +328,8 @@ std::vector<pal::string_t> fx_resolver_t::get_disabled_versions()
     return disabled_versions;
 }
 
-fx_resolver_t::fx_resolver_t(bool disable_multilevel_lookup, const runtime_config_t::settings_t& override_settings)
-    : m_disable_multilevel_lookup{disable_multilevel_lookup}
-    , m_override_settings{override_settings}
+fx_resolver_t::fx_resolver_t(const runtime_config_t::settings_t& override_settings)
+    : m_override_settings{override_settings}
     , m_disabled_versions{get_disabled_versions()}
 { }
 
@@ -485,7 +464,7 @@ StatusCode fx_resolver_t::read_framework(
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
             // Resolve the effective framework reference against the existing physical framework folders
-            std::unique_ptr<fx_definition_t> fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), dotnet_root, m_disable_multilevel_lookup, m_disabled_versions);
+            std::unique_ptr<fx_definition_t> fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), dotnet_root, m_disabled_versions);
             if (fx == nullptr)
             {
                 resolution_failure.missing = std::move(new_effective_fx_ref);
@@ -547,7 +526,7 @@ StatusCode fx_resolver_t::resolve_frameworks(
     fx_definition_vector_t& fx_definitions,
     resolution_failure_info& resolution_failure)
 {
-    fx_resolver_t resolver{ app_config.get_is_multilevel_lookup_disabled(), override_settings };
+    fx_resolver_t resolver{ override_settings };
 
     // Read the shared frameworks; retry is necessary when a framework is already resolved, but then a newer compatible version is processed.
     StatusCode rc = StatusCode::Success;
@@ -587,7 +566,7 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
                 _X("Architecture: %s"),
                 app_display_name,
                 get_current_arch_name());
-            display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), dotnet_root, app_config.get_is_multilevel_lookup_disabled());
+            display_missing_framework_error(resolution_failure.missing.get_fx_name(), resolution_failure.missing.get_fx_version(), dotnet_root);
             break;
         case StatusCode::FrameworkCompatFailure:
             display_incompatible_framework_error(resolution_failure.incompatible_higher.get_fx_version(), resolution_failure.incompatible_lower);

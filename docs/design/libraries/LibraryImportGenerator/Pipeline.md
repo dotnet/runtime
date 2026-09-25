@@ -8,7 +8,31 @@ The P/Invoke source generator is responsible for finding all methods marked with
 1. [Generate the corresponding P/Invoke](#pinvoke)
 1. Add the generated source to the compilation.
 
-The pipeline uses the Roslyn [Syntax APIs](https://learn.microsoft.com/dotnet/api/microsoft.codeanalysis.csharp.syntax) to create the generated code. This imposes some structure for the marshalling generators and allows for easier inspection or modification (if desired) of the generated code.
+## Text emission
+
+The interop generators share their text-emission infrastructure in
+`src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration`.
+Input analysis extracts type names, attributes, containing declarations, and marshalling
+information into value models. Emission operates on these models, not on syntax trees.
+`ContainingSyntaxContext` stores syntax-independent `DeclarationHeader` values shared
+with the JSON source generator. `ContainingTypeUtilities` in
+`src/libraries/Common/src/SourceGenerators` supplies containing-type traversal and
+declaration formatting; interop retains source-spelled names, while JSON uses symbol-formatted
+names and requires every containing type to be partial. Generic-parameter attributes remain
+on the original declaration rather than being repeated on generated partial declarations.
+`GeneratedParameter` and `GeneratedMethodSignature` describe signatures, and
+`IndentedTextWriter` writes statements and scoped blocks with deterministic line endings.
+
+Marshallers write each marshalling stage to a writer. The stub generators compose those
+stages while preserving pinning scopes, exception handling, and resource-cleanup order.
+Callers that need local functions own the body block, call `GenerateStubStatements`,
+and emit the local function declarations themselves.
+The pin stage writes `fixed` headers; the caller supplies the enclosed block. Close all
+writer block scopes before obtaining their text with `ToString()`. Literal values must be
+escaped with `CodeWriterHelpers.StringLiteral`, rather than interpolated as C# source.
+
+Roslyn syntax APIs remain appropriate for inspecting input declarations and implementing
+code fixes. They should not be used to construct, parse, or normalize generated output.
 
 ## Symbol and metadata processing
 
@@ -58,7 +82,7 @@ The marshalling generators are responsible for generating the code for each [sta
 
 ## Stub code generation
 
-Generation of the stub code happens in stages. The marshalling generator for each parameter and return is called to generate code for each stage of the stub. The statements and syntax provided by each marshalling generator for each stage combine to form the full stub implementation.
+Generation of the stub code happens in stages. The marshalling generator for each parameter and return is called to generate code for each stage of the stub. The text written by each marshalling generator for each stage combines to form the full stub implementation.
 
 The stub code generator itself will handle some initial setup and variable declarations:
 - Assign `out` parameters to `default`
@@ -74,7 +98,7 @@ The stub code generator itself will handle some initial setup and variable decla
     - Call `Generate` on the marshalling generator for every parameter
 1. `Pin`: data pinning in preparation for calling the generated P/Invoke
     - Call `Generate` on the marshalling generator for every parameter
-    - Ignore any statements that are not `fixed` statements
+    - Write only `fixed` headers; the stub code generator supplies the enclosed block
 1. `PinnedMarshal`: conversion of managed to native data
     - Call `Generate` on the marshalling generator for every parameter
 1. `Invoke`: call to the generated P/Invoke
@@ -83,6 +107,12 @@ The stub code generator itself will handle some initial setup and variable decla
 1. `NotifyForSuccessfulInvoke`: Notify a marshaller that all stages through the "Invoke" stage were successful.
     - Used to keep alive any objects who's native representation won't keep them alive across the call.
     - Call `Generate` on the marshalling generator for every parameter.
+1. `ErrorUnmarshal`: capture and convert native error values before ordinary output values.
+    - Call `Generate` for the `UnmarshalCapture` and `Unmarshal` stages only on marshallers marked as error-handling positions.
+    - For a managed-to-unmanaged stub, run after `NotifyForSuccessfulInvoke` and before ordinary unmarshalling so an error marshaller can throw without reading potentially invalid outputs.
+    - For an unmanaged-to-managed stub, run before ordinary input unmarshalling and before invoking the managed target.
+    - After the error value is captured, cleanup for callee-allocated resources owned by the error marshaller runs even if error conversion throws. `CleanupCallerAllocated` also runs from the surrounding `finally`.
+    - If error conversion throws, the invocation is not marked successful, so cleanup for ordinary callee-allocated return and `out` values is skipped rather than freeing potentially uninitialized outputs.
 1. `UnmarshalCapture`: capture any native out parameters to avoid memory leaks if exceptions are thrown during `Unmarshal`.
     - If the method has a non-void return, call `Generate` on the marshalling generator for the return
     - Call `Generate` on the marshalling generator for every parameter
@@ -94,7 +124,7 @@ The stub code generator itself will handle some initial setup and variable decla
     - If this stage has any statements, put them in an if statement where the condition represents whether the call succeeded
 1. `CleanupCallerAllocated`: free any resources allocated by the caller
     - Call `Generate` on the marshalling generator for every parameter
-1. `CleanupCalleeAllocated`: if the native method succeeded, free any resources allocated by the callee (`out` parameters and return values)
+1. `CleanupCalleeAllocated`: if the native invocation and error unmarshalling succeeded, free any resources allocated by the callee (`out` parameters and return values)
     - Call `Generate` on the marshalling generator for every parameter
     - If this stage has any statements, put them in an if statement where the condition represents whether the call succeeded
 
@@ -111,6 +141,7 @@ try
         << Invoke >>
     }
     << Notify For Successful Invoke >>
+    << Error Unmarshal >>
     << Unmarshal Capture >>
     << Unmarshal >>
 }
@@ -154,22 +185,27 @@ To help enable developers to use the full model described in the [Struct Marshal
 
 ### `SetLastError=true`
 
-The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://learn.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be stored after the native invocation, such that it can be retrieved using [`Marshal.GetLastWin32Error`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastwin32error).
+The stub code generation also handles [`SetLastError=true`][SetLastError] behaviour. This configuration indicates that the system error code ([`errno`](https://en.wikipedia.org/wiki/Errno.h) on Unix, [`GetLastError`](https://learn.microsoft.com/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror) on Windows) should be captured after the native invocation and published through [`Marshal.GetLastPInvokeError`](https://learn.microsoft.com/dotnet/api/system.runtime.interopservices.marshal.getlastpinvokeerror).
 
 This means that, rather than simply invoke the native method, the generated stub will:
 
-1. Clear the system error by setting it to 0
-2. Invoke the native method
-3. Get the system error
-4. Set the stored error for the P/Invoke (accessible via `Marshal.GetLastWin32Error`)
+1. Clear the system error by setting it to 0.
+2. Invoke the native method.
+3. Capture the system error immediately after the invocation.
+4. If an error marshaller emits either `UnmarshalCapture` or `Unmarshal` statements, publish the captured value once through `Marshal.SetLastPInvokeError` before the error-unmarshal sequence begins. Error capture and conversion can therefore observe the native call's error through `Marshal.GetLastPInvokeError`. Either stage can also overwrite that stored value, in which case later error-marshalling stages and error-owned cleanup observe the changed value.
+5. If the stub completes successfully, publish the captured value again after unmarshalling and cleanup so the caller observes the native call's error instead of changes made by marshalling code.
+
+If error conversion, ordinary unmarshalling, or cleanup throws, the final publication in step 5
+does not run. The stub therefore does not guarantee the value of `Marshal.GetLastPInvokeError`
+after an exception escapes.
 
 A core requirement of this functionality is that the P/Invoke called in (2) is blittable (the purpose of the P/Invoke source generator), such that there will be no additional operations (e.g unmarshalling) after the invocation that could change the system error that is retrieved in (3). Similarly, (3) must not involve any operations before getting the system error that could change the system error. This also relies on the runtime itself handling preserving the last error (see `BEGIN/END_PRESERVE_LAST_ERROR` macros) during JIT and P/Invoke resolution.
 
-Clearing the system error (1) is necessary because the native method may not set the error at all on success and the system error would retain its value from a previous operation. The developer should be able to check `Marshal.GetLastWin32Error` after a P/Inovke to determine success or failure, so the stub explicitly clears the error before the native invocation, such that the last error will indicate success if the native call does not change it.
+Clearing the system error in step 1 is necessary because the native method may not set the error at all on success and the system error would retain its value from a previous operation. The developer should be able to check `Marshal.GetLastPInvokeError` after a successful P/Invoke to determine success or failure, so the stub explicitly clears the error before the native invocation. The last error therefore indicates success if the native call does not change it.
 
 ## P/Invoke
 
-The P/Invoke called by the stub is created based on the user's original declaration of the stub. The signature is generated using the syntax returned by `AsNativeType` and `AsParameter` of the marshalling generators for the return and parameters. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.
+The P/Invoke called by the stub is created based on the user's original declaration of the stub. The native return type and parameter models supplied by the marshalling generators form a `GeneratedMethodSignature`, which is written directly as source text. Any marshalling attributes on the return and parameters of the managed method - [`MarshalAsAttribute`][MarshalAsAttribute], [`InAttribute`][InAttribute], [`OutAttribute`][OutAttribute] - are dropped.
 
 The fields of the [`DllImportAttribute`][DllImportAttribute] are set based on the fields of `LibraryImportAttribute` as follows:
 

@@ -1,5 +1,9 @@
 <Project>
     <PropertyGroup>
+        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
         <FeaturePortableEntryPoints>false</FeaturePortableEntryPoints>
@@ -7,7 +11,6 @@
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
         <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
         <FeaturePortableTimer>true</FeaturePortableTimer>
-        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">
@@ -48,6 +51,7 @@
         <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
         <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
         <FeatureIjw>true</FeatureIjw>
+        <FeatureVarargs>true</FeatureVarargs>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsOSX)' == 'true' OR '$(TargetsMacCatalyst)' == 'true' OR '$(TargetsiOS)' == 'true' OR '$(TargetstvOS)' == 'true'">
@@ -76,6 +80,7 @@
         <DefineConstants Condition="'$(FeatureCominterop)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP</DefineConstants>
         <DefineConstants Condition="'$(FeatureCominteropApartmentSupport)' == 'true'">$(DefineConstants);FEATURE_COMINTEROP_APARTMENT_SUPPORT</DefineConstants>
         <DefineConstants Condition="'$(FeatureIjw)' == 'true'">$(DefineConstants);FEATURE_IJW</DefineConstants>
+        <DefineConstants Condition="'$(FeatureVarargs)' == 'true'">$(DefineConstants);FEATURE_VARARGS</DefineConstants>
         <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>

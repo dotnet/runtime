@@ -27,7 +27,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -77,7 +77,6 @@ class   MethodDescChunk;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
 enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
@@ -554,6 +553,15 @@ class EEClassLayoutInfo
         };
 
         static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
+
+        friend struct ::cdac_data<EEClassLayoutInfo>;
+};
+
+template<> struct cdac_data<EEClassLayoutInfo>
+{
+    static constexpr size_t LayoutType = offsetof(EEClassLayoutInfo, m_LayoutType);
+    static constexpr size_t AlignmentRequirement = offsetof(EEClassLayoutInfo, m_ManagedLargestAlignmentRequirementOfAllMembers);
+    static constexpr size_t Flags = offsetof(EEClassLayoutInfo, m_bFlags);
 };
 
 //
@@ -1807,6 +1815,7 @@ template<> struct cdac_data<EEClass>
     static constexpr size_t NumNonVirtualSlots = offsetof(EEClass, m_NumNonVirtualSlots);
     static constexpr size_t BaseSizePadding = offsetof(EEClass, m_cbBaseSizePadding);
     static constexpr size_t OptionalFields = offsetof(EEClass, m_rpOptionalFields);
+    static constexpr size_t VMFlags = offsetof(EEClass, m_VMFlags);
 };
 
 template<> struct cdac_data<EEClassOptionalFields>
@@ -1888,26 +1897,23 @@ public:
 #endif // !DACCESS_COMPILE
 };
 
-class UMThunkMarshInfo;
+template<> struct cdac_data<LayoutEEClass>
+{
+    static constexpr size_t LayoutInfo = offsetof(LayoutEEClass, m_LayoutInfo);
+};
 
-#ifdef FEATURE_COMINTEROP
-struct CLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
+class UMThunkMarshInfo;
 
 class DelegateEEClass : public EEClass
 {
 public:
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    PTR_Stub                         m_pStaticCallStub;
-    PTR_Stub                         m_pInstRetBuffCallStub;
+    PCODE                            m_pStaticCallStub;
+    PCODE                            m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
     PCODE                            m_pMultiCastInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;
     Volatile<PCODE>                  m_pMarshalStub;
-
-#ifdef FEATURE_COMINTEROP
-    CLRToCOMCallInfo *m_pCLRToCOMCallInfo;
-#endif // FEATURE_COMINTEROP
 
     PTR_MethodDesc GetInvokeMethod()
     {
@@ -1920,9 +1926,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         // Note: Memory allocated on loader heap is zero filled
     }
-
-    // We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-    LoaderHeap *GetStubHeap();
 #endif // !DACCESS_COMPILE
 
 };
@@ -2008,7 +2011,9 @@ inline PCODE GetPreStubEntryPoint()
 
 PCODE TheUMThunkPreStub();
 
+#ifdef FEATURE_VARARGS
 PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg);
+#endif // FEATURE_VARARGS
 
 
 

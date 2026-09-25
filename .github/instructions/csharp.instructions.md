@@ -5,8 +5,8 @@ applyTo: "**/*.cs"
 # C# (managed code)
 
 Conventions for C# changes across `src/`. Also apply `conventions` (all changes), `tests` (test
-files), and any matching area file (`core-runtime`, `jit`, `system-net-*`, `extensions-*`,
-`compression`, `cdac`). Native runtime code is covered by `native`.
+files), and any matching area file (`core-runtime`, `jit`, `illink`, `system-net-*`,
+`extensions-*`, `compression`, `cdac`). Native runtime code is covered by `native`.
 
 ## Correctness & Safety
 

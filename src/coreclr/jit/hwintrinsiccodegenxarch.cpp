@@ -1036,6 +1036,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_AVX512:
         case InstructionSet_AVX512_X64:
         case InstructionSet_AVX512v2:
+        case InstructionSet_AVX10v1:
         case InstructionSet_AVX10v2:
         case InstructionSet_AVX10v2_X64:
         case InstructionSet_AVXVNNIINT:
@@ -1890,6 +1891,7 @@ void CodeGen::genNonTableDrivenHWIntrinsicsJumpTableFallback(GenTreeHWIntrinsic*
 
         case NI_AVX512_FusedMultiplyAdd:
         case NI_AVX512_FusedMultiplyAddScalar:
+        case NI_AVX10v1_FusedMultiplyAddScalar:
         case NI_AVX512_FusedMultiplyAddNegated:
         case NI_AVX512_FusedMultiplyAddNegatedScalar:
         case NI_AVX512_FusedMultiplyAddSubtract:
@@ -2350,49 +2352,30 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector_GetLower:
         case NI_Vector_GetLower128:
         {
+            // Only copy the defined source bits for unsafe widening, or the requested low bits
+            // for extraction. Narrow register copies also avoid unnecessarily dirtying upper state.
+            if (intrinsicId == NI_Vector_GetLower)
+            {
+                attr = emitTypeSize(node->TypeGet());
+            }
+            else if (intrinsicId == NI_Vector_ToVector512Unsafe)
+            {
+                attr = emitTypeSize(TYP_SIMD32);
+            }
+            else
+            {
+                attr = emitTypeSize(TYP_SIMD16);
+            }
+
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
-                // We want to always emit the EA_16BYTE version here.
-                //
-                // For ToVector256Unsafe the upper bits don't matter and for GetLower we
-                // only actually need the lower 16-bytes, so we can just be "more efficient"
-                if (intrinsicId == NI_Vector_GetLower)
-                {
-                    attr = emitTypeSize(node->TypeGet());
-                }
-                else if (intrinsicId == NI_Vector_ToVector512Unsafe)
-                {
-                    attr = emitTypeSize(TYP_SIMD32);
-                }
-                else
-                {
-                    attr = emitTypeSize(TYP_SIMD16);
-                }
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             }
             else
             {
                 assert(instOptions == INS_OPTS_NONE);
 
-                // We want to always emit the EA_32BYTE version here.
-                //
-                // For ToVector256Unsafe the upper bits don't matter and this allows same
-                // register moves to be elided. For GetLower we're getting a Vector128 and
-                // so the upper bits aren't impactful either allowing the same.
-
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                if (intrinsicId == NI_Vector_GetLower)
-                {
-                    attr = emitTypeSize(node->TypeGet());
-                }
-                else if (intrinsicId == NI_Vector_ToVector256Unsafe)
-                {
-                    attr = emitTypeSize(TYP_SIMD32);
-                }
-                else
-                {
-                    attr = emitTypeSize(TYP_SIMD64);
-                }
                 emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
             }
             break;
@@ -2447,11 +2430,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             {
                 divTypeSize = EA_32BYTE;
             }
-            simd_t               negOneIntVec = simd_t::AllBitsSet();
-            CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
-
             // div-by-zero check
-            emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg2, tmpReg2, tmpReg2, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_xorpd, EA_16BYTE, tmpReg2, tmpReg2, tmpReg2, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg2, tmpReg2, op2Reg, instOptions);
             emit->emitIns_R_R(INS_ptest, typeSize, tmpReg2, tmpReg2, instOptions);
             genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);
@@ -2466,6 +2446,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     minValueInt.i32[i] = INT_MIN;
                 }
                 CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
+
+                simd_t               negOneIntVec = simd_t::AllBitsSet();
+                CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
 
                 emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op1Reg, minValueFld, 0, instOptions);
                 emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg3, op2Reg, negOneFld, 0, instOptions);
@@ -2534,18 +2517,20 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 assert(varTypeIsUnsigned(baseType));
                 emit->emitIns_SIMD_R_R_R(INS_divpd, divTypeSize, tmpReg1, tmpReg2, tmpReg3, instOptions);
 
+                // A quotient >= 2^31 requires a divisor of 1, so replace the conversion's
+                // overflow sentinel with the dividend, selecting each packed 32-bit lane independently.
                 if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, tmpReg3, tmpReg1, instOptions);
                     emit->emitIns_Mov(INS_movups, typeSize, tmpReg1, op1Reg, instOptions);
-                    emit->emitIns_SIMD_R_R_R_R(INS_blendvpd, typeSize, targetReg, tmpReg3, tmpReg1, tmpReg3,
+                    emit->emitIns_SIMD_R_R_R_R(INS_blendvps, typeSize, targetReg, tmpReg3, tmpReg1, tmpReg3,
                                                instOptions);
                 }
                 else
                 {
                     emit->emitIns_R_R(INS_cvttpd2dq, divTypeSize, tmpReg1, tmpReg1, instOptions);
                     emit->emitIns_Mov(INS_movups, typeSize, tmpReg2, op1Reg, instOptions);
-                    emit->emitIns_R_R(INS_blendvpd, typeSize, tmpReg1, tmpReg2, instOptions);
+                    emit->emitIns_R_R(INS_blendvps, typeSize, tmpReg1, tmpReg2, instOptions);
                     emit->emitIns_Mov(INS_movups, typeSize, targetReg, tmpReg1, false);
                 }
             }
@@ -2879,6 +2864,24 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
     }
 
     genProduceReg(node);
+}
+
+//------------------------------------------------------------------------
+// ClearUnusedMaskBits: Zeroes up to 8 bits of the mask register, for small lane counts
+//
+// Arguments:
+//    maskReg - The mask register to clear the unused bits of
+//    count   - The number of live lanes in the mask, which must be less than 8
+//
+void CodeGen::ClearUnusedMaskBits(regNumber maskReg, uint32_t count)
+{
+    assert((count == 2) || (count == 4));
+    assert(emitter::isMaskReg(maskReg));
+
+    emitter* emit = GetEmitter();
+
+    emit->emitIns_R_R_I(INS_kshiftlb, EA_8BYTE, maskReg, maskReg, (int8_t)(8 - count));
+    emit->emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, maskReg, maskReg, (int8_t)(8 - count));
 }
 
 //------------------------------------------------------------------------
@@ -3422,6 +3425,15 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(emitter::isMaskReg(op1Reg));
 
             emit->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
+
+            if (count < 8)
+            {
+                // Emit shifts to clear bits N to 7 for 2-bit or 4-bit NotMask.
+                // There is no 2 or 4-bit knot*.  Normally not an issue, but would cause wrong codegen
+                // if k is used in a kmovb+POPCNT for example.
+
+                ClearUnusedMaskBits(targetReg, count);
+            }
             break;
         }
 
@@ -3624,6 +3636,13 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
             // Use EA_32BYTE to ensure the VEX.L bit gets set
             emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+
+            if (count < 8)
+            {
+                // Same issue here as with knotb/NI_AVX512_NotMask above.
+
+                ClearUnusedMaskBits(targetReg, count);
+            }
             break;
         }
 
@@ -3697,6 +3716,19 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(baseType == TYP_ULONG || baseType == TYP_LONG);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
             genHWIntrinsic_R_R_RM(node, ins, EA_8BYTE, instOptions);
+            break;
+        }
+
+        case NI_AVX10v1_ConvertScalarToVector128Half:
+        {
+            // For integer sources the value is read directly from a general purpose register, so the
+            // operand size must reflect the source type (e.g. `ecx` rather than `rcx`). Floating-point
+            // sources come from a vector register and use the full 128-bit size.
+            if (varTypeIsIntegral(baseType))
+            {
+                attr = emitActualTypeSize(baseType);
+            }
+            genHWIntrinsic_R_R_RM(node, ins, attr, instOptions);
             break;
         }
 

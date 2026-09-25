@@ -979,7 +979,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static float MaxNative(float x, float y) => (x > y) ? x : y;
+        public static float MaxNative(float x, float y)
+        {
+#if MONO
+            return (x > y) ? x : y;
+#else
+            return MaxNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1010,7 +1017,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static float MinNative(float x, float y) => (x < y) ? x : y;
+        public static float MinNative(float x, float y)
+        {
+#if MONO
+            return (x < y) ? x : y;
+#else
+            return MinNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1888,23 +1902,17 @@ namespace System
             return result;
         }
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static float DegreesToRadians(float degrees)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+        // Multiplying by `head` alone is enough here, without the rest of the triple that `double`
+        // needs: the constant being inexact is under `2^-54.6` relative and the single rounding of
+        // the product is `2^-53`, together under `2^-28.6` of a `float` ulp, while no significand
+        // brings the exact value nearer than `2^-26.5` ulp to the boundary between two results
+        // (`2^-26.470` for `DegreesToRadians`, `2^-24.5` for `RadiansToDegrees`).
 
-            return (degrees * Pi) / 180.0f;
-        }
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static float DegreesToRadians(float degrees) => (float)(degrees * double.DegreesToRadiansHead);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static float RadiansToDegrees(float radians)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (radians * 180.0f) / Pi;
-        }
+        public static float RadiansToDegrees(float radians) => (float)(radians * double.RadiansToDegreesHead);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         [Intrinsic]
