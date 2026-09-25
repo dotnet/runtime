@@ -84,8 +84,11 @@ public class WasmInterpreterTransitions
     }
 
     private delegate S2 ReturnsS2Delegate(int a);
+    private delegate S8 ReturnsS8Delegate(int value);
+    private delegate int TransformDelegate(int value);
 
     private readonly int _state = C;
+    internal int State => _state;
 
     [Fact]
     public static void TestEntryPoint()
@@ -208,9 +211,88 @@ public class WasmInterpreterTransitions
         Assert.Equal(153, self.InterpretedIntFrom17Int(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17));           // IiTiiiiiiiiiiiiiiiip
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
+
+        // R2R delegate construction calls CtorClosed directly for bounded closed-instance shapes
+        // and uses the general DelegateConstruct helper for open, static, generic, and fallback shapes.
+        TransformDelegate openStatic = CreateOpenStaticDelegate();
+        Assert.Equal(A + 1, openStatic(A));
+        Assert.Null(openStatic.Target);
+        Assert.Equal(nameof(StaticDelegateTarget), openStatic.Method.Name);
+
+        WasmDelegateHelpers.Target openInstanceTarget = new(C);
+        WasmDelegateHelpers.OpenTransform openInstance = WasmDelegateHelpers.Factory.Create();
+        Assert.Equal(A + C, openInstance(openInstanceTarget, A));
+        Assert.Null(openInstance.Target);
+        Assert.Equal(nameof(WasmDelegateHelpers.Target.Transform), openInstance.Method.Name);
+
+        TransformDelegate closedInstance = self.CreateClosedInstanceDelegate();
+        Assert.Equal(A + C, closedInstance(A));
+        Assert.Same(self, closedInstance.Target);
+        Assert.Equal(nameof(InstanceDelegateTarget), closedInstance.Method.Name);
+
+        TransformDelegate closedStatic = CreateClosedStaticDelegate(self);
+        Assert.Equal(A + C, closedStatic(A));
+        Assert.Same(self, closedStatic.Target);
+        Assert.Equal(nameof(WasmDelegateTargets.ClosedStaticDelegateTarget), closedStatic.Method.Name);
+
+        for (int i = 0; i < 100; i++)
+        {
+            Assert.Equal(A + 1, CreateOpenStaticDelegate()(A));
+            Assert.Equal(A + C, WasmDelegateHelpers.Factory.Create()(openInstanceTarget, A));
+            Assert.Equal(A + C, self.CreateClosedInstanceDelegate()(A));
+            Assert.Equal(A + C, CreateClosedStaticDelegate(self)(A));
+        }
+
+        Assert.Throws<ArgumentException>(() => CreateClosedInstanceDelegate(null!));
+        TransformDelegate virtualDelegate = self.CreateVirtualDelegate();
+        Assert.Equal(A + C, virtualDelegate(A));
+
+        ReturnsS8Delegate closedStaticRetBufDelegate = CreateClosedStaticRetBufDelegate(self);
+        Assert.Same(self, closedStaticRetBufDelegate.Target);
+        Assert.Equal(nameof(WasmDelegateTargets.ClosedStaticRetBufDelegateTarget), closedStaticRetBufDelegate.Method.Name);
+
+        ReturnsS8Delegate openStaticRetBufDelegate = CreateOpenStaticRetBufDelegate();
+        S8 openStaticRetBufResult = openStaticRetBufDelegate(A);
+        Assert.Equal(A, openStaticRetBufResult.A);
+        Assert.Equal(B, openStaticRetBufResult.B);
     }
 
     private static int s_sideEffect;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int StaticDelegateTarget(int value) => value + 1;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private int InstanceDelegateTarget(int value) => value + _state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    protected virtual int VirtualDelegateTarget(int value) => value + _state;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateOpenStaticDelegate() => new(StaticDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsS8Delegate CreateOpenStaticRetBufDelegate() => new(OpenStaticRetBufDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateClosedStaticDelegate(WasmInterpreterTransitions target) =>
+        new(target.ClosedStaticDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static ReturnsS8Delegate CreateClosedStaticRetBufDelegate(WasmInterpreterTransitions target) =>
+        new(target.ClosedStaticRetBufDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static S8 OpenStaticRetBufDelegateTarget(int value) => new S8 { A = value, B = B };
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateClosedInstanceDelegate() => new(InstanceDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateClosedInstanceDelegate(WasmInterpreterTransitions target) => new(target.InstanceDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private TransformDelegate CreateVirtualDelegate() => new(VirtualDelegateTarget);
 
     // Reverse-pinvoke entry (R2R-compiled) that calls an interpreted static int(int).
     private static unsafe delegate* unmanaged<int, int> s_ucoToInterpreted = &UnmanagedCallerCallsInterpreted;
@@ -445,4 +527,17 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceTakesS16AndTwoInt(S16 s, int a, int b) => (int)(s.A + s.B) + a + b + _state; // MiTS16iip
+}
+
+internal static class WasmDelegateTargets
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static int ClosedStaticDelegateTarget(this WasmInterpreterTransitions target, int value) =>
+        value + target.State;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static WasmInterpreterTransitions.S8 ClosedStaticRetBufDelegateTarget(
+        this WasmInterpreterTransitions target,
+        int value) =>
+        new WasmInterpreterTransitions.S8 { A = value, B = target.State };
 }

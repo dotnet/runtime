@@ -158,6 +158,56 @@ public class R2RTestSuites
     }
 
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
+    public void WasmDelegateConstructors()
+    {
+        var wasmDelegateConstructors = new CompiledAssembly
+        {
+            AssemblyName = nameof(WasmDelegateConstructors),
+            SourceResourceNames = ["Webcil/WasmDelegateConstructors.cs"],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(WasmDelegateConstructors),
+            [
+                new(nameof(WasmDelegateConstructors), [new CrossgenAssembly(wasmDelegateConstructors)])
+                {
+                    OutputFileExtension = ".wasm",
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+
+            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+                .Where(section => section.Entries is not null)
+                .SelectMany(section => section.Entries)
+                .ToList();
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+
+            List<string> delegateCtorSignatures = importEntries
+                .Where(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            Assert.Empty(delegateCtorSignatures);
+
+            List<string> importSignatures = importEntries
+                .Where(entry => entry.Signature is not null)
+                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
+                .ToList();
+            Assert.True(
+                importSignatures.Any(signature =>
+                    signature.Contains("System.Delegate.DelegateConstruct", StringComparison.Ordinal)),
+                string.Join(Environment.NewLine, importSignatures));
+            Assert.True(
+                importSignatures.Any(signature =>
+                    signature.Contains("System.Delegate.CtorClosed", StringComparison.Ordinal)),
+                string.Join(Environment.NewLine, importSignatures));
+        }
+    }
+
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsWasmTarget))]
     public void WasmVirtualDispatch()
     {
         var wasmVirtualDispatch = new CompiledAssembly
