@@ -7033,7 +7033,7 @@ void CordbProcess::GetEventBlock(BOOL * pfBlockExists)
 
 //
 // Verify that the version info in the control block matches what we expect. The minimum supported protocol from the
-// Runtime must be greater or equal to the minimum required protocol of the debugger.
+// Runtime must be between the minimum required and the current protocol of the debugger.
 //
 void CordbProcess::VerifyControlBlock()
 {
