@@ -457,21 +457,15 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Returns true when the Wasm signature has both a hidden generic context and an async continuation.
+        /// Returns true when the Wasm signature has a hidden generic context followed by an async continuation.
         /// </summary>
-        /// <remarks>
-        /// The generic context is encoded like any pointer-sized argument, so it can only be recognized by its position:
-        /// it is always passed immediately before the async continuation (see "Passing Continuation argument" in
-        /// docs/design/coreclr/botr/clr-abi.md). Without an async continuation, it occupies the first argument slot either way.
-        /// </remarks>
         public static bool HasGenericContextBeforeAsync(WasmSignature wasmSignature, TypeSystemContext context)
         {
             string sig = wasmSignature.SignatureString;
             int asyncIndex = sig.IndexOf('a');
             char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
 
-            // Apart from the generic context, only the return type (a single char at index 0, or ending in a digit) or
-            // 'T' can precede the async continuation.
+            // Index 0 is the return type, not a generic context.
             return (asyncIndex > 1) && (sig[asyncIndex - 1] == hiddenParamChar);
         }
 
