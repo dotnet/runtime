@@ -17,6 +17,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly bool _emitGenericParseEnum;
             private readonly bool _emitNotNullIfNotNull;
             private readonly bool _emitThrowIfNullMethod;
+            private readonly bool _useUpdatedMemorySafetyRules;
 
             private readonly SourceWriter _writer = new();
 
@@ -29,6 +30,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _emitGenericParseEnum = sourceGenSpec.EmitGenericParseEnum;
                 _emitNotNullIfNotNull = sourceGenSpec.EmitNotNullIfNotNull;
                 _emitThrowIfNullMethod = sourceGenSpec.EmitThrowIfNullMethod;
+                _useUpdatedMemorySafetyRules = sourceGenSpec.UseUpdatedMemorySafetyRules;
             }
 
             public void Emit(SourceProductionContext context)

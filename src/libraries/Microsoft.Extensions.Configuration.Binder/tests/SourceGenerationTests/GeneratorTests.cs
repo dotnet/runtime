@@ -471,6 +471,147 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("""
+            public record Settings
+            {
+                public required string Name { get; init; }
+                public required Nested Child { get; init; }
+            }
+
+            public record Nested
+            {
+                public required string Value { get; init; }
+            }
+            """)]
+        [InlineData("""
+            public class Settings
+            {
+                public required string Name { get; set; }
+                public required Nested Child { get; set; }
+            }
+
+            public class Nested
+            {
+                public required string Value { get; set; }
+            }
+            """)]
+        [InlineData("""
+            public struct Settings
+            {
+                public required string Name { get; set; }
+                public required Nested Child { get; set; }
+            }
+
+            public struct Nested
+            {
+                public required string Value { get; set; }
+            }
+            """)]
+        public async Task RequiredPropertyOnParameterlessConstructorType(string settingsType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Settings settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                {{settingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("""
+            internal class Settings
+            {
+                public required string Name { get; internal set; }
+            }
+            """)]
+        [InlineData("""
+            internal class Settings
+            {
+                public required string Name { get; internal init; }
+            }
+            """)]
+        public async Task RequiredPropertyWithNonPublicSetter_NoDiagnostic(string settingsType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                {{settingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            // The instance is constructed through an accessor that bypasses the required-member check, so no diagnostic
+            // is reported. The member with the non-public setter is simply left at its default, like the reflection
+            // binder (which does not bind non-public members by default).
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task RequiredPropertyWithNonPublicSetter_SetsRequiredMembersConstructor_NoDiagnostic()
+        {
+            // The constructor is marked [SetsRequiredMembers], so the compiler does not require the member to be set in
+            // an object initializer; the generator must not report a diagnostic or mark the type non-constructible.
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                internal class Settings
+                {
+                    [SetsRequiredMembers]
+                    public Settings() { Name = "default"; }
+
+                    public required string Name { get; internal set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ListOfTupleWithComplexElementInInternalPropertyTest()
         {
@@ -1751,6 +1892,156 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.Empty(result.Diagnostics);
 
             AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        /// <summary>
+        /// An init-only property whose setter validates or has side effects must not be invoked when its
+        /// configuration key is absent. The generator sets init-only members post-construction and, like the
+        /// reflection binder, only when a value was bound - so an absent key leaves the (null) default untouched
+        /// instead of calling the setter with it. Covers both <c>Get&lt;T&gt;</c> and <c>Bind(instance)</c>.
+        /// </summary>
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("NullRejectingOptions options = config.Get<NullRejectingOptions>();")]
+        [InlineData("NullRejectingOptions options = new(); config.Bind(options);")]
+        public async Task InitOnlyProperty_ValidatingSetter_NotInvokedWhenKeyAbsent(string bindStatements)
+        {
+            string source = $$"""
+                using System;
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static bool Result;
+
+                    public static void Main()
+                    {
+                        IConfiguration config = new ConfigurationBuilder()
+                            .AddInMemoryCollection(new Dictionary<string, string> { ["Number"] = "42" })
+                            .Build();
+                        {{bindStatements}}
+                        Result = options.Number == 42 && options.Name is null;
+                    }
+                }
+
+                public class NullRejectingOptions
+                {
+                    private string _name;
+                    public string Name
+                    {
+                        get => _name;
+                        init => _name = value ?? throw new ArgumentNullException(nameof(value));
+                    }
+                    public int Number { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Number binds; Name has no config key, so its validating setter must not be called with the null default.
+            Assert.True(Assert.IsType<bool>(LoadAndInvokeMain(result.OutputCompilation, "Result")));
+        }
+
+        /// <summary>
+        /// A type nested in a generic type cannot use a generic-wrapper <c>[UnsafeAccessor]</c> for its init-only
+        /// members - the wrapper is keyed on the type's own type parameters, which cannot express the enclosing type's -
+        /// so it falls back to reflection. That must produce compilable code, whether or not the nested type is itself
+        /// generic.
+        /// </summary>
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("Outer<string>.Options")]
+        [InlineData("Outer<string>.GenericOptions<int>")]
+        [InlineData("Outer<string>.Middle.Option")]
+        public async Task InitOnlyProperty_OnTypeNestedInGenericType_Compiles(string boundType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfiguration config = new ConfigurationBuilder().Build();
+                        _ = config.Get<{{boundType}}>();
+                    }
+                }
+
+                public class Outer<T>
+                {
+                    public class Options
+                    {
+                        public T Value { get; init; }
+                    }
+
+                    public class GenericOptions<TItem>
+                    {
+                        public T Value { get; init; }
+                        public TItem Item { get; init; }
+                    }
+
+                    // Middle has no type parameters of its own but is effectively generic through Outer<T>, so its own
+                    // nested Option is too - the immediate containing type's own arity is 0 yet a wrapper is still invalid.
+                    public class Middle
+                    {
+                        public class Option
+                        {
+                            public T Value { get; init; }
+                            public string Name { get; init; }
+                        }
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        /// <summary>
+        /// A nullable init-only property is set post-construction only when its configuration is present. An absent key
+        /// preserves a non-null field-initializer default; a present (empty) value that binds to <see langword="null"/>
+        /// overwrites the default - matching the reflection binder, which sets a property when it bound a value even if
+        /// that value is null. This distinguishes "absent" from "bound to null", which a plain non-null value check cannot.
+        /// </summary>
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("""["Other"] = "x" """, "5")]
+        [InlineData("""["Value"] = "" """, "null")]
+        [InlineData("""["Value"] = "7" """, "7")]
+        public async Task InitOnlyNullableProperty_SetOnlyWhenConfigPresent(string entries, string expected)
+        {
+            string source = $$"""
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static string Result;
+
+                    public static void Main()
+                    {
+                        IConfiguration config = new ConfigurationBuilder()
+                            .AddInMemoryCollection(new Dictionary<string, string> { {{entries}} })
+                            .Build();
+                        Options options = config.Get<Options>();
+                        Result = options.Value?.ToString() ?? "null";
+                    }
+                }
+
+                public class Options
+                {
+                    public int? Value { get; init; } = 5;
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            Assert.Equal(expected, Assert.IsType<string>(LoadAndInvokeMain(result.OutputCompilation, "Result")));
         }
     }
 }

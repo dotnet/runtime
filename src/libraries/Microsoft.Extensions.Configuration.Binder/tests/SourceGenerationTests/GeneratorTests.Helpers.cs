@@ -210,9 +210,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             return assemblies;
         }
 
-        private static void AssertCanCreateAssemblyImage(Compilation compilation)
+        private static void Emit(Compilation compilation, Stream peStream)
         {
-            var emitResult = compilation.Emit(Stream.Null);
+            var emitResult = compilation.Emit(peStream);
             if (!emitResult.Success)
             {
                 // Explicit failures to include in the test output.
@@ -221,16 +221,12 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             }
         }
 
+        private static void AssertCanCreateAssemblyImage(Compilation compilation) => Emit(compilation, Stream.Null);
+
         private static byte[] CreateAssemblyImage(Compilation compilation)
         {
             using MemoryStream stream = new();
-            var emitResult = compilation.Emit(stream);
-            if (!emitResult.Success)
-            {
-                // Explicit failures to include in the test output.
-                string errorMessage = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
-                throw new InvalidOperationException(errorMessage);
-            }
+            Emit(compilation, stream);
             return stream.ToArray();
         }
 

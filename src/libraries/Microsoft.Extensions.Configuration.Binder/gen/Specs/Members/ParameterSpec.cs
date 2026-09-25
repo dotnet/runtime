@@ -29,6 +29,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public RefKind RefKind { get; }
 
+        /// <summary>The open (type-parameter-referencing) form of the parameter type, used inside a generic constructor-accessor wrapper class; <see langword="null"/> when the declaring type is non-generic or the parameter type contains no type parameters.</summary>
+        public string? OpenTypeFQN { get; init; }
+
         public override bool CanGet => false;
 
         public override bool CanSet => true;
