@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef DUMPWRITERELF_H
+#define DUMPWRITERELF_H
+
 #ifdef HOST_64BIT
 #define ELF_CLASS ELFCLASS64
 #else
@@ -41,7 +44,7 @@ class DumpWriter
 {
 private:
     int m_fd;
-    BYTE m_tempBuffer[0x4000];
+    uint8_t m_tempBuffer[0x4000];
     ProcessInfo& m_processInfo;
     const DynamicArray<ModuleRegion>& m_moduleMappings;
     const DynamicArray<MemoryRegion>& m_dumpRegions;
@@ -82,3 +85,5 @@ private:
         ));
     }
 };
+
+#endif // DUMPWRITERELF_H

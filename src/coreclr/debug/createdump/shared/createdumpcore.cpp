@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "createdump_options.h"
 #include "createdumpcore.h"
 
 #ifdef HOST_WINDOWS
@@ -202,7 +201,7 @@ printf_error(const char* format, ...)
 
 #ifdef HOST_UNIX
 
-static void
+void
 trace_prefix(const char* format, va_list args)
 {
     // Only add this prefix if logging to the console
@@ -210,7 +209,6 @@ trace_prefix(const char* format, va_list args)
     {
         fprintf(g_stdout, "[createdump] ");
     }
-    // fprintf(g_stdout, "%08" PRIx64 " ", minipal_hires_ticks() / g_ticksPerMS);
     print_trace_timestamp();
     vfprintf(g_stdout, format, args);
     fflush(g_stdout);

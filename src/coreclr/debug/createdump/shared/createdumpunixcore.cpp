@@ -2,18 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdumpcore.h"
-#include "processinfo.h"
 
 #if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
 long g_pageSize = 0;
 #endif
-
-bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
-{
-    strncpy(buffer, DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE, bufferSize);
-    buffer[bufferSize - 1] = '\0';
-    return true;
-}
 
 // Try reading the executable name from the /proc/<pid>/exe link. Prefer this name to the
 // one reported by status if it is available because the status name is often truncated

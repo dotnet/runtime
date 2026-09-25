@@ -3,12 +3,6 @@
 
 #include <minipal/types.h>
 
-#ifdef __APPLE__
-#include "../dbgutil/machoreader.h"
-#else
-#include "../dbgutil/elfreader.h"
-#endif
-
 extern const std::string GetFileName(const std::string& fileName);
 extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...) MINIPAL_ATTR_FORMAT_PRINTF(1, 2);
@@ -60,6 +54,7 @@ public:
 
     bool Initialize();
     bool PopulateFromProcessInfo();
+    void AddThreadStacks();
     void CleanupAndResumeProcess();
     bool GatherCrashInfo(DumpType dumpType);
     void CombineMemoryRegions();

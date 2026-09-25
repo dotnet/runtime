@@ -8,6 +8,11 @@ bool linkedCreateDump = false;
 uint64_t g_ticksPerMS = 0;
 uint64_t g_startTime = 0;
 
+void print_trace_timestamp()
+{
+    fprintf(g_stdout, "%08" PRIx64 " ", minipal_hires_ticks() / g_ticksPerMS);
+}
+
 bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
 {
     if (GetTempPathWrapper(bufferSize, buffer) == 0)

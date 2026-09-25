@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "shared/createdumpcore.h"
+#include "shared/dumpwriter.h"
+#include <time.h>
 
 static size_t FindDumpRegionInsertionIndex(const DynamicArray<MemoryRegion>* regions, uint64_t startAddress)
 {
@@ -77,7 +79,19 @@ bool g_createdumpLinked = true;
 
 void print_trace_timestamp()
 {
+    struct timespec timestamp;
+    if (clock_gettime(CLOCK_MONOTONIC, &timestamp) == 0)
+    {
+        uint64_t milliseconds = static_cast<uint64_t>(timestamp.tv_sec) * 1000 + static_cast<uint64_t>(timestamp.tv_nsec) / 1000000;
+        fprintf(g_stdout, "%08" PRIx64 " ", milliseconds);
+    }
+}
 
+bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
+{
+    strncpy(buffer, DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE, bufferSize);
+    buffer[bufferSize - 1] = '\0';
+    return true;
 }
 
 // This method is a simplified version of the original CreateDump function.

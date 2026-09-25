@@ -96,6 +96,9 @@ typedef int T_CONTEXT;
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+#include "../dbgutil/machoreader.h"
+#else
+#include "../dbgutil/elfreader.h"
 #endif
 #include "moduleinfo.h"
 #include "datatarget.h"
@@ -103,9 +106,8 @@ typedef int T_CONTEXT;
 #include "threadinfo.h"
 #include "crashinfo.h"
 #include "crashreportwriter.h"
-#include "dumpwriter.h"
+#include "shared/dumpwriter.h"
 #include "runtimeinfo.h"
-#include "specialdiaginfo.h"
 #endif
 
 extern MINIDUMP_TYPE GetMiniDumpType(DumpType dumpType);

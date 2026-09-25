@@ -29,10 +29,10 @@
 #define MCREG_Pc(mc)      ((mc).pc)
 #endif
 
-#define FPREG_ErrorOffset(fpregs) *(DWORD*)&((fpregs).rip)
-#define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
-#define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
-#define FPREG_DataSelector(fpregs) *(((WORD*)&((fpregs).rdp)) + 2)
+#define FPREG_ErrorOffset(fpregs) *(uint32_t*)&((fpregs).rip)
+#define FPREG_ErrorSelector(fpregs) *(((uint16_t*)&((fpregs).rip)) + 2)
+#define FPREG_DataOffset(fpregs) *(uint32_t*)&((fpregs).rdp)
+#define FPREG_DataSelector(fpregs) *(((uint16_t*)&((fpregs).rdp)) + 2)
 #if defined(__arm__)
 #define user_regs_struct user_regs
 #define user_fpregs_struct user_fpregs

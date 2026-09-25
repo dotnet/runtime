@@ -4,6 +4,8 @@
 #ifndef COREUTILS_H
 #define COREUTILS_H
 
+#include <new>
+
 #define INITIAL_CAPACITY 64
 
 template <typename T>

@@ -511,30 +511,40 @@ CrashInfo::AddOrReplaceModuleMapping(uint64_t baseAddress, uint64_t size, const 
     if (found == m_moduleMappings.end())
     {
         // On MacOS the assemblies are always added.
-        ModuleRegion newRegion(flags, start, end, 0, name);
-        m_moduleMappings.insert(newRegion);
+        ModuleRegion newRegion(flags, start, end, 0);
+        if (!newRegion.SetFileName(name.c_str()))
+        {
+            return;
+        }
         m_cbModuleMappings += newRegion.Size();
 
         if (g_diagnostics) {
             newRegion.Trace("MODULE: ADD ");
         }
+        m_moduleMappings.insert(Move(newRegion));
     }
-    else if (found->FileName().compare(name) != 0)
+    else if (!found->FileNameEquals(name.c_str()))
     {
         // Create the new memory region with the managed assembly name.
-        ModuleRegion newRegion(*found, name);
+        ModuleRegion newRegion(static_cast<const MemoryRegion&>(*found));
+        if (!newRegion.SetFileName(name.c_str()))
+        {
+            return;
+        }
+
+        uint64_t oldRegionSize = found->Size();
 
         // Remove and cleanup the old one
         m_moduleMappings.erase(found);
-        m_cbModuleMappings -= found->Size();
+        m_cbModuleMappings -= oldRegionSize;
 
         // Add the new memory region.
-        m_moduleMappings.insert(newRegion);
         m_cbModuleMappings += newRegion.Size();
 
         if (g_diagnostics) {
             newRegion.Trace("MODULE: REPLACE ");
         }
+        m_moduleMappings.insert(Move(newRegion));
     }
 }
 
@@ -694,6 +704,12 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
     assert(end > 0);
 
     return InsertMemoryRegion(MemoryRegion(GetMemoryRegionFlags(start), start, end));
+}
+
+int
+CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
+{
+    return m_processInfo.InsertMemoryRegion(m_dumpRegionStore, region);
 }
 
 //

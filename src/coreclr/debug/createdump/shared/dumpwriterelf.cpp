@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdumpcore.h"
+#include "dumpwriter.h"
 
 extern int g_readProcessMemoryErrno;
 

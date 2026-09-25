@@ -7,6 +7,35 @@
 #include <unistd.h>
 #include <sys/types.h>
 
+#ifndef __APPLE__
+// typedef for our parsing of the auxv variables in /proc/pid/auxv.
+#if TARGET_64BIT
+typedef Elf64_auxv_t elf_aux_entry;
+#define PRIx PRIx64
+#define PRIu PRIu64
+#define PRId PRId64
+#define PRIA "016"
+#define PRIxA PRIA PRIx
+#else
+typedef Elf32_auxv_t elf_aux_entry;
+#define PRIx PRIx32
+#define PRIu PRIu32
+#define PRId PRId32
+#define PRIA "08"
+#define PRIxA PRIA PRIx
+#endif // __APPLE__
+
+typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
+
+// All interesting auvx entry types are AT_SYSINFO_EHDR and below
+#define AT_MAX (AT_SYSINFO_EHDR + 1)
+
+#endif
+
+#ifndef MAX_LONGPATH
+#define MAX_LONGPATH   1024
+#endif
+
 class DumpRegionStore
 {
 public:
@@ -101,6 +130,7 @@ public:
     bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);
     bool AddMapping(const MemoryRegion& region);
     bool AddMapping(const ModuleRegion& region);
+    int InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRegion& memoryRegion);
 #ifndef __APPLE__
     void CalculateRuntimeBaseAddress();
 #endif
@@ -138,7 +168,6 @@ public:
 private:
     bool EnumerateMemoryRegions(DumpRegionStore& regionStore);
     bool GetAuxvEntries();
-    int InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRegion& memoryRegion);
     bool PageCanBeRead(uint64_t start);
     bool PageMappedToPhysicalMemory(uint64_t start);
 };

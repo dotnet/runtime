@@ -9,8 +9,6 @@
 
 extern CrashInfo* g_crashInfo;
 
-int g_readProcessMemoryErrno = 0;
-
 bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
 bool
@@ -82,6 +80,8 @@ CrashInfo::CopyDumpWriterRegions(
 bool
 CrashInfo::EnumerateMemoryRegions()
 {
+    // On unix, this is done by ProcessInfo, so we don't need to do anything here.
+    return true;
 }
 
 //
