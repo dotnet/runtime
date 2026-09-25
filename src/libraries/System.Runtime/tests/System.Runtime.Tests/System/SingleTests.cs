@@ -857,6 +857,25 @@ namespace System.Tests
         }
 
         [Theory]
+        [InlineData(3.1415927E-07f, "F8", "0.00000031")]
+        [InlineData(3.1415927E-07f, "F9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "F10", "0.0000003142")]
+        [InlineData(-3.1415927E-07f, "F9", "-0.000000314")]
+        [InlineData(3.1415927E-07f, "C9", "\u00A40.000000314")]
+        [InlineData(3.1415927E-07f, "N9", "0.000000314")]
+        [InlineData(3.1415927E-07f, "P7", "0.0000314 %")]
+        [InlineData(3.1415927E-07f, "P9", "0.000031416 %")]
+        [InlineData(float.Epsilon, "F9", "0.000000000")]
+        [InlineData(-float.Epsilon, "F9", "-0.000000000")]
+        [InlineData(0.0f, "F9", "0.000000000")]
+        [InlineData(-0.0f, "F9", "-0.000000000")]
+        public static void ToString_FractionalPrecision(float value, string format, string expected)
+        {
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+            NumberFormatTestHelper.TryFormatNumberTest(value, format, NumberFormatInfo.InvariantInfo, expected);
+        }
+
+        [Theory]
         // Basic values
         [InlineData(1.0f, "x", "0x1p+0")]
         [InlineData(1.5f, "x", "0x1.8p+0")]

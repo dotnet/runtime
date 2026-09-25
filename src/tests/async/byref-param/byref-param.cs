@@ -8,12 +8,7 @@ using Xunit;
 public class Async2ByrefParam
 {
     [Fact]
-    public static int TestByrefParam()
-    {
-        return Test().GetAwaiter().GetResult();
-    }
-
-    private static async Task<int> Test()
+    public static async Task<int> Test()
     {
         return await HasByrefParam(out int val) + val;
     }
@@ -25,12 +20,7 @@ public class Async2ByrefParam
     }
 
     [Fact]
-    public static int TestByrefParamWithSuspension()
-    {
-        return TestWithSuspension().GetAwaiter().GetResult();
-    }
-
-    private static async Task<int> TestWithSuspension()
+    public static async Task<int> TestWithSuspension()
     {
         await Verify(new string('a', 100), out int val);
         return val;

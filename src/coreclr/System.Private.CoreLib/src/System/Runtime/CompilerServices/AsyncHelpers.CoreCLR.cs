@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -434,63 +435,29 @@ namespace System.Runtime.CompilerServices
             return default!;
         }
 
-        /// <summary>
-        /// Used by internal thunks that implement awaiting on ValueTask.
-        /// A ValueTask may wrap:
-        /// - Completed result   (we never await this)
-        /// - Task
-        /// - ValueTaskSource
-        /// Therefore, when we are awaiting a ValueTask completion we are really
-        /// awaiting a completion of an underlying Task or ValueTaskSource.
-        /// </summary>
-        /// <param name="valueTask">ValueTask whose completion we are awaiting.</param>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe void TransparentSuspend(ValueTask valueTask)
+        private static unsafe void TransparentSuspend(IValueTaskSource source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
-            Continuation nextCont;
-            object? obj = valueTask._obj;
-            if (obj is Task t)
+            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
+            if (vtsCont != null)
             {
-                RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
-                if (taskCont != null)
-                {
-                    state.CachedTaskContinuation = null;
-                }
-                else
-                {
-                    taskCont = new RuntimeAsyncTaskContinuation();
-                }
-
-                taskCont.Initialize(t);
-                state.StackState->TaskContinuation = taskCont;
-                nextCont = taskCont;
+                state.CachedValueTaskSourceContinuation = null;
             }
             else
             {
-                ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
-                if (vtsCont != null)
-                {
-                    state.CachedValueTaskSourceContinuation = null;
-                }
-                else
-                {
-                    vtsCont = new ValueTaskSourceContinuation();
-                }
-
-                Debug.Assert(obj is IValueTaskSource);
-                vtsCont.Initialize(Unsafe.As<object, IValueTaskSource>(ref obj), valueTask._token);
-                state.StackState->ValueTaskSourceContinuation = vtsCont;
-                nextCont = vtsCont;
+                vtsCont = new ValueTaskSourceContinuation();
             }
 
-            sentinelContinuation.Next = nextCont;
+            vtsCont.Initialize(source, token);
 
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskSourceContinuation = vtsCont;
             state.CaptureContexts();
-            AsyncSuspend(nextCont);
+            AsyncSuspend(vtsCont);
         }
 
         [Intrinsic]
@@ -532,50 +499,27 @@ namespace System.Runtime.CompilerServices
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
-        private static unsafe T TransparentSuspend<T>(ValueTask<T> valueTask)
+        private static unsafe T TransparentSuspend<T>(IValueTaskSource<T> source, short token)
         {
             ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
             Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
 
-            Continuation nextCont;
-            object? obj = valueTask._obj;
-            if (obj is Task<T> t)
+            ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
+            if (vtsCont != null)
             {
-                RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
-                if (taskCont != null)
-                {
-                    state.CachedTaskContinuation = null;
-                }
-                else
-                {
-                    taskCont = new RuntimeAsyncTaskContinuation();
-                }
-
-                taskCont.Initialize<T>(t);
-                state.StackState->TaskContinuation = taskCont;
-                nextCont = taskCont;
+                state.CachedValueTaskSourceContinuation = null;
             }
             else
             {
-                ValueTaskSourceContinuation? vtsCont = state.CachedValueTaskSourceContinuation;
-                if (vtsCont != null)
-                {
-                    state.CachedValueTaskSourceContinuation = null;
-                }
-                else
-                {
-                    vtsCont = new ValueTaskSourceContinuation();
-                }
-
-                Debug.Assert(obj is IValueTaskSource<T>);
-                vtsCont.Initialize<T>(Unsafe.As<object, IValueTaskSource<T>>(ref obj), valueTask._token);
-                state.StackState->ValueTaskSourceContinuation = vtsCont;
-                nextCont = vtsCont;
+                vtsCont = new ValueTaskSourceContinuation();
             }
 
-            sentinelContinuation.Next = nextCont;
+            vtsCont.Initialize<T>(source, token);
+
+            sentinelContinuation.Next = vtsCont;
+            state.StackState->ValueTaskSourceContinuation = vtsCont;
             state.CaptureContexts();
-            AsyncSuspend(nextCont);
+            AsyncSuspend(vtsCont);
             return default!;
         }
 
@@ -699,14 +643,35 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.Async)]
         private static void TransparentAwait(ValueTask task)
         {
-            if (!task.IsCompleted)
+            object? obj = task._obj;
+            if (obj == null)
             {
-                TailAwait();
-                TransparentSuspend(task);
                 return;
             }
 
-            task.ThrowIfCompletedUnsuccessfully();
+            if (obj is Task t)
+            {
+                if (!t.IsCompleted)
+                {
+                    TailAwait();
+                    TransparentSuspend(t);
+                    return;
+                }
+
+                TaskAwaiter.ValidateEnd(t);
+                return;
+            }
+
+            Debug.Assert(obj is IValueTaskSource);
+            IValueTaskSource vts = Unsafe.As<object, IValueTaskSource>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                TransparentSuspend(vts, task._token);
+                return;
+            }
+
+            vts.GetResult(task._token);
         }
 
         [BypassReadyToRun]
@@ -727,13 +692,33 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.Async)]
         private static T TransparentAwait<T>(ValueTask<T> task)
         {
-            if (!task.IsCompleted)
+            object? obj = task._obj;
+            if (obj == null)
             {
-                TailAwait();
-                return TransparentSuspend(task);
+                return task._result!;
             }
 
-            return task.Result;
+            if (obj is Task<T> t)
+            {
+                if (!t.IsCompleted)
+                {
+                    TailAwait();
+                    return TransparentSuspend(t);
+                }
+
+                TaskAwaiter.ValidateEnd(t);
+                return t.ResultOnSuccess;
+            }
+
+            Debug.Assert(obj is IValueTaskSource<T>);
+            IValueTaskSource<T> vts = Unsafe.As<object, IValueTaskSource<T>>(ref obj);
+            if (vts.GetStatus(task._token) == ValueTaskSourceStatus.Pending)
+            {
+                TailAwait();
+                return TransparentSuspend(vts, task._token);
+            }
+
+            return vts.GetResult(task._token);
         }
 
         // Represents execution of a chain of suspended and resuming runtime
@@ -802,35 +787,7 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (stackState->AwaiterContinuation != null)
-                    {
-                        // The awaiter is stored in the continuation for the caller of
-                        // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        stackState->AwaiterContinuation(
-                            headContinuation, stackState->AwaiterOffset, GetContinuationAction());
-                    }
-                    else if (stackState->CriticalNotifier is { } critNotifier)
-                    {
-                        // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
-                        // These never have special continuation context handling.
-                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
-                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
-                    }
-                    else if (stackState->TaskContinuation is { } taskCont)
-                    {
-                        Debug.Assert(headContinuation == taskCont);
-                        // Runtime async callable wrapper for task returning
-                        // method. This implements the context transparent
-                        // forwarding and makes these wrappers minimal cost.
-                        Debug.Assert(taskCont.Task != null);
-                        taskCont.RuntimeAsyncTask = this;
-                        if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
-                        {
-                            taskCont.Execute(canInline: false);
-                        }
-                    }
-                    else if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
+                    if (stackState->ValueTaskSourceContinuation is { } valueTaskSourceCont)
                     {
                         Debug.Assert(headContinuation == valueTaskSourceCont);
                         object? source = valueTaskSourceCont.Source;
@@ -878,6 +835,34 @@ namespace System.Runtime.CompilerServices
                             valueTaskSourceCont.Token,
                             configFlags);
                     }
+                    else if (stackState->AwaiterContinuation != null)
+                    {
+                        // The awaiter is stored in the continuation for the caller of
+                        // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                        stackState->AwaiterContinuation(
+                            headContinuation, stackState->AwaiterOffset, GetContinuationAction());
+                    }
+                    else if (stackState->CriticalNotifier is { } critNotifier)
+                    {
+                        // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
+                        // These never have special continuation context handling.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                        critNotifier.UnsafeOnCompleted(GetContinuationAction());
+                    }
+                    else if (stackState->TaskContinuation is { } taskCont)
+                    {
+                        Debug.Assert(headContinuation == taskCont);
+                        // Runtime async callable wrapper for task returning
+                        // method. This implements the context transparent
+                        // forwarding and makes these wrappers minimal cost.
+                        Debug.Assert(taskCont.Task != null);
+                        taskCont.RuntimeAsyncTask = this;
+                        if (!taskCont.Task.AddTaskContinuation(taskCont, addBeforeOthers: false))
+                        {
+                            taskCont.Execute(canInline: false);
+                        }
+                    }
                     else
                     {
                         Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
@@ -900,8 +885,7 @@ namespace System.Runtime.CompilerServices
                 if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                 {
                     Continuation? nextContinuation = state.SentinelContinuation!.Next;
-
-                    AsyncDebugger.HandleSuspended(nextContinuation);
+                    AsyncDebugger.HandleSuspended(this, nextContinuation);
 
                     if (!HandleSuspended(ref state))
                     {
@@ -1072,7 +1056,7 @@ namespace System.Runtime.CompilerServices
                 asyncDispatcherInfo.NextContinuation = MoveContinuationState();
                 refDispatcherInfo = &asyncDispatcherInfo;
 
-                RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags);
+                RuntimeAsyncInstrumentationHelpers.ResumeRuntimeAsyncContext(this, ref asyncDispatcherInfo, flags, asyncDispatcherInfo.NextContinuation);
 
                 while (true)
                 {
@@ -1772,7 +1756,7 @@ namespace System.Runtime.CompilerServices
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static void ResumeRuntimeAsyncContext(Task task, ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags)
+            public static void ResumeRuntimeAsyncContext(Task task, ref AsyncDispatcherInfo info, AsyncInstrumentation.Flags flags, Continuation? continuation)
             {
                 info.CurrentTask = task;
                 AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
@@ -1788,7 +1772,7 @@ namespace System.Runtime.CompilerServices
 
                     if (AsyncInstrumentation.IsEnabled.AsyncDebugger(flags))
                     {
-                        AsyncDebugger.ResumeAsyncContext(task);
+                        AsyncDebugger.ResumeAsyncContext(task, continuation);
                     }
                 }
             }
@@ -1945,8 +1929,9 @@ namespace System.Runtime.CompilerServices
                 TplEventSource.Log.TraceOperationBegin(task.Id, "System.Runtime.CompilerServices.AsyncHelpers+RuntimeAsyncTask", 0);
             }
 
-            public static void ResumeAsyncContext(Task task)
+            public static void ResumeAsyncContext(Task task, Continuation? continuation)
             {
+                OutputTaskWaitEnd(task, continuation);
                 TplEventSource.Log.TraceSynchronousWorkBegin(task.Id, CausalitySynchronousWork.Execution);
             }
 
@@ -1999,16 +1984,37 @@ namespace System.Runtime.CompilerServices
                 Task.RemoveRuntimeAsyncContinuationTimestamp(curContinuation);
             }
 
-            public static void HandleSuspended(Continuation? nextContinuation)
+            public static void HandleSuspended(Task task, Continuation? nextContinuation)
             {
                 if (nextContinuation != null)
                 {
                     Task.TryAddRuntimeAsyncContinuationChainTimestamps(nextContinuation);
                 }
+
+                OutputTaskWaitBegin(task, nextContinuation);
+            }
+
+            private static void OutputTaskWaitBegin(Task task, Continuation? continuation)
+            {
+                if (continuation is RuntimeAsyncTaskContinuation { Task: Task awaitedTask })
+                {
+                    TplEventSource log = TplEventSource.Log;
+                    if (log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TaskTransfer | TplEventSource.Keywords.Tasks))
+                    {
+                        log.TaskWaitBegin(
+                            task.m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                            task.Id,
+                            awaitedTask.Id,
+                            TplEventSource.TaskWaitBehavior.Asynchronous,
+                            task.Id);
+                    }
+                }
             }
 
             public static void HandleSuspendedFailed(Task task, Continuation? nextContinuation)
             {
+                OutputTaskWaitEnd(task, nextContinuation);
+
                 if (nextContinuation != null)
                 {
                     Task.RemoveRuntimeAsyncTask(task, nextContinuation);
@@ -2016,6 +2022,21 @@ namespace System.Runtime.CompilerServices
                 else
                 {
                     Task.RemoveRuntimeAsyncTask(task);
+                }
+            }
+
+            private static void OutputTaskWaitEnd(Task task, Continuation? continuation)
+            {
+                if (continuation is RuntimeAsyncTaskContinuation { Task: Task awaitedTask })
+                {
+                    TplEventSource log = TplEventSource.Log;
+                    if (log.IsEnabled(EventLevel.Verbose, TplEventSource.Keywords.Tasks))
+                    {
+                        log.TaskWaitEnd(
+                            task.m_taskScheduler?.Id ?? TaskScheduler.Default.Id,
+                            task.Id,
+                            awaitedTask.Id);
+                    }
                 }
             }
         }

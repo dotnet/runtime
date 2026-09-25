@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 1
+#define CDAC_RECOMMENDED_READER_VERSION 2
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)
@@ -596,7 +596,21 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::Nu
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
 CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
+CDAC_TYPE_FIELD(EEClass, T_UINT32, VMFlags, cdac_data<EEClass>::VMFlags)
 CDAC_TYPE_END(EEClass)
+
+// LayoutInfo aliases unrelated memory unless EEClass::HasLayout() is true.
+CDAC_TYPE_BEGIN(LayoutEEClass)
+CDAC_TYPE_INDETERMINATE(LayoutEEClass)
+CDAC_TYPE_FIELD(LayoutEEClass, TYPE(EEClassLayoutInfo), LayoutInfo, cdac_data<LayoutEEClass>::LayoutInfo)
+CDAC_TYPE_END(LayoutEEClass)
+
+CDAC_TYPE_BEGIN(EEClassLayoutInfo)
+CDAC_TYPE_INDETERMINATE(EEClassLayoutInfo)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, LayoutType, cdac_data<EEClassLayoutInfo>::LayoutType)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, AlignmentRequirement, cdac_data<EEClassLayoutInfo>::AlignmentRequirement)
+CDAC_TYPE_FIELD(EEClassLayoutInfo, T_UINT8, Flags, cdac_data<EEClassLayoutInfo>::Flags)
+CDAC_TYPE_END(EEClassLayoutInfo)
 
 CDAC_TYPE_BEGIN(EEClassOptionalFields)
 CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
@@ -1813,6 +1827,9 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+#ifdef FEATURE_INTERPRETER
+CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
+#endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM
