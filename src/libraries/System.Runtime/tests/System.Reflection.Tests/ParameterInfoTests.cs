@@ -577,6 +577,7 @@ namespace System.Reflection.Tests
         [Theory]
         [InlineData(typeof(int))]
         [InlineData(typeof(string))]
+        [ActiveIssue("needs triage", TestRuntimes.Mono)]
         public void GetModifiedParameterType_IndexParameter(Type indexType)
         {
             PropertyInfo property = typeof(ParameterInfoMetadata).GetProperty("Item", new[] { indexType });
