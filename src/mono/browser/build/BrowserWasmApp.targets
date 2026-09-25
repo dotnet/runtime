@@ -313,36 +313,8 @@
   <Target Name="_BrowserWasmWriteRspForLinking" BeforeTargets="_WasmWriteRspForLinking">
     <ItemGroup>
       <EmccExportedRuntimeMethod Include="PThread" Condition="'$(WasmEnableThreads)' == 'true'" />
-
-      <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
-      <EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
-      <EmccIncomingModuleJSAPI Include="arguments" />
-      <EmccIncomingModuleJSAPI Include="canvas" />
-      <EmccIncomingModuleJSAPI Include="dynamicLibraries" />
-      <EmccIncomingModuleJSAPI Include="elementPointerLock" />
-      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
-      <EmccIncomingModuleJSAPI Include="locateFile" />
-      <EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
-      <EmccIncomingModuleJSAPI Include="noExitRuntime" />
-      <EmccIncomingModuleJSAPI Include="noInitialRun" />
-      <EmccIncomingModuleJSAPI Include="onAbort" />
-      <EmccIncomingModuleJSAPI Include="onExit" />
-      <EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
-      <EmccIncomingModuleJSAPI Include="postRun" />
-      <EmccIncomingModuleJSAPI Include="preInit" />
-      <EmccIncomingModuleJSAPI Include="preRun" />
-      <EmccIncomingModuleJSAPI Include="print" />
-      <EmccIncomingModuleJSAPI Include="printErr" />
-      <EmccIncomingModuleJSAPI Include="setStatus" />
-      <EmccIncomingModuleJSAPI Include="statusMessage" />
-      <EmccIncomingModuleJSAPI Include="stderr" />
-      <EmccIncomingModuleJSAPI Include="stdin" />
-      <EmccIncomingModuleJSAPI Include="stdout" />
-      <EmccIncomingModuleJSAPI Include="thisProgram" />
-      <EmccIncomingModuleJSAPI Include="wasm" />
-      <EmccIncomingModuleJSAPI Include="websocket" />
-      <!-- not an emscripten default; set on the worker from the message which starts a pthread -->
-      <EmccIncomingModuleJSAPI Include="wasmMemory" Condition="'$(WasmEnableThreads)' == 'true'" />
+      <!-- EmccIncomingModuleJSAPI defaults (incl. wasmMemory when threads are enabled) come from wasm-props.json
+           via _ReadWasmProps, written by src/mono/browser/browser.proj. -->
     </ItemGroup>
     <PropertyGroup>
       <_WasmEHLib Condition="'$(WasmEnableExceptionHandling)' == 'true'">libmono-wasm-eh-wasm.a</_WasmEHLib>

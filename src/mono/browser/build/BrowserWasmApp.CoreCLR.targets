@@ -161,6 +161,36 @@
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
       <EmccExportedFunction Include="___async_continuation" />
     </ItemGroup>
+
+    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
+    <ItemGroup>
+      <EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
+      <EmccIncomingModuleJSAPI Include="arguments" />
+      <EmccIncomingModuleJSAPI Include="canvas" />
+      <EmccIncomingModuleJSAPI Include="dynamicLibraries" />
+      <EmccIncomingModuleJSAPI Include="elementPointerLock" />
+      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
+      <EmccIncomingModuleJSAPI Include="locateFile" />
+      <EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
+      <EmccIncomingModuleJSAPI Include="noExitRuntime" />
+      <EmccIncomingModuleJSAPI Include="noInitialRun" />
+      <EmccIncomingModuleJSAPI Include="onAbort" />
+      <EmccIncomingModuleJSAPI Include="onExit" />
+      <EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
+      <EmccIncomingModuleJSAPI Include="postRun" />
+      <EmccIncomingModuleJSAPI Include="preInit" />
+      <EmccIncomingModuleJSAPI Include="preRun" />
+      <EmccIncomingModuleJSAPI Include="print" />
+      <EmccIncomingModuleJSAPI Include="printErr" />
+      <EmccIncomingModuleJSAPI Include="setStatus" />
+      <EmccIncomingModuleJSAPI Include="statusMessage" />
+      <EmccIncomingModuleJSAPI Include="stderr" />
+      <EmccIncomingModuleJSAPI Include="stdin" />
+      <EmccIncomingModuleJSAPI Include="stdout" />
+      <EmccIncomingModuleJSAPI Include="thisProgram" />
+      <EmccIncomingModuleJSAPI Include="wasm" />
+      <EmccIncomingModuleJSAPI Include="websocket" />
+    </ItemGroup>
   </Target>
 
   <!-- Import shared native.wasm.targets for Emscripten SDK, ICU, exported functions/methods.
@@ -853,36 +883,6 @@
 
   <Target Name="_CoreCLRWriteLinkRsp"
           DependsOnTargets="GenerateEmccExports">
-
-    <!-- Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. -->
-    <ItemGroup>
-      <EmccIncomingModuleJSAPI Include="ENVIRONMENT" />
-      <EmccIncomingModuleJSAPI Include="arguments" />
-      <EmccIncomingModuleJSAPI Include="canvas" />
-      <EmccIncomingModuleJSAPI Include="dynamicLibraries" />
-      <EmccIncomingModuleJSAPI Include="elementPointerLock" />
-      <EmccIncomingModuleJSAPI Include="instantiateWasm" />
-      <EmccIncomingModuleJSAPI Include="locateFile" />
-      <EmccIncomingModuleJSAPI Include="monitorRunDependencies" />
-      <EmccIncomingModuleJSAPI Include="noExitRuntime" />
-      <EmccIncomingModuleJSAPI Include="noInitialRun" />
-      <EmccIncomingModuleJSAPI Include="onAbort" />
-      <EmccIncomingModuleJSAPI Include="onExit" />
-      <EmccIncomingModuleJSAPI Include="onRuntimeInitialized" />
-      <EmccIncomingModuleJSAPI Include="postRun" />
-      <EmccIncomingModuleJSAPI Include="preInit" />
-      <EmccIncomingModuleJSAPI Include="preRun" />
-      <EmccIncomingModuleJSAPI Include="print" />
-      <EmccIncomingModuleJSAPI Include="printErr" />
-      <EmccIncomingModuleJSAPI Include="setStatus" />
-      <EmccIncomingModuleJSAPI Include="statusMessage" />
-      <EmccIncomingModuleJSAPI Include="stderr" />
-      <EmccIncomingModuleJSAPI Include="stdin" />
-      <EmccIncomingModuleJSAPI Include="stdout" />
-      <EmccIncomingModuleJSAPI Include="thisProgram" />
-      <EmccIncomingModuleJSAPI Include="wasm" />
-      <EmccIncomingModuleJSAPI Include="websocket" />
-    </ItemGroup>
 
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>"[BROWSER_HOST,@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
