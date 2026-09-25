@@ -16,7 +16,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public ExternMethodSymbolNode(NodeFactory factory, MethodDesc method, bool isUnboxing = false)
             : base(isUnboxing ? UnboxingStubNode.GetMangledName(factory.NameMangler, method) :
-                  factory.NameMangler.GetMangledMethodName(method))
+                  factory.NameMangler.GetMangledMethodName(method),
+                  ExternalTypeSignature.FromMethod(method))
         {
             _method = method;
         }

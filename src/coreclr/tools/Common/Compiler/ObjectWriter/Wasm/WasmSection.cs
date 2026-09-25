@@ -276,6 +276,11 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
+        /// <summary>
+        /// Counts an import entry that was written directly to the section by an object node.
+        /// </summary>
+        public void CompleteExternallyWrittenEntry() => CompleteEntry();
+
         protected override void WriteEntryCore(SectionWriter writer, WasmImport entry)
         {
             writer.EmitSymbolDefinition(new Utf8String(entry.Name));

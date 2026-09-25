@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysisFramework;
 
-using Internal.Text;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.JitInterface;
@@ -193,14 +192,14 @@ namespace ILCompiler
             protected override int GetValueHashCode(Helper value) => (int)value.HelperID;
             protected override Helper CreateValueFromKey(ReadyToRunHelper key)
             {
-                string mangledName;
+                KnownExternFunction? knownFunction;
                 MethodDesc methodDesc;
-                JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key, out mangledName, out methodDesc);
-                Debug.Assert(mangledName != null || methodDesc != null);
+                JitHelper.GetEntryPoint(_compilation.TypeSystemContext, key, out knownFunction, out methodDesc);
+                Debug.Assert(knownFunction != null || methodDesc != null);
 
                 ISymbolNode entryPoint;
-                if (mangledName != null)
-                    entryPoint = _compilation.NodeFactory.ExternFunctionSymbol(new Utf8String(mangledName));
+                if (knownFunction != null)
+                    entryPoint = _compilation.NodeFactory.KnownExternFunction(knownFunction.Value);
                 else
                     entryPoint = _compilation.NodeFactory.MethodEntrypoint(methodDesc);
 

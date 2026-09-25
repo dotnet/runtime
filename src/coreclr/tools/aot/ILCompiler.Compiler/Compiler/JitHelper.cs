@@ -7,6 +7,8 @@ using Internal.TypeSystem;
 using Internal.IL;
 using Internal.ReadyToRunConstants;
 
+using ILCompiler.DependencyAnalysis;
+
 namespace ILCompiler
 {
     internal static class JitHelper
@@ -15,21 +17,21 @@ namespace ILCompiler
         /// Returns JIT helper entrypoint. JIT helpers can be either implemented by entrypoint with given mangled name or
         /// by a method in class library.
         /// </summary>
-        public static void GetEntryPoint(TypeSystemContext context, ReadyToRunHelper id, out string mangledName, out MethodDesc methodDesc)
+        public static void GetEntryPoint(TypeSystemContext context, ReadyToRunHelper id, out KnownExternFunction? knownFunction, out MethodDesc methodDesc)
         {
-            mangledName = null;
+            knownFunction = null;
             methodDesc = null;
 
             switch (id)
             {
                 case ReadyToRunHelper.Throw:
-                    mangledName = "RhpThrowEx";
+                    knownFunction = KnownExternFunction.ThrowEx;
                     break;
                 case ReadyToRunHelper.Rethrow:
-                    mangledName = "RhpRethrow";
+                    knownFunction = KnownExternFunction.Rethrow;
                     break;
                 case ReadyToRunHelper.ThrowExact:
-                    mangledName = "RhpThrowExact";
+                    knownFunction = KnownExternFunction.ThrowExact;
                     break;
 
                 case ReadyToRunHelper.Overflow:
@@ -39,7 +41,7 @@ namespace ILCompiler
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowIndexOutOfRangeException"u8);
                     break;
                 case ReadyToRunHelper.FailFast:
-                    mangledName = "RhpFallbackFailFast"; // TODO: Report stack buffer overrun
+                    knownFunction = KnownExternFunction.FallbackFailFast; // TODO: Report stack buffer overrun
                     break;
                 case ReadyToRunHelper.ThrowNullRef:
                     methodDesc = context.GetHelperEntryPoint("ThrowHelpers"u8, "ThrowNullReferenceException"u8);
@@ -61,62 +63,56 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DebugBreak:
-                    mangledName = "RhDebugBreak";
+                    knownFunction = KnownExternFunction.DebugBreak;
                     break;
 
                 case ReadyToRunHelper.WriteBarrier:
-                    mangledName = context.Target.Architecture switch
-                    {
-                        TargetArchitecture.ARM64 => "RhpAssignRefArm64",
-                        TargetArchitecture.LoongArch64 => "RhpAssignRefLoongArch64",
-                        TargetArchitecture.RiscV64 => "RhpAssignRefRiscV64",
-                        _ => "RhpAssignRef"
-                    };
+                    knownFunction = KnownExternFunction.WriteBarrier;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier:
-                    mangledName = context.Target.Architecture == TargetArchitecture.ARM64 ? "RhpCheckedAssignRefArm64" : "RhpCheckedAssignRef";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier;
                     break;
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
                     break;
                 case ReadyToRunHelper.BulkWriteBarrierSmall:
-                    mangledName = "RhBulkMoveWithWriteBarrier";
+                    knownFunction = KnownExternFunction.BulkMoveWithWriteBarrier;
                     break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
-                    mangledName = "RhpAssignRefEAX";
+                    knownFunction = KnownExternFunction.WriteBarrier_EAX;
                     break;
                 case ReadyToRunHelper.WriteBarrier_EBX:
-                    mangledName = "RhpAssignRefEBX";
+                    knownFunction = KnownExternFunction.WriteBarrier_EBX;
                     break;
                 case ReadyToRunHelper.WriteBarrier_ECX:
-                    mangledName = "RhpAssignRefECX";
+                    knownFunction = KnownExternFunction.WriteBarrier_ECX;
                     break;
                 case ReadyToRunHelper.WriteBarrier_EDI:
-                    mangledName = "RhpAssignRefEDI";
+                    knownFunction = KnownExternFunction.WriteBarrier_EDI;
                     break;
                 case ReadyToRunHelper.WriteBarrier_ESI:
-                    mangledName = "RhpAssignRefESI";
+                    knownFunction = KnownExternFunction.WriteBarrier_ESI;
                     break;
                 case ReadyToRunHelper.WriteBarrier_EBP:
-                    mangledName = "RhpAssignRefEBP";
+                    knownFunction = KnownExternFunction.WriteBarrier_EBP;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EAX:
-                    mangledName = "RhpCheckedAssignRefEAX";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier_EAX;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EBX:
-                    mangledName = "RhpCheckedAssignRefEBX";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier_EBX;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ECX:
-                    mangledName = "RhpCheckedAssignRefECX";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier_ECX;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EDI:
-                    mangledName = "RhpCheckedAssignRefEDI";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier_EDI;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_ESI:
-                    mangledName = "RhpCheckedAssignRefESI";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier_ESI;
                     break;
                 case ReadyToRunHelper.CheckedWriteBarrier_EBP:
-                    mangledName = "RhpCheckedAssignRefEBP";
+                    knownFunction = KnownExternFunction.CheckedWriteBarrier_EBP;
                     break;
                 case ReadyToRunHelper.Box:
                 case ReadyToRunHelper.Box_Nullable:
@@ -140,10 +136,10 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.NewArray:
-                    mangledName = "RhNewArray";
+                    knownFunction = KnownExternFunction.NewArray;
                     break;
                 case ReadyToRunHelper.NewObject:
-                    mangledName = "RhNewObject";
+                    knownFunction = KnownExternFunction.NewObject;
                     break;
 
                 case ReadyToRunHelper.Stelem_Ref:
@@ -163,7 +159,7 @@ namespace ILCompiler
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "SpanHelpers"u8, "ClearWithoutReferences"u8, null);
                     break;
                 case ReadyToRunHelper.NativeMemSet:
-                    mangledName = "memset";
+                    knownFunction = KnownExternFunction.NativeMemSet;
                     break;
 
                 case ReadyToRunHelper.GetRuntimeTypeHandle:
@@ -180,23 +176,23 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.Lng2Dbl:
-                    mangledName = "RhpLng2Dbl";
+                    knownFunction = KnownExternFunction.Lng2Dbl;
                     break;
                 case ReadyToRunHelper.ULng2Dbl:
-                    mangledName = "RhpULng2Dbl";
+                    knownFunction = KnownExternFunction.ULng2Dbl;
                     break;
                 case ReadyToRunHelper.Lng2Flt:
-                    mangledName = "RhpLng2Flt";
+                    knownFunction = KnownExternFunction.Lng2Flt;
                     break;
                 case ReadyToRunHelper.ULng2Flt:
-                    mangledName = "RhpULng2Flt";
+                    knownFunction = KnownExternFunction.ULng2Flt;
                     break;
 
                 case ReadyToRunHelper.Dbl2Lng:
-                    mangledName = "RhpDbl2Lng";
+                    knownFunction = KnownExternFunction.Dbl2Lng;
                     break;
                 case ReadyToRunHelper.Dbl2ULng:
-                    mangledName = "RhpDbl2ULng";
+                    knownFunction = KnownExternFunction.Dbl2ULng;
                     break;
 
                 case ReadyToRunHelper.Dbl2IntOvf:
@@ -213,14 +209,14 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.DblRem:
-                    mangledName = "fmod";
+                    knownFunction = KnownExternFunction.DblRem;
                     break;
                 case ReadyToRunHelper.FltRem:
-                    mangledName = "fmodf";
+                    knownFunction = KnownExternFunction.FltRem;
                     break;
 
                 case ReadyToRunHelper.LMul:
-                    mangledName = "RhpLMul";
+                    knownFunction = KnownExternFunction.LMul;
                     break;
                 case ReadyToRunHelper.LMulOfv:
                     {
@@ -264,27 +260,27 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.LRsz:
-                    mangledName = "RhpLRsz";
+                    knownFunction = KnownExternFunction.LRsz;
                     break;
                 case ReadyToRunHelper.LRsh:
-                    mangledName = "RhpLRsh";
+                    knownFunction = KnownExternFunction.LRsh;
                     break;
                 case ReadyToRunHelper.LLsh:
-                    mangledName = "RhpLLsh";
+                    knownFunction = KnownExternFunction.LLsh;
                     break;
 
                 case ReadyToRunHelper.PInvokeBegin:
-                    mangledName = "RhpPInvoke";
+                    knownFunction = KnownExternFunction.PInvokeBegin;
                     break;
                 case ReadyToRunHelper.PInvokeEnd:
-                    mangledName = "RhpPInvokeReturn";
+                    knownFunction = KnownExternFunction.PInvokeEnd;
                     break;
 
                 case ReadyToRunHelper.ReversePInvokeEnter:
-                    mangledName = "RhpReversePInvoke";
+                    knownFunction = KnownExternFunction.ReversePInvokeEnter;
                     break;
                 case ReadyToRunHelper.ReversePInvokeExit:
-                    mangledName = "RhpReversePInvokeReturn";
+                    knownFunction = KnownExternFunction.ReversePInvokeExit;
                     break;
 
                 case ReadyToRunHelper.CheckCastAny:
@@ -321,7 +317,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.GVMLookupForSlot:
-                    mangledName = "RhpDispatchResolve";
+                    knownFunction = KnownExternFunction.GVMLookupForSlot;
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:
@@ -350,23 +346,23 @@ namespace ILCompiler
         //
         // These methods are static compiler equivalent of RhGetRuntimeHelperForType
         //
-        public static string GetNewObjectHelperForType(TypeDesc type)
+        public static KnownExternFunction GetNewObjectHelperForType(TypeDesc type)
         {
             if (type.RequiresAlign8())
             {
                 if (type.HasFinalizer)
-                    return "RhpNewFinalizableAlign8";
+                    return KnownExternFunction.NewFinalizableAlign8;
 
                 if (type.IsValueType)
-                    return "RhpNewFastMisalign";
+                    return KnownExternFunction.NewFastMisalign;
 
-                return "RhpNewFastAlign8";
+                return KnownExternFunction.NewFastAlign8;
             }
 
             if (type.HasFinalizer)
-                return "RhpNewFinalizable";
+                return KnownExternFunction.NewFinalizable;
 
-            return "RhpNewFast";
+            return KnownExternFunction.NewFast;
         }
     }
 }

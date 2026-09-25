@@ -416,6 +416,11 @@ namespace ILCompiler.ObjectWriter
                     RecordMethodSignature(signature);
                 }
 
+                if (node is WasmFunctionImportNode import)
+                {
+                    RecordFunctionImport(import);
+                }
+
                 if (node is INodeWithTypeSignature codeNode && _nodeFactory.Target.IsWasm)
                 {
                     Debug.Assert(codeNode.Signature != null, $"Wasm code node {codeNode.GetType()} has null signature");
@@ -625,6 +630,10 @@ namespace ILCompiler.ObjectWriter
         private protected virtual void RecordMethodSignature(WasmTypeNode signature)
         {
             Debug.Assert(LayoutMode == CodeDataLayout.Separate);
+        }
+
+        private protected virtual void RecordFunctionImport(WasmFunctionImportNode import)
+        {
         }
 
         private protected virtual void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)

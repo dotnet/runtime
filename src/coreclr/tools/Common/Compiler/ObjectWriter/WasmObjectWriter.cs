@@ -159,6 +159,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private protected override void RecordFunctionImport(WasmFunctionImportNode import)
+        {
+            // Assign the import's index in the function index space. The import entry itself is emitted
+            // by the node's own data.
+            _wasmSymbolManager.AddImport(new Utf8String(import.GetMangledName(_nodeFactory.NameMangler)), WasmIndexSpace.Function);
+            GetOrCreateSection<WasmImportSection>(WasmObjectNodeSection.ImportSection, out _).CompleteExternallyWrittenEntry();
+        }
+
         private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
         {
             FuncletKind[] funcletKinds = nodeWithFunclets.GetFuncletKinds();
