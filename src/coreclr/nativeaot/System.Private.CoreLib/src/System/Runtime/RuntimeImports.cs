@@ -418,7 +418,7 @@ namespace System.Runtime
         private static partial int _RhYield();
         internal static bool RhYield() => _RhYield() != 0;
 
-#if !TARGET_UNIX
+#if TARGET_WINDOWS
         // Wait for any object to be signalled, in a way that's compatible with the CLR's behavior in an STA.
         [LibraryImport(RuntimeLibrary)]
         internal static unsafe partial int RhCompatibleReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
@@ -600,10 +600,10 @@ namespace System.Runtime
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetModuleFileName")]
-#if TARGET_UNIX
-        internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out byte* moduleName);
-#else
+#if TARGET_WINDOWS
         internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out char* moduleName);
+#else
+        internal static extern unsafe int RhGetModuleFileName(IntPtr moduleHandle, out byte* moduleName);
 #endif
 
         //
@@ -868,11 +868,11 @@ namespace System.Runtime
         [RuntimeImport(RuntimeLibrary, "modff")]
         internal static extern unsafe float modff(float x, float* intptr);
 
-#if TARGET_UNIX
-        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
+#if TARGET_WINDOWS
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial void RhSetCurrentThreadName(string name);
 #else
-        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(RuntimeLibrary, StringMarshalling = StringMarshalling.Utf8)]
         internal static partial void RhSetCurrentThreadName(string name);
 #endif
     }
