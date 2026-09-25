@@ -2352,49 +2352,30 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
         case NI_Vector_GetLower:
         case NI_Vector_GetLower128:
         {
+            // Only copy the defined source bits for unsafe widening, or the requested low bits
+            // for extraction. Narrow register copies also avoid unnecessarily dirtying upper state.
+            if (intrinsicId == NI_Vector_GetLower)
+            {
+                attr = emitTypeSize(node->TypeGet());
+            }
+            else if (intrinsicId == NI_Vector_ToVector512Unsafe)
+            {
+                attr = emitTypeSize(TYP_SIMD32);
+            }
+            else
+            {
+                attr = emitTypeSize(TYP_SIMD16);
+            }
+
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
-                // We want to always emit the EA_16BYTE version here.
-                //
-                // For ToVector256Unsafe the upper bits don't matter and for GetLower we
-                // only actually need the lower 16-bytes, so we can just be "more efficient"
-                if (intrinsicId == NI_Vector_GetLower)
-                {
-                    attr = emitTypeSize(node->TypeGet());
-                }
-                else if (intrinsicId == NI_Vector_ToVector512Unsafe)
-                {
-                    attr = emitTypeSize(TYP_SIMD32);
-                }
-                else
-                {
-                    attr = emitTypeSize(TYP_SIMD16);
-                }
                 genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
             }
             else
             {
                 assert(instOptions == INS_OPTS_NONE);
 
-                // We want to always emit the EA_32BYTE version here.
-                //
-                // For ToVector256Unsafe the upper bits don't matter and this allows same
-                // register moves to be elided. For GetLower we're getting a Vector128 and
-                // so the upper bits aren't impactful either allowing the same.
-
                 // Just use movaps for reg->reg moves as it has zero-latency on modern CPUs
-                if (intrinsicId == NI_Vector_GetLower)
-                {
-                    attr = emitTypeSize(node->TypeGet());
-                }
-                else if (intrinsicId == NI_Vector_ToVector256Unsafe)
-                {
-                    attr = emitTypeSize(TYP_SIMD32);
-                }
-                else
-                {
-                    attr = emitTypeSize(TYP_SIMD64);
-                }
                 emit->emitIns_Mov(INS_movaps, attr, targetReg, op1Reg, /* canSkip */ true);
             }
             break;
@@ -2450,7 +2431,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                 divTypeSize = EA_32BYTE;
             }
             // div-by-zero check
-            emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg2, tmpReg2, tmpReg2, instOptions);
+            emit->emitIns_SIMD_R_R_R(INS_xorpd, EA_16BYTE, tmpReg2, tmpReg2, tmpReg2, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg2, tmpReg2, op2Reg, instOptions);
             emit->emitIns_R_R(INS_ptest, typeSize, tmpReg2, tmpReg2, instOptions);
             genJumpToThrowHlpBlk(EJ_jne, SCK_DIV_BY_ZERO);

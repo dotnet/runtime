@@ -2518,9 +2518,17 @@ ValueNum ValueNumStore::VNOneForSimdType(var_types simdType, var_types simdBaseT
     return VNBroadcastForSimdType(simdType, simdBaseType, oneVN);
 }
 
-ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType)
+ValueNum ValueNumStore::VNForSimdType(unsigned simdSize, var_types simdBaseType, var_types auxiliaryType)
 {
-    ValueNum baseTypeVN = VNForIntCon(INT32(simdBaseType));
+    // Both types fit in a byte. Reserve zero in the upper byte for no auxiliary type,
+    // preserving the base-type constant for the common case.
+    unsigned encodedTypes = static_cast<unsigned>(simdBaseType);
+    if (auxiliaryType != TYP_UNKNOWN)
+    {
+        encodedTypes |= (static_cast<unsigned>(auxiliaryType) + 1) << SimdTypeBits;
+    }
+
+    ValueNum baseTypeVN = VNForIntCon(encodedTypes);
     ValueNum sizeVN     = VNForIntCon(simdSize);
     ValueNum simdTypeVN = VNForFunc(TYP_REF, VNF_SimdType, sizeVN, baseTypeVN);
 
@@ -7030,6 +7038,15 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
     }
     else
     {
+        // Fold loads of byref exposed locals into ByrefExposedLocalLoad
+        VNFuncApp funcApp;
+        if (vnStore->GetVNFunc(vnStore->VNNormalValue(pointerVN), &funcApp) && funcApp.FuncIs(VNF_PtrToLoc))
+        {
+            unsigned lclNum  = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(0));
+            unsigned lclOffs = (unsigned)vnStore->CoercedConstantValue<size_t>(funcApp.GetArg(1));
+            return fgValueNumberByrefExposedLocalLoad(type, lclNum, lclOffs);
+        }
+
         ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
         // The memoization for VNFunc applications does not factor in the result type, so
         // VNF_ByrefExposedLoad takes the loaded type as an explicit parameter.
@@ -7038,6 +7055,32 @@ ValueNum Compiler::fgValueNumberByrefExposedLoad(var_types type, ValueNum pointe
             vnStore->VNForFunc(type, VNF_ByrefExposedLoad, typeVN, vnStore->VNNormalValue(pointerVN), memoryVN);
         return loadVN;
     }
+}
+
+//------------------------------------------------------------------------
+// fgValueNumberByrefExposedLocalLoad: Compute the value number for a
+//   byref-exposed load from an address-exposed local.
+//
+// Arguments:
+//    type    - The type of the load
+//    lclNum  - The local being loaded from
+//    lclOffs - The offset into the local
+//
+// Returns:
+//    The value number of the load.
+//
+ValueNum Compiler::fgValueNumberByrefExposedLocalLoad(var_types type, unsigned lclNum, unsigned lclOffs)
+{
+    if (type == TYP_STRUCT)
+    {
+        // See fgValueNumberByrefExposedLoad.
+        return vnStore->VNForExpr(compCurBB, TYP_STRUCT);
+    }
+
+    ValueNum memoryVN = fgCurMemoryVN[ByrefExposed];
+    ValueNum typeVN   = vnStore->VNForIntCon(type);
+    return vnStore->VNForFunc(type, VNF_ByrefExposedLocalLoad, typeVN, vnStore->VNForIntCon(lclNum),
+                              vnStore->VNForIntPtrCon(lclOffs), memoryVN);
 }
 
 var_types ValueNumStore::TypeOfVN(ValueNum vn) const
@@ -9183,13 +9226,11 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         return VNZeroForType(type);
                     }
                 }
-                else if (IsVectorPerElementMask(argVN, baseType, simdSize))
+                else if (cnsVN == VNAllBitsForType(type, simdSize))
                 {
                     // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
                     // integrals
-                    ValueNum allBitsVN = VNAllBitsForType(type, simdSize);
-
-                    if (cnsVN == allBitsVN)
+                    if (IsVectorPerElementMask(argVN, baseType, simdSize))
                     {
                         // We are comparing something that is known per element to be either
                         // AllBitsSet or Zero, with AllBitsSet.
@@ -9361,12 +9402,10 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunBinary(
                         return VNAllBitsForType(type, elementCount);
                     }
                 }
-                else if (IsVectorPerElementMask(argVN, baseType, simdSize))
+                else if (cnsVN == VNZeroForType(type))
                 {
                     // Handle `(Mask != Zero) == Mask` and `(Zero != Mask) == Mask` for integral types
-                    ValueNum zeroVN = VNZeroForType(type);
-
-                    if (cnsVN == zeroVN)
+                    if (IsVectorPerElementMask(argVN, baseType, simdSize))
                     {
                         // We are comparing something that is known per element to be either
                         // AllBitsSet or Zero, with Zero.
@@ -9979,13 +10018,13 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 }
 
 //-------------------------------------------------------------------
-// IsVectorPerElementMask: returns true if the ValueNum is a vector constant per-element mask
+// IsVectorPerElementMask: returns true if the ValueNum is a vector per-element mask
 //                         (every element has either all bits set or none of them) for the
 //                         given simd size and base type.
 //
 // Arguments:
 //    vn           - the value number to check
-//    simdBaseType - the base type of the constant being checked.
+//    simdBaseType - the base type being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
@@ -9993,7 +10032,27 @@ ValueNum ValueNumStore::EvalHWIntrinsicFunTernary(
 //
 bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, unsigned simdSize)
 {
+    SmallValueNumSet knownMasks;
+    return IsVectorPerElementMask(vn, simdBaseType, simdSize, knownMasks, 0);
+}
+
+// Cache successful compound proofs for this query only: mask validity depends on the requested element size.
+// As in scalar evolution analysis, limit recursion to 64 levels to bound native stack usage.
+bool ValueNumStore::IsVectorPerElementMask(
+    ValueNum vn, var_types simdBaseType, unsigned simdSize, SmallValueNumSet& knownMasks, unsigned depth)
+{
     // This should be kept in sync with GenTree::IsVectorPerElementMask
+
+    if (knownMasks.Lookup(vn))
+    {
+        return true;
+    }
+
+    const unsigned MaxDepth = 64;
+    if (depth >= MaxDepth)
+    {
+        return false;
+    }
 
     var_types simdType     = TypeOfVN(vn);
     unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
@@ -10053,6 +10112,8 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
     }
 #endif // TARGET_ARM64
 
+    bool isMask = false;
+
     switch (oper)
     {
         case GT_AND:
@@ -10068,14 +10129,16 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
             // there isn't any way to statically determine this for non-constants and
             // the constant cases should've already been folded.
 
-            return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize) &&
-                   IsVectorPerElementMask(funcApp.GetArg(1), simdBaseType, simdSize);
+            isMask = IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize, knownMasks, depth + 1) &&
+                     IsVectorPerElementMask(funcApp.GetArg(1), simdBaseType, simdSize, knownMasks, depth + 1);
+            break;
         }
 
         case GT_NOT:
         {
             // We are an unary bitwise operation where the input is a per-element mask
-            return IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize);
+            isMask = IsVectorPerElementMask(funcApp.GetArg(0), simdBaseType, simdSize, knownMasks, depth + 1);
+            break;
         }
 
         default:
@@ -10085,7 +10148,12 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
         }
     }
 
-    return false;
+    if (isMask)
+    {
+        knownMasks.Add(m_compiler, vn);
+    }
+
+    return isMask;
 }
 
 #endif // FEATURE_HW_INTRINSICS
@@ -10932,7 +11000,7 @@ uint32_t ValueNumStore::GetVNHWIntrinsicSizeAndBaseType(const VNFuncApp& funcApp
     assert(IsVNConstant(simdType.GetArg(0)));
     assert(IsVNConstant(simdType.GetArg(1)));
 
-    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)));
+    *simdBaseType = static_cast<var_types>(GetConstantInt32(simdType.GetArg(1)) & SimdTypeMask);
     return static_cast<uint32_t>(GetConstantInt32(simdType.GetArg(0)));
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -11422,11 +11490,19 @@ void ValueNumStore::vnDumpSimdType(Compiler* comp, VNFuncApp* simdType)
     assert(IsVNConstant(simdType->GetArg(0)));
     assert(IsVNConstant(simdType->GetArg(1)));
 
-    int       simdSize     = ConstantValue<int>(simdType->GetArg(0));
-    var_types simdBaseType = static_cast<var_types>(ConstantValue<int>(simdType->GetArg(1)));
+    int       simdSize      = ConstantValue<int>(simdType->GetArg(0));
+    unsigned  encodedTypes  = ConstantValue<unsigned>(simdType->GetArg(1));
+    var_types simdBaseType  = static_cast<var_types>(encodedTypes & SimdTypeMask);
+    unsigned  auxiliaryType = encodedTypes >> SimdTypeBits;
 
-    printf("%s(simd%d, %s)", VNFuncName(simdType->GetFunc()), simdSize,
+    printf("%s(simd%d, %s", VNFuncName(simdType->GetFunc()), simdSize,
            (simdBaseType == TYP_UNDEF) ? varTypeName(TYP_UNDEF) : varTypeName(simdBaseType));
+
+    if (auxiliaryType != 0)
+    {
+        printf(", aux %s", varTypeName(static_cast<var_types>(auxiliaryType - 1)));
+    }
+    printf(")");
 }
 #endif // FEATURE_SIMD
 
@@ -13384,8 +13460,15 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             {
                 unsigned lclNum  = tree->AsLclFld()->GetLclNum();
                 unsigned lclOffs = tree->AsLclFld()->GetLclOffs();
+
+                // For async functions resumption will give locals a new
+                // address. We model that with a "frame version" argument that
+                // changes inside async functions, but that is unchanged in
+                // normal methods.
+                ValueNum frameVersion =
+                    compIsAsync() ? vnStore->VNForExpr(compCurBB, TYP_INT) : vnStore->VNZeroForType(TYP_INT);
                 tree->gtVNPair.SetBoth(vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                          vnStore->VNForIntPtrCon(lclOffs)));
+                                                          vnStore->VNForIntPtrCon(lclOffs), frameVersion));
                 assert(lvaGetDesc(lclNum)->IsAddressExposed() || lvaGetDesc(lclNum)->IsDefinedViaAddress());
             }
             break;
@@ -13403,9 +13486,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else if (varDsc->IsAddressExposed())
                 {
                     // Address-exposed locals are part of ByrefExposed.
-                    ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                         vnStore->VNForIntPtrCon(lcl->GetLclOffs()));
-                    ValueNum loadVN = fgValueNumberByrefExposedLoad(lcl->TypeGet(), addrVN);
+                    ValueNum loadVN = fgValueNumberByrefExposedLocalLoad(lcl->TypeGet(), lclNum, lcl->GetLclOffs());
 
                     lcl->gtVNPair.SetLiberal(loadVN);
                     lcl->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, lcl->TypeGet()));
@@ -13433,9 +13514,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 else if (varDsc->IsAddressExposed())
                 {
                     // Address-exposed locals are part of ByrefExposed.
-                    ValueNum addrVN = vnStore->VNForFunc(TYP_BYREF, VNF_PtrToLoc, vnStore->VNForIntCon(lclNum),
-                                                         vnStore->VNForIntPtrCon(lclFld->GetLclOffs()));
-                    ValueNum loadVN = fgValueNumberByrefExposedLoad(lclFld->TypeGet(), addrVN);
+                    ValueNum loadVN =
+                        fgValueNumberByrefExposedLocalLoad(lclFld->TypeGet(), lclNum, lclFld->GetLclOffs());
 
                     lclFld->gtVNPair.SetLiberal(loadVN);
                     lclFld->gtVNPair.SetConservative(vnStore->VNForExpr(compCurBB, lclFld->TypeGet()));
@@ -13526,6 +13606,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                                 assert(embedClsHnd != nullptr);
                                 ValueNum handleVN = vnStore->VNForHandle((ssize_t)embedClsHnd, GTF_ICON_CLASS_HDL);
                                 tree->gtVNPair    = vnStore->VNPWithExc(ValueNumPair(handleVN, handleVN), addrXvnp);
+
+                                if (tree->IndirMayFault(this))
+                                {
+                                    // The value is known, but the load still dereferences "addr" and can
+                                    // raise NullReferenceException. It has to be recorded here because
+                                    // fgValueNumberAddExceptionSetForIndirection skips indirections whose
+                                    // value numbers are constants.
+                                    tree->gtVNPair = vnStore->VNPWithExc(tree->gtVNPair,
+                                                                         fgValueNumberIndirNullCheckExceptions(addr));
+                                }
+
                                 returnsTypeHandle = true;
                             }
                         }
@@ -14188,8 +14279,10 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
     }
     else
     {
-        VNFunc       func       = GetVNFuncForNode(tree);
-        ValueNum     simdTypeVN = vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType());
+        // The auxiliary type distinguishes overloads with the same operand bits, such as gather index widths.
+        VNFunc   func = GetVNFuncForNode(tree);
+        ValueNum simdTypeVN =
+            vnStore->VNForSimdType(tree->GetSimdSize(), tree->GetSimdBaseType(), tree->GetAuxiliaryType());
         ValueNumPair resultTypeVNPair(simdTypeVN, simdTypeVN);
 
         JITDUMP("    simdTypeVN is ");
@@ -14234,8 +14327,17 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
             {
                 ValueNum normalLVN =
                     vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetLiberal(), resultTypeVNPair.GetLiberal());
-                ValueNum normalCVN = vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetConservative(),
-                                                                      resultTypeVNPair.GetConservative());
+                ValueNum normalCVN;
+
+                if (op1vnp.BothEqual())
+                {
+                    normalCVN = normalLVN;
+                }
+                else
+                {
+                    normalCVN = vnStore->EvalHWIntrinsicFunUnary(tree, func, op1vnp.GetConservative(),
+                                                                 resultTypeVNPair.GetConservative());
+                }
 
                 normalPair = ValueNumPair(normalLVN, normalCVN);
                 excSetPair = op1Xvnp;
@@ -14251,9 +14353,18 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                     ValueNum normalLVN =
                         vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetLiberal(), op2vnp.GetLiberal(),
                                                           resultTypeVNPair.GetLiberal());
-                    ValueNum normalCVN =
-                        vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetConservative(),
-                                                          op2vnp.GetConservative(), resultTypeVNPair.GetConservative());
+                    ValueNum normalCVN;
+
+                    if (op1vnp.BothEqual() && op2vnp.BothEqual())
+                    {
+                        normalCVN = normalLVN;
+                    }
+                    else
+                    {
+                        normalCVN = vnStore->EvalHWIntrinsicFunBinary(tree, func, op1vnp.GetConservative(),
+                                                                      op2vnp.GetConservative(),
+                                                                      resultTypeVNPair.GetConservative());
+                    }
 
                     normalPair = ValueNumPair(normalLVN, normalCVN);
                     excSetPair = vnStore->VNPExcSetUnion(op1Xvnp, op2Xvnp);
@@ -14269,10 +14380,19 @@ void Compiler::fgValueNumberHWIntrinsic(GenTreeHWIntrinsic* tree)
                     ValueNum normalLVN =
                         vnStore->EvalHWIntrinsicFunTernary(tree, func, op1vnp.GetLiberal(), op2vnp.GetLiberal(),
                                                            op3vnp.GetLiberal(), resultTypeVNPair.GetLiberal());
-                    ValueNum normalCVN =
-                        vnStore->EvalHWIntrinsicFunTernary(tree, func, op1vnp.GetConservative(),
-                                                           op2vnp.GetConservative(), op3vnp.GetConservative(),
-                                                           resultTypeVNPair.GetConservative());
+                    ValueNum normalCVN;
+
+                    if (op1vnp.BothEqual() && op2vnp.BothEqual() && op3vnp.BothEqual())
+                    {
+                        normalCVN = normalLVN;
+                    }
+                    else
+                    {
+                        normalCVN =
+                            vnStore->EvalHWIntrinsicFunTernary(tree, func, op1vnp.GetConservative(),
+                                                               op2vnp.GetConservative(), op3vnp.GetConservative(),
+                                                               resultTypeVNPair.GetConservative());
+                    }
 
                     normalPair = ValueNumPair(normalLVN, normalCVN);
 

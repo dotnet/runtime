@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- ApiCompat filters out the internal ExperimentalAttribute used by .NET Standard, so it
+       incorrectly reports this already-experimental API as becoming experimental on .NET 10. -->
+  <Suppression>
+    <DiagnosticId>CP0023</DiagnosticId>
+    <Target>M:System.Security.Cryptography.Cose.CoseKey.#ctor(System.Security.Cryptography.MLDsa)</Target>
+    <Left>lib/netstandard2.0/System.Security.Cryptography.Cose.dll</Left>
+    <Right>lib/net10.0/System.Security.Cryptography.Cose.dll</Right>
+  </Suppression>
+</Suppressions>

@@ -611,7 +611,11 @@ Thread* SetupThread()
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
     CheckThreadStateNotDestroyed();
+#endif
 
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
