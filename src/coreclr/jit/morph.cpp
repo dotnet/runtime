@@ -3444,6 +3444,7 @@ GenTree* Compiler::fgMorphExpandImplicitByRefArg(GenTreeLclVarCommon* lclNode)
     {
         newArgNode = (argNodeType == TYP_STRUCT) ? gtNewStoreBlkNode(argNodeLayout, addrNode, data)
                                                  : gtNewStoreIndNode(argNodeType, addrNode, data)->AsIndir();
+        newArgNode->gtFlags |= GTF_IND_TGT_NOT_HEAP;
     }
     else if (isLoad)
     {
