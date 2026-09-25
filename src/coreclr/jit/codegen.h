@@ -222,7 +222,7 @@ protected:
     regNumber                  GetMultiUseOperandReg(GenTree* operand);
     void                       genEmitLocalGet(regNumber reg, WasmValueType expectedType);
     void                       genEmitLocalGet(regNumber reg, var_types expectedType);
-    void                       genEmitNullCheck(regNumber reg);
+    void                       genEmitNullCheck(regNumber reg, var_types refType);
     unsigned                   GetStackPointerRegIndex() const;
     unsigned                   GetFramePointerRegIndex() const;
     void                       ensureCurrentFuncIsUnwindable();
