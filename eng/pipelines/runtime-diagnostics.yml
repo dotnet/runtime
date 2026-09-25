@@ -6,10 +6,10 @@
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
 #                      subset). Independent of every other stage.
 #
-#   CdacTests          Per-platform CdacBuild + SOS / Dump / Stress /
+#   CdacTests          Per-platform build + SOS / Dump / Stress /
 #                      XPlatDumpGen / XPlatDumpTest legs in one stage. Each test
-#                      leg uses job-level dependsOnGlobalBuilds: CdacBuild, so
-#                      e.g. linux_x64 tests start as soon as linux_x64 CdacBuild
+#                      leg uses job-level dependsOnGlobalBuilds: Build, so
+#                      e.g. linux_x64 tests start as soon as linux_x64 Build
 #                      finishes (no waiting on the slowest platform). SOS.Tests
 #                      covers both legacy DAC and cDAC modes against that build.
 #                      Interpreter coverage is tracked separately.
@@ -39,6 +39,17 @@ parameters:
     - windows_arm64
     - linux_arm64
     - linux_arm
+    - osx_arm64
+    - osx_x64
+- name: sosPlatforms
+  displayName: SOS Platforms
+  type: object
+  default:
+    - windows_x64
+    - windows_x86
+    - linux_x64
+    - windows_arm64
+    - linux_arm64
     - osx_arm64
     - osx_x64
 # osx_arm64 / osx_x64 are intentionally excluded from x-plat coverage.
@@ -138,12 +149,12 @@ extends:
     # cDAC SOS + dump + stress + xplat-dump-gen tests.
     #
     # These test families live in one stage so they can use
-    # job-level dependsOnGlobalBuilds against the shared CdacBuild jobs
+    # job-level dependsOnGlobalBuilds against the shared Build jobs
     # (also in this stage) -- linux_x64 test legs start as soon as
-    # linux_x64 CdacBuild finishes, no waiting on slower platforms.
+    # linux_x64 Build finishes, no waiting on slower platforms.
     #
     # Runtime is built Checked. The cDAC native shim ships in the Release
-    # testhost CdacBuild publishes -- stress tests load it in-process.
+    # testhost the shared build publishes -- stress tests load it in-process.
     # Dump tests load the managed cDAC assemblies directly and rebuild them
     # at /p:Configuration=Debug during payload prep.
     # ----------------------------------------------------------------------
@@ -151,15 +162,15 @@ extends:
       dependsOn: []
       jobs:
       # Shared per-platform build. Downstream jobs in this stage depend on
-      # the per-platform build_<plat>_release_CdacBuild via job-level
-      # dependsOnGlobalBuilds: - nameSuffix: CdacBuild.
+      # the per-platform build_<plat>_release_Build via job-level
+      # dependsOnGlobalBuilds: - nameSuffix: Build.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms: ${{ parameters.cdacDumpPlatforms }}
           jobParameters:
-            nameSuffix: CdacBuild
+            nameSuffix: Build
             buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 180
@@ -180,13 +191,13 @@ extends:
         parameters:
           jobTemplate: /eng/pipelines/diagnostics/sos-test-leg.yml
           buildConfig: release
-          platforms: ${{ parameters.cdacDumpPlatforms }}
+          platforms: ${{ parameters.sosPlatforms }}
           jobParameters:
-            name: SOS_Helix
+            nameSuffix: SOS
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 360
             dependsOnGlobalBuilds:
-            - nameSuffix: CdacBuild
+            - nameSuffix: Build
 
       # cDAC Dump Tests -- single-leg mode, not on schedule.
       - ${{ if and(eq(parameters.cdacDumpTestMode, 'single-leg'), ne(variables['Build.Reason'], 'Schedule')) }}:
@@ -215,7 +226,7 @@ extends:
             buildArgs: -s tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig)
             timeoutInMinutes: 180
             dependsOnGlobalBuilds:
-            - nameSuffix: CdacBuild
+            - nameSuffix: Build
             preBuildSteps:
             - template: /eng/pipelines/cdac/download-cdac-build-artifact.yml
             postBuildSteps:
