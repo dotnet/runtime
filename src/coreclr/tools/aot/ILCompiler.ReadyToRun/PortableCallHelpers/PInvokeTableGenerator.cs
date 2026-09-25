@@ -8,6 +8,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
+using ILCompiler.DependencyAnalysis.Wasm;
+using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Internal.TypeSystem.Interop;
@@ -246,6 +248,7 @@ namespace ILCompiler.PortableCallHelpers
                 // The current approach has limitations with overloaded methods.
                 extern "C" void LookupUnmanagedCallersOnlyMethodByName(const char* fullQualifiedTypeName, const char* methodName, MethodDesc** ppMD);
                 extern "C" void ExecuteInterpretedMethodFromUnmanaged(MethodDesc* pMD, int8_t* args, size_t argSize, int8_t* ret, PCODE callerIp);
+                extern "C" void* GetR2RNativeCodeForUnmanagedCallersOnly(MethodDesc* pMD);
 
                 """);
 
@@ -254,6 +257,7 @@ namespace ILCompiler.PortableCallHelpers
             callbacks.Sort(new PInvokeCallbackComparer());
             foreach (PInvokeCallback cb in callbacks)
             {
+                RejectUnsupportedCallbackSignature(cb);
                 cb.EntrySymbol = FixedSymbolName(cb);
 
                 if (!callbackNames.Add(cb.EntrySymbol))
@@ -281,11 +285,36 @@ namespace ILCompiler.PortableCallHelpers
                 // those instead. Every other type this emits reaches the slot unchanged through a cast.
                 bool CarriesBits(int i) => parameterCTypes[i] is "float" or "double";
                 string argsDeclaration = parameterCount > 0
-                    ? $"\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};\n"
-                      + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));\n"))
+                    ? $"\n\n    int64_t args[{parameterCount}] = {{ {string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => CarriesBits(i) ? "0" : $"(int64_t)arg{i}"))} }};"
+                      + string.Concat(Enumerable.Range(0, parameterCount).Where(CarriesBits).Select(i => $"\n    memcpy(&args[{i}], &arg{i}, sizeof(arg{i}));"))
                     : string.Empty;
                 string parametersDeclaration = string.Join(", ", parameterCTypes.Select((p, i) => $"{p} arg{i}"));
                 string arguments = string.Join(", ", Enumerable.Range(0, parameterCount).Select(i => $"arg{i}"));
+                // A partial R2R image can compile an UnmanagedCallersOnly callback to native code. That R2R code
+                // is the directly-callable native entrypoint (same ABI as this wrapper's parameters), so dispatch
+                // to it and skip the interpreter/interp->R2R path entirely.
+                string r2rVar = $"R2RCode_{cb.EntrySymbol}";
+                string paramTypesOnly = string.Join(", ", parameterCTypes);
+                string r2rDispatch = cb.IsVoid
+                    ? $"((void(*)({paramTypesOnly}))r2r)({arguments});{w.NewLine}        return;"
+                    : $"return (({MapType(cb.ReturnType)}(*)({paramTypesOnly}))r2r)({arguments});";
+                // Cache the resolved entrypoint in a per-callback static, published with acquire/release
+                // atomics: these are native entry points that can be entered concurrently, and the value is
+                // computed identically on every call, so the racing read/write is benign but must not tear.
+                string r2rStaticDecl = $"{w.NewLine}static void* {r2rVar} = (void*)(intptr_t)-1;";
+                string r2rSection =
+                    w.NewLine + "    // Prefer the R2R native entrypoint when this callback was compiled (partial R2R)."
+                    + w.NewLine + "    // Resolve once and cache; a method's native-code availability is fixed after first prepare."
+                    + w.NewLine + $"    void* r2r = __atomic_load_n(&{r2rVar}, __ATOMIC_ACQUIRE);"
+                    + w.NewLine + "    if (r2r == (void*)(intptr_t)-1)"
+                    + w.NewLine + "    {"
+                    + w.NewLine + $"        r2r = GetR2RNativeCodeForUnmanagedCallersOnly(MD_{cb.EntrySymbol});"
+                    + w.NewLine + $"        __atomic_store_n(&{r2rVar}, r2r, __ATOMIC_RELEASE);"
+                    + w.NewLine + "    }"
+                    + w.NewLine + "    if (r2r != nullptr)"
+                    + w.NewLine + "    {"
+                    + w.NewLine + $"        {r2rDispatch}"
+                    + w.NewLine + "    }";
                 string exportFunction = cb.IsExport ?
                     $$"""
 
@@ -298,16 +327,16 @@ namespace ILCompiler.PortableCallHelpers
                 w.Write(
                     $$"""
 
-                    static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;
+                    static MethodDesc* MD_{{cb.EntrySymbol}} = nullptr;{{r2rStaticDecl}}
                     static {{
                     MapType(cb.ReturnType)}} Call_{{cb.EntrySymbol}}({{parametersDeclaration}})
-                    {{{argsDeclaration}}
+                    {
                         // Lazy lookup of MethodDesc for the function export scenario.
                         if (!MD_{{cb.EntrySymbol}})
                         {
                             LookupUnmanagedCallersOnlyMethodByName("{{cb.TypeFullName}}, {{cb.AssemblyName}}", "{{cb.MethodName}}", &MD_{{cb.EntrySymbol}});
-                        }{{
-                        (!cb.IsVoid ? $"{w.NewLine}{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
+                        }{{r2rSection}}{{argsDeclaration}}{{
+                        (!cb.IsVoid ? $"{w.NewLine}    {MapType(cb.ReturnType)} result;" : "")}}
                         ExecuteInterpretedMethodFromUnmanaged(MD_{{cb.EntrySymbol}}, {{argsArgs}}, {{(cb.IsVoid ? "nullptr" : "(int8_t*)&result")}}, (PCODE)&Call_{{cb.EntrySymbol}});{{
                         (!cb.IsVoid ? $"{w.NewLine}    return result;" : "")}}
                     }{{exportFunction}}
@@ -349,6 +378,43 @@ namespace ILCompiler.PortableCallHelpers
 
                 throw new LogAsErrorException(
                     $"Exported callback '{cb.EntryPoint}' cannot be resolved at run time: '{cb.TypeFullName}' declares more than one [UnmanagedCallersOnly] method named '{cb.MethodName}', and the runtime looks them up by name alone. Give them distinct names: {string.Join(", ", ambiguous)}");
+            }
+
+            static void RejectUnsupportedCallbackSignature(PInvokeCallback cb)
+            {
+                List<string> loweredTokens = InteropSignature.ParseSignatureTokens(
+                    InteropSignature.GetMethodSignature(cb.Method, WasmLowering.LoweringFlags.IsUnmanagedCallersOnly));
+                string token = null;
+                for (int i = 1; i < loweredTokens.Count; i++)
+                {
+                    if (IsUnsupportedToken(loweredTokens[i]))
+                    {
+                        token = loweredTokens[i];
+                        break;
+                    }
+                }
+
+                if (token is null && !cb.IsVoid)
+                {
+                    string returnToken = InteropSignature.GetAbiToken(cb.ReturnType);
+                    if (IsUnsupportedToken(returnToken))
+                        token = returnToken;
+                }
+
+                if (token is not null)
+                {
+                    throw new LogAsErrorException(
+                        $"UnmanagedCallersOnly callback '{cb.Method}' has unsupported signature token '{token}', which the generated native wrapper does not support.");
+                }
+
+                if (!cb.IsVoid && IsPassedByReference(cb.ReturnType))
+                {
+                    throw new LogAsErrorException(
+                        $"UnmanagedCallersOnly callback '{cb.Method}' has return type '{cb.ReturnType}' that uses a hidden return buffer, which the generated native wrapper does not support.");
+                }
+
+                static bool IsUnsupportedToken(string token) =>
+                    token is "V" || InteropSignature.IsMultiSlotToken(token);
             }
         }
 

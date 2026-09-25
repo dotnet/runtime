@@ -703,6 +703,87 @@ public class WasmArgumentLayoutTests
         Assert.Equal(tokens[1], InteropSignature.GetAbiToken(type));
     }
 
+    [Theory]
+    [InlineData("int", "System.Int128", "l2")]
+    [InlineData("System.Int128", "int", "l2")]
+    [InlineData("int", "System.Runtime.Intrinsics.Vector128<int>", "V")]
+    [InlineData("System.Runtime.Intrinsics.Vector128<int>", "int", "V")]
+    public void PortableCallHelpersGeneratorRejectsUnsupportedSignatureTokens(
+        string returnType, string parameterType, string expectedToken)
+    {
+        string source = $$"""
+            using System;
+            using System.Runtime.InteropServices;
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly(EntryPoint = "callback")]
+                public static {{returnType}} Handle({{parameterType}} value) => default;
+            }
+            """;
+
+        AssertPortableCallHelpersGeneratorRejects(source, $"has unsupported signature token '{expectedToken}'");
+    }
+
+    [Fact]
+    public void PortableCallHelpersGeneratorRejectsHiddenReturnBufferCallbacks()
+    {
+        string source = """
+            using System.Runtime.InteropServices;
+
+            public struct Pair
+            {
+                public int First;
+                public int Second;
+            }
+
+            public static class Exports
+            {
+                [UnmanagedCallersOnly(EntryPoint = "callback")]
+                public static Pair Handle(int value) => default;
+            }
+            """;
+
+        AssertPortableCallHelpersGeneratorRejects(source, "uses a hidden return buffer");
+    }
+
+    private void AssertPortableCallHelpersGeneratorRejects(string source, string expectedError)
+    {
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Callbacks.dll"));
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = Path.Combine(workingDirectory, "generated"),
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: false));
+
+            Assert.Equal(1, exitCode);
+            Assert.Contains(expectedError, log.ToString());
+        }
+        finally
+        {
+            // The type system maps an input assembly with FileShare.Read and never releases it - the
+            // context is not disposable - so on Windows the compiled input cannot be deleted while
+            // this process lives. Cleaning up is best effort rather than a second way to fail.
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
     private const string CoreLibSimpleName = "System.Private.CoreLib";
 
     /// <summary>
@@ -768,6 +849,9 @@ public class WasmArgumentLayoutTests
             {
                 Assert.Equal(0, exitCode);
                 Assert.DoesNotContain("declares more than one", log.ToString());
+                string reverseHelpers = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-reverse.cpp"));
+                Assert.Contains("__atomic_load_n", reverseHelpers);
+                Assert.Contains("__atomic_store_n", reverseHelpers);
             }
         }
         finally
