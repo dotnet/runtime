@@ -127,9 +127,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// Builds the argument layout for a Wasm thunk from its Wasm signature.
         /// </summary>
         /// <remarks>
-        /// <see cref="WasmLowering.RaiseSignature"/> models a generic context that precedes the async continuation as
-        /// explicit parameter 0. For layout purposes it is modeled as the hidden instantiation argument instead, so that
-        /// it is placed before the async continuation, matching the interpreter and the method's GC ref map. When present,
+        /// <see cref="WasmLowering.RaiseSignature"/> has no way to mark a parameter as the hidden generic context, so it
+        /// returns it as the first entry of the <see cref="MethodSignature"/> parameter list, with <c>this</c> and the
+        /// return buffer implied by the signature flags and return type. <see cref="ArgIterator{TTypeHandle}"/> would then
+        /// lay it out as the first user argument, after the async continuation. Here it is removed from the parameter list
+        /// and modeled as the hidden instantiation argument, giving the <c>[this] [generic context] [async continuation]
+        /// [user args]</c> order from docs/design/coreclr/botr/clr-abi.md, which the interpreter and the method's GC ref
+        /// map also use. On Wasm, the return buffer is not part of the argument area. When the generic context is present,
         /// the returned signature omits it, and <see cref="ArgIterator{TTypeHandle}.HasParamType"/> is set.
         /// </remarks>
         internal static (MethodSignature, ArgIterator<TypeHandle>, TransitionBlock) BuildWasmThunkArgIterator(WasmSignature wasmSignature, TypeSystemContext context)

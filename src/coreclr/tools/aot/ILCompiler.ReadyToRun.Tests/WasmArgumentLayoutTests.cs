@@ -191,7 +191,7 @@ public class WasmArgumentLayoutTests
         Assert.Equal(callRefMapIterator.HasThis, thunkIterator.HasThis);
 
         // The thunk only models the generic context as the hidden instantiation argument when it precedes the async
-        // continuation; otherwise it stays explicit parameter 0, which must still land in the same slot.
+        // continuation; otherwise it stays the first user argument, which must still land in the same slot.
         Assert.Equal(sharedGeneric && asyncVariant, thunkIterator.HasParamType);
         if (callRefMapIterator.HasParamType)
         {

@@ -457,32 +457,22 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Returns true when the Wasm signature carries a hidden generic context immediately before the async continuation.
+        /// Returns true when the Wasm signature has both a hidden generic context and an async continuation.
         /// </summary>
         /// <remarks>
-        /// The generic context is encoded with the hidden-pointer char (i32 on wasm32, i64 on wasm64) after the return
-        /// type and optional 'this', directly followed by the 'a' async marker.
+        /// The generic context is encoded like any pointer-sized argument, so it can only be recognized by its position:
+        /// it is always passed immediately before the async continuation (see "Passing Continuation argument" in
+        /// docs/design/coreclr/botr/clr-abi.md). Without an async continuation, it occupies the first argument slot either way.
         /// </remarks>
         public static bool HasGenericContextBeforeAsync(WasmSignature wasmSignature, TypeSystemContext context)
         {
             string sig = wasmSignature.SignatureString;
-            int pos = 0;
-            if (sig[pos] == 'S')
-            {
-                ParseStructSize(sig, ref pos);
-            }
-            else
-            {
-                pos++;
-            }
-
-            if ((pos < sig.Length) && (sig[pos] == 'T'))
-            {
-                pos++;
-            }
-
+            int asyncIndex = sig.IndexOf('a');
             char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
-            return (pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a');
+
+            // Apart from the generic context, only the return type (a single char at index 0, or ending in a digit) or
+            // 'T' can precede the async continuation.
+            return (asyncIndex > 1) && (sig[asyncIndex - 1] == hiddenParamChar);
         }
 
         public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
@@ -519,7 +509,7 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // A generic context precedes the async continuation; it is encoded with the
             // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
             char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
             bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync(wasmSignature, context);
