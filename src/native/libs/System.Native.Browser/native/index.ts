@@ -54,6 +54,11 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
         return _ems_.wasmTable;
     }
 
+    function asCallbackArray(callbacks: undefined | (() => any) | (() => any)[]): (() => any)[] {
+        if (!callbacks) return [];
+        return typeof callbacks === "function" ? [callbacks] : callbacks;
+    }
+
     function setupEmscripten() {
         _ems_.Module.preInit = [() => {
             if (_ems_.dotnetApi.getConfig) {
@@ -82,10 +87,4 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
             };
         }, ...asCallbackArray(_ems_.Module.preRun)];
     }
-}
-
-// emscripten accepts a single callback or an array of them
-function asCallbackArray(callbacks: undefined | (() => any) | (() => any)[]): (() => any)[] {
-    if (!callbacks) return [];
-    return typeof callbacks === "function" ? [callbacks] : callbacks;
 }
