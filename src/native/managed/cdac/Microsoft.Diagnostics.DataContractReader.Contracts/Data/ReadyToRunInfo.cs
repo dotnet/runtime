@@ -13,7 +13,8 @@ internal sealed partial class ReadyToRunInfo : IData<ReadyToRunInfo>
     [Field] public partial uint NumRuntimeFunctions { get; }
     // Absent when the runtime is built without FEATURE_COLD_R2R_CODE.
     [Field] public partial uint? NumHotColdMap { get; }
-    [Field] public partial TargetPointer DelayLoadMethodCallThunks { get; }
+    // Absent on WASM.
+    [Field] public partial TargetPointer? DelayLoadMethodCallThunks { get; }
     [Field] public partial TargetPointer DebugInfoSection { get; }
     [Field] public partial TargetPointer ExceptionInfoSection { get; }
     [Field] public partial TargetPointer LoadedImageBase { get; }

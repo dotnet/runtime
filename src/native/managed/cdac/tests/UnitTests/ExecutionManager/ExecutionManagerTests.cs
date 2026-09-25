@@ -389,6 +389,31 @@ public class ExecutionManagerTests
     }
 
     [Fact]
+    public void ReadyToRunInfo_WasmMissingOptionalFields_EnsureAllFieldsRead()
+    {
+        MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
+        MockExecutionManagerBuilder emBuilder = new(
+            "c1",
+            wasmArch,
+            MockExecutionManagerBuilder.DefaultAllocationRange,
+            isWasm: true);
+        MockReadyToRunInfo r2rInfo = emBuilder.AddReadyToRunInfo([0x100], []);
+        r2rInfo.MinVirtualIP = 0x8001_0001;
+        r2rInfo.LoadedImageBase = 0x0090_0000;
+        Target target = CreateTarget(
+            emBuilder,
+            RuntimeInfoOperatingSystem.Windows,
+            RuntimeInfoArchitecture.Wasm);
+
+        Data.ReadyToRunInfo data =
+            target.ProcessedData.GetOrAdd<Data.ReadyToRunInfo>(r2rInfo.Address);
+        ((Data.IReadableData)data).EnsureAllFieldsRead();
+
+        Assert.Null(data.NumHotColdMap);
+        Assert.Null(data.DelayLoadMethodCallThunks);
+    }
+
+    [Fact]
     public void GetGCInfo_R2R_WasmVirtualIPUsesLoadedImageBase()
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };

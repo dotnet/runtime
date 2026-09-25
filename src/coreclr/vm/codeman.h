@@ -770,6 +770,7 @@ public:
 struct RangeSection
 {
     friend class RangeSectionMap;
+    // [cDAC] [ExecutionManager]: Contract depends on these values.
     enum RangeSectionFlags
     {
         RANGE_SECTION_NONE          = 0x0,

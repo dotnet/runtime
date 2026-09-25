@@ -280,11 +280,11 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (rangeSection.IsVirtualIP)
                 return false;
 
-            if (r2rInfo.DelayLoadMethodCallThunks == TargetPointer.Null)
+            if (r2rInfo.DelayLoadMethodCallThunks is not { } thunks || thunks == TargetPointer.Null)
                 return false;
 
             // Check if the address is in the region containing thunks for READYTORUN_HELPER_DelayLoad_MethodCall
-            Data.ImageDataDirectory thunksData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(r2rInfo.DelayLoadMethodCallThunks);
+            Data.ImageDataDirectory thunksData = Target.ProcessedData.GetOrAdd<Data.ImageDataDirectory>(thunks);
             ulong rva = jittedCodeAddress - GetLoadedImageBase(rangeSection, r2rInfo);
             return thunksData.VirtualAddress <= rva && rva < thunksData.VirtualAddress + thunksData.Size;
         }
