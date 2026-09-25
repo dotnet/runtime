@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetComputerNameW")]
         private static unsafe partial int GetComputerName(char* lpBuffer, uint* nSize);
 

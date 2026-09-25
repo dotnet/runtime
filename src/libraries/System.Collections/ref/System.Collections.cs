@@ -565,6 +565,9 @@ namespace System.Collections
         public BitArray(int length) { }
         public BitArray(int length, bool defaultValue) { }
         public BitArray(int[] values) { }
+        public BitArray(System.ReadOnlySpan<bool> values) { }
+        public BitArray(System.ReadOnlySpan<byte> bytes) { }
+        public BitArray(System.ReadOnlySpan<int> values) { }
         public int Count { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public bool IsSynchronized { get { throw null; } }

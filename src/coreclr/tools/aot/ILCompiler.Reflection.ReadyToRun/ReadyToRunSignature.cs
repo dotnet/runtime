@@ -1393,6 +1393,14 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(')');
                     break;
 
+                case ReadyToRunFixupKind.StoreMultiCallableAddrOfCode:
+                    uint targetCodeRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    uint storeLocationRVA = BitConverter.ToUInt32(_image, Offset);
+                    SkipBytes(4);
+                    builder.Append($" (STORE_MULTI_CALLABLE_ADDR_OF_CODE Target:RVA[0x{targetCodeRVA:X}] Location:RVA[0x{storeLocationRVA:X}])");
+                    break;
+
                 case ReadyToRunFixupKind.Check_VirtualFunctionOverride:
                 case ReadyToRunFixupKind.Verify_VirtualFunctionOverride:
                     ReadyToRunVirtualFunctionOverrideFlags flags = (ReadyToRunVirtualFunctionOverrideFlags)ReadUInt();
@@ -1448,7 +1456,18 @@ namespace ILCompiler.Reflection.ReadyToRun
                     break;
 
                 case ReadyToRunFixupKind.DeclaringTypeHandle:
-                    ParseType(builder);
+                    if (_contextReader.DeclaringTypeHandleFixupUsesMethodSignature)
+                    {
+                        ParseMethod(builder);
+                    }
+                    else
+                    {
+                        // Images predating R2R version 27 encode the declaring type followed by the type
+                        // named by the token.
+                        ParseType(builder);
+                        builder.Append(" of ");
+                        ParseType(builder);
+                    }
                     builder.Append(" (DECLARING_TYPE_HANDLE)");
                     break;
 
@@ -1744,6 +1763,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("BULK_WRITE_BARRIER");
                     break;
 
+                case ReadyToRunHelper.BulkWriteBarrierSmall:
+                    builder.Append("BULK_WRITE_BARRIER_SMALL");
+                    break;
+
                 // Array helpers
                 case ReadyToRunHelper.Stelem_Ref:
                     builder.Append("STELEM_REF");
@@ -1776,6 +1799,10 @@ namespace ILCompiler.Reflection.ReadyToRun
 
                 case ReadyToRunHelper.PInvokeEnd:
                     builder.Append("PINVOKE_END");
+                    break;
+
+                case ReadyToRunHelper.ResumeAfterCatch:
+                    builder.Append("RESUME_AFTER_CATCH");
                     break;
 
                 case ReadyToRunHelper.GCPoll:

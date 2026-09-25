@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.PatchpointInfo))]
 internal sealed partial class PatchpointInfo : IData<PatchpointInfo>
 {
-    [Field] public uint LocalCount { get; }
+    [Field] public partial uint LocalCount { get; }
 }

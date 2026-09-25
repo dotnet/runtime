@@ -151,6 +151,18 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? HalfType => GetOrResolveType("System.Half", ref _HalfType);
         private Option<INamedTypeSymbol?> _HalfType;
 
+        public INamedTypeSymbol? BFloat16Type => GetOrResolveType("System.Numerics.BFloat16", ref _BFloat16Type);
+        private Option<INamedTypeSymbol?> _BFloat16Type;
+
+        public INamedTypeSymbol? Decimal32Type => GetOrResolveType("System.Numerics.Decimal32", ref _Decimal32Type);
+        private Option<INamedTypeSymbol?> _Decimal32Type;
+
+        public INamedTypeSymbol? Decimal64Type => GetOrResolveType("System.Numerics.Decimal64", ref _Decimal64Type);
+        private Option<INamedTypeSymbol?> _Decimal64Type;
+
+        public INamedTypeSymbol? Decimal128Type => GetOrResolveType("System.Numerics.Decimal128", ref _Decimal128Type);
+        private Option<INamedTypeSymbol?> _Decimal128Type;
+
         public IArrayTypeSymbol? ByteArrayType => _ByteArrayType.HasValue
             ? _ByteArrayType.Value
             : (_ByteArrayType = new(Compilation.CreateArrayTypeSymbol(Compilation.GetSpecialType(SpecialType.System_Byte), rank: 1))).Value;

@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ModuleLookupMap))]
 internal sealed partial class ModuleLookupMap : IData<ModuleLookupMap>
 {
-    [Field] public TargetPointer TableData { get; }
-    [Field] public TargetPointer Next { get; }
-    [Field] public uint Count { get; }
-    [Field] public TargetNUInt SupportedFlagsMask { get; }
+    [Field] public partial TargetPointer TableData { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial uint Count { get; }
+    [Field] public partial TargetNUInt SupportedFlagsMask { get; }
 }

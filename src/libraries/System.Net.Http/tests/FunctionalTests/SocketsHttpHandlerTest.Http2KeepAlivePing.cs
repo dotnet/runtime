@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
@@ -316,6 +317,204 @@ namespace System.Net.Http.Functional.Tests
             }, NoAutoPingResponseHttp2Options);
         }
 
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task KeepAliveConfigured_ConnectionShutDownByGoAway_KeepAlivePingsAreStillSent()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+                client.Timeout = TestHelper.PassingTestTimeout;
+
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                await response.Content.ReadAsStream().CopyToAsync(Stream.Null);
+            },
+            async server =>
+            {
+                await EstablishConnectionAsync(server);
+
+                int streamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendResponseHeadersAsync(streamId, endStream: false));
+
+                // Tell the client that the connection is going away, but that this stream will still be processed.
+                // This removes the connection from the pool, but it must keep sending PINGs while the request is active.
+                await GuardConnectionWriteAsync(() => _connection.SendGoAway(streamId));
+
+                await WaitForKeepAlivePingsAndFinishResponseAsync(streamId);
+
+                await TerminateLoopbackConnectionAsync();
+            }, NoAutoPingResponseHttp2Options);
+        }
+
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task KeepAliveConfigured_NoPingResponseAfterGoAway_RequestShouldFail()
+        {
+            // This is the user-visible symptom of a connection no longer being pinged after a GOAWAY frame:
+            // a long-lived request on a connection whose transport silently died would hang forever.
+            _sendPingResponse = false;
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(1.5);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+                client.Timeout = TestHelper.PassingTestTimeout;
+
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // The request must be torn down once the server stops responding to the keep alive PINGs.
+                HttpProtocolException ex = await Assert.ThrowsAsync<HttpProtocolException>(() => response.Content.ReadAsStream().CopyToAsync(Stream.Null));
+                Assert.Equal(HttpRequestError.HttpProtocolError, ex.HttpRequestError);
+                Assert.Contains("KeepAlivePingDelay", ex.Message);
+
+                await _serverFinished.Task.WaitAsync(TestTimeout);
+            },
+            async server =>
+            {
+                await EstablishConnectionAsync(server);
+
+                int streamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendResponseHeadersAsync(streamId, endStream: false));
+
+                await GuardConnectionWriteAsync(() => _connection.SendGoAway(streamId));
+
+                // Wait for the client to disconnect due to hitting the KeepAliveTimeout.
+                await _incomingFramesTask;
+
+                await TerminateLoopbackConnectionAsync();
+            }, NoAutoPingResponseHttp2Options);
+        }
+
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task KeepAliveConfigured_ConnectionAtMaxConcurrentStreams_KeepAlivePingsAreStillSent()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+
+                using HttpClient client = new HttpClient(handler);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+                client.Timeout = TestHelper.PassingTestTimeout;
+
+                // Warmup request, ensuring that the connection picked up the server's MaxConcurrentStreams setting.
+                using HttpResponseMessage warmupResponse = await client.GetAsync(uri);
+                Assert.Equal(HttpStatusCode.OK, warmupResponse.StatusCode);
+
+                // This request occupies the connection's only stream.
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // A second request can't be served until the first one completes. Attempting it removes the
+                // connection from the pool, but it must keep sending PINGs while the first request is active.
+                Task<HttpResponseMessage> queuedRequest = client.GetAsync(uri);
+
+                await response.Content.ReadAsStream().CopyToAsync(Stream.Null);
+
+                using HttpResponseMessage queuedResponse = await queuedRequest;
+                Assert.Equal(HttpStatusCode.OK, queuedResponse.StatusCode);
+            },
+            async server =>
+            {
+                await EstablishConnectionAsync(server, new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 1 });
+
+                int warmupStreamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(warmupStreamId));
+
+                int streamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendResponseHeadersAsync(streamId, endStream: false));
+
+                await WaitForKeepAlivePingsAndFinishResponseAsync(streamId);
+
+                // The queued request is only sent out after the previous one completed.
+                int queuedStreamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendDefaultResponseAsync(queuedStreamId));
+
+                await TerminateLoopbackConnectionAsync();
+            }, NoAutoPingResponseHttp2Options);
+        }
+
+        [OuterLoop("Runs long")]
+        [Fact]
+        public async Task KeepAliveConfigured_HandlerDisposedWithActiveRequest_KeepAlivePingsAreStillSent()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(10);
+                handler.KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests;
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(1);
+
+                using HttpClient client = new HttpClient(handler, disposeHandler: false);
+                client.DefaultRequestVersion = HttpVersion.Version20;
+                client.Timeout = TestHelper.PassingTestTimeout;
+
+                using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Disposing the handler doesn't affect requests that are already in flight,
+                // so they must keep sending keep alive PINGs.
+                handler.Dispose();
+
+                await response.Content.ReadAsStream().CopyToAsync(Stream.Null);
+            },
+            async server =>
+            {
+                await EstablishConnectionAsync(server);
+
+                int streamId = await ReadRequestHeaderAsync();
+                await GuardConnectionWriteAsync(() => _connection.SendResponseHeadersAsync(streamId, endStream: false));
+
+                await WaitForKeepAlivePingsAndFinishResponseAsync(streamId);
+
+                await TerminateLoopbackConnectionAsync();
+            }, NoAutoPingResponseHttp2Options);
+        }
+
+        /// <summary>Waits for keep alive PINGs to arrive while the request is active, then completes the response.</summary>
+        private async Task WaitForKeepAlivePingsAndFinishResponseAsync(int streamId)
+        {
+            Interlocked.Exchange(ref _pingCounter, 0); // reset the PING counter
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            bool receivedPings = false;
+
+            // Don't send anything on the stream while waiting -- every frame the client receives
+            // resets its ping timer, so the connection must stay quiet for the PINGs to be sent.
+            while (stopwatch.Elapsed < TestHelper.PassingTestTimeout)
+            {
+                if (Volatile.Read(ref _pingCounter) > 0)
+                {
+                    receivedPings = true;
+                    break;
+                }
+
+                await Task.Delay(100);
+            }
+
+            Assert.True(receivedPings, "Timed out waiting for keep alive PINGs.");
+
+            // Finish the response.
+            await GuardConnectionWriteAsync(() => _connection.SendResponseBodyAsync(streamId, new byte[64], isFinal: true));
+        }
+
         private async Task ProcessIncomingFramesAsync(CancellationToken cancellationToken)
         {
             try
@@ -370,9 +569,9 @@ namespace System.Net.Http.Functional.Tests
             await _connection.DisposeAsync();
         }
 
-        private async Task EstablishConnectionAsync(Http2LoopbackServer server)
+        private async Task EstablishConnectionAsync(Http2LoopbackServer server, params SettingsEntry[] settingsEntries)
         {
-            _connection = await server.EstablishConnectionAsync();
+            _connection = await server.EstablishConnectionAsync(settingsEntries);
             _incomingFramesTask = ProcessIncomingFramesAsync(_incomingFramesCts.Token);
         }
 

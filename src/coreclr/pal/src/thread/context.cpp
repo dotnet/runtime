@@ -403,8 +403,8 @@ bool Xstate_IsAvx512Supported()
 
 bool Xstate_IsApxSupported()
 {
-#if defined(HAVE_MACH_EXCEPTIONS)
-    // TODO-xarch-apx: I assume OSX will never support APX
+#if !defined(HOST_AMD64) || defined(TARGET_OSX)
+    // APX is AMD64 only and not supported on macOS.
     return false;
 #else
     static int Xstate_ApxSupported = -1;
@@ -882,19 +882,18 @@ void CONTEXTToNativeContext(CONST CONTEXT *lpContext, native_context_t *native)
                 dest = FPREG_Xstate_Hi16Zmm(native, &size);
                 _ASSERT(size == (sizeof(M512) * 16));
                 memcpy_s(dest, sizeof(M512) * 16, &lpContext->Zmm16, sizeof(M512) * 16);
-
-#ifndef TARGET_OSX
-                // TODO-xarch-apx: I suppose OSX will not support APX.
-                if (FPREG_HasApxRegisters(native))
-                {
-                    _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
-
-                    dest = FPREG_Xstate_Egpr(native, &size);
-                    _ASSERT(size == (sizeof(DWORD64) * 16));
-                    memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
-                }
-#endif //  !TARGET_OSX
             }
+#ifndef TARGET_OSX
+            // APX xstate handling is compiled only for non-macOS targets.
+            if (FPREG_HasApxRegisters(native))
+            {
+                _ASSERT((lpContext->XStateFeaturesMask & XSTATE_MASK_APX) == XSTATE_MASK_APX);
+
+                dest = FPREG_Xstate_Egpr(native, &size);
+                _ASSERT(size == (sizeof(DWORD64) * 16));
+                memcpy_s(dest, sizeof(DWORD64) * 16, &lpContext->R16, sizeof(DWORD64) * 16);
+            }
+#endif //  !TARGET_OSX
         }
 #elif defined(HOST_ARM64)
         if (sve && sve->head.size >= SVE_SIG_CONTEXT_SIZE(sve_vq_from_vl(sve->vl)))

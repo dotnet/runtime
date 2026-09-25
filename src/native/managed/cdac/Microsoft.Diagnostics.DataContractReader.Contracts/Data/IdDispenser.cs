@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.IdDispenser))]
 internal sealed partial class IdDispenser : IData<IdDispenser>
 {
-    [Field] public TargetPointer IdToThread { get; }
-    [Field] public uint HighestId { get; }
+    [Field] public partial TargetPointer IdToThread { get; }
+    [Field] public partial uint HighestId { get; }
 }

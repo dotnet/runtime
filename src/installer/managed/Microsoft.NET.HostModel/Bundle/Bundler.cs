@@ -399,26 +399,24 @@ namespace Microsoft.NET.HostModel.Bundle
                         }
                     }
 
-                    // MacOS keeps a cache of file signatures, so we must create a new inode to ensure the file signature is properly updated.
-                    if (_macosCodesign && File.Exists(bundlePath))
+                    // On non-Windows, delete any existing bundle so the output is written to a new inode.
+                    // FileStreamOptions.UnixCreateMode only applies when a file is created, not when an
+                    // existing file is truncated in place, so without this an existing non-executable
+                    // bundle would keep its permissions and require a chmod (which can fail on some
+                    // filesystems, e.g. bind-mounted volumes in rootless containers). On macOS this also
+                    // ensures the kernel's code signature cache is not reused for the new contents.
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && File.Exists(bundlePath))
                     {
-                        _tracer.Log($"Removing existing bundle file to clear signature cache: {bundlePath}");
+                        _tracer.Log($"Removing existing bundle file: {bundlePath}");
                         File.Delete(bundlePath);
                     }
-                    using (FileStream bundleOutputStream = File.Open(bundlePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                    using (FileStream bundleOutputStream = HostModelUtils.CreateFileStreamForHost(bundlePath, FileAccess.Write, FileShare.None))
                     {
                         BinaryUtils.WriteToStream(accessor, bundleOutputStream, (long)endOfBundle);
                     }
                 }
             }
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // chmod +755
-                File.SetUnixFileMode(bundlePath,
-                     UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                     UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                     UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
-            }
+            HostModelUtils.SetPermissionsForHost(bundlePath);
             return bundlePath;
         }
 

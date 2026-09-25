@@ -777,7 +777,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public void ConstructingFromOptionsKeepsReference()
         {
-            JsonStringEnumConverter converter = new();
+            JsonConverter converter = new JsonStringEnumConverter<JsonIgnoreCondition>();
             JsonSerializerOptions options = new()
             {
                 PropertyNameCaseInsensitive = true,
@@ -873,6 +873,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             {
                 Uri = new Uri("http://contoso.com"),
                 Array = new int[] { 42 },
+                ByteArray = new byte[] { 1, 2, 3 },
                 Poco = new ClassWithNullableProperties.MyPoco(),
 
                 NullableUri = new Uri("http://contoso.com"),
@@ -885,10 +886,17 @@ namespace System.Text.Json.SourceGeneration.Tests
             void RunTest(ClassWithNullableProperties expected)
             {
                 string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithNullableProperties);
+
+                if (expected.ByteArray is null)
+                {
+                    Assert.Contains("\"ByteArray\":null", json);
+                }
+
                 ClassWithNullableProperties actual = JsonSerializer.Deserialize(json, DefaultContext.ClassWithNullableProperties);
 
                 Assert.Equal(expected.Uri, actual.Uri);
                 Assert.Equal(expected.Array, actual.Array);
+                Assert.Equal(expected.ByteArray, actual.ByteArray);
                 Assert.Equal(expected.Poco, actual.Poco);
 
                 Assert.Equal(expected.NullableUri, actual.NullableUri);
@@ -943,6 +951,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             public Uri? Uri { get; set; }
             public int[]? Array { get; set; }
+            public byte[]? ByteArray { get; set; }
             public MyPoco? Poco { get; set; }
 
             public Uri? NullableUri { get; set; }

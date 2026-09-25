@@ -8,6 +8,7 @@ include(CheckSymbolExists)
 include(CheckTypeSize)
 include(CheckLibraryExists)
 include(CheckFunctionExists)
+include(CMakePushCheckState)
 
 if (CLR_CMAKE_TARGET_APPLE)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
@@ -22,8 +23,8 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_OPENBSD)
-    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include ${CROSS_ROOTFS}/usr/local/include/inotify)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include ${CROSS_ROOTFS}/usr/local/include/inotify)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -43,15 +44,6 @@ endif()
 set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror -Wno-error=unused-value -Wno-error=unused-variable")
 if (CMAKE_C_COMPILER_ID MATCHES "Clang")
     set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wno-error=builtin-requires-header")
-endif()
-
-# Apple platforms like macOS/iOS allow targeting older operating system versions with a single SDK,
-# the mere presence of a symbol in the SDK doesn't tell us whether the deployment target really supports it.
-# The compiler raises a warning when using an unsupported API, turn that into an error so check_symbol_exists()
-# can correctly identify whether the API is supported on the target.
-check_c_compiler_flag("-Wunguarded-availability" "C_SUPPORTS_WUNGUARDED_AVAILABILITY")
-if(C_SUPPORTS_WUNGUARDED_AVAILABILITY)
-  set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Wunguarded-availability")
 endif()
 
 # in_pktinfo: Find whether this struct exists
@@ -206,10 +198,13 @@ check_symbol_exists(
     unistd.h
     HAVE_PIPE)
 
+cmake_push_check_state()
+list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
 check_symbol_exists(
     pipe2
     unistd.h
     HAVE_PIPE2)
+cmake_pop_check_state()
 
 # close_range is available as a function on FreeBSD 12.2+ and Linux (glibc >= 2.34).
 # On Linux with older glibc it is still accessible via the __NR_close_range syscall number.
@@ -1052,8 +1047,10 @@ endif()
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))
+if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
     set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
+elseif (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_OPENBSD)
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -lpthread -L${CROSS_ROOTFS}/usr/local/lib/inotify")
 endif()
 
 check_symbol_exists(

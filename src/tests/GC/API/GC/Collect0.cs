@@ -6,6 +6,7 @@ using System;
 using Xunit;
 
 public class Test_Collect0 {
+	[SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
 	[Fact]
 	[ActiveIssue("https://github.com/dotnet/runtime/issues/118965", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsCoreClrInterpreter))]
 	public static int TestEntryPoint() {

@@ -1,4 +1,12 @@
 <Project>
+  <!-- Set this after the project body has finalized IsTestProject. Do not propagate the
+       resulting value through project references; each referenced project must decide
+       independently whether it is a browser test app that should be published with R2R. -->
+  <PropertyGroup Condition="'$(TestWasmReadyToRun)' == 'true' and '$(IsTestProject)' == 'true' and '$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(PublishReadyToRun)' == ''">
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <_TestWasmReadyToRunImplicit>true</_TestWasmReadyToRunImplicit>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- Override strong name key to default to Open for test projects,
          Tests which wish to control this should set TestStrongNameKeyId. -->
@@ -198,13 +206,13 @@
                         '$(IsTestSupportProject)' != 'true' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\CallerArgumentExpressionAttribute.cs" />
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\ExceptionPolyfills.cs" Link="System\ExceptionPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\ExceptionPolyfills.cs" Link="Common\Polyfills\ExceptionPolyfills.cs" />
   </ItemGroup>
 
   <!-- Adds polyfills for Span-related functionality on non-.NETCoreApp builds -->
   <ItemGroup Condition="'$(IncludeSpanPolyfills)' == 'true' and
                         '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
-    <Compile Include="$(LibrariesProjectRoot)\Common\src\System\MemoryExtensionsPolyfills.cs" Link="System\MemoryExtensionsPolyfills.cs" />
+    <Compile Include="$(LibrariesProjectRoot)\Common\src\Polyfills\MemoryExtensionsPolyfills.cs" Link="Common\Polyfills\MemoryExtensionsPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\StringPolyfills.cs" Link="System\StringPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Buffers\SearchValuesPolyfills.cs" Link="System\Buffers\SearchValuesPolyfills.cs" />
     <Compile Include="$(LibrariesProjectRoot)\Common\src\System\Text\AsciiPolyfills.cs" Link="System\Text\AsciiPolyfills.cs" />
@@ -270,5 +278,12 @@
   <PropertyGroup>
     <PackageId Condition="'$(IsSourceProject)' == 'true' and '$(IsPackable)' != 'true'">$(MSBuildProjectName)-project</PackageId>
   </PropertyGroup>
+
+  <!-- Apply this after all imported targets have added their project references so explicit
+       GlobalPropertiesToRemove metadata is augmented instead of replacing this default. -->
+  <ItemGroup Condition="'$(_TestWasmReadyToRunImplicit)' == 'true'">
+    <ProjectReference Update="@(ProjectReference)"
+                      GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);PublishReadyToRun" />
+  </ItemGroup>
 
 </Project>

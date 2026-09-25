@@ -40,7 +40,7 @@ public class ObjectiveCMarshalDumpTests : DumpTestBase
             if (mt == TargetPointer.Null)
                 continue;
 
-            TypeHandle typeHandle = rtsContract.GetTypeHandle(mt);
+            ITypeHandle typeHandle = rtsContract.GetTypeHandle(mt);
             if (rtsContract.IsTrackedReferenceWithFinalizer(typeHandle))
                 results.Add(objectAddress);
         }

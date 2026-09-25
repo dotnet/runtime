@@ -6,6 +6,7 @@ set(MDRUNTIME_SOURCES
   mdfileformat.cpp
   metamodel.cpp
   metamodelro.cpp
+  noopmetadataimport.cpp
   recordpool.cpp
   mdinternaldisp.cpp
   mdinternalro.cpp
@@ -61,5 +62,5 @@ set_target_properties(mdruntime-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdruntime-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdruntime_ppdb ${MDRUNTIME_SOURCES})
-target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_compile_definitions(mdruntime_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB SELF_NO_HOST)
 target_precompile_headers(mdruntime_ppdb PRIVATE stdafx.h)

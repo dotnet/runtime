@@ -34,6 +34,10 @@ Abstract:
 #include <dirent.h>
 #include <dlfcn.h>
 
+#if defined(TARGET_WASI)
+#include "pal/wasi/pal_wasi_missing.h"
+#endif
+
 /* <stdarg.h> needs to be included after "palinternal.h" to avoid name
    collision for va_start and va_end */
 #include <stdarg.h>

@@ -70,7 +70,17 @@ int LinearScan::BuildNode(GenTree* tree)
     // floating type generates AVX instruction (vmovss etc.), set the flag
     if (!varTypeUsesIntReg(tree->TypeGet()))
     {
-        SetContainsAVXFlags();
+        unsigned simdSize = 0;
+#ifdef FEATURE_SIMD
+        // Track producers and possible register copies rather than memory stores. Intrinsics
+        // account for their actual instruction widths in BuildHWIntrinsic.
+        if (varTypeIsSIMD(tree) && !tree->OperIs(GT_STOREIND, GT_STORE_LCL_VAR, GT_STORE_LCL_FLD) &&
+            !tree->OperIsHWIntrinsic() && !tree->IsVectorZero())
+        {
+            simdSize = genTypeSize(tree->TypeGet());
+        }
+#endif // FEATURE_SIMD
+        SetContainsAVXFlags(simdSize);
     }
 
     switch (tree->OperGet())
@@ -315,6 +325,9 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
             srcCount = BuildBinaryUses(tree->AsOp());
             assert(dstCount == 1);
             BuildDef(tree);
@@ -1306,7 +1319,8 @@ int LinearScan::BuildCall(GenTreeCall* call)
             ctrlExprCandidates = RBM_INT_CALLEE_TRASH.GetIntRegSet();
             if (m_compiler->getNeedsGSSecurityCookie())
             {
-                ctrlExprCandidates &= ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true).GetIntRegSet();
+                ctrlExprCandidates &=
+                    ~m_compiler->codeGen->genGetGSCookieTempRegs(/* tailCall */ true, call).GetIntRegSet();
             }
         }
 #ifdef TARGET_X86
@@ -1455,7 +1469,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags();
+                    // Zero initialization uses a 128-bit xor, which also clears the upper vector bits.
+                    SetContainsAVXFlags(src->IsIntegralConst(0) ? XMM_REGSIZE_BYTES
+                                                                : m_compiler->roundDownSIMDSize(size));
                 }
 
 #ifdef TARGET_X86
@@ -1560,7 +1576,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                         // no more than MaxInternalCount. Currently, it's controlled by getUnrollThreshold(memmove)
                         buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
                     }
-                    SetContainsAVXFlags();
+                    SetContainsAVXFlags(simdSize);
                 }
                 else if (isPow2(size))
                 {
@@ -1906,7 +1922,7 @@ int LinearScan::BuildModDiv(GenTree* tree)
         tgtPrefUse          = op1Use;
         srcCount            = 1;
     }
-    srcCount += BuildDelayFreeUses(op2, op1, lowGprRegs & ~(SRBM_RAX | SRBM_RDX));
+    srcCount += BuildDelayFreeUses(op2, op1, availableIntRegs & ~(SRBM_RAX | SRBM_RDX));
 
     buildInternalRegisterUses();
 
@@ -2013,50 +2029,6 @@ int LinearScan::BuildIntrinsic(GenTree* tree)
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// SkipContainedUnaryOp: Skips a contained non-memory or const node
-// and gets the underlying op1 instead
-//
-// Arguments:
-//    node - The node to handle
-//
-// Return Value:
-//    If node is a contained non-memory or const unary op, its op1 is returned;
-//    otherwise node is returned unchanged.
-static GenTree* SkipContainedUnaryOp(GenTree* node)
-{
-    if (!node->isContained())
-    {
-        return node;
-    }
-
-    if (node->OperIsHWIntrinsic())
-    {
-        GenTreeHWIntrinsic* hwintrinsic = node->AsHWIntrinsic();
-        NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
-        switch (intrinsicId)
-        {
-            case NI_Vector128_CreateScalar:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-            {
-                return hwintrinsic->Op(1);
-            }
-
-            default:
-            {
-                break;
-            }
-        }
-    }
-
-    return node;
-}
-
-//------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
 //
 // Arguments:
@@ -2080,7 +2052,18 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     // or non-AVX intrinsics that will use VEX encoding if it is available on the target).
     if (intrinsicTree->isSIMD())
     {
-        SetContainsAVXFlags(intrinsicTree->GetSimdSize());
+        unsigned simdSize = intrinsicTree->GetSimdSize();
+        if ((category == HW_Category_MemoryStore) || (intrinsicId == NI_Vector_CreateScalar) ||
+            (intrinsicId == NI_Vector_CreateScalarUnsafe))
+        {
+            // Stores do not dirty upper lanes; scalar creation writes at most an XMM register.
+            simdSize = XMM_REGSIZE_BYTES;
+        }
+        else if ((intrinsicId == NI_Vector_GetLower) || (intrinsicId == NI_Vector_GetLower128))
+        {
+            simdSize = genTypeSize(intrinsicTree->TypeGet());
+        }
+        SetContainsAVXFlags(simdSize);
     }
 
     int srcCount = 0;
@@ -2110,47 +2093,42 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
     }
     else
     {
-        // In a few cases, we contain an operand that isn't a load from memory or a constant. Instead,
-        // it is essentially a "transparent" node we're ignoring or handling specially in codegen
-        // to simplify the overall IR handling. As such, we need to "skip" such nodes when present and
-        // get the underlying op1 so that delayFreeUse and other preferencing remains correct.
-
         GenTree* op1    = nullptr;
         GenTree* op2    = nullptr;
         GenTree* op3    = nullptr;
         GenTree* op4    = nullptr;
         GenTree* op5    = nullptr;
-        GenTree* lastOp = SkipContainedUnaryOp(intrinsicTree->Op(numArgs));
+        GenTree* lastOp = intrinsicTree->Op(numArgs);
 
         switch (numArgs)
         {
             case 5:
             {
-                op5 = SkipContainedUnaryOp(intrinsicTree->Op(5));
+                op5 = intrinsicTree->Op(5);
                 FALLTHROUGH;
             }
 
             case 4:
             {
-                op4 = SkipContainedUnaryOp(intrinsicTree->Op(4));
+                op4 = intrinsicTree->Op(4);
                 FALLTHROUGH;
             }
 
             case 3:
             {
-                op3 = SkipContainedUnaryOp(intrinsicTree->Op(3));
+                op3 = intrinsicTree->Op(3);
                 FALLTHROUGH;
             }
 
             case 2:
             {
-                op2 = SkipContainedUnaryOp(intrinsicTree->Op(2));
+                op2 = intrinsicTree->Op(2);
                 FALLTHROUGH;
             }
 
             case 1:
             {
-                op1 = SkipContainedUnaryOp(intrinsicTree->Op(1));
+                op1 = intrinsicTree->Op(1);
                 break;
             }
 
@@ -2200,15 +2178,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
         // must be handled within the case.
         switch (intrinsicId)
         {
-            case NI_Vector128_CreateScalar:
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-            case NI_Vector128_CreateScalarUnsafe:
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-            case NI_Vector128_ToScalar:
-            case NI_Vector256_ToScalar:
-            case NI_Vector512_ToScalar:
+            case NI_Vector_CreateScalar:
+            case NI_Vector_CreateScalarUnsafe:
+            case NI_Vector_ToScalar:
             {
                 assert(numArgs == 1);
 
@@ -2242,9 +2214,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_GetElement:
-            case NI_Vector256_GetElement:
-            case NI_Vector512_GetElement:
+            case NI_Vector_GetElement:
             {
                 assert(numArgs == 2);
 
@@ -2264,9 +2234,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_WithElement:
-            case NI_Vector256_WithElement:
-            case NI_Vector512_WithElement:
+            case NI_Vector_WithElement:
             {
                 assert(numArgs == 3);
 
@@ -2291,17 +2259,15 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_AsVector128Unsafe:
-            case NI_Vector128_AsVector2:
-            case NI_Vector128_AsVector3:
-            case NI_Vector128_ToVector256:
-            case NI_Vector128_ToVector512:
-            case NI_Vector256_ToVector512:
-            case NI_Vector128_ToVector256Unsafe:
-            case NI_Vector256_ToVector512Unsafe:
-            case NI_Vector256_GetLower:
-            case NI_Vector512_GetLower:
-            case NI_Vector512_GetLower128:
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_AsVector2:
+            case NI_Vector_AsVector3:
+            case NI_Vector_ToVector256:
+            case NI_Vector_ToVector256Unsafe:
+            case NI_Vector_ToVector512:
+            case NI_Vector_ToVector512Unsafe:
+            case NI_Vector_GetLower:
+            case NI_Vector_GetLower128:
             {
                 assert(numArgs == 1);
                 SingleTypeRegSet apxAwareRegCandidates =
@@ -2505,6 +2471,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
             case NI_AVX512_FusedMultiplySubtractAdd:
             case NI_AVX512_FusedMultiplySubtractNegated:
             case NI_AVX512_FusedMultiplySubtractNegatedScalar:
+            case NI_AVX10v1_FusedMultiplyAddScalar:
             {
                 // While this operation is RMW, it is also almost freely reorderable
                 // and so we do not need to set the operands as delay free unless
@@ -2748,6 +2715,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
 
             case NI_AVXVNNI_MultiplyWideningAndAdd:
             case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
+            case NI_AVX512v3_MultiplyWideningAndAdd:
+            case NI_AVX512v3_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_MultiplyWideningAndAdd:
             case NI_AVXVNNIINT_MultiplyWideningAndAddSaturate:
             case NI_AVXVNNIINT_V512_MultiplyWideningAndAdd:
@@ -2828,9 +2797,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 break;
             }
 
-            case NI_Vector128_op_Division:
-            case NI_Vector256_op_Division:
+            case NI_Vector_op_Division:
             {
+                if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX))
+                {
+                    // Integer division converts to doubles in registers twice the input width.
+                    SetContainsAVXFlags(2 * intrinsicTree->GetSimdSize());
+                }
+
                 srcCount = BuildOperandUses(op1, lowSIMDRegs());
                 srcCount += BuildOperandUses(op2, lowSIMDRegs());
 
@@ -2843,7 +2817,7 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCou
                 if (!m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
                 {
                     // If AVX is not supported, we need to specifically allocate XMM0 because we will eventually
-                    // generate a pblendvpd, which requires XMM0 specifically for the mask register.
+                    // generate blendvp*, which requires XMM0 specifically for the mask register.
                     buildInternalFloatRegisterDefForNode(intrinsicTree,
                                                          m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX)
                                                              ? lowSIMDRegs()
@@ -3180,10 +3154,6 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
     }
 
 #ifdef FEATURE_SIMD
-    if (varTypeIsSIMD(indirTree))
-    {
-        SetContainsAVXFlags(genTypeSize(indirTree->TypeGet()));
-    }
     buildInternalRegisterUses();
 #endif // FEATURE_SIMD
 

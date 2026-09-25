@@ -35,6 +35,17 @@ namespace Microsoft.Extensions.Logging.EventSource
         private readonly LoggingEventSource _eventSource;
         private readonly int _factoryID;
 
+        [ThreadStatic]
+        private static MemoryStream? t_jsonStream;
+        [ThreadStatic]
+        private static Utf8JsonWriter? t_jsonWriter;
+
+        // Upper bound for the per-thread buffers we keep cached between events. A single unusually
+        // large event (e.g. a huge property value) must not permanently inflate steady-state memory
+        // on long-lived thread-pool threads. This mirrors ConsoleLogger, which caps its thread-static
+        // StringBuilder at the same size.
+        private const int MaxCachedBufferSize = 1024;
+
         public EventSourceLogger(string categoryName, int factoryID, LoggingEventSource eventSource, EventSourceLogger? next)
         {
             CategoryName = categoryName;
@@ -261,8 +272,13 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         private static string ToJson(IReadOnlyList<KeyValuePair<string, string?>> keyValues)
         {
-            using var stream = new MemoryStream();
-            using var writer = new Utf8JsonWriter(stream);
+            // Reuse a per-thread stream and writer to avoid allocating a MemoryStream, a Utf8JsonWriter,
+            // and their backing buffers on every logged event.
+            MemoryStream stream = t_jsonStream ??= new MemoryStream();
+            Utf8JsonWriter writer = t_jsonWriter ??= new Utf8JsonWriter(stream);
+
+            stream.SetLength(0);
+            writer.Reset(stream);
 
             writer.WriteStartObject();
             foreach (KeyValuePair<string, string?> keyValue in keyValues)
@@ -273,12 +289,23 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             writer.Flush();
 
-            if (!stream.TryGetBuffer(out ArraySegment<byte> buffer))
+            string result = stream.TryGetBuffer(out ArraySegment<byte> buffer)
+                ? Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count)
+                : Encoding.UTF8.GetString(stream.ToArray());
+
+            if (stream.Capacity > MaxCachedBufferSize)
             {
-                buffer = new ArraySegment<byte>(stream.ToArray());
+                // This event grew the stream capacity and may also have grown the writer's internal buffer.
+                // Shrink the stream back down (its length must be reset before its capacity can be lowered)
+                // and drop the writer, whose internal buffer has no public API to shrink, so neither is
+                // retained at the larger size on this thread. Both are lazily recreated on the next event.
+                stream.SetLength(0);
+                stream.Capacity = MaxCachedBufferSize;
+                writer.Dispose();
+                t_jsonWriter = null;
             }
 
-            return Encoding.UTF8.GetString(buffer.Array!, buffer.Offset, buffer.Count);
+            return result;
         }
     }
 }

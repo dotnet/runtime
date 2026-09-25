@@ -39,31 +39,18 @@ set(MDCOMPILER_HEADERS
   regmeta.h
 )
 
-set(MDCOMPILER_WKS_SOURCES
-  ${MDCOMPILER_SOURCES}
-  verifylayouts.cpp
-)
-
-set(MDCOMPILER_WKS_HEADERS
-  ${MDCOMPILER_HEADERS}
-  ../inc/verifylayouts.h
-)
-
 convert_to_absolute_path(MDCOMPILER_SOURCES ${MDCOMPILER_SOURCES})
 convert_to_absolute_path(MDCOMPILER_HEADERS ${MDCOMPILER_HEADERS})
-convert_to_absolute_path(MDCOMPILER_WKS_SOURCES ${MDCOMPILER_WKS_SOURCES})
-convert_to_absolute_path(MDCOMPILER_WKS_HEADERS ${MDCOMPILER_WKS_HEADERS})
 
 if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND MDCOMPILER_SOURCES ${MDCOMPILER_HEADERS})
-    list(APPEND MDCOMPILER_WKS_SOURCES ${MDCOMPILER_WKS_HEADERS})
 endif()
 
 add_library_clr(mdcompiler_dac ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_headers(mdcompiler_dac PRIVATE stdafx.h)
 
-add_library_clr(mdcompiler_wks OBJECT ${MDCOMPILER_WKS_SOURCES})
+add_library_clr(mdcompiler_wks OBJECT ${MDCOMPILER_SOURCES})
 target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
 target_precompile_headers(mdcompiler_wks PRIVATE stdafx.h)
 
@@ -72,5 +59,5 @@ set_target_properties(mdcompiler-dbi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(mdcompiler-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_ppdb ${MDCOMPILER_SOURCES})
-target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB)
+target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB SELF_NO_HOST)
 target_precompile_headers(mdcompiler_ppdb PRIVATE stdafx.h)

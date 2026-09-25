@@ -8,27 +8,19 @@ using System.Security.Principal;
 
 namespace System.Security.AccessControl
 {
-
     public enum AccessControlType
     {
         Allow = 0,
         Deny = 1,
     }
 
-
     public abstract class AuthorizationRule
     {
-        #region Private Members
-
         private readonly IdentityReference _identity;
         private readonly int _accessMask;
         private readonly bool _isInherited;
         private readonly InheritanceFlags _inheritanceFlags;
         private readonly PropagationFlags _propagationFlags;
-
-        #endregion
-
-        #region Constructors
 
         protected internal AuthorizationRule(
             IdentityReference identity,
@@ -78,10 +70,6 @@ namespace System.Security.AccessControl
             }
         }
 
-        #endregion
-
-        #region Properties
-
         public IdentityReference IdentityReference
         {
             get { return _identity; }
@@ -107,19 +95,11 @@ namespace System.Security.AccessControl
             get { return _propagationFlags; }
         }
 
-        #endregion
     }
-
 
     public abstract class AccessRule : AuthorizationRule
     {
-        #region Private Methods
-
         private readonly AccessControlType _type;
-
-        #endregion
-
-        #region Constructors
 
         protected AccessRule(
             IdentityReference identity,
@@ -151,30 +131,18 @@ namespace System.Security.AccessControl
             _type = type;
         }
 
-        #endregion
-
-        #region Properties
-
         public AccessControlType AccessControlType
         {
             get { return _type; }
         }
 
-        #endregion
     }
-
 
     public abstract class ObjectAccessRule : AccessRule
     {
-        #region Private Members
-
         private readonly Guid _objectType;
         private readonly Guid _inheritedObjectType;
         private readonly ObjectAceFlags _objectFlags = ObjectAceFlags.None;
-
-        #endregion
-
-        #region Constructors
 
         protected ObjectAccessRule(IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, Guid objectType, Guid inheritedObjectType, AccessControlType type)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags, type)
@@ -200,10 +168,6 @@ namespace System.Security.AccessControl
             }
         }
 
-        #endregion
-
-        #region Properties
-
         public Guid ObjectType
         {
             get { return _objectType; }
@@ -219,19 +183,11 @@ namespace System.Security.AccessControl
             get { return _objectFlags; }
         }
 
-        #endregion
     }
-
 
     public abstract class AuditRule : AuthorizationRule
     {
-        #region Private Members
-
         private readonly AuditFlags _flags;
-
-        #endregion
-
-        #region Constructors
 
         protected AuditRule(
             IdentityReference identity,
@@ -254,30 +210,18 @@ namespace System.Security.AccessControl
             _flags = auditFlags;
         }
 
-        #endregion
-
-        #region Public Properties
-
         public AuditFlags AuditFlags
         {
             get { return _flags; }
         }
 
-        #endregion
     }
-
 
     public abstract class ObjectAuditRule : AuditRule
     {
-        #region Private Members
-
         private readonly Guid _objectType;
         private readonly Guid _inheritedObjectType;
         private readonly ObjectAceFlags _objectFlags = ObjectAceFlags.None;
-
-        #endregion
-
-        #region Constructors
 
         protected ObjectAuditRule(IdentityReference identity, int accessMask, bool isInherited, InheritanceFlags inheritanceFlags, PropagationFlags propagationFlags, Guid objectType, Guid inheritedObjectType, AuditFlags auditFlags)
             : base(identity, accessMask, isInherited, inheritanceFlags, propagationFlags, auditFlags)
@@ -304,10 +248,6 @@ namespace System.Security.AccessControl
             }
         }
 
-        #endregion
-
-        #region Public Properties
-
         public Guid ObjectType
         {
             get { return _objectType; }
@@ -323,47 +263,29 @@ namespace System.Security.AccessControl
             get { return _objectFlags; }
         }
 
-
-        #endregion
     }
-
 
     public sealed class AuthorizationRuleCollection : ReadOnlyCollectionBase
     {
-        #region Constructors
-
         public AuthorizationRuleCollection()
             : base()
         {
         }
-
-        #endregion
-
-        #region Public methods
 
         public void AddRule(AuthorizationRule? rule)
         {
             InnerList.Add(rule);
         }
 
-        #endregion
-
-        #region ICollection Members
-
         public void CopyTo(AuthorizationRule[] rules, int index)
         {
-            ((ICollection)this).CopyTo(rules, index);
+            InnerList.CopyTo(rules, index);
         }
-
-        #endregion
-
-        #region Public properties
 
         public AuthorizationRule? this[int index]
         {
             get { return InnerList[index] as AuthorizationRule; }
         }
 
-        #endregion
     }
 }

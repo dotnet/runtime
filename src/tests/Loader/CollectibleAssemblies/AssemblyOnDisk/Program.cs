@@ -9,11 +9,17 @@ using Xunit;
 
 public class Program
 {
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void EntryPoint()
     {
-        string directoryPath = Path.Combine(AppContext.BaseDirectory, "ToDelete");
         string originalAssemblyPath = typeof(Program).Assembly.Location;
+        if (originalAssemblyPath.Length == 0)
+        {
+            return;
+        }
+
+        string directoryPath = Path.Combine(Path.GetTempPath(), $"AssemblyOnDisk-{Guid.NewGuid():N}");
         string newAssemblyPath = Path.Combine(directoryPath, Path.GetFileName(originalAssemblyPath));
 
         // If the directory already exists, delete it

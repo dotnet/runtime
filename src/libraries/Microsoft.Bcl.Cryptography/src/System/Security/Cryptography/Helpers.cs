@@ -99,21 +99,6 @@ namespace Internal.Cryptography
             }
         }
 
-        extension (RandomNumberGenerator)
-        {
-            internal static unsafe void Fill(Span<byte> buffer)
-            {
-                if (buffer.Length > 0)
-                {
-                    fixed (byte* pbBuffer = buffer)
-                    {
-                        Interop.BCrypt.NTSTATUS status = Interop.BCrypt.BCryptGenRandom(IntPtr.Zero, pbBuffer, buffer.Length, Interop.BCrypt.BCRYPT_USE_SYSTEM_PREFERRED_RNG);
-                        if (status != Interop.BCrypt.NTSTATUS.STATUS_SUCCESS)
-                            throw Interop.BCrypt.CreateCryptographicException(status);
-                    }
-                }
-            }
-        }
 #endif
     }
 }

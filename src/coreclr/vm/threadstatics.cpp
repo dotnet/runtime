@@ -202,6 +202,7 @@ void ScanThreadStaticRoots(Thread* pThread, promote_func* fn, ScanContext* sc)
 
     // Report non-collectible object array
     fn(&pThreadLocalData->pNonCollectibleTlsArrayData, sc, 0);
+
 }
 #endif // DACCESS_COMPILE
 
@@ -332,7 +333,6 @@ void AllocateThreadStaticBoxes(MethodTable *pMT, PTRARRAYREF *ppRef)
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         PRECONDITION(pMT->HasBoxedThreadStatics());
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;
 
@@ -738,7 +738,7 @@ void GetTLSIndexForThreadStatic(MethodTable* pMT, bool gcStatic, TLSIndex* pInde
                 uint32_t alignment;
                 if (bytesNeeded >= 8)
                     alignment = 8;
-                if (bytesNeeded >= 4)
+                else if (bytesNeeded >= 4)
                     alignment = 4;
                 else if (bytesNeeded >= 2)
                     alignment = 2;

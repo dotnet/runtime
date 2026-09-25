@@ -131,7 +131,7 @@ namespace System.Reflection
 
         public override string ImageRuntimeVersion => GetInfo(AssemblyInfoKind.ImageRuntimeVersion)!;
 
-        public override string Location => GetInfo(AssemblyInfoKind.Location)!;
+        public override string Location => AssemblyLoadContext.ResolveAssemblyLocation(this, GetInfo(AssemblyInfoKind.Location)!);
 
         // TODO: consider a dedicated icall instead
         public override bool IsCollectible => AssemblyLoadContext.GetLoadContext((Assembly)this)!.IsCollectible;
@@ -272,7 +272,7 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
@@ -282,12 +282,12 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
         public override Module? GetModule(string name)

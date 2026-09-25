@@ -106,6 +106,7 @@ public class Program
     }
 
     [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+    [SkipOnCoreClr("Running Crossgen2 under GC stress takes too long.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static int TestEntryPoint()
     {

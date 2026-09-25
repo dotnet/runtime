@@ -141,6 +141,9 @@ struct RuntimeThreadLocals
 #ifdef FEATURE_HIJACK
     void **                 m_ppvHijackedReturnAddressLocation;
     void *                  m_pvHijackedReturnAddress;
+#if defined(TARGET_ARM64)
+    void *                  m_pSpForPacSign;
+#endif
 #endif // FEATURE_HIJACK
     PTR_ExInfo              m_pExInfoStackHead;
 #ifdef TARGET_X86

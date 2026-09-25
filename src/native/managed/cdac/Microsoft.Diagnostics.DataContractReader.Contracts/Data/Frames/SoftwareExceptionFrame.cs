@@ -7,7 +7,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 internal partial class SoftwareExceptionFrame : IData<SoftwareExceptionFrame>
 {
     [FieldAddress]
-    public TargetPointer TargetContext { get; }
+    public partial TargetPointer TargetContext { get; }
 
-    [Field] public TargetPointer ReturnAddress { get; }
+    [Field] public partial TargetCodePointer ReturnAddress { get; }
 }

@@ -737,10 +737,17 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         return -1;
 
     pVal->fixedSizedData.TypeID = (ULONGLONG) th.AsTAddr();
-    pVal->fixedSizedData.ModuleID = (ULONGLONG) (TADDR) th.GetModule();
-    pVal->fixedSizedData.TypeNameID = (th.GetMethodTable() == NULL) ? 0 : th.GetCl();
+
+    // Runtime Async continuation MethodTables have no metadata (nil TypeDef token, no name).
+    // Describe them via the base Continuation type so heap dumps show a real name instead of
+    // "Type(0x02000000)"; the per-object TypeID above stays the derived MT so GCBulkNode entries
+    // still resolve. See https://github.com/dotnet/runtime/issues/120800.
+    TypeHandle thNamed = th.UpCastTypeIfNeeded();
+
+    pVal->fixedSizedData.ModuleID = (ULONGLONG) (TADDR) thNamed.GetModule();
+    pVal->fixedSizedData.TypeNameID = (thNamed.GetMethodTable() == NULL) ? 0 : thNamed.GetCl();
     pVal->fixedSizedData.Flags = 0;
-    pVal->fixedSizedData.CorElementType = (BYTE) th.GetInternalCorElementType();
+    pVal->fixedSizedData.CorElementType = (BYTE) thNamed.GetInternalCorElementType();
 
     if (th.IsArray())
     {
@@ -846,7 +853,7 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
             TRACE_LEVEL_INFORMATION,
             CLR_GCHEAPANDTYPENAMES_KEYWORD))
         {
-            th.GetName(pVal->sName);
+            thNamed.GetName(pVal->sName);
         }
         pVal->sName.Normalize();
     }

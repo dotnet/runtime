@@ -193,6 +193,8 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
+typedef UINT_PTR QCallExceptionStatus;
+
 #if defined(DACCESS_COMPILE)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER
@@ -202,12 +204,88 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 #else // DACCESS_COMPILE
 
+constexpr QCallExceptionStatus QCallOutOfMemoryException = 1;
+constexpr QCallExceptionStatus QCallStackOverflowException = 2;
+
+void SetQCallExceptionStatusThrowable(QCallExceptionStatus* pStatus, OBJECTREF throwable);
+
+static_assert(sizeof(QCallExceptionStatus) == sizeof(void*));
+
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
+void UnwindAndContinueRethrowHelperInsideQCallCatch(
+    Exception* pException,
+    QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame));
+
+#ifdef TARGET_UNIX
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExceptionStatus* pQCallException);
+#endif
+
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef FEATURE_INTERPRETER
-VOID DECLSPEC_NORETURN UnwindAndContinueResumeAfterCatch(TADDR resumeSP, TADDR resumeIP);
-#endif // FEATURE_INTERPRETER
+class ResumeAfterCatchException;
+#endif
+
+#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)
+VOID DECLSPEC_NORETURN RethrowResumeAfterCatchException(const ResumeAfterCatchException& ex, Frame *pFrame, TADDR ssp);
+
+#if defined(HOST_AMD64) && defined(HOST_WINDOWS)
+#define READ_SSP() _rdsspq()
+#else
+#define READ_SSP() 0
+#endif
+
+// Install / uninstall handler at a native to managed code boundary.
+
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp) \
+        CONTEXT *__pResumeAfterCatchContext = pContext;                \
+        TADDR __pResumeAfterCatchSSP = ssp;                            \
+        TADDR __resumeSP = 0, __resumeIP = 0;                          \
+        try                                                            \
+        {
+
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame) \
+        Frame *__pResumeAfterCatchFrame = pFrame;             \
+        TADDR __pResumeAfterCatchSSP = READ_SSP();            \
+        TADDR __resumeSP = 0, __resumeIP = 0;                 \
+        try                                                   \
+        {
+
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT                                                              \
+        }                                                                                                              \
+        catch (const ResumeAfterCatchException& ex)                                                                    \
+        {                                                                                                              \
+            /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */    \
+            /* tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295 */       \
+            ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                             \
+        }                                                                                                              \
+        if (__resumeSP != 0)                                                                                           \
+        {                                                                                                              \
+            ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                      \
+            RethrowResumeAfterCatchExceptionSkipManagedFrames(ex, __pResumeAfterCatchContext, __pResumeAfterCatchSSP); \
+        }
+
+
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME                                                             \
+        }                                                                                                           \
+        catch (const ResumeAfterCatchException& ex)                                                                 \
+        {                                                                                                           \
+            /* We don't rethrow the exception here to work around a Windows bug in shadow stack pointer updating */ \
+            /* tracked by (internal) OS issue: https://microsoft.visualstudio.com/OS/_workitems/edit/62622295 */    \
+            ex.GetResumeContext(&__resumeSP, &__resumeIP);                                                          \
+        }                                                                                                           \
+        if (__resumeSP != 0)                                                                                        \
+        {                                                                                                           \
+            ResumeAfterCatchException ex(__resumeSP, __resumeIP);                                                   \
+            RethrowResumeAfterCatchException(ex, __pResumeAfterCatchFrame, __pResumeAfterCatchSSP);                 \
+        }
+
+#else // FEATURE_INTERPRETER && !HOST_WASM
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame)
+#define INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT(pContext, ssp)
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME
+#define UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_CONTEXT
+#endif // FEATURE_INTERPRETER && !HOST_WASM
 
 #ifdef TARGET_UNIX
 VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHardwareException);
@@ -256,6 +334,35 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             CrashDumpAndTerminateProcess(1);                                                        \
             UNREACHABLE();                                                                          \
         }
+
+
+#define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
+    {                                                                                       \
+        INDEBUG(MAKE_CURRENT_THREAD_AVAILABLE();)                                           \
+        INDEBUG(Frame* __pUnCEntryFrame = CURRENT_THREAD->GetFrame();)                      \
+        _ASSERTE(__pUnCEntryFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
+        PAL_CPP_TRY {
+
+#define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED (PAL_SEHException&, ex)                \
+        {                                           \
+            _ASSERTE(CURRENT_THREAD->GetFrame() == __pUnCEntryFrame);     \
+            _ASSERTE(CURRENT_THREAD->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
+            CaptureQCallExceptionFromPALException(ex, qcallError);        \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        {                                                                                   \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
+        {                                                                                   \
+            CONSISTENCY_CHECK(NULL != __pException);                                        \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_ENDTRY                                                                      \
+    }
+
 
 #elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
@@ -342,6 +449,35 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(false);
+
+
+#if !defined(TARGET_UNIX)
+    // The Windows implementation of the INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER is very similar
+    // to the unix one, but the major distinction is that the Windows version allows for an existing
+    // eh which has been converted into SEH, to flow directly into managed code. The unix version
+    // catches the PAL_SEHException and converts it into a managed exception before it hits managed code.
+
+#define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
+    {                                                                                       \
+        INDEBUG(MAKE_CURRENT_THREAD_AVAILABLE();)                                           \
+        INDEBUG(Frame* __pUnCEntryFrame = CURRENT_THREAD->GetFrame();)                      \
+        _ASSERTE(__pUnCEntryFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
+        PAL_CPP_TRY {
+
+#define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        {                                                                                   \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
+        {                                                                                   \
+            CONSISTENCY_CHECK(NULL != __pException);                                        \
+            UnwindAndContinueRethrowHelperInsideQCallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
+        }                                                                                   \
+        PAL_CPP_ENDTRY                                                                      \
+    }
+#endif
 
 #endif // DACCESS_COMPILE
 

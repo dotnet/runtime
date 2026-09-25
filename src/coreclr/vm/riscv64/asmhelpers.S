@@ -315,7 +315,7 @@ C_FUNC(ThePreStubPatchLabel):
     ret
 LEAF_END ThePreStubPatch, _TEXT
 
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
     // Save arguments and return address
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     //PROLOG_SAVE_REG  gp, 16
@@ -612,44 +612,6 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     EPILOG_RESTORE_REG_PAIR_INDEXED   fp, ra, 16
     EPILOG_RETURN
 NESTED_END CallEHFilterFunclet, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicNonGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld a1, OFFSETOF__DynamicStaticsInfo__m_pNonGCStatics(a0)
-    fence r,rw
-    bnez a1, LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper)
-    mv  a0, a1
-    ret
-
-LOCAL_LABEL(JIT_GetDynamicNonGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetNonGCStaticBase
-    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
-    PREPARE_EXTERNAL_VAR g_pGetNonGCStaticBase, t4
-    ld t4, 0(t4)
-    EPILOG_BRANCH_REG        t4
-LEAF_END JIT_GetDynamicNonGCStaticBase_SingleAppDomain, _TEXT
-
-// ------------------------------------------------------------------
-// void* JIT_GetDynamicGCStaticBase(DynamicStaticsInfo* pStaticsInfo)
-
-LEAF_ENTRY JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
-    // If class is not initialized, bail to C++ helper
-    ld a1, OFFSETOF__DynamicStaticsInfo__m_pGCStatics(a0)
-    fence r,rw
-    bnez a1, LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper)
-    mv  a0, a1
-    ret
-
-LOCAL_LABEL(JIT_GetDynamicGCStaticBase_SingleAppDomain_CallHelper):
-    // Tail call GetGCStaticBase
-    ld a0, OFFSETOF__DynamicStaticsInfo__m_pMethodTable(a0)
-    PREPARE_EXTERNAL_VAR g_pGetGCStaticBase, t4
-    ld t4, 0(t4)
-    EPILOG_BRANCH_REG        t4
-LEAF_END JIT_GetDynamicGCStaticBase_SingleAppDomain, _TEXT
 
 #ifdef FEATURE_READYTORUN
 

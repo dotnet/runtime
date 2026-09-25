@@ -1,6 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
+
+#ifdef SERVER_GC
+namespace SVR {
+#else // SERVER_GC
+namespace WKS {
+#endif // SERVER_GC
+
 void gc_heap::update_collection_counts_for_no_gc()
 {
     assert (settings.pause_mode == pause_no_gc);
@@ -835,7 +843,7 @@ void gc_heap::allocate_for_no_gc_after_gc()
 
 enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold)
 {
-    dprintf(1, ("[no_gc_callback] calling enable_no_gc_callback with callback_threshold = %llu\n", callback_threshold));
+    dprintf(1, ("[no_gc_callback] calling enable_no_gc_callback with callback_threshold = %" PRIu64 "\n", callback_threshold));
     enable_no_gc_region_callback_status status = enable_no_gc_region_callback_status::succeed;
     suspend_EE();
     {
@@ -890,12 +898,12 @@ enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCal
 #endif
                     if (dd_new_allocation (hp->dynamic_data_of (soh_gen0)) <= (ptrdiff_t)soh_withheld_budget)
                     {
-                        dprintf(1, ("[no_gc_callback] failed because of running out of soh budget= %llu\n", soh_withheld_budget));
+                        dprintf(1, ("[no_gc_callback] failed because of running out of soh budget= %zu\n", soh_withheld_budget));
                         status = insufficient_budget;
                     }
                     if (dd_new_allocation (hp->dynamic_data_of (loh_generation)) <= (ptrdiff_t)loh_withheld_budget)
                     {
-                        dprintf(1, ("[no_gc_callback] failed because of running out of loh budget= %llu\n", loh_withheld_budget));
+                        dprintf(1, ("[no_gc_callback] failed because of running out of loh budget= %zu\n", loh_withheld_budget));
                         status = insufficient_budget;
                     }
                 }
@@ -929,3 +937,5 @@ enable_no_gc_region_callback_status gc_heap::enable_no_gc_callback(NoGCRegionCal
 
     return status;
 }
+
+} // namespace WKS/SVR

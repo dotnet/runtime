@@ -17,17 +17,23 @@ public readonly record struct DelegateInfo(
     TargetCodePointer TargetMethodPtr,
     DelegateType DelegateType);
 
+public readonly record struct ContinuationInfo(
+    TargetPointer Next,
+    TargetPointer DiagnosticIP,
+    uint State);
+
 public interface IObject : IContract
 {
     static string IContract.Name { get; } = nameof(Object);
     TargetPointer GetMethodTableAddress(TargetPointer address) => throw new NotImplementedException();
     string GetStringValue(TargetPointer address) => throw new NotImplementedException();
-    TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds) => throw new NotImplementedException();
+    TargetPointer GetArrayData(TargetPointer address, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues) => throw new NotImplementedException();
     bool GetBuiltInComData(TargetPointer address, out TargetPointer rcw, out TargetPointer ccw, out TargetPointer ccf) => throw new NotImplementedException();
     int TryGetHashCode(TargetPointer address) => throw new NotImplementedException();
     // Returns the SyncBlock address for the object, or TargetPointer.Null if no sync block is associated with it.
     TargetPointer GetSyncBlockAddress(TargetPointer address) => throw new NotImplementedException();
     DelegateInfo GetDelegateInfo(TargetPointer address) => throw new NotImplementedException();
+    ContinuationInfo GetContinuationInfo(TargetPointer address) => throw new NotImplementedException();
     ulong GetSize(TargetPointer address) => throw new NotImplementedException();
     void GetStringData(TargetPointer address, out uint length, out uint offsetToFirstChar) => throw new NotImplementedException();
 }

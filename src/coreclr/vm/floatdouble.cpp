@@ -232,6 +232,16 @@ FCIMPLEND
 FCIMPL2_VV(double, COMDouble::Pow, double x, double y)
     FCALL_CONTRACT;
 
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+    // The ARM/ARM64 CRT implementation of `pow` returns `0` rather than `x` for
+    // subnormal `x` when `y` is exactly `1`; `pow(x, 1)` is `x` for all `x`
+    // https://github.com/dotnet/runtime/issues/12139
+    if (y == 1.0)
+    {
+        return x;
+    }
+#endif
+
     return pow(x, y);
 FCIMPLEND
 

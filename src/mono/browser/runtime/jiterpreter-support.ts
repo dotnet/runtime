@@ -481,13 +481,13 @@ export class WasmBuilder {
         if (includeFunctionTable !== false)
             throw new Error("function table imports are disabled");
 
-        const enableWasmEh = this.getExceptionTag() !== undefined;
+        const enableWasmFinalEh = this.getExceptionTag() !== undefined;
 
         // Import section
         this.beginSection(2);
         this.appendULeb(
             1 + // memory
-            (enableWasmEh ? 1 : 0) + // c++ exception tag
+            (enableWasmFinalEh ? 1 : 0) + // c++ exception tag
             importsToEmit.length +
             ((includeFunctionTable !== false) ? 1 : 0)
         );
@@ -520,7 +520,7 @@ export class WasmBuilder {
             this.appendULeb(0x01);
         }
 
-        if (enableWasmEh) {
+        if (enableWasmFinalEh) {
             // import the c++ exception tag
             this.appendName("x");
             this.appendName("e");
@@ -854,6 +854,28 @@ export class WasmBuilder {
             throw new Error("No blocks active");
         this.activeBlocks--;
         this.appendU8(WasmOpcode.end);
+    }
+
+    // Returns the index of an imported tag within the wasm tag index space, which is SEPARATE
+    //  from the type index space (so getTypeIndex must not be used for catch/throw immediates).
+    //  The jiterpreter module imports exactly one tag, __cpp_exception, so it is at tag index 0.
+    getTagIndex (name: string): number {
+        if (name !== "__cpp_exception")
+            throw new Error(`Unknown wasm tag '${name}'`);
+        return 0;
+    }
+
+    // Emits a try_table block (standardized exnref EH proposal) with a single
+    //  'catch <tag> -> label' clause. On catch, the tag's parameters are pushed and control
+    //  branches out by catchLabelDepth levels. Must be closed with endBlock().
+    tryTable (type: WasmValtype, catchTagName: string, catchLabelDepth: number) {
+        this.appendU8(WasmOpcode.try_table);
+        this.appendU8(type);
+        this.appendULeb(1); // one catch clause
+        this.appendU8(0x00); // 0x00 = catch (tag): push tag params, then branch
+        this.appendULeb(this.getTagIndex(catchTagName)); // tag index (separate index space from types)
+        this.appendULeb(catchLabelDepth);
+        this.activeBlocks++;
     }
 
     arg (name: string | number, opcode?: WasmOpcode) {
@@ -1969,7 +1991,7 @@ export type JiterpreterOptions = {
     enableJitCall: boolean;
     enableBackwardBranches: boolean;
     enableCallResume: boolean;
-    enableWasmEh: boolean;
+    enableWasmFinalEh: boolean;
     enableSimd: boolean;
     enableAtomics: boolean;
     zeroPageOptimization: boolean;
@@ -2016,7 +2038,7 @@ const optionNames: { [jsName: string]: string } = {
     "enableJitCall": "jiterpreter-jit-call-enabled",
     "enableBackwardBranches": "jiterpreter-backward-branch-entries-enabled",
     "enableCallResume": "jiterpreter-call-resume-enabled",
-    "enableWasmEh": "jiterpreter-wasm-eh-enabled",
+    "enableWasmFinalEh": "jiterpreter-wasm-eh-enabled",
     "enableSimd": "jiterpreter-simd-enabled",
     "enableAtomics": "jiterpreter-atomics-enabled",
     "zeroPageOptimization": "jiterpreter-zero-page-optimization",

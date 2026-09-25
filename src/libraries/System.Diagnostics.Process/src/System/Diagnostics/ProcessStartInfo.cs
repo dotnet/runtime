@@ -144,6 +144,31 @@ namespace System.Diagnostics
         public bool StartDetached { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the process should be started in a suspended state.
+        /// </summary>
+        /// <value><see langword="true" /> if the process should be started suspended; otherwise, <see langword="false" />. The default is <see langword="false" />.</value>
+        /// <remarks>
+        /// <para>
+        /// When set to <see langword="true" />, the process is created with its main thread suspended.
+        /// The process will not begin execution until <see cref="SafeProcessHandle.Resume" /> is called
+        /// on the <see cref="SafeProcessHandle" /> returned by <see cref="SafeProcessHandle.Start(ProcessStartInfo)" />.
+        /// </para>
+        /// <para>
+        /// On Windows, the process is started with the
+        /// <see href="https://learn.microsoft.com/windows/win32/procthread/process-creation-flags">CREATE_SUSPENDED</see> flag.
+        /// </para>
+        /// <para>
+        /// On macOS, the process is started with the <c>POSIX_SPAWN_START_SUSPENDED</c> flag.
+        /// </para>
+        /// <para>
+        /// This property cannot be used together with <see cref="UseShellExecute" /> set to <see langword="true" />.
+        /// </para>
+        /// </remarks>
+        [SupportedOSPlatform("windows")]
+        [SupportedOSPlatform("macos")]
+        public bool StartSuspended { get; set; }
+
+        /// <summary>
         /// Gets or sets a <see cref="SafeFileHandle"/> that will be used as the standard input of the child process.
         /// When set, the handle is passed directly to the child process and <see cref="RedirectStandardInput"/> must be <see langword="false"/>.
         /// </summary>
@@ -447,6 +472,18 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.StartDetachedNotCompatible);
             }
+
+#pragma warning disable CA1416 // StartSuspended getter works on all platforms; the attribute guards the actual effect
+            if (StartSuspended && !OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            if (StartSuspended && UseShellExecute)
+            {
+                throw new InvalidOperationException(SR.StartSuspendedNotCompatible);
+            }
+#pragma warning restore CA1416
 
             if (InheritedHandles is not null && (UseShellExecute || !string.IsNullOrEmpty(UserName)))
             {

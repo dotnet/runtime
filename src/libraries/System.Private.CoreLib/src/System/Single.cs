@@ -422,19 +422,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         //
@@ -985,7 +979,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static float MaxNative(float x, float y) => (x > y) ? x : y;
+        public static float MaxNative(float x, float y)
+        {
+#if MONO
+            return (x > y) ? x : y;
+#else
+            return MaxNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1016,7 +1017,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static float MinNative(float x, float y) => (x < y) ? x : y;
+        public static float MinNative(float x, float y)
+        {
+#if MONO
+            return (x < y) ? x : y;
+#else
+            return MinNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1432,15 +1440,23 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
-                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#if MONO
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#else
+                byte actualResult = (byte)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
+#if MONO
                 char actualResult = (value >= char.MaxValue) ? char.MaxValue :
                                     (value <= char.MinValue) ? char.MinValue : (char)value;
+#else
+                char actualResult = (char)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1454,8 +1470,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ushort))
             {
+#if MONO
                 ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
                                       (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+#else
+                ushort actualResult = (ushort)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1504,6 +1524,27 @@ namespace System
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
         }
 
         //
@@ -1861,23 +1902,17 @@ namespace System
             return result;
         }
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static float DegreesToRadians(float degrees)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+        // Multiplying by `head` alone is enough here, without the rest of the triple that `double`
+        // needs: the constant being inexact is under `2^-54.6` relative and the single rounding of
+        // the product is `2^-53`, together under `2^-28.6` of a `float` ulp, while no significand
+        // brings the exact value nearer than `2^-26.5` ulp to the boundary between two results
+        // (`2^-26.470` for `DegreesToRadians`, `2^-24.5` for `RadiansToDegrees`).
 
-            return (degrees * Pi) / 180.0f;
-        }
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static float DegreesToRadians(float degrees) => (float)(degrees * double.DegreesToRadiansHead);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static float RadiansToDegrees(float radians)
-        {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
-
-            return (radians * 180.0f) / Pi;
-        }
+        public static float RadiansToDegrees(float radians) => (float)(radians * double.RadiansToDegreesHead);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         [Intrinsic]
@@ -2208,7 +2243,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

@@ -197,6 +197,80 @@ private:
         virtual void         FixupRetExpr()               = 0;
 
         //------------------------------------------------------------------------
+        // SplitCall: spill all side effect uses of the call and the useToSpill into temps.
+        //
+        // Parameters
+        //   block - the block to insert the spill statements into.
+        //   useToSpill - the use of the call to spill into a temp.
+        //
+        void SplitCall(BasicBlock* block, GenTree** useToSpill)
+        {
+            // Find last arg with a side effect. All args with any effect
+            // before that will need to be spilled.
+            GenTree** lastSideEffectUse = nullptr;
+            for (GenTree** use : m_origCall->UseEdges())
+            {
+                if (((*use)->gtFlags & GTF_SIDE_EFFECT) != 0)
+                {
+                    lastSideEffectUse = use;
+                }
+            }
+
+            if (lastSideEffectUse != nullptr)
+            {
+                for (GenTree** use : m_origCall->UseEdges())
+                {
+                    GenTree* node = *use;
+                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) ||
+                        (!m_compiler->impIsInvariant(node) && m_compiler->gtHasLocalsWithAddrOp(node)))
+                    {
+                        SpillUseToTemp(block, use);
+                    }
+
+                    if (use == lastSideEffectUse)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // We spill the use if it is complex, regardless of side effects.
+            if (!(*useToSpill)->IsLocal())
+            {
+                SpillUseToTemp(block, useToSpill);
+            }
+        }
+
+        //------------------------------------------------------------------------
+        // SpillUseToTemp: spill an argument into a temp.
+        //
+        // Parameters
+        //   arg - The arg to create a temp and local store for.
+        //
+        void SpillUseToTemp(BasicBlock* block, GenTree** use)
+        {
+            unsigned       tmpNum = m_compiler->lvaGrabTemp(true DEBUGARG("indirect call transform spill temp"));
+            GenTree* const node   = *use;
+            GenTree*       store  = m_compiler->gtNewTempStore(tmpNum, node);
+
+            if (node->TypeIs(TYP_REF))
+            {
+                bool                 isExact   = false;
+                bool                 isNonNull = false;
+                CORINFO_CLASS_HANDLE cls       = m_compiler->gtGetClassHandle(node, &isExact, &isNonNull);
+                if (cls != NO_CLASS_HANDLE)
+                {
+                    m_compiler->lvaSetClass(tmpNum, cls, isExact);
+                }
+            }
+
+            Statement* storeStmt = m_compiler->fgNewStmtFromTree(store, m_stmt->GetDebugInfo());
+            m_compiler->fgInsertStmtAtEnd(block, storeStmt);
+
+            *use = m_compiler->gtNewLclVarNode(tmpNum);
+        }
+
+        //------------------------------------------------------------------------
         // CreateRemainder: split current block at the call stmt and
         // insert statements after the call into m_remainderBlock.
         //
@@ -379,6 +453,12 @@ private:
         {
             assert(checkIdx == 0);
 
+            if (m_origCall->IsGenericVirtual(m_compiler))
+            {
+                SplitCall(m_currBlock, &m_origCall->gtControlExpr);
+                m_fptrAddress = m_origCall->gtControlExpr;
+            }
+
             m_checkBlock               = CreateAndInsertBasicBlock(BBJ_ALWAYS, m_currBlock, m_currBlock);
             GenTree*   fatPointerMask  = new (m_compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
             GenTree*   fptrAddressCopy = m_compiler->gtCloneExpr(m_fptrAddress);
@@ -491,16 +571,6 @@ private:
 
             JITDUMP("\n----------------\n\n*** %s contemplating [%06u] in " FMT_BB " \n", Name(),
                     m_compiler->dspTreeID(m_origCall), m_currBlock->bbNum);
-
-            // We currently need inline candidate info to guarded devirt.
-            //
-            if (!m_origCall->IsInlineCandidate())
-            {
-                JITDUMP("*** %s Bailing on [%06u] -- not an inline candidate\n", Name(),
-                        m_compiler->dspTreeID(m_origCall));
-                ClearFlag();
-                return;
-            }
 
             m_likelihood = m_origCall->GetGDVCandidateInfo(0)->likelihood;
             assert((m_likelihood >= 0) && (m_likelihood <= 100));
@@ -630,41 +700,8 @@ private:
                 prevCheckBlock->SetCond(prevCheckCheckEdge, prevCheckThenEdge);
             }
 
-            // Find last arg with a side effect. All args with any effect
-            // before that will need to be spilled.
-            CallArg* lastSideEffArg = nullptr;
-            for (CallArg& arg : m_origCall->gtArgs.Args())
-            {
-                if ((arg.GetNode()->gtFlags & GTF_SIDE_EFFECT) != 0)
-                {
-                    lastSideEffArg = &arg;
-                }
-            }
-
-            if (lastSideEffArg != nullptr)
-            {
-                for (CallArg& arg : m_origCall->gtArgs.Args())
-                {
-                    GenTree* argNode = arg.GetNode();
-                    if (((argNode->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(argNode))
-                    {
-                        SpillArgToTempBeforeGuard(&arg);
-                    }
-
-                    if (&arg == lastSideEffArg)
-                    {
-                        break;
-                    }
-                }
-            }
-
             CallArg* thisArg = m_origCall->gtArgs.GetThisArg();
-            // We spill 'this' if it is complex, regardless of side effects. It
-            // is going to be used multiple times due to the guard.
-            if (!thisArg->GetNode()->IsLocal())
-            {
-                SpillArgToTempBeforeGuard(thisArg);
-            }
+            SplitCall(m_checkBlock, &thisArg->EarlyNodeRef());
 
             GenTree* thisTree = m_compiler->gtCloneExpr(thisArg->GetNode());
 
@@ -744,35 +781,6 @@ private:
         }
 
         //------------------------------------------------------------------------
-        // SpillArgToTempBeforeGuard: spill an argument into a temp in the guard/check block.
-        //
-        // Parameters
-        //   arg - The arg to create a temp and local store for.
-        //
-        void SpillArgToTempBeforeGuard(CallArg* arg)
-        {
-            unsigned       tmpNum  = m_compiler->lvaGrabTemp(true DEBUGARG("guarded devirt arg temp"));
-            GenTree* const argNode = arg->GetNode();
-            GenTree*       store   = m_compiler->gtNewTempStore(tmpNum, argNode);
-
-            if (argNode->TypeIs(TYP_REF))
-            {
-                bool                 isExact   = false;
-                bool                 isNonNull = false;
-                CORINFO_CLASS_HANDLE cls       = m_compiler->gtGetClassHandle(argNode, &isExact, &isNonNull);
-                if (cls != NO_CLASS_HANDLE)
-                {
-                    m_compiler->lvaSetClass(tmpNum, cls, isExact);
-                }
-            }
-
-            Statement* storeStmt = m_compiler->fgNewStmtFromTree(store, m_stmt->GetDebugInfo());
-            m_compiler->fgInsertStmtAtEnd(m_checkBlock, storeStmt);
-
-            arg->SetEarlyNode(m_compiler->gtNewLclVarNode(tmpNum));
-        }
-
-        //------------------------------------------------------------------------
         // FixupRetExpr: set up to repair return value placeholder from call
         //
         virtual void FixupRetExpr()
@@ -830,10 +838,20 @@ private:
             }
             else
             {
-                // If there's a spill temp already associated with this inline candidate,
-                // use that instead of allocating a new temp.
+                // Only candidates that made it through impMarkInlineCandidateHelper get a
+                // spill temp, so candidate 0 may not be the one carrying it.
                 //
-                m_returnTemp = inlineInfo->preexistingSpillTemp;
+                m_returnTemp = BAD_VAR_NUM;
+                for (uint8_t i = 0; i < m_origCall->GetInlineCandidatesCount(); i++)
+                {
+                    const unsigned spillTemp = m_origCall->GetGDVCandidateInfo(i)->preexistingSpillTemp;
+                    if (spillTemp != BAD_VAR_NUM)
+                    {
+                        // Same call site, so all candidates must agree.
+                        assert((m_returnTemp == BAD_VAR_NUM) || (m_returnTemp == spillTemp));
+                        m_returnTemp = spillTemp;
+                    }
+                }
 
                 if (m_returnTemp != BAD_VAR_NUM)
                 {
@@ -940,22 +958,6 @@ private:
             GenTreeCall* call = m_compiler->gtCloneCandidateCall(m_origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(m_compiler->gtNewLclvNode(thisTemp, TYP_REF));
 
-            // If the original call was flagged as one that might inspire enumerator de-abstraction
-            // cloning, move the flag to the devirtualized call.
-            //
-            if (m_compiler->hasImpEnumeratorGdvLocalMap())
-            {
-                Compiler::NodeToUnsignedMap* const map           = m_compiler->getImpEnumeratorGdvLocalMap();
-                unsigned                           enumeratorLcl = BAD_VAR_NUM;
-                if (map->Lookup(m_origCall, &enumeratorLcl))
-                {
-                    JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", m_compiler->dspTreeID(call),
-                            enumeratorLcl);
-                    map->Remove(m_origCall);
-                    map->Set(call, enumeratorLcl);
-                }
-            }
-
             INDEBUG(call->SetIsGuarded());
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", m_compiler->dspTreeID(call), block->bbNum);
@@ -1004,16 +1006,26 @@ private:
             //
             assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
-            // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
-            // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
+            // Don't inline if the candidate was kept for devirtualization only, or if the
+            // devirtualizer couldn't use the unboxed entry (which invalidates the inline info).
+            // Either way we keep the direct call, we just don't re-mark it as a candidate.
             //
-            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedEntryHandle;
-            if ((unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd))
+            CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedResolvedToken.hMethod;
+            const bool unboxedEntryMismatch        = (unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd);
+
+            if (!inlineInfo->isInlineable || unboxedEntryMismatch)
             {
-                // Demote this call to a non-inline candidate
-                //
-                JITDUMP("Devirtualization was unable to use the unboxed entry; so marking call (to boxed entry) as not "
-                        "inlineable\n");
+                if (unboxedEntryMismatch)
+                {
+                    JITDUMP("Devirtualization was unable to use the unboxed entry; so marking call (to boxed entry) as "
+                            "not inlineable\n");
+                }
+                else
+                {
+                    JITDUMP("Target of this GDV candidate is not inlineable; leaving the devirtualized call as a plain "
+                            "direct call\n");
+                    m_compiler->Metrics.NoInlineGDV++;
+                }
 
                 call->gtFlags &= ~GTF_CALL_INLINE_CANDIDATE;
                 call->ClearInlineInfo();
@@ -1030,6 +1042,25 @@ private:
             }
             else
             {
+                // If the original call was flagged as one that might inspire enumerator
+                // de-abstraction cloning, move the flag to the devirtualized call.
+                //
+                // Done here rather than right after the clone so a candidate we won't inline
+                // doesn't consume the mapping and hide it from one we will.
+                //
+                if (m_compiler->hasImpEnumeratorGdvLocalMap())
+                {
+                    Compiler::NodeToUnsignedMap* const map           = m_compiler->getImpEnumeratorGdvLocalMap();
+                    unsigned                           enumeratorLcl = BAD_VAR_NUM;
+                    if (map->Lookup(m_origCall, &enumeratorLcl))
+                    {
+                        JITDUMP("Flagging [%06u] for enumerator cloning via V%02u\n", m_compiler->dspTreeID(call),
+                                enumeratorLcl);
+                        map->Remove(m_origCall);
+                        map->Set(call, enumeratorLcl);
+                    }
+                }
+
                 // Add the call.
                 //
                 m_compiler->fgNewStmtAtEnd(block, call, m_stmt->GetDebugInfo());
@@ -1527,22 +1558,32 @@ private:
 
 #ifdef DEBUG
 
-//------------------------------------------------------------------------
-// fgDebugCheckForTransformableIndirectCalls: callback to make sure there
-//  are no more GTF_CALL_M_FAT_POINTER_CHECK or GTF_CALL_M_GUARDED_DEVIRT
-//  calls remaining
-//
-Compiler::fgWalkResult Compiler::fgDebugCheckForTransformableIndirectCalls(GenTree** pTree, fgWalkData* data)
+class CheckTransformableIndirectCallsVisitor final : public GenTreeVisitor<CheckTransformableIndirectCallsVisitor>
 {
-    GenTree* tree = *pTree;
-    if (tree->IsCall())
+public:
+    enum
     {
-        GenTreeCall* call = tree->AsCall();
-        assert(!call->IsFatPointerCandidate());
-        assert(!call->IsGuardedDevirtualizationCandidate());
+        DoPreOrder = true,
+    };
+
+    CheckTransformableIndirectCallsVisitor(Compiler* compiler)
+        : GenTreeVisitor<CheckTransformableIndirectCallsVisitor>(compiler)
+    {
     }
-    return WALK_CONTINUE;
-}
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        GenTree* tree = *use;
+        if (tree->IsCall())
+        {
+            GenTreeCall* call = tree->AsCall();
+            assert(!call->IsFatPointerCandidate());
+            assert(!call->IsGuardedDevirtualizationCandidate());
+        }
+
+        return fgWalkResult::WALK_CONTINUE;
+    }
+};
 
 //------------------------------------------------------------------------
 // CheckNoTransformableIndirectCallsRemain: walk through blocks and check
@@ -1552,11 +1593,13 @@ void Compiler::CheckNoTransformableIndirectCallsRemain()
 {
     assert(!doesMethodHaveFatPointer());
 
+    CheckTransformableIndirectCallsVisitor visitor(this);
+
     for (BasicBlock* const block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
-            fgWalkTreePre(stmt->GetRootNodePointer(), fgDebugCheckForTransformableIndirectCalls);
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
         }
     }
 }

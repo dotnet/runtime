@@ -107,7 +107,9 @@
         //  t1: parameter of the thunk's target
         PREPARE_EXTERNAL_VAR RhpCidResolve, t0
         mv t1, t5
-        tail       C_FUNC(RhpUniversalTransitionTailCall)
+    1:
+        auipc t2, %pcrel_hi(C_FUNC(RhpUniversalTransitionTailCall))
+        jalr  x0, t2, %pcrel_lo(1b)
     LEAF_END RhpInterfaceDispatchSlow, _TEXT
 
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH

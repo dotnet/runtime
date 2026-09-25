@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -31,31 +30,88 @@ namespace System.Net.Http
         private readonly long _creationTickCount = Environment.TickCount64;
         private long? _idleSinceTickCount;
 
+        /// <summary>
+        /// The context passed to the <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback.
+        /// A single instance is reused to avoid allocating a new context for each eviction check.
+        /// </summary>
+        private SocketsHttpConnectionEvictionContext? _evictionContext;
+
+        /// <summary>
+        /// Allocated at establishment only when <see cref="SocketsHttpHandler.ShouldEvictConnection"/>
+        /// is configured, and canceled (but not disposed, so handed-out tokens stay valid) when the connection closes.
+        /// </summary>
+        private CancellationTokenSource? _connectionDisposalCts;
+
+        /// <summary>
+        /// The <see cref="HttpConnectionPool.EvictionGeneration"/> at which this connection was last evaluated by the
+        /// <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback.
+        /// </summary>
+        private int _lastEvictionGeneration;
+
+        /// <summary>
+        /// Set while the <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback is running for this connection.
+        /// Ensures the callback is invoked for at most one caller at a time for a given connection.
+        /// </summary>
+        private bool _evictionCallbackInProgress;
+
+        private volatile bool _markedForEviction;
+
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
         /// <summary>Cached string for the last Server header received on this connection.</summary>
         private string? _lastServerHeaderValue;
 
-        public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
+        /// <summary>Whether the connection has been marked for eviction by <see cref="SocketsHttpHandler.ShouldEvictConnection"/> and should no longer be used for new requests.</summary>
+        public bool MarkedForEviction => _markedForEviction;
+
+        public long Id { get; }
 
         public Activity? ConnectionSetupActivity { get; private set; }
 
-        public HttpConnectionBase(HttpConnectionPool pool)
+        public HttpConnectionBase(HttpConnectionPool pool, long connectionId)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool != null);
             _pool = pool;
+            Id = connectionId;
         }
 
-        public HttpConnectionBase(HttpConnectionPool pool, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
-            : this(pool)
+        public HttpConnectionBase(HttpConnectionPool pool, long connectionId, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+            : this(pool, connectionId)
         {
-            MarkConnectionAsEstablished(connectionSetupActivity, remoteEndPoint);
+            // HTTP/1.1 and HTTP/2 connections always target the pool's origin authority.
+            MarkConnectionAsEstablished(connectionSetupActivity, remoteEndPoint, pool.OriginAuthority);
         }
 
-        protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
+        /// <summary>Allocates the next unique connection id. Generated before the connection object exists so that
+        /// the same id can be surfaced to <see cref="SocketsHttpHandler.ConnectCallback"/> and telemetry.</summary>
+        internal static long GetNextConnectionId() => Interlocked.Increment(ref s_connectionCounter);
+
+        protected void MarkConnectionAsEstablished(Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint, HttpAuthority authority, DnsEndPoint? connectedEndPoint = null)
         {
             ConnectionSetupActivity = connectionSetupActivity;
+
+            // The eviction generation baseline and disposal token are only relevant when a ShouldEvictConnection
+            // callback is configured, so they're only set up in that case.
+            if (_pool.Settings._shouldEvictConnection is not null)
+            {
+                // Baseline the eviction generation to the pool's current value so a freshly established connection isn't
+                // immediately re-evaluated; it becomes eligible once the next maintenance pass advances the generation.
+                _lastEvictionGeneration = _pool.EvictionGeneration;
+
+                _connectionDisposalCts = new CancellationTokenSource();
+
+                // Report the endpoint this connection actually targets, consistent with remoteEndPoint. HTTP/3 passes
+                // the exact DnsEndPoint it used to establish the QuicConnection (which Alt-Svc may point at an authority
+                // distinct from the origin); HTTP/1.1 and HTTP/2 fall back to the pool's origin authority.
+                _evictionContext = new SocketsHttpConnectionEvictionContext(
+                    connectedEndPoint ?? new DnsEndPoint(authority.IdnHost, authority.Port),
+                    remoteEndPoint,
+                    Id,
+                    this is HttpConnection ? HttpVersion.Version11 : this is Http2Connection ? HttpVersion.Version20 : HttpVersion.Version30,
+                    _creationTickCount);
+            }
+
             if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled)
             {
                 Debug.Assert(_pool.Settings._metrics is not null);
@@ -75,7 +131,8 @@ namespace System.Net.Http
                         protocol,
                         _pool.IsSecure ? "https" : "http",
                         _pool.TelemetryServerAddress,
-                        _pool.OriginAuthority.Port);
+                        _pool.OriginAuthority.Port,
+                        remoteEndPoint?.Address?.ToString());
 
                     _connectionMetrics.ConnectionEstablished();
                 }
@@ -99,6 +156,10 @@ namespace System.Net.Http
 
         public void MarkConnectionAsClosed()
         {
+            // Cancel the disposal token used by the ShouldEvictConnection callback. The source is intentionally not
+            // disposed so tokens already handed to a running callback stay valid (and observe the cancellation).
+            _connectionDisposalCts?.Cancel();
+
             if (GlobalHttpSettings.MetricsHandler.IsGloballyEnabled) _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
 
             if (HttpTelemetry.Log.IsEnabled())
@@ -169,7 +230,64 @@ namespace System.Net.Http
 
         public long GetLifetimeTicks(long nowTicks) => nowTicks - _creationTickCount;
 
+        /// <summary>The amount of time that has elapsed since the connection was established.</summary>
+        internal TimeSpan Age => TimeSpan.FromMilliseconds(GetLifetimeTicks(Environment.TickCount64));
+
         public long GetIdleTicks(long nowTicks) => _idleSinceTickCount is long idleSinceTickCount ? nowTicks - idleSinceTickCount : 0;
+
+        /// <summary>
+        /// Called when a connection is returned to the pool to run the eviction evaluation that may have been skipped
+        /// for it during a background pass. HTTP/1.1 connections that were in use at the time weren't visible in the
+        /// available list (they were checked out as pending), so the pass couldn't evaluate them. Comparing the
+        /// connection's last evaluated generation against the pool's current one detects that case and evaluates now.
+        /// </summary>
+        public void RunEvictionEvaluationIfNeeded()
+        {
+            if (_pool.EvictionGeneration != _lastEvictionGeneration)
+            {
+                _ = EvaluateForEvictionAsync();
+            }
+        }
+
+        /// <summary>
+        /// Runs the <see cref="SocketsHttpHandler.ShouldEvictConnection"/> callback for this connection
+        /// and marks the connection for eviction if the callback requests it. The callback runs at most
+        /// once at a time for this connection.
+        /// </summary>
+        public async Task EvaluateForEvictionAsync()
+        {
+            Debug.Assert(_pool.Settings._shouldEvictConnection is not null);
+            Debug.Assert(_connectionDisposalCts is not null);
+            Debug.Assert(_evictionContext is not null);
+
+            // There's a benign race condition here where we might run the callback more than once for a given generation.
+            if (Interlocked.Exchange(ref _evictionCallbackInProgress, true) ||
+                MarkedForEviction ||
+                _connectionDisposalCts.IsCancellationRequested)
+            {
+                return;
+            }
+
+            try
+            {
+                if (await _pool.Settings._shouldEvictConnection(_evictionContext, _connectionDisposalCts.Token).ConfigureAwait(false))
+                {
+                    _markedForEviction = true;
+
+                    if (NetEventSource.Log.IsEnabled()) Trace("Marking connection for eviction per ShouldEvictConnection callback.");
+                }
+            }
+            catch (Exception e)
+            {
+                // Don't let a misbehaving user callback take down pool maintenance.
+                if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(SocketsHttpHandler.ShouldEvictConnection)} threw an exception: {e}");
+            }
+            finally
+            {
+                _lastEvictionGeneration = _pool.EvictionGeneration;
+                _evictionCallbackInProgress = false;
+            }
+        }
 
         /// <summary>Check whether a connection is still usable, or should be scavenged.</summary>
         /// <returns>True if connection can be used.</returns>
@@ -222,6 +340,13 @@ namespace System.Net.Http
         /// </summary>
         public bool IsUsable(long nowTicks, TimeSpan pooledConnectionLifetime, TimeSpan pooledConnectionIdleTimeout)
         {
+            // The connection may have been marked for eviction by the ShouldEvictConnection callback.
+            if (MarkedForEviction)
+            {
+                if (NetEventSource.Log.IsEnabled()) Trace("Scavenging connection. Connection was evicted.");
+                return false;
+            }
+
             // Validate that the connection hasn't been idle in the pool for longer than is allowed.
             if (pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan)
             {

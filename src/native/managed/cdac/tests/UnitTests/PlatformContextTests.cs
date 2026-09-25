@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using Xunit;
 
@@ -43,12 +45,37 @@ public class PlatformContextTests
     }
 
     [Theory]
-    [InlineData(33)]
+    [InlineData(65)] // REGNUM_COUNT
+    [InlineData(66)] // REGNUM_AMBIENT_SP
     public void ARM64_OutOfRange_ReturnsFalse(int regNum)
     {
         var ctx = new ARM64Context();
         Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0)));
         Assert.False(ctx.TryReadRegister(regNum, out _));
+    }
+
+    [Theory]
+    [InlineData(33)] // V0
+    [InlineData(64)] // V31
+    public void ARM64_VectorRegisterNumber_WriteReturnsFalse(int regNum)
+    {
+        // Vector registers are read-only through the numeric register accessor.
+        var ctx = new ARM64Context();
+        Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0x1122334455667788UL)));
+    }
+
+    [Theory]
+    [InlineData(33, 0)]  // V0 -> V[0]
+    [InlineData(64, 62)] // V31 -> V[62]
+    public unsafe void ARM64_VectorRegisterNumber_ReadUsesLow64Bits(int regNum, int vIndex)
+    {
+        var ctx = new ARM64Context();
+        ulong* registers = ctx.V;
+        registers[vIndex] = 0x1122334455667788UL;      // low 64 bits
+        registers[vIndex + 1] = 0x8877665544332211UL;  // high 64 bits (must be ignored)
+
+        Assert.True(ctx.TryReadRegister(regNum, out TargetNUInt value));
+        Assert.Equal(0x1122334455667788UL, value.Value);
     }
 
     [Theory]
@@ -92,6 +119,16 @@ public class PlatformContextTests
         var ctx = new X86Context();
         Assert.False(ctx.TrySetRegister(regNum, new TargetNUInt(0)));
         Assert.False(ctx.TryReadRegister(regNum, out _));
+    }
+
+    [Fact]
+    public void X86_ContextFlags_MatchNativeContext()
+    {
+        var ctx = new X86Context();
+
+        Assert.Equal(0x00010001u, ctx.ContextControlFlags);
+        Assert.Equal(0x00010007u, ctx.FullContextFlags);
+        Assert.Equal(0x0001003fu, ctx.AllContextFlags);
     }
 
     [Theory]
@@ -143,5 +180,47 @@ public class PlatformContextTests
         Assert.True(ctx.TryReadRegister(0, out TargetNUInt value));
         Assert.Equal(0UL, value.Value);
         Assert.False(ctx.TrySetRegister(0, new TargetNUInt(0xDEAD)));
+    }
+
+    /// <summary>
+    /// Architectures with a hardware single-step (trace) flag, the register that holds it,
+    /// the trace-flag bit, and an unrelated bit that must be preserved by UnsetSingleStepFlag.
+    /// </summary>
+    public static IEnumerable<object[]> HardwareSingleStepContexts()
+    {
+        yield return [new ContextHolder<X86Context>(), "eflags", 0x100UL, 0x202UL];
+        yield return [new ContextHolder<AMD64Context>(), "eflags", 0x100UL, 0x202UL];
+        yield return [new ContextHolder<ARM64Context>(), "cpsr", 0x0020_0000UL, 0x4000_0000UL];
+    }
+
+    [Theory]
+    [MemberData(nameof(HardwareSingleStepContexts))]
+    public void UnsetSingleStepFlag_ClearsTraceFlag_PreservesOtherBits(
+        IPlatformAgnosticContext ctx, string flagRegister, ulong traceFlagBit, ulong otherBits)
+    {
+        Assert.True(ctx.TrySetRegister(flagRegister, new TargetNUInt(traceFlagBit | otherBits)));
+
+        ctx.UnsetSingleStepFlag();
+
+        Assert.True(ctx.TryReadRegister(flagRegister, out TargetNUInt value));
+        Assert.Equal(otherBits, value.Value);
+    }
+
+    public static IEnumerable<object[]> EmulatedSingleStepContexts()
+    {
+        yield return [new ContextHolder<ARMContext>()];
+        yield return [new ContextHolder<LoongArch64Context>()];
+        yield return [new ContextHolder<RISCV64Context>()];
+    }
+
+    [Theory]
+    [MemberData(nameof(EmulatedSingleStepContexts))]
+    public void UnsetSingleStepFlag_IsNoOp_OnEmulatedSingleStepArches(IPlatformAgnosticContext ctx)
+    {
+        byte[] before = ctx.GetBytes();
+
+        ctx.UnsetSingleStepFlag();
+
+        Assert.Equal(before, ctx.GetBytes());
     }
 }

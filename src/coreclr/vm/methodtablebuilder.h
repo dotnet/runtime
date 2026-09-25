@@ -49,15 +49,23 @@ public:
             return typeContext.m_classInst;
         }
 
-#ifdef _DEBUG
-        // Typical instantiation (= open type). Non-NULL only when loading any non-typical instantiation.
-        // NULL if 'this' is a typical instantiation or a non-generic type.
-        MethodTable * dbg_pTypicalInstantiationMT;
+        // Typical instantiation (= open type) MethodTable. Non-NULL only when loading a
+        // non-typical instantiation of a generic type. NULL if 'this' is a typical
+        // instantiation or a non-generic type. Used to reuse the typical instantiation's
+        // DispatchMap for non-typical instantiations.
+        MethodTable * pTypicalInstantiationMT;
 
+        inline MethodTable * GetTypicalMethodTable() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return pTypicalInstantiationMT;
+        }
+
+#ifdef _DEBUG
         inline MethodTable * Debug_GetTypicalMethodTable() const
         {
             LIMITED_METHOD_CONTRACT;
-            return dbg_pTypicalInstantiationMT;
+            return pTypicalInstantiationMT;
         }
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
@@ -1082,7 +1090,21 @@ private:
         // Returns the metadata declaration attributes for this method.
         DWORD
         GetDeclAttrs() const
-            { LIMITED_METHOD_CONTRACT; return m_dwDeclAttrs; }
+            {
+                LIMITED_METHOD_CONTRACT;
+
+                DWORD dwDeclAttrs = m_dwDeclAttrs;
+                if (hasAsyncFlags(m_asyncMethodFlags, AsyncMethodFlags::ReturnDroppingThunk))
+                {
+                    // A return-dropping thunk is synthesized by the runtime and always has an implementation -
+                    // it calls the ordinary async variant virtually and drops the result.
+                    // The metadata method that the thunk is derived from may be abstract (i.e. when the covariant
+                    // override that needs the thunk is abstract), but the thunk itself never is.
+                    dwDeclAttrs &= ~mdAbstract;
+                }
+
+                return dwDeclAttrs;
+            }
 
         //-----------------------------------------------------------------------------------------
         // Returns the metadata implementation attributes for this method.
@@ -2394,8 +2416,8 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
         bmtError->resIDWhy = idResWhy;
@@ -2416,8 +2438,8 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
         bmtError->resIDWhy = idResWhy;
@@ -2764,6 +2786,33 @@ private:
     // See comment in implementation for more details.
     VOID
     PlaceInterfaceMethods();
+
+    // --------------------------------------------------------------------------------------------
+    // Describes how the DispatchMap for the type being built relates to its typical instantiation.
+    enum class DispatchMapReuseKind
+    {
+        // There is no typical instantiation to reuse from (the type is an interface or is itself a
+        // typical type definition). The DispatchMap must be built normally, which requires running
+        // PlaceInterfaceMethods.
+        BuildNormally,
+
+        // The typical instantiation has its own DispatchMap. Because the encoded map is
+        // instantiation-independent, it can be reused directly instead of being rebuilt.
+        ReuseTypicalMap,
+
+        // The typical instantiation has no DispatchMap of its own, so this non-typical instantiation
+        // is known to have an empty DispatchMap as well. PlaceInterfaceMethods can be skipped and no
+        // DispatchMap needs to be built.
+        KnownEmpty,
+    };
+
+    // --------------------------------------------------------------------------------------------
+    // Determines how the DispatchMap for the type being built relates to its typical instantiation
+    // (see DispatchMapReuseKind). When the result is ReuseTypicalMap, *ppTypicalMTForReuse is set to
+    // the typical instantiation's MethodTable whose DispatchMap can be reused; otherwise it is set to
+    // NULL.
+    DispatchMapReuseKind
+    GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse);
 
     // --------------------------------------------------------------------------------------------
     // For every MethodImpl pair (represented by Entry) in bmtMethodImpl, place the body in the

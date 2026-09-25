@@ -81,7 +81,7 @@ internal sealed class ArraySinglePrimitiveRecord<T> : SZArrayRecord<T>
         int sizeOfT = typeof(T) == typeof(DateTime) || typeof(T) == typeof(TimeSpan)
             ? 8
             : typeof(T) != typeof(char)
-                ? Unsafe.SizeOf<T>()
+                ? sizeof(T)
                 : 1;
 
         long requiredBytes = (long)count * sizeOfT;

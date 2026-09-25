@@ -216,7 +216,7 @@ public:
 		ep_char8_t *outputPathUTF8 = NULL;
 		if (outputPath)
 			outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputPath));
-		EventPipeSessionID result = ep_enable (
+		EventPipeSessionID result = ep_init_session (
 			outputPathUTF8,
 			circularBufferSizeInMB,
 			providerConfigs.GetProviderConfigs(),
@@ -254,7 +254,7 @@ public:
 		}
 		CONTRACTL_END;
 
-		ep_start_streaming(id);
+		ep_start_session(id);
 	}
 
 	static inline EventPipeSession * GetSession(EventPipeSessionID id)

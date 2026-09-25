@@ -1746,16 +1746,14 @@ Thanks for contributing to CLR Stress!
                 ProcessStartInfo psi = new ProcessStartInfo("cscript.exe", Environment.ExpandEnvironmentVariables(arguments));
                 psi.UseShellExecute = false;
                 psi.RedirectStandardOutput = true;
+                psi.RedirectStandardError = true;
 
-                Process p = Process.Start(psi);
-                p.StandardOutput.ReadToEnd();
-                p.WaitForExit();
-                if (p.ExitCode != 0)
+                ProcessTextOutput result = Process.RunAndCaptureText(psi);
+                if (result.ExitStatus.ExitCode != 0)
                 {
                     Console.WriteLine("cscript.exe " + Environment.ExpandEnvironmentVariables("//b //nologo %SCRIPTSDIR%\\record.js -i %STRESSID% -a UPDATE_RECORD -s RUNNING"));
-                    Console.WriteLine("WARNING: Status update did not return success! {0}", p.ExitCode);
+                    Console.WriteLine("WARNING: Status update did not return success! {0}", result.ExitStatus.ExitCode);
                 }
-                p.Dispose();
             }
             else
             {

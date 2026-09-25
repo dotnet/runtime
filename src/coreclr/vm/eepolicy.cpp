@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 
 #include "common.h"
+#include <minipal/time.h>
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
@@ -51,7 +52,6 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
             if (exitCode != goodExit)
             {
                 _ASSERTE(!"Bad Exit value");
-                FAULT_NOT_FATAL();      // if we OOM we can simply give up
                 minipal_log_print_error("Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
                 DebugBreak();
             }
@@ -165,6 +165,7 @@ class CallStackLogger
     PEXCEPTION_POINTERS m_pExceptionInfo;
     // MethodDescs of the stack frames, the TOS is at index 0
     CDynArray<MethodDesc*> m_frames;
+    bool m_captureStackOverflowTrace;
 
     StackWalkAction LogCallstackForLogCallbackWorker(CrawlFrame *pCF)
     {
@@ -214,7 +215,10 @@ class CallStackLogger
         TypeString::AppendMethodInternal(frame, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-        InProcCrashReportAddStackOverflowTraceFrame(frame.GetUTF8(), repeatCount, repeatSequenceLength);
+        if (m_captureStackOverflowTrace)
+        {
+            InProcCrashReportAddStackOverflowTraceFrame(frame.GetUTF8(), repeatCount, repeatSequenceLength);
+        }
 #endif // FEATURE_INPROC_CRASHREPORT
 
         SString str(pWordAt);
@@ -226,11 +230,12 @@ class CallStackLogger
 
 public:
 
-    CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo)
+    CallStackLogger(PEXCEPTION_POINTERS pExceptionInfo, bool captureStackOverflowTrace)
     {
         WRAPPER_NO_CONTRACT;
 
         m_pExceptionInfo = pExceptionInfo;
+        m_captureStackOverflowTrace = captureStackOverflowTrace;
     }
 
     // Callback called by the stack walker for each frame on the stack
@@ -317,7 +322,10 @@ public:
         }
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-        InProcCrashReportBeginStackOverflowTrace(crashingTid, static_cast<uint32_t>(m_frames.Count()));
+        if (m_captureStackOverflowTrace)
+        {
+            InProcCrashReportBeginStackOverflowTrace(crashingTid, static_cast<uint32_t>(m_frames.Count()));
+        }
 #endif // FEATURE_INPROC_CRASHREPORT
 
         for (int i = 0; i < largestCommonStartOffset; i++)
@@ -349,7 +357,10 @@ public:
         }
 
 #ifdef FEATURE_INPROC_CRASHREPORT
-        InProcCrashReportEndStackOverflowTrace();
+        if (m_captureStackOverflowTrace)
+        {
+            InProcCrashReportEndStackOverflowTrace();
+        }
 #endif // FEATURE_INPROC_CRASHREPORT
     }
 };
@@ -370,7 +381,7 @@ static bool g_LogStackOverflowExit = false;
 // Return Value:
 //    None
 //
-inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExceptionInfo)
+inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExceptionInfo, bool captureStackOverflowTrace)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -386,7 +397,7 @@ inline void LogCallstackForLogWorker(Thread* pThread, PEXCEPTION_POINTERS pExcep
     }
     WordAt.Append(W(" "));
 
-    CallStackLogger logger(pExceptionInfo);
+    CallStackLogger logger(pExceptionInfo, captureStackOverflowTrace);
 
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
@@ -438,7 +449,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
             // for GC during the stacktrace reporting.
             GCX_PREEMP();
 
-            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+            minipal_sleep(INFINITE);
         }
         return;
     }
@@ -477,7 +488,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, PEXCEPTION_POINTERS
         Thread* pThread = GetThreadNULLOk();
         if (pThread && errorSource == NULL)
         {
-            LogCallstackForLogWorker(pThread, pExceptionInfo);
+            LogCallstackForLogWorker(pThread, pExceptionInfo, /*captureStackOverflowTrace*/ false);
 
             if (argExceptionString != NULL) {
                 PrintToStdErrW(argExceptionString);
@@ -675,18 +686,21 @@ void DisplayStackOverflowException()
     PrintToStdErrA("Stack overflow.\n");
 }
 
+static volatile LONG g_stackOverflowCallStackLogged = 0;
+
 DWORD LogStackOverflowStackTraceThread(void* arg)
 {
-    LogCallstackForLogWorker((Thread*)arg, NULL);
+   LogCallstackForLogWorker((Thread*)arg, NULL, /*captureStackOverflowTrace*/ true);
+   InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
 
-    return 0;
+   return 0;
 }
 
 void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pExceptionInfo, BOOL fSkipDebugger)
 {
     // This is fatal error.  We do not care about SO mode any more.
     // All of the code from here on out is robust to any failures in any API's that are called.
-    CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
+    CONTRACT_VIOLATION(GCViolation | ModeViolation | TakesLockViolation);
 
     WRAPPER_NO_CONTRACT;
 
@@ -737,8 +751,6 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         fef.InitAndLink(pExceptionContext);
     }
 
-    static volatile LONG g_stackOverflowCallStackLogged = 0;
-
     // Dump stack trace only for the first thread failing with stack overflow to prevent mixing
     // multiple stack traces together.
     if (InterlockedCompareExchange(&g_stackOverflowCallStackLogged, 1, 0) == 0)
@@ -749,19 +761,23 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
 
         DisplayStackOverflowException();
 
-        HandleHolder stackDumpThreadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer"));
-        if (stackDumpThreadHandle != INVALID_HANDLE_VALUE)
+        HandleHolder stackDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, LogStackOverflowStackTraceThread, GetThreadNULLOk(), W(".NET SO Tracer")) };
+        if (stackDumpThreadHandle != NULL)
         {
             // Wait for the stack trace logging completion
-            DWORD res = WaitForSingleObject(stackDumpThreadHandle, INFINITE);
-            _ASSERTE(res == WAIT_OBJECT_0);
+            while (g_stackOverflowCallStackLogged != 2)
+            {
+                minipal_sleep(1);
+            }
  #ifdef _DEBUG
             if (g_LogStackOverflowExit)
                 PrintToStdErrA("@Stack trace printing helper thread exited.\n");
  #endif
         }
-
-        g_stackOverflowCallStackLogged = 2;
+        else
+        {
+            InterlockedExchange(&g_stackOverflowCallStackLogged, 2);
+        }
     }
     else
     {
@@ -772,7 +788,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
         // Wait for the thread that is logging the stack trace to complete
         while (g_stackOverflowCallStackLogged != 2)
         {
-            Sleep(50);
+            minipal_sleep(50);
         }
     }
 
@@ -873,7 +889,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     WRAPPER_NO_CONTRACT;
 
     // All of the code from here on out is robust to any failures in any API's that are called.
-    FAULT_NOT_FATAL();
 
     EXCEPTION_RECORD   exceptionRecord;
     EXCEPTION_POINTERS exceptionPointers;
@@ -906,8 +921,7 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
     {
         // This is fatal error.  We do not care about SO mode any more.
         // All of the code from here on out is robust to any failures in any API's that are called.
-        CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
-
+        CONTRACT_VIOLATION(GCViolation | ModeViolation | TakesLockViolation);
 
         // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
         // block indefinitely if the fatal error occurred during the GC.

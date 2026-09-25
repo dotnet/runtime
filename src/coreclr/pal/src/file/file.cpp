@@ -71,10 +71,7 @@ CObjectType CorUnix::otFile(
                 NULL,   // No immutable data copy routine
                 NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
-                CFileProcessLocalDataCleanupRoutine,
-                CObjectType::UnwaitableObject,
-                CObjectType::SignalingNotApplicable,
-                CObjectType::ThreadReleaseNotApplicable
+                CFileProcessLocalDataCleanupRoutine
                 );
 
 CAllowedObjectTypes CorUnix::aotFile(otiFile);
@@ -133,6 +130,13 @@ FileCleanupRoutine(
 
     if (!fShutdown && -1 != pLocalData->unix_fd)
     {
+#if defined(TARGET_WASI)
+        // WASI: init_std_handle borrows fileno(stream) for stdin/stdout/stderr
+        // because WASI has no dup(). Never close a borrowed std fd here.
+        if (pLocalData->unix_fd != STDIN_FILENO &&
+            pLocalData->unix_fd != STDOUT_FILENO &&
+            pLocalData->unix_fd != STDERR_FILENO)
+#endif
         close(pLocalData->unix_fd);
     }
 
@@ -2397,7 +2401,13 @@ static HANDLE init_std_handle(HANDLE * pStd, FILE *stream)
 
     /* duplicate the FILE *, so that we can fclose() in FILECloseHandle without
        closing the original */
+#if defined(TARGET_WASI)
+    // WASI has no dup(); use fileno directly. FileCleanupRoutine skips
+    // close() for the borrowed standard-stream fds (STDIN/STDOUT/STDERR).
+    new_fd = fileno(stream);
+#else
     new_fd = fcntl(fileno(stream), F_DUPFD_CLOEXEC, 0); // dup, but with CLOEXEC
+#endif
     if(-1 == new_fd)
     {
         ERROR("dup() failed; errno is %d (%s)\n", errno, strerror(errno));
@@ -2479,6 +2489,13 @@ done:
     }
     else if (-1 != new_fd)
     {
+#if defined(TARGET_WASI)
+        // See FileCleanupRoutine: on WASI, new_fd may be a borrowed std fd
+        // (STDIN/STDOUT/STDERR) because init_std_handle can't dup on WASI.
+        if (new_fd != STDIN_FILENO &&
+            new_fd != STDOUT_FILENO &&
+            new_fd != STDERR_FILENO)
+#endif
         close(new_fd);
     }
 

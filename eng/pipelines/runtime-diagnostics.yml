@@ -3,8 +3,8 @@
 # Pipeline overview:
 #
 #   SOSTests           windows_x64 Release. One shared coreclr+libs build (-c Debug
-#                      -rc release -lc release -clrinterpreter) consumed by 3 SOS
-#                      legs that run on top of it: cDAC, cDAC_no_fallback, DAC.
+#                      -rc release -lc release -clrinterpreter) consumed by 2 SOS
+#                      legs that run on top of it: cDAC and DAC.
 #                      Each leg sets testInterpreter: true so interpreter coverage
 #                      is exercised inline (no separate Interpreter leg).
 #
@@ -70,9 +70,11 @@ parameters:
   type: object
   default:
     - windows_x64
+    - windows_x86
     - linux_x64
     - windows_arm64
     - linux_arm64
+    - linux_arm
 
 resources:
   repositories:
@@ -97,12 +99,16 @@ schedules:
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - eng/pipelines/**
     - src/native/managed/cdac/**
     - src/coreclr/debug/runtimeinfo/**
+    - src/coreclr/vm/cdacstress.cpp
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
@@ -110,7 +116,7 @@ extends:
     stages:
 
     # ----------------------------------------------------------------------
-    # SOS tests: shared windows_x64 build + 3 SOS legs that consume it.
+    # SOS tests: shared windows_x64 build + 2 SOS legs that consume it.
     # ----------------------------------------------------------------------
     - stage: SOSTests
       jobs:
@@ -145,24 +151,44 @@ extends:
                 tarCompression: $(tarCompression)
                 artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
                 displayName: Build Assets
+            # Publish the transport package so the cDAC leg consumes the same cDAC and DBI
+            # pair produced by this runtime build.
+            - powershell: |
+                $packagePattern = "$(Build.SourcesDirectory)\artifacts\packages\Debug\NonShipping\runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport.*.nupkg"
+                $packages = @(Get-ChildItem -File -Path $packagePattern | Where-Object Name -NotLike '*.symbols.nupkg')
+                if ($packages.Count -ne 1) {
+                  throw "Expected one cDAC transport package matching '$packagePattern', but found $($packages.Count)."
+                }
+
+                $cdacTransportUploadDir = "$(Build.ArtifactStagingDirectory)\cdac-transport"
+                New-Item -ItemType Directory -Force -Path $cdacTransportUploadDir | Out-Null
+                Copy-Item -Path $packages[0].FullName -Destination $cdacTransportUploadDir
+                Write-Host "##vso[task.setvariable variable=cdacTransportUploadDir]$cdacTransportUploadDir"
+              displayName: 'Stage cDAC Transport Package'
+            - template: /eng/pipelines/common/upload-artifact-step.yml
+              parameters:
+                rootFolder: $(cdacTransportUploadDir)
+                includeRootFolder: false
+                archiveType: $(archiveType)
+                archiveExtension: $(archiveExtension)
+                tarCompression: $(tarCompression)
+                artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
+                displayName: cDAC Assets
 
       # SOS test legs: each depends on the shared build above. Differ only in
-      # name (artifact namespace) and the cDAC fallback flags.
+      # name (artifact namespace) and the cDAC/DAC load mode.
+
+      # Exercise SOS's strict standalone cDAC mode with the matching cDAC and DBI.
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: cDAC
-          useCdac: true
-
-      - template: /eng/pipelines/diagnostics/sos-test-leg.yml
-        parameters:
-          name: cDAC_no_fallback
-          useCdac: true
-          noFallback: true
+          dacMode: cdac
+          useRuntimeCDac: true
 
       - template: /eng/pipelines/diagnostics/sos-test-leg.yml
         parameters:
           name: DAC
-          useCdac: false
+          dacMode: dac
 
     # ----------------------------------------------------------------------
     # cDAC managed-side unit tests + DataGenerator tests. Standalone, no
@@ -296,7 +322,7 @@ extends:
             prepareParameters:
               cdacTestConfig: Debug
             sendDisplayName: 'Send cDAC Dump Gen to Helix'
-            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:EnableHelixJobMonitor=false /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
             failDisplayName: 'Fail on dump generation errors'
             failErrorMessage: 'One or more cDAC dump generation failures were detected. Failing the job.'
             publishDumpsArtifactName: CdacDumps_$(osGroup)_$(archType)

@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
@@ -1353,7 +1354,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithExtensionPropertyNoGenericParameters))]
         [InlineData(typeof(ClassWithExtensionPropertyOneGenericParameter))]
         [InlineData(typeof(ClassWithExtensionPropertyThreeGenericParameters))]
-        public async Task DeserializeIntoGenericDictionaryParameterCount(Type type)
+        public async Task DeserializeIntoGenericDictionaryParameterCount([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             object obj = await Serializer.DeserializeWrapper("{\"hello\":\"world\"}", type);
 

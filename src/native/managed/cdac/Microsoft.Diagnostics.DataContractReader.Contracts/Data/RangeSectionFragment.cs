@@ -6,21 +6,22 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.RangeSectionFragment))]
 internal sealed partial class RangeSectionFragment : IData<RangeSectionFragment>
 {
-    [Field] public TargetPointer RangeBegin { get; }
-    [Field] public TargetPointer RangeEndOpen { get; }
-    [Field] public TargetPointer RangeSection { get; }
+    [Field] public partial TargetPointer RangeBegin { get; }
+    [Field] public partial TargetPointer RangeEndOpen { get; }
+    [Field] public partial TargetPointer RangeSection { get; }
 
     /// <summary>
     /// The Next pointer uses the low bit as a collectible flag
     /// (see <c>RangeSectionFragmentPointer</c> in codeman.h).
-    /// The OnInit handler strips it to get the actual address.
+    /// The initializer strips it to get the actual address.
     /// </summary>
-    public TargetPointer Next { get; private set; }
+    [CustomInit(nameof(InitNext))] public partial TargetPointer Next { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    [DataDescriptorDependency(nameof(Next), "pointer")]
+    private partial TargetPointer InitNext(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.RangeSectionFragment);
-        Next = target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
+        return target.ReadPointerField(address, type, nameof(Next)) & ~1ul;
     }
 
     public bool Contains(TargetCodePointer address)

@@ -37,8 +37,8 @@ parameters:
   templateContext: ''
   disableComponentGovernance: ''
   liveRuntimeDir: ''
-  useCdac: false
-  noFallback: false
+  dacMode: ''
+  useRuntimeCDac: false
   classFilter: ''
   methodFilter: ''
   testInterpreter: false
@@ -91,8 +91,8 @@ jobs:
 
       - _TestArgs: '-test'
       - _Cross: ''
-      - _CdacArgs: ''
-      - _NoFallbackArgs: ''
+      - _DacModeArgs: ''
+      - _CDacPackageArgs: ''
       - _ClassFilterArgs: ''
       - _MethodFilterArgs: ''
       - _TestInterpreterArgs: ''
@@ -108,11 +108,13 @@ jobs:
       - ${{ if or(eq(parameters.buildOnly, 'true'), eq(parameters.isCodeQLRun, 'true')) }}:
         - _TestArgs: ''
 
-      - ${{ if eq(parameters.useCdac, 'true') }}:
-        - _CdacArgs: '-useCdac'
+      # Selects which DAC/cDAC SOS loads (see DacMode in dotnet/diagnostics SOSRunner).
+      - ${{ if ne(parameters.dacMode, '') }}:
+        - _DacModeArgs: '-dacMode ${{ parameters.dacMode }}'
 
-      - ${{ if eq(parameters.noFallback, 'true') }}:
-        - _NoFallbackArgs: '-noFallback'
+      # Installs the cDAC and DBI produced by the runtime build without changing SOS's default policy.
+      - ${{ if eq(parameters.useRuntimeCDac, 'true') }}:
+        - _CDacPackageArgs: '/p:PackageWithCDac=true /p:runtimewinx64MicrosoftDotNetCdacTransportVersion=$(cdacTransportVersion) /p:RestoreAdditionalProjectSources=$(cdacTransportSource)'
 
       - ${{ if ne(parameters.classFilter, '') }}:
         - _ClassFilterArgs: '-classfilter ${{ parameters.classFilter }}'
@@ -169,6 +171,9 @@ jobs:
 
     - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
 
+    - ${{ if or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.hostedOs, 'osx')) }}:
+      - template: /eng/pipelines/common/select-xcode.yml
+
     - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh ${{ parameters.osGroup }}
         displayName: Install Build Dependencies
@@ -209,28 +214,43 @@ jobs:
         - ${{ else }}:
           - ${{ preBuildStep }}
 
-    # Build
-    - script: $(_buildScript)
-          -ci
-          -configuration ${{ parameters.buildConfig }}
-          -architecture ${{ parameters.archType }}
-          -privatebuild
-          $(_CdacArgs)
-          $(_NoFallbackArgs)
-          $(_TestInterpreterArgs)
-          -liveRuntimeDir ${{ parameters.liveRuntimeDir }}
-          $(_TestArgs)
-          $(_Cross)
-          $(_InternalInstallArgs)
-          $(_ClassFilterArgs)
-          $(_MethodFilterArgs)
+    - powershell: |
+        & "$(Build.SourcesDirectory)\eng\build.ps1" `
+          -restore `
+          -build `
+          -ci `
+          -configuration ${{ parameters.buildConfig }} `
+          -architecture ${{ parameters.archType }} `
+          -privatebuild `
+          $(_DacModeArgs) `
+          $(_CDacPackageArgs) `
+          $(_TestInterpreterArgs) `
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
+          $(_InternalInstallArgs) `
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
-      ${{ if eq(parameters.testOnly, 'true') }}:
-        displayName: Test
-      ${{ elseif eq(parameters.buildOnly, 'true') }}:
-        displayName: Build
-      ${{ else }}:
-        displayName: Build / Test
+        exit $LASTEXITCODE
+      displayName: Build
+      condition: succeeded()
+
+    - powershell: |
+        & "$(Build.SourcesDirectory)\eng\build.ps1" `
+          -test `
+          -skipnative `
+          -skipmanaged `
+          -ci `
+          -configuration ${{ parameters.buildConfig }} `
+          -architecture ${{ parameters.archType }} `
+          -privatebuild `
+          $(_DacModeArgs) `
+          $(_CDacPackageArgs) `
+          $(_TestInterpreterArgs) `
+          -liveRuntimeDir ${{ parameters.liveRuntimeDir }} `
+          $(_InternalInstallArgs) `
+          $(_ClassFilterArgs) `
+          $(_MethodFilterArgs) `
+          /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+        exit $LASTEXITCODE
+      displayName: Test
       condition: succeeded()
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos', 'android') }}:

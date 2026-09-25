@@ -11,10 +11,10 @@ using Xunit;
 public class Async2Struct
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
-        Async().Wait();
-        Async2().Wait();
+        await Async();
+        await Async2();
     }
 
     [System.Runtime.CompilerServices.RuntimeAsyncMethodGeneration(false)]
@@ -31,7 +31,6 @@ public class Async2Struct
         await s.Test();
         AssertEqual(100, s.Value);
     }
-
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void AssertEqual(int expected, int val)

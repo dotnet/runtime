@@ -43,6 +43,7 @@ namespace System.Net.Mail
         private bool _inCall;
         private bool _timedOut;
         private string? _targetName;
+        private const string DefaultTargetNamePrefix = "SMTPSVC/";
         private SmtpDeliveryMethod _deliveryMethod = SmtpDeliveryMethod.Network;
         private SmtpDeliveryFormat _deliveryFormat = SmtpDeliveryFormat.SevenBit; // Non-EAI default
         private string? _pickupDirectoryLocation;
@@ -103,7 +104,7 @@ namespace System.Net.Mail
                 _port = DefaultPort;
             }
 
-            _targetName ??= "SMTPSVC/" + _host;
+            _targetName ??= DefaultTargetNamePrefix + _host;
 
             if (_clientDomain == null)
             {
@@ -162,8 +163,20 @@ namespace System.Net.Mail
 
                 if (value != _host)
                 {
+                    // If TargetName is still the default derived from the current host, keep it in
+                    // sync with the new host so Negotiate/NTLM authentication uses the correct SPN.
+                    // A TargetName explicitly set by the caller (not matching the default) is left
+                    // untouched.
+                    if (_targetName == DefaultTargetNamePrefix + _host)
+                    {
+                        _targetName = DefaultTargetNamePrefix + value;
+                    }
+
                     _host = value;
                     _servicePoint = null;
+                    // The cached connection targets the previous host, so invalidate it to force
+                    // a new connection to be established on the next send.
+                    _transport.InvalidateCachedConnection();
                 }
             }
         }
@@ -187,6 +200,9 @@ namespace System.Net.Mail
                 {
                     _port = value;
                     _servicePoint = null;
+                    // The cached connection targets the previous port, so invalidate it to force
+                    // a new connection to be established on the next send.
+                    _transport.InvalidateCachedConnection();
                 }
             }
         }
@@ -316,6 +332,11 @@ namespace System.Net.Mail
             }
             set
             {
+                if (_inCall)
+                {
+                    throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
+                }
+
                 _transport.EnableSsl = value;
             }
         }
@@ -334,7 +355,21 @@ namespace System.Net.Mail
         public string? TargetName
         {
             get { return _targetName; }
-            set { _targetName = value; }
+            set
+            {
+                if (_inCall)
+                {
+                    throw new InvalidOperationException(SR.SmtpInvalidOperationDuringSend);
+                }
+
+                if (value != _targetName)
+                {
+                    _targetName = value;
+                    // The target name is the SPN used during authentication, so invalidate any
+                    // cached connection to force a new one on the next send.
+                    _transport.InvalidateCachedConnection();
+                }
+            }
         }
 
         private bool ServerSupportsEai

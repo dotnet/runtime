@@ -48,87 +48,6 @@ namespace System
             HandleToInfo
         }
 
-        // Helper to build lists of MemberInfos. Special cased to avoid allocations for lists of one element.
-        internal struct ListBuilder<T> where T : class
-        {
-            private T[]? _items;
-            private T _item;
-            private int _count;
-            private int _capacity;
-
-            public ListBuilder(int capacity)
-            {
-                _items = null;
-                _item = null!;
-                _count = 0;
-                _capacity = capacity;
-            }
-
-            public T this[int index]
-            {
-                get
-                {
-                    Debug.Assert(index < Count);
-                    return (_items != null) ? _items[index] : _item;
-                }
-            }
-
-            public T[] ToArray()
-            {
-                if (_count == 0)
-                    return [];
-                if (_count == 1)
-                    return [_item];
-
-                Array.Resize(ref _items, _count);
-                _capacity = _count;
-                return _items!;
-            }
-
-            public void CopyTo(object[] array, int index)
-            {
-                if (_count == 0)
-                    return;
-
-                if (_count == 1)
-                {
-                    array[index] = _item;
-                    return;
-                }
-
-                Array.Copy(_items!, 0, array, index, _count);
-            }
-
-            public int Count => _count;
-
-            public void Add(T item)
-            {
-                if (_count == 0)
-                {
-                    _item = item;
-                }
-                else
-                {
-                    if (_count == 1)
-                    {
-                        if (_capacity < 2)
-                            _capacity = 4;
-                        _items = new T[_capacity];
-                        _items[0] = _item;
-                    }
-                    else if (_capacity == _count)
-                    {
-                        int newCapacity = 2 * _capacity;
-                        Array.Resize(ref _items, newCapacity);
-                        _capacity = newCapacity;
-                    }
-
-                    _items![_count] = item;
-                }
-                _count++;
-            }
-        }
-
         internal sealed class RuntimeTypeCache
         {
             private const int MAXNAMELEN = 1024;
@@ -1808,7 +1727,7 @@ namespace System
 
         internal static MethodBase? GetMethodBase(RuntimeType? reflectedType, IRuntimeMethodInfo methodHandle)
         {
-            MethodBase? retval = GetMethodBase(reflectedType, methodHandle.Value);
+            MethodBase? retval = GetMethodBase(reflectedType, IRuntimeMethodInfo.GetValue(methodHandle));
             GC.KeepAlive(methodHandle);
             return retval;
         }
@@ -1856,7 +1775,7 @@ namespace System
                     for (int i = 0; i < methodBases.Length; i++)
                     {
                         IRuntimeMethodInfo rmi = (IRuntimeMethodInfo)methodBases[i];
-                        if (rmi.Value.Value == methodHandle.Value)
+                        if (IRuntimeMethodInfo.GetValue(rmi).Value == methodHandle.Value)
                             loaderAssuredCompatible = true;
                     }
 
@@ -3414,6 +3333,7 @@ namespace System
             }
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
         private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result);
 
@@ -3426,6 +3346,7 @@ namespace System
             GetComObjectGuid(ObjectHandleOnStack.Create(ref type), result);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
         private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result);
 #endif // FEATURE_COMINTEROP
@@ -4136,6 +4057,7 @@ namespace System
         #endregion
 
 #if FEATURE_COMINTEROP
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_InvokeDispMethod")]
         private static partial void InvokeDispMethod(
             ObjectHandleOnStack type,
@@ -4366,6 +4288,7 @@ namespace System
     #region Library
     internal readonly unsafe partial struct MdUtf8String
     {
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz);

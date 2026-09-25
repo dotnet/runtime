@@ -79,6 +79,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.BulkWriteBarrier:
                     methodDesc = context.GetCoreLibEntryPoint("System"u8, "Buffer"u8, "BulkMoveWithWriteBarrier"u8, null);
                     break;
+                case ReadyToRunHelper.BulkWriteBarrierSmall:
+                    mangledName = "RhBulkMoveWithWriteBarrier";
+                    break;
                 case ReadyToRunHelper.WriteBarrier_EAX:
                     mangledName = "RhpAssignRefEAX";
                     break;
@@ -318,7 +321,7 @@ namespace ILCompiler
                     break;
 
                 case ReadyToRunHelper.GVMLookupForSlot:
-                    methodDesc = context.SystemModule.GetKnownType("System.Runtime"u8, "TypeLoaderExports"u8).GetKnownMethod("GVMLookupForSlot"u8, null);
+                    mangledName = "RhpDispatchResolve";
                     break;
 
                 case ReadyToRunHelper.TypeHandleToRuntimeType:

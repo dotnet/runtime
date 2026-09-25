@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Xunit;
 
-namespace VectorMathTests
+namespace SIMDTests.CreateGenericTests
 {
     public class Program
     {

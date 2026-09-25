@@ -949,6 +949,35 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [Fact]
+        public async Task GetterOnlyCollectionProperties()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        MyOptions options = new();
+                        config.Bind(options);
+                    }
+
+                    public class MyOptions
+                    {
+                        public List<string>? NullList { get; }
+                        public List<string> ExistingList { get; } = new();
+                    }
+                }
+                """;
+
+            await VerifyAgainstBaselineUsingFile("GetterOnlyCollectionProperties.generated.txt", source);
+        }
+
+        [Fact]
         public async Task MinimalGenerationIfNoBindableMembers()
         {
             string source = """
@@ -970,6 +999,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                         List<AbstractType_CannotInit> obj3 = new();
                         configuration.Bind(obj3);
+
+                        List<AbstractType_CannotInit_WithMembers> obj4 = new();
+                        configuration.Bind(obj4);
                     }
                 }
 
@@ -985,6 +1017,11 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 public abstract class AbstractType_CannotInit
                 {
                 }
+
+                public abstract class AbstractType_CannotInit_WithMembers
+                {
+                    public int Value { get; set; }
+                }
                 """;
 
             ConfigBindingGenRunResult result = await VerifyAgainstBaselineUsingFile(
@@ -992,7 +1029,9 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 source,
                 expectedDiags: ExpectedDiagnostics.FromGeneratorOnly);
 
-            Assert.Equal(2, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
+            // Two diagnostics per abstract element type: one for the missing public constructor,
+            // and one reporting that the collection element type is not supported.
+            Assert.Equal(4, result.Diagnostics.Where(diag => diag.Id == Diagnostics.TypeNotSupported.Id).Count());
         }
 
         private readonly static string [] s_typesToSkip = new string []

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Xunit;
@@ -13,6 +14,25 @@ namespace System.Text.Json.Serialization.Tests
     {
         private static readonly JsonSerializerOptions s_serializerOptionsPreserve = new JsonSerializerOptions { ReferenceHandler = ReferenceHandler.Preserve };
         private static readonly JsonSerializerSettings s_newtonsoftSerializerSettingsPreserve = new JsonSerializerSettings { PreserveReferencesHandling = PreserveReferencesHandling.All, ReferenceLoopHandling = ReferenceLoopHandling.Serialize };
+
+        // Asserts that the serializer output matches the Newtonsoft.Json reference-preservation baseline.
+        // The Newtonsoft.Json baseline is reflection-based (its APIs are annotated RequiresUnreferencedCode
+        // and RequiresDynamicCode), so it is only exercised when dynamic code is supported. The runtime guard
+        // makes the call unreachable under Native AOT (where PlatformDetection.IsReflectionEmitSupported is
+        // false), while still running the baseline in the non-AOT source generator configuration. The trim/AOT
+        // analyzers cannot see through the guard, so the warnings are suppressed here.
+        [UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+            Justification = "The Newtonsoft.Json baseline only runs when dynamic code is supported, guarded by PlatformDetection.IsReflectionEmitSupported.")]
+        [UnconditionalSuppressMessage("AOT", "IL3050:RequiresDynamicCode",
+            Justification = "The Newtonsoft.Json baseline only runs when dynamic code is supported, guarded by PlatformDetection.IsReflectionEmitSupported.")]
+        private static void AssertOutputEqualsNewtonsoft(object value, string actual)
+        {
+            if (PlatformDetection.IsReflectionEmitSupported)
+            {
+                string expected = JsonConvert.SerializeObject(value, s_newtonsoftSerializerSettingsPreserve);
+                Assert.Equal(expected, actual);
+            }
+        }
 
         public class Employee
         {
@@ -52,10 +72,9 @@ namespace System.Text.Json.Serialization.Tests
 
             angela.ExtensionData = extensionData;
 
-            string expected = JsonConvert.SerializeObject(angela, s_newtonsoftSerializerSettingsPreserve);
             string actual = await Serializer.SerializeWrapper(angela, s_serializerOptionsPreserve);
 
-            Assert.Equal(expected, actual);
+            AssertOutputEqualsNewtonsoft(angela, actual);
         }
 
         #region struct tests

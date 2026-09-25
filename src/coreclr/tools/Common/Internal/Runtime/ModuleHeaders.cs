@@ -15,7 +15,7 @@ namespace Internal.Runtime
     {
         public const uint Signature = 0x00525452; // 'RTR'
 
-        public const ushort CurrentMajorVersion = 22;
+        public const ushort CurrentMajorVersion = 30;
         public const ushort CurrentMinorVersion = 0;
     }
 #if READYTORUN
@@ -84,6 +84,7 @@ namespace Internal.Runtime
         ExternalTypeMaps            = 124, // Added to CoreCLR in V18.3
         ProxyTypeMaps               = 125, // Added to CoreCLR in V18.3
         TypeMapAssemblyTargets      = 126, // Added in V18.3
+        WasmAsyncResumeInfo         = 127, // Added in V29
 
         //
         // NativeAOT ReadyToRun sections
@@ -102,6 +103,8 @@ namespace Internal.Runtime
         // 211 is unused - it was used by LoopHijackFlag
         ImportAddressTables = 212,
         ModuleInitializerList = 213,
+        GvmDispatchCellInfoRegion = 214,
+        GvmDispatchCellRegion = 215,
 
         // Sections 300 - 399 are reserved for RhFindBlob backwards compatibility
         ReadonlyBlobRegionStart = 300,

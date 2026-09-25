@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { exceptions, simd } from "wasm-feature-detect";
+import { exceptionsFinal, simd } from "wasm-feature-detect";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, globalThisAny } from "./per-module";
 import { dotnetAssert } from "./cross-module";
@@ -13,7 +13,7 @@ const scriptUrl = normalizeFileUrl(scriptUrlQuery);
 const scriptDirectory = normalizeDirectoryUrl(scriptUrl);
 
 export async function validateEngineFeatures(): Promise<void> {
-    dotnetAssert.check(await exceptions(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
+    dotnetAssert.check(await exceptionsFinal(), "This browser/engine doesn't support WASM exception handling. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     dotnetAssert.check(await simd(), "This browser/engine doesn't support WASM SIMD. Please use a modern version. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms");
     if (ENVIRONMENT_IS_NODE) {
         const nodeMajorVersion = parseInt(globalThisAny.process.versions.node.split(".")[0], 10);

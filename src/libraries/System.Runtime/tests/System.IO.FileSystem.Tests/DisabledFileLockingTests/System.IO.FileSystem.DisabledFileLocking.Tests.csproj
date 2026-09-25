@@ -38,6 +38,10 @@
     <TrimmerRootDescriptor Condition="'$(TargetsAppleMobile)' == 'true' and '$(EnableAggressiveTrimming)' == 'true' and '$(UseNativeAotRuntime)' != 'true'" Include="$(MSBuildThisFileDirectory)ILLink.Descriptors.xml" />
   </ItemGroup>
   <ItemGroup>
-    <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="true" />
+    <!-- The default is 'disabled' for iOS and tvOS, but these platforms technically support locking, so enable file locking here to test the non-default scenario -->
+    <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="false"
+                                    Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'" />
+    <RuntimeHostConfigurationOption Include="System.IO.DisableFileLocking" Value="true"
+                                    Condition="'$(TargetOS)' != 'ios' and '$(TargetOS)' != 'iossimulator' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" />
   </ItemGroup>
 </Project>

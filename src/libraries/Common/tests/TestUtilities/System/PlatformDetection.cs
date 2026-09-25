@@ -43,6 +43,7 @@ namespace System
         public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
         public static bool IsFreeBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD"));
         public static bool IsNetBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
+        public static bool IsOpenBSD => RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"));
         public static bool IsAndroid => RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID"));
         public static bool IsNotAndroid => !IsAndroid;
         public static bool IsAndroidX86 => IsAndroid && IsX86Process;
@@ -64,7 +65,7 @@ namespace System
         public static bool IsAppleMobile => IsMacCatalyst || IsiOS || IstvOS;
         public static bool IsNotAppleMobile => !IsAppleMobile;
         public static bool IsNotNetFramework => !IsNetFramework;
-        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD;
+        public static bool IsBsdLike => IsApplePlatform || IsFreeBSD || IsNetBSD || IsOpenBSD;
 
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
@@ -84,6 +85,10 @@ namespace System
         public static bool Is32BitProcess => IntPtr.Size == 4;
         public static bool Is64BitProcess => IntPtr.Size == 8;
         public static bool IsNotWindows => !IsWindows;
+
+        // Test expectation for floating-point operations, not a platform-wide guarantee.
+        // Bitcasts and other explicitly bit-preserving operations should still be tested exactly.
+        public static bool IsNaNPayloadPreservationExpected => !IsRiscV64Process && !IsWasm;
 
         private static volatile int s_isPrivilegedProcess = -1;
         public static bool IsPrivilegedProcess
@@ -275,6 +280,7 @@ namespace System
         public static bool IsSingleFile => !HasAssemblyFiles;
 
         public static bool IsReadyToRunCompiled => Environment.GetEnvironmentVariable("TEST_READY_TO_RUN_MODE") == "1";
+        public static bool IsWasmReadyToRun => IsWasm && IsReadyToRunCompiled;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported

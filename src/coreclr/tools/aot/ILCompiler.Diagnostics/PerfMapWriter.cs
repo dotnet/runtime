@@ -118,6 +118,8 @@ namespace ILCompiler.Diagnostics
                 TargetOS.NetBSD => PerfMapOSToken.NetBSD,
                 TargetOS.OpenBSD => PerfMapOSToken.OpenBSD,
                 TargetOS.SunOS => PerfMapOSToken.SunOS,
+                TargetOS.Browser => PerfMapOSToken.Browser,
+                TargetOS.Wasi => PerfMapOSToken.Wasi,
                 _ => throw new NotImplementedException(details.OperatingSystem.ToString())
             };
 
@@ -138,6 +140,7 @@ namespace ILCompiler.Diagnostics
                 TargetArchitecture.X86 => PerfMapArchitectureToken.X86,
                 TargetArchitecture.RiscV64 => PerfMapArchitectureToken.RiscV64,
                 TargetArchitecture.LoongArch64 => PerfMapArchitectureToken.LoongArch64,
+                TargetArchitecture.Wasm32 => PerfMapArchitectureToken.Wasm,
                 _ => throw new NotImplementedException(details.Architecture.ToString())
             };
 

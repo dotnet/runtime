@@ -16,6 +16,7 @@ namespace System.Net.NameResolution.Tests
     public class GetHostEntryTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132750", TestPlatforms.OSX | TestPlatforms.MacCatalyst)]
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
@@ -256,6 +257,22 @@ namespace System.Net.NameResolution.Tests
         }
 
         [Theory]
+        [InlineData("\0")]
+        [InlineData("\0host")]
+        [InlineData("host\0")]
+        [InlineData("ho\0st")]
+        [InlineData("host\0name")]
+        public async Task DnsGetHostEntry_NullCharacterInName_ThrowsArgumentException(string hostNameOrAddress)
+        {
+            Assert.Throws<ArgumentException>(() => Dns.GetHostEntry(hostNameOrAddress));
+            Assert.Throws<ArgumentException>(() => Dns.GetHostAddresses(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostEntryAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Dns.GetHostAddressesAsync(hostNameOrAddress));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostEntry, Dns.EndGetHostEntry, hostNameOrAddress, null));
+            await Assert.ThrowsAsync<ArgumentException>(() => Task.Factory.FromAsync(Dns.BeginGetHostAddresses, Dns.EndGetHostAddresses, hostNameOrAddress, null));
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -405,8 +422,8 @@ namespace System.Net.NameResolution.Tests
             await Assert.ThrowsAnyAsync<Exception>(() => Dns.GetHostEntryAsync(hostName));
         }
 
-        // "localhost." (with trailing dot) should NOT be treated as a subdomain.
-        // It's equivalent to plain "localhost" and should resolve via OS resolver.
+        // "localhost." is equivalent to plain "localhost".
+        // The OS resolver is tried first, falling back to plain "localhost" if resolution fails or returns no addresses.
         [Fact]
         public async Task DnsGetHostEntry_LocalhostWithTrailingDot_ReturnsLoopback()
         {

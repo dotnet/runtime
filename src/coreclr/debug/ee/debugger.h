@@ -36,6 +36,7 @@
 #include "eedbginterface.h"
 #include "dbginterface.h"
 #include "corhost.h"
+#include "debugwait.h"
 
 
 #include "corjit.h"
@@ -364,32 +365,7 @@ inline bool ThisMaybeHelperThread() { return true; }
 
 #endif
 
-
-// These are methods for transferring information between a REGDISPLAY and
-// a DebuggerREGDISPLAY.
 extern void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc);
-extern void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* pRD);
-
-//
-// PUSHED_REG_ADDR gives us NULL if the register still lives in the thread's context, or it gives us the address
-// of where the register was pushed for this frame.
-//
-// This macro is used in CopyREGDISPLAY() and SetDebuggerREGDISPLAYFromREGDISPLAY().  We really should make
-// DebuggerREGDISPLAY to be a class with these two methods, but unfortunately, the RS has no notion of REGDISPLAY.
-inline LPVOID PushedRegAddr(REGDISPLAY* pRD, LPVOID pAddr)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if ( ((UINT_PTR)(pAddr) >= (UINT_PTR)pRD->pCurrentContextPointers) &&
-         ((UINT_PTR)(pAddr) <= ((UINT_PTR)pRD->pCurrentContextPointers + sizeof(T_KNONVOLATILE_CONTEXT_POINTERS))) )
-
-        return NULL;
-
-    // (Microsoft 2/9/07 - putting this in an else clause confuses gcc for some reason, so I've moved
-    //  it to here)
-    return pAddr;
-}
-
 bool HandleIPCEventWrapper(Debugger* pDebugger, DebuggerIPCEvent *e);
 
 HRESULT ValidateObject(Object *objPtr);
@@ -673,10 +649,10 @@ protected:
     // that blew its stack
     FAVORCALLBACK m_fpFavor;
     void                           *m_pFavorData;
-    HANDLE                          m_FavorReadEvent;
+    WaitEvent                      *m_FavorReadEvent;
     Crst                            m_FavorLock;
 
-    HANDLE                          m_FavorAvailableEvent;
+    WaitEvent                      *m_FavorAvailableEvent;
 };
 
 
@@ -721,10 +697,10 @@ protected:
     // This is a separate lock from the larger Debugger-lock / Controller lock, which allows regions under those
     // locks to access debugger datastructures w/o blocking each other.
     Crst                  m_DebuggerDataLock;
-    HANDLE                m_CtrlCMutex;
-    HANDLE                m_exAttachEvent;
-    HANDLE                m_exUnmanagedAttachEvent;
-    HANDLE                m_garbageCollectionBlockerEvent;
+    CLREvent              m_CtrlCMutex;
+    CLREvent              m_exAttachEvent;
+    CLREvent              m_exUnmanagedAttachEvent;
+    CLREvent              m_garbageCollectionBlockerEvent;
 
     BOOL                  m_DebuggerHandlingCtrlC;
 
@@ -832,7 +808,8 @@ public:
     void MainLoop();
     void TemporaryHelperThreadMainLoop();
 
-    HANDLE GetHelperThreadCanGoEvent(void) {LIMITED_METHOD_CONTRACT;  return m_helperThreadCanGoEvent; }
+    CLREvent &GetHelperThreadCanGoEvent(void) {LIMITED_METHOD_CONTRACT; return m_helperThreadCanGoEvent; }
+    CLREvent &GetLeftSideUnmanagedWaitEvent(void) {LIMITED_METHOD_CONTRACT; return m_leftSideUnmanagedWaitEvent; }
 
     void EarlyHelperThreadDeath(void);
 
@@ -890,8 +867,8 @@ private:
     }
     Crst * GetFavorLock()                   { return &m_favorData.m_FavorLock; }
 
-    HANDLE GetFavorReadEvent()              { return m_favorData.m_FavorReadEvent; }
-    HANDLE GetFavorAvailableEvent()         { return m_favorData.m_FavorAvailableEvent; }
+    WaitEvent *GetFavorReadEvent()      { return m_favorData.m_FavorReadEvent; }
+    WaitEvent *GetFavorAvailableEvent() { return m_favorData.m_FavorAvailableEvent; }
 
     HelperThreadFavor m_favorData;
 
@@ -916,10 +893,14 @@ private:
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
     HANDLE                          m_thread;
+    Volatile<BOOL>                  m_helperThreadRunning;
     bool                            m_run;
 
-    HANDLE                          m_threadControlEvent;
-    HANDLE                          m_helperThreadCanGoEvent;
+    WaitEvent                      *m_threadControlEvent;
+    WaitEvent                      *m_helperThreadExitedEvent;
+    CLREvent                        m_helperThreadCanGoEvent;
+    CLREvent                        m_rightSideEventRead;
+    CLREvent                        m_leftSideUnmanagedWaitEvent;
     bool                            m_rgfInitRuntimeOffsets[IPC_TARGET_COUNT];
     bool                            m_fDetachRightSide;
 
@@ -1053,7 +1034,7 @@ public:
     ~DebuggerMethodInfo();
 
     // A profiler can remap the IL. We track the "instrumented" IL map here.
-    void SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries);
+    void SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries);
     bool HasInstrumentedILMap() {return m_fHasInstrumentedILMap; }
 
     // TranslateToInstIL will take offOrig, and translate it to the
@@ -1532,7 +1513,7 @@ public:
             "                     m_lastIL: 0x%x\n"
             "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
+            m_methodInfo, (void*)m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -1925,6 +1906,7 @@ public:
 
     void ThreadCreated(Thread* pRuntimeThread);
     void ThreadStarted(Thread* pRuntimeThread);
+    void SendCreateThreadAtInterpreterEntry(Thread* pRuntimeThread);
     void DetachThread(Thread *pRuntimeThread);
 
     BOOL SuspendComplete(bool isEESuspendedForGC = false);
@@ -2037,7 +2019,8 @@ public:
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers);
+                 bool *extendOthers,
+                 unsigned ilCodeSize);
 
     DebuggerMethodInfo *GetOrCreateMethodInfo(Module *pModule, mdMethodDef token);
 
@@ -2308,6 +2291,7 @@ public:
 private:
     void DoNotCallDirectlyPrivateLock(void);
     void DoNotCallDirectlyPrivateUnlock(void);
+    void ReleaseDebuggerLockAndBlockForShutdownIfNotSpecialThread(Thread *pThread);
 
     // This function gets the jit debugger launched and waits for the native attach to complete
     // Make sure you called PreJitAttach and it returned TRUE before you call this
@@ -2772,7 +2756,7 @@ public:
     void MarkDebuggerAttachedInternal();
     void MarkDebuggerUnattachedInternal();
 
-    HANDLE                GetAttachEvent()          { return  GetLazyData()->m_exAttachEvent; }
+    CLREvent &GetAttachEvent()          { return GetLazyData()->m_exAttachEvent; }
 
 private:
 #ifndef DACCESS_COMPILE
@@ -2780,10 +2764,10 @@ private:
 #endif
     DebuggerPendingFuncEvalTable *GetPendingEvals() { return GetLazyData()->m_pPendingEvals; }
     SIZE_T_UNORDERED_ARRAY * GetBPMappingDuplicates() { return &GetLazyData()->m_BPMappingDuplicates; }
-    HANDLE                GetUnmanagedAttachEvent() { return  GetLazyData()->m_exUnmanagedAttachEvent; }
+    CLREvent &GetUnmanagedAttachEvent() { return GetLazyData()->m_exUnmanagedAttachEvent; }
     BOOL                  GetDebuggerHandlingCtrlC() { return GetLazyData()->m_DebuggerHandlingCtrlC; }
     void                  SetDebuggerHandlingCtrlC(BOOL f) { GetLazyData()->m_DebuggerHandlingCtrlC = f; }
-    HANDLE                GetCtrlCMutex()          { return GetLazyData()->m_CtrlCMutex; }
+    CLREvent &GetCtrlCMutex()          { return GetLazyData()->m_CtrlCMutex; }
     UnorderedPtrArray*    GetMemBlobs()            { return &GetLazyData()->m_pMemBlobs; }
 
 
@@ -2855,7 +2839,7 @@ private:
     // represents different thead redirection functions recognized by the debugger
     enum HijackFunction
     {
-        kUnhandledException = 0,
+        kUnhandledException = 0, // [cDAC] [Debugger]: Contract depends on this value.
         kRedirectedForGCThreadControl,
         kRedirectedForDbgThreadControl,
         kRedirectedForUserSuspend,
@@ -2910,23 +2894,7 @@ private:
     PTR_DebuggerLazyInit         m_pLazyData;
 
 
-    // A list of all defines that affect layout of MD types
-    typedef enum _Target_Defines
-    {
-        DEFINE__DEBUG = 1,
-    } _Target_Defines;
-
-    // A bitfield that has bits set at build time corresponding
-    // to which defines are active
-    static const int _defines = 0
-#ifdef _DEBUG
-        | DEFINE__DEBUG
-#endif
-        ;
-
 public:
-    DWORD m_defines;
-    DWORD m_mdDataStructureVersion;
 #ifndef DACCESS_COMPILE
     virtual void SuspendForGarbageCollectionStarted();
     virtual void SuspendForGarbageCollectionCompleted();
@@ -2940,7 +2908,7 @@ public:
     // guarantee the corresponding AfterGC event is sent even if the events are disabled during GC.
     BOOL m_isGarbageCollectionEventsEnabledLatch;
 private:
-    HANDLE GetGarbageCollectionBlockerEvent() { return  GetLazyData()->m_garbageCollectionBlockerEvent; }
+    CLREvent &GetGarbageCollectionBlockerEvent() { return GetLazyData()->m_garbageCollectionBlockerEvent; }
 
 private:
     BOOL m_fOutOfProcessSetContextEnabled;
@@ -3695,18 +3663,6 @@ void DbgLogHelper(DebuggerIPCEventType event);
 // These are various utility functions, mainly where we factor out code.
 //-----------------------------------------------------------------------------
 
-// Specify type of Win32 event
-enum EEventResetType {
-    kManualResetEvent = TRUE,
-    kAutoResetEvent = FALSE
-};
-
-HANDLE CreateWin32EventOrThrow(
-    LPSECURITY_ATTRIBUTES lpEventAttributes,
-    EEventResetType eType,
-    BOOL bInitialState
-);
-
 HANDLE OpenWin32EventOrThrow(
     DWORD dwDesiredAccess,
     BOOL bInheritHandle,
@@ -3847,6 +3803,8 @@ struct cdac_data<Debugger>
     static constexpr size_t RSRequestedSync = offsetof(Debugger, m_RSRequestedSync);
     static constexpr size_t SendExceptionsOutsideOfJMC = offsetof(Debugger, m_sendExceptionsOutsideOfJMC);
     static constexpr size_t GCNotificationEventsEnabled = offsetof(Debugger, m_isGarbageCollectionEventsEnabled);
+    static constexpr size_t RgHijackFunction = offsetof(Debugger, m_rgHijackFunction);
+    static constexpr size_t MaxHijackFunctions = Debugger::kMaxHijackFunctions;
 };
 
 template<>

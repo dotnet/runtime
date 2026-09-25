@@ -60,6 +60,10 @@ namespace System.Globalization
         /// </summary>
         AllowBinarySpecifier = 0x00000400,
 
+        // NOTE: The highest bit (0x8000_0000) is reserved for the runtime-internal Number.AllowTrailingInvalidCharacters
+        // style used by the INumberBase.TryParsePartial implementations. Do not assign it to a public flag; new public
+        // flags should continue upward from 0x00000800 so they don't stomp the reserved bit.
+
         Integer = AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign,
 
         HexNumber = AllowLeadingWhite | AllowTrailingWhite | AllowHexSpecifier,

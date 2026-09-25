@@ -896,46 +896,14 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                 _ASSERTE(argTH.GetMethodTable());
 
                 unsigned size = argTH.GetMethodTable()->GetNumInstanceFieldBytes();
-                if (size <= sizeof(ARG_SLOT)
-#if defined(TARGET_AMD64)
-                    // On AMD64 we pass value types of size which are not powers of 2 by ref.
-                    && ((size & (size-1)) == 0)
-#endif // TARGET_AMD64
-                   )
+                if (size <= sizeof(ARG_SLOT))
                 {
                     memcpyNoGCRefs(ArgSlotEndiannessFixup(pArgument, sizeof(LPVOID)), pAddr, size);
                 }
                 else
                 {
                     _ASSERTE(pFEAD->argAddr != (CORDB_ADDRESS)0);
-#if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
-                    if (ArgIterator::IsArgPassedByRef(argTH))
-                    {
-                        // On X64, by-value value class arguments which are bigger than 8 bytes are passed by reference
-                        // according to the native calling convention.  The same goes for value class arguments whose size
-                        // is smaller than 8 bytes but not a power of 2.  To avoid side effets, we need to allocate a
-                        // temporary variable and pass that by reference instead. On ARM64, by-value value class
-                        // arguments which are bigger than 16 bytes are passed by reference.
-                        _ASSERTE(ppProtectedValueClasses != NULL);
-
-                        BYTE * pTemp = new (interopsafe) BYTE[ALIGN_UP(sizeof(ValueClassInfo), 8) + size];
-
-                        ValueClassInfo * pValueClassInfo = (ValueClassInfo *)pTemp;
-                        LPVOID pData = pTemp + ALIGN_UP(sizeof(ValueClassInfo), 8);
-
-                        memcpyNoGCRefs(pData, pAddr, size);
-                        *pArgument = PtrToArgSlot(pData);
-
-                        pValueClassInfo->pData = pData;
-                        pValueClassInfo->pMT = argTH.GetMethodTable();
-
-                        pValueClassInfo->pNext = *ppProtectedValueClasses;
-                        *ppProtectedValueClasses = pValueClassInfo;
-                    }
-                    else
-#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
                     *pArgument = PtrToArgSlot(pAddr);
-
                 }
             }
             else
@@ -1208,6 +1176,38 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
             }
         }
     }
+
+#if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
+    if (!isByRef && (argSigType == ELEMENT_TYPE_VALUETYPE) && ArgIterator::IsArgPassedByRef(argTH))
+    {
+        unsigned size = argTH.GetMethodTable()->GetNumInstanceFieldBytes();
+        if (size > sizeof(ARG_SLOT))
+        {
+            // Copy both unboxed and boxed arguments outside the GC heap: the callee may
+            // overwrite the argument without write barriers. Smaller arguments already
+            // have a copy in the ARG_SLOT array.
+            _ASSERTE(ppProtectedValueClasses != nullptr);
+
+            SIZE_T allocSize;
+            if (!ClrSafeInt<SIZE_T>::addition(ALIGN_UP(sizeof(ValueClassInfo), 8), size, allocSize))
+            {
+                ThrowHR(COR_E_OVERFLOW);
+            }
+
+            BYTE* pTemp = new (interopsafe) BYTE[allocSize];
+            ValueClassInfo* pValueClassInfo = reinterpret_cast<ValueClassInfo*>(pTemp);
+            void* pData = pTemp + ALIGN_UP(sizeof(ValueClassInfo), 8);
+
+            memcpyNoGCRefs(pData, ArgSlotToPtr(*pArgument), size);
+            *pArgument = PtrToArgSlot(pData);
+
+            pValueClassInfo->pData = pData;
+            pValueClassInfo->pMT = argTH.GetMethodTable();
+            pValueClassInfo->pNext = *ppProtectedValueClasses;
+            *ppProtectedValueClasses = pValueClassInfo;
+        }
+    }
+#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }
 
 static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
@@ -2099,6 +2099,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
     //
     if ((pDE->m_evalType != DB_IPCE_FET_NEW_OBJECT) && !pDE->m_md->IsStatic() && pDE->m_md->IsUnboxingStub())
     {
+        GCX_PREEMP();
         *ppUnboxedMD = pDE->m_md->GetMethodTable()->GetUnboxedEntryPointMD(pDE->m_md);
     }
 
@@ -2213,13 +2214,20 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
         // Now, find the proper MethodDesc for this interface method based on the object we're invoking the
         // method on.
         //
-        pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(&objRef, pDE->m_ownerTypeHandle);
+        {
+            MethodTable *pMT = objRef->GetMethodTable();
+            GCX_PREEMP();
+            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(&objRef, pMT, pDE->m_ownerTypeHandle);
+        }
 
         GCPROTECT_END();
     }
     else
     {
-        pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(NULL, pDE->m_ownerTypeHandle);
+        {
+            GCX_PREEMP();
+            pDE->m_targetCodeAddr = pDE->m_md->GetCallTarget(NULL, NULL, pDE->m_ownerTypeHandle);
+        }
     }
 
     //
@@ -2320,7 +2328,7 @@ void CopyArgsToBuffer(DebuggerEval *pDE,
             "\t: argSigType=0x%x, byrefArgSigType=0x%0x, inType=0x%0x\n",
              pFEArgInfo[currArgIndex].argSigType,
              pFEArgInfo[currArgIndex].byrefArgSigType,
-             pFEAD->argElementType));
+             static_cast<unsigned>(pFEAD->argElementType)));
 
         INT64 *pDest = &(pBufferArray[currArgIndex]);
 
@@ -2740,7 +2748,7 @@ void PackArgumentArray(DebuggerEval *pDE,
                                                                                   : DL_All)
                             );
 
-        LOG((LF_CORDB, LL_EVERYTHING, "this = 0x%08x\n", ArgSlotToPtr(pArguments[currArgSlot])));
+        LOG((LF_CORDB, LL_EVERYTHING, "this = %p\n", ArgSlotToPtr(pArguments[currArgSlot])));
 
         // We need to check 'this' for a null ref ourselves... NOTE: only do this if we put an object reference on
         // the stack. If we put a byref for a value type, then we don't need to do this!
@@ -2835,7 +2843,7 @@ void PackArgumentArray(DebuggerEval *pDE,
             "\t: argSigType=0x%x, byrefArgSigType=0x%0x, inType=0x%0x\n",
              pFEArgInfo[currArgIndex].argSigType,
              pFEArgInfo[currArgIndex].byrefArgSigType,
-             pFEAD->argElementType));
+             static_cast<unsigned>(pFEAD->argElementType)));
 
 
         GetFuncEvalArgValue(pDE,
@@ -3195,7 +3203,10 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     // Now that all the args are protected, we can go back and deal with generic args and resolving
     // all their information.
     //
-    ResolveFuncEvalGenericArgInfo(pDE);
+    {
+        GCX_PREEMP();
+        ResolveFuncEvalGenericArgInfo(pDE);
+    }
 
     //
     // Grab the signature of the method we're working on and do some error checking.
@@ -3352,7 +3363,7 @@ static void DoNormalFuncEval( DebuggerEval *pDE,
     allocArgCnt++;
 
     LOG((LF_CORDB, LL_EVERYTHING,
-         "Func eval for %s::%s: allocArgCnt=%d\n",
+         "Func eval for %s::%s: allocArgCnt=%zu\n",
          pDE->m_md->m_pszDebugClassName,
          pDE->m_md->m_pszDebugMethodName,
          allocArgCnt));
@@ -3807,7 +3818,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     {
         GCX_FORBID();
 
-        LOG((LF_CORDB, LL_INFO100000, "D:FEHW for pDE:%08x evalType:%d\n", pDE, pDE->m_evalType));
+        LOG((LF_CORDB, LL_INFO100000, "D:FEHW for pDE:%p evalType:%d\n", pDE, pDE->m_evalType));
 
         pThread = GetThread();
 

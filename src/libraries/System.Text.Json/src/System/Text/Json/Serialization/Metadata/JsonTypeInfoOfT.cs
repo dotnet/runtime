@@ -63,15 +63,15 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (Kind == JsonTypeInfoKind.None)
             {
-                Debug.Assert(_createObject == null);
-                Debug.Assert(_typedCreateObject == null);
+                Debug.Assert(_createObject is null);
+                Debug.Assert(_typedCreateObject is null);
                 ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
             }
 
             if (!Converter.SupportsCreateObjectDelegate)
             {
                 Debug.Assert(_createObject is null);
-                Debug.Assert(_typedCreateObject == null);
+                Debug.Assert(_typedCreateObject is null);
                 ThrowHelper.ThrowInvalidOperationException_CreateObjectConverterNotCompatible(Type);
             }
 
@@ -242,7 +242,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 Debug.Assert(!IsReadOnly, "We should not mutate read-only JsonTypeInfo");
                 _serialize = value;
-                HasSerializeHandler = value != null;
+                HasSerializeHandler = value is not null;
             }
         }
 

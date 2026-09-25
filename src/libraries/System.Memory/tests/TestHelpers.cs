@@ -193,7 +193,7 @@ namespace System
 
         public static Span<byte> GetSpanBE()
         {
-            Span<byte> spanBE = new byte[Unsafe.SizeOf<TestStructExplicit>()];
+            Span<byte> spanBE = new byte[sizeof(TestStructExplicit)];
 
             WriteInt16BigEndian(spanBE, s_testExplicitStruct.S0);
             WriteInt32BigEndian(spanBE.Slice(2), s_testExplicitStruct.I0);
@@ -214,7 +214,7 @@ namespace System
 
         public static Span<byte> GetSpanLE()
         {
-            Span<byte> spanLE = new byte[Unsafe.SizeOf<TestStructExplicit>()];
+            Span<byte> spanLE = new byte[sizeof(TestStructExplicit)];
 
             WriteInt16LittleEndian(spanLE, s_testExplicitStruct.S0);
             WriteInt32LittleEndian(spanLE.Slice(2), s_testExplicitStruct.I0);

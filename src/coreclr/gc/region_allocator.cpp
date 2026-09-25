@@ -1,8 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "gcinternal.h"
 
 #ifdef USE_REGIONS
+
+#ifdef SERVER_GC
+namespace SVR
+{
+#else // SERVER_GC
+namespace WKS
+{
+#endif // SERVER_GC
+
 bool region_allocator::init (uint8_t* start, uint8_t* end, size_t alignment, uint8_t** lowest, uint8_t** highest)
 {
     uint8_t* actual_start = start;
@@ -488,4 +498,7 @@ void region_allocator::move_highest_free_regions (int64_t n, bool small_region_p
         current_index -= current_num_units;
     }
 }
+
+} // namespace WKS/SVR
+
 #endif //USE_REGIONS

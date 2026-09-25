@@ -37,14 +37,60 @@ char* DetectDefaultAppleLocaleName(void)
 }
 
 #if defined(APPLE_HYBRID_GLOBALIZATION)
+
+static NSString* GetLanguageSubtag(NSString *localeName)
+{
+    NSRange separatorRange = [localeName rangeOfCharacterFromSet:
+        [NSCharacterSet characterSetWithCharactersInString:@"-_@"]];
+    if (separatorRange.location != NSNotFound)
+        return [localeName substringToIndex:separatorRange.location];
+    return localeName;
+}
+
+static NSString* GetLocaleLanguageCode(NSString *localeName, NSLocale *canonicalLocale)
+{
+    // Foundation canonicalizes "no" (Norwegian) to "nb" (Norwegian Bokmål), unlike ICU which
+    // keeps "no". Preserve "no" so culture names match Windows/Android (see dotnet/runtime#112249).
+    NSString *languageSubtag = GetLanguageSubtag(localeName);
+    if ([languageSubtag caseInsensitiveCompare:@"no"] == NSOrderedSame &&
+        [canonicalLocale.languageCode isEqualToString:@"nb"])
+    {
+        return @"no";
+    }
+
+    return canonicalLocale.languageCode;
+}
+
+static NSString* GetLocaleIdentifier(NSString *localeName, NSLocale *canonicalLocale)
+{
+    NSString *canonicalLanguageCode = canonicalLocale.languageCode;
+    NSString *languageCode = GetLocaleLanguageCode(localeName, canonicalLocale);
+    NSString *localeIdentifier = canonicalLocale.localeIdentifier;
+
+    if (languageCode == nil ||
+        canonicalLanguageCode == nil ||
+        localeIdentifier == nil ||
+        [languageCode isEqualToString:canonicalLanguageCode] ||
+        localeIdentifier.length < canonicalLanguageCode.length)
+    {
+        return localeIdentifier;
+    }
+
+    return [languageCode stringByAppendingString:[localeIdentifier substringFromIndex:canonicalLanguageCode.length]];
+}
+
 const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 {
     @autoreleasepool
     {
         NSString *locName = [[NSString alloc] initWithUTF8String:localeName];
         NSLocale *currentLocale = [[NSLocale alloc] initWithLocaleIdentifier:locName];
-        const char* value = [currentLocale.localeIdentifier UTF8String];
-        return strdup(value);
+        NSString *value = GetLocaleIdentifier(locName, currentLocale);
+
+        if (value.length == 0)
+            return strdup("");
+
+        return strdup([value UTF8String]);
     }
 }
 
@@ -238,12 +284,14 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
                 value = numberFormatter.minusSign;
                 break;
             case LocaleString_Iso639LanguageTwoLetterName:
-                value = [currentLocale objectForKey:NSLocaleLanguageCode];
+            {
+                value = GetLocaleLanguageCode(locName, currentLocale);
                 break;
+            }
             case LocaleString_Iso639LanguageThreeLetterName:
             {
-                NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-                return iso639_2 == nil ? strdup("") : strdup(getISO3LanguageByLangCode([iso639_2 UTF8String]));
+                NSString *languageCode = GetLocaleLanguageCode(locName, currentLocale);
+                return languageCode == nil ? strdup("") : strdup(getISO3LanguageByLangCode([languageCode UTF8String]));
             }
             case LocaleString_Iso3166CountryName:
                 value = [currentLocale objectForKey:NSLocaleCountryCode];
@@ -271,7 +319,8 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             case LocaleString_ParentName:
             {
                 char localeNameTemp[FULLNAME_CAPACITY];
-                const char* lName = [currentLocale.localeIdentifier UTF8String];
+                NSString *localeIdentifier = GetLocaleIdentifier(locName, currentLocale);
+                const char* lName = [localeIdentifier UTF8String];
                 GetParent(lName, localeNameTemp, FULLNAME_CAPACITY);
                 return strdup(localeNameTemp);
             }
@@ -839,4 +888,3 @@ int32_t GlobalizationNative_IsPredefinedLocaleNative(const char* localeName)
     }
 }
 #endif
-

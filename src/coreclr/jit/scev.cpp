@@ -132,7 +132,7 @@ void Scev::Dump(Compiler* comp)
             }
             else
             {
-                printf("%lld", (int64_t)cns->Value);
+                printf("%lld", (long long)cns->Value);
             }
             break;
         }
@@ -1451,7 +1451,18 @@ GenTree* ScalarEvolutionContext::Materialize(Scev* scev)
 {
     ValueNumPair vnp;
     GenTree*     result;
-    return Materialize(scev, true, &result, &vnp) ? result : nullptr;
+
+    // Materializing IR may create nodes before failing partway through (e.g.
+    // when a subexpression cannot be materialized). Snapshot the gen tree ID so
+    // that we can roll it back and avoid leaking IDs for the orphaned nodes.
+    INDEBUG(unsigned prevGenTreeID = m_compiler->compGenTreeID);
+    if (Materialize(scev, true, &result, &vnp))
+    {
+        return result;
+    }
+
+    INDEBUG(m_compiler->compGenTreeID = prevGenTreeID);
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -1725,7 +1736,7 @@ bool ScalarEvolutionContext::AddRecMayOverflow(ScevAddRec*                      
     }
 
     int64_t startCns;
-    if (addRec->Start->GetConstantValue(m_compiler, &startCns) && (startCns != 0))
+    if (!addRec->Start->GetConstantValue(m_compiler, &startCns) || (startCns != 0))
     {
         return true;
     }

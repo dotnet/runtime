@@ -14,9 +14,8 @@
 //
 NESTED_ENTRY RhCommonStub, _TEXT, NoHandler
           // Custom calling convention:
-          //      red zone has pointer to the current thunk's data block (data contains 2 pointer values: context + target pointers)
-          //      Copy red zone value into r12 so that the PROLOG_PUSH doesn't destroy it
-          ldr          r12, [sp, #-4]
+          //      r12 already has the current thunk's data block pointer
+          //      (thunk branched here via ldr pc, preserving r12)
           PROLOG_PUSH  "{r0-r4, lr}"
           PROLOG_VPUSH {d0-d7}        // Capture the floating point argument registers
 

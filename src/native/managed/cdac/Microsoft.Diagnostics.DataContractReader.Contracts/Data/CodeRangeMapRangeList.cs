@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CodeRangeMapRangeList))]
 internal sealed partial class CodeRangeMapRangeList : IData<CodeRangeMapRangeList>
 {
-    [Field] public int RangeListType { get; }
+    [Field] public partial int RangeListType { get; }
 }

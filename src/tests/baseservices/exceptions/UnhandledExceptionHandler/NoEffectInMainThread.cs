@@ -43,6 +43,12 @@ public class NoEffectInMainThread
 
     public static int Main()
     {
+        if (!PlatformDetection.IsMultithreadingSupported)
+        {
+            Console.WriteLine("Multithreading is not supported, skipping test.");
+            return 100;
+        }
+
         // sanity check, the handler should be working in a separate thread
         Thread th = new Thread(() =>
         {

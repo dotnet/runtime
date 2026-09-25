@@ -54,7 +54,12 @@ ASM_OFFSET(   30,    48, Thread, m_pTransitionFrame)
 ASM_OFFSET(   34,    50, Thread, m_pDeferredTransitionFrame)
 ASM_OFFSET(   40,    68, Thread, m_ppvHijackedReturnAddressLocation)
 ASM_OFFSET(   44,    70, Thread, m_pvHijackedReturnAddress)
+#if defined(TARGET_ARM64)
+ASM_OFFSET(   48,    78, Thread, m_pSpForPacSign)
+ASM_OFFSET(   4c,    80, Thread, m_pExInfoStackHead)
+#else
 ASM_OFFSET(   48,    78, Thread, m_pExInfoStackHead)
+#endif
 #ifdef TARGET_X86
 ASM_OFFSET(   4c,    FF, Thread, m_uHijackedReturnValueFlags)
 #endif

@@ -261,7 +261,7 @@ blah blah
                                 culture: null,
                                 activationAttributes: null);
 
-            var syncSendAdapterType = Type.GetType("System.Net.SyncReadWriteAdapter, System.Net.Mail");
+            var syncSendAdapterType = Type.GetType("System.SyncReadWriteAdapter, System.Net.Mail");
 
             // Send the message.
 #pragma warning disable IL3050 // Roslyn analyzer can't see through the private reflection, but publish process can. This is safe.

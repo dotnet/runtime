@@ -457,6 +457,12 @@ unsafe class Program
         Check("AvxVnni", ExpectedAvxVnni, &AvxVnniIsSupported, AvxVnni.IsSupported, () => AvxVnni.MultiplyWideningAndAdd(Vector128<int>.Zero, Vector128<byte>.Zero, Vector128<sbyte>.Zero).Equals(Vector128<int>.Zero));
         Check("AvxVnni.X64", ExpectedAvxVnni, &AvxVnniX64IsSupported, AvxVnni.X64.IsSupported, null);
 
+        // AvxVnni.V512 is folded under AVX512v3 (Avx512Vbmi2 is a representative
+        // sibling). On a machine that has AVX-512-VNNI but lacks the dedicated
+        // VEX AvxVnni CPUID bit, AvxVnni.V512.IsSupported (and AvxVnni.IsSupported)
+        // must still report true.
+        Check("AvxVnni.V512", ExpectedAvx512Vbmi2, &AvxVnniV512IsSupported, AvxVnni.V512.IsSupported, () => AvxVnni.V512.MultiplyWideningAndAdd(Vector512<int>.Zero, Vector512<byte>.Zero, Vector512<sbyte>.Zero).Equals(Vector512<int>.Zero));
+
         Check("Gfni", ExpectedGfni, &GfniIsSupported, Gfni.IsSupported, () => Gfni.GaloisFieldMultiply(Vector128<byte>.Zero, Vector128<byte>.Zero).Equals(Vector128<byte>.Zero));
         Check("Gfni.V256", ExpectedGfniV256, &GfniV256IsSupported, Gfni.V256.IsSupported, () => Gfni.V256.GaloisFieldMultiply(Vector256<byte>.Zero, Vector256<byte>.Zero).Equals(Vector256<byte>.Zero));
         Check("Gfni.V512", ExpectedGfniV512, &GfniV512IsSupported, Gfni.V512.IsSupported, () => Gfni.V512.GaloisFieldMultiply(Vector512<byte>.Zero, Vector512<byte>.Zero).Equals(Vector512<byte>.Zero));
@@ -590,6 +596,7 @@ unsafe class Program
 
     static bool AvxVnniIsSupported() => AvxVnni.IsSupported;
     static bool AvxVnniX64IsSupported() => AvxVnni.X64.IsSupported;
+    static bool AvxVnniV512IsSupported() => AvxVnni.V512.IsSupported;
     static bool AvxVnniIntIsSupported() => AvxVnniInt8.IsSupported;
     static bool AvxVnniIntV512IsSupported() => AvxVnniInt16.V512.IsSupported;
 

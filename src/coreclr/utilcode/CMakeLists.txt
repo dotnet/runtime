@@ -1,6 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(UTILCODE_COMMON_SOURCES
+  dn_xxhash.cpp
   clrhost_nodependencies.cpp
   ccomprc.cpp
   ex.cpp
@@ -15,7 +16,6 @@ set(UTILCODE_COMMON_SOURCES
   collections.cpp
   posterror.cpp
   clrhelpers.cpp
-  utsem.cpp
   check.cpp
   log.cpp
   arraylist.cpp

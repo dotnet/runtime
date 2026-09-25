@@ -60,6 +60,10 @@ export interface DotnetHostBuilder {
      */
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
     /**
+     * Sets a callback that is invoked after each resource finishes downloading.
+     */
+    withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder;
+    /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
      */
@@ -220,7 +224,6 @@ export interface Assets {
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
 
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -292,6 +295,7 @@ export type JsAsset = Asset & {
 
 export type SymbolsAsset = Asset & {
     name: string; // actually URL
+    hash?: string | null | "";
     cache?: RequestCache;
 }
 
@@ -399,10 +403,6 @@ export type SingleAssetBehaviors =
      * The javascript module for loader.
      */
     | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
     /**
      * The javascript module for diagnostic server and client.
      */

@@ -109,6 +109,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
         kernel32.lib
+        ntdll.lib
         advapi32.lib
         ole32.lib
         oleaut32.lib
@@ -179,12 +180,14 @@ if(TARGET coreclr)
         $<TARGET_NAME_IF_EXISTS:coreclrpal>
         ${CLRJIT_STATIC}
         ${CLRINTERPRETER_STATIC}
+        vm_gc_wks
+        $<TARGET_NAME_IF_EXISTS:vm_gc_svr>
         cee_wks_core
         cee_wks
         ${FOUNDATION})
 endif()
 
-target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
+target_link_libraries(coreclr_static PUBLIC ${CORECLR_LIBRARIES} ${CORECLR_STATIC_CLRJIT_STATIC} ${CORECLR_STATIC_CLRINTERPRETER_STATIC} vm_gc_wks $<TARGET_NAME_IF_EXISTS:vm_gc_svr> cee_wks_core ${CEE_WKS_STATIC} ${FOUNDATION})
 target_compile_definitions(coreclr_static PUBLIC CORECLR_EMBEDDED)
 
 if(FEATURE_INPROC_CRASHREPORT AND NOT CLR_CROSS_COMPONENTS_BUILD)

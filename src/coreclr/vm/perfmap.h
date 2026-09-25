@@ -32,6 +32,19 @@ public:
         return false;
 #endif
     }
+
+#ifdef FEATURE_INTERPRETER
+    // Log an interpreter IR bytecode range to the perfmap
+    static void LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize)
+    {
+        CONTRACTL{
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
+        } CONTRACTL_END;
+    }
+#endif
+
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
     {
         CONTRACTL
@@ -52,12 +65,12 @@ public:
         CONTRACTL_END;
     }
 
-    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType)
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter = true)
     {
         CONTRACTL
         {
             GC_NOTRIGGER;
-            MODE_ANY;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
     }
@@ -148,8 +161,13 @@ public:
     // Log a pre-compiled method to the map.
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode);
 
+#ifdef FEATURE_INTERPRETER
+    // Log an interpreter IR bytecode range to the perfmap
+    static void LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t irSize);
+#endif
+
     // Log a set of stub to the map.
-    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType);
+    static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter = true);
 
     // Close the map and flush any remaining data.
     static void Disable();

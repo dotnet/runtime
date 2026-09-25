@@ -18,6 +18,7 @@ namespace ILCompiler.DependencyAnalysis
         public RuntimeMethodHandleNode(MethodDesc targetMethod)
         {
             Debug.Assert(!targetMethod.IsSharedByGenericInstantiations);
+            Debug.Assert(!targetMethod.IsAsyncVariant());
 
             // IL is allowed to LDTOKEN an uninstantiated thing. Do not check IsRuntimeDetermined for the nonexact thing.
             Debug.Assert((targetMethod.HasInstantiation && targetMethod.IsMethodDefinition)
@@ -74,29 +75,20 @@ namespace ILCompiler.DependencyAnalysis
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
 
-            int flags = 0;
-
-            MethodDesc targetMethodForMetadata = _targetMethod.GetTypicalMethodDefinition();
-            if (targetMethodForMetadata.IsAsyncVariant())
-            {
-                targetMethodForMetadata = factory.TypeSystemContext.GetTargetOfAsyncVariantMethod(targetMethodForMetadata);
-                flags |= RuntimeMethodHandleConstants.IsAsyncVariant;
-            }
-
-            int handle = relocsOnly ? 0 : factory.MetadataManager.GetMetadataHandleForMethod(factory, targetMethodForMetadata);
+            int handle = relocsOnly ? 0 : factory.MetadataManager.GetMetadataHandleForMethod(factory, _targetMethod.GetTypicalMethodDefinition());
 
             objData.EmitPointerReloc(factory.MaximallyConstructableType(_targetMethod.OwningType));
             objData.EmitInt(handle);
 
             if (_targetMethod != _targetMethod.GetMethodDefinition())
             {
-                objData.EmitInt(_targetMethod.Instantiation.Length | flags);
+                objData.EmitInt(_targetMethod.Instantiation.Length);
                 foreach (TypeDesc instParam in _targetMethod.Instantiation)
                     objData.EmitPointerReloc(factory.NecessaryTypeSymbol(instParam));
             }
             else
             {
-                objData.EmitInt(0 | flags);
+                objData.EmitInt(0);
             }
 
             return objData.ToObjectData();

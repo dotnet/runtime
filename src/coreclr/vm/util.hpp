@@ -68,66 +68,6 @@ BOOL inline FitsInU4(uint64_t val)
     return val == (uint64_t)(uint32_t)val;
 }
 
-#if defined(DACCESS_COMPILE)
-#define FastInterlockedCompareExchange InterlockedCompareExchange
-#define FastInterlockedCompareExchangeAcquire InterlockedCompareExchangeAcquire
-#define FastInterlockedCompareExchangeRelease InterlockedCompareExchangeRelease
-#else
-
-#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-FORCEINLINE LONG  FastInterlockedCompareExchange(
-    LONG volatile *Destination,
-    LONG Exchange,
-    LONG Comperand)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casal32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchange(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONG FastInterlockedCompareExchangeAcquire(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casa32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchangeAcquire(Destination, Exchange, Comperand);
-    }
-}
-
-FORCEINLINE LONG FastInterlockedCompareExchangeRelease(
-  IN OUT LONG volatile *Destination,
-  IN LONG Exchange,
-  IN LONG Comperand
-)
-{
-    if (g_arm64_atomics_present)
-    {
-        return (LONG) __casl32((unsigned __int32*) Destination, (unsigned  __int32)Comperand, (unsigned __int32)Exchange);
-    }
-    else
-    {
-        return InterlockedCompareExchangeRelease(Destination, Exchange, Comperand);
-    }
-}
-
-#endif // defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
-
-#endif //defined(DACCESS_COMPILE)
-
-
 //************************************************************************
 // CQuickHeap
 //
@@ -254,6 +194,73 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR_END()          __gcHolder.Leave();
 #endif
 
+// The GCX_*_REGION_BEGIN/END macros are the region form of the corresponding GCX_ holders.
+//
+// WHEN THE REGION FORM MUST BE USED
+// --------------------------------
+// A region must be used instead of the plain GCX_ holder whenever the foreign WebAssembly
+// exception tag used by RtlRestoreContext to resume a managed catch can unwind through the holder
+// while its GC mode transition is still active.
+//
+// This occurs in two principal shapes:
+//
+//   - The holder spans a transition into managed execution from which an exception can be handled
+//     by an older managed frame. Examples include CallDescrWorker, interpreter-to-managed calls,
+//     and UnmanagedCallersOnlyCaller::InvokeDirect when invoking Ex::RhThrowEx, Ex::RhThrowHwEx,
+//     or Ex::RhRethrow. The foreign tag bypasses native typed catches while unwinding toward the
+//     managed catch continuation.
+//
+//   - The holder's scope contains a complete INSTALL/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER or
+//     INSTALL/UNINSTALL_MANAGED_EXCEPTION_DISPATCHER pair using the default uninstall form or
+//     _EX(false), or calls a function that performs equivalent redispatch while the holder remains
+//     active. The UNINSTALL catches an ordinary native exception and redispatches it as a managed
+//     exception before the outer holder leaves its scope.
+//
+// The containment direction matters. A holder nested entirely inside an installed handler span
+// is not made unsafe merely by that span: an ordinary native exception unwinds the holder before
+// reaching the matching catch. This does not make the holder safe if it independently spans a
+// transition into managed execution; in that case the foreign tag can bypass the installed native
+// catch and unwind directly through the holder.
+//
+// UnmanagedCallersOnlyCaller::InvokeThrowing/InvokeThrowing_Ret do not themselves require region
+// form for their inner GCX_PREEMP holder. Their calling convention marshals managed exceptions
+// through an exception out-parameter, and that holder ends before COMPlusThrow raises the
+// corresponding ordinary native exception. This does not make an outer holder containing a
+// complete dispatcher INSTALL/UNINSTALL pair safe.
+//
+// Type loading, JIT compilation, entrypoint acquisition, or other GC-triggering work does not by
+// itself require region form. It does so only if its dynamic call path can enter managed execution
+// or redispatch a managed exception while the holder remains active.
+//
+// On WASM, Clang lowers a C++ destructor cleanup to a catch_all, which intercepts the foreign tag,
+// runs the destructor, and rethrows. A plain GCX_ holder on such a frame would therefore change
+// the thread's GC mode as the tag passes through. Clang lowers an explicit catch (...) to a catch
+// of the C++ exception tag only, so a region built from try/catch (...) does not misfire.
+//
+// Do not confuse the exception-dispatcher macros above with
+// INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME/_CONTEXT. The latter are guarded by
+// `#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)`, are no-ops on WASM, and are unrelated
+// to this hazard.
+//
+// It is always correct to use the plain GCX_ holder when none of the above applies; the region
+// form simply carries the restriction below, so prefer the holder where there is a choice.
+//
+// RESTRICTION
+// -----------
+// Semantically a region is equivalent to the corresponding GCX_ holder, as long as the region
+// does not contain an early return, break, continue, or goto out of the region. Such a jump
+// skips the _END macro and leaks the mode transition; restructure the code to fall out of the
+// region instead (for example by assigning to a result variable declared before the _BEGIN).
+#ifdef TARGET_WASM
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_COOP_REGION_BEGIN/END block.
+#define GCX_COOP_REGION_BEGIN()         { GCX_COOP_NO_DTOR(); try { do {} while (0)
+#define GCX_COOP_REGION_END()           } catch (...) { GCX_COOP_NO_DTOR_END(); throw; } GCX_COOP_NO_DTOR_END(); } do {} while (0)
+#else
+#define GCX_COOP_REGION_BEGIN()         { GCX_COOP(); { do {} while (0)
+#define GCX_COOP_REGION_END()           } } do {} while (0)
+#endif
+
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_PREEMP()                                    GCPreemp __gcHolder("GCX_PREEMP", __FUNCTION__, __FILE__, __LINE__)
 #define GCX_PREEMP_NO_DTOR()                            GCPreempNoDtor __gcHolder; __gcHolder.Enter(TRUE, "GCX_PREEMP_NO_DTOR", __FUNCTION__, __FILE__, __LINE__)
@@ -264,6 +271,18 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_PREEMP_NO_DTOR_HAVE_THREAD(curThreadNullOk) GCPreempNoDtor __gcHolder; __gcHolder.Enter(curThreadNullOk, TRUE)
 #define GCX_PREEMP_NO_DTOR()                            GCPreempNoDtor __gcHolder; __gcHolder.Enter(TRUE)
 #define GCX_PREEMP_NO_DTOR_END()                        __gcHolder.Leave()
+#endif
+
+#ifdef TARGET_WASM
+// On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
+// See the comment on GCX_COOP_REGION_BEGIN above for when the region form must be used instead of
+// the plain GCX_PREEMP holder.
+// THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_PREEMP_REGION_BEGIN/END block.
+#define GCX_PREEMP_REGION_BEGIN()       { GCX_PREEMP_NO_DTOR(); try { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } catch (...) { GCX_PREEMP_NO_DTOR_END(); throw; } GCX_PREEMP_NO_DTOR_END(); } do {} while (0)
+#else
+#define GCX_PREEMP_REGION_BEGIN()       { GCX_PREEMP(); { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } } do {} while (0)
 #endif
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -286,6 +305,18 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP(_cond)                             GCCoop __gcHolder(_cond)
 #define GCX_MAYBE_COOP_NO_DTOR(_cond)   GCCoopNoDtor __gcHolder; __gcHolder.Enter(_cond)
 #define GCX_MAYBE_COOP_NO_DTOR_END()    __gcHolder.Leave();
+#endif
+
+#ifdef TARGET_WASM
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// See the comment on GCX_COOP_REGION_BEGIN above for when the region form must be used instead of
+// the plain GCX_MAYBE_COOP holder.
+// THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_MAYBE_COOP_REGION_BEGIN/END block.
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { GCX_MAYBE_COOP_NO_DTOR(_cond); try { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } catch (...) { GCX_MAYBE_COOP_NO_DTOR_END(); throw; } GCX_MAYBE_COOP_NO_DTOR_END(); } do {} while (0)
+#else
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { GCX_MAYBE_COOP(_cond); { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } } do {} while (0)
 #endif
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -332,15 +363,39 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR()
 #define GCX_COOP_NO_DTOR_END()
 
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_COOP_REGION_BEGIN()         { do {} while (0)
+#define GCX_COOP_REGION_END()           } do {} while (0)
+
 #define GCX_PREEMP()
 #define GCX_PREEMP_NO_DTOR()
 #define GCX_PREEMP_NO_DTOR_HAVE_THREAD(curThreadNullOk)
 #define GCX_PREEMP_NO_DTOR_END()
 
+// On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_PREEMP_REGION_BEGIN()       { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } do {} while (0)
+
 #define GCX_MAYBE_PREEMP(_cond)
 
 #define GCX_COOP_NO_THREAD_BROKEN()
 #define GCX_MAYBE_COOP_NO_THREAD_BROKEN(_cond)
+
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } do {} while (0)
 
 #define GCX_PREEMP_THREAD_EXISTS(curThread)
 #define GCX_COOP_THREAD_EXISTS(curThread)
@@ -487,20 +542,38 @@ CLRUnmapViewOfFile(
     IN LPVOID lpBaseAddress
     );
 
+struct CLRMapViewTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type ptr)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-FORCEINLINE void VoidCLRUnmapViewOfFile(void *ptr) { CLRUnmapViewOfFile(ptr); }
-typedef Wrapper<void *, DoNothing, VoidCLRUnmapViewOfFile> CLRMapViewHolder;
-#else
-typedef Wrapper<void *, DoNothing, DoNothing> CLRMapViewHolder;
+        if (ptr != NULL)
+            CLRUnmapViewOfFile(ptr);
 #endif
+    }
+};
+using CLRMapViewHolder = LifetimeHolder<CLRMapViewTraits>;
+
+BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
 
 #ifdef TARGET_UNIX
+struct PALPEFileTraits final
+{
+    using Type = void*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type ptr)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-FORCEINLINE void VoidPALUnloadPEFile(void *ptr) { PAL_LOADUnloadPEFile(ptr); }
-typedef Wrapper<void *, DoNothing, VoidPALUnloadPEFile> PALPEFileHolder;
-#else
-typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
+        if (ptr != NULL)
+            PAL_LOADUnloadPEFile(ptr);
 #endif
+    }
+};
+using PALPEFileHolder = LifetimeHolder<PALPEFileTraits>;
 #endif // TARGET_UNIX
 
 #define SetupThreadForComCall(OOMRetVal)            \
@@ -516,53 +589,26 @@ typedef Wrapper<void *, DoNothing, DoNothing> PALPEFileHolder;
 #define SetupForComCallDWORD() SetupThreadForComCall(ERROR_OUTOFMEMORY)
 
 // A holder for NATIVE_LIBRARY_HANDLE.
-FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
+struct NativeLibraryHandleTraits final
 {
-    WRAPPER_NO_CONTRACT;
+    using Type = NATIVE_LIBRARY_HANDLE;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type h)
+    {
+        STATIC_CONTRACT_WRAPPER;
 
-    if (h == NULL)
-        return;
+        if (h == NULL)
+            return;
 
 #ifdef HOST_UNIX
-    PAL_FreeLibraryDirect(h);
+        PAL_FreeLibraryDirect(h);
 #else
-    FreeLibrary(h);
+        FreeLibrary(h);
 #endif
-}
+    }
+};
 
-typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, 0> NativeLibraryHandleHolder;
-
-extern thread_local size_t t_CantStopCount;
-
-// For debugging, we can track arbitrary Can't-Stop regions.
-// In V1.0, this was on the Thread object, but we need to track this for threads w/o a Thread object.
-FORCEINLINE void IncCantStopCount()
-{
-    t_CantStopCount++;
-}
-
-FORCEINLINE void DecCantStopCount()
-{
-    t_CantStopCount--;
-}
-
-typedef StateHolder<IncCantStopCount, DecCantStopCount> CantStopHolder;
-
-#ifdef _DEBUG
-// For debug-only, this can be used w/ a holder to ensure that we're keeping our CS count balanced.
-// We should never use this w/ control flow.
-inline size_t GetCantStopCount()
-{
-    return t_CantStopCount;
-}
-
-// At places where we know we're calling out to native code, we can assert that we're NOT in a CS region.
-// This is _debug only since we only use it for asserts; not for real code-flow control in a retail build.
-inline bool IsInCantStopRegion()
-{
-    return (GetCantStopCount() > 0);
-}
-#endif // _DEBUG
+using NativeLibraryHandleHolder = LifetimeHolder<NativeLibraryHandleTraits>;
 
 BOOL IsValidMethodCodeNotification(ULONG32 Notification);
 

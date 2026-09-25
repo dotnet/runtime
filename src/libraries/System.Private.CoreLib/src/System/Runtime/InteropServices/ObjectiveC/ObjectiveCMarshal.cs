@@ -12,6 +12,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// API to enable Objective-C marshalling.
     /// </summary>
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("ios")]
+    [SupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
     [CLSCompliant(false)]
     public static partial class ObjectiveCMarshal
     {
@@ -224,7 +227,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             internal IntPtr _memory;
             private IntPtr _longWeakHandle;
 
-            public ObjcTrackingInformation()
+            public unsafe ObjcTrackingInformation()
             {
                 _memory = (IntPtr)NativeMemory.AllocZeroed(TAGGED_MEMORY_SIZE_IN_POINTERS * (nuint)IntPtr.Size);
             }
@@ -257,7 +260,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 }
             }
 
-            ~ObjcTrackingInformation()
+            unsafe ~ObjcTrackingInformation()
             {
                 IntPtr longWeakHandle = Volatile.Read(ref _longWeakHandle);
 #if NATIVEAOT

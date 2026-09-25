@@ -24,15 +24,19 @@ namespace ComInterfaceGenerator.Unit.Tests
 {
     public class ComInterfaceGeneratorOutputShape
     {
-        [Fact]
-        public async Task SingleComInterface()
+        [Theory]
+        [InlineData("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+        [InlineData("00000000-0000-0000-0000-000000000000")]
+        [InlineData("FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF")]
+        [InlineData("090A6364-FF00-0109-0A63-646566FEFF01")]
+        public async Task SingleComInterface(string iid)
         {
-            string source = """
+            string source = $$"""
                 using System.Runtime.InteropServices;
                 using System.Runtime.InteropServices.Marshalling;
 
                 [GeneratedComInterface]
-                [Guid("9D3FD745-3C90-4C10-B140-FAFB01E3541D")]
+                [Guid("{{iid}}")]
                 partial interface INativeAPI
                 {
                     void Method();
@@ -275,6 +279,241 @@ namespace ComInterfaceGenerator.Unit.Tests
             }
         }
 
+        [Fact]
+        public async Task IndexerOverloadsDifferingByParameterModifierEmitDistinctDeclarations()
+        {
+            var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F41")]
+                    partial interface IFoo
+                    {
+                        int this[int x] { get; }
+                        int this[in int x] { set; }
+                    }
+                }
+            """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                IndexerDeclarationSyntax[] generatedIndexers = comp.SyntaxTrees
+                    .SelectMany(t => t.GetRoot().DescendantNodes().OfType<IndexerDeclarationSyntax>())
+                    .Where(i => i.ExplicitInterfaceSpecifier is not null)
+                    .ToArray();
+
+                Assert.Equal(2, generatedIndexers.Length);
+
+                bool unmodifiedFound = false;
+                bool inFound = false;
+                foreach (IndexerDeclarationSyntax indexer in generatedIndexers)
+                {
+                    SyntaxTokenList modifiers = indexer.ParameterList.Parameters[0].Modifiers;
+                    if (modifiers.Count == 0)
+                    {
+                        unmodifiedFound = true;
+                    }
+                    else if (modifiers.Any(m => m.IsKind(SyntaxKind.InKeyword)))
+                    {
+                        inFound = true;
+                    }
+                }
+
+                Assert.True(unmodifiedFound, "Expected a generated indexer with no parameter modifier.");
+                Assert.True(inFound, "Expected a generated indexer with an 'in' parameter modifier.");
+            }
+        }
+
+        [Fact]
+        public async Task ValidatePropertyAndIndexerAccessorStubsHaveAdditionalAttributes()
+        {
+            var source = $$"""
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace Test
+                {
+                    [GeneratedComInterface]
+                    [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                    partial interface IFoo
+                    {
+                        int Value { get; set; }
+                        int this[int i] { get; set; }
+                    }
+                }
+            """;
+
+            var test = new VerifyCompilationTest<Microsoft.Interop.ComInterfaceGenerator, Microsoft.CodeAnalysis.Testing.EmptyDiagnosticAnalyzer>(false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck | TestBehaviors.SkipGeneratedCodeCheck,
+                CompilationVerifier = VerifyCompilation
+            };
+            await test.RunAsync();
+
+            static void VerifyCompilation(Compilation comp)
+            {
+                string generatedCodeAttributeName = typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName!;
+                string skipLocalsInitAttributeName = typeof(System.Runtime.CompilerServices.SkipLocalsInitAttribute).FullName!;
+
+                var accessors = comp.SyntaxTrees
+                    .SelectMany(t => t.GetRoot().DescendantNodes().OfType<AccessorDeclarationSyntax>())
+                    .Where(a => a.Kind() is SyntaxKind.GetAccessorDeclaration or SyntaxKind.SetAccessorDeclaration
+                                && a.Body is not null
+                                // Only the generated stubs carry these attributes. Other generated types have
+                                // accessors of their own, such as the vtable pointer on InterfaceInformation.
+                                && a.Ancestors().OfType<TypeDeclarationSyntax>().First().Identifier.Text == "InterfaceImplementation")
+                    .ToList();
+
+                Assert.Equal(4, accessors.Count);
+
+                foreach (AccessorDeclarationSyntax accessor in accessors)
+                {
+                    IEnumerable<string> attributeNames = accessor.AttributeLists
+                        .SelectMany(al => al.Attributes)
+                        .Select(a => a.Name.ToString());
+
+                    Assert.Contains(attributeNames, n => n.Contains(generatedCodeAttributeName));
+                    Assert.Contains(attributeNames, n => n.Contains(skipLocalsInitAttributeName));
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData("return")]
+        [InlineData("async")]
+        public async Task EscapedIdentifiersInInheritedMembers(string methodName)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                namespace @namespace
+                {
+                    partial class @class
+                    {
+                        [GeneratedComInterface]
+                        [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                        public partial interface @interface
+                        {
+                            int @{{methodName}}(int @params);
+                            int @event { get; set; }
+                            int this[in int @ref] { get; set; }
+                        }
+
+                        [GeneratedComInterface]
+                        [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F41")]
+                        public partial interface IDerived : @interface
+                        {
+                            void Next();
+                        }
+                    }
+                }
+                """;
+
+            await VerifyGeneratedTypeShapes(source, "namespace.class+interface", "namespace.class+IDerived");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void GeneratedTextIsCachedUnlessSignatureChanges(bool changeSignature)
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                partial interface INativeAPI
+                {
+                    int Method(int value);
+                    int Value { get; set; }
+                }
+                """;
+
+            string updatedSource = changeSignature
+                ? source.Replace("int Method(int value)", "long Method(long value)")
+                : "// Input trivia does not affect generated source.\r\n" + source;
+
+            GeneratedSourceVerification.VerifyIncrementalOutput(
+                new Microsoft.Interop.ComInterfaceGenerator(),
+                source,
+                updatedSource,
+                changeSignature,
+                1,
+                "GeneratedComInterface");
+        }
+
+        [Theory]
+        [InlineData("internal", "public")]
+        [InlineData("public", "internal")]
+        public void DeclarationEditsInvalidateGeneratedText(string accessibility, string updatedAccessibility)
+        {
+            string source = $$"""
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                {{accessibility}} partial interface I {}
+                """;
+
+            GeneratedSourceVerification.VerifyIncrementalOutput(
+                new Microsoft.Interop.ComInterfaceGenerator(),
+                source,
+                source.Replace(accessibility, updatedAccessibility),
+                true,
+                1,
+                "GeneratedComInterface");
+        }
+
+        [Fact]
+        public void SafetyModeChangeInvalidatesGeneratedText()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("D5C9B7D9-2A05-4F92-9C3A-7B1C5E2D8F40")]
+                public partial interface I {}
+                """;
+            Compilation compilation = TestUtils.CreateCompilation(source);
+            GeneratorDriver driver = TestUtils.CreateDriver(compilation, null, [new Microsoft.Interop.ComInterfaceGenerator()]);
+            driver = driver.RunGeneratorsAndUpdateCompilation(compilation, out Compilation firstCompilation, out var diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(firstCompilation);
+            GeneratedSourceResult firstSource = Assert.Single(Assert.Single(driver.GetRunResult().Results).GeneratedSources);
+            Assert.Contains("public unsafe partial interface I", firstSource.SourceText.ToString());
+
+            SyntaxTree tree = Assert.Single(compilation.SyntaxTrees);
+            var parseOptions = ((CSharpParseOptions)tree.Options).WithFeatures(
+                [new KeyValuePair<string, string>("updated-memory-safety-rules", "")]);
+            compilation = compilation.ReplaceSyntaxTree(tree, CSharpSyntaxTree.ParseText(source, parseOptions));
+            driver = driver.WithUpdatedParseOptions(parseOptions).RunGeneratorsAndUpdateCompilation(compilation, out Compilation secondCompilation, out diagnostics);
+            Assert.Empty(diagnostics);
+            TestUtils.AssertPostSourceGeneratorCompilation(secondCompilation);
+            GeneratedSourceResult secondSource = Assert.Single(Assert.Single(driver.GetRunResult().Results).GeneratedSources);
+
+            Assert.NotEqual(firstSource.SourceText.ToString(), secondSource.SourceText.ToString());
+            Assert.Contains("public partial interface I", secondSource.SourceText.ToString());
+            Assert.DoesNotContain("public unsafe partial interface I", secondSource.SourceText.ToString());
+        }
+
         private static async Task VerifyGeneratedTypeShapes(string source, params string[] typeNames)
         {
             GeneratedShapeTest test = new(typeNames)
@@ -319,7 +558,21 @@ namespace ComInterfaceGenerator.Unit.Tests
                 Assert.Collection(Assert.IsAssignableFrom<INamedTypeSymbol>(iUnknownDerivedAttribute.AttributeClass).TypeArguments,
                     infoType =>
                     {
-                        Assert.True(Assert.IsAssignableFrom<INamedTypeSymbol>(infoType).IsFileLocal);
+                        INamedTypeSymbol generatedInfo = Assert.IsAssignableFrom<INamedTypeSymbol>(infoType);
+                        Assert.True(generatedInfo.IsFileLocal);
+                        IPropertySymbol iid = Assert.Single(generatedInfo.GetMembers("Iid").OfType<IPropertySymbol>());
+                        PropertyDeclarationSyntax declaration = Assert.IsType<PropertyDeclarationSyntax>(iid.DeclaringSyntaxReferences.Single().GetSyntax());
+                        ImplicitObjectCreationExpressionSyntax initializer = Assert.IsType<ImplicitObjectCreationExpressionSyntax>(declaration.Initializer!.Value);
+                        CollectionExpressionSyntax bytes = Assert.IsType<CollectionExpressionSyntax>(Assert.Single(initializer.ArgumentList.Arguments).Expression);
+                        SemanticModel model = comp.GetSemanticModel(declaration.SyntaxTree);
+                        byte[] actualBytes = bytes.Elements.Select(element =>
+                        {
+                            ExpressionSyntax expression = Assert.IsType<ExpressionElementSyntax>(element).Expression;
+                            return checked((byte)Assert.IsType<int>(model.GetConstantValue(expression).Value));
+                        }).ToArray();
+                        AttributeData guid = Assert.Single(userDefinedInterface.GetAttributes(),
+                            attr => attr.AttributeClass?.ToDisplayString() == typeof(GuidAttribute).FullName);
+                        Assert.Equal(new Guid(Assert.IsType<string>(guid.ConstructorArguments[0].Value)).ToByteArray(), actualBytes);
                     },
                     implementationType =>
                     {

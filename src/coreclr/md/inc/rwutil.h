@@ -11,7 +11,16 @@
 #ifndef __RWUtil__h__
 #define __RWUtil__h__
 
-class UTSemReadWrite;
+#include <minipal/rwlock.h>
+
+class CMiniMdRW;
+
+HRESULT CreateMDReadWriteLock(minipal_rwlock **ppLock);
+void DestroyMDReadWriteLock(minipal_rwlock *pLock);
+HRESULT AcquireMDReadLock(minipal_rwlock *pLock);
+HRESULT AcquireMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd));
+void ReleaseMDReadLock(minipal_rwlock *pLock);
+void ReleaseMDWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd));
 
 #define UTF8STR(wszInput, szOutput)                         \
     do {                                                    \
@@ -300,45 +309,49 @@ struct OptionValue
 
 //*********************************************************************
 //
-// Helper class to ensure calling UTSemReadWrite correctly.
-// The destructor will call the correct UnlockRead or UnlockWrite depends what lock it is holding.
+// Helper class to ensure the metadata read-write lock is released correctly.
+// The destructor releases whichever lock mode it holds.
 // User should use macro defined in below instead of calling functions on this class directly.
 // They are LOCKREAD(), LOCKWRITE(), and CONVERT_READ_TO_WRITE_LOCK.
 //
 //*********************************************************************
-class CMDSemReadWrite
+class CMDReadWriteLock
 {
 public:
-    CMDSemReadWrite(UTSemReadWrite *pSem);
-    ~CMDSemReadWrite();
+    CMDReadWriteLock(minipal_rwlock *pLock COMMA_INDEBUG(CMiniMdRW *pMiniMd));
+    ~CMDReadWriteLock();
     HRESULT LockRead();
     HRESULT LockWrite();
     void UnlockWrite();
     HRESULT ConvertReadLockToWriteLock();
+#ifdef _DEBUG
+    void Debug_DetachMiniMd();
+#endif // _DEBUG
 private:
     bool            m_fLockedForRead;
     bool            m_fLockedForWrite;
-    UTSemReadWrite  *m_pSem;
+    minipal_rwlock  *m_pLock;
+    INDEBUG(CMiniMdRW *m_pMiniMd;)
 };
 
 
-#define LOCKREADIFFAILRET()         CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailRet(cSem.LockRead());
-#define LOCKWRITEIFFAILRET()        CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailRet(cSem.LockWrite());
+#define LOCKREADIFFAILRET()         CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailRet(lockHolder.LockRead());
+#define LOCKWRITEIFFAILRET()        CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailRet(lockHolder.LockWrite());
 
-#define LOCKREADNORET()             CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    hr = cSem.LockRead();
-#define LOCKWRITENORET()            CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    hr = cSem.LockWrite();
+#define LOCKREADNORET()             CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    hr = lockHolder.LockRead();
+#define LOCKWRITENORET()            CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    hr = lockHolder.LockWrite();
 
-#define LOCKREAD()                  CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailGo(cSem.LockRead());
-#define LOCKWRITE()                 CMDSemReadWrite cSem(m_pSemReadWrite);\
-                                    IfFailGo(cSem.LockWrite());
+#define LOCKREAD()                  CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailGo(lockHolder.LockRead());
+#define LOCKWRITE()                 CMDReadWriteLock lockHolder(m_pReadWriteLock COMMA_INDEBUG(m_pStgdb != NULL ? &m_pStgdb->m_MiniMd : NULL));\
+                                    IfFailGo(lockHolder.LockWrite());
 
-#define UNLOCKWRITE()               cSem.UnlockWrite();
-#define CONVERT_READ_TO_WRITE_LOCK() IfFailGo(cSem.ConvertReadLockToWriteLock());
+#define UNLOCKWRITE()               lockHolder.UnlockWrite();
+#define CONVERT_READ_TO_WRITE_LOCK() IfFailGo(lockHolder.ConvertReadLockToWriteLock());
 
 
 #endif // __RWUtil__h__

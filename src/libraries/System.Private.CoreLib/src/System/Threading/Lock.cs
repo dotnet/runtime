@@ -272,7 +272,7 @@ namespace System.Threading
         public bool TryEnter(TimeSpan timeout) => TryEnter_Outlined(WaitHandle.ToTimeoutMilliseconds(timeout));
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs) != UninitializedThreadId;
+        internal bool TryEnter_Outlined(int timeoutMs) => TryEnter_Inlined(timeoutMs) != UninitializedThreadId;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int TryEnter_Inlined(int timeoutMs)
@@ -562,7 +562,8 @@ namespace System.Threading
                 Interlocked.Increment(ref s_contentionCount);
 
                 long waitStartTimeTicks = 0;
-                if (areContentionEventsEnabled)
+                // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+                if (areContentionEventsEnabled && NativeRuntimeEventSource.Log.IsEnabled())
                 {
                     NativeRuntimeEventSource.Log.ContentionStart(this);
                     waitStartTimeTicks = Stopwatch.GetTimestamp();
@@ -634,7 +635,8 @@ namespace System.Threading
                     Debug.Assert(_recursionCount == 0);
                     _owningThreadId = currentThreadId;
 
-                    if (areContentionEventsEnabled)
+                    // Also check NativeRuntimeEventSource.Log.IsEnabled() to enable trimming
+                    if (areContentionEventsEnabled && NativeRuntimeEventSource.Log.IsEnabled())
                     {
                         double waitDurationNs =
                             (Stopwatch.GetTimestamp() - waitStartTimeTicks) * 1_000_000_000.0 / Stopwatch.Frequency;

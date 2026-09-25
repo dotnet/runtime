@@ -37,7 +37,7 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     _In_ OBJECTREF throwable,
     _Outptr_ void** context)
 {
-    CONTRACT(ManagedToNativeExceptionCallback)
+    CONTRACTL
     {
         NOTHROW;
         MODE_COOPERATIVE;
@@ -45,7 +45,7 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
         PRECONDITION(throwable != NULL);
         PRECONDITION(context != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ManagedToNativeExceptionCallback callback = NULL;
     *context = NULL;
@@ -67,7 +67,7 @@ ManagedToNativeExceptionCallback Interop::GetPropagatingExceptionCallback(
     EX_END_CATCH_UNREACHABLE;
 #endif // FEATURE_OBJCMARSHAL
 
-    RETURN callback;
+    return callback;
 }
 
 void Interop::OnGCStarted(_In_ int nCondemnedGeneration)

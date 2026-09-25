@@ -11,10 +11,29 @@ set(SOURCES
     ../gceventstatus.cpp
     ../gcconfig.cpp
     ../gccommon.cpp
-    ../gceewks.cpp
+    ../gcee.cpp
     ../gchandletable.cpp
     ../gcscan.cpp
-    ../gcwks.cpp
+    ../gc.cpp
+    ../init.cpp
+    ../no_gc.cpp
+    ../finalization.cpp
+    ../dynamic_tuning.cpp
+    ../region_free_list.cpp
+    ../region_allocator.cpp
+    ../memory.cpp
+    ../sweep.cpp
+    ../collect.cpp
+    ../diagnostics.cpp
+    ../dynamic_heap_count.cpp
+    ../card_table.cpp
+    ../relocate_compact.cpp
+    ../mark_phase.cpp
+    ../background.cpp
+    ../interface.cpp
+    ../allocation.cpp
+    ../plan_phase.cpp
+    ../regions_segments.cpp
     ../gcload.cpp
     ../handletable.cpp
     ../handletablecache.cpp
@@ -56,6 +75,7 @@ if(CLR_CMAKE_TARGET_WIN32)
     ${STATIC_MT_VCRT_LIB}
     kernel32.lib
     advapi32.lib
+    coreclrminipal
     minipal
   )
 endif(CLR_CMAKE_TARGET_WIN32)

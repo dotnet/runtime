@@ -5,6 +5,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),CA1050,CA1850</NoWarn>
     <DefaultExcludesInProjectFolder>$(DefaultExcludesInProjectFolder);Templates\*.*</DefaultExcludesInProjectFolder>
+    <!-- Emit into stable, version-independent folder names instead of the TFM so the package layout and its
+         consumers don't need updating whenever the .NET Core TFM bumps. -->
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>$(OutputPath)net\</OutputPath>
+    <IntermediateOutputPath>$(IntermediateOutputPath)net\</IntermediateOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,7 +24,7 @@
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
     <ItemGroup>
-      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\$(NetCoreAppToolCurrent)" />
+      <FilesToPackage Include="$(OutputPath)$(MSBuildProjectName)*" TargetPath="tasks\net" />
     </ItemGroup>
   </Target>
 
