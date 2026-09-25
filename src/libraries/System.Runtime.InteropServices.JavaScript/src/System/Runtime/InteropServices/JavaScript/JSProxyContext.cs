@@ -274,6 +274,19 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         }
 
+        // Selects the context to bind a [JSExport] into. BindManagedFunction can be reached from an
+        // assembly module initializer running on a thread without JS interop (see the documented
+        // contract on JSFunctionBinding.BindManagedFunction), so fall back to the main/UI thread
+        // context rather than rejecting that supported path.
+        public static JSProxyContext BindingContextOrMain()
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            return CurrentThreadContext ?? MainThreadContext;
+#else
+            return MainThreadContext;
+#endif
+        }
+
         #endregion
 
         #region Handles

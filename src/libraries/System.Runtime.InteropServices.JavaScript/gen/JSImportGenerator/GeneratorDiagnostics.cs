@@ -23,7 +23,7 @@ namespace Microsoft.Interop
             public const string InvalidJSExportAttributeUsage = Prefix + "1071";
             public const string TypeNotSupported = Prefix + "1072";
             public const string ConfigurationNotSupported = Prefix + "1073";
-            public const string JSImportRequiresAllowUnsafeBlocks = Prefix + "1074";
+            // SYSLIB1074 (JSImportRequiresAllowUnsafeBlocks) retired: generated [JSImport] stubs no longer require unsafe code.
             public const string JSExportRequiresAllowUnsafeBlocks = Prefix + "1075";
         }
 
@@ -158,16 +158,6 @@ namespace Microsoft.Interop
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidJSExportAttributedMethodDescription)));
-
-        public static readonly DiagnosticDescriptor JSImportRequiresAllowUnsafeBlocks =
-                   DiagnosticDescriptorHelper.Create(
-                       Ids.JSImportRequiresAllowUnsafeBlocks,
-                       GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksTitle)),
-                       GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksMessage)),
-                       Category,
-                       DiagnosticSeverity.Error,
-                       isEnabledByDefault: true,
-                       description: GetResourceString(nameof(SR.JSImportRequiresAllowUnsafeBlocksDescription)));
 
         public static readonly DiagnosticDescriptor JSExportRequiresAllowUnsafeBlocks =
                    DiagnosticDescriptorHelper.Create(

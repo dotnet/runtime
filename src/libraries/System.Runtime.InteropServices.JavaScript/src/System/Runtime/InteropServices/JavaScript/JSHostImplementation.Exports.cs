@@ -12,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "It's kept from trimming by DynamicDependencyAttribute in the generated code.")]
         public static unsafe JSFunctionBinding BindManagedFunction(string fullyQualifiedName, int signatureHash, ReadOnlySpan<JSMarshalerType> signatures)
         {
-            var ctx = JSProxyContext.AssertIsInteropThread();
+            var ctx = JSProxyContext.BindingContextOrMain();
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             var wrapperName = $"__Wrapper_{methodName}_{signatureHash}";
             // reflection wants '+' between nested types, but the JS side walks the export tree on '/', so keep shortClassName as parsed

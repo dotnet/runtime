@@ -211,15 +211,6 @@
     <value>Please annotate the argument with 'JSMarshalAsAttribute' to specify marshaling of {0}.</value>
     <comment>{0} is a type of the argument</comment>
   </data>
-  <data name="JSImportRequiresAllowUnsafeBlocksDescription" xml:space="preserve">
-    <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
-  </data>
-  <data name="JSImportRequiresAllowUnsafeBlocksMessage" xml:space="preserve">
-    <value>JSImportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
-  </data>
-  <data name="JSImportRequiresAllowUnsafeBlocksTitle" xml:space="preserve">
-    <value>JSImportAttribute requires unsafe code. For more information see https://aka.ms/dotnet-wasm-jsinterop</value>
-  </data>
   <data name="JSExportRequiresAllowUnsafeBlocksDescription" xml:space="preserve">
     <value>JSExportAttribute requires unsafe code. Project must be updated with '&lt;AllowUnsafeBlocks&gt;true&lt;/AllowUnsafeBlocks&gt;'.</value>
   </data>
