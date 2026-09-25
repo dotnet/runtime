@@ -3,48 +3,6 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0022</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.X509CertificateKeyAccessors.CopyWithPrivateKey(System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.MLDsa)</Target>
-    <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
-    <Right>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0022</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.X509CertificateKeyAccessors.CopyWithPrivateKey(System.Security.Cryptography.X509Certificates.X509Certificate2,System.Security.Cryptography.MLKem)</Target>
-    <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
-    <Right>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0022</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.X509CertificateKeyAccessors.GetMLDsaPrivateKey(System.Security.Cryptography.X509Certificates.X509Certificate2)</Target>
-    <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
-    <Right>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0022</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.X509CertificateKeyAccessors.GetMLDsaPublicKey(System.Security.Cryptography.X509Certificates.X509Certificate2)</Target>
-    <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
-    <Right>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0022</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.X509CertificateKeyAccessors.GetMLKemPrivateKey(System.Security.Cryptography.X509Certificates.X509Certificate2)</Target>
-    <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
-    <Right>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0022</DiagnosticId>
-    <Target>M:System.Security.Cryptography.X509Certificates.X509CertificateKeyAccessors.GetMLKemPublicKey(System.Security.Cryptography.X509Certificates.X509Certificate2)</Target>
-    <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
-    <Right>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Right>
-    <IsBaselineSuppression>true</IsBaselineSuppression>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0022</DiagnosticId>
     <Target>M:System.Security.Cryptography.MLDsa.ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan{System.Byte},System.Security.Cryptography.PbeParameters)</Target>
     <Left>lib/net10.0/Microsoft.Bcl.Cryptography.dll</Left>
     <Right>lib/net12.0/Microsoft.Bcl.Cryptography.dll</Right>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
   <PropertyGroup>
-    <TargetFramework>net12.0</TargetFramework>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' == ''">net12.0</TargetFramework>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' != ''">$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)</TargetFramework>
     <StaticWebAssetBasePath>client2</StaticWebAssetBasePath>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
