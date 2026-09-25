@@ -274,6 +274,8 @@ public:
                    PromotionLiveness* liveness,
                    FlowGraphDfsTree*  dfsTree);
 
+    void PrepareReadBacks();
+
     bool MadeChanges()
     {
         return m_madeChanges;

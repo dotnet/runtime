@@ -1665,7 +1665,7 @@ GenTree* Promotion::CreateReadBack(Compiler* compiler, unsigned structLclNum, co
 
 //------------------------------------------------------------------------
 // ReplaceVisitor:
-//   Prepare state for propagating pending readbacks in reverse postorder.
+//   Initialize the replacement visitor.
 //
 // Parameters:
 //   prom       - Promotion phase.
@@ -1684,8 +1684,18 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
     , m_dfsTree(dfsTree)
     , m_postOrderTraits(dfsTree->PostOrderTraits())
 {
-    unsigned index                        = 0;
-    bool     hasPlannedReadBackCandidates = false;
+}
+
+//------------------------------------------------------------------------
+// PrepareReadBacks:
+//   Initialize field tracking, compute loop/EH materialization boundaries,
+//   and plan common readbacks before replacing uses.
+//
+void ReplaceVisitor::PrepareReadBacks()
+{
+    FlowGraphDfsTree* dfsTree                      = m_dfsTree;
+    unsigned          index                        = 0;
+    bool              hasPlannedReadBackCandidates = false;
     for (AggregateInfo* agg : m_aggregates)
     {
         LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
@@ -3259,6 +3269,7 @@ PhaseStatus Promotion::Run()
 
     FlowGraphDfsTree* dfsTree = m_compiler->m_dfsTree;
     ReplaceVisitor    replacer(this, aggregates, &liveness, dfsTree);
+    replacer.PrepareReadBacks();
     for (unsigned i = dfsTree->GetPostOrderCount(); i > 0; i--)
     {
         BasicBlock* bb        = dfsTree->GetPostOrder(i - 1);
