@@ -76,13 +76,10 @@ extends:
             performanceRepoAlias: performance
             monoMicro:
               enabled: false
-              configs: []
             monoInterpreter:
               enabled: false
-              configs: []
             monoAot:
               enabled: false
-              configs: []
             jobParameters:
               ${{ if parameters.onlySanityCheck }}:
                 onlySanityCheck: true
