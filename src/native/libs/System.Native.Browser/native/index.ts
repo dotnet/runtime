@@ -55,15 +55,17 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
     }
 
     function setupEmscripten() {
+        const userPreInit = normalizeCallbacks(_ems_.Module.preInit);
         _ems_.Module.preInit = [() => {
             if (_ems_.dotnetApi.getConfig) {
                 const virtualWorkingDirectory = _ems_.dotnetApi.getConfig().virtualWorkingDirectory;
                 _ems_.FS.createPath("/", virtualWorkingDirectory!, true, true);
                 _ems_.FS.chdir(virtualWorkingDirectory!);
             }
-        }, ...(_ems_.Module.preInit || [])];
+        }, ...userPreInit];
 
         // preInit runs before Emscripten assigns the native WASM exports.
+        const userPreRun = normalizeCallbacks(_ems_.Module.preRun);
         _ems_.Module.preRun = [() => {
             const orig_funcs_on_exit = _ems_.___funcs_on_exit;
             // it would be better to use addOnExit(), but it's called too late.
@@ -80,6 +82,10 @@ export function dotnetInitializeModule(internals: InternalExchange): void {
                     // silently ignore any error during shutdown
                 }
             };
-        }, ...(_ems_.Module.preRun || [])];
+        }, ...userPreRun];
+    }
+
+    function normalizeCallbacks(callbacks: (() => any)[] | (() => any) | undefined): (() => any)[] {
+        return typeof callbacks === "function" ? [callbacks] : callbacks || [];
     }
 }
