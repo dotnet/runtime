@@ -456,6 +456,35 @@ namespace Internal.JitInterface
             return int.Parse(sig.AsSpan(start, pos - start));
         }
 
+        /// <summary>
+        /// Returns true when the Wasm signature carries a hidden generic context immediately before the async continuation.
+        /// </summary>
+        /// <remarks>
+        /// The generic context is encoded with the hidden-pointer char (i32 on wasm32, i64 on wasm64) after the return
+        /// type and optional 'this', directly followed by the 'a' async marker.
+        /// </remarks>
+        public static bool HasGenericContextBeforeAsync(WasmSignature wasmSignature, TypeSystemContext context)
+        {
+            string sig = wasmSignature.SignatureString;
+            int pos = 0;
+            if (sig[pos] == 'S')
+            {
+                ParseStructSize(sig, ref pos);
+            }
+            else
+            {
+                pos++;
+            }
+
+            if ((pos < sig.Length) && (sig[pos] == 'T'))
+            {
+                pos++;
+            }
+
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            return (pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a');
+        }
+
         public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
         {
             string sig = wasmSignature.SignatureString;

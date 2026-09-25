@@ -41,36 +41,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool INodeWithTypeSignature.IsAsyncCall => false;
         bool INodeWithTypeSignature.HasGenericContextArg => false;
 
-        private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
-        private bool HasGenericContextBeforeAsync
-        {
-            get
-            {
-                int asyncMarkerIndex = _wasmSignature.SignatureString.IndexOf('a');
-                if (asyncMarkerIndex < 0)
-                {
-                    return false;
-                }
-
-                int pos = 1;
-                if (_wasmSignature.SignatureString[0] == 'S')
-                {
-                    while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
-                    {
-                        pos++;
-                    }
-                }
-
-                if ((pos < _wasmSignature.SignatureString.Length) && (_wasmSignature.SignatureString[pos] == 'T'))
-                {
-                    pos++;
-                }
-
-                char hiddenParamChar = (_context.Target.PointerSize == 4) ? 'i' : 'l';
-                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == hiddenParamChar);
-            }
-        }
-
         public WasmInterpreterToR2RThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {
             _context = factory.TypeSystemContext;
@@ -113,14 +83,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Debug.Assert(!instructionEncoder.Is64Bit);
 
             ISymbolNode targetTypeIndex = _targetTypeNode;
-            bool hasAsyncContinuation = HasAsyncContinuation;
 
-            MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
+            (MethodSignature methodSignature, ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildWasmThunkArgIterator(_wasmSignature, _context);
+            bool hasAsyncContinuation = argit.HasAsyncContinuation;
+            bool hasGenericContext = argit.HasParamType;
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
-            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
 
             // Gather explicit-arg offsets and indirectness from ArgIterator.
             // ArgIterator offsets are relative to the TransitionBlock base; the interpreter
@@ -137,14 +106,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 interpOffsets[argIndex] = argOffset - sizeOfTransitionBlock;
                 isIndirectStructArg[argIndex] = WasmLowering.CurrentArgLowersValueTypeToPassAsByref(argit);
                 argIndex++;
-            }
-
-            if (hasGenericContextBeforeAsync)
-            {
-                // The raised signature models the generic context as explicit parameter 0, so ArgIterator
-                // places it after the async continuation. The interpreter passes the generic context
-                // before the async continuation, i.e. in the slot ArgIterator assigns to the continuation.
-                interpOffsets[0] = argit.GetAsyncContinuationArgOffset() - sizeOfTransitionBlock;
             }
 
             WasmFuncType targetFuncType = _targetTypeNode.Type;
@@ -180,7 +141,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Store(0));
 
             // Build the arguments for the R2R call_indirect.
-            // Target R2R wasm params: ($sp, [this], [retbuf], explicit_params..., portableEntrypoint)
+            // Target R2R wasm params: ($sp, [this], [retbuf], [generic context], [async continuation], explicit_params..., portableEntrypoint)
             // (matches Compiler::lvaInitArgs / WasmR2RToInterpreterThunkNode local order.)
             // We track targetParamIndex to look up the correct wasm type for each arg.
             int targetParamIndex = 0;
@@ -213,14 +174,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 targetParamIndex++;
             }
 
-            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            if (hasGenericContext)
+            {
+                expressions.Add(Local.Get(LocalPArgs));
+                expressions.Add(I32.Load((ulong)(argit.GetParamTypeArgOffset() - sizeOfTransitionBlock)));
+                targetParamIndex++;
+            }
+
+            if (hasAsyncContinuation)
             {
                 expressions.Add(I32.Const(0));
                 targetParamIndex++;
             }
 
             // Explicit parameters — load each from pArgs at the ArgIterator-derived offset.
-            // A generic context is parameter 0; the async continuation follows it.
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -274,12 +241,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         default:
                             throw new Exception("Unexpected wasm type for interpreter-to-R2R arg");
                     }
-                    targetParamIndex++;
-                }
-
-                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
-                {
-                    expressions.Add(I32.Const(0));
                     targetParamIndex++;
                 }
             }

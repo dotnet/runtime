@@ -51,34 +51,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         bool INodeWithTypeSignature.HasGenericContextArg => false;
 
         private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
-        private bool HasGenericContextBeforeAsync
-        {
-            get
-            {
-                int asyncMarkerIndex = _wasmSignature.SignatureString.IndexOf('a');
-                if (asyncMarkerIndex < 0)
-                {
-                    return false;
-                }
-
-                int pos = 1;
-                if (_wasmSignature.SignatureString[0] == 'S')
-                {
-                    while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
-                    {
-                        pos++;
-                    }
-                }
-
-                if ((pos < _wasmSignature.SignatureString.Length) && (_wasmSignature.SignatureString[pos] == 'T'))
-                {
-                    pos++;
-                }
-
-                char hiddenParamChar = (_context.Target.PointerSize == 4) ? 'i' : 'l';
-                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == hiddenParamChar);
-            }
-        }
 
         public WasmR2RToInterpreterThunkNode(NodeFactory factory, WasmSignature wasmSignature)
         {
@@ -123,10 +95,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(s_helperTypeParams);
 
-            MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            bool hasAsyncContinuation = HasAsyncContinuation;
-            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
+            (MethodSignature methodSignature, ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildWasmThunkArgIterator(_wasmSignature, _context);
+            bool hasAsyncContinuation = argit.HasAsyncContinuation;
+            bool hasGenericContext = argit.HasParamType;
 
             bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
             bool hasThis = !methodSignature.IsStatic;
@@ -158,14 +129,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 offsets[i] += transitionBlockOffset;
             }
+            int genericContextOffset = hasGenericContext ? argit.GetParamTypeArgOffset() + transitionBlockOffset : 0;
             int asyncContinuationOffset = hasAsyncContinuation ? argit.GetAsyncContinuationArgOffset() + transitionBlockOffset : 0;
-            if (hasGenericContextBeforeAsync)
-            {
-                // The raised signature models the generic context as explicit parameter 0, so ArgIterator
-                // places it after the async continuation. The interpreter expects the generic context
-                // before the async continuation, so swap the two pointer-sized slots.
-                (offsets[0], asyncContinuationOffset) = (asyncContinuationOffset, offsets[0]);
-            }
             int sizeOfStoredLocals = argumentsOffset + AlignmentHelper.AlignUp(sizeOfArgumentArray, 16);
 
             bool hasWasmReturn = _typeNode.Type.Returns.Types.Length > 0;
@@ -218,7 +183,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 wasmLocalIndex++;
             }
 
-            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            if (hasGenericContext)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)genericContextOffset));
+                wasmLocalIndex++;
+            }
+
+            if (hasAsyncContinuation)
             {
                 expressions.Add(Local.Get(0));
                 expressions.Add(Local.Get(wasmLocalIndex));
@@ -308,14 +281,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         default:
                             throw new Exception("Unexpected wasm type arg");
                     }
-                    wasmLocalIndex++;
-                }
-
-                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
-                {
-                    expressions.Add(Local.Get(0));
-                    expressions.Add(Local.Get(wasmLocalIndex));
-                    expressions.Add(I32.Store((ulong)asyncContinuationOffset));
                     wasmLocalIndex++;
                 }
             }

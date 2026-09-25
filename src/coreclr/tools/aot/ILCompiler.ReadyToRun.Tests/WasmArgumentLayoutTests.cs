@@ -109,6 +109,55 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
+    [InlineData(false, false, "iiaip")]
+    [InlineData(true, false, "iTiaip")]
+    [InlineData(false, true, "S16iaip")]
+    [InlineData(true, true, "S16Tiaip")]
+    public void WasmThunkArgLayoutPlacesGenericContextBeforeAsyncContinuation(bool hasThis, bool returnsStruct, string expectedSignature)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
+        TypeDesc returnType = returnsStruct ? MakeAlignedEightBlob(context, 16) : int32;
+        MethodSignature signature = new MethodSignature(hasThis ? MethodSignatureFlags.None : MethodSignatureFlags.Static, 0, returnType, [int32]);
+
+        WasmSignature lowered = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall);
+        Assert.Equal(expectedSignature, lowered.SignatureString);
+        Assert.True(WasmLowering.HasGenericContextBeforeAsync(lowered, context));
+
+        var (layoutSignature, argIterator, transitionBlock) = GCRefMapBuilder.BuildWasmThunkArgIterator(lowered, context);
+        Assert.True(argIterator.HasParamType);
+        Assert.True(argIterator.HasAsyncContinuation);
+        Assert.Equal(1, layoutSignature.Length);
+        Assert.Same(int32, layoutSignature[0]);
+
+        // The interpreter and the method's GC ref map expect [this][generic context][async continuation][args].
+        int firstHiddenArgOffset = transitionBlock.OffsetOfArgs + (hasThis ? 8 : 0);
+        Assert.Equal(firstHiddenArgOffset, argIterator.GetParamTypeArgOffset());
+        Assert.Equal(firstHiddenArgOffset + 8, argIterator.GetAsyncContinuationArgOffset());
+        Assert.Equal(firstHiddenArgOffset + 16, argIterator.GetNextOffset());
+    }
+
+    [Theory]
+    [InlineData(WasmLowering.LoweringFlags.None, "iiip", 2)]
+    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg, "iiiip", 3)]
+    [InlineData(WasmLowering.LoweringFlags.IsAsyncCall, "iaiip", 2)]
+    public void WasmThunkArgLayoutKeepsExplicitParametersWithoutAsyncGenericContext(WasmLowering.LoweringFlags flags, string expectedSignature, int expectedParameters)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
+        MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, int32, [int32, int32]);
+
+        WasmSignature lowered = WasmLowering.GetSignature(signature, flags);
+        Assert.Equal(expectedSignature, lowered.SignatureString);
+        Assert.False(WasmLowering.HasGenericContextBeforeAsync(lowered, context));
+
+        var (layoutSignature, argIterator, _) = GCRefMapBuilder.BuildWasmThunkArgIterator(lowered, context);
+        Assert.False(argIterator.HasParamType);
+        Assert.Equal((flags & WasmLowering.LoweringFlags.IsAsyncCall) != 0, argIterator.HasAsyncContinuation);
+        Assert.Equal(expectedParameters, layoutSignature.Length);
+    }
+
+    [Theory]
     [InlineData(MethodSignatureFlags.None)]
     [InlineData(MethodSignatureFlags.CallingConventionVarargs)]
     [InlineData(MethodSignatureFlags.UnmanagedCallingConventionCdecl)]
