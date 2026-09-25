@@ -2156,6 +2156,8 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
+    // Other statement in the block must be an assignment to the local being compared.
+    // RHS must be binary operation or another local.
     GenTree* const data = firstTree->AsLclVar()->Data();
     if (data->OperIs(GT_LCL_VAR))
     {
@@ -2396,7 +2398,10 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
     GenTree*  data     = store->Data();
     var_types copyType = TYP_UNDEF;
 
-    // Look through one adjacent copy, retaining both stores for any other uses.
+    // Look through one adjacent copy, ex.
+    // V01 = 1
+    // V02 = V01
+    // CMP V02, 0
     if (data->OperIs(GT_LCL_VAR))
     {
         Statement* sourceStmt = secondLastStmt->GetPrevStmt();
@@ -2441,7 +2446,7 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
 
     LclVarDsc* varDsc  = lvaGetDesc(lcl);
     GenTree*   newData = gtCloneExpr(data);
-    if (varTypeIsSmall(copyType) && fgCastNeeded(newData, copyType))
+    if ((copyType != TYP_UNDEF) && varTypeIsSmall(copyType) && fgCastNeeded(newData, copyType))
     {
         newData = gtNewCastNode(TYP_INT, newData, false, copyType);
         newData = gtFoldExpr(newData);
