@@ -3378,7 +3378,7 @@ void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
         case GT_STORE_LCL_FLD:
             assert((tree->gtFlags & GTF_VAR_DEF) != 0);
             if (!fgImplicitByRefLclFldsStale || !tree->OperIs(GT_STORE_LCL_FLD) ||
-                !lvaGetDesc(tree->AsLclFld())->TypeIs(TYP_BYREF) ||
+                !lvaGetDesc(tree->AsLclFld())->TypeIs(TYP_I_IMPL) ||
                 !lvaIsImplicitByRefLocal(tree->AsLclFld()->GetLclNum()))
             {
                 assert(((tree->gtFlags & GTF_VAR_USEASG) != 0) == tree->IsPartialLclFld(this));

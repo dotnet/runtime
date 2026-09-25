@@ -2496,7 +2496,8 @@ bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
 // "By-value value types passed by reference" in clr-abi.md for the exact rules.
 //
 // The shadow copies must be outside the GC heap, so stores into them do not
-// require write barriers. The caller is responsible for GC reporting their contents.
+// require write barriers and the pointers are typed as TYP_I_IMPL after morph.
+// The caller is responsible for GC reporting their contents.
 //
 // Arguments:
 //    lclNum - The local in question
@@ -2512,7 +2513,7 @@ bool Compiler::lvaIsImplicitByRefLocal(unsigned lclNum) const
     {
         assert(varDsc->lvIsParam);
 
-        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_BYREF));
+        assert(varTypeIsStruct(varDsc) || varDsc->TypeIs(TYP_I_IMPL));
         return true;
     }
 #endif // FEATURE_IMPLICIT_BYREFS
