@@ -474,11 +474,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         return;
     }
 
-    // Managed code leaves the __stack_pointer global stale, and inlined PInvokes (JIT_PInvokeBegin,
-    // SuppressGCTransition publishes) leave it lowered to this or a callee's shadow SP. A reverse
-    // PInvoke method is called with the native ABI, so restore the global to its value on entry
-    // (the post-prolog SP plus the frame size) before returning to the native caller. This is a
-    // net-zero operation on the Wasm operand stack, so any return value already pushed is preserved.
+    // Restore __stack_pointer to the value it had on entry
     if (m_compiler->opts.IsReversePInvoke())
     {
         assert(m_compiler->funCurrentFuncIdx() == ROOT_FUNC_IDX);
