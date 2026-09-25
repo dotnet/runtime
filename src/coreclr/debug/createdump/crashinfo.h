@@ -95,7 +95,7 @@ public:
     inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }
     inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
-    inline DumpRegionStore* GetDumpRegionStore() { return &m_dumpRegionStore; }
+    inline DumpRegionStore& GetDumpRegionStore() { return m_dumpRegionStore; }
     inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #ifndef __APPLE__
     inline const DynamicArray<elf_aux_entry>& AuxvEntries() const { return m_processInfo.AuxvEntries(); }

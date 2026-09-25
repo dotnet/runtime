@@ -149,6 +149,33 @@ public:
     DynamicArray(const DynamicArray&) = delete;
     DynamicArray& operator=(const DynamicArray&) = delete;
 
+    DynamicArray(DynamicArray&& other) noexcept :
+        m_items(other.m_items),
+        m_count(other.m_count),
+        m_capacity(other.m_capacity)
+    {
+        other.m_items = nullptr;
+        other.m_count = 0;
+        other.m_capacity = 0;
+    }
+
+    DynamicArray& operator=(DynamicArray&& other) noexcept
+    {
+        if (this != &other)
+        {
+            delete[] m_items;
+
+            m_items = other.m_items;
+            m_count = other.m_count;
+            m_capacity = other.m_capacity;
+
+            other.m_items = nullptr;
+            other.m_count = 0;
+            other.m_capacity = 0;
+        }
+        return *this;
+    }
+
     bool Add(const T& item) noexcept
     {
         if (m_count == m_capacity && !Grow())
@@ -206,6 +233,11 @@ public:
     const T* end() const noexcept
     {
         return m_items != nullptr ? m_items + m_count : nullptr;
+    }
+
+    bool empty() const noexcept
+    {
+        return m_count == 0;
     }
 
     size_t Count() const noexcept

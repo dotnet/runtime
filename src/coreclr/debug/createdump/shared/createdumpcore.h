@@ -76,6 +76,68 @@ extern bool linkedCreateDump;
 extern bool g_diagnostics;
 extern bool g_diagnosticsVerbose;
 
+template <typename TRegions, typename TCombinedRegions, typename TInsert>
+bool CombineMemoryRegions(const TRegions& regions, TCombinedRegions& combinedRegions, TInsert insert)
+{
+    TRACE("CombineMemoryRegions: STARTED\n");
+    assert(!regions.empty());
+
+    // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
+    // don't affect the core dump so ignore them when comparing the flags.
+    uint32_t flags = 0;
+    uint64_t start = 0;
+    uint64_t end = 0;
+    bool hasRegion = false;
+
+    for (const MemoryRegion& region : regions)
+    {
+        uint32_t regionFlags = region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
+        if (!hasRegion)
+        {
+            flags = regionFlags;
+            start = region.StartAddress();
+            end = region.EndAddress();
+            hasRegion = true;
+            continue;
+        }
+
+        // To combine a region it needs to be contiguous, same permissions and memory backed flag.
+        if (end == region.StartAddress() && flags == regionFlags)
+        {
+            end = region.EndAddress();
+        }
+        else
+        {
+            if (!insert(MemoryRegion(flags, start, end)))
+            {
+                return false;
+            }
+            flags = regionFlags;
+            start = region.StartAddress();
+            end = region.EndAddress();
+        }
+    }
+
+    assert(start != end);
+    if (!insert(MemoryRegion(flags, start, end)))
+    {
+        return false;
+    }
+
+    TRACE("CombineMemoryRegions: FINISHED\n");
+
+    if (g_diagnosticsVerbose)
+    {
+        TRACE("Final Memory Regions:\n");
+        for (const MemoryRegion& region : combinedRegions)
+        {
+            region.Trace();
+        }
+    }
+
+    return true;
+}
+
 void printf_status(const char* format, ...);
 void printf_error(const char* format, ...);
 
@@ -84,5 +146,5 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize);
 bool FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exeName, int pid);
 int ParseCreateDumpOptions(int argc, char* argv[], CreateDumpOptions* options);
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize);
-bool AddSpecialDiagInfoRegion(DumpRegionStore* regionStore);
+bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore);
 bool CreateDumpCore(const CreateDumpOptions* options, DumpRegionStore* regionStore);

@@ -100,11 +100,11 @@ bool ProcessInfo::AddMapping(const MemoryRegion& region, const char* fileName, b
     return m_mappings.Add(Move(mapping));
 }
 
-bool AddSpecialDiagInfoRegion(DumpRegionStore* regionStore)
+bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore)
 {
     // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
     MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
-    return regionStore->Insert(&special);
+    return regionStore.Insert(&special);
 }
 
 //

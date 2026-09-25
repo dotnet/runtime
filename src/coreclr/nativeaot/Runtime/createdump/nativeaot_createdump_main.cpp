@@ -80,7 +80,7 @@ void print_trace_timestamp()
 
 }
 
-bool LinkedCreateDump(const CreateDumpOptions* options, DumpRegionStore* regionStore)
+bool LinkedCreateDump(const CreateDumpOptions* options)
 {
     asserte(options->CreateDump);
 
@@ -91,6 +91,9 @@ bool LinkedCreateDump(const CreateDumpOptions* options, DumpRegionStore* regionS
 
     bool result = false;
     bool initialized = false;
+    DynamicArray<MemoryRegion> dumpRegions;
+    DynamicArray<MemoryRegion> combinedRegions;
+    DumpRegionStore regionStore{ &dumpRegions, &FindDumpRegionOverlap, &InsertDumpRegion };
     ProcessInfo processInfo(*options);
 
     if (!processInfo.Initialize())
@@ -112,7 +115,7 @@ bool LinkedCreateDump(const CreateDumpOptions* options, DumpRegionStore* regionS
         goto exit;
     }
 
-    if (!processInfo.GatherCrashInfo(*regionStore))
+    if (!processInfo.GatherCrashInfo(regionStore))
     {
         goto exit;
     }
@@ -122,7 +125,7 @@ bool LinkedCreateDump(const CreateDumpOptions* options, DumpRegionStore* regionS
         goto exit;
     }
 
-    if (!processInfo.SelectDumpRegions(*regionStore, options->DumpType))
+    if (!processInfo.SelectDumpRegions(regionStore, options->DumpType))
     {
         goto exit;
     }
@@ -133,11 +136,22 @@ bool LinkedCreateDump(const CreateDumpOptions* options, DumpRegionStore* regionS
         goto exit;
     }
 
-    CombineMemoryRegions(static_cast<DynamicArray<MemoryRegion>*>(regionStore->Container()));
+    if (!CombineMemoryRegions(
+            dumpRegions,
+            combinedRegions,
+            [&combinedRegions](const MemoryRegion& region)
+            {
+                assert(combinedRegions.empty() || combinedRegions[combinedRegions.Count() - 1] < region);
+                return combinedRegions.Add(region);
+            }))
+    {
+        goto exit;
+    }
+    dumpRegions = Move(combinedRegions);
 
     if (!WriteLinuxElfDump(
             &processInfo,
-            regionStore,
+            &regionStore,
             options))
     {
         goto exit;
@@ -174,8 +188,6 @@ int nativeaot_createdump_main(int argc, const char* argv[])
         options.DumpPathTemplate = defaultDumpPath;
     }
 
-    DynamicArray<MemoryRegion> dumpRegions;
-    DumpRegionStore regionStore{ &dumpRegions, &FindDumpRegionOverlap, &InsertDumpRegion };
-    bool result = LinkedCreateDump(&options, &regionStore);
+    bool result = LinkedCreateDump(&options);
     return result ? 0 : 1;
 }

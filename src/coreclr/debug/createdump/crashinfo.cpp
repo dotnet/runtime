@@ -711,53 +711,22 @@ CrashInfo::InsertMemoryRegion(uint64_t address, size_t size)
 void
 CrashInfo::CombineMemoryRegions()
 {
-    TRACE("CombineMemoryRegions: STARTED\n");
-    assert(!m_memoryRegions.empty());
     std::set<MemoryRegion> memoryRegionsNew;
 
-    // MEMORY_REGION_FLAG_SHARED and MEMORY_REGION_FLAG_PRIVATE are internal flags that
-    // don't affect the core dump so ignore them when comparing the flags.
-    uint32_t flags = m_memoryRegions.begin()->Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
-    uint64_t start = m_memoryRegions.begin()->StartAddress();
-    uint64_t end = start;
-
-    for (const MemoryRegion& region : m_memoryRegions)
+    if (!::CombineMemoryRegions(
+            m_memoryRegions,
+            memoryRegionsNew,
+            [&memoryRegionsNew](const MemoryRegion& region)
+            {
+                assert(memoryRegionsNew.find(region) == memoryRegionsNew.end());
+                return memoryRegionsNew.insert(region).second;
+            }))
     {
-        // To combine a region it needs to be contiguous, same permissions and memory backed flag.
-        if ((end == region.StartAddress()) &&
-            (flags == (region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK)))
-        {
-            end = region.EndAddress();
-        }
-        else
-        {
-            MemoryRegion memoryRegion(flags, start, end);
-            assert(memoryRegionsNew.find(memoryRegion) == memoryRegionsNew.end());
-            memoryRegionsNew.insert(memoryRegion);
-
-            flags = region.Flags() & MEMORY_REGION_FLAG_PERMISSIONS_MASK;
-            start = region.StartAddress();
-            end = region.EndAddress();
-        }
+        assert(!"Could not combine memory regions");
+        return;
     }
-
-    assert(start != end);
-    MemoryRegion memoryRegion(flags, start, end);
-    assert(memoryRegionsNew.find(memoryRegion) == memoryRegionsNew.end());
-    memoryRegionsNew.insert(memoryRegion);
 
     m_memoryRegions = memoryRegionsNew;
-
-    TRACE("CombineMemoryRegions: FINISHED\n");
-
-    if (g_diagnosticsVerbose)
-    {
-        TRACE("Final Memory Regions:\n");
-        for (const MemoryRegion& region : m_memoryRegions)
-        {
-            region.Trace();
-        }
-    }
 }
 
 //

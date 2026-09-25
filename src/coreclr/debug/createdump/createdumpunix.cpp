@@ -51,7 +51,7 @@ CreateDump(const CreateDumpOptions& options)
     {
         goto exit;
     }
-    if (!processInfo.GatherCrashInfo(*crashInfo->GetDumpRegionStore()))
+    if (!processInfo.GatherCrashInfo(crashInfo->GetDumpRegionStore()))
     {
         goto exit;
     }
@@ -70,7 +70,7 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
 
-    if (!processInfo.SelectDumpRegions(*crashInfo->GetDumpRegionStore(), options.DumpType))
+    if (!processInfo.SelectDumpRegions(crashInfo->GetDumpRegionStore(), options.DumpType))
     {
         goto exit;
     }
