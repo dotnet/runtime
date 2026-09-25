@@ -755,6 +755,10 @@ namespace System.Tests
         [InlineData( float.PositiveInfinity,  3,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  4,  float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  5,  float.PositiveInfinity, 0.0f)]
+        [InlineData(-1.0f,                    -16777217,   -1.0f,                   0.0f)]
+        [InlineData(-1.0f,                     16777217,   -1.0f,                   0.0f)]
+        [InlineData(-0.0f,                    -16777217,    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.0f,                     16777217,   -0.0f,                   0.0f)]
         public static void RootN(float x, int n, float expectedResult, float allowedVariance)
         {
             AssertExtensions.Equal(expectedResult, float.RootN(x, n), allowedVariance);
