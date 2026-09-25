@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using static System.Runtime.InteropServices.JavaScript.JSHostImplementation;
@@ -23,8 +24,10 @@ namespace System.Runtime.InteropServices.JavaScript
         // they have negative values, so that they don't collide with JSHandles.
         private nint NextJSVHandle = -2;
         private readonly List<nint> JSVHandleFreeList = new();
-        internal Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
-        internal int NextJSExportHandle = 1;
+        // Guarded by lock (this) in the multi-threaded build: BindManagedFunction can register an export
+        // into another thread's context via BindingContextOrMain, concurrently with CallJSExport reading it.
+        private readonly Dictionary<int, Action<IntPtr>> JSExportByHandle = new Dictionary<int, Action<IntPtr>>();
+        private int NextJSExportHandle = 1;
 
         public int PromiseHolderCount
         {
@@ -285,6 +288,29 @@ namespace System.Runtime.InteropServices.JavaScript
 #else
             return MainThreadContext;
 #endif
+        }
+
+        // Registration can run on a thread other than the one owning this context, see BindingContextOrMain.
+        public int AllocJSExportHandle(Action<IntPtr> wrapper)
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (this)
+#endif
+            {
+                int methodHandle = NextJSExportHandle++;
+                JSExportByHandle[methodHandle] = wrapper;
+                return methodHandle;
+            }
+        }
+
+        public bool TryGetJSExport(int methodHandle, [MaybeNullWhen(false)] out Action<IntPtr> wrapper)
+        {
+#if FEATURE_WASM_MANAGED_THREADS
+            lock (this)
+#endif
+            {
+                return JSExportByHandle.TryGetValue(methodHandle, out wrapper);
+            }
         }
 
         #endregion

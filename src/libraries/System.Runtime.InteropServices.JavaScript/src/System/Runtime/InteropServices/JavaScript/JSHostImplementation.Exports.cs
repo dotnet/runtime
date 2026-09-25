@@ -40,8 +40,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 wrapperInfo.Invoke(null, new object?[] { boxedLegacyArgs });
             };
 
-            int methodHandle = ctx.NextJSExportHandle++;
-            ctx.JSExportByHandle[methodHandle] = wrapper;
+            int methodHandle = ctx.AllocJSExportHandle(wrapper);
 
             var signature = GetMethodSignature(signatures, null, null);
 

@@ -370,7 +370,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             ref JSMarshalerArgument argException = ref argumentsBuffer[0]; // initialized by caller in alloc_stack_frame()
             var ctx = argException.AssertCurrentThreadContext();
-            if (!ctx.JSExportByHandle.TryGetValue(methodHandle, out var jsExport))
+            if (!ctx.TryGetJSExport(methodHandle, out var jsExport))
             {
                 argException.ToJS(new InvalidOperationException("Unable to resolve JSExport by handle"));
                 return;
