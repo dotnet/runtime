@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -72,7 +73,7 @@ namespace System.Net.WebSockets.Tests
             stream.Position = 0;
             using WebSocket webSocket = WebSocket.CreateFromStream(stream, isServer: false, subProtocol: null, Timeout.InfiniteTimeSpan);
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var cts = new CancellationTokenSource(TestHelper.PassingTestTimeout);
             return await Assert.ThrowsAsync<WebSocketException>(() =>
                 webSocket.ReceiveAsync(new byte[1024], cts.Token));
         }
