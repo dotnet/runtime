@@ -3480,12 +3480,19 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
 
     if (helperUsesPep)
     {
-        // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
-        // The helper function address is the address of an indirection cell, so we load from the cell to get the PEP
-        // address to push.
-        assert(helperFunction.accessType == IAT_PVALUE);
-        GetEmitter()->emitAddressConstant(helperFunction.addr);
-        GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        if (helperFunction.accessType == IAT_VALUE)
+        {
+            // Direct same-image managed helpers do not need a portable entrypoint.
+            GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+        }
+        else
+        {
+            // Push PEP onto the stack because we are calling a managed helper that expects it as the last parameter.
+            // The helper function address is the address of an indirection cell, so load the PEP address from the cell.
+            assert(helperFunction.accessType == IAT_PVALUE);
+            GetEmitter()->emitAddressConstant(helperFunction.addr);
+            GetEmitter()->emitIns_I(INS_I_load, EA_PTRSIZE, 0);
+        }
     }
 
     if (params.callType == EC_INDIR_R)
