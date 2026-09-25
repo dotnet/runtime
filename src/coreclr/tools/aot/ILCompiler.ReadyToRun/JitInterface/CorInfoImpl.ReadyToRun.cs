@@ -3603,10 +3603,11 @@ namespace Internal.JitInterface
                 }
                 _precodeFixups = previouslyStashedFixups;
 
-                // Static methods and constructors can be the first use of a module.
+                // Static methods, constructors, and instance methods on default-initialized value types
+                // can be the first use of a module.
                 // Preserve activation if the module has, or outside the version bubble can gain, an initializer.
                 EcmaModule inlineeModule = (inlinee.OwningType as MetadataType)?.Module as EcmaModule;
-                if ((inlinee.Signature.IsStatic || inlinee.IsConstructor) &&
+                if ((inlinee.Signature.IsStatic || inlinee.IsConstructor || inlinee.OwningType.IsValueType) &&
                     inlineeModule is not null &&
                     inlineeModule != _compilation.TypeSystemContext.SystemModule &&
                     inlineeModule != (MethodBeingCompiled.OwningType as MetadataType)?.Module &&

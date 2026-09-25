@@ -23,3 +23,9 @@ public class InlineableInstance
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetValue() => 42;
 }
+
+public struct InlineableValueType
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetValue() => 42;
+}

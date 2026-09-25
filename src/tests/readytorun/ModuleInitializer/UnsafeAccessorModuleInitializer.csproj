@@ -12,5 +12,6 @@
     <ProjectReference Include="FieldLibrary.csproj" />
     <ProjectReference Include="InitializerLibrary.csproj" />
     <ProjectReference Include="RvaFieldLibrary.ilproj" />
+    <ProjectReference Include="ValueTypeLibrary.csproj" />
   </ItemGroup>
 </Project>

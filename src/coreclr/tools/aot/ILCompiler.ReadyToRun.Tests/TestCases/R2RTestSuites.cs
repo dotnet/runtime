@@ -111,6 +111,7 @@ public class R2RTestSuites
             ValidateMethod("TestGetValue", "InlineableLib.GetValue", !composite || hasInitializer);
             ValidateMethod("TestConstructor", "InlineableInstance..ctor", !composite || hasInitializer);
             ValidateMethod("TestInstanceMethod", "InlineableInstance.GetValue", false);
+            ValidateMethod("TestValueTypeInstanceMethod", "InlineableValueType.GetValue", !composite || hasInitializer);
 
             void ValidateMethod(string callerName, string inlineeName, bool needsActivation)
             {

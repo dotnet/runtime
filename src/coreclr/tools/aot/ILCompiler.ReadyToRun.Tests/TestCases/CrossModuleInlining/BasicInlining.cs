@@ -29,6 +29,12 @@ public static class BasicInlining
     {
         return new InlineableInstance();
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int TestValueTypeInstanceMethod()
+    {
+        return default(InlineableValueType).GetValue();
+    }
 }
 
 public sealed class InstanceInlining : InlineableInstance

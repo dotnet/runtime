@@ -24,4 +24,13 @@ public static class UnsafeAccessorModuleInitializer
         Assert.True(AppContext.TryGetSwitch("RvaFieldLibrary.Initialized", out bool initialized) && initialized,
             "Accessing the RVA field did not run its module initializer.");
     }
+
+    [Fact]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static void ValueTypeInstanceMethodAccess()
+    {
+        Assert.Equal(42, default(ValueTypeLibrary).GetValue());
+        Assert.True(AppContext.TryGetSwitch("ValueTypeLibrary.Initialized", out bool initialized) && initialized,
+            "Calling the value-type instance method did not run its module initializer.");
+    }
 }
