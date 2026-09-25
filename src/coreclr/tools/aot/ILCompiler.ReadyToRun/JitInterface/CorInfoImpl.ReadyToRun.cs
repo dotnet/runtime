@@ -473,9 +473,22 @@ namespace Internal.JitInterface
 
     unsafe partial class CorInfoImpl
     {
+        internal readonly struct ManagedHelperProbeResult(
+            bool compilationSucceeded,
+            bool requiresInstructionSetSupportFixup,
+            bool retryRequested,
+            MethodDesc[] methodsRequiringILBodies)
+        {
+            public bool CompilationSucceeded { get; } = compilationSucceeded;
+            public bool RequiresInstructionSetSupportFixup { get; } = requiresInstructionSetSupportFixup;
+            public bool RetryRequested { get; } = retryRequested;
+            public MethodDesc[] MethodsRequiringILBodies { get; } = methodsRequiringILBodies;
+        }
+
         private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORECLR_ABI;
 
         private readonly ReadyToRunCodegenCompilation _compilation;
+        private bool _isCompilationProbe;
         private MethodWithGCInfo _methodCodeNode;
         private MethodColdCodeNode _methodColdCodeNode;
         private OffsetMapping[] _debugLocInfos;
@@ -708,7 +721,9 @@ namespace Internal.JitInterface
 
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
-            if ((_ilBodiesNeeded == null) && _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
+            if (!_isCompilationProbe &&
+                (_ilBodiesNeeded == null) &&
+                _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
             {
                 HashCode hashCode = default(HashCode);
                 hashCode.AddBytes(_code);
@@ -741,9 +756,13 @@ namespace Internal.JitInterface
             }
 
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
+            if ((_ilBodiesNeeded != null) ||
+                (!_isCompilationProbe && (InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)))
             {
-                _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                if (!_isCompilationProbe)
+                {
+                    _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
+                }
                 result = CompilationResult.CompilationRetryRequested;
             }
         }
@@ -784,7 +803,24 @@ namespace Internal.JitInterface
 
         public void CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger)
         {
+            CompileMethod(methodCodeNodeNeedingCode, logger, publishCode: true);
+        }
+
+        public ManagedHelperProbeResult ProbeManagedHelper(MethodDesc method, Logger logger)
+        {
+            MethodWithGCInfo methodCodeNode = new MethodWithGCInfo(method)
+            {
+                IsJitHelper = true,
+            };
+
+            return CompileMethod(methodCodeNode, logger, publishCode: false);
+        }
+
+        private ManagedHelperProbeResult CompileMethod(MethodWithGCInfo methodCodeNodeNeedingCode, Logger logger, bool publishCode)
+        {
             bool codeGotPublished = false;
+            ManagedHelperProbeResult result = default;
+            _isCompilationProbe = !publishCode;
             _methodCodeNode = methodCodeNodeNeedingCode;
 
             try
@@ -793,35 +829,35 @@ namespace Internal.JitInterface
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it is skipped.");
-                    return;
+                    return result;
                 }
 
                 if (MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has an non version resilient signature.");
-                    return;
+                    return result;
                 }
                 MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
                 if (methodIL == null)
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because IL code could not be found for the method.");
-                    return;
+                    return result;
                 }
 
                 if (!_methodCodeNode.IsJitHelper && FunctionJustThrows(methodIL))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it always throws an exception");
-                    return;
+                    return result;
                 }
 
                 if (FunctionHasNonReferenceableTypedILCatchClause(methodIL, _compilation.NodeFactory.CompilationModuleGroup))
                 {
                     if (logger.IsVerbose)
                         logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` was not compiled because it has a non referenceable catch clause");
-                    return;
+                    return result;
                 }
 
                 var typicalDef = MethodBeingCompiled.GetTypicalMethodDefinition();
@@ -878,16 +914,60 @@ namespace Internal.JitInterface
                 {
                     logger.Writer.WriteLine($"Info: Method `{MethodBeingCompiled}` triggered recompilation to acquire stable tokens for cross module inline.");
                 }
+
+                if (!publishCode)
+                {
+                    MethodDesc[] methodsRequiringILBodies = _ilBodiesNeeded is null ? null : [.. _ilBodiesNeeded];
+                    if (compilationResult == CompilationResult.CompilationComplete)
+                    {
+                        ValidatePrecodeFixups();
+                    }
+
+                    result = new ManagedHelperProbeResult(
+                        compilationResult == CompilationResult.CompilationComplete,
+                        compilationResult == CompilationResult.CompilationComplete && RequiresInstructionSetSupportFixup(),
+                        compilationResult == CompilationResult.CompilationRetryRequested,
+                        methodsRequiringILBodies);
+                }
             }
             finally
             {
-                if (!codeGotPublished)
+                if (publishCode && !codeGotPublished)
                 {
                     PublishEmptyCode();
                 }
 
                 HasColdCode = (_methodColdCodeNode != null);
                 CompileMethodCleanup();
+                _isCompilationProbe = false;
+            }
+
+            return result;
+        }
+
+        private void ValidatePrecodeFixups()
+        {
+            if (_precodeFixups is null)
+                return;
+
+            foreach (ISymbolNode fixup in _precodeFixups)
+            {
+                ValidatePrecodeFixup(fixup);
+            }
+        }
+
+        private void ValidatePrecodeFixup(ISymbolNode fixup)
+        {
+            if (fixup is IMethodNode methodNode)
+            {
+                try
+                {
+                    _compilation.NodeFactory.DetectGenericCycles(_methodCodeNode.Method, methodNode.Method);
+                }
+                catch (TypeLoadException)
+                {
+                    throw new RequiresRuntimeJitException("Requires runtime JIT - potential generic cycle detected");
+                }
             }
         }
 
@@ -1003,15 +1083,17 @@ namespace Internal.JitInterface
 
         private ISymbolNode GetHelperFtnUncached(CorInfoHelpFunc ftnNum, out MethodDesc helperMethod)
         {
-            helperMethod = _compilation.NodeFactory.Target.IsWasm ? GetManagedHelper(ftnNum) : null;
+            MethodDesc managedHelper = GetManagedHelper(ftnNum);
 
-            if (helperMethod is not null &&
-                _compilation.CompilationModuleGroup.ContainsMethodBody(helperMethod, unboxingStub: false))
+            if (managedHelper is not null &&
+                _compilation.IsDirectManagedHelperEligible(managedHelper))
             {
-                MethodWithGCInfo helperMethodNode = _compilation.NodeFactory.CompiledMethodNode(helperMethod);
+                Debug.Assert(_compilation.CompilationModuleGroup.ContainsMethodBody(managedHelper, unboxingStub: false));
+                helperMethod = managedHelper;
+                MethodWithGCInfo helperMethodNode = _compilation.NodeFactory.CompiledMethodNode(managedHelper);
                 MethodWithToken helperMethodWithToken = new MethodWithToken(
-                    helperMethod,
-                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(helperMethod, true, true),
+                    managedHelper,
+                    _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(managedHelper, true, true),
                     constrainedType: null,
                     unboxing: false,
                     genericContextObject: MethodBeingCompiled);
@@ -1021,6 +1103,7 @@ namespace Internal.JitInterface
                 return helperMethodNode;
             }
 
+            helperMethod = null;
             ReadyToRunHelper id;
 
             switch (ftnNum)
