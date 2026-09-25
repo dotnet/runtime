@@ -3206,11 +3206,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
     }
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    if (fVirtual)
-    {
-        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
-    }
-
+    MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pCode);
     if (virtualDispatchTarget != nullptr)
     {
         READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT** ppImportEntry =
