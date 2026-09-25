@@ -1302,15 +1302,16 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
         }
     } while (changed && dfsTree->HasCycle());
 
-    // Now that we create throw helper blocks after lower,
-    // we don't need to search for them and set up liveness
-    // during lower.
-    assert(!m_compiler->fgRngChkThrowAdded);
-
-#ifdef DEBUG
-    // Double-check that no unreachable throw helper blocks exist.
-    if (m_compiler->fgBBcount != dfsTree->GetPostOrderCount())
+    // If we had unremovable blocks that are not in the DFS tree then make
+    // the 'keepAlive' set live in them. This would normally not be
+    // necessary assuming those blocks are actually unreachable; however,
+    // in LIR, throw helpers fall into this category because we do not introduce flow
+    // to them until codegen. Fix that up here.
+    //
+    if (TLiveness::IsLIR && (m_compiler->fgBBcount != dfsTree->GetPostOrderCount()))
     {
+        JITDUMP("Checking for throw helpers...\n");
+
         for (BasicBlock* block : m_compiler->Blocks())
         {
             if (dfsTree->Contains(block))
@@ -1318,10 +1319,28 @@ void Liveness<TLiveness>::DoLiveVarAnalysis()
                 continue;
             }
 
-            assert(!block->HasFlag(BBF_THROW_HELPER));
+            if (!block->HasFlag(BBF_THROW_HELPER))
+            {
+                continue;
+            }
+
+            JITDUMP(FMT_BB " is a throw helper, computing liveness\n", block->bbNum);
+
+            // We know throw helpers do not impact global liveness, so we just
+            // recompute within the block itself.
+            //
+            m_compiler->fgSetThrowHelpBlockLiveness(block);
+
+            // Mark last uses in the throw helper block's IR.
+            //
+            VARSET_TP keepAliveVars(VarSetOps::MakeEmpty(m_compiler));
+            VARSET_TP life(VarSetOps::MakeCopy(m_compiler, block->bbLiveOut));
+            ComputeLifeLIR(life, block, keepAliveVars);
+            assert(VarSetOps::Equal(m_compiler, life, block->bbLiveIn));
         }
     }
 
+#ifdef DEBUG
     if (m_compiler->verbose)
     {
         printf("\nBB liveness after DoLiveVarAnalysis():\n\n");
@@ -1526,6 +1545,14 @@ void Compiler::fgSetThrowHelpBlockLiveness(BasicBlock* block)
         unsigned thisVarIndex = lvaGetDesc(info.compThisArg)->lvVarIndex;
         VarSetOps::AddElemD(this, block->bbLiveOut, thisVarIndex);
     }
+
+#ifdef TARGET_WASM
+    LclVarDsc* wasmSpVarDsc = lvaGetDesc(lvaWasmSpArg);
+    if (wasmSpVarDsc->lvTracked)
+    {
+        VarSetOps::AddElemD(this, block->bbLiveOut, wasmSpVarDsc->lvVarIndex);
+    }
+#endif // TARGET_WASM
 
     if (block->HasPotentialEHSuccs(this))
     {

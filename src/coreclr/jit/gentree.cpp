@@ -5565,7 +5565,8 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 //
 bool Compiler::gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp)
 {
-    assert(fgOrder == FGOrderTree);
+    // Rationalization sequences replacement trees before the compilation enters LIR.
+    assert((fgOrder == FGOrderTree) || ((fgNodeThreading == NodeThreading::AllTrees) && !compRationalIRForm));
 
     if (impIsInvariant(firstOp) || impIsInvariant(secondOp))
     {
@@ -28330,9 +28331,8 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         {
             // return Sse.MoveHighToLow(op2.AsSingle(), op1.AsSingle()).As<T>();
 
-            GenTree* result = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize);
-            result->SetReverseOp();
-            return result;
+            gtPrepareOperandsForReordering(&op1, &op2);
+            return gtNewSimdHWIntrinsicNode(type, op2, op1, NI_X86Base_MoveHighToLow, TYP_FLOAT, simdSize);
         }
 
         // return Sse.Shuffle(op1.AsSingle(), op2.AsSingle(), immediate).As<T>();
@@ -28376,20 +28376,19 @@ GenTree* Compiler::gtNewSimdConcatNode(var_types type,
         return gtNewSimdWithUpperNode(type, op1, upper, simdBaseType, simdSize);
     }
 
-    GenTree* lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
-
     if (rightUpper)
     {
         // return op2.WithLower(op1.GetUpper());
 
-        GenTree* result = gtNewSimdWithLowerNode(type, op2, lower, simdBaseType, simdSize);
-        result->SetReverseOp();
-        return result;
+        gtPrepareOperandsForReordering(&op1, &op2);
+        GenTree* lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
+        return gtNewSimdWithLowerNode(type, op2, lower, simdBaseType, simdSize);
     }
 
-    // return op1.GetUpper().ToVectorUnsafe().WithUpper(op2.GetLower());
+    GenTree* lower = gtNewSimdGetUpperNode(halfType, op1, simdBaseType, simdSize);
+    upper          = gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
 
-    upper = gtNewSimdGetLowerNode(halfType, op2, simdBaseType, simdSize);
+    // return op1.GetUpper().ToVectorUnsafe().WithUpper(op2.GetLower());
 
 #if defined(TARGET_XARCH)
     GenTree* result =
@@ -28905,35 +28904,32 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     // TODO-XARCH-CQ: If we have known set/unset bits for the indices, we could further optimise many cases
     // below.
 
+    auto createReorderedIntrinsic = [&](NamedIntrinsic intrinsic) -> GenTree* {
+        gtPrepareOperandsForReordering(&op1, &op2);
+        return gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
+    };
+
     if (simdSize == 64)
     {
         if (elementSize == 1)
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX512v2));
 
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512v2_PermuteVar64x8, simdBaseType, simdSize);
-            retNode->SetReverseOp();
+            retNode = createReorderedIntrinsic(NI_AVX512v2_PermuteVar64x8);
         }
         else if (elementSize == 2)
         {
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512_PermuteVar32x16, simdBaseType, simdSize);
-            retNode->SetReverseOp();
+            retNode = createReorderedIntrinsic(NI_AVX512_PermuteVar32x16);
         }
         else if (elementSize == 4)
         {
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512_PermuteVar16x32, simdBaseType, simdSize);
-            retNode->SetReverseOp();
+            retNode = createReorderedIntrinsic(NI_AVX512_PermuteVar16x32);
         }
         else
         {
             assert(elementSize == 8);
 
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX512_PermuteVar8x64, simdBaseType, simdSize);
-            retNode->SetReverseOp();
+            retNode = createReorderedIntrinsic(NI_AVX512_PermuteVar8x64);
         }
     }
     else if ((elementSize == 1) && (simdSize == 16))
@@ -28948,17 +28944,13 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     {
         NamedIntrinsic intrinsic = NI_AVX512v2_PermuteVar32x8;
 
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
-        retNode->SetReverseOp();
+        retNode = createReorderedIntrinsic(intrinsic);
     }
     else if ((elementSize == 2) && compOpportunisticallyDependsOn(InstructionSet_AVX512, isShuffleNative))
     {
         NamedIntrinsic intrinsic = (simdSize == 16) ? NI_AVX512_PermuteVar8x16 : NI_AVX512_PermuteVar16x16;
 
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
-        retNode->SetReverseOp();
+        retNode = createReorderedIntrinsic(intrinsic);
     }
     else if ((elementSize == 4) &&
              ((simdSize == 32) || compOpportunisticallyDependsOn(InstructionSet_AVX, isShuffleNative)))
@@ -28969,9 +28961,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
         {
             assert(compIsaSupportedDebugOnly(InstructionSet_AVX2));
 
-            // swap the operands to match the encoding requirements
-            retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseType, simdSize);
-            retNode->SetReverseOp();
+            retNode = createReorderedIntrinsic(NI_AVX2_PermuteVar8x32);
         }
         else
         {
@@ -28984,9 +28974,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
     {
         NamedIntrinsic intrinsic = NI_AVX512_PermuteVar4x64;
 
-        // swap the operands to match the encoding requirements
-        retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, intrinsic, simdBaseType, simdSize);
-        retNode->SetReverseOp();
+        retNode = createReorderedIntrinsic(intrinsic);
     }
     else if ((elementSize == 8) && (simdSize == 16) && compOpportunisticallyDependsOn(InstructionSet_AVX512))
     {
@@ -29082,9 +29070,7 @@ GenTree* Compiler::gtNewSimdShuffleVariableNode(
             // perform the shuffle with our int indices
             if (simdSize == 32)
             {
-                // swap the operands to match the encoding requirements
-                retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseType, simdSize);
-                retNode->SetReverseOp();
+                retNode = createReorderedIntrinsic(NI_AVX2_PermuteVar8x32);
             }
             else
             {

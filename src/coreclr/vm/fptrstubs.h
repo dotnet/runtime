@@ -32,6 +32,11 @@ public :
         return GetFuncPtrStub(pMD, GetDefaultType(pMD));
     }
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    PCODE               LookupClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke);
+    PCODE               AddClosedStaticRetBufStub(MethodDesc* pTargetMD, MethodDesc* pDelegateInvoke, PCODE pStub);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
     static PrecodeType GetDefaultType(MethodDesc* pMD);
 
 private:
@@ -77,6 +82,35 @@ private:
     };
 
     SHash<PrecodeTraits>    m_hashTable;    // To find a existing stub for a method
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    struct ClosedStaticRetBufStubEntry
+    {
+        MethodDesc* Target;
+        MethodDesc* DelegateInvoke;
+        PCODE Stub;
+    };
+
+    class ClosedStaticRetBufStubTraits : public NoRemoveSHashTraits<DefaultSHashTraits<ClosedStaticRetBufStubEntry>>
+    {
+    public:
+        struct key_t
+        {
+            MethodDesc* Target;
+            MethodDesc* DelegateInvoke;
+        };
+
+        static key_t GetKey(const element_t& entry) { LIMITED_METHOD_CONTRACT; return { entry.Target, entry.DelegateInvoke }; }
+        static BOOL Equals(key_t left, key_t right) { LIMITED_METHOD_CONTRACT; return left.Target == right.Target && left.DelegateInvoke == right.DelegateInvoke; }
+        static count_t Hash(key_t key) { LIMITED_METHOD_CONTRACT; return (count_t)(size_t)key.Target ^ (count_t)(size_t)key.DelegateInvoke; }
+        static bool IsNull(const element_t& entry) { LIMITED_METHOD_CONTRACT; return entry.Target == NULL; }
+        static element_t Null() { LIMITED_METHOD_CONTRACT; return { NULL, NULL, NULL }; }
+        static bool IsDeleted(const element_t& entry) { LIMITED_METHOD_CONTRACT; return entry.Target == (MethodDesc*)-1; }
+        static element_t Deleted() { LIMITED_METHOD_CONTRACT; return { (MethodDesc*)-1, NULL, NULL }; }
+    };
+
+    SHash<ClosedStaticRetBufStubTraits> m_closedStaticRetBufStubs;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 };
 
 #endif // _FPTRSTUBS_H
