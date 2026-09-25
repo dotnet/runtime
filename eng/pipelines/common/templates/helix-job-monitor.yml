@@ -27,7 +27,7 @@ jobs:
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     testResultUploadParallelism: ${{ parameters.testResultUploadParallelism }}
     allowNoHelixJobs: ${{ parameters.allowNoHelixJobs }}
-    helixBaseUri: ${{ coalesce(parameters.helixBaseUri, variables.helixBaseUri) }}
+    helixBaseUri: ${{ coalesce(parameters.helixBaseUri, variables.helixBaseUri, 'https://helix.dot.net/') }}
     ${{ if or(eq(parameters.useEntraAuthentication, true), eq(variables['helixUseEntraAuthentication'], true)) }}:
       useEntraAuthentication: true
       azureSubscription: ${{ coalesce(parameters.azureSubscription, variables.helixAzureSubscription) }}
