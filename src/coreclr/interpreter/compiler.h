@@ -355,6 +355,9 @@ struct InterpBasicBlock
     // Is a leave chain island basic block
     bool isLeaveChainIsland;
 
+    // True if this block is the target of a backward branch, i.e. a loop head.
+    bool isBackwardBranchTarget;
+
     // If this basic block is a catch or filter funclet entry, this is the index of the variable
     // that holds the exception object.
     int clauseVarIndex;
@@ -387,6 +390,7 @@ struct InterpBasicBlock
         isFilterOrCatchFuncletEntry = false;
         isFinallyCallIsland = false;
         isLeaveChainIsland = false;
+        isBackwardBranchTarget = false;
         clauseVarIndex = -1;
         overlappingEHClauseCount = 0;
         enclosingTryBlockCount = -1;
@@ -641,6 +645,8 @@ private:
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
 
+    bool m_emitInterpPGO;
+
     void DeclarePointerIsClass(CORINFO_CLASS_HANDLE clsHnd)
     {
 #ifdef DEBUG
@@ -767,6 +773,8 @@ private:
     void CreateSynchronizedRetValVar();
 
     void GenerateCode(CORINFO_METHOD_INFO* methodInfo);
+
+    void InstrumentBlockCounts();
     InterpBasicBlock* GenerateCodeForLeaveChainIslands(InterpBasicBlock *pNewBB, InterpBasicBlock *pPrevBB);
     void PatchInitLocals(CORINFO_METHOD_INFO* methodInfo);
 
@@ -1150,6 +1158,7 @@ public:
     static bool s_browserProfilerEnabled;
 #endif
 #endif // PERFTRACING_DISABLE_THREADS
+    static bool s_interpPgoEnabled;
 
 #if MEASURE_MEM_ALLOC
     // Memory statistics for profiling.

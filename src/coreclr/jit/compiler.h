@@ -3773,13 +3773,13 @@ public:
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdStoreNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreAlignedNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreNonTemporalNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -4044,6 +4044,9 @@ public:
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
+
+    bool gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp);
+    void gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp);
 
     // Given an address expression, compute its costs and addressing mode opportunities,
     // and mark addressing mode candidates as GTF_DONT_CSE.
@@ -5034,7 +5037,16 @@ public:
         return lvaGetDesc(lclNum)->lvInSsa;
     }
 
-    unsigned lvaStubArgumentVar = BAD_VAR_NUM; // variable representing the secret stub argument
+    bool compHasSecretStubArgument() const
+    {
+        return lvaSecretStubArg != BAD_VAR_NUM;
+    }
+
+    unsigned lvaGetSecretStubArgumentVar() const
+    {
+        assert(compHasSecretStubArgument());
+        return lvaSecretStubArg;
+    }
 
     InlineInfo*     impInlineInfo; // Only present for inlinees
     InlineStrategy* m_inlineStrategy;
@@ -5418,8 +5430,7 @@ protected:
     GenTree* impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
-                                  NamedIntrinsic        intrinsicName,
-                                  bool                  mustExpand);
+                                  NamedIntrinsic        intrinsicName);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
@@ -5452,8 +5463,7 @@ protected:
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig
-                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
-                                        bool                  mustExpand);
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint));
     GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5471,7 +5481,7 @@ protected:
                             bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -5490,8 +5500,7 @@ protected:
                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                var_types             simdBaseType,
                                var_types             retType,
-                               unsigned              simdSize,
-                               bool                  mustExpand);
+                               unsigned              simdSize);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
@@ -6529,6 +6538,9 @@ public:
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
 
+    // Compute the value number for a byref-exposed load of the given type from the given local and offset.
+    ValueNum fgValueNumberByrefExposedLocalLoad(var_types type, unsigned lclNum, unsigned lclOffs);
+
     unsigned fgVNPassesCompleted = 0; // Number of times fgValueNumber has been run.
 
     // Utility functions for fgValueNumber.
@@ -7418,6 +7430,7 @@ public:
     void fgAsyncLiveness();
     void fgPostLowerLiveness();
     PhaseStatus fgEarlyLiveness();
+    PhaseStatus fgLateLiveness();
 
     void fgAddHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars, MemoryKindSet& memoryLiveness);
 
@@ -9718,22 +9731,6 @@ public:
         return eeGetEEInfo()->targetAbi == abi;
     }
 
-    bool BlockNonDeterministicIntrinsics(bool mustExpand)
-    {
-        // We explicitly block these APIs from being expanded in R2R
-        // since we know they are non-deterministic across hardware
-
-        if (IsReadyToRun())
-        {
-            if (mustExpand)
-            {
-                implReadyToRunUnsupported();
-            }
-            return true;
-        }
-        return false;
-    }
-
     bool generateCFIUnwindCodes()
     {
 #if defined(FEATURE_CFI_SUPPORT)
@@ -10973,17 +10970,21 @@ private:
 #endif // DEBUG
 
 public:
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                   bool                   supported,
+                                   bool                   preserveNegativeDependency = false) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will exactly match the target machine
-    // on which the function is executed (except for CoreLib, where there are special rules)
-    bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
+    // on which the function is executed (except for CoreLib, unless preserveNegativeDependency is true)
+    bool compExactlyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-        if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
+        // ISA usage for non-deterministic intrinsics always notifies the EE regardless of the cache, to make sure
+        // that the method preserves a negative ISA prerequisite.
+        if (preserveNegativeDependency || (opts.compSupportsISAReported.HasInstructionSet(isa) == false))
         {
-            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
+            if (notifyInstructionSetUsage(isa, opts.compSupportsISA.HasInstructionSet(isa), preserveNegativeDependency))
                 ((Compiler*)this)->opts.compSupportsISAExactly.AddInstructionSet(isa);
             ((Compiler*)this)->opts.compSupportsISAReported.AddInstructionSet(isa);
         }
@@ -10996,11 +10997,11 @@ public:
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will match the target machine if the result is true.
     // If the result is false, then the target machine may have support for the instruction.
-    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
+    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
-        if (opts.compSupportsISA.HasInstructionSet(isa))
+        if (preserveNegativeDependency || opts.compSupportsISA.HasInstructionSet(isa))
         {
-            return compExactlyDependsOn(isa);
+            return compExactlyDependsOn(isa, preserveNegativeDependency);
         }
         else
         {
@@ -11009,10 +11010,10 @@ public:
     }
 
     // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
-    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
+    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
         // Report intent to use the ISA to the EE
-        compExactlyDependsOn(isa);
+        compExactlyDependsOn(isa, preserveNegativeDependency);
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
@@ -11958,7 +11959,6 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // Hidden argument captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
         bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
 
