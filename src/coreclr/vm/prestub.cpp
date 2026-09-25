@@ -539,29 +539,6 @@ bool MethodDesc::TryPublishR2RCodeForUnmanagedCallersOnly()
     return false;
 #endif // FEATURE_READYTORUN
 }
-
-bool MethodDesc::TryPublishR2RCodeForPortableEntryPoint()
-{
-    STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_READYTORUN
-    // Only probe the ordinary IL methods that DoPrestub would resolve through PrepareInitialCode.
-    // Unboxing and instantiating stubs require extra portable-entrypoint state that is initialized
-    // only by their dedicated DoPrestub paths. UnmanagedCallersOnly R2R bodies use the unmanaged
-    // Wasm ABI, while managed import thunks always use the managed ABI, so leave them on the
-    // existing fallback path.
-    if (!IsIL() || IsWrapperStub() || HasUnmanagedCallersOnlyAttribute())
-    {
-        return false;
-    }
-
-    PrepareCodeConfig config(NativeCodeVersion(this), FALSE, TRUE);
-    config.SetCallerGCMode(CallerGCMode::Coop);
-    return GetPrecompiledR2RCode(&config) != (PCODE)NULL;
-#else // !FEATURE_READYTORUN
-    return false;
-#endif // FEATURE_READYTORUN
-}
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 PCODE MethodDesc::GetMulticoreJitCode(PrepareCodeConfig* pConfig, bool* pWasTier0)
@@ -3186,22 +3163,24 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                 pEMFrame->SetFunction(pMD);
             }
 
-            pCode = pMD->GetMethodEntryPoint();
-
-#ifdef FEATURE_PORTABLE_ENTRYPOINTS
-            if (!PortableEntryPoint::HasNativeEntryPoint(pCode) &&
-                pMD->TryPublishR2RCodeForPortableEntryPoint())
-            {
-                pCode = pMD->GetMethodEntryPoint();
-            }
-#endif // FEATURE_PORTABLE_ENTRYPOINTS
-
 #if _DEBUG
             if (pEMFrame->GetGCRefMap() != NULL)
             {
                 _ASSERTE(CheckGCRefMapEqual(pEMFrame->GetGCRefMap(), pMD, false));
             }
 #endif // _DEBUG
+
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+            // Portable entrypoints are stable, so prepare the method before patching the import cell.
+            // This publishes an existing R2R body instead of leaving the cell on an interpreter thunk.
+            if (pMD->ShouldCallPrestub())
+            {
+                (void)pMD->DoPrestub(NULL);
+            }
+
+            pCode = PatchNonVirtualExternalMethod(pMD, pMD->GetMethodEntryPoint(), pImportSection, pIndirection);
+#else // !FEATURE_PORTABLE_ENTRYPOINTS
+            pCode = pMD->GetMethodEntryPoint();
 
             //
             // Note that we do not want to call code:MethodDesc::ShouldCallPrestub() here. It does not take remoting
@@ -3220,6 +3199,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
                 pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
             }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
     }
 

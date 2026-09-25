@@ -2362,9 +2362,6 @@ public:
     // publish it into this method's portable entrypoint WITHOUT compiling interpreter byte code.
     // Returns true if native code was found and published, false otherwise.
     bool TryPublishR2RCodeForUnmanagedCallersOnly();
-
-    // Probe for precompiled R2R code before a managed portable-entrypoint call falls back to the interpreter.
-    bool TryPublishR2RCodeForPortableEntryPoint();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 private:
