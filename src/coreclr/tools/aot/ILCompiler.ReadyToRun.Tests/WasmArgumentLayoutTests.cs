@@ -157,6 +157,87 @@ public class WasmArgumentLayoutTests
         Assert.Equal(expectedParameters, layoutSignature.Length);
     }
 
+    /// <summary>
+    /// The delay-load GC ref map for a call is computed from the callee's <see cref="MethodDesc"/>, while the Wasm
+    /// import thunk that spills the arguments during the fixup only has the callee's Wasm signature. Both must agree
+    /// on every argument location, or a GC during the fixup reports the wrong slots.
+    /// </summary>
+    [Theory]
+    [InlineData("FromResult", true, false)]
+    [InlineData("FromResult", true, true)]
+    [InlineData("StartNew", true, true)]
+    [InlineData("Delay", false, true)]
+    public void WasmThunkArgLayoutMatchesCallRefMapLayout(string methodName, bool sharedGeneric, bool asyncVariant)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        MethodDesc method = GetTaskReturningCoreLibMethod(context, methodName);
+        if (sharedGeneric)
+        {
+            method = method.MakeInstantiatedMethod(context.CanonType);
+        }
+
+        if (asyncVariant)
+        {
+            method = context.GetAsyncVariantMethod(method);
+        }
+
+        Assert.Equal(sharedGeneric, method.RequiresInstArg());
+        Assert.Equal(asyncVariant, method.IsAsyncCall());
+
+        WasmSignature lowered = WasmLowering.GetSignature(method.Signature, WasmLowering.GetLoweringFlags(method));
+        var (callRefMapIterator, _) = GCRefMapBuilder.BuildCallRefMapArgIterator(method, isUnboxingStub: false);
+        var (_, thunkIterator, _) = GCRefMapBuilder.BuildWasmThunkArgIterator(lowered, context);
+
+        Assert.Equal(callRefMapIterator.HasThis, thunkIterator.HasThis);
+
+        // The thunk only models the generic context as the hidden instantiation argument when it precedes the async
+        // continuation; otherwise it stays explicit parameter 0, which must still land in the same slot.
+        Assert.Equal(sharedGeneric && asyncVariant, thunkIterator.HasParamType);
+        if (callRefMapIterator.HasParamType)
+        {
+            int thunkGenericContextOffset = thunkIterator.HasParamType ? thunkIterator.GetParamTypeArgOffset() : thunkIterator.GetNextOffset();
+            Assert.Equal(callRefMapIterator.GetParamTypeArgOffset(), thunkGenericContextOffset);
+        }
+
+        Assert.Equal(callRefMapIterator.HasAsyncContinuation, thunkIterator.HasAsyncContinuation);
+        if (callRefMapIterator.HasAsyncContinuation)
+        {
+            Assert.Equal(callRefMapIterator.GetAsyncContinuationArgOffset(), thunkIterator.GetAsyncContinuationArgOffset());
+        }
+
+        List<int> callRefMapArgOffsets = new();
+        int argOffset;
+        while ((argOffset = callRefMapIterator.GetNextOffset()) != TransitionBlock.InvalidOffset)
+        {
+            callRefMapArgOffsets.Add(argOffset);
+        }
+
+        List<int> thunkArgOffsets = new();
+        while ((argOffset = thunkIterator.GetNextOffset()) != TransitionBlock.InvalidOffset)
+        {
+            thunkArgOffsets.Add(argOffset);
+        }
+
+        Assert.Equal(callRefMapArgOffsets, thunkArgOffsets);
+    }
+
+    private static MethodDesc GetTaskReturningCoreLibMethod(ReadyToRunCompilerContext context, string methodName)
+    {
+        MetadataType type = methodName == "StartNew"
+            ? context.SystemModule.GetType("System.Threading.Tasks"u8, "TaskFactory"u8)
+            : context.SystemModule.GetType("System.Threading.Tasks"u8, "Task"u8);
+        foreach (MethodDesc method in type.GetMethods())
+        {
+            if ((method.Name.ToString() == methodName) && (method.Signature.Length == 1) && (method.HasInstantiation == (methodName != "Delay")) &&
+                ((methodName != "Delay") || method.Signature[0].IsWellKnownType(WellKnownType.Int32)))
+            {
+                return method;
+            }
+        }
+
+        throw new InvalidOperationException($"No single-argument {type.Name.ToString()}.{methodName} overload in System.Private.CoreLib");
+    }
+
     [Theory]
     [InlineData(MethodSignatureFlags.None)]
     [InlineData(MethodSignatureFlags.CallingConventionVarargs)]

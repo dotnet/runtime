@@ -155,14 +155,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return (signature, argit, transitionBlock);
         }
 
-        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        /// <summary>
+        /// Builds the argument layout the GC ref map of a call to <paramref name="method"/> describes.
+        /// </summary>
+        internal static (ArgIterator<TypeHandle>, TransitionBlock) BuildCallRefMapArgIterator(MethodDesc method, bool isUnboxingStub)
         {
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildArgIterator(method.Signature, method.Context,
+            return BuildArgIterator(method.Signature, method.Context,
                 methodRequiresInstArg: method.RequiresInstArg(),
                 isUnboxingStub: isUnboxingStub,
                 methodIsArrayAddressMethod: method.IsArrayAddressMethod(),
                 methodIsStringConstructor: method.OwningType.IsString && method.IsConstructor,
                 methodIsAsyncCall: method.IsAsyncCall());
+        }
+
+        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        {
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildCallRefMapArgIterator(method, isUnboxingStub);
 
             int nStackBytes = argit.SizeOfFrameArgumentArray();
 
