@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
 #pragma warning disable IDE0060
         private static ECParameters ExportParametersFromLegacyKey(SecKeyPair keys, bool includePrivateParameters)
             => throw new CryptographicException();
+#pragma warning restore IDE0060
 
         private static void ExtractPublicKeyFromPrivateKey(ref ECParameters ecParameters)
         {
@@ -23,21 +24,27 @@ namespace System.Security.Cryptography
                 Oids.secp256r1 => 256,
                 Oids.secp384r1 => 384,
                 Oids.secp521r1 => 521,
-                _ => throw new UnreachableException(),
+                _ => throw DebugFail(), // Apple only supports NIST curves.
             };
 
             byte[] privateKey = ecParameters.D!;
             int fieldSize = (keySizeInBits + 7) / 8;
             Debug.Assert(privateKey.Length == fieldSize);
 
-            Span<byte> publicKey = stackalloc byte[1 + 2 * fieldSize];
+            const int MaxPublicKeySize = 192; // P-521 is 133 bytes, round this off to 192.
+            Span<byte> publicKey = (stackalloc byte[MaxPublicKeySize]).Slice(0, 1 + 2 * fieldSize);
             Interop.AppleCrypto.EccExportPublicKeyFromPrivateKey(keySizeInBits, privateKey, publicKey);
             AsymmetricAlgorithmHelpers.DecodeFromUncompressedAnsiX963Key(
                 publicKey,
                 hasPrivateKey: false,
                 out ECParameters publicParameters);
             ecParameters.Q = publicParameters.Q;
+
+            static Exception DebugFail()
+            {
+                Debug.Fail($"Unexpected curve with OID.");
+                return new CryptographicException();
+            }
         }
-#pragma warning restore IDE0060
     }
 }

@@ -9,6 +9,7 @@ using System.Runtime.InteropServices.Swift;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using Microsoft.Win32.SafeHandles;
+using Swift.Runtime;
 
 #pragma warning disable CS3016 // Arrays as attribute arguments are not CLS Compliant
 
@@ -28,27 +29,35 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.AppleCryptoNative)]
         [UnmanagedCallConv(CallConvs = [ typeof(CallConvSwift) ])]
-        private static partial int AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
+        private static unsafe partial int AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
             int keySizeInBits,
-            ReadOnlySpan<byte> privateKey,
-            int privateKeyLength,
-            Span<byte> destination,
-            int destinationLength);
+            UnsafeBufferPointer<byte> privateKey,
+            UnsafeMutableBufferPointer<byte> destination);
 
         internal static void EccExportPublicKeyFromPrivateKey(
             int keySizeInBits,
             ReadOnlySpan<byte> privateKey,
             Span<byte> destination)
         {
+            Debug.Assert(!privateKey.IsEmpty);
+            Debug.Assert(!destination.IsEmpty);
+
             const int Success = 1;
             const int InvalidKey = 0;
 
-            int result = AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
-                keySizeInBits,
-                privateKey,
-                privateKey.Length,
-                destination,
-                destination.Length);
+            int result;
+
+            unsafe
+            {
+                fixed (byte* privateKeyPtr = privateKey)
+                fixed (byte* destinationPtr = destination)
+                {
+                    result = AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
+                        keySizeInBits,
+                        new UnsafeBufferPointer<byte>(privateKeyPtr, privateKey.Length),
+                        new UnsafeMutableBufferPointer<byte>(destinationPtr, destination.Length));
+                }
+            }
 
             switch (result)
             {

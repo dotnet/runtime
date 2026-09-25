@@ -598,15 +598,15 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
 @_silgen_name("AppleCryptoNative_EccExportPublicKeyFromPrivateKey")
 public func AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
     keySizeInBits: Int32,
-    pPrivateKey: UnsafeMutableRawPointer?,
-    cbPrivateKey: Int32,
-    pOutput: UnsafeMutablePointer<UInt8>?,
-    cbOutput: Int32) -> Int32 {
-    guard let pPrivateKey, cbPrivateKey > 0, let pOutput, cbOutput > 0 else {
+    privateKey: UnsafeBufferPointer<UInt8>,
+    destination: UnsafeMutableBufferPointer<UInt8>) -> Int32 {
+    guard !privateKey.isEmpty, !destination.isEmpty else {
         return -1
     }
 
-    let privateKey = Data(bytesNoCopy: pPrivateKey, count: Int(cbPrivateKey), deallocator: Data.Deallocator.none)
+    // The purpose of this method is to take an EC private scalar D and compute the public value, Q. For this
+    // limited purpose it doesn't matter if we use KeyAgreement or Signing because the result will be the same.
+    // This implementation just uses KeyAgreement.
     let publicKey: Data
 
     switch keySizeInBits {
@@ -629,15 +629,11 @@ public func AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
             return -1
     }
 
-    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
-
     guard publicKey.count == destination.count else {
         return -1
     }
 
-    let copied = publicKey.withUnsafeBytes { publicKeyBytes in
-        return publicKeyBytes.copyBytes(to: destination) == publicKeyBytes.count
-    }
+    let copied = publicKey.copyBytes(to: destination) == publicKey.count
 
     return copied ? 1 : -1
 }
