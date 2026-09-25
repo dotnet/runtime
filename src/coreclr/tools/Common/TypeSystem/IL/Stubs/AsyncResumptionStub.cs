@@ -117,7 +117,9 @@ namespace ILCompiler
                 var doneResult = ilEmitter.NewCodeLabel();
                 ilStream.EmitLdLoc(newContinuationLocal);
                 ilStream.Emit(ILOpcode.brtrue, doneResult);
+                ilStream.EmitLdArg(0);
                 ilStream.EmitLdArg(1);
+                ilStream.Emit(ILOpcode.call, ilEmitter.NewToken(continuation.GetKnownMethod("GetNextResultStorage"u8, null)));
                 ilStream.EmitLdLoc(resultLocal);
                 ilStream.Emit(ILOpcode.stobj, ilEmitter.NewToken(_targetMethod.Signature.ReturnType));
                 ilStream.EmitLabel(doneResult);

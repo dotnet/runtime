@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     {
         internal Task? Task;
         internal Task? RuntimeAsyncTask;
-        private delegate*<Task, ref byte, void> _getResult;
+        private delegate*<Task, Continuation?, ref byte, void> _getResult;
         internal object? ContinuationContext;
 
         public RuntimeAsyncTaskContinuation()
@@ -104,7 +104,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [StackTraceHidden]
-        public void GetResult(ref byte returnValue)
+        public void GetResult(Continuation? next, ref byte taskResult)
         {
             Debug.Assert(Task != null);
 
@@ -112,7 +112,7 @@ namespace System.Runtime.CompilerServices
             Task task = Task;
             Task = null;
 
-            _getResult(task, ref returnValue);
+            _getResult(task, next, ref taskResult);
         }
 
         public void Initialize(Task task)
@@ -128,19 +128,19 @@ namespace System.Runtime.CompilerServices
         }
 
         [StackTraceHidden]
-        private static void GetResult(Task task, ref byte result)
+        private static void GetResult(Task task, Continuation? next, ref byte taskResult)
         {
             TaskAwaiter.ValidateEnd(task);
         }
 
         [StackTraceHidden]
-        private static void GetResult<T>(Task task, ref byte result)
+        private static void GetResult<T>(Task task, Continuation? next, ref byte taskResult)
         {
             Debug.Assert(task is Task<T>);
 
             Task<T> taskOfT = Unsafe.As<Task, Task<T>>(ref task);
             TaskAwaiter.ValidateEnd(taskOfT);
-            Unsafe.As<byte, T>(ref result) = taskOfT.ResultOnSuccess;
+            Unsafe.As<byte, T>(ref GetResultStorage(next, ref taskResult)) = taskOfT.ResultOnSuccess;
         }
 
         private static class TaskContinuationResume
@@ -156,6 +156,7 @@ namespace System.Runtime.CompilerServices
             private static Continuation? ResumeTaskContinuation(Continuation cont, ref byte result)
             {
                 var taskCont = (RuntimeAsyncTaskContinuation)cont;
+                Continuation? next = taskCont.Next;
                 taskCont.Next = null;
                 taskCont.RuntimeAsyncTask = null;
                 taskCont.ContinuationContext = null;
@@ -164,7 +165,7 @@ namespace System.Runtime.CompilerServices
 
                 AsyncHelpers.ReturnTaskContinuation(taskCont);
 
-                taskCont.GetResult(ref result);
+                taskCont.GetResult(next, ref result);
                 return null;
             }
 

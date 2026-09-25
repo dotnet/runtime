@@ -19,10 +19,10 @@
 //  src/coreclr/nativeaot/Runtime/inc/ModuleHeaders.h
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
-#define READYTORUN_MAJOR_VERSION 29
-#define READYTORUN_MINOR_VERSION 0x0003
+#define READYTORUN_MAJOR_VERSION 30
+#define READYTORUN_MINOR_VERSION 0x0000
 
-#define MINIMUM_READYTORUN_MAJOR_VERSION 26
+#define MINIMUM_READYTORUN_MAJOR_VERSION 30
 
 // R2R Version 2.1 adds the InliningInfo section
 // R2R Version 2.2 adds the ProfileDataInfo section
@@ -77,6 +77,8 @@
 // READYTORUN_HELPER_ResumeAfterCatch at catch resumption points). Only WebAssembly emits or
 // consumes the scaffolding, so the flag is only ever set on WebAssembly images.
 // R2R Version 29.3 adds READYTORUN_HELPER_BulkWriteBarrierSmall.
+// R2R Version 30 moves async result propagation into resumption stubs. Their byref argument
+//     now points to the root task's result rather than the next continuation's result storage.
 
 struct READYTORUN_CORE_HEADER
 {

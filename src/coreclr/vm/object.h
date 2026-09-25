@@ -2124,6 +2124,12 @@ class ContinuationObject : public Object
     friend struct ::cdac_data<ContinuationObject>;
 
     public:
+    CONTINUATIONREF GetNext() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return Next;
+    }
+
     CorInfoContinuationFlags GetFlags() const
     {
         LIMITED_METHOD_CONTRACT;
