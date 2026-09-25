@@ -151,7 +151,7 @@ struct HENUMInternal
 
     // This will only clear the content of enum and will not free the memory of enum
     static void ClearEnum(
-        HENUMInternal   *pmdEnum);
+        HENUMInternal   *pmdEnum) noexcept;
 
     // create a HENUMInternal. This will allocate the memory
     __checkReturn
@@ -403,7 +403,7 @@ DECLARE_INTERFACE_(IMDInternalImport, IUnknown)
     } // MDInternalRW::EnumReset
 
     void EnumClose(
-        HENUMInternal *phEnum)        // [IN] the enumerator to be closed
+        HENUMInternal *phEnum) noexcept // [IN] the enumerator to be closed
     {
         _ASSERTE( phEnum->m_EnumType == MDSimpleEnum ||
             phEnum->m_EnumType == MDDynamicArrayEnum);
