@@ -119,6 +119,10 @@
 
 #endif // _DEBUG
 
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_REJIT) || defined(FEATURE_CODE_VERSIONING)
+#define FEATURE_INLINE_TRACKING_ENABLED
+#endif
+
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct
 // hardware instructions (rdtsc), for accessing high-resolution hardware timers is enabled. This is disabled
 // in Silverlight (just to avoid thinking about whether the extra code space is worthwhile).

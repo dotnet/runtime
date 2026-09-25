@@ -803,7 +803,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
     m_pPersistentInlineTrackingMap(NULL),
+#endif // FEATURE_INLINE_TRACKING_ENABLED
     m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
@@ -964,44 +966,37 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_availableTypesHashtable = NativeHashtable(parser);
     }
 
-    // For format version 5.2 and later, there is an optional table of instrumentation data
 #ifdef FEATURE_PGO
-    if (IsImageVersionAtLeast(5, 2))
+    IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
+    if (pPgoInstrumentationDataDir)
     {
-        IMAGE_DATA_DIRECTORY * pPgoInstrumentationDataDir = m_pComposite->FindSection(ReadyToRunSectionType::PgoInstrumentationData);
-        if (pPgoInstrumentationDataDir)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
-            m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
-        }
-
-        // Force the Pgo manager infrastructure to be initialized
-        pLoaderAllocator->GetOrCreatePgoManager();
+        NativeParser parser = NativeParser(&m_nativeReader, pPgoInstrumentationDataDir->VirtualAddress);
+        m_pgoInstrumentationDataHashtable = NativeHashtable(parser);
     }
+
+    // Force the Pgo manager infrastructure to be initialized
+    pLoaderAllocator->GetOrCreatePgoManager();
 #endif
 
-    if (IsImageVersionAtLeast(18, 3))
+    IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
+    if (pExternalTypeMapsDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pExternalTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ExternalTypeMaps);
-        if (pExternalTypeMapsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
-            m_externalTypeMaps = NativeHashtable(parser);
-        }
+        NativeParser parser = NativeParser(&m_nativeReader, pExternalTypeMapsDir->VirtualAddress);
+        m_externalTypeMaps = NativeHashtable(parser);
+    }
 
-        IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
-        if (pProxyTypeMapsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
-            m_proxyTypeMaps = NativeHashtable(parser);
-        }
+    IMAGE_DATA_DIRECTORY* pProxyTypeMapsDir = m_component.FindSection(ReadyToRunSectionType::ProxyTypeMaps);
+    if (pProxyTypeMapsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pProxyTypeMapsDir->VirtualAddress);
+        m_proxyTypeMaps = NativeHashtable(parser);
+    }
 
-        IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
-        if (pTypeMapAssemblyTargetsDir != NULL)
-        {
-            NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
-            m_typeMapAssemblyTargets = NativeHashtable(parser);
-        }
+    IMAGE_DATA_DIRECTORY* pTypeMapAssemblyTargetsDir = m_component.FindSection(ReadyToRunSectionType::TypeMapAssemblyTargets);
+    if (pTypeMapAssemblyTargetsDir != NULL)
+    {
+        NativeParser parser = NativeParser(&m_nativeReader, pTypeMapAssemblyTargetsDir->VirtualAddress);
+        m_typeMapAssemblyTargets = NativeHashtable(parser);
     }
 
     if (!m_isComponentAssembly)
@@ -1013,40 +1008,23 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-    if (IsImageVersionAtLeast(6, 3))
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
+    IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
+    if (pCrossModuleInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
-        if (pCrossModuleInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
-            CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
-                pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
-        }
+        const BYTE* pCrossModuleInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pCrossModuleInlineTrackingInfoDir);
+        CrossModulePersistentInlineTrackingMapR2R::TryLoad(pModule, pLoaderAllocator, pCrossModuleInlineTrackingMapData, pCrossModuleInlineTrackingInfoDir->Size,
+            pamTracker, (CrossModulePersistentInlineTrackingMapR2R**)&m_pCrossModulePersistentInlineTrackingMap);
     }
 
-    // For format version 4.1 and later, there is an optional inlining table
-    if (IsImageVersionAtLeast(4, 1))
+    IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
+    if (pInlineTrackingInfoDir != NULL)
     {
-        IMAGE_DATA_DIRECTORY* pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo2);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
-        }
+        const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+        PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
+            pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
     }
-
-    // For format version 2.1 and later, there is an optional inlining table
-    if (m_pPersistentInlineTrackingMap == nullptr && IsImageVersionAtLeast(2, 1))
-    {
-        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = m_component.FindSection(ReadyToRunSectionType::InliningInfo);
-        if (pInlineTrackingInfoDir != NULL)
-        {
-            const BYTE* pInlineTrackingMapData = (const BYTE*)m_pComposite->GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-            PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-                                                    pamTracker, &m_pPersistentInlineTrackingMap);
-        }
-    }
+#endif // FEATURE_INLINE_TRACKING_ENABLED
 
     // For format version 3.1 and later, there is an optional attributes section
     IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);

@@ -58,7 +58,9 @@ class SString;
 class MethodTable;
 class DynamicMethodTable;
 class TieredCompilationManager;
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
 class JITInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING_ENABLED
 
 #ifdef FEATURE_METADATA_UPDATER
 class EnCEEClassData;
@@ -72,7 +74,9 @@ class EnCEEClassData;
 #define METHOD_STUBS_HASH_BUCKETS 11
 #define GUID_TO_TYPE_HASH_BUCKETS 16
 
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
+#endif // FEATURE_INLINE_TRACKING_ENABLED
 
 //
 // LookupMaps are used to implement RID maps
@@ -1409,8 +1413,10 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
     BOOL HasReadyToRunInlineTrackingMap();
     COUNT_T GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+#endif // FEATURE_INLINE_TRACKING_ENABLED
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
     BOOL HasJitInlineTrackingMap();
     PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
@@ -1660,9 +1666,9 @@ private:
 
     DebuggerSpecificData  m_debuggerSpecificData;
 
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#if defined(FEATURE_INLINE_TRACKING_ENABLED) && (defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA))
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
+#endif // FEATURE_INLINE_TRACKING_ENABLED && (PROFILING_SUPPORTED || PROFILING_SUPPORTED_DATA)
 
     // a.dll calls a method in b.dll and that method call a method in c.dll. When ngening
     // a.dll it is possible then method in b.dll can be inlined. When that happens a.dll R2R image stores
