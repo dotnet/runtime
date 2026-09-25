@@ -1684,12 +1684,19 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
     , m_dfsTree(dfsTree)
     , m_postOrderTraits(dfsTree->PostOrderTraits())
 {
-    unsigned index = 0;
+    unsigned index                        = 0;
+    bool     hasPlannedReadBackCandidates = false;
     for (AggregateInfo* agg : m_aggregates)
     {
-        for (Replacement& rep : agg->Replacements)
+        LclVarDsc* dsc = m_compiler->lvaGetDesc(agg->LclNum);
+        for (unsigned i = 0; i < agg->Replacements.size(); i++)
         {
-            rep.ReadBackIndex = index++;
+            agg->Replacements[i].ReadBackIndex = index++;
+            if (!hasPlannedReadBackCandidates && (dsc->lvIsParam || dsc->lvIsOSRLocal) &&
+                m_liveness->IsReplacementLiveIn(m_compiler->fgFirstBB, agg->LclNum, i))
+            {
+                hasPlannedReadBackCandidates = true;
+            }
         }
     }
 
@@ -1698,6 +1705,7 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
     m_currentStructFields            = new (m_compiler, CMK_Promotion) BitVec[dfsTree->GetPostOrderCount()]{};
     m_processedBlocks                = BitVecOps::MakeEmpty(&m_postOrderTraits);
     m_requiresAlreadyReadBackOnEntry = BitVecOps::MakeEmpty(&m_postOrderTraits);
+    m_requiresReadBackOnExit         = BitVecOps::MakeEmpty(&m_postOrderTraits);
 
     for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
     {
@@ -1717,7 +1725,20 @@ ReplaceVisitor::ReplaceVisitor(Promotion*         prom,
         });
     }
 
-    PlanReadBacks();
+    // The CFG does not change during replacement. Share boundary decisions
+    // between the planner and the actual materialization.
+    for (unsigned i = 0; i < dfsTree->GetPostOrderCount(); i++)
+    {
+        if (MustMaterializeReadBacks(dfsTree->GetPostOrder(i)))
+        {
+            BitVecOps::AddElemD(&m_postOrderTraits, m_requiresReadBackOnExit, i);
+        }
+    }
+
+    if (hasPlannedReadBackCandidates)
+    {
+        PlanReadBacks();
+    }
 }
 
 //------------------------------------------------------------------------
@@ -1738,16 +1759,6 @@ void ReplaceVisitor::PlanReadBacks()
     FlowGraphDominatorTree* domTree      = m_compiler->m_domTree;
     BitVec                  pendingOut   = BitVecOps::MakeEmpty(&m_postOrderTraits);
     BitVec                  sites        = BitVecOps::MakeEmpty(&m_postOrderTraits);
-    BitVec                  barriers     = BitVecOps::MakeEmpty(&m_postOrderTraits);
-
-    for (unsigned i = 0; i < m_dfsTree->GetPostOrderCount(); i++)
-    {
-        BasicBlock* block = m_dfsTree->GetPostOrder(i);
-        if (MustMaterializeReadBacks(block))
-        {
-            BitVecOps::AddElemD(&m_postOrderTraits, barriers, i);
-        }
-    }
 
     for (AggregateInfo* agg : m_aggregates)
     {
@@ -1814,13 +1825,13 @@ void ReplaceVisitor::PlanReadBacks()
                     BitVecOps::AddElemD(&m_postOrderTraits, sites, block->bbPostorderNum);
                     pending = false;
                 }
-                if (m_liveness->IsReplacementDefined(block, agg->LclNum, i))
+                if (pending && m_liveness->IsReplacementDefined(block, agg->LclNum, i))
                 {
                     pending = false;
                 }
                 if (pending && m_liveness->IsReplacementLiveOut(block, agg->LclNum, i))
                 {
-                    if (BitVecOps::IsMember(&m_postOrderTraits, barriers, block->bbPostorderNum))
+                    if (BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, block->bbPostorderNum))
                     {
                         BitVecOps::AddElemD(&m_postOrderTraits, sites, block->bbPostorderNum);
                     }
@@ -2034,13 +2045,17 @@ void ReplaceVisitor::InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNu
 //
 bool ReplaceVisitor::MustMaterializeReadBacks(BasicBlock* block)
 {
-    bool materialize = block->HasPotentialEHSuccs(m_compiler) ||
-                       block->KindIs(BBJ_CALLFINALLY, BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET);
-    block->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
-        materialize |= BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, succ->bbPostorderNum);
-        return BasicBlockVisit::Continue;
-    });
-    return materialize;
+    if (block->HasPotentialEHSuccs(m_compiler) ||
+        block->KindIs(BBJ_CALLFINALLY, BBJ_EHFINALLYRET, BBJ_EHFILTERRET, BBJ_EHCATCHRET))
+    {
+        return true;
+    }
+
+    return block->VisitRegularSuccs(m_compiler, [&](BasicBlock* succ) {
+        return BitVecOps::IsMember(&m_postOrderTraits, m_requiresAlreadyReadBackOnEntry, succ->bbPostorderNum)
+                   ? BasicBlockVisit::Abort
+                   : BasicBlockVisit::Continue;
+    }) == BasicBlockVisit::Abort;
 }
 
 //------------------------------------------------------------------------
@@ -2053,7 +2068,8 @@ bool ReplaceVisitor::MustMaterializeReadBacks(BasicBlock* block)
 //
 void ReplaceVisitor::EndBlock()
 {
-    bool materialize = MustMaterializeReadBacks(m_currentBlock);
+    bool materialize =
+        BitVecOps::IsMember(&m_postOrderTraits, m_requiresReadBackOnExit, m_currentBlock->bbPostorderNum);
 
     BitVec& pendingReadBacks    = m_pendingReadBacks[m_currentBlock->bbPostorderNum];
     pendingReadBacks            = BitVecOps::MakeEmpty(m_readBackTraits);

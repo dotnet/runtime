@@ -259,6 +259,7 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     BitVec*           m_currentStructFields;
     BitVec            m_processedBlocks;
     BitVec            m_requiresAlreadyReadBackOnEntry;
+    BitVec            m_requiresReadBackOnExit;
 
 public:
     enum
