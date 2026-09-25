@@ -16,6 +16,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <signal.h>
+#ifdef TARGET_LINUX
+#include <sys/auxv.h>
+#endif
 #if HAVE_PRCTL_H
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -49,6 +52,20 @@
 #include <minipal/utils.h>
 #include <minipal/thread.h>
 #include <generatedumpflags.h>
+
+#ifdef TARGET_LINUX
+// Defined in the nativeaot-createdump-enabled/disabled library.
+// True when the enabled variant is linked into a supported Linux executable.
+extern "C" bool g_createdumpLinked;
+// True when the linked bootstrap handles the createdump sentinel.
+extern bool g_createdumpDispatchSupported;
+
+#include "createdump/createdump_sentinel.h"
+
+// True when linked-in createdump can re-execute the current process.
+bool g_selfRestartCreatedump = false;
+const char* const SelfCreateDumpPath = "/proc/self/exe";
+#endif
 
 #if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
 
@@ -120,20 +137,57 @@ Return
 --*/
 static
 bool
+CanUseSelfRestartCreatedump(
+    int dumpType,
+    uint32_t flags,
+    const char* logFileName)
+{
+#ifdef TARGET_LINUX
+    const uint32_t SupportedFlags =
+        GenerateDumpFlagsLoggingEnabled |
+        GenerateDumpFlagsVerboseLoggingEnabled;
+
+    return g_selfRestartCreatedump &&
+        (flags & ~SupportedFlags) == 0 &&
+        dumpType == DumpTypeFull;
+#else
+    return false;
+#endif
+}
+
+static
+bool
 BuildCreateDumpCommandLine(
     const char** argv,
     const char* dumpName,
     const char* logFileName,
     int dumpType,
-    uint32_t flags)
+    uint32_t flags,
+    bool selfRestart)
 {
-    if (g_szCreateDumpPath == nullptr)
+    const char* program = g_szCreateDumpPath;
+#ifdef TARGET_LINUX
+    if (selfRestart)
+    {
+        program = SelfCreateDumpPath;
+    }
+#endif
+    if (program == nullptr)
     {
         return false;
     }
 
     int argc = 0;
-    argv[argc++] = g_szCreateDumpPath;
+    argv[argc++] = program;
+
+#ifdef TARGET_LINUX
+    // In self-restart mode, insert the GUID sentinel so the re-executed
+    // process knows to enter createdump mode instead of normal startup.
+    if (selfRestart)
+    {
+        argv[argc++] = CREATEDUMP_SENTINEL;
+    }
+#endif
 
     if (dumpName != nullptr)
     {
@@ -520,7 +574,8 @@ PalGenerateCoreDump(
     {
         dumpName = nullptr;
     }
-    bool result = BuildCreateDumpCommandLine(argvCreateDump, dumpName, nullptr, dumpType, flags);
+    bool selfRestart = CanUseSelfRestartCreatedump(dumpType, flags, nullptr);
+    bool result = BuildCreateDumpCommandLine(argvCreateDump, dumpName, nullptr, dumpType, flags, selfRestart);
     if (result)
     {
         result = CreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
@@ -603,7 +658,8 @@ PalCreateDumpInitialize()
         char* program = nullptr;
         
         // Check if user provided a custom path to createdump tool directory
-        if (RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath))
+        bool customDumpToolPath = RhConfig::Environment::TryGetStringValue("DbgCreateDumpToolPath", &dumpToolPath);
+        if (customDumpToolPath)
         {
             // Use the provided directory path and concatenate with "createdump"
             size_t dumpToolPathLen = strlen(dumpToolPath);
@@ -652,7 +708,17 @@ PalCreateDumpInitialize()
 
         g_szCreateDumpPath = program;
 
-        if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
+#ifdef TARGET_LINUX
+    g_selfRestartCreatedump =
+        g_createdumpLinked &&
+        g_createdumpDispatchSupported &&
+        !customDumpToolPath &&
+        getauxval(AT_SECURE) == 0 &&
+        access(SelfCreateDumpPath, X_OK) == 0;
+#endif
+
+    bool selfRestart = CanUseSelfRestartCreatedump(dumpType, flags, logFilePath);
+    if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags, selfRestart))
         {
             return false;
         }

@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "shared/createdumpcore.h"
-#include "shared/dumpwriter.h"
+#include "createdumpcore.h"
+#include "dumpwriter.h"
 #include <time.h>
 
 static size_t FindDumpRegionInsertionIndex(const DynamicArray<MemoryRegion>* regions, uint64_t startAddress)
@@ -75,7 +75,7 @@ static bool InsertDumpRegion(void* container, const MemoryRegion* region)
 }
 
 // Exported symbol so PalCreateDump.cpp can detect that this library is linked.
-bool g_createdumpLinked = true;
+extern "C" bool g_createdumpLinked = true;
 
 void print_trace_timestamp()
 {
@@ -98,7 +98,7 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
 // Consider updating the original CreateDump if changes are made to this simplified version.
 bool LinkedCreateDump(const CreateDumpOptions* options)
 {
-    asserte(options->CreateDump);
+    assert(options->CreateDump);
 
     if (!ValidateDumpOptions(options))
     {
@@ -165,28 +165,31 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
     }
     dumpRegions = Move(combinedRegions);
 
-    printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath);
+    printf_status("Writing %s to file %s\n", GetDumpTypeString(options->DumpType), dumpPath);
 
     processInfo.CalculateRuntimeBaseAddress();
-    DumpWriter dumpWriter(processInfo, processInfo.ModuleMappings(), dumpRegions);
-    // Write the actual dump file
-    if (!dumpWriter.OpenDump(dumpPath))
     {
-        goto exit;
-    }
-    if (!dumpWriter.WriteDump())
-    {
-        printf_error("Writing dump FAILED\n");
+        DumpWriter dumpWriter(processInfo, processInfo.ModuleMappings(), dumpRegions);
 
-        // Delete the partial dump file on error
-        remove(dumpPath);
-        goto exit;
+        // Write the actual dump file
+        if (!dumpWriter.OpenDump(dumpPath))
+        {
+            goto exit;
+        }
+        if (!dumpWriter.WriteDump())
+        {
+            printf_error("Writing dump FAILED\n");
+
+            // Delete the partial dump file on error
+            remove(dumpPath);
+            goto exit;
+        }
     }
 
     result = true;
 
 exit:
-    if (kill(options.Pid, 0) == 0)
+    if (kill(options->Pid, 0) == 0)
     {
         printf_status("Target process is alive\n");
     }
@@ -199,7 +202,7 @@ exit:
         }
         else
         {
-            printf_error("kill(%d, 0) FAILED %s (%d)\n", options.Pid, strerror(err), err);
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", options->Pid, strerror(err), err);
         }
     } 
     if (initialized)
@@ -210,7 +213,7 @@ exit:
     return result;
 }
 
-int nativeaot_createdump_main(int argc, const char* argv[])
+extern "C" int nativeaot_createdump_main(int argc, const char* argv[])
 {
     CreateDumpOptions options{};
     int exitCode = ParseCreateDumpOptions(argc, (char**)argv, &options);

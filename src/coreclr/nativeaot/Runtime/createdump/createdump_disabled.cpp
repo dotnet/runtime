@@ -4,9 +4,9 @@
 // Disabled stub for NativeAOT linked-in createdump.
 // Linked when linked createdump is not enabled for the output configuration.
 
-bool g_createdumpLinked = false;
+extern "C" bool g_createdumpLinked = false;
 
-int nativeaot_createdump_main(int argc, const char* argv[])
+extern "C" int nativeaot_createdump_main(int, const char*[])
 {
     return 1;
 }
