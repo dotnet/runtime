@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
             int fieldSize = (keySizeInBits + 7) / 8;
             Debug.Assert(privateKey.Length == fieldSize);
 
-            const int MaxPublicKeySize = 192; // P-521 is 133 bytes, round this off to 192.
+            const int MaxPublicKeySize = 136; // P-521 is 133 bytes, round this off to 136.
             Span<byte> publicKey = (stackalloc byte[MaxPublicKeySize]).Slice(0, 1 + 2 * fieldSize);
             Interop.AppleCrypto.EccExportPublicKeyFromPrivateKey(keySizeInBits, privateKey, publicKey);
             AsymmetricAlgorithmHelpers.DecodeFromUncompressedAnsiX963Key(
