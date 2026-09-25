@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdumpcore.h"
-#include "processreader.h"
+#include "processinfo.h"
 
 #if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
 long g_pageSize = 0;

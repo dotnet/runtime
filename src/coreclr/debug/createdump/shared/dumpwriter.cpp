@@ -3,11 +3,12 @@
 
 #include "createdump.h"
 
-DumpWriter::DumpWriter(CrashInfo& crashInfo) :
+DumpWriter::DumpWriter(ProcessInfo& processInfo, DynamicArray<ModuleRegion> &moduleMappings, DynamicArray<MemoryRegion> &dumpRegions) :
     m_fd(-1),
-    m_crashInfo(crashInfo)
+    m_processInfo(processInfo),
+    m_moduleMappings(moduleMappings),
+    m_dumpRegions(dumpRegions)
 {
-    m_crashInfo.AddRef();
 }
 
 DumpWriter::~DumpWriter()

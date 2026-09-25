@@ -52,6 +52,30 @@ CrashInfo::CleanupAndResumeProcess()
     }
 }
 
+bool
+CrashInfo::CopyDumpWriterRegions(
+    DynamicArray<ModuleRegion>& moduleMappings,
+    DynamicArray<MemoryRegion>& dumpRegions) const
+{
+    for (const ModuleRegion& mapping : m_moduleMappings)
+    {
+        ModuleRegion moduleMapping(static_cast<const MemoryRegion&>(mapping));
+        if (!moduleMapping.SetFileName(mapping.FileName()) || !moduleMappings.Add(Move(moduleMapping)))
+        {
+            return false;
+        }
+    }
+
+    for (const MemoryRegion& region : m_memoryRegions)
+    {
+        if (!dumpRegions.Add(region))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 //
 // Get the module mappings for the core dump NT_FILE notes
 //

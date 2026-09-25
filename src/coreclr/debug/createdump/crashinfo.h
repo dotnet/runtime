@@ -98,6 +98,7 @@ public:
     inline DumpRegionStore& GetDumpRegionStore() { return m_dumpRegionStore; }
     inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #ifndef __APPLE__
+    bool CopyDumpWriterRegions(DynamicArray<ModuleRegion>& moduleMappings, DynamicArray<MemoryRegion>& dumpRegions) const;
     inline const DynamicArray<elf_aux_entry>& AuxvEntries() const { return m_processInfo.AuxvEntries(); }
     inline size_t GetAuxvSize() const { return m_processInfo.AuxvEntries().Count() * sizeof(elf_aux_entry); }
 #endif

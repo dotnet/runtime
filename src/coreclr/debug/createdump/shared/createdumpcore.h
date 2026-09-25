@@ -70,7 +70,7 @@ extern void trace_verbose_printf(const char* format, ...) MINIPAL_ATTR_FORMAT_PR
 
 #include "memoryregion.h"
 #include "threadsnapshot.h"
-#include "processreader.h"
+#include "processinfo.h"
 
 extern bool linkedCreateDump;
 extern bool g_diagnostics;

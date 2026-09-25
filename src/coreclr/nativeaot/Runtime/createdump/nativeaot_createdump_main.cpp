@@ -153,7 +153,7 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
 
     printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath);
 
-    DumpWriter dumpWriter(processInfo, combinedRegions);
+    DumpWriter dumpWriter(processInfo, processInfo.ModuleMappings(), dumpRegions);
     // Write the actual dump file
     if (!dumpWriter.OpenDump(dumpPath))
     {

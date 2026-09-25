@@ -14,7 +14,6 @@ CreateDump(const CreateDumpOptions& options)
 {
     ProcessInfo processInfo(options);
     ReleaseHolder<CrashInfo> crashInfo{ new CrashInfo(options, processInfo) };
-    DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool processInitialized = false;
     bool result = false;
@@ -108,6 +107,17 @@ CreateDump(const CreateDumpOptions& options)
     
         printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath.c_str());
 
+#ifdef __APPLE__
+        DumpWriter dumpWriter(*crashInfo);
+#else
+        DynamicArray<ModuleRegion> moduleMappings;
+        DynamicArray<MemoryRegion> dumpRegions;
+        if (!crashInfo->CopyDumpWriterRegions(moduleMappings, dumpRegions))
+        {
+            goto exit;
+        }
+        DumpWriter dumpWriter(processInfo, moduleMappings, dumpRegions);
+#endif
         // Write the actual dump file
         if (!dumpWriter.OpenDump(dumpPath.c_str()))
         {

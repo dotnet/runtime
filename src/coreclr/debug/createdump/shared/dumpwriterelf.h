@@ -41,15 +41,17 @@ class DumpWriter
 {
 private:
     int m_fd;
-    CrashInfo& m_crashInfo;
     BYTE m_tempBuffer[0x4000];
+    ProcessInfo& m_processInfo;
+    const DynamicArray<ModuleRegion>& m_moduleMappings;
+    const DynamicArray<MemoryRegion>& m_dumpRegions;
 
     // no public copy constructor
     DumpWriter(const DumpWriter&) = delete;
     void operator=(const DumpWriter&) = delete;
 
 public:
-    DumpWriter(CrashInfo& crashInfo);
+    DumpWriter(ProcessInfo& processInfo, const DynamicArray<ModuleRegion>& moduleMappings, const DynamicArray<MemoryRegion>& dumpRegions);
     virtual ~DumpWriter();
     bool OpenDump(const char* dumpFileName);
     bool WriteDump();
