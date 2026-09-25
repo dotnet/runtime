@@ -12607,7 +12607,7 @@ BOOL MethodTableBuilder::bmtMethodImplInfo::IsBody(mdToken tok)
     CONSISTENCY_CHECK(TypeFromToken(tok) == mdtMethodDef);
     for (DWORD i = 0; i < pIndex; i++)
     {
-        if (GetBodyMethodDesc(i)->GetMemberDef() == tok)
+        if (GetImplementationMethod(i)->GetMethodSignature().GetToken() == tok)
         {
             return TRUE;
         }
