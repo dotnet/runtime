@@ -13,6 +13,8 @@ parameters:
 
 steps:
   - ${{ if and(or(eq(parameters.osGroup, 'linux'), eq(parameters.osGroup, 'freebsd'), eq(parameters.osGroup, 'openbsd'), eq(parameters.osGroup, 'osx')), or(eq(parameters.archType, 'x64'), eq(parameters.archType, 'arm64'))) }}:
+    - template: /eng/pipelines/coreclr/templates/roslyn-cache-stats.yml
+
     - script: sccache --show-stats || true
       displayName: Sccache stats
       condition: always()

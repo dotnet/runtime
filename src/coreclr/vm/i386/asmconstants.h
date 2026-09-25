@@ -75,8 +75,10 @@ ASMCONSTANTS_C_ASSERT(CONTEXT_Eip == offsetof(CONTEXT,Eip))
 #define CONTEXT_Esp 0xc4
 ASMCONSTANTS_C_ASSERT(CONTEXT_Esp == offsetof(CONTEXT,Esp))
 
+#ifdef FEATURE_VARARGS
 #define VASigCookie__StubOffset 4
 ASMCONSTANTS_C_ASSERT(VASigCookie__StubOffset == offsetof(VASigCookie, pPInvokeILStub))
+#endif // FEATURE_VARARGS
 
 #ifndef UNIX_X86_ABI
 #define SIZEOF_TailCallFrame 32

@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 
 import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
-import { bind_arg_marshal_to_js, end_marshal_task_to_js } from "./marshal-to-js";
+import { bind_arg_marshal_to_js, end_marshal_task_to_js, release_eager_task_holder } from "./marshal-to-js";
 import {
     get_sig, get_signature_argument_count,
     bound_cs_function_symbol, get_signature_version, alloc_stack_frame, get_signature_type,
@@ -203,8 +203,14 @@ function bind_fn_1RA (closure: BindingClosure) {
             // pre-allocate the promise
             let promise = res_converter(args);
 
-            // call C# side
-            invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            try {
+                // call C# side
+                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            } catch (ex) {
+                // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
+                release_eager_task_holder(promise);
+                throw ex;
+            }
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -270,8 +276,14 @@ function bind_fn_2RA (closure: BindingClosure) {
             // pre-allocate the promise
             let promise = res_converter(args);
 
-            // call C# side
-            invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            try {
+                // call C# side
+                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+            } catch (ex) {
+                // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
+                release_eager_task_holder(promise);
+                throw ex;
+            }
 
             // in case the C# side returned synchronously
             promise = end_marshal_task_to_js(args, undefined, promise);
@@ -317,7 +329,13 @@ function bind_fn (closure: BindingClosure) {
 
             // call C# side
             if (is_async) {
-                invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                try {
+                    invoke_async_jsexport(runtimeHelpers.managedThreadTID, method, args, size);
+                } catch (ex) {
+                    // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt it
+                    release_eager_task_holder(js_result);
+                    throw ex;
+                }
                 // in case the C# side returned synchronously
                 js_result = end_marshal_task_to_js(args, undefined, js_result);
             } else if (is_discard_no_wait) {

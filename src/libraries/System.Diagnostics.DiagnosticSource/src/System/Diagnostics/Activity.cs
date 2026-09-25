@@ -2125,15 +2125,25 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Converts 'idData' which is assumed to be HEX Unicode characters to binary
-        /// puts it in 'outBytes'
+        /// Converts 'charData' which is assumed to be HEX Unicode characters to binary
+        /// and puts it in 'destination'. destination.Length * 2 must equal charData.Length.
         /// </summary>
-        internal static void SetSpanFromHexChars(ReadOnlySpan<char> charData, Span<byte> outBytes)
+        internal static void SetSpanFromHexChars(ReadOnlySpan<char> charData, Span<byte> destination)
         {
-            Debug.Assert(outBytes.Length * 2 == charData.Length);
-            for (int i = 0; i < outBytes.Length; i++)
-                outBytes[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
+            if (destination.Length * 2 != charData.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(destination));
+            }
+
+#if NET
+            OperationStatus status = Convert.FromHexString(charData, destination, out _, out _);
+            Debug.Assert(status == OperationStatus.Done);
+#else
+            for (int i = 0; i < destination.Length; i++)
+                destination[i] = HexByteFromChars(charData[i * 2], charData[i * 2 + 1]);
+#endif
         }
+
         internal static byte HexByteFromChars(char char1, char char2)
         {
             int hi = HexConverter.FromLowerChar(char1);

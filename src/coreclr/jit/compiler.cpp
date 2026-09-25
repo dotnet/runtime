@@ -785,7 +785,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     //
     if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
     {
-        info.compCompHnd->getWasmLowering(clsHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            info.compCompHnd->getWasmLowering(clsHnd);
+        });
     }
 #endif // DEBUG
 #endif // defined(TARGET_WASM)
@@ -1968,11 +1970,14 @@ void Compiler::compSetProcessor()
 #endif // TARGET_XARCH
 }
 
-bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const
+bool Compiler::notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                         bool                   supported,
+                                         bool                   preserveNegativeDependency) const
 {
     const char* isaString = InstructionSetToString(isa);
-    JITDUMP("Notify VM instruction set (%s) %s be supported.\n", isaString, supported ? "must" : "must not");
-    return info.compCompHnd->notifyInstructionSetUsage(isa, supported);
+    JITDUMP("Notify VM instruction set (%s) %s be supported%s.\n", isaString, supported ? "must" : "must not",
+            preserveNegativeDependency ? " (preserve negative dependency)" : "");
+    return info.compCompHnd->notifyInstructionSetUsage(isa, supported, preserveNegativeDependency);
 }
 
 #ifdef PROFILING_SUPPORTED
@@ -3370,6 +3375,58 @@ bool Compiler::compPromoteFewerStructs(unsigned lclNum)
 }
 
 //------------------------------------------------------------------------
+// compAsyncInliningStress: determine if general runtime async inlining is being
+//   stressed, i.e. if async callees that may suspend are inlined with a decaying
+//   random probability.
+//
+// Returns:
+//   true if the stress is enabled
+//
+// Notes:
+//   The stress is enabled either explicitly via JitStressAsyncInlining, or for
+//   roughly 50% of async methods under JitStress. Only async methods are stressed
+//   since awaits cannot be inlined into non-async roots anyway.
+//
+//   See AsyncStressPolicy.
+//
+bool Compiler::compAsyncInliningStress()
+{
+    if (JitConfig.JitStressAsyncInlining() != 0)
+    {
+        return true;
+    }
+
+    return impInlineRoot()->compIsAsync() && compStressCompile(STRESS_ASYNC_INLINE, 50);
+}
+
+//------------------------------------------------------------------------
+// compAsyncInliningStressSeed: get the external seed for the random decisions
+//   made when stressing general async inlining.
+//
+// Returns:
+//   Non-zero seed value.
+//
+int Compiler::compAsyncInliningStressSeed()
+{
+    int seed = JitConfig.JitStressAsyncInlining();
+
+    if (seed == 0)
+    {
+        // The stress kicked in via JitStress, so use its value as the seed. It can be
+        // zero when the stress mode was enabled via DOTNET_JitStressModeNames, in which
+        // case any non-zero seed will do.
+        seed = getJitStressLevel();
+
+        if (seed == 0)
+        {
+            seed = 2;
+        }
+    }
+
+    return seed;
+}
+
+//------------------------------------------------------------------------
 // dumpRegMask: display a register mask. For well-known sets of registers, display a well-known token instead of
 // a potentially large number of registers.
 //
@@ -4255,14 +4312,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         hashBv::Init(this);
 
         VarSetOps::AssignAllowUninitRhs(this, compCurLife, VarSetOps::UninitVal());
-
-        // The temp holding the secret stub argument is used by fgImport() when importing the intrinsic.
-        if (info.compPublishStubParam)
-        {
-            assert(lvaStubArgumentVar == BAD_VAR_NUM);
-            lvaStubArgumentVar                     = lvaGrabTempWithImplicitUse(false DEBUGARG("stub argument"));
-            lvaGetDesc(lvaStubArgumentVar)->lvType = TYP_I_IMPL;
-        }
     };
     DoPhase(this, PHASE_PRE_IMPORT, preImportPhase);
 
@@ -4299,6 +4348,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Import: convert the instrs in each basic block to a tree based intermediate representation
     //
+    activePhaseChecks |= PhaseChecks::CHECK_IR | PhaseChecks::CHECK_IR_RELAXED;
     DoPhase(this, PHASE_IMPORTATION, &Compiler::fgImport);
 
     // If this is a failed inline attempt, we're done.
@@ -4502,6 +4552,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Apply the type update to implicit byref parameters; also choose (based on address-exposed
     // analysis) which implicit byref promotions to keep (requires copy to initialize) or discard.
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = true);
     DoPhase(this, PHASE_MORPH_IMPBYREF, &Compiler::fgRetypeImplicitByRefArgs);
 
 #ifdef DEBUG
@@ -4512,8 +4563,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     // Morph the trees in all the blocks of the method
     //
+    INDEBUG(fgImplicitByRefLclFldsStale = false);
     unsigned const preMorphBBCount = fgBBcount;
     DoPhase(this, PHASE_MORPH_GLOBAL, &Compiler::fgMorphBlocks);
+
+    // Global morph restores the strict IR flag invariants.
+    activePhaseChecks &= ~PhaseChecks::CHECK_IR_RELAXED;
 
     auto postMorphPhase = [this]() {
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -6228,31 +6283,33 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     if (JitConfig.EnableExtraSuperPmiQueries())
     {
-        // Get the assembly name, to aid finding any particular SuperPMI method context function
-        (void)eeGetClassAssemblyName(info.compClassHnd);
+        eeRunExtraSuperPmiQueries([&]() {
+            // Get the assembly name, to aid finding any particular SuperPMI method context function
+            (void)eeGetClassAssemblyName(info.compClassHnd);
 
-        // Fetch class names for the method's generic parameters.
-        //
-        CORINFO_SIG_INFO sig;
-        info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
+            // Fetch class names for the method's generic parameters.
+            //
+            CORINFO_SIG_INFO sig;
+            info.compCompHnd->getMethodSig(info.compMethodHnd, &sig, nullptr);
 
-        const unsigned classInst = sig.sigInst.classInstCount;
-        if (classInst > 0)
-        {
-            for (unsigned i = 0; i < classInst; i++)
+            const unsigned classInst = sig.sigInst.classInstCount;
+            if (classInst > 0)
             {
-                eeGetClassName(sig.sigInst.classInst[i]);
+                for (unsigned i = 0; i < classInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.classInst[i]);
+                }
             }
-        }
 
-        const unsigned methodInst = sig.sigInst.methInstCount;
-        if (methodInst > 0)
-        {
-            for (unsigned i = 0; i < methodInst; i++)
+            const unsigned methodInst = sig.sigInst.methInstCount;
+            if (methodInst > 0)
             {
-                eeGetClassName(sig.sigInst.methInst[i]);
+                for (unsigned i = 0; i < methodInst; i++)
+                {
+                    eeGetClassName(sig.sigInst.methInst[i]);
+                }
             }
-        }
+        });
     }
 #endif // DEBUG
 
@@ -6739,8 +6796,6 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
 
     info.compIsStatic = (info.compFlags & CORINFO_FLG_STATIC) != 0;
-
-    info.compPublishStubParam = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM);
 
     if (opts.IsReversePInvoke())
     {

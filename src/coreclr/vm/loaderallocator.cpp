@@ -78,6 +78,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
+    m_pLastUsedOptimizedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
@@ -757,7 +758,7 @@ BOOL LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
     return FALSE;
 } // LoaderAllocator::Destroy
 
-extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator)
+extern "C" BOOL QCALLTYPE LoaderAllocator_Destroy(QCall::LoaderAllocatorHandle pLoaderAllocator, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

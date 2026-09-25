@@ -17,7 +17,6 @@
     <Compile Include="Conversions\Boxing\box_isinst_unbox.cs" />
     <Compile Include="Coverage\chaos55915408cs.cs" />
     <Compile Include="Coverage\chaos56200037cs.cs" />
-    <Compile Include="Coverage\chaos65204782cs.cs" />
     <Compile Include="Typeof\dynamicTypes.cs" />
     <Compile Include="Typeof\objectBoxing.cs" />
     <Compile Include="Typeof\refTypesdynamic.cs" />

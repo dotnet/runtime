@@ -131,10 +131,7 @@ CObjectType CorUnix::otFileMapping(
                 CFileMappingImmutableDataCopyRoutine,
                 CFileMappingImmutableDataCleanupRoutine,
                 sizeof(CFileMappingProcessLocalData),
-                NULL,   // No process local data cleanup routine
-                CObjectType::UnwaitableObject,
-                CObjectType::SignalingNotApplicable,
-                CObjectType::ThreadReleaseNotApplicable
+                NULL    // No process local data cleanup routine
                 );
 
 CAllowedObjectTypes aotFileMapping(otiFileMapping);

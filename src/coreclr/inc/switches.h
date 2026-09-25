@@ -130,12 +130,6 @@
 #define FEATURE_JIT_METHOD_PERF
 
 
-#ifndef FEATURE_USE_ASM_GC_WRITE_BARRIERS
-// If we're not using assembly write barriers, then this turns on a performance measurement
-// mode that gathers and prints statistics about # of GC write barriers invokes.
-// #define FEATURE_COUNT_GC_WRITE_BARRIERS
-#endif
-
 // Enables a mode in which GC is completely conservative in stacks and registers: all stack slots and registers
 // are treated as potential pinned interior pointers. When enabled, the runtime flag DOTNET_GCCONSERVATIVE
 // determines dynamically whether GC is conservative. Note that appdomain unload, LCG and unloadable assemblies

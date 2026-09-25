@@ -126,6 +126,14 @@ public class RedundantBranchDominating
         return 3;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int Exception_00(int a, int b, int c)
+    {
+        int result = a == b ? 1 : 2;
+        result += a == b + (a / c - a / c) ? 10 : 20;
+        return result;
+    }
+
     private static void RunTest(string name, Func<int, int> func, int[] expectedResults, int[] expectedEffects)
     {
         s_effects = 0;
@@ -165,4 +173,8 @@ public class RedundantBranchDominating
     [Fact]
     public static void TestDom05() =>
         RunTest(nameof(Dom_05), Dom_05, new[] { 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, 1 }, new[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
+
+    [Fact]
+    public static void TestException00() =>
+        Assert.Throws<DivideByZeroException>(() => Exception_00(5, 5, 0));
 }

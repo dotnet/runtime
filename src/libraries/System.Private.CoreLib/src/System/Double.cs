@@ -984,7 +984,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static double MaxNative(double x, double y) => (x > y) ? x : y;
+        public static double MaxNative(double x, double y)
+        {
+#if MONO
+            return (x > y) ? x : y;
+#else
+            return MaxNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1015,7 +1022,14 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
         [Intrinsic]
-        public static double MinNative(double x, double y) => (x < y) ? x : y;
+        public static double MinNative(double x, double y)
+        {
+#if MONO
+            return (x < y) ? x : y;
+#else
+            return MinNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]

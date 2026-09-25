@@ -45,12 +45,24 @@ exist and scores workflow output against them, is deferred.
   `tool-calls` evidence that it actually fetched a real build and searched existing
   KBEs.
 
-- **`ci-failure-fix`** has the agent find a real open `[ci-scan]` Known Build
-  Error issue via `gh`, reason about it, and emit one safe-output at
+- **`ci-failure-fix`** runs the workflow's deterministic scanner-author filter
+  in trusted eval setup before the agent starts. The agent then reads a
+  candidate's body and comments through GitHub MCP, reasons about the real open
+  `[ci-scan]` Known Build Error, and emits one safe-output at
   `out/decision.md`. Graders check that it either created a fix PR, with a
   `[ci-fix]` title, a linked KBE, and a real diff that is never a test-disable,
-  or engaged owners with a hand-off comment, and never both, plus `tool-calls`
-  evidence that it acted on a real issue.
+  or engaged owners with a hand-off comment, and never both. A deterministic
+  program grader validates the trusted filter output metadata and requires
+  successful MCP body and comments reads for the same candidate referenced by
+  `Linked KBE:` in the decision. The eval setup runs the same checked-in filter
+  script before the agent and preserves the artifact for grading.
+  An empty candidate list reports the live eval as unavailable (a grader error,
+  not a pass); `noop` cannot pass. The production empty-list skip is covered by
+  the deterministic intake tests instead.
+
+  This eval connects directly to the GitHub MCP server, not through production's
+  filtering gateway. It checks MCP usage and remediation behavior, but does not
+  validate production filtering; gateway-parity coverage remains separate work.
 
 - **`ci-failure-scan-feedback`** has the agent scan real recent `[ci-scan]`
   issues and `[ci-fix]` PRs via `gh`, then emit its feedback safe-output at
@@ -67,6 +79,17 @@ token for on the eval step. Live runs are non-deterministic and depend on what
 is failing at eval time.
 
 ## Run locally
+
+The deterministic fixer tests need Python 3, Bash, jq, and Node with the eval
+dependencies installed (`npm ci --prefix .github/workflows/evals`), but no
+credentials or network access during testing. They exercise the shared intake
+script and grader, including author filtering, pagination, empty results, API
+failures, repository/job conditions, trusted candidate metadata, and
+candidate/read/comments/decision identity:
+
+```bash
+python3 .github/workflows/evals/test_ci_failure_fix_candidates.py
+```
 
 You need Node 22.12 or newer, Docker, a Copilot token for the agent and judges,
 and a GitHub token for the agent's `gh` calls and the GitHub MCP server.

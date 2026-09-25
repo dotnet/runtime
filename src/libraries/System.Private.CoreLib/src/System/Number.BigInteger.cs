@@ -487,6 +487,11 @@ namespace System
             private nint _length;
             private BlocksBuffer _blocks;
 
+            // _blocks spans MaxBlockCount native-width blocks and only the first _length of them are ever read, so the
+            // out parameters below use Unsafe.SkipInit rather than `= default` to avoid zero-filling the
+            // whole buffer. Measured on the double.Parse slow path, `= default` costs 10-30%
+            // (267ns -> 340ns for 50 digits, 1456ns -> 1650ns for 408 digits).
+
             public static void Add(scoped ref readonly BigInteger lhs, scoped ref readonly BigInteger rhs, out BigInteger result)
             {
                 Unsafe.SkipInit(out result);

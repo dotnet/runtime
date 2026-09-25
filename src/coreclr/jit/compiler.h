@@ -1517,9 +1517,10 @@ enum class PhaseChecks : unsigned int
     CHECK_LIKELIHOODS   = 1 << 5, // profile data likelihood integrity
     CHECK_PROFILE       = 1 << 6, // profile data full integrity
     CHECK_PROFILE_FLAGS = 1 << 7, // blocks with profile-derived weights have BBF_PROF_WEIGHT flag set
-    CHECK_LINKED_LOCALS = 1 << 8,  // check linked list of locals
-    CHECK_FG_INIT_BLOCK = 1 << 9,  // flow graph has an init block
+    CHECK_LINKED_LOCALS    = 1 << 8,  // check linked list of locals
+    CHECK_FG_INIT_BLOCK    = 1 << 9,  // flow graph has an init block
     CHECK_LIR_UNUSED_VALUES = 1 << 10, // LIR values with no user are marked as unused
+    CHECK_IR_RELAXED       = 1 << 11, // allow and count extra IR flags
 };
 
 inline constexpr PhaseChecks operator ~(PhaseChecks a)
@@ -2017,6 +2018,9 @@ struct NaturalLoopIterInfo
 {
     // The local that is the induction variable.
     unsigned IterVar = BAD_VAR_NUM;
+
+    // The local that the limit depends on, or BAD_VAR_NUM for a constant limit.
+    unsigned LimitVar = BAD_VAR_NUM;
 
 #ifdef DEBUG
     // Tree that initializes induction variable outside the loop.
@@ -3769,13 +3773,13 @@ public:
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdStoreNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreAlignedNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreNonTemporalNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -4041,6 +4045,9 @@ public:
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
 
+    bool gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp);
+    void gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp);
+
     // Given an address expression, compute its costs and addressing mode opportunities,
     // and mark addressing mode candidates as GTF_DONT_CSE.
     // TODO-Throughput - Consider actually instantiating these early, to avoid
@@ -4060,6 +4067,8 @@ public:
 
     // Returns "true" iff "tree" or its (transitive) children have any of the side effects in "flags".
     bool gtTreeHasSideEffects(GenTree* tree, GenTreeFlags flags, bool ignoreCctors = false);
+
+    GenTree* gtExtractSideEffectsFromUnusedNode(GenTree* node);
 
     void gtExtractSideEffList(GenTree*     expr,
                               GenTree**    pList,
@@ -5028,7 +5037,16 @@ public:
         return lvaGetDesc(lclNum)->lvInSsa;
     }
 
-    unsigned lvaStubArgumentVar = BAD_VAR_NUM; // variable representing the secret stub argument
+    bool compHasSecretStubArgument() const
+    {
+        return lvaSecretStubArg != BAD_VAR_NUM;
+    }
+
+    unsigned lvaGetSecretStubArgumentVar() const
+    {
+        assert(compHasSecretStubArgument());
+        return lvaSecretStubArg;
+    }
 
     InlineInfo*     impInlineInfo; // Only present for inlinees
     InlineStrategy* m_inlineStrategy;
@@ -5412,8 +5430,7 @@ protected:
     GenTree* impEstimateIntrinsic(CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   CorInfoType           callJitType,
-                                  NamedIntrinsic        intrinsicName,
-                                  bool                  mustExpand);
+                                  NamedIntrinsic        intrinsicName);
     GenTree* impMathIntrinsic(CORINFO_METHOD_HANDLE method,
                               CORINFO_SIG_INFO*     sig
                               R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
@@ -5446,8 +5463,7 @@ protected:
                                         CORINFO_CLASS_HANDLE  clsHnd,
                                         CORINFO_METHOD_HANDLE method,
                                         CORINFO_SIG_INFO*     sig
-                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
-                                        bool                  mustExpand);
+                                        R2RARG(CORINFO_CONST_LOOKUP* entryPoint));
     GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -5465,7 +5481,7 @@ protected:
                             bool                  mustExpand);
 
 protected:
-    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa);
+    bool compSupportsHWIntrinsic(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false);
 
     GenTree* impSpecialIntrinsic(NamedIntrinsic        intrinsic,
                                  CORINFO_CLASS_HANDLE  clsHnd,
@@ -5484,8 +5500,7 @@ protected:
                                R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                var_types             simdBaseType,
                                var_types             retType,
-                               unsigned              simdSize,
-                               bool                  mustExpand);
+                               unsigned              simdSize);
 
     GenTree* getArgForHWIntrinsic(var_types argType, CORINFO_CLASS_HANDLE argClass);
     GenTree* impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType);
@@ -5546,6 +5561,7 @@ public:
     static const unsigned CHECK_SPILL_NONE = static_cast<unsigned>(-2);
 
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
+    NamedIntrinsic resolveNamedIntrinsic(CORINFO_METHOD_HANDLE method, NamedIntrinsic intrinsic);
     void impBeginTreeList();
     void impEndTreeList(BasicBlock* block, Statement* firstStmt, Statement* lastStmt);
     void impEndTreeList(BasicBlock* block);
@@ -6118,6 +6134,12 @@ public:
 
     bool fgGlobalMorphDone = false;
 
+#ifdef DEBUG
+    // Retyping implicit byref parameters temporarily leaves existing local field
+    // accesses described using their pre-retyping struct types.
+    bool fgImplicitByRefLclFldsStale = false;
+#endif
+
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
 
@@ -6496,12 +6518,9 @@ public:
     // tree node).
     PhaseStatus fgValueNumber();
 
-    void fgValueNumberLocalStore(GenTree*             storeNode,
-                                 GenTreeLclVarCommon* lclDefNode,
-                                 ssize_t              offset,
-                                 ValueSize            storeSize,
-                                 ValueNumPair         value,
-                                 bool                 normalize = true);
+    template <typename TDef>
+    void fgValueNumberLocalStore(
+        GenTree* storeNode, const TDef& def, ValueNumPair value, bool normalize = true);
 
     void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
@@ -6518,6 +6537,9 @@ public:
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
+
+    // Compute the value number for a byref-exposed load of the given type from the given local and offset.
+    ValueNum fgValueNumberByrefExposedLocalLoad(var_types type, unsigned lclNum, unsigned lclOffs);
 
     unsigned fgVNPassesCompleted = 0; // Number of times fgValueNumber has been run.
 
@@ -6899,6 +6921,8 @@ public:
     bool fgBlockIsGoodTailDuplicationCandidate(BasicBlock* block, unsigned* lclNum);
 
     bool fgOptimizeEmptyBlock(BasicBlock* block);
+
+    bool fgLeadsToEmptyBlockCycle(BasicBlock* block);
 
     bool fgOptimizeBranchToEmptyUnconditional(BasicBlock* block, BasicBlock* bDest);
 
@@ -8056,7 +8080,10 @@ public:
                      LclNumToLiveDefsMap* curSsaName);
     void optBlockCopyPropPopStacks(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
     bool optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaName);
-    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode, LclNumToLiveDefsMap* curSsaName);
+    void optCopyPropPushDef(GenTreeLclVarCommon* lclNode,
+                            unsigned             lclNum,
+                            unsigned             ssaNum,
+                            LclNumToLiveDefsMap* curSsaName);
     int optCopyProp_LclVarScore(const LclVarDsc* lclVarDsc, const LclVarDsc* copyVarDsc, bool preferOp2);
     PhaseStatus optVnCopyProp();
     INDEBUG(void optDumpCopyPropStack(LclNumToLiveDefsMap* curSsaName));
@@ -8239,6 +8266,8 @@ public:
                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                              CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken);
 
+    bool canKeepNonInlineableGdvCandidate(GenTreeCall* call);
+
     int getGDVMaxTypeChecks()
     {
         int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
@@ -8328,7 +8357,7 @@ public:
                                            GenTree*    nullCheckTree,
                                            GenTree**   nullCheckParent,
                                            Statement** nullCheckStmt);
-    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTry, bool checkSideEffectSummary);
+    bool        optCanMoveNullCheckPastTree(GenTree* tree, bool isInsideTryOrFilter, bool checkSideEffectSummary);
 
     PhaseStatus optInductionVariables();
 
@@ -8375,7 +8404,11 @@ public:
     bool                  optRedundantRelop(BasicBlock* const block);
     bool                  optRedundantDominatingBranch(BasicBlock* const block);
     bool                  optRedundantBranch(BasicBlock* const block);
-    bool                  optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop);
+    bool                  optJumpThreadDom(BasicBlock* const block,
+                                           BasicBlock* const domBlock,
+                                           bool              domIsSameRelop,
+                                           ValueNum          domCmpExcVN,
+                                           ValueNum          treeExcVN);
     bool                  optJumpThreadPhi(BasicBlock* const block, GenTree* tree, ValueNum treeNormVN);
     JumpThreadCheckResult optJumpThreadCheck(BasicBlock* const block, BasicBlock* const domBlock);
     bool optFindPhiUsesInBlockAndSuccessors(BasicBlock* block, GenTreeLclVar* phiDef, JumpThreadInfo& jti);
@@ -8710,7 +8743,10 @@ public:
 
         bool IsConstantInt32Assertion() const
         {
-            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN);
+            // Note the O2K_CONST_INT payload is an ssize_t, so it may hold a TYP_LONG constant that
+            // does not fit into an int32. Callers assume an int32-sized constant, so require that here.
+            return CanPropEqualOrNotEqual() && GetOp2().KindIs(O2K_CONST_INT) && GetOp1().KindIs(O1K_LCLVAR, O1K_VN) &&
+                   FitsIn<int>(GetOp2().GetIntConstant());
         }
 
         bool CanPropLclVar() const
@@ -9169,8 +9205,12 @@ public:
         }
 
         // Create "i <relop> (bnd + cns)" assertion
-        static AssertionDsc CreateCompareCheckedBound(
-            const Compiler* comp, VNFunc relop, ValueNum op1VN, ValueNum checkedBndVN, int cns)
+        static AssertionDsc CreateCompareCheckedBound(const Compiler* comp,
+                                                      VNFunc          relop,
+                                                      ValueNum        op1VN,
+                                                      ValueNum        checkedBndVN,
+                                                      int             cns,
+                                                      bool            isVNNeverNegative = false)
         {
             assert(op1VN != ValueNumStore::NoVN);
             assert(checkedBndVN != ValueNumStore::NoVN);
@@ -9182,7 +9222,7 @@ public:
             dsc.m_op2.m_kind              = O2K_VN_ADD_CNS;
             dsc.m_op2.m_vn                = checkedBndVN;
             dsc.m_op2.m_icon.m_iconVal    = cns;
-            dsc.m_op2.m_isVNNeverNegative = comp->vnStore->IsVNNeverNegative(checkedBndVN);
+            dsc.m_op2.m_isVNNeverNegative = isVNNeverNegative || comp->vnStore->IsVNNeverNegative(checkedBndVN);
             return dsc;
         }
 
@@ -9691,22 +9731,6 @@ public:
         return eeGetEEInfo()->targetAbi == abi;
     }
 
-    bool BlockNonDeterministicIntrinsics(bool mustExpand)
-    {
-        // We explicitly block these APIs from being expanded in R2R
-        // since we know they are non-deterministic across hardware
-
-        if (IsReadyToRun())
-        {
-            if (mustExpand)
-            {
-                implReadyToRunUnsupported();
-            }
-            return true;
-        }
-        return false;
-    }
-
     bool generateCFIUnwindCodes()
     {
 #if defined(FEATURE_CFI_SUPPORT)
@@ -9828,6 +9852,47 @@ public:
     }
 
     bool eeRunWithSPMIErrorTrapImp(void (*function)(void*), void* param);
+
+    template <typename Functor>
+    bool eeRunFunctorWithErrorTrap(Functor f)
+    {
+        return eeRunWithErrorTrap<Functor>(
+            [](Functor* pf) {
+            (*pf)();
+        },
+            &f);
+    }
+
+#ifdef DEBUG
+    //------------------------------------------------------------------------
+    // eeRunExtraSuperPmiQueries: make JIT-EE queries whose only purpose is to enrich
+    //    the recorded SuperPMI method context (see JitConfig.EnableExtraSuperPmiQueries).
+    //
+    // Type parameters:
+    //    Functor - callable that makes the queries
+    //
+    // Arguments:
+    //    f - the functor
+    //
+    // Notes:
+    //    Extra queries must be observationally inert: enabling them must not change what
+    //    the JIT compiles. That is not automatic, because the EE may fail a query that the
+    //    JIT would never have made on its own. An AOT compiler in particular throws for a
+    //    handle it cannot embed, such as a type outside the current version bubble, and an
+    //    escaping exception would abort the enclosing inline or method. The collection
+    //    would then import less IL than a later replay does, and the context it recorded
+    //    would be missing the data that replay goes on to ask for.
+    //
+    //    Wrap only EE queries. JIT work must stay outside, because the trap does not
+    //    discriminate by origin: a noway_assert, NOMEM or assert raised inside the functor
+    //    would be quietly absorbed instead of failing the method.
+    //
+    template <typename Functor>
+    void eeRunExtraSuperPmiQueries(Functor f)
+    {
+        eeRunFunctorWithErrorTrap(f);
+    }
+#endif // DEBUG
 
     // Utility functions
 
@@ -10667,16 +10732,16 @@ public:
         Memset,
         Memcpy,
         Memmove,
+        Memcmp,
         MemcmpU16,
-        ProfiledMemmove,
-        ProfiledMemcmp
+        ProfiledMemmove
     };
 
     //------------------------------------------------------------------------
     // getUnrollThreshold: Calculates the unrolling threshold for the given operation
     //
     // Arguments:
-    //    type       - kind of the operation (memset/memcpy)
+    //    type       - kind of memory operation
     //    canUseSimd - whether it is allowed to use SIMD or not
     //
     // Return Value:
@@ -10684,6 +10749,33 @@ public:
     //
     unsigned int getUnrollThreshold(UnrollKind type, bool canUseSimd = true)
     {
+        if (type == UnrollKind::Memcmp)
+        {
+            // Match the unroller's supported ISA width, not the preferred vector width.
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#ifdef FEATURE_SIMD
+            if (canUseSimd)
+            {
+#ifdef TARGET_AMD64
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512))
+                {
+                    return 128;
+                }
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX2))
+                {
+                    // 256-bit equality requires AVX2, not just AVX.
+                    return 64;
+                }
+#endif // TARGET_AMD64
+                return 32;
+            }
+#endif // FEATURE_SIMD
+            return 16;
+#else
+            return 0;
+#endif // TARGET_AMD64 || TARGET_ARM64
+        }
+
         unsigned maxRegSize = REGSIZE_BYTES;
         unsigned threshold  = maxRegSize;
 
@@ -10752,11 +10844,15 @@ public:
 #endif
         }
 
-        // For profiled memcmp/memmove we don't want to unroll too much as it's just a guess,
+        // For profiled memmove we don't want to unroll too much as it's just a guess,
         // and it works better for small sizes.
-        if ((type == UnrollKind::ProfiledMemcmp) || (type == UnrollKind::ProfiledMemmove))
+        if (type == UnrollKind::ProfiledMemmove)
         {
+#ifdef TARGET_ARM64
+            threshold = maxRegSize * 4;
+#else
             threshold = maxRegSize * 2;
+#endif
         }
 
         return threshold;
@@ -10874,17 +10970,21 @@ private:
 #endif // DEBUG
 
 public:
-    bool notifyInstructionSetUsage(CORINFO_InstructionSet isa, bool supported) const;
+    bool notifyInstructionSetUsage(CORINFO_InstructionSet isa,
+                                   bool                   supported,
+                                   bool                   preserveNegativeDependency = false) const;
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will exactly match the target machine
-    // on which the function is executed (except for CoreLib, where there are special rules)
-    bool compExactlyDependsOn(CORINFO_InstructionSet isa) const
+    // on which the function is executed (except for CoreLib, unless preserveNegativeDependency is true)
+    bool compExactlyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
 #if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
-        if ((opts.compSupportsISAReported.HasInstructionSet(isa)) == false)
+        // ISA usage for non-deterministic intrinsics always notifies the EE regardless of the cache, to make sure
+        // that the method preserves a negative ISA prerequisite.
+        if (preserveNegativeDependency || (opts.compSupportsISAReported.HasInstructionSet(isa) == false))
         {
-            if (notifyInstructionSetUsage(isa, (opts.compSupportsISA.HasInstructionSet(isa))))
+            if (notifyInstructionSetUsage(isa, opts.compSupportsISA.HasInstructionSet(isa), preserveNegativeDependency))
                 ((Compiler*)this)->opts.compSupportsISAExactly.AddInstructionSet(isa);
             ((Compiler*)this)->opts.compSupportsISAReported.AddInstructionSet(isa);
         }
@@ -10897,11 +10997,11 @@ public:
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
     // The result of this api call will match the target machine if the result is true.
     // If the result is false, then the target machine may have support for the instruction.
-    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
+    bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
-        if (opts.compSupportsISA.HasInstructionSet(isa))
+        if (preserveNegativeDependency || opts.compSupportsISA.HasInstructionSet(isa))
         {
-            return compExactlyDependsOn(isa);
+            return compExactlyDependsOn(isa, preserveNegativeDependency);
         }
         else
         {
@@ -10910,10 +11010,10 @@ public:
     }
 
     // Answer the question: Is a particular ISA supported for explicit hardware intrinsics?
-    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa) const
+    bool compHWIntrinsicDependsOn(CORINFO_InstructionSet isa, bool preserveNegativeDependency = false) const
     {
         // Report intent to use the ISA to the EE
-        compExactlyDependsOn(isa);
+        compExactlyDependsOn(isa, preserveNegativeDependency);
         return opts.compSupportsISA.HasInstructionSet(isa);
     }
 
@@ -11695,6 +11795,7 @@ public:
         STRESS_MODE(UNSAFE_BUFFER_CHECKS)                                                       \
         STRESS_MODE(NULL_OBJECT_CHECK)                                                          \
         STRESS_MODE(RANDOM_INLINE)                                                              \
+        STRESS_MODE(ASYNC_INLINE) /* Randomly inline async callees that may suspend */          \
         STRESS_MODE(SWITCH_CMP_BR_EXPANSION)                                                    \
         STRESS_MODE(GENERIC_VARN)                                                               \
         STRESS_MODE(PROFILER_CALLBACKS) /* Will generate profiler hooks for ELT callbacks */    \
@@ -11765,10 +11866,10 @@ public:
 
     // Is general runtime async inlining being stressed, i.e. are async callees inlined
     // with a decaying random probability? See AsyncStressPolicy.
-    static bool compAsyncInliningStress()
-    {
-        return JitConfig.JitStressAsyncInlining() != 0;
-    }
+    bool compAsyncInliningStress();
+
+    // External seed for the random decisions made when stressing general async inlining.
+    static int compAsyncInliningStressSeed();
 
     bool compPromoteFewerStructs(unsigned lclNum);
 
@@ -11858,7 +11959,6 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // Hidden argument captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
         bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
 

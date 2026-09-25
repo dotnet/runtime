@@ -74,6 +74,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 caseTypeInfo = options.GetTypeInfoInternal(caseType);
                 state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
+                state.Current.NumberHandling = typeInfo.NumberHandling ?? caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
             }
 
             JsonConverter caseConverter = caseTypeInfo.Converter;
@@ -185,6 +186,7 @@ namespace System.Text.Json.Serialization.Converters
 
             JsonTypeInfo caseTypeInfo = options.GetTypeInfoInternal(caseType);
             state.Current.JsonPropertyInfo = caseTypeInfo.PropertyInfoForTypeInfo;
+            state.Current.NumberHandling = typeInfo.NumberHandling ?? caseTypeInfo.PropertyInfoForTypeInfo.EffectiveNumberHandling;
             return caseTypeInfo.Converter.TryWriteAsObject(writer, caseValue, options, ref state);
         }
     }

@@ -138,23 +138,6 @@ public:
 #endif
 
 private:
-    // Some Crsts have a "shutdown" mode.
-    // A Crst in shutdown mode can only be taken / released by special
-    // (the helper / finalizer / shutdown) threads. Any other thread that tries to take
-    // the a "shutdown" crst will immediately release the Crst and instead just block forever.
-    //
-    // This prevents random threads from blocking the special threads from doing finalization on shutdown.
-    //
-    // Unfortunately, each Crst needs its own "shutdown" flag because we can't convert all the locks
-    // into shutdown locks at once. For eg, the TSL needs to suspend the runtime before
-    // converting to a shutdown lock. But it can't suspend the runtime while holding
-    // a UNSAFE_ANYMODE lock (such as the debugger-lock). So at least the debugger-lock
-    // and TSL need to be set separately.
-    //
-    // So for such Crsts, it's the caller's responsibility to detect if the crst is in
-    // shutdown mode, and if so, call this function after enter.
-    void ReleaseAndBlockForShutdownIfNotSpecialThread();
-
     // Enter & Leave are deliberately private to force callers to use the
     // Holder class.  If you bypass the Holder class and access these members
     // directly, your lock is not exception-safe.

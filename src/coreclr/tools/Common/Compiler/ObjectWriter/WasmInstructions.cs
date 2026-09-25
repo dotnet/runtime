@@ -117,9 +117,12 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
     public enum WasmExprKind
     {
+        Unreachable = 0x00,
         If = 0x04,
         End = 0x0B,
+        Call = 0x10,
         CallIndirect = 0x11,
+        ReturnCall = 0x12,
         LocalGet = 0x20,
         LocalSet = 0x21,
         LocalTee = 0x22,
@@ -127,6 +130,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         GlobalSet = 0x24,
         I32Const = 0x41,
         I64Const = 0x42,
+        I32Eqz = 0x45,
         I32Ge_s = 0x4E,
         I32Add = 0x6A,
         I32Sub = 0x6B,
@@ -134,6 +138,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         I64Load = 0x29,
         F32Load = 0x2A,
         F64Load = 0x2B,
+        I32Load16_u = 0x2F,
         I32Store = 0x36,
         I64Store = 0x37,
         F32Store = 0x38,
@@ -445,6 +450,25 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             pos += DwarfHelper.WriteSLEB128(buffer.Slice(pos), ConstValue);
 
             return pos;
+        }
+    }
+
+    internal sealed class WasmPaddedI32ConstExpr : WasmExpr
+    {
+        private readonly int _value;
+
+        public WasmPaddedI32ConstExpr(int value) : base(WasmExprKind.I32Const)
+        {
+            _value = value;
+        }
+
+        public override int EncodeSize() => base.EncodeSize() + Relocation.WASM_PADDED_RELOC_SIZE_32;
+
+        public override int Encode(Span<byte> buffer)
+        {
+            int pos = base.Encode(buffer);
+            DwarfHelper.WritePaddedSLEB128(buffer.Slice(pos, Relocation.WASM_PADDED_RELOC_SIZE_32), _value);
+            return pos + Relocation.WASM_PADDED_RELOC_SIZE_32;
         }
     }
 
@@ -814,6 +838,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         {
             return new WasmConstExpr(WasmExprKind.I32Const, value);
         }
+        public static WasmExpr PaddedConst(int value)
+        {
+            return new WasmPaddedI32ConstExpr(value);
+        }
         public static WasmExpr ConstRVA(ISymbolNode symbolNode)
         {
             return new WasmLEBConstantReloc(WasmExprKind.I32Const, symbolNode, RelocType.WASM_MEMORY_ADDR_REL_SLEB);
@@ -821,8 +849,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
         public static WasmExpr Add => new WasmBinaryExpr(WasmExprKind.I32Add);
         public static WasmExpr Sub => new WasmBinaryExpr(WasmExprKind.I32Sub);
+        public static WasmExpr Eqz => new WasmUnaryExpr(WasmExprKind.I32Eqz);
         public static WasmExpr Ge_s => new WasmBinaryExpr(WasmExprKind.I32Ge_s);
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Load, 4, new WasmEncodableULong(offset));
+        public static WasmExpr Load16_u(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Load16_u, 2, new WasmEncodableULong(offset));
         public static WasmExpr LoadWithRVAOffset(ISymbolNode symbolNode) => new WasmMemoryArgInstruction<WasmEncodableSymbol>(WasmExprKind.I32Load, 4, new WasmEncodableSymbol(symbolNode, RelocType.WASM_MEMORY_ADDR_REL_LEB));
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Store, 4, new WasmEncodableULong(offset));
     }
@@ -874,6 +904,9 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
     internal static class ControlFlow
     {
+        public static WasmExpr Unreachable => new WasmUnaryExpr(WasmExprKind.Unreachable);
+        public static WasmExpr Call(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.Call, target, RelocType.WASM_FUNCTION_INDEX_LEB);
+        public static WasmExpr ReturnCall(ISymbolNode target) => new WasmLEBConstantReloc(WasmExprKind.ReturnCall, target, RelocType.WASM_FUNCTION_INDEX_LEB);
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
     }
     internal static class Table
