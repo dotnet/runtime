@@ -619,7 +619,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitValidateConfigurationKeysMethod();
                 }
 
-                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCoreMain | MethodsToGen_CoreBindingHelper.GetCore))
+                if (ShouldEmitMethods(MethodsToGen_CoreBindingHelper.BindCoreMain | MethodsToGen_CoreBindingHelper.GetCore | MethodsToGen_CoreBindingHelper.HasValueOrChildren))
                 {
                     // HasValueOrChildren references this method.
                     Debug.Assert(emitAsConfigWithChildren);
@@ -1161,7 +1161,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         bindingToLocal: true);
 
                     string instanceArg = type.IsValueType ? $"ref {Identifier.instance}" : Identifier.instance;
+
+                    // Invoke the init-only setter only when configuration is present for this member. This mirrors a
+                    // settable property, whose assignment runs only inside its own "key present" check, and the
+                    // reflection binder, which sets a property only when it bound a value (HasNewValue). An absent key
+                    // leaves the member at its default without calling the setter - so a null default is preserved and a
+                    // validating or side-effecting setter is not invoked with it - while a present (even empty) value is
+                    // set, matching how a nullable member is reset to null.
+                    EmitStartBlock($"if ({Identifier.HasValueOrChildren}({GetSectionFromConfigurationExpression(property.ConfigurationKeyName)}))");
                     _writer.WriteLine($"{GetInitOnlySetterAccessorName(type, property)}({instanceArg}, {local});");
+                    EmitEndBlock();
                 }
             }
 

@@ -978,13 +978,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 bool declaringTypeIsGeneric = declaringType.IsGenericType;
+
+                // A generic declaring type uses a generic wrapper class for the accessor, but only when it is not itself
+                // nested in a generic type: the wrapper is keyed on the declaring type's own type parameters, which cannot
+                // express the enclosing type's parameters. A type nested in a generic type (whether or not it adds its own
+                // parameters) therefore falls back to reflection, which needs no open-generic form.
+                bool canUseGenericWrapper = declaringTypeIsGeneric &&
+                    _typeSymbols.SupportsGenericUnsafeAccessors &&
+                    declaringType.ContainingType is not { IsGenericType: true };
                 bool setterCanUseUnsafeAccessor =
                     _typeSymbols.UnsafeAccessorAttribute is not null &&
                     declaringTypeCanBeNamed &&
-                    (!declaringTypeIsGeneric || _typeSymbols.SupportsGenericUnsafeAccessors);
+                    (!declaringTypeIsGeneric || canUseGenericWrapper);
 
                 GenericAccessorInfo genericInfo = default;
-                if (setterCanUseUnsafeAccessor && declaringTypeIsGeneric)
+                if (canUseGenericWrapper)
                 {
                     INamedTypeSymbol definition = declaringType.OriginalDefinition;
                     genericInfo = new GenericAccessorInfo(

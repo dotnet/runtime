@@ -351,6 +351,12 @@ namespace Microsoft.Extensions
             public List<string> Items { get; init; } = new() { "preset" };
         }
 
+        public sealed class InitOnlyAssignFromSectionValueProperties
+        {
+            public string Text { get; init; } = "textDefault";
+            public object Obj { get; init; } = "objDefault";
+        }
+
         public class BaseWithInitOnlyProperty
         {
             public string BaseName { get; init; } = "baseDefault";

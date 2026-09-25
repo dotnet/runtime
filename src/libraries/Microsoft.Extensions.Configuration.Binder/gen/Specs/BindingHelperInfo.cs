@@ -209,6 +209,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                         {
                                             RegisterForGen_AsConfigWithChildrenHelper();
                                         }
+
+                                        // An init-only member is set post-construction only when its configuration is
+                                        // present, which the generated BindCore checks with HasValueOrChildren, so ensure
+                                        // that helper is emitted.
+                                        if (property.CanSetViaAccessor && _typeIndex.ShouldBindTo(property))
+                                        {
+                                            RegisterForGen_HasValueOrChildrenHelper();
+                                        }
                                     }
 
                                     if (hasBindableMembers)
@@ -270,6 +278,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             private void RegisterForGen_AsConfigWithChildrenHelper() => _methodsToGen |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
+
+            // HasValueOrChildren is backed by AsConfigWithChildren, so registering it also registers that helper.
+            private void RegisterForGen_HasValueOrChildrenHelper() =>
+                _methodsToGen |= MethodsToGen_CoreBindingHelper.HasValueOrChildren | MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
         }
     }
 }

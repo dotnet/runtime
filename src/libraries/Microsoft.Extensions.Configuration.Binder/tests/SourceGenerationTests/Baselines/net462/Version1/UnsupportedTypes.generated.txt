@@ -136,7 +136,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         temp2 = ParseInt(value3, configuration.GetSection("x").Path);
                     }
                 }
-                __set_Record___System__Action____x(instance, temp2);
+                if (HasValueOrChildren(configuration.GetSection("x")))
+                {
+                    __set_Record___System__Action____x(instance, temp2);
+                }
             }
             else
             {

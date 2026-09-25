@@ -2265,6 +2265,28 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal("derivedDefault", whenMissing.DerivedName);
         }
 
+        /// <summary>
+        /// An init-only property of an <c>AssignFromSectionValue</c> type (<see cref="string"/> or <see cref="object"/>)
+        /// takes the section value as-is. An empty string is a real value, so it is set (overwriting a non-null default)
+        /// rather than treated as absent, while a missing key preserves the default - matching the reflection binder.
+        /// </summary>
+        [Fact]
+        public void CanBind_InitOnlyAssignFromSectionValueProperty()
+        {
+            string present = """{ "Text": "", "Obj": "hi" }""";
+            string missing = """{ "Unrelated": "x" }""";
+
+            InitOnlyAssignFromSectionValueProperties whenPresent =
+                TestHelpers.GetConfigurationFromJsonString(present).Get<InitOnlyAssignFromSectionValueProperties>();
+            InitOnlyAssignFromSectionValueProperties whenMissing =
+                TestHelpers.GetConfigurationFromJsonString(missing).Get<InitOnlyAssignFromSectionValueProperties>();
+
+            Assert.Equal("", whenPresent.Text);
+            Assert.Equal("hi", whenPresent.Obj);
+            Assert.Equal("textDefault", whenMissing.Text);
+            Assert.Equal("objDefault", whenMissing.Obj);
+        }
+
         public static IEnumerable<object[]> Configuration_TestData()
         {
             yield return new object[]
