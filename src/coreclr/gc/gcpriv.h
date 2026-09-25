@@ -687,6 +687,21 @@ public:
     void first_init(); // for the life of the EE
 
     void record (gc_history_global* history);
+
+    gc_etw_type get_etw_type() const
+    {
+        if (concurrent)
+        {
+            return gc_etw_type_bgc;
+        }
+#ifdef BACKGROUND_GC
+        if (condemned_generation < max_generation && background_p)
+        {
+            return gc_etw_type_fgc;
+        }
+#endif // BACKGROUND_GC
+        return gc_etw_type_ngc;
+    }
 };
 
 // This is a compact version of gc_mechanism that we use to save in the history.
@@ -5475,6 +5490,7 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
+    PER_HEAP_ISOLATED_METHOD void record_gc_pause(uint64_t duration_microseconds);
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_ephemeral_gc_info;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_full_blocking_gc_info;

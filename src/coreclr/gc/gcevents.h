@@ -10,6 +10,7 @@
 
 KNOWN_EVENT(GCStart_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCEnd_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
+KNOWN_EVENT(GCPause, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCPause)
 KNOWN_EVENT(GCGenerationRange, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GCHeapSurvivalAndMovement)
 KNOWN_EVENT(GCHeapStats_V2, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)
 KNOWN_EVENT(GCCreateSegment_V1, GCEventProvider_Default, GCEventLevel_Information, GCEventKeyword_GC)

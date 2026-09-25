@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.Diagnostics.Metrics
 {
@@ -16,6 +17,7 @@ namespace System.Diagnostics.Metrics
 
         // The SyncObject is used to synchronize the following operations:
         //  - Instrument.Publish()
+        //  - Instrument.SetMeasurementStateCallback
         //  - Meter constructor
         //  - Meter.Dispose
         //  - MeterListener.EnableMeasurementEvents
@@ -27,6 +29,39 @@ namespace System.Diagnostics.Metrics
         // We use LikedList here so we don't have to take any lock while iterating over the list as we always hold on a node which be either valid or null.
         // DiagLinkedList is thread safe for Add and Remove operations.
         internal readonly DiagLinkedList<ListenerSubscription> _subscriptions = new DiagLinkedList<ListenerSubscription>();
+
+        private Action<Instrument, bool, long>? _measurementStateChanged;
+        private long _measurementEpoch;
+
+        // Subscription epochs distinguish a re-enabled producer from an in-flight previous delivery.
+        internal long MeasurementEpoch => Volatile.Read(ref _measurementEpoch);
+
+        internal void SetMeasurementStateCallback(Action<Instrument, bool, long> callback)
+        {
+            MeasurementState state;
+            lock (Instrument.SyncObject)
+            {
+                Debug.Assert(_measurementStateChanged is null);
+                _measurementStateChanged = callback;
+                state = GetMeasurementState();
+            }
+
+            // Publication can synchronously enable listeners before the hook is installed.
+            state.Notify(this);
+        }
+
+        internal MeasurementState GetMeasurementState()
+        {
+            Debug.Assert(Monitor.IsEntered(Instrument.SyncObject));
+            return _measurementStateChanged is null ? default :
+                new MeasurementState(_measurementStateChanged, Enabled && !Meter.Disposed, _measurementEpoch);
+        }
+
+        internal readonly struct MeasurementState(Action<Instrument, bool, long> callback, bool enabled, long epoch)
+        {
+            internal bool HasCallback => callback is not null;
+            internal void Notify(Instrument instrument) => callback?.Invoke(instrument, enabled, epoch);
+        }
 
         /// <summary>
         /// Constructs a new instance of <see cref="Instrument"/>.
@@ -171,6 +206,8 @@ namespace System.Diagnostics.Metrics
         internal object? EnableMeasurement(ListenerSubscription subscription, out bool oldStateStored)
         {
             oldStateStored = false;
+            bool trackState = _measurementStateChanged is not null;
+            bool wasEnabled = trackState && Enabled;
 
             if (!_subscriptions.AddIfNotExist(subscription, (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)))
             {
@@ -180,11 +217,24 @@ namespace System.Diagnostics.Metrics
                 return oldSubscription.State;
             }
 
+            if (trackState && !wasEnabled)
+            {
+                Volatile.Write(ref _measurementEpoch, _measurementEpoch + 1);
+            }
             return false;
         }
 
         // Called from MeterListener.DisableMeasurementEvents
-        internal object? DisableMeasurements(MeterListener listener) => _subscriptions.Remove(new ListenerSubscription(listener), (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)).State;
+        internal object? DisableMeasurements(MeterListener listener)
+        {
+            bool wasEnabled = _measurementStateChanged is not null && Enabled;
+            object? state = _subscriptions.Remove(new ListenerSubscription(listener), (s1, s2) => object.ReferenceEquals(s1.Listener, s2.Listener)).State;
+            if (wasEnabled && !Enabled)
+            {
+                Volatile.Write(ref _measurementEpoch, _measurementEpoch + 1);
+            }
+            return state;
+        }
 
         internal virtual void Observe(MeterListener listener)
         {
