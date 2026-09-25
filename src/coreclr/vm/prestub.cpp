@@ -2769,7 +2769,7 @@ PCODE TheVarargPInvokeStub(BOOL hasRetBuffArg)
 }
 #endif // FEATURE_VARARGS
 
-static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, PTR_READYTORUN_IMPORT_SECTION pImportSection, TADDR pIndirection)
+static PCODE PatchNonVirtualExternalMethod(MethodDesc * pMD, PCODE pCode, TADDR pIndirection)
 {
     STANDARD_VM_CONTRACT;
 
@@ -3213,7 +3213,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
 
             PCODE pEntryPoint = pMD->GetMethodEntryPoint();
             MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(pEntryPoint);
-            pCode = PatchNonVirtualExternalMethod(pMD, pEntryPoint, pImportSection, pIndirection);
+            pCode = PatchNonVirtualExternalMethod(pMD, pEntryPoint, pIndirection);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
             pCode = pMD->GetMethodEntryPoint();
 
@@ -3232,7 +3232,7 @@ EXTERN_C PCODE STDCALL ExternalMethodFixupWorker(
                     pCode = pMD->GetLoaderAllocator()->GetFuncPtrStubs()->GetFuncPtrStub(pMD);
                 }
 
-                pCode = PatchNonVirtualExternalMethod(pMD, pCode, pImportSection, pIndirection);
+                pCode = PatchNonVirtualExternalMethod(pMD, pCode, pIndirection);
             }
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
         }
