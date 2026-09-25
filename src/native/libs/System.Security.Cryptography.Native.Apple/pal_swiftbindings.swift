@@ -595,6 +595,53 @@ public func AppleCryptoNative_DigestCurrent(ctx: UnsafeMutableRawPointer?, pOutp
     return 1
 }
 
+@_silgen_name("AppleCryptoNative_EccExportPublicKeyFromPrivateKey")
+public func AppleCryptoNative_EccExportPublicKeyFromPrivateKey(
+    keySizeInBits: Int32,
+    pPrivateKey: UnsafeMutableRawPointer?,
+    cbPrivateKey: Int32,
+    pOutput: UnsafeMutablePointer<UInt8>?,
+    cbOutput: Int32) -> Int32 {
+    guard let pPrivateKey, cbPrivateKey > 0, let pOutput, cbOutput > 0 else {
+        return -1
+    }
+
+    let privateKey = Data(bytesNoCopy: pPrivateKey, count: Int(cbPrivateKey), deallocator: Data.Deallocator.none)
+    let publicKey: Data
+
+    switch keySizeInBits {
+        case 256:
+            guard let key = try? P256.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        case 384:
+            guard let key = try? P384.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        case 521:
+            guard let key = try? P521.KeyAgreement.PrivateKey(rawRepresentation: privateKey) else {
+                return 0
+            }
+            publicKey = key.publicKey.x963Representation
+        default:
+            return -1
+    }
+
+    let destination = UnsafeMutableRawBufferPointer(start: pOutput, count: Int(cbOutput))
+
+    guard publicKey.count == destination.count else {
+        return -1
+    }
+
+    let copied = publicKey.withUnsafeBytes { publicKeyBytes in
+        return publicKeyBytes.copyBytes(to: destination) == publicKeyBytes.count
+    }
+
+    return copied ? 1 : -1
+}
+
 // Return values:
 //   1: success
 //   0: key agreement failed (e.g. peer is a low-order point and the shared
