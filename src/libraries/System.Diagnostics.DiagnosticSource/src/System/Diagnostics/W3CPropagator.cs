@@ -327,6 +327,14 @@ namespace System.Diagnostics
             value = null!;
             valueSpan = Trim(valueSpan);
 
+            // If every character is already in the allowed (unescaped) baggage-value set, which
+            // excludes both '%' and non-ASCII, the value decodes to itself.
+            if (valueSpan.IndexOfAnyExcept(s_validBaggageValueChars) < 0)
+            {
+                value = valueSpan.ToString();
+                return true;
+            }
+
             using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[128]);
 
             for (int i = 0; i < valueSpan.Length; i++)
