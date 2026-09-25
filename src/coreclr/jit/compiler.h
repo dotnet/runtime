@@ -3773,13 +3773,13 @@ public:
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
     GenTree* gtNewSimdStoreNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreAlignedNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdStoreNonTemporalNode(
-        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize);
+        GenTree* op1, GenTree* op2, var_types simdBaseType, unsigned simdSize, bool reverseOps = false);
 
     GenTree* gtNewSimdSumNode(
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
@@ -4044,6 +4044,9 @@ public:
 
     // Returns true iff the secondNode can be swapped with firstNode.
     bool gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode);
+
+    bool gtCanReorderWithoutTemp(GenTree* firstOp, GenTree* secondOp);
+    void gtPrepareOperandsForReordering(GenTree** firstOp, GenTree** secondOp);
 
     // Given an address expression, compute its costs and addressing mode opportunities,
     // and mark addressing mode candidates as GTF_DONT_CSE.
