@@ -69,10 +69,14 @@ namespace System.Threading
 
     internal abstract class NamedMutexProcessDataBase(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> header) : ISharedMemoryProcessData
     {
+        // The shared data layout must stay compatible with the CoreCLR PAL implementation used by .NET 10 and earlier
+        // https://github.com/dotnet/runtime/blob/release/10.0/src/coreclr/pal/src/synchobj/mutex.cpp, which
+        // uses the same shared memory files and the same SyncSystemVersion.
+        // Processes from both implementations may open the same named mutex at the same time.
         private const byte SyncSystemVersion = 1;
         protected const int PollLoopMaximumSleepMilliseconds = 100;
         protected const uint InvalidProcessId = unchecked((uint)-1);
-        protected const uint InvalidThreadId = unchecked((uint)-1);
+        protected const ulong InvalidThreadId = unchecked((ulong)-1);
 
         // Use PThread mutex-backed named mutexes if possible.
         // macOS has support for the features we need in the pthread mutexes on arm64
@@ -82,7 +86,12 @@ namespace System.Threading
         // independently by the processes involved. See https://github.com/dotnet/runtime/issues/10519.
         // On OpenBSD, cross process mutexes are not supported in the pthread implementation. See https://github.com/dotnet/runtime/pull/125089.
         // On Haiku, robust mutexes are WIP. See https://github.com/dotnet/runtime/pull/126701#issuecomment-4334338213.
-        private static bool UsePThreadMutexes => !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku();
+        // On Linux arm and arm64, we do not use PThread mutex-backed named mutexes for compatibility with previous .NET versions.
+        private static bool UsePThreadMutexes =>
+#if (TARGET_ARM || TARGET_ARM64)
+            !OperatingSystem.IsLinux() &&
+#endif
+            !OperatingSystem.IsApplePlatform() && !OperatingSystem.IsFreeBSD() && !OperatingSystem.IsOpenBSD() && !OperatingSystem.IsHaiku();
 
         private readonly SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> _processDataHeader = header;
         protected nuint _lockCount;
@@ -98,38 +107,17 @@ namespace System.Threading
 
         protected abstract void SetLockOwnerToCurrentThread();
 
-        public MutexTryAcquireLockResult TryAcquireLock(WaitSubsystem.ThreadWaitInfo waitInfo, int timeoutMilliseconds, ref WaitSubsystem.LockHolder holder)
+        public UnrecordedMutexAcquisition TryAcquireLock(int timeoutMilliseconds)
         {
-            SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
-            holder.Dispose();
-            MutexTryAcquireLockResult result = AcquireLockCore(timeoutMilliseconds);
-
-            if (result == MutexTryAcquireLockResult.AcquiredLockRecursively)
+            if (timeoutMilliseconds != 0)
             {
-                return MutexTryAcquireLockResult.AcquiredLock;
+                // We can't have the creation/deletion process lock held while trying to acquire a lock with a non-zero timeout
+                // as this can lead to a deadlock or livelock situation between multiple different cross-process mutexes
+                // used across multiple threads within the same process and across processes.
+                SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsNotLocked();
             }
 
-            if (result == MutexTryAcquireLockResult.TimedOut)
-            {
-                // If the lock was not acquired, we don't have any more work to do.
-                return result;
-            }
-
-            holder = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
-            SetLockOwnerToCurrentThread();
-            _lockCount = 1;
-            _lockOwnerThread = waitInfo.Thread;
-            // Add the ref count for the thread's wait info.
-            _processDataHeader.IncrementRefCount();
-            waitInfo.NamedMutexOwnershipChain.Add(this);
-
-            if (IsAbandoned)
-            {
-                IsAbandoned = false;
-                result = MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
-            }
-
-            return result;
+            return new UnrecordedMutexAcquisition(this, AcquireLockCore(timeoutMilliseconds));
         }
 
         public void ReleaseLock()
@@ -248,8 +236,13 @@ namespace System.Threading
 
                         if (created && acquireLockIfCreated)
                         {
-                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(Thread.CurrentThread.WaitInfo, timeoutMilliseconds: 0, ref creationDeletionProcessLock);
-                            Debug.Assert(acquireResult == MutexTryAcquireLockResult.AcquiredLock);
+                            NamedMutexProcessDataBase processData = processDataHeader._processData;
+                            MutexTryAcquireLockResult acquireResult = processDataHeader._processData.TryAcquireLock(timeoutMilliseconds: 0).RecordMutexAcquisition(Thread.CurrentThread.WaitInfo);
+                            if (acquireResult != MutexTryAcquireLockResult.AcquiredLock)
+                            {
+                                // We created the mutex so we should be able to acquire it immediately.
+                                throw new ApplicationException();
+                            }
                         }
                     }
 
@@ -289,6 +282,39 @@ namespace System.Threading
                 Thread.CurrentThread.WaitInfo.NamedMutexOwnershipChain.Remove(this);
             }
         }
+
+        public struct UnrecordedMutexAcquisition(NamedMutexProcessDataBase mutexData, MutexTryAcquireLockResult rawAcquireResult)
+        {
+            public MutexTryAcquireLockResult RecordMutexAcquisition(WaitSubsystem.ThreadWaitInfo waitInfo)
+            {
+                if (rawAcquireResult == MutexTryAcquireLockResult.AcquiredLockRecursively)
+                {
+                    return MutexTryAcquireLockResult.AcquiredLock;
+                }
+
+                if (rawAcquireResult == MutexTryAcquireLockResult.TimedOut)
+                {
+                    return MutexTryAcquireLockResult.TimedOut;
+                }
+
+                SharedMemoryManager<NamedMutexProcessDataBase>.Instance.VerifyCreationDeletionProcessLockIsLocked();
+
+                mutexData.SetLockOwnerToCurrentThread();
+                mutexData._lockCount = 1;
+                mutexData._lockOwnerThread = waitInfo.Thread;
+                // Add the ref count for the thread's wait info.
+                mutexData._processDataHeader.IncrementRefCount();
+                waitInfo.NamedMutexOwnershipChain.Add(mutexData);
+
+                if (mutexData.IsAbandoned)
+                {
+                    mutexData.IsAbandoned = false;
+                    return MutexTryAcquireLockResult.AcquiredLockButMutexWasAbandoned;
+                }
+
+                return rawAcquireResult;
+            }
+        }
     }
 
     internal sealed unsafe class NamedMutexProcessDataWithPThreads(SharedMemoryProcessDataHeader<NamedMutexProcessDataBase> processDataHeader) : NamedMutexProcessDataBase(processDataHeader)
@@ -298,7 +324,7 @@ namespace System.Threading
 
         protected override bool IsLockOwnedByThreadInThisProcess(Thread thread)
         {
-            Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out uint ownerThreadId);
+            Interop.Sys.LowLevelCrossProcessMutex_GetOwnerProcessAndThreadId(_sharedData, out uint ownerProcessId, out ulong ownerThreadId);
             return ownerProcessId == (uint)Environment.ProcessId &&
                    ownerThreadId == (uint)thread.ManagedThreadId;
         }
@@ -581,12 +607,14 @@ namespace System.Threading
             }
         }
 
+        // Must match the file lock variant of NamedMutexSharedData in the CoreCLR PAL used by .NET 10 and earlier
+        // (src/coreclr/pal/src/include/pal/mutex.hpp): the owner thread ID is 64 bits wide and _isAbandoned follows it.
         [StructLayout(LayoutKind.Sequential)]
         internal ref struct SharedData
         {
             private uint _timedWaiterCount;
             private uint _lockOwnerProcessId;
-            private uint _lockOwnerThreadId;
+            private ulong _lockOwnerThreadId;
             private byte _isAbandoned;
 
             public uint TimedWaiterCount { get => _timedWaiterCount; set => _timedWaiterCount = value; }
@@ -602,7 +630,7 @@ namespace System.Threading
                 }
             }
 
-            public uint LockOwnerThreadId
+            public ulong LockOwnerThreadId
             {
                 get
                 {
@@ -650,10 +678,13 @@ namespace System.Threading
             public int Wait_Locked(ThreadWaitInfo waitInfo, int timeoutMilliseconds, bool interruptible, ref LockHolder lockHolder)
             {
                 lockHolder.Dispose();
+
+                NamedMutexProcessDataBase.UnrecordedMutexAcquisition acquisition = _processDataHeader._processData!.TryAcquireLock(timeoutMilliseconds);
                 LockHolder scope = SharedMemoryManager<NamedMutexProcessDataBase>.Instance.AcquireCreationDeletionProcessLock();
                 try
                 {
-                    MutexTryAcquireLockResult result = _processDataHeader._processData!.TryAcquireLock(waitInfo, timeoutMilliseconds, ref scope);
+                    MutexTryAcquireLockResult result = acquisition.RecordMutexAcquisition(waitInfo);
+
                     return result switch
                     {
                         MutexTryAcquireLockResult.AcquiredLock => WaitHandle.WaitSuccess,

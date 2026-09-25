@@ -10,7 +10,7 @@ import { dotnetAssert, dotnetLogger, Module } from "./cross-module";
 import { bindAssemblyExports, invokeJSExport } from "./managed-exports";
 import { allocStackFrame, getSig, getSignatureType, getSignatureArgumentCount, getSignatureVersion, jsInteropState } from "./marshal";
 import { bindArgMarshalToCs } from "./marshal-to-cs";
-import { bindArgMarshalToJs, endMarshalTaskToJs } from "./marshal-to-js";
+import { bindArgMarshalToJs, endMarshalTaskToJs, releaseEagerTaskHolder } from "./marshal-to-js";
 import { assertJsInterop, assertRuntimeRunning, endMeasure, isRuntimeRunning, startMeasure } from "./utils";
 import { MarshalerType, MeasuredBlock } from "./types";
 import { boundCsFunctionSymbol, exportsByAssembly } from "./gc-handles";
@@ -201,8 +201,14 @@ function bindFn_1RA(closure: BindingClosureCS) {
             // pre-allocate the promise
             let promise = resConverter(args);
 
-            // call C# side
-            invokeJSExport(methodHandle, args);
+            try {
+                // call C# side
+                invokeJSExport(methodHandle, args);
+            } catch (ex) {
+                // the throw unwinds past endMarshalTaskToJs, which would otherwise adopt it
+                releaseEagerTaskHolder(promise);
+                throw ex;
+            }
 
             // in case the C# side returned synchronously
             promise = endMarshalTaskToJs(args, undefined, promise);
@@ -266,8 +272,14 @@ function bindFn_2RA(closure: BindingClosureCS) {
             // pre-allocate the promise
             let promise = resConverter(args);
 
-            // call C# side
-            invokeJSExport(methodHandle, args);
+            try {
+                // call C# side
+                invokeJSExport(methodHandle, args);
+            } catch (ex) {
+                // the throw unwinds past endMarshalTaskToJs, which would otherwise adopt it
+                releaseEagerTaskHolder(promise);
+                throw ex;
+            }
 
             // in case the C# side returned synchronously
             promise = endMarshalTaskToJs(args, undefined, promise);
@@ -311,7 +323,13 @@ function bindFn(closure: BindingClosureCS) {
 
             // call C# side
             if (isAsync) {
-                invokeJSExport(methodHandle, args);
+                try {
+                    invokeJSExport(methodHandle, args);
+                } catch (ex) {
+                    // the throw unwinds past endMarshalTaskToJs, which would otherwise adopt it
+                    releaseEagerTaskHolder(jsResult);
+                    throw ex;
+                }
                 // in case the C# side returned synchronously
                 jsResult = endMarshalTaskToJs(args, undefined, jsResult);
             } else if (isDiscardNoWait) {

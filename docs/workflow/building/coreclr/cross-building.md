@@ -157,7 +157,7 @@ docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/arm64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-arm64 \
   ./build.sh --subset clr --cross --arch arm64
 ```
 
@@ -170,7 +170,7 @@ docker run --rm \
   -v <RUNTIME_REPO_PATH>:/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/x64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-freebsd-14-amd64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-freebsd-14-amd64 \
   ./build.sh --subset clr --cross --os freebsd
 ```
 
@@ -201,7 +201,7 @@ docker run --rm -it \
   -v $(pwd):/runtime \
   -w /runtime \
   -e ROOTFS_DIR=/crossrootfs/arm64 \
-  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net11.0-cross-freebsd-14-arm64 \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-4.0-net11.0-cross-freebsd-14-arm64 \
   bash
 ```
 

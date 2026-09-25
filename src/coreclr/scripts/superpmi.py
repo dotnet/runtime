@@ -340,7 +340,7 @@ replay_common_parser = argparse.ArgumentParser(add_help=False)
 # NOTE: When adding arguments here, also make sure that they are set when collect does its replay:
 # see the "collect" case in setup_args.
 replay_common_parser.add_argument("-mch_files", metavar="MCH_FILE", nargs='+', help=replay_mch_files_help)
-replay_common_parser.add_argument("-filter", nargs='+', help=filter_help)
+replay_common_parser.add_argument("-filter", "-f", nargs='+', help=filter_help)
 replay_common_parser.add_argument("-product_location", help=product_location_help)
 replay_common_parser.add_argument("--force_download", action="store_true", help=force_download_help)
 replay_common_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
@@ -405,7 +405,7 @@ upload_private_parser.add_argument("--skip_cleanup", action="store_true", help=s
 # subparser for download
 download_parser = subparsers.add_parser("download", description=download_description, parents=[core_root_parser, target_parser])
 
-download_parser.add_argument("-filter", nargs='+', help=filter_help)
+download_parser.add_argument("-filter", "-f", nargs='+', help=filter_help)
 download_parser.add_argument("-jit_ee_version", help=jit_ee_version_help)
 download_parser.add_argument("--skip_cleanup", action="store_true", help=skip_cleanup_help)
 download_parser.add_argument("--force_download", action="store_true", help=force_download_help)

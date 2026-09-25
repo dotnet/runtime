@@ -86,7 +86,7 @@ namespace Microsoft.Interop
                 throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
             }
             var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
-            return new GeneratedStubCodeContext(sourceAvailableContext.TypeKeyOwner, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
+            return new GeneratedStubCodeContext(sourceAvailableContext.TypeKeyOwner, sourceAvailableContext.ContainingSyntaxContext, methodStub, new(diagnostics));
         }
 
         private GeneratedMethodContextBase? _unmanagedToManagedStub;
@@ -106,7 +106,7 @@ namespace Microsoft.Interop
                 throw new InvalidOperationException("Cannot generate stubs for non-source available methods.");
             }
             var (methodStub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(sourceAvailableContext, ComInterfaceGeneratorHelpers.GetGeneratorResolver);
-            return new GeneratedStubCodeContext(sourceAvailableContext.OriginalDefiningType, sourceAvailableContext.ContainingSyntaxContext, new(methodStub), new(diagnostics));
+            return new GeneratedStubCodeContext(sourceAvailableContext.OriginalDefiningType, sourceAvailableContext.ContainingSyntaxContext, methodStub, new(diagnostics));
         }
 
         /// <summary>

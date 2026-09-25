@@ -1012,8 +1012,9 @@ namespace System
             // When the number is known to be roundtrippable (either because we requested it be, or
             // because we know we have enough digits to satisfy roundtrippability), we should validate
             // that the number actually roundtrips back to the original result.
+            // This only applies to significant digits; fractional digits may include leading zeros.
 
-            Debug.Assert(((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
+            Debug.Assert(!isSignificantDigits || ((precision != -1) && (precision < TNumber.MaxRoundTripDigits)) || (TNumber.FloatToBits(value) == TNumber.FloatToBits(NumberToFloat<TNumber>(ref number))));
 
             if (fmt != 0)
             {

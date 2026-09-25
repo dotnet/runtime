@@ -1038,6 +1038,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
@@ -2354,6 +2357,11 @@ namespace Internal.JitInterface
                 (_compilation.NodeFactory.Target.IsWasm &&
                     targetMethod.OwningType.IsInterface))
             {
+                if (!targetMethod.HasInstantiation)
+                {
+                    // If it is also a default interface method call, it should go through instantiating stub.
+                    useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
+                }
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
             }
@@ -2539,6 +2547,19 @@ namespace Internal.JitInterface
             // We validate the safety of the signature here, as it could have been adjusted
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
+
+            if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
+            {
+                // The hidden-argument flags come from the resolved call signature: a shared generic
+                // delegate supplies its generic context through 'this', which the Invoke method's own
+                // instantiation flags do not reflect.
+                WasmLowering.LoweringFlags loweringFlags = WasmLowering.GetLoweringFlags(&pResult->sig);
+                Debug.Assert(!loweringFlags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly));
+
+                MethodSignature closedStaticSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(targetMethod.Signature);
+                WasmSignature wasmSignature = WasmLowering.GetSignature(closedStaticSignature, loweringFlags);
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSignature), "R2R-to-interpreter thunk for closed-static delegate target");
+            }
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
@@ -3876,17 +3897,7 @@ namespace Internal.JitInterface
             // D code is shared by physical signature, but each target I thunk must preserve
             // the full interpreter layout, including aggregate sizes and alignment.
             MethodSignature delegateSignature = WasmLowering.RaiseSignature(signature, _compilation.TypeSystemContext);
-            TypeDesc[] targetParameters = new TypeDesc[delegateSignature.Length + 1];
-            targetParameters[0] = _compilation.TypeSystemContext.GetWellKnownType(WellKnownType.Object);
-            for (int i = 0; i < delegateSignature.Length; i++)
-            {
-                targetParameters[i + 1] = delegateSignature[i];
-            }
-            MethodSignature targetSignature = new MethodSignature(
-                MethodSignatureFlags.Static,
-                0,
-                delegateSignature.ReturnType,
-                targetParameters);
+            MethodSignature targetSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(delegateSignature);
             WasmSignature targetWasmSignature = WasmLowering.GetSignature(targetSignature, WasmLowering.LoweringFlags.None);
             Debug.Assert(targetWasmSignature.FuncType.Equals(signature.FuncType));
             AddAdditionalDependency(

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -108,15 +106,15 @@ namespace Microsoft.Interop
         /// <summary>
         /// Generate code for marshalling
         /// </summary>
+        /// <param name="writer">Writer for the generated statements.</param>
         /// <param name="context">Code generation context</param>
-        /// <returns>List of statements to be added to the P/Invoke stub</returns>
         /// <remarks>
-        /// The generator should return the appropriate statements based on the
+        /// The generator should write the appropriate statements based on the
         /// <see cref="StubIdentifierContext.CurrentStage" /> of <paramref name="context"/>.
-        /// For <see cref="StubIdentifierContext.Stage.Pin"/>, any statements not of type
-        /// <see cref="FixedStatementSyntax"/> will be ignored.
+        /// For <see cref="StubIdentifierContext.Stage.Pin"/>, write only fixed-statement
+        /// headers, without bodies. The stub generator supplies the shared body.
         /// </remarks>
-        IEnumerable<StatementSyntax> Generate(StubIdentifierContext context);
+        void Generate(IndentedTextWriter writer, StubIdentifierContext context);
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition
@@ -163,7 +161,7 @@ namespace Microsoft.Interop
 
         public SignatureBehavior NativeSignatureBehavior => unbound.GetNativeSignatureBehavior(TypeInfo);
 
-        public IEnumerable<StatementSyntax> Generate(StubIdentifierContext context) => unbound.Generate(TypeInfo, CodeContext, context);
+        public void Generate(IndentedTextWriter writer, StubIdentifierContext context) => unbound.Generate(writer, TypeInfo, CodeContext, context);
 
         public ValueBoundaryBehavior ValueBoundaryBehavior => unbound.GetValueBoundaryBehavior(TypeInfo, context);
 
@@ -191,7 +189,7 @@ namespace Microsoft.Interop
     public interface IUnboundMarshallingGenerator
     {
         /// <summary>
-        /// Get the native type syntax for <paramref name="info"/>
+        /// Get the native type for <paramref name="info"/>
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <returns>Managed type info for the native type representing <paramref name="info"/></returns>
@@ -201,7 +199,7 @@ namespace Microsoft.Interop
         /// Get shape that represents the provided <paramref name="info"/> in the native signature
         /// </summary>
         /// <param name="info">Object to marshal</param>
-        /// <returns>Parameter syntax for <paramref name="info"/></returns>
+        /// <returns>The native signature representation for <paramref name="info"/></returns>
         SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info);
 
         /// <summary>
@@ -209,23 +207,23 @@ namespace Microsoft.Interop
         /// </summary>
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>
-        /// <returns>Argument syntax for <paramref name="info"/></returns>
+        /// <returns>The value representation at the managed/native boundary for <paramref name="info"/></returns>
         ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context);
 
         /// <summary>
         /// Generate code for marshalling
         /// </summary>
+        /// <param name="writer">Writer for the generated statements.</param>
         /// <param name="info">Object to marshal</param>
         /// <param name="codeContext">Code generation context</param>
         /// <param name="context">Context to get identifiers</param>
-        /// <returns>List of statements to be added to the P/Invoke stub</returns>
         /// <remarks>
-        /// The generator should return the appropriate statements based on the
+        /// The generator should write the appropriate statements based on the
         /// <see cref="StubIdentifierContext.CurrentStage" /> of <paramref name="context"/>.
-        /// For <see cref="StubIdentifierContext.Stage.Pin"/>, any statements not of type
-        /// <see cref="FixedStatementSyntax"/> will be ignored.
+        /// For <see cref="StubIdentifierContext.Stage.Pin"/>, write only fixed-statement
+        /// headers, without bodies. The stub generator supplies the shared body.
         /// </remarks>
-        IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context);
+        void Generate(IndentedTextWriter writer, TypePositionInfo info, StubCodeContext codeContext, StubIdentifierContext context);
 
         /// <summary>
         /// Returns whether or not this marshaller uses an identifier for the native value in addition

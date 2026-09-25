@@ -9,7 +9,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal readonly struct Thread_1 : IThread
 {
     private readonly Target _target;
-    private readonly TargetPointer _threadStoreAddr;
+    private readonly CachedValue<TargetPointer> _threadStore;
 
     [Flags]
     private enum TLSIndexType
@@ -49,7 +49,12 @@ internal readonly struct Thread_1 : IThread
     internal Thread_1(Target target)
     {
         _target = target;
-        _threadStoreAddr = target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore));
+        _threadStore = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ThreadStore)));
+    }
+
+    public void Flush(FlushScope scope)
+    {
+        _threadStore.Clear();
     }
 
     void IThread.SetDebuggerControlledThreadState(TargetPointer thread, DebuggerControlledThreadState state)
@@ -66,7 +71,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreData IThread.GetThreadStoreData()
     {
-        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
         return new ThreadStoreData(
             threadStore.ThreadCount,
             threadStore.FirstThreadLink,
@@ -76,7 +81,7 @@ internal readonly struct Thread_1 : IThread
 
     ThreadStoreCounts IThread.GetThreadCounts()
     {
-        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStoreAddr);
+        Data.ThreadStore threadStore = _target.ProcessedData.GetOrAdd<Data.ThreadStore>(_threadStore);
         return new ThreadStoreCounts(
             threadStore.UnstartedCount,
             threadStore.BackgroundCount,

@@ -42,6 +42,12 @@ public struct JitManagerInfo
     public TargetPointer HeapListAddress;
 }
 
+public enum JitManagerKind
+{
+    EE,
+    Interpreter,
+}
+
 public enum CodeKind : uint
 {
     Unknown = 0,
@@ -114,8 +120,8 @@ public interface IExecutionManager : IContract
     bool IsGcSafe(TargetCodePointer instructionPointer) => throw new NotImplementedException();
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
-    JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
-    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
+    JitManagerInfo? GetJitManagerInfo(JitManagerKind kind) => throw new NotImplementedException();
+    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos(JitManagerKind kind) => throw new NotImplementedException();
     IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
