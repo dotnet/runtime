@@ -1310,23 +1310,24 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
 
+    StackingAllocator * const pStackingAllocator = GetStackingAllocator();
     SetBMTData(
         pAllocator,
-        new (GetStackingAllocator()) bmtErrorInfo(),
-        new (GetStackingAllocator()) bmtProperties(),
-        new (GetStackingAllocator()) bmtVtable(),
-        new (GetStackingAllocator()) bmtParentInfo(),
-        new (GetStackingAllocator()) bmtInterfaceInfo(),
-        new (GetStackingAllocator()) bmtMetaDataInfo(),
-        new (GetStackingAllocator()) bmtMethodInfo(),
-        new (GetStackingAllocator()) bmtMethAndFieldDescs(),
-        new (GetStackingAllocator()) bmtFieldPlacement(),
-        new (GetStackingAllocator()) bmtInternalInfo(),
-        new (GetStackingAllocator()) bmtGCSeriesInfo(),
-        new (GetStackingAllocator()) bmtMethodImplInfo(),
+        new (pStackingAllocator) bmtErrorInfo(),
+        new (pStackingAllocator) bmtProperties(),
+        new (pStackingAllocator) bmtVtable(),
+        new (pStackingAllocator) bmtParentInfo(),
+        new (pStackingAllocator) bmtInterfaceInfo(),
+        new (pStackingAllocator) bmtMetaDataInfo(),
+        new (pStackingAllocator) bmtMethodInfo(),
+        new (pStackingAllocator) bmtMethAndFieldDescs(),
+        new (pStackingAllocator) bmtFieldPlacement(),
+        new (pStackingAllocator) bmtInternalInfo(),
+        new (pStackingAllocator) bmtGCSeriesInfo(),
+        new (pStackingAllocator) bmtMethodImplInfo(),
         bmtGenericsInfo,
-        new (GetStackingAllocator()) bmtEnumFieldInfo(pModule->GetMDImport()),
-        new (GetStackingAllocator()) bmtLayoutInfo(*initialLayoutInfo));
+        new (pStackingAllocator) bmtEnumFieldInfo(pModule->GetMDImport()),
+        new (pStackingAllocator) bmtLayoutInfo(*initialLayoutInfo));
 
     //Initialize structs
 
@@ -8666,9 +8667,11 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
         }
 
         // Place fields, largest first
+        bmtFieldPlacement * const pFieldPlacement = bmtFP;
         for (i = MAX_LOG2_PRIMITIVE_FIELD_SIZE; (signed int) i >= 0; i--)
         {
-            if (bmtFP->NumInstanceFieldsOfSize[i] == 0)
+            const DWORD dwNumInstanceFields = pFieldPlacement->NumInstanceFieldsOfSize[i];
+            if (dwNumInstanceFields == 0)
                 continue;
 
             // Align instance fields if we aren't already
@@ -8680,11 +8683,11 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 
             // Fields of this size start at the next available location
-            bmtFP->InstanceFieldStart[i] = dwCumulativeInstanceFieldPos;
-            dwCumulativeInstanceFieldPos += (bmtFP->NumInstanceFieldsOfSize[i] << i);
+            pFieldPlacement->InstanceFieldStart[i] = dwCumulativeInstanceFieldPos;
+            dwCumulativeInstanceFieldPos += (dwNumInstanceFields << i);
 
             // Reset counters for the loop after this one
-            bmtFP->NumInstanceFieldsOfSize[i]  = 0;
+            pFieldPlacement->NumInstanceFieldsOfSize[i] = 0;
         }
 
 
