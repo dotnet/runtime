@@ -135,6 +135,59 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(5, result.Count);
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task SendAsync_CompressedFragments_PreservesPayload(bool contextTakeover, bool cancelable)
+        {
+            using WebSocketTestStream stream = new();
+            WebSocketDeflateOptions options = new() { ClientContextTakeover = contextTakeover };
+            using WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
+            {
+                KeepAliveInterval = Timeout.InfiniteTimeSpan,
+                DangerousDeflateOptions = options
+            });
+            using WebSocket server = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
+            {
+                IsServer = true,
+                KeepAliveInterval = Timeout.InfiniteTimeSpan,
+                DangerousDeflateOptions = options
+            });
+            using CancellationTokenSource cts = new();
+            CancellationToken token = cancelable ? cts.Token : default;
+            byte[] source = new byte[65540];
+            new Random(42).NextBytes(source);
+            byte[] original = (byte[])source.Clone();
+
+            foreach (bool disableCompression in new[] { false, false, true, false })
+            {
+                WebSocketMessageFlags flags = disableCompression ? WebSocketMessageFlags.DisableCompression : 0;
+                await client.SendAsync(source.AsMemory(1, 31), WebSocketMessageType.Binary, flags, token);
+                await client.SendAsync(ReadOnlyMemory<byte>.Empty, WebSocketMessageType.Binary, flags, token);
+                // Also exercise the path where writing the frame completes asynchronously.
+                stream.DelayForNextSend = TimeSpan.FromMilliseconds(1);
+                await client.SendAsync(source.AsMemory(32, source.Length - 33), WebSocketMessageType.Binary,
+                    flags | WebSocketMessageFlags.EndOfMessage, token);
+
+                byte[] received = new byte[source.Length];
+                int count = 0;
+                ValueWebSocketReceiveResult result;
+                do
+                {
+                    result = await server.ReceiveAsync(received.AsMemory(count, Math.Min(257, received.Length - count)), token);
+                    Assert.Equal(WebSocketMessageType.Binary, result.MessageType);
+                    count += result.Count;
+                }
+                while (!result.EndOfMessage);
+
+                Assert.Equal(source.Length - 2, count);
+                Assert.True(original.AsSpan(1, count).SequenceEqual(received.AsSpan(0, count)));
+                Assert.Equal(original, source);
+            }
+        }
+
         [Fact]
         public async Task ReceiveHelloWithoutContextTakeover()
         {

@@ -685,17 +685,19 @@ namespace System.Net.WebSockets
             // Write the payload
             if (payloadBuffer.Length > 0)
             {
-                payloadBuffer.CopyTo(new Span<byte>(_sendBuffer, headerLength, payloadLength));
-
-                // Release the deflater buffer if any, we're not going to need the payloadBuffer anymore.
-                _deflater?.ReleaseBuffer();
-
-                // If we added a mask to the header, XOR the payload with the mask.  We do the manipulation in the send buffer so as to avoid
-                // changing the data in the caller-supplied payload buffer.
+                Span<byte> destination = new Span<byte>(_sendBuffer, headerLength, payloadLength);
                 if (maskOffset.HasValue)
                 {
-                    ApplyMask(new Span<byte>(_sendBuffer, headerLength, payloadLength), _sendBuffer, maskOffset.Value, 0);
+                    // Apply the mask while copying, without changing the caller-supplied payload buffer.
+                    CopyAndMask(payloadBuffer, destination, CombineMaskBytes(_sendBuffer, maskOffset.Value));
                 }
+                else
+                {
+                    payloadBuffer.CopyTo(destination);
+                }
+
+                // Release the deflater buffer only after we're done reading the payloadBuffer.
+                _deflater?.ReleaseBuffer();
             }
 
             // Return the number of bytes in the send buffer
@@ -1673,17 +1675,52 @@ namespace System.Net.WebSockets
         private static int CombineMaskBytes(ReadOnlySpan<byte> buffer, int maskOffset) =>
             BitConverter.ToInt32(buffer.Slice(maskOffset));
 
-        /// <summary>Applies a mask to a portion of a byte array.</summary>
-        /// <param name="toMask">The buffer to which the mask should be applied.</param>
-        /// <param name="mask">The array containing the mask to apply.</param>
-        /// <param name="maskOffset">The offset into <paramref name="mask"/> of the mask to apply of length <see cref="MaskLength"/>.</param>
-        /// <param name="maskOffsetIndex">The next position offset from <paramref name="maskOffset"/> of which by to apply next from the mask.</param>
-        /// <returns>The updated maskOffsetOffset value.</returns>
-        private static int ApplyMask(Span<byte> toMask, byte[] mask, int maskOffset, int maskOffsetIndex)
+        /// <summary>Copies a payload to a separate buffer, applying the four-byte mask as it copies.</summary>
+        private static unsafe void CopyAndMask(ReadOnlySpan<byte> source, Span<byte> destination, int mask)
         {
-            Debug.Assert(maskOffsetIndex < MaskLength, $"Unexpected {nameof(maskOffsetIndex)}: {maskOffsetIndex}");
-            Debug.Assert(mask.Length >= MaskLength + maskOffset, $"Unexpected inputs: {mask.Length}, {maskOffset}");
-            return ApplyMask(toMask, CombineMaskBytes(mask, maskOffset), maskOffsetIndex);
+            Debug.Assert(source.Length == destination.Length);
+            Debug.Assert(!source.Overlaps(destination));
+
+            fixed (byte* sourceBeg = &MemoryMarshal.GetReference(source))
+            fixed (byte* destinationBeg = &MemoryMarshal.GetReference(destination))
+            {
+                byte* sourcePtr = sourceBeg;
+                byte* destinationPtr = destinationBeg;
+                byte* sourceEnd = sourceBeg + source.Length;
+
+                if (sourceEnd - sourcePtr >= sizeof(int))
+                {
+                    // Process Vector<byte>.Count bytes at a time.
+                    if (Vector.IsHardwareAccelerated && (sourceEnd - sourcePtr) >= Vector<byte>.Count)
+                    {
+                        Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(mask));
+                        do
+                        {
+                            *(Vector<byte>*)destinationPtr = *(Vector<byte>*)sourcePtr ^ maskVector;
+                            sourcePtr += Vector<byte>.Count;
+                            destinationPtr += Vector<byte>.Count;
+                        }
+                        while (sourceEnd - sourcePtr >= Vector<byte>.Count);
+                    }
+
+                    // Process 4 bytes at a time.
+                    while (sourceEnd - sourcePtr >= sizeof(int))
+                    {
+                        *(int*)destinationPtr = *(int*)sourcePtr ^ mask;
+                        sourcePtr += sizeof(int);
+                        destinationPtr += sizeof(int);
+                    }
+                }
+
+                // Process 1 byte at a time. Each outgoing frame starts at mask index zero.
+                byte* maskPtr = (byte*)&mask;
+                int maskIndex = 0;
+                while (sourcePtr != sourceEnd)
+                {
+                    *destinationPtr++ = (byte)(*sourcePtr++ ^ maskPtr[maskIndex]);
+                    maskIndex = (maskIndex + 1) & 3;
+                }
+            }
         }
 
         /// <summary>Applies a mask to a portion of a byte array.</summary>
