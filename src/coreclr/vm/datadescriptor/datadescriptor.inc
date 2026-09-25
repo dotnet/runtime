@@ -973,6 +973,12 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInf
 CDAC_TYPE_END(ReadyToRunInfo)
 
 #ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(VirtualIPRangeSection)
+CDAC_TYPE_INDETERMINATE(VirtualIPRangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, TYPE(RangeSection), RangeSection, cdac_data<VirtualIPRangeSection>::RangeSection)
+CDAC_TYPE_FIELD(VirtualIPRangeSection, T_POINTER, Next, cdac_data<VirtualIPRangeSection>::Next)
+CDAC_TYPE_END(VirtualIPRangeSection)
+
 CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
 CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
 CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
@@ -1292,6 +1298,9 @@ CDAC_TYPE_END(InterpreterFrame)
 CDAC_TYPE_BEGIN(TransitionBlock)
 CDAC_TYPE_SIZE(sizeof(TransitionBlock))
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CodePointer), ReturnAddress, offsetof(TransitionBlock, m_ReturnAddress))
+#ifdef TARGET_WASM
+CDAC_TYPE_FIELD(TransitionBlock, T_POINTER, StackPointer, offsetof(TransitionBlock, m_StackPointer))
+#endif // TARGET_WASM
 CDAC_TYPE_FIELD(TransitionBlock, TYPE(CalleeSavedRegisters), CalleeSavedRegisters, offsetof(TransitionBlock, m_calleeSavedRegisters))
 // Offset to argument registers and first GCRefMap slot (platform-specific)
 #if (defined(TARGET_AMD64) && !defined(UNIX_AMD64_ABI)) || defined(TARGET_WASM)
@@ -1693,6 +1702,8 @@ CDAC_GLOBAL_STRING(Architecture, loongarch64)
 CDAC_GLOBAL_STRING(Architecture, riscv64)
 #elif defined(TARGET_WASM)
 CDAC_GLOBAL_STRING(Architecture, wasm)
+CDAC_GLOBAL(WasmDebugRegisterTypeShift, T_UINT8, ICorDebugInfo::WASM_REG_TYPE_SHIFT)
+CDAC_GLOBAL(WasmDebugValueTypeCount, T_UINT8, ICorDebugInfo::WASM_VALUE_TYPE_COUNT)
 #else
 #error TARGET_{ARCH} define is not recognized by the cDAC. Update this switch and the enum values in IRuntimeInfo.cs
 #endif
@@ -1831,6 +1842,7 @@ CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManag
 CDAC_GLOBAL_POINTER(InterpreterJitManagerAddress, cdac_data<ExecutionManager>::InterpreterJitManagerAddress)
 #endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
+CDAC_GLOBAL_POINTER(VirtualIPRangeList, cdac_data<ExecutionManager>::VirtualIPRangeListAddress)
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)

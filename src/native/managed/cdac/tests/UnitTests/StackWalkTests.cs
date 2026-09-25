@@ -812,6 +812,77 @@ public unsafe class StackWalkTests
         Assert.Equal(calleeSavedFP, context.FramePointer.Value);
     }
 
+    [Fact]
+    public void UpdateContextFromFrame_WasmR2RInlinedCallFrame_DerivesInstructionAndFramePointersFromStack()
+    {
+        const ulong callSiteSP = 0x0020_0000;
+        (Target target, ulong inlinedCallFrameAddress) =
+            WasmMockTarget.CreateWithR2RInlinedCallFrame(
+                callSiteSP,
+                WasmMockTarget.FunctionTableIndex);
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(inlinedCallFrameAddress);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(callSiteSP, context.StackPointer.Value);
+        Assert.Equal(
+            WasmMockTarget.MinVirtualIP + WasmMockTarget.FunctionBeginAddress + 6,
+            context.InstructionPointer.Value);
+        Assert.Equal(callSiteSP, context.FramePointer.Value);
+    }
+
+    [Fact]
+    public void UpdateContextFromFrame_WasmR2RTransitionFrame_UsesSavedStackAndDerivesFramePointer()
+    {
+        const ulong savedStackPointer = 0x0020_0000;
+        (Target target, ulong transitionFrameAddress) =
+            WasmMockTarget.CreateWithR2RTransitionFrame(
+                savedStackPointer,
+                WasmMockTarget.FunctionTableIndex);
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(transitionFrameAddress);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(savedStackPointer, context.StackPointer.Value);
+        Assert.Equal(
+            WasmMockTarget.MinVirtualIP + WasmMockTarget.FunctionBeginAddress + 6,
+            context.InstructionPointer.Value);
+        Assert.Equal(savedStackPointer, context.FramePointer.Value);
+    }
+
+    [Fact]
+    public void UpdateContextFromFrame_WasmTransitionFrameWithoutSavedR2RStack_UsesFallbackAndClearsFramePointer()
+    {
+        const ulong savedStackPointer = 0x0020_0000;
+        const uint nativeReturnAddress = 0x0004_2000;
+        (Target target, ulong transitionFrameAddress) =
+            WasmMockTarget.CreateWithR2RTransitionFrame(
+                savedStackPointer,
+                WasmMockTarget.FunctionTableIndex);
+
+        Data.FramedMethodFrame framedMethodFrame =
+            target.ProcessedData.GetOrAdd<Data.FramedMethodFrame>(transitionFrameAddress);
+        target.Write<uint>(framedMethodFrame.TransitionBlockPtr, nativeReturnAddress);
+        target.WritePointer(
+            framedMethodFrame.TransitionBlockPtr + sizeof(uint),
+            TargetPointer.Null);
+
+        ContextHolder<WasmContext> context = new();
+        FrameHelpers frameHelpers = new(target);
+        Data.Frame frame = target.ProcessedData.GetOrAdd<Data.Frame>(transitionFrameAddress);
+        frameHelpers.UpdateContextFromFrame(frame, context);
+
+        Assert.Equal(nativeReturnAddress, context.InstructionPointer.Value);
+        Assert.Equal(
+            framedMethodFrame.TransitionBlockPtr.Value + Data.TransitionBlock.GetSize(target),
+            context.StackPointer.Value);
+        Assert.Equal(TargetPointer.Null, context.FramePointer);
+    }
+
     // The WasmContext mirrors the native wasm T_CONTEXT (src/coreclr/pal/inc/pal.h): five
     // 32-bit slots (ContextFlags, InterpreterWalkFramePointer, InterpreterSP/FP/IP). Verify the
     // serialized size and that the synthetic first-argument register (InterpreterWalkFramePointer)

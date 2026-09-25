@@ -86,6 +86,44 @@ internal sealed class MockFramedMethodFrame : MockFrame
         get => ReadPointerField(MethodDescPtrFieldName);
         set => WritePointerField(MethodDescPtrFieldName, value);
     }
+
+    public ulong TransitionBlockPtr
+    {
+        get => ReadPointerField(TransitionBlockPtrFieldName);
+        set => WritePointerField(TransitionBlockPtrFieldName, value);
+    }
+}
+
+internal sealed class MockWasmTransitionBlock : TypedView
+{
+    private const string ReturnAddressFieldName = "ReturnAddress";
+    private const string StackPointerFieldName = "StackPointer";
+    private const string CalleeSavedRegistersFieldName = "CalleeSavedRegisters";
+
+    public static Layout<MockWasmTransitionBlock> CreateLayout(MockTarget.Architecture architecture)
+    {
+        LayoutBuilder builder = new("TransitionBlock", architecture)
+        {
+            Size = 2 * sizeof(uint),
+        };
+        return builder
+            .AddField(ReturnAddressFieldName, 0, sizeof(uint))
+            .AddField(CalleeSavedRegistersFieldName, 0, sizeof(uint))
+            .AddField(StackPointerFieldName, sizeof(uint), sizeof(uint))
+            .Build<MockWasmTransitionBlock>();
+    }
+
+    public ulong ReturnAddress
+    {
+        get => ReadCodePointerField(ReturnAddressFieldName);
+        set => WriteCodePointerField(ReturnAddressFieldName, value);
+    }
+
+    public ulong StackPointer
+    {
+        get => ReadPointerField(StackPointerFieldName);
+        set => WritePointerField(StackPointerFieldName, value);
+    }
 }
 
 internal sealed class MockInterpMethodContextFrame : TypedView

@@ -12,7 +12,10 @@ public static class Constants
         public const string SystemDomain = nameof(SystemDomain);
         public const string ThreadStore = nameof(ThreadStore);
         public const string FinalizerThread = nameof(FinalizerThread);
+        public const string VirtualIPRangeList = nameof(VirtualIPRangeList);
         public const string FunctionTableIndexRangeList = nameof(FunctionTableIndexRangeList);
+        public const string WasmDebugRegisterTypeShift = nameof(WasmDebugRegisterTypeShift);
+        public const string WasmDebugValueTypeCount = nameof(WasmDebugValueTypeCount);
         public const string GCThread = nameof(GCThread);
         public const string Debugger = nameof(Debugger);
         public const string DebuggerPatchTable = nameof(DebuggerPatchTable);

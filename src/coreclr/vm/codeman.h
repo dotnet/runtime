@@ -2817,11 +2817,19 @@ struct cdac_data<ExecutionManager>
     static constexpr PTR_InterpreterJitManager* InterpreterJitManagerAddress = &ExecutionManager::m_pInterpreterJitManager;
 #endif // FEATURE_INTERPRETER
 #ifdef TARGET_WASM
+    static constexpr VirtualIPRangeSection** VirtualIPRangeListAddress = &ExecutionManager::s_pVirtualIPRangeList;
     static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
 #endif // TARGET_WASM
 };
 
 #ifdef TARGET_WASM
+template<>
+struct cdac_data<VirtualIPRangeSection>
+{
+    static constexpr size_t RangeSection = offsetof(VirtualIPRangeSection, rangeSection);
+    static constexpr size_t Next = offsetof(VirtualIPRangeSection, pNext);
+};
+
 template<>
 struct cdac_data<FunctionTableIndexRangeSection>
 {

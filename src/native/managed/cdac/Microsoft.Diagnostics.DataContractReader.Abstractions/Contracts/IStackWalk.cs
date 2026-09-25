@@ -84,6 +84,35 @@ public record struct DebuggerEvalData(
     uint MethodToken,
     TargetPointer AssemblyPtr);
 
+/// <summary>
+/// Identifies the WebAssembly function represented by a stack frame.
+/// </summary>
+/// <remarks>
+/// <para>
+/// <see cref="FunctionTableIndex"/> is the raw runtime-global shared-table index stored in the
+/// CoreCLR WASM shadow frame. When the index maps to a registered ReadyToRun range,
+/// <see cref="Module"/>, <see cref="RuntimeFunctionIndex"/>, and <see cref="IsFunclet"/> identify
+/// the owning image entry.
+/// </para>
+/// <para>
+/// A WebAssembly engine's function index is module-local. Consumers must use
+/// <see cref="Module"/> together with <see cref="RuntimeFunctionIndex"/> and the image's element
+/// section to translate to an engine function index; the raw shared-table index alone is not an
+/// engine function index.
+/// </para>
+/// </remarks>
+public readonly struct WasmFunctionIdentity
+{
+    /// <summary>The raw runtime-global function-table index stored in the frame.</summary>
+    public uint FunctionTableIndex { get; init; }
+    /// <summary>The owning ReadyToRun module, or null when the raw index is not registered.</summary>
+    public TargetPointer? Module { get; init; }
+    /// <summary>The RUNTIME_FUNCTION index within <see cref="Module"/>, or null when unresolved.</summary>
+    public uint? RuntimeFunctionIndex { get; init; }
+    /// <summary>Whether the resolved runtime function is a funclet, or null when unresolved.</summary>
+    public bool? IsFunclet { get; init; }
+}
+
 public interface IStackWalk : IContract
 {
     static string IContract.Name => nameof(StackWalk);
@@ -106,6 +135,7 @@ public interface IStackWalk : IContract
     byte[] GetContext(ThreadData threadData, ThreadContextSource contextSource, uint contextFlags) => throw new NotImplementedException();
     TargetPointer GetFuncletRootId(IStackDataFrameHandle stackDataFrameHandle, out uint parentNativeOffset) => throw new NotImplementedException();
     TargetPointer GetExactGenericArgsToken(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
+    WasmFunctionIdentity GetWasmFunctionIdentity(IStackDataFrameHandle stackDataFrameHandle) => throw new NotImplementedException();
 }
 
 public struct StackWalk : IStackWalk
