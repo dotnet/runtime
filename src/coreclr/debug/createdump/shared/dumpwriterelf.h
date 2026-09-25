@@ -67,11 +67,11 @@ private:
     bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 
     size_t GetProcessInfoSize() const { return sizeof(Nhdr) + 8 + sizeof(prpsinfo_t); }
-    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_crashInfo.GetAuxvSize(); }
+    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + (m_processInfo.AuxvEntries().Count() * sizeof(elf_aux_entry)); }
     size_t GetThreadInfoSize() const
     {
-        return (m_crashInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
-              + (m_crashInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
+        return (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)
+              + (m_processInfo.Threads().Count() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
               + (sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct))
 #if defined(__i386__)
               + (sizeof(Nhdr) + 8 + sizeof(user_fpxregs_struct))

@@ -32,7 +32,6 @@ private:
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     siginfo_t m_siginfo;                            // signal info (if any)
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
-    uint64_t m_runtimeBaseAddress;                  // base address of the runtime module
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
 #else
@@ -89,7 +88,7 @@ public:
     inline uint64_t ExceptionRecord() const { return m_processInfo.ExceptionRecord(); }
     inline const char* Name() const { return m_processInfo.Name(); }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
-    inline const uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
+    inline uint64_t RuntimeBaseAddress() const { return m_processInfo.RuntimeBaseAddress(); }
 
     inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
     inline const std::set<ModuleRegion>& ModuleMappings() const { return m_moduleMappings; }

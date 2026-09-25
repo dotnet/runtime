@@ -3,7 +3,10 @@
 
 #include "createdump.h"
 
-DumpWriter::DumpWriter(ProcessInfo& processInfo, DynamicArray<ModuleRegion> &moduleMappings, DynamicArray<MemoryRegion> &dumpRegions) :
+DumpWriter::DumpWriter(
+    ProcessInfo& processInfo,
+    const DynamicArray<ModuleRegion>& moduleMappings,
+    const DynamicArray<MemoryRegion>& dumpRegions) :
     m_fd(-1),
     m_processInfo(processInfo),
     m_moduleMappings(moduleMappings),
@@ -18,7 +21,6 @@ DumpWriter::~DumpWriter()
         close(m_fd);
         m_fd = -1;
     }
-    m_crashInfo.Release();
 }
 
 bool
@@ -40,8 +42,8 @@ DumpWriter::WriteDiagInfo(size_t size)
     SpecialDiagInfoHeader header = {
         {SPECIAL_DIAGINFO_SIGNATURE},
         SPECIAL_DIAGINFO_VERSION,
-        m_crashInfo.ExceptionRecord(),
-        m_crashInfo.RuntimeBaseAddress()
+        m_processInfo.ExceptionRecord(),
+        m_processInfo.RuntimeBaseAddress()
     };
     if (!WriteData(&header, sizeof(header))) {
         return false;

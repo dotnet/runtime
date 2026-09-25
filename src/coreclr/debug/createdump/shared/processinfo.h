@@ -53,6 +53,7 @@ class ProcessInfo
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
     uint64_t m_pageSize;
+    uint64_t m_runtimeBaseAddress;                  // base address of the runtime module
 
     char m_exeName[MAX_LONGPATH]; // prefer a constant here
     int m_crashSignal;                              // crash signal code or 0 if none
@@ -81,6 +82,7 @@ public:
         m_ppid(0),
         m_tgid(0),
         m_pageSize(0),
+        m_runtimeBaseAddress(0),
         m_exeName{},
         m_crashSignal(options.Signal),
         m_crashThread(options.CrashThread),
@@ -99,6 +101,9 @@ public:
     bool ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read);
     bool AddMapping(const MemoryRegion& region);
     bool AddMapping(const ModuleRegion& region);
+#ifndef __APPLE__
+    void CalculateRuntimeBaseAddress();
+#endif
 
     pid_t Pid() const { return m_pid; }
     pid_t Ppid() const { return m_ppid; }
@@ -107,7 +112,9 @@ public:
     int Signal() const { return m_crashSignal; }
     uint64_t ExceptionRecord() const { return m_exceptionRecord; }
     uint64_t PageSize() const { return m_pageSize; }
+    uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
     const char* Name() const { return m_exeName; }
+    void SetRuntimeBaseAddress(uint64_t address) { m_runtimeBaseAddress = address; }
 #ifdef __APPLE__
     vm_map_t Task() const { return m_task; }
 #endif

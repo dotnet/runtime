@@ -109,6 +109,43 @@ bool ProcessInfo::GetAuxvEntries()
     return result;
 }
 
+void ProcessInfo::CalculateRuntimeBaseAddress()
+{
+#if TARGET_64BIT
+    typedef Elf64_Phdr elf_program_header;
+#else
+    typedef Elf32_Phdr elf_program_header;
+#endif
+
+    uint64_t programHeaders = m_auxvValues[AT_PHDR];
+    uint64_t programHeaderCount = m_auxvValues[AT_PHNUM];
+    uint64_t programHeaderSize = m_auxvValues[AT_PHENT];
+    if (programHeaders == 0 || programHeaderCount == 0 || programHeaderSize != sizeof(elf_program_header) ||
+        programHeaderCount > (UINT64_MAX - programHeaders) / programHeaderSize)
+    {
+        return;
+    }
+
+    for (uint64_t index = 0; index < programHeaderCount; index++)
+    {
+        elf_program_header programHeader;
+        size_t read = 0;
+        if (!ReadProcessMemory(programHeaders + (index * programHeaderSize), &programHeader, sizeof(programHeader), &read) ||
+            read != sizeof(programHeader))
+        {
+            return;
+        }
+
+        if (programHeader.p_type == PT_PHDR && programHeaders >= programHeader.p_vaddr)
+        {
+            // AT_PHDR is relocated; PT_PHDR.p_vaddr is not. Their difference is the ELF load bias.
+            m_runtimeBaseAddress = programHeaders - programHeader.p_vaddr;
+            TRACE("Runtime base address: %" PRIA PRIx64 "\n", m_runtimeBaseAddress);
+            return;
+        }
+    }
+}
+
 bool HasDeletedSuffix(const char* fileName)
 {
     if (fileName == NULL)

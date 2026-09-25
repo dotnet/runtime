@@ -125,7 +125,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
         if (last != std::string::npos)
         {
             m_coreclrPath = moduleName.substr(0, last + 1);
-            m_runtimeBaseAddress = baseAddress;
+            m_processInfo.SetRuntimeBaseAddress(baseAddress);
 
             // Now populate the elfreader with the runtime module info and
             // lookup the DAC table symbol to ensure that all the memory
@@ -147,7 +147,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                 if (TryLookupSymbol("DotNetRuntimeInfo", &symbolOffset))
                 {
                     m_coreclrPath = GetDirectory(moduleName);
-                    m_runtimeBaseAddress = baseAddress;
+                    m_processInfo.SetRuntimeBaseAddress(baseAddress);
 
                     // explicit initialization for old gcc support; instead of just runtimeInfo { }
                     RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { }, .RuntimeVersion = { } };
@@ -169,7 +169,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                 if (TryLookupSymbol("DotNetRuntimeContractDescriptor", &symbolOffset))
                 {
                     m_coreclrPath = GetDirectory(moduleName);
-                    m_runtimeBaseAddress = baseAddress;
+                    m_processInfo.SetRuntimeBaseAddress(baseAddress);
                     TRACE("Found valid NativeAOT runtime module\n");
                 }
             }
