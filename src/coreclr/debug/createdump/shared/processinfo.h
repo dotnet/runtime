@@ -58,16 +58,14 @@ class ProcessInfo
     char m_exeName[MAX_LONGPATH]; // prefer a constant here
     int m_crashSignal;                              // crash signal code or 0 if none
     pid_t m_crashThread;                            // crashing thread id or 0 if none
-    int m_signalCode;                               // crash signal code or 0 if none
-    int m_signalErrno;
-    uint64_t m_signalAddress;
+    siginfo_t m_siginfo;                            // signal info (if any)
     uint64_t m_exceptionRecord;                     // exception record address or 0 if none
 
 #ifdef __APPLE__
     vm_map_t m_task = 0;                            // the mach task for the process
 #else
-    int m_fdMemory = -1;
-    int m_fdPagemap = -1;
+    int m_fdMemory = -1;                            // /proc/<pid>/mem handle
+    int m_fdPagemap = -1;                           // /proc/<pid>/pagemap handle
     bool m_canUseProcVmReadSyscall = true;
     DynamicArray<elf_aux_entry> m_auxvEntries;
     elf_aux_val_t m_auxvValues[AT_MAX]{};
@@ -86,11 +84,13 @@ public:
         m_exeName{},
         m_crashSignal(options.Signal),
         m_crashThread(options.CrashThread),
-        m_signalCode(options.SignalCode),
-        m_signalErrno(options.SignalErrno),
-        m_signalAddress(options.SignalAddress),
         m_exceptionRecord(options.ExceptionRecord)
     {
+        memset(&m_siginfo, 0, sizeof(m_siginfo));
+        m_siginfo.si_signo = options.Signal;
+        m_siginfo.si_code = options.SignalCode;
+        m_siginfo.si_errno = options.SignalErrno;
+        m_siginfo.si_addr = (void*)options.SignalAddress;
     }
 
     bool Initialize();
@@ -110,6 +110,7 @@ public:
     pid_t Tgid() const { return m_tgid; }
     pid_t CrashThread() const { return m_crashThread; }
     int Signal() const { return m_crashSignal; }
+    const siginfo_t* SigInfo() const { return &m_siginfo; }
     uint64_t ExceptionRecord() const { return m_exceptionRecord; }
     uint64_t PageSize() const { return m_pageSize; }
     uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
@@ -130,6 +131,7 @@ public:
     const DynamicArray<MemoryRegion>& OtherMappings() const noexcept { return m_otherMappings; }
 #ifndef __APPLE__
     const DynamicArray<elf_aux_entry>& AuxvEntries() const noexcept { return m_auxvEntries; }
+    size_t GetAuxvSize() const { return m_auxvEntries.Count() * sizeof(elf_aux_entry); }
     elf_aux_val_t AuxvValue(size_t index) const { return m_auxvValues[index]; }
 #endif
 

@@ -15,6 +15,12 @@
 #include <sys/uio.h>
 #include <sys/user.h>
 #include <elf.h>
+#include "coreutils.h"
+#include "dumpwriterelf.h"
+#include "memoryregion.h"
+#include "specialdiaginfo.h"
+#include "threadsnapshot.h"
+#include "processinfo.h"
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
@@ -67,10 +73,6 @@ extern void trace_verbose_printf(const char* format, ...) MINIPAL_ATTR_FORMAT_PR
 #define TRACE(args, ...)
 #define TRACE_VERBOSE(args, ...)
 #endif
-
-#include "memoryregion.h"
-#include "threadsnapshot.h"
-#include "processinfo.h"
 
 extern bool linkedCreateDump;
 extern bool g_diagnostics;

@@ -30,7 +30,6 @@ private:
     IXCLRDataProcess* m_pClrDataProcess;            // dac process interface instance
     AppModelType m_appModel;                        // Normal, single-file or native AOT app.
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
-    siginfo_t m_siginfo;                            // signal info (if any)
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
@@ -95,11 +94,10 @@ public:
     inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
     inline DumpRegionStore& GetDumpRegionStore() { return m_dumpRegionStore; }
-    inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #ifndef __APPLE__
     bool CopyDumpWriterRegions(DynamicArray<ModuleRegion>& moduleMappings, DynamicArray<MemoryRegion>& dumpRegions) const;
     inline const DynamicArray<elf_aux_entry>& AuxvEntries() const { return m_processInfo.AuxvEntries(); }
-    inline size_t GetAuxvSize() const { return m_processInfo.AuxvEntries().Count() * sizeof(elf_aux_entry); }
+    inline size_t GetAuxvSize() const { return m_processInfo.GetAuxvSize(); }
 #endif
     bool ReadMemory(void* address, void* buffer, size_t size) { return ReadMemory((uint64_t)address, buffer, size); }
 

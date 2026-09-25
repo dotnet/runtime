@@ -63,11 +63,11 @@ private:
     bool WriteAuxv();
     size_t GetNTFileInfoSize(size_t* alignmentBytes = nullptr);
     bool WriteNTFileInfo();
-    bool WriteThread(const ThreadInfo& thread);
+    bool WriteThread(const ThreadSnapshot& thread);
     bool WriteData(const void* buffer, size_t length) { return WriteData(m_fd, buffer, length); }
 
     size_t GetProcessInfoSize() const { return sizeof(Nhdr) + 8 + sizeof(prpsinfo_t); }
-    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + (m_processInfo.AuxvEntries().Count() * sizeof(elf_aux_entry)); }
+    size_t GetAuxvInfoSize() const { return sizeof(Nhdr) + 8 + m_processInfo.GetAuxvSize(); }
     size_t GetThreadInfoSize() const
     {
         return (m_processInfo.Signal() != 0 ? (sizeof(Nhdr) + 8 + sizeof(siginfo_t)) : 0)

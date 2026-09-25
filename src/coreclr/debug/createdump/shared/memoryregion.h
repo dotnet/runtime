@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifndef MEMORYREGION_H
+#define MEMORYREGION_H
+
 #include "specialdiaginfo.h"
 #include "coreutils.h"
 
@@ -186,3 +189,5 @@ public:
         MemoryRegion::Trace(prefix, m_fileName.CStr());
     }
 };
+
+#endif // MEMORYREGION_H

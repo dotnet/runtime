@@ -27,11 +27,6 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options, ProcessInfo& processInfo)
     m_enumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
-    memset(&m_siginfo, 0, sizeof(m_siginfo));
-    m_siginfo.si_signo = options.Signal;
-    m_siginfo.si_code = options.SignalCode;
-    m_siginfo.si_errno = options.SignalErrno;
-    m_siginfo.si_addr = (void*)options.SignalAddress;
 }
 
 bool

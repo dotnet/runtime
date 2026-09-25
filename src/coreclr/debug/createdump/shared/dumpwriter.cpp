@@ -3,17 +3,6 @@
 
 #include "createdump.h"
 
-DumpWriter::DumpWriter(
-    ProcessInfo& processInfo,
-    const DynamicArray<ModuleRegion>& moduleMappings,
-    const DynamicArray<MemoryRegion>& dumpRegions) :
-    m_fd(-1),
-    m_processInfo(processInfo),
-    m_moduleMappings(moduleMappings),
-    m_dumpRegions(dumpRegions)
-{
-}
-
 DumpWriter::~DumpWriter()
 {
     if (m_fd != -1)
