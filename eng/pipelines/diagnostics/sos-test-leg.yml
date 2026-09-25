@@ -3,7 +3,7 @@
 
 parameters:
   buildConfig: ''
-  name: ''
+  nameSuffix: ''
   archType: ''
   hostedOs: ''
   osGroup: ''
@@ -29,7 +29,8 @@ parameters:
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
-    name: ${{ parameters.name }}_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    name: ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
+    displayName: ${{ format('{0}{1}-{2} {3} {4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig, parameters.nameSuffix) }}
     pool: ${{ parameters.pool }}
     container: ${{ parameters.container }}
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -41,7 +42,7 @@ jobs:
     artifacts:
       publish:
         logs:
-          name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.name }}
+          name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
 
     # Component governance does not work on musl machines
     ${{ if eq(parameters.osSubgroup, '_musl') }}:
@@ -63,11 +64,11 @@ jobs:
     - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       - group: DotNet-HelixApi-Access
       - group: AzureDevOps-Artifact-Feeds-Pats
-    - _PhaseName: ${{ parameters.name }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    - _PhaseName: ${{ parameters.nameSuffix }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
     - _Pipeline_StreamDumpDir: $(Build.SourcesDirectory)/artifacts/tmp/${{ parameters.buildConfig }}/streams
-    - _CrossBuildArg: ''
-    - ${{ if eq(parameters.crossBuild, true) }}:
-      - _CrossBuildArg: '-cross'
+    - _DiagnosticsCrossBuildArg: ''
+    - ${{ if or(eq(parameters.osGroup, 'linux'), and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64'))) }}:
+      - _DiagnosticsCrossBuildArg: '-cross'
     - ${{ each variable in parameters.variables }}:
       - ${{ variable }}
 
@@ -129,7 +130,7 @@ jobs:
             -configuration ${{ parameters.buildConfig }} `
             -architecture ${{ parameters.archType }} `
             -privatebuild `
-            $(_CrossBuildArg) `
+            $(_DiagnosticsCrossBuildArg) `
             /p:PackageWithCDac=false `
             /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
           exit $LASTEXITCODE
@@ -142,7 +143,7 @@ jobs:
           -configuration ${{ parameters.buildConfig }}
           -architecture ${{ parameters.archType }}
           -privatebuild
-          $(_CrossBuildArg)
+          $(_DiagnosticsCrossBuildArg)
           /p:PackageWithCDac=false
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
         displayName: Build
@@ -215,7 +216,7 @@ jobs:
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.StagingDirectory)/HelixLogs'
-        artifactName: 'Logs_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+        artifactName: 'Logs_${{ parameters.nameSuffix }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
       displayName: 'Publish Helix Logs'
       continueOnError: true
       condition: always()
