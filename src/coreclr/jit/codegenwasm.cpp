@@ -2474,7 +2474,7 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
     //
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        genEmitNullCheck(REG_NA, tree->Addr()->TypeGet());
+        genEmitNullCheck(REG_NA, tree->Addr());
     }
     else
     {
@@ -2487,24 +2487,26 @@ void CodeGen::genCodeForNullCheck(GenTreeIndir* tree)
 //
 // Arguments:
 //    regNum - register to check, or REG_NA if value to check is on the stack
-//
-void CodeGen::genEmitNullCheck(regNumber reg, var_types refType)
+//    addr   - the original tree for the address which is being checked
+void CodeGen::genEmitNullCheck(regNumber reg, GenTree* addr)
 {
     if (reg != REG_NA)
     {
         genEmitLocalGet(reg, WasmValueType::I);
     }
 
-    if (refType == TYP_REF)
+    var_types refType = addr->TypeGet();
+    if (refType == TYP_REF && !addr->OperIs(GT_LEA))
     {
-        // Object references can be compared directly with null
+        // Object references without any offset can be compared directly with null
         GetEmitter()->emitIns(INS_I_eqz);
     }
     else
     {
-        // Otherwise, we have a byref or integer-type address which needs to be compared to
-        // the max unchecked null offset
-        assert(refType == TYP_BYREF || varTypeIsIntOrI(refType));
+        // Otherwise, we have either:
+        // a TYP_REF address whose underlying tree is a GT_LEA, which may have an attached offset OR
+        // a byref or integer-type address.
+        // In both cases, we need to do a relative comparison with the max unchecked null offset.
         GetEmitter()->emitIns_I(INS_I_const, EA_PTRSIZE, m_compiler->compMaxUncheckedOffsetForNullObject);
         GetEmitter()->emitIns(INS_I_le_u);
     }
@@ -3098,7 +3100,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     {
         // "Base" is the address itself unless it is a contained address mode, which is never materialized.
         //
-        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()), tree->Base()->TypeGet());
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()), tree->Base());
     }
 
     // TODO-WASM: Memory barriers
@@ -3152,7 +3154,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     {
         // "Base" is the address itself unless it is a contained address mode, which is never materialized.
         //
-        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()), tree->Base()->TypeGet());
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()), tree->Base());
     }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
@@ -3214,7 +3216,7 @@ void CodeGen::genCall(GenTreeCall* call)
 
     if (call->NeedsNullCheck())
     {
-        genEmitNullCheck(thisReg, thisNode->TypeGet());
+        genEmitNullCheck(thisReg, thisNode);
     }
 
     genCallInstruction(call);
@@ -3897,9 +3899,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     bool      nullCheckDest = (blkOp->gtFlags & GTF_IND_NONFAULTING) == 0;
     bool      nullCheckSrc  = false;
     GenTree*  dest          = blkOp->Addr();
-    var_types destType      = TYP_UNKNOWN;
     GenTree*  src           = blkOp->Data();
-    var_types srcType       = TYP_UNKNOWN;
     regNumber destReg       = REG_NA;
     regNumber srcReg        = REG_NA;
     unsigned  destOffset    = 0;
@@ -3921,8 +3921,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         // We need to match lowering and only fetch a register for src when we're expected to.
         if (!isNativeOp || nullCheckSrc)
         {
-            srcReg  = GetMultiUseOperandReg(src);
-            srcType = src->TypeGet();
+            srcReg = GetMultiUseOperandReg(src);
         }
         assert(!src->isContained());
     }
@@ -3943,7 +3942,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         bool                 fpBased;
         srcReg = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
         // A frame-based address is a byref
-        srcType   = TYP_BYREF;
         srcOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
     }
@@ -3953,7 +3951,6 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         GenTreeLclVarCommon* lclVar = dest->AsLclVarCommon();
         bool                 fpBased;
         destReg    = GetFramePointerReg(m_compiler->funCurrentFuncIdx());
-        destType   = TYP_BYREF;
         destOffset = m_compiler->lvaFrameAddress(lclVar->GetLclNum(), &fpBased) + lclVar->GetLclOffs();
         assert(fpBased);
     }
@@ -3963,8 +3960,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
     }
     else if (isCopyBlk || nullCheckDest)
     {
-        destReg  = GetMultiUseOperandReg(dest);
-        destType = dest->TypeGet();
+        destReg = GetMultiUseOperandReg(dest);
     }
     else
     {
@@ -3976,13 +3972,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
 
     if (nullCheckDest)
     {
-        assert(destType != TYP_UNKNOWN);
-        genEmitNullCheck(destReg, destType);
+        genEmitNullCheck(destReg, dest);
     }
     if (nullCheckSrc)
     {
-        assert(srcType != TYP_UNKNOWN);
-        genEmitNullCheck(srcReg, srcType);
+        genEmitNullCheck(srcReg, src);
     }
 
     emitter* emit = GetEmitter();
