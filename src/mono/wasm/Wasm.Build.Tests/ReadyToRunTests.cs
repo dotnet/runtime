@@ -87,7 +87,7 @@ namespace Wasm.Build.Tests
                 extraItems: extraItems);
             if (composite)
                 AddR2RSuffixLibrary(info);
-            string extraArgs = GetR2RBuildArgs(config);
+            string extraArgs = GetR2RBuildArgs(config, composite);
             if (nativeRelink)
             {
                 // CoreCLR relinks dotnet.native.wasm via the in-tree targets + EMSDK_PATH, not the browser
@@ -148,7 +148,7 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_composite_no_webcil",
                 extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite><WasmEnableWebcil>false</WasmEnableWebcil>");
             (string _, string output) = BlazorPublish(info, config,
-                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config)));
+                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
 
             Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);
         }
@@ -262,12 +262,13 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
         }
 
-        // Wire the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so R2R images use the
-        // right container, and the in-build crossgen2 when this leg shipped it. Each is passed only when present
-        // under BASE_DIR: the no-workload leg ships the shim but resolves crossgen2 itself from the SDK pack (the
-        // SDK restores it when PublishReadyToRun is set), so passing a non-existent Crossgen2InBuildDir there
-        // would break the call-helpers generator. All inert if BASE_DIR is unset.
-        private static string GetR2RBuildArgs(Configuration config)
+        // Wire the in-build crossgen2 when this leg shipped it, and for composite the wasm-aware Crossgen2Tasks shim:
+        // composite needs the shim's wasm output naming (<entry>.r2r.wasm owner, <name>.wasm stubs), which the base
+        // SDK's ReadyToRun tasks don't implement yet (dotnet/sdk#56395). Per-assembly R2R keeps the base SDK tasks so
+        // that path stays covered. Each is passed only when present under BASE_DIR: the no-workload leg resolves
+        // crossgen2 itself from the SDK pack (the SDK restores it when PublishReadyToRun is set), so passing a
+        // non-existent Crossgen2InBuildDir there would break the call-helpers generator. All inert if BASE_DIR is unset.
+        private static string GetR2RBuildArgs(Configuration config, bool composite)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
             if (string.IsNullOrEmpty(baseDir))
@@ -282,9 +283,9 @@ namespace Wasm.Build.Tests
             var args = new List<string>();
             if (Directory.Exists(crossgenDir))
                 args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
-            if (File.Exists(shimProps))
+            if (composite && File.Exists(shimProps))
                 args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
-            if (File.Exists(shimTargets))
+            if (composite && File.Exists(shimTargets))
                 args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
             return string.Join(" ", args);
         }

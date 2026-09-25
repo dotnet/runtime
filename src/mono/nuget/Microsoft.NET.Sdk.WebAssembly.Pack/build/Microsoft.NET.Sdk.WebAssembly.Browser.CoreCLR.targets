@@ -65,6 +65,19 @@ Copyright (c) .NET Foundation. All rights reserved.
            Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or provide a ResolvedCrossgen2Pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
   </Target>
 
+  <!-- Composite needs wasm-aware ReadyToRun tasks: the component stubs probe for the owner as <entry>.r2r.wasm,
+       and crossgen2 writes each component stub as <name>.wasm. Tasks without wasm naming plan <entry>.r2r.dll
+       and <name>.dll outputs that are never produced, so fail before the (long) composite compile. -->
+  <Target Name="_WasmCoreClrValidateCompositeTasks"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasmCompositeOwnerEntry Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true'))" />
+    </ItemGroup>
+    <Error Condition="'@(_WasmCompositeOwnerEntry)' != '' and !$([System.String]::Copy('%(_WasmCompositeOwnerEntry.OutputR2RImage)').EndsWith('.r2r.wasm'))"
+           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires ReadyToRun SDK tasks that name the composite image '&lt;entry&gt;.r2r.wasm', but they planned '$([System.IO.Path]::GetFileName('%(_WasmCompositeOwnerEntry.OutputR2RImage)'))'. Use an SDK with wasm ReadyToRun output naming (dotnet/sdk#56395), or set Crossgen2SdkOverridePropsPath and Crossgen2SdkOverrideTargetsPath to the dotnet/runtime Crossgen2Tasks." />
+  </Target>
+
   <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
        PublishReadyToRun selects its flavour, so it belongs in the webcil staging stamp too. -->
   <ItemGroup>
