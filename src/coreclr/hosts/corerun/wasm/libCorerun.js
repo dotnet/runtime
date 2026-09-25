@@ -262,24 +262,20 @@ function libCoreRunFactory() {
                 stackRestore(sp);
             }
 
+            // Only self-installing wrappers are supported (keep in sync with
+            // WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING): the engine has already installed the
+            // payload, and any table slice, from the module's active segments.
             const webcilVersion = wasmInstance.exports.webcilVersion.value;
-            if ((webcilVersion > 1) || (webcilVersion < 0)) {
-                throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
+            if (webcilVersion !== 2) {
+                throw new Error(`Webcil image '${wasmPath}' has unsupported Webcil wrapper version ${webcilVersion}; expected 2`);
             }
 
-            // Two image shapes reach this point. A component stub carries its payload and table in
-            // passive segments and hands them over via getWebcilPayload/fillWebcilTable. A composite
-            // uses active segments, so the engine has already installed both by the time the instance
-            // exists, and only the header's tableBase field is left to write. Feature-detect rather
-            // than assume: calling getWebcilPayload on a composite would trap, because memory.init
-            // against an active (hence dropped) segment is out of bounds.
-            if (typeof (wasmInstance.exports.patchWebcilHeader) === "function") {
-                wasmInstance.exports.patchWebcilHeader(payloadPtr, payloadSize);
-            } else {
-                wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
-                if (tableSize > 0) {
-                    wasmInstance.exports.fillWebcilTable();
+            if (tableSize > 0) {
+                // The header's tableBase field lives in linear memory, so no segment can supply it.
+                if (typeof (wasmInstance.exports.patchWebcilHeader) !== "function") {
+                    throw new Error(`Webcil R2R image '${wasmPath}' does not export patchWebcilHeader`);
                 }
+                wasmInstance.exports.patchWebcilHeader(payloadPtr, payloadSize);
             }
 
             HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;

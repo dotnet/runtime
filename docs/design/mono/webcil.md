@@ -3,7 +3,7 @@
 ## Version
 
 This described version 0.0, and 1.0 of the Webcil payload format.
-This describes version 0 and 1 of the WebAssembly module Webcil wrapper.
+This describes versions 0 and 2 of the WebAssembly module Webcil wrapper. Version 1 is retired.
 
 ## Motivation
 
@@ -40,7 +40,7 @@ Webcil consists of a standard [binary WebAssembly version 0 module](https://weba
 ```
 
 That is, the module imports linear memory 0 and exports:
-* a global `i32` `webcilVersion` encoding the version of the WebAssembly wrapper (currently 0),
+* a global `i32` `webcilVersion` encoding the version of the WebAssembly wrapper (0 for this form),
 * a function `getWebcilSize : i32 -> ()` that writes the size of the Webcil payload to the specified
   address in linear memory as a `u32` (that is: 4 LE bytes).
 * a function `getWebcilPayload : i32 i32 -> ()` that writes `$n` bytes of the content of the Webcil
@@ -75,109 +75,70 @@ module without instantiating it to properly parse the ECMA-335 metadata in the W
 (**Note**: the wrapper may be versioned independently of the payload.)
 
 #### WebAssembly module Webcil wrapper format version 1
-Version 1 of the WebAssembly module Webcil wrapper adds an additional capability and requirements.
-If data segment 0 is at least 8 bytes in size, and the second 4 bytes has a non-zero value when interpreted as a 4-byte
-little-endian unsigned 32-bit integer, then data segment 0 encodes two little-endian
-u32 values: `payloadSize` (first 4 bytes) and `tableSize` (second 4 bytes). In this case,
-`tableSize` shall be the number of table entries required for the WebAssembly
-module to be loaded, and the module shall import a table, as well as `__stack_pointer`, `__table_base`, and
-`__memory_base` globals. Two module shapes are permitted, distinguished by whether the payload and
-table segments are passive or active.
 
-A **host-installed** module keeps both segments passive. It shall provide a `fillWebcilTable`
-function which initializes the table, and its `getWebcilPayload` API shall copy the payload and fill
-in the `TableBase` field of the `WebcilHeader`. Per-assembly component forwarding stubs use this
-shape, because a stub may be parsed from its file rather than instantiated.
+Version 1 of the wrapper kept the ReadyToRun payload and function table in passive segments that the
+host installed by calling `getWebcilPayload` and `fillWebcilTable`. It is retired and replaced by
+version 2; hosts do not load it.
 
-A **self-installing** module emits the payload as an active data segment at `(global.get __memory_base)`
-and the table as an active element segment at `(global.get __table_base)`, so the engine installs both
-at instantiation. Such a module exports neither `getWebcilPayload` nor `fillWebcilTable` - calling
-`memory.init` or `table.init` against an active segment traps, because an active segment is implicitly
-dropped once applied. It shall instead export `patchWebcilHeader`, which fills in the `TableBase` field;
-the host must call it after instantiation, since the runtime reads that field from the mapped image and
-an unwritten field reads as 0, silently shifting every function index by `tableBase`. Composite and
-single-assembly R2R images use this shape.
+#### WebAssembly module Webcil wrapper format version 2
 
-A self-installing module leaves `__memory_base` and `__table_base` as imports, which a host may satisfy
-in either of two ways, with different consequences:
+Version 2 of the WebAssembly module Webcil wrapper is **self-installing**: the engine installs the
+payload, and the function table if there is one, at instantiation. CoreCLR uses version 2 for every
+Webcil image - IL-only, single-assembly ReadyToRun, composite ReadyToRun, and composite component
+forwarding stubs - and a version 1 payload is always wrapped this way. The passive version 0 wrapper
+is only produced for version 0 payloads (Mono).
 
-- **Supply them at instantiation**, as immutable `WebAssembly.Global` values. The segment offsets stay
-  `global.get` of an *imported* global, which is a valid constant expression, so the module needs no
-  further processing. The browser host does this.
-- **Define and export them, then link the module into the host** with a merge tool. Merging internalizes
-  the globals, and `global.get` of a *defined* global is not a constant expression outside the GC
-  proposal - engines disagree here, so the merged module must have its offsets folded to `i32.const`
-  before it is portable. The offline WASI pipeline does this.
+Data segment 0 stays passive and holds the size metadata, so a host can read it before instantiating
+the module. If data segment 0 is at least 8 bytes in size and its second 4 bytes are non-zero when
+interpreted as a little-endian u32, it encodes two little-endian u32 values: `payloadSize` (first 4
+bytes) and `tableSize` (second 4 bytes). Otherwise it encodes only `payloadSize`, and `tableSize` is 0.
 
-Neither approach requires rewriting the segments themselves; only the second requires a fold, and that
-fold is not free, because the pass that performs it also propagates globals into function bodies.
+The module shall:
 
-A host that reserves the composite's table slice at link time can treat `__table_base` as a constant:
-reserving the first N slots leaves the composite at base 1 regardless of its size. `__memory_base` is
-the address of the host's payload region and has to be read out of the linked host.
+* import `memory` and an immutable `i32` global `__memory_base` from the `webcil` module;
+* emit the payload as data segment 1, an active segment at `(global.get __memory_base)`;
+* export `webcilVersion` with the value 2, and `getWebcilSize`;
+* not export `getWebcilPayload` or `fillWebcilTable`. Calling `memory.init` or `table.init` against an
+  active segment traps, because an active segment is implicitly dropped once applied.
 
-The memory of the WebcilPayload must also be allocated with 16 byte alignment.
+If `tableSize` is non-zero (a ReadyToRun image), the module shall also import the table as
+`__indirect_function_table`, the `__stack_pointer` and `__table_base` globals, and the other runtime
+globals and tags its code uses; emit its function table as an active element segment at
+`(global.get __table_base)` containing `tableSize` entries; and export `patchWebcilHeader`, which fills
+in the `TableBase` field of the installed `WebcilHeader`.
 
-The module shall not export its compiled functions. Exports count towards the engine's
-effective-type-size limit, so a module carrying a framework-sized function count becomes unloadable
-if each function is exported; the element segment, not the export table, is what makes a function
-reachable. Function names shall instead be carried in the `name` custom section, which is ignored by
-engines, counts towards no limit, and may be stripped when size matters.
+A host loads a version 2 module by reserving a 16-byte-aligned range of `payloadSize` bytes in linear
+memory and `tableSize` table slots, instantiating the module with `__memory_base` and `__table_base`
+set to the start of those ranges, and then, if `tableSize` is non-zero, calling
+`patchWebcilHeader(__memory_base, payloadSize)`. The host must reject any other `webcilVersion`.
 
 ``` wat
-;; Host-installed shape (passive segments).
+;; IL-only image.
 (module
-  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: two little-endian u32 values (payloadSize, tableSize). This specifies a Webcil payload of size 15 bytes with 1 required table entry
-  (data "webcil Payload\cc")  ;; data segment 1: Webcil payload
   (import "webcil" "memory" (memory (;0;) 1))
-  (import "webcil" "__stack_pointer" (global (;0;) (mut i32)))
-  (import "webcil" "__memory_base" (global (;1;) i32))
-  (import "webcil" "__table_base" (global (;2;) i32))
-  (import "webcil" "__indirect_function_table" (table (;0;) 1 funcref))
-  (global (export "webcilVersion") i32 (i32.const 1))
+  (import "webcil" "__memory_base" (global (;0;) i32))
+  (global (export "webcilVersion") i32 (i32.const 2))
   (func (export "getWebcilSize") (param $destPtr i32) (result)
     local.get $destPtr
     i32.const 0
     i32.const 4
     memory.init 0)
-  (func (export "getWebcilPayload") (param $d i32) (param $n i32) (result)
-  ;; Copy from the passive data segment
-    local.get $d
-    i32.const 0
-    local.get $n
-    memory.init 1
-  ;; Set the table base, if the amount of data to write is large enough
-    local.get 1
-    i32.const 32 ;; the amount of bytes required so that the write below does not overflow the size specified
-    i32.ge_s
-    if
-     local.get 0
-     global.get 2 ;; get the tableBase from the global assigned during instantiate
-     i32.store offset=28
-    end
-    )
-  (func (export "fillWebcilTable") (result)
-    global.get 2 ;; function pointers to fill in start at tableBase
-    i32.const 0
-    i32.const 1 ;; There is 1 element in elem segment 0
-    table.init 0 0)
-  (func (param $d i32) (result i32) ;; Example of function to be injected into "table"
-    local.get 0)
-  (elem (;0;) func 3))
+  (data "\0f\00\00\00") ;; data segment 0: payloadSize - passive, read before instantiation
+  (data (global.get 0) "webcil Payload\cc")) ;; data segment 1: Webcil payload, active at __memory_base
 ```
 
 ``` wat
-;; Self-installing shape (active segments). The engine applies both segments at
-;; instantiation, so only the header's TableBase field is left for the host to trigger.
+;; ReadyToRun image. The engine applies both segments at instantiation, so only the header's
+;; TableBase field is left for the host to trigger.
 (module
-  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: payloadSize, tableSize - stays passive, read from the file before instantiation
+  (data "\0f\00\00\00\01\00\00\00") ;; data segment 0: payloadSize, tableSize - passive, read before instantiation
   (data (global.get 1) "webcil Payload\cc")  ;; data segment 1: Webcil payload, active at __memory_base
   (import "webcil" "memory" (memory (;0;) 1))
   (import "webcil" "__stack_pointer" (global (;0;) (mut i32)))
   (import "webcil" "__memory_base" (global (;1;) i32))
   (import "webcil" "__table_base" (global (;2;) i32))
   (import "webcil" "__indirect_function_table" (table (;0;) 1 funcref))
-  (global (export "webcilVersion") i32 (i32.const 1))
+  (global (export "webcilVersion") i32 (i32.const 2))
   (func (export "getWebcilSize") (param $destPtr i32) (result)
     local.get $destPtr
     i32.const 0
@@ -198,6 +159,33 @@ engines, counts towards no limit, and may be stripped when size matters.
   (elem (;0;) (global.get 2) func 2)) ;; active at __table_base
 ```
 
+The module leaves `__memory_base` and `__table_base` as imports, which a host may satisfy in either of
+two ways, with different consequences:
+
+- **Supply them at instantiation**, as immutable `WebAssembly.Global` values. The segment offsets stay
+  `global.get` of an *imported* global, which is a valid constant expression, so the module needs no
+  further processing. The browser host and corerun do this.
+- **Define and export them, then link the module into the host** with a merge tool. Merging internalizes
+  the globals, and `global.get` of a *defined* global is not a constant expression outside the GC
+  proposal - engines disagree here, so the merged module must have its offsets folded to `i32.const`
+  before it is portable. The offline WASI pipeline does this.
+
+Neither approach requires rewriting the segments themselves; only the second requires a fold, and that
+fold is not free, because the pass that performs it also propagates globals into function bodies.
+
+A host that reserves the composite's table slice at link time can treat `__table_base` as a constant:
+reserving the first N slots leaves the composite at base 1 regardless of its size. `__memory_base` is
+the address of the host's payload region and has to be read out of the linked host.
+
+The module shall not export its compiled functions. Exports count towards the engine's
+effective-type-size limit, so a module carrying a framework-sized function count becomes unloadable
+if each function is exported; the element segment, not the export table, is what makes a function
+reachable. Function names shall instead be carried in the `name` custom section, which is ignored by
+engines, counts towards no limit, and may be stripped when size matters.
+
+A tool that examines a version 2 module without instantiating it can still locate the payload as data
+segment 1, after skipping the active segment's offset expression.
+
 (**Rationale**: The size metadata describes the memory and table ranges that the host must reserve
 before instantiation. Active segments initialize those ranges; they do not allocate memory or grow
 the table. The browser host uses the sizes from the matching boot configuration to reserve these
@@ -211,13 +199,10 @@ The loader does not validate that layout before instantiation; a module importin
 memory can also access that memory from its code. Applications must deploy matching modules and
 boot configuration, retaining the resource integrity hashes used by the browser loader.
 
-(**Rationale**: Using a new function called fillWebcilTable to fill in the table enables future
-multithreading logic which may require instantiating the table in multiple workers, without
-recopying the memory from the webassembly segment into the memory space.)
-
-(**Rationale**: The getWebcilPayload api filling in the TableBase field of the WebcilHeader allows
-the runtime to put a more complex implementation of the relocations scheme into the code which is part
-of the runtime's wasm code, reducing the volume of code needed in each webcil file.)
+(**Rationale**: `patchWebcilHeader` writes the `TableBase` field because the runtime reads it from the
+mapped image rather than from a Wasm global, and an unwritten field reads as 0, silently shifting
+every function index by `tableBase`. Keeping this one step in the module lets the runtime implement
+the relocation scheme in its own code, reducing the volume of code needed in each Webcil file.)
 
 (**Rationale**: Requiring an alignment of 16 bytes allows for both efficient memory usage for loading
 images into linear memory, as well as for allowing for efficient storage of 128 bit vector constants
@@ -291,11 +276,10 @@ base reloc section.
     uint16_t Reserved0; // 0, or 1-based index of .reloc webcil section
 ```
 
-The header structure has an additional `uint32_t` field called TableBase. A host-installed wrapper
-fills this field while executing `getWebcilPayload`. A self-installing wrapper has no
-`getWebcilPayload` export; its active data segment installs the payload at `__memory_base`, and the
-host must call `patchWebcilHeader` after instantiation to write the `__table_base` value into this
-field before the runtime consumes the image.
+The header structure has an additional `uint32_t` field called TableBase. The payload is installed
+by the version 2 wrapper's active data segment at `__memory_base`; for a ReadyToRun image, the host
+must call `patchWebcilHeader` after instantiation to write the `__table_base` value into this field
+before the runtime consumes the image.
 
 #### Section header table
 

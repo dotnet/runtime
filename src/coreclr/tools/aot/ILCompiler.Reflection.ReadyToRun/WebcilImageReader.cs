@@ -739,9 +739,9 @@ namespace ILCompiler.Reflection.ReadyToRun
             webcilOffset = 0;
 
             // Parse WASM module structure to find the data section (id=11)
-            // which contains the Webcil payload. The payload segment is passive in a component
-            // forwarding stub and active in a self-installing image (one that carries code and
-            // installs itself at instantiation), so both kinds have to be inspected.
+            // which contains the Webcil payload. The payload segment is active in a self-installing
+            // (wrapper version 2) image and passive in the legacy version 0 wrapper, so both kinds
+            // have to be inspected.
             int offset = 8; // Skip WASM magic + version
             while (offset < image.Length)
             {

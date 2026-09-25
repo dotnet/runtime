@@ -13,12 +13,13 @@ using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
 using Xunit;
 using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
+using WebcilConstants = crossgen2::Microsoft.NET.WebAssembly.Webcil.WebcilConstants;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
-    public static void AssertWebcilSegmentLayout(WebcilImageReader reader, bool isSelfInstalling)
+    public static void AssertWebcilSegmentLayout(WebcilImageReader reader, bool isComponentStub)
     {
         Assert.True(reader.IsWasmWrapped);
         Assert.True(WasmIndexSpacesHaveExpectedEntries(reader, out string diagnostic), diagnostic);
@@ -30,35 +31,36 @@ internal static class WasmR2RAssert
 
         uint definedFunctionCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Function);
         Assert.True(definedFunctionCount > 0, "Expected functions in the Webcil wrapper");
-        if (!isSelfInstalling)
+        if (isComponentStub)
         {
-            // Component forwarding stubs contain no compiled methods.
-            Assert.Equal(3u, definedFunctionCount);
+            // Component forwarding stubs contain no compiled methods, only the two host-called stubs.
+            Assert.Equal(2u, definedFunctionCount);
         }
 
-        string[] expectedFunctionExports = isSelfInstalling
-            ? ["getWebcilSize", "patchWebcilHeader"]
-            : ["fillWebcilTable", "getWebcilPayload", "getWebcilSize"];
         string[] actualFunctionExports = ReadWasmExports(reader)
             .Where(export => export.Value.Kind == WasmImportKind.Function)
             .Select(export => export.Key)
             .Order(StringComparer.Ordinal)
             .ToArray();
-        Assert.Equal(expectedFunctionExports, actualFunctionExports);
+        Assert.Equal(["getWebcilSize", "patchWebcilHeader"], actualFunctionExports);
 
         Assert.True(
-            TryGetWasmSectionBounds(image, WasmSectionKind.Element, out int offset, out int end),
+            TryGetWasmSectionBounds(image, WasmSectionKind.Global, out int offset, out int end),
+            "Global section not found in the wasm image");
+        Assert.Equal(1u, ReadWasmUleb32(image, ref offset, end)); // webcilVersion
+        Assert.Equal((byte)0x7F, ReadWasmByte(image, ref offset, end)); // i32
+        Assert.Equal((byte)0x00, ReadWasmByte(image, ref offset, end)); // const
+        Assert.Equal((byte)0x41, ReadWasmByte(image, ref offset, end)); // i32.const
+        Assert.Equal((uint)WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING, ReadWasmUleb32(image, ref offset, end));
+        Assert.Equal((byte)0x0B, ReadWasmByte(image, ref offset, end));
+        Assert.Equal(end, offset);
+
+        Assert.True(
+            TryGetWasmSectionBounds(image, WasmSectionKind.Element, out offset, out end),
             "Element section not found in the wasm image");
         Assert.Equal(1u, ReadWasmUleb32(image, ref offset, end));
-        Assert.Equal(isSelfInstalling ? 0u : 1u, ReadWasmUleb32(image, ref offset, end));
-        if (isSelfInstalling)
-        {
-            AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.TableBaseGlobalIndex);
-        }
-        else
-        {
-            Assert.Equal((byte)0, ReadWasmByte(image, ref offset, end)); // funcref elemkind
-        }
+        Assert.Equal(0u, ReadWasmUleb32(image, ref offset, end)); // active, table 0
+        AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.TableBaseGlobalIndex);
 
         uint elementCount = ReadWasmUleb32(image, ref offset, end);
         Assert.Equal(definedFunctionCount, elementCount);
@@ -82,11 +84,8 @@ internal static class WasmR2RAssert
         Assert.Equal(elementCount, tableSize);
         offset += checked((int)sizesLength);
 
-        Assert.Equal(isSelfInstalling ? 0u : 1u, ReadWasmUleb32(image, ref offset, end));
-        if (isSelfInstalling)
-        {
-            AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.ImageBaseGlobalIndex);
-        }
+        Assert.Equal(0u, ReadWasmUleb32(image, ref offset, end)); // active, memory 0
+        AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.ImageBaseGlobalIndex);
 
         uint payloadLength = ReadWasmUleb32(image, ref offset, end);
         Assert.Equal(payloadSize, payloadLength);
@@ -350,21 +349,19 @@ internal static class WasmR2RAssert
         // Only the host-called stubs are exported. Exporting every compiled function counts towards
         // the engine's effective-type-size limit and makes a framework-sized composite unloadable;
         // function names live in the name section instead, which CheckFunctionNames verifies.
-        // A self-installing image needs two stubs; a host-installed component stub needs three.
+        // Every image needs the same two stubs: getWebcilSize, and patchWebcilHeader to record the table base.
         List<string> exportedFunctions = exports
             .Where(export => export.Value.Kind == WasmImportKind.Function)
             .Select(export => export.Key)
             .Order(StringComparer.Ordinal)
             .ToList();
 
-        string[] selfInstalling = ["getWebcilSize", "patchWebcilHeader"];
-        string[] hostInstalled = ["fillWebcilTable", "getWebcilPayload", "getWebcilSize"];
-        if (!exportedFunctions.SequenceEqual(selfInstalling, StringComparer.Ordinal) &&
-            !exportedFunctions.SequenceEqual(hostInstalled, StringComparer.Ordinal))
+        string[] expectedExports = ["getWebcilSize", "patchWebcilHeader"];
+        if (!exportedFunctions.SequenceEqual(expectedExports, StringComparer.Ordinal))
         {
             failures.Add(
-                $"Expected exactly the stub function exports [{string.Join(", ", selfInstalling)}] " +
-                $"or [{string.Join(", ", hostInstalled)}]; found [{string.Join(", ", exportedFunctions)}].");
+                $"Expected exactly the stub function exports [{string.Join(", ", expectedExports)}]; " +
+                $"found [{string.Join(", ", exportedFunctions)}].");
             return;
         }
 

@@ -344,20 +344,15 @@ namespace ILCompiler.ObjectWriter
     }
 
     /// <summary>
-    /// A <c>funcref</c> element segment targeting table 0.
+    /// An active <c>funcref</c> element segment targeting table 0, placed by <see cref="OffsetExpr"/>.
+    /// The engine installs it at instantiation.
     /// </summary>
-    /// <remarks>
-    /// When <see cref="OffsetExpr"/> is <see langword="null"/> the segment is emitted as passive
-    /// (flag 1), which requires a <c>table.init</c> to install it. Otherwise it is emitted as
-    /// active (flag 0) with <see cref="OffsetExpr"/> as its offset constant expression, and the
-    /// engine installs it at instantiation.
-    /// </remarks>
     internal readonly struct WasmElementSegment
     {
         public ReadOnlyMemory<int> FunctionIndices { get; }
         public WasmInstructionGroup OffsetExpr { get; }
 
-        public WasmElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr = null)
+        public WasmElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr)
         {
             FunctionIndices = functionIndices;
             OffsetExpr = offsetExpr;
@@ -375,18 +370,10 @@ namespace ILCompiler.ObjectWriter
         {
             ReadOnlySpan<int> functionIndices = entry.FunctionIndices.Span;
 
-            if (entry.OffsetExpr is not null)
-            {
-                // Active element segment, table 0. Flag 0 implies both the table index and the
-                // funcref element type, so no element-type byte follows.
-                writer.WriteByte(0);
-                WriteEncodable(writer, entry.OffsetExpr);
-            }
-            else
-            {
-                writer.WriteByte(1); // Passive element segment
-                writer.WriteByte(0); // element type: ref func
-            }
+            // Active element segment, table 0. Flag 0 implies both the table index and the
+            // funcref element type, so no element-type byte follows.
+            writer.WriteByte(0);
+            WriteEncodable(writer, entry.OffsetExpr);
 
             writer.WriteULEB128((ulong)functionIndices.Length);
             foreach (int functionIndex in functionIndices)

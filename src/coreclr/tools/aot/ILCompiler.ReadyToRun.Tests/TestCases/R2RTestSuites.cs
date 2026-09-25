@@ -406,7 +406,7 @@ public class R2RTestSuites
             int payloadOffset = reader.GetOffset(section.RelativeVirtualAddress) - section.RelativeVirtualAddress;
             Assert.Equal(0, payloadOffset & 0xF);
 
-            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isSelfInstalling: true);
+            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isComponentStub: false);
 
             foreach (string assemblyName in new[] { "CompositeLib", nameof(WasmCompositeModule) })
             {
@@ -416,7 +416,7 @@ public class R2RTestSuites
                 Assert.True(File.Exists(componentPath), $"Component image not found: {componentPath}");
 
                 var componentReader = new WebcilImageReader(File.ReadAllBytes(componentPath));
-                WasmR2RAssert.AssertWebcilSegmentLayout(componentReader, isSelfInstalling: false);
+                WasmR2RAssert.AssertWebcilSegmentLayout(componentReader, isComponentStub: true);
 
                 IAssemblyMetadata metadata = componentReader.GetStandaloneAssemblyMetadata();
                 Assert.NotNull(metadata);
@@ -2265,7 +2265,7 @@ public class R2RTestSuites
         static void Validate(ReadyToRunReader reader)
         {
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
-            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isSelfInstalling: true);
+            WasmR2RAssert.AssertWebcilSegmentLayout(webcilReader, isComponentStub: false);
         }
     }
 }

@@ -8,6 +8,8 @@ import { browserVirtualAppBase, sizeOfPtr } from "../per-module";
 
 const hasInstantiateStreaming = typeof WebAssembly !== "undefined" && typeof WebAssembly.instantiateStreaming === "function";
 const loadedAssemblies: Map<string, { ptr: number, length: number }> = new Map();
+// Self-installing wrapper version; keep in sync with WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING.
+const webcilWrapperVersion = 2;
 
 export function registerPdbBytes(bytes: Uint8Array, virtualPath: string) {
     const lastSlash = virtualPath.lastIndexOf("/");
@@ -48,7 +50,7 @@ export function registerDllBytes(bytes: Uint8Array, virtualPath: string, shortNa
 
 export async function instantiateWebcilModule(webcilPromise: Promise<Response>, memory: WebAssembly.Memory, virtualPath: string, tableSize?: number, payloadSize?: number): Promise<void> {
     // Boot-config sizes let us reserve the payload and table ranges before streaming instantiation.
-    // Assets without a tableSize are plain (Webcil wrapper version 0) images.
+    // Assets without a tableSize are IL-only images.
     if (typeof payloadSize !== "number" || payloadSize === 0) {
         throw new Error(`Webcil asset '${virtualPath}' is missing payloadSize in the boot config.`);
     }
@@ -102,16 +104,20 @@ function allocWebcilPayload(payloadSize: number): number {
     }
 }
 
-// Builds the `webcil` import object. For R2R images (tableSize > 0) the module imports the runtime's
-// stack pointer, exception tag, indirect-call table and base globals; this also grows the table.
-// These import names and the webcilVersion/getWebcilPayload/fillWebcilTable/patchWebcilHeader
-// handshake in finishWebcilInstance are the R2R Webcil-in-Wasm host ABI defined by crossgen's
-// WasmObjectWriter (src/coreclr/tools/Common/Compiler/ObjectWriter/WasmObjectWriter.cs,
-// CreateDefaultGlobalImports/WriteExports). Keep in sync with the corerun host
+// Builds the `webcil` import object. Every image imports the runtime's memory and the __memory_base
+// global its active payload segment is placed at. R2R images (tableSize > 0) also import the runtime's
+// stack pointer, exception tag, indirect-call table and __table_base; this also grows the table.
+// These import names and the webcilVersion/patchWebcilHeader handshake in finishWebcilInstance are the
+// self-installing Webcil-in-Wasm host ABI defined by crossgen's WebCilObjectWriter
+// (src/coreclr/tools/Common/Compiler/ObjectWriter/WebCilObjectWriter.cs) and the IL-only wrapper
+// (src/tasks/Microsoft.NET.WebAssembly.Webcil/WebcilWasmWrapper.cs). Keep in sync with the corerun host
 // (src/coreclr/hosts/corerun/wasm/libCorerun.js, BrowserHost_ExternalAssemblyProbe). The browser
 // loader receives payloadSize/tableSize from boot config rather than parsing the wrapper.
 function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tableSize: number): Record<string, WebAssembly.ImportValue> {
-    const webcilImports: Record<string, WebAssembly.ImportValue> = { memory };
+    const webcilImports: Record<string, WebAssembly.ImportValue> = {
+        memory,
+        __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+    };
     if (tableSize > 0) {
         const stackPointer = _ems_.wasmExports?.__stack_pointer;
         const rtlRestoreContextTag = _ems_.wasmExports?.__coreclr_wasm_rtlrestorecontext_tag;
@@ -132,34 +138,26 @@ function buildWebcilImports(memory: WebAssembly.Memory, payloadPtr: number, tabl
         webcilImports.__async_continuation = asyncContinuation as unknown as WebAssembly.ImportValue;
         webcilImports.__indirect_function_table = _ems_.wasmTable;
         webcilImports.__table_base = new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex);
-        webcilImports.__memory_base = new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr);
     }
     return webcilImports;
 }
 
-// Finishes active or passive payload installation and registers the loaded image for
-// BrowserHost_ExternalAssemblyProbe.
+// Records the table base for R2R images and registers the loaded image for
+// BrowserHost_ExternalAssemblyProbe. The engine has already installed the payload (and table slice)
+// from the module's active segments during instantiation.
 function finishWebcilInstance(instance: WebAssembly.Instance, payloadPtr: number, payloadSize: number, tableSize: number, virtualPath: string): void {
     const webcilVersion = (instance.exports.webcilVersion as WebAssembly.Global).value;
-    if (webcilVersion > 1 || webcilVersion < 0) {
-        throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
+    if (webcilVersion !== webcilWrapperVersion) {
+        throw new Error(`Webcil asset '${virtualPath}' has unsupported Webcil wrapper version ${webcilVersion}; expected ${webcilWrapperVersion}.`);
     }
 
-    // Two image shapes reach this point. A component stub carries its payload and table in passive
-    // segments and hands them over via getWebcilPayload/fillWebcilTable. A composite uses active
-    // segments, so the engine installed both at instantiation and only the header's tableBase field
-    // is left to write. Feature-detect rather than assume: getWebcilPayload on a composite would
-    // trap, because memory.init against an active (hence dropped) segment is out of bounds.
-    const patchWebcilHeader = instance.exports.patchWebcilHeader as ((ptr: number, size: number) => void) | undefined;
-    if (typeof patchWebcilHeader === "function") {
-        patchWebcilHeader(payloadPtr, payloadSize);
-    } else {
-        const getWebcilPayload = instance.exports.getWebcilPayload as (ptr: number, size: number) => void;
-        getWebcilPayload(payloadPtr, payloadSize);
-        if (tableSize > 0) {
-            const fillWebcilTable = instance.exports.fillWebcilTable as () => void;
-            fillWebcilTable();
+    if (tableSize > 0) {
+        // The header's tableBase field lives in linear memory, so no segment can supply it.
+        const patchWebcilHeader = instance.exports.patchWebcilHeader as ((ptr: number, size: number) => void) | undefined;
+        if (typeof patchWebcilHeader !== "function") {
+            throw new Error(`Webcil R2R asset '${virtualPath}' does not export patchWebcilHeader.`);
         }
+        patchWebcilHeader(payloadPtr, payloadSize);
     }
 
     const name = virtualPath.startsWith(browserVirtualAppBase)

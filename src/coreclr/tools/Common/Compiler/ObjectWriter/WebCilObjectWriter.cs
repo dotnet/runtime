@@ -97,42 +97,13 @@ namespace ILCompiler.ObjectWriter
                 ]
         );
 
-        WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
-            new WasmFuncType(new([]), new([])), // (func)
-                [
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex),
-                    I32.Const(0),
-                    I32.Const(tableSize),
-                    Table.Init(0, 0)
-                ]
-        );
-
-        WasmFunctionBody GetWebcilPayload => new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
-                [
-                    Local.Get(0), // (local.get $d)
-                    I32.Const(0),
-                    Local.Get(1), // (local.get $n)
-                    Memory.Init(1),
-                    Local.Get(1),
-                    I32.Const(32),
-                    I32.Ge_s,
-                    Block.If(WasmBlockType.Empty),
-                    Local.Get(0), // (local.get $d)
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
-                    I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
-                    Block.End
-                ]
-        );
-
         /// <summary>
-        /// Counterpart of <see cref="GetWebcilPayload"/> for a self-installing image. Its payload lives in an
-        /// active data segment, so the engine has already copied it to <c>imageBase</c> and a
-        /// <c>memory.init</c> would in fact trap: an active segment is implicitly dropped at
-        /// instantiation. All that remains is the header's <c>tableBase</c> field, which the runtime
-        /// reads from the mapped image rather than from a Wasm global
-        /// (<c>WebcilDecoder::GetTableBaseOffset</c>), and which returns 0 when unwritten - silently
-        /// shifting every R2R function index by <c>tableBase</c>. Both hosts must call this after
+        /// Records the table base in the installed payload's header. The payload and function table are
+        /// active segments, so the engine has already placed them at <c>__memory_base</c> and
+        /// <c>__table_base</c> during instantiation. The header's <c>tableBase</c> field is the one
+        /// value a segment cannot supply: the runtime reads it from the mapped image rather than from a
+        /// Wasm global (<c>WebcilDecoder::GetTableBaseOffset</c>), and it returns 0 when unwritten -
+        /// silently shifting every R2R function index by <c>tableBase</c>. Hosts must call this after
         /// instantiation.
         /// </summary>
         static WasmFunctionBody PatchWebcilHeader = new WasmFunctionBody(
@@ -266,18 +237,6 @@ namespace ILCompiler.ObjectWriter
             writer.WriteULEB128(NumDataSegments); // number of data segments
         }
 
-        /// <summary>
-        /// Whether this image installs its own payload and function table via active segments.
-        /// </summary>
-        /// <remarks>
-        /// True for any image that carries code - a composite or a single-assembly R2R image - since
-        /// the host instantiates those and the engine can apply the segments. False for a per-assembly
-        /// component forwarding stub, which must keep its payload passive: a stub is not necessarily
-        /// instantiated at all, and an offline host may instead parse it as a file and locate the
-        /// payload by passive data segment index, which an active segment would defeat.
-        /// </remarks>
-        private bool IsSelfInstallingImage => !_nodeFactory.OptimizationFlags.IsComponentModule;
-
         /// <summary>Offset constant expression placing the payload segment at the host-supplied image base.</summary>
         private static WasmInstructionGroup ImageBaseOffsetExpr =>
             new WasmInstructionGroup([Global.Get(ImageBaseGlobalIndex)]);
@@ -306,24 +265,14 @@ namespace ILCompiler.ObjectWriter
             }
 #endif
 
-            // The stub set is image-kind dependent. A self-installing image installs both its payload and its
-            // function table via active segments, so it needs neither getWebcilPayload (whose
-            // memory.init would trap against a dropped active segment) nor fillWebcilTable (whose
-            // work the engine has already done); it needs only patchWebcilHeader, because the
-            // header's tableBase field is read from linear memory and cannot come from a segment.
-            // A component stub keeps all three: it is passive throughout and is installed by the host.
-            int stubCount = IsSelfInstallingImage ? 2 : 3;
+            // Every image - composite, single-assembly, or component forwarding stub - installs its payload
+            // and function table via active segments, so the only stub the host calls beyond
+            // getWebcilSize is patchWebcilHeader: the header's tableBase field is read from linear memory
+            // and cannot come from a segment.
+            const int stubCount = 2;
             int totalMethodCount = MethodCount + stubCount;
             InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
-            if (IsSelfInstallingImage)
-            {
-                InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader);
-            }
-            else
-            {
-                InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
-                InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
-            }
+            InsertWasmStub(new Utf8String("patchWebcilHeader"), PatchWebcilHeader);
 
             Debug.Assert(MethodCount == totalMethodCount);
 
@@ -332,9 +281,8 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteGlobalSection()
         {
-            // webcilVersion: i32 const = 0
             WriteGlobal("webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
-                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WC_VERSION_MAJOR)]));
+                new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING)]));
         }
 
         private static readonly ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
@@ -537,7 +485,7 @@ namespace ILCompiler.ObjectWriter
             WebcilPayloadDataSegment webcilPayloadSegment = new(
                 webcilHeader,
                 webcilSections,
-                IsSelfInstallingImage ? ImageBaseOffsetExpr : null);
+                ImageBaseOffsetExpr);
 
             // Writing our memory import <- size of the webcil segment (for an accurate minimum size)
             WriteMemoryImport((ulong)webcilPayloadSegment.ContentSize);
@@ -1168,9 +1116,8 @@ namespace ILCompiler.ObjectWriter
                 .Select(symbol => symbol.Index)
                 .ToArray();
 
-            // A self-installing image installs its table slice via an active segment at the host-supplied table
-            // base. A component stub stays passive; it has no table slice of its own to install.
-            WriteElementSegment(functionIndices, IsSelfInstallingImage ? TableBaseOffsetExpr : null);
+            // The table slice is installed by an active segment at the host-supplied table base.
+            WriteElementSegment(functionIndices, TableBaseOffsetExpr);
         }
     }
 }

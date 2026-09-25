@@ -11,25 +11,27 @@ using Microsoft.NET.WebAssembly.Webcil;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// The data segment of Webcil modules that contains the Webcil payload composed of WebcilSections.
+    /// The active data segment of Webcil modules that contains the Webcil payload composed of WebcilSections.
     /// </summary>
+    /// <remarks>
+    /// The segment is placed by an offset expression that reads a host-supplied base-address global, so
+    /// the engine copies the payload into the host's allocation at instantiation.
+    /// </remarks>
     internal sealed class WebcilPayloadDataSegment : IWasmActiveDataSegment
     {
         private readonly WebcilHeader _header;
         private readonly WebcilSection[] _sections;
         private readonly int _alignment;
-        private readonly WasmDataSegmentType _segmentType;
         private readonly WasmInstructionGroup _initExpr;
         private int _paddingBytesCount;
 
         public WebcilPayloadDataSegment(
             WebcilHeader header,
             WebcilSection[] sections,
-            WasmInstructionGroup initExpr = null)
+            WasmInstructionGroup initExpr)
         {
             _header = header;
             _sections = sections;
-            _segmentType = initExpr is null ? WasmDataSegmentType.Passive : WasmDataSegmentType.Active;
             _initExpr = initExpr;
             _alignment = WebCilObjectWriter.WebcilSectionAlignment;
             foreach (WebcilSection section in sections)
@@ -39,7 +41,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         public int HeaderSize =>
-            WasmDataSegmentEncoding.GetHeaderSize(_segmentType, _initExpr);
+            WasmDataSegmentEncoding.GetHeaderSize(WasmDataSegmentType.Active, _initExpr);
 
         public int FileAlignment => _alignment;
 
@@ -64,7 +66,7 @@ namespace ILCompiler.ObjectWriter
 
         public int ContentSize => checked(RawContentSize + _paddingBytesCount);
 
-        public WasmDataSegmentType SegmentType => _segmentType;
+        public WasmDataSegmentType SegmentType => WasmDataSegmentType.Active;
 
         public int EncodeSize() => HeaderSize + ContentSize;
 
@@ -73,7 +75,7 @@ namespace ILCompiler.ObjectWriter
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             int headerSize = WasmDataSegmentEncoding.EncodeHeader(
                 headerBuffer,
-                _segmentType,
+                WasmDataSegmentType.Active,
                 _initExpr,
                 ContentSize);
             Debug.Assert(headerSize == HeaderSize);
@@ -114,18 +116,9 @@ namespace ILCompiler.ObjectWriter
 
         public void SetMemoryOffset(int offset)
         {
-            Debug.Assert(_segmentType == WasmDataSegmentType.Active);
         }
 
-        public int GetMemoryAddressOfOffset(int offsetInSegment)
-        {
-            Debug.Assert(offsetInSegment >= 0 && offsetInSegment <= RawContentSize);
-            if (_segmentType == WasmDataSegmentType.Active)
-            {
-                throw new NotSupportedException("Active WebCIL payload segments use an imported base-address global.");
-            }
-
-            return offsetInSegment;
-        }
+        public int GetMemoryAddressOfOffset(int offsetInSegment) =>
+            throw new NotSupportedException("Active WebCIL payload segments use an imported base-address global.");
     }
 }

@@ -256,7 +256,7 @@ namespace ILCompiler.ObjectWriter
         private protected void WriteGlobalExport(string name, int globalIndex) =>
             WriteExport(name, WasmExportKind.Global, globalIndex);
 
-        private protected void WriteElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr = null)
+        private protected void WriteElementSegment(ReadOnlyMemory<int> functionIndices, WasmInstructionGroup offsetExpr)
         {
             WasmElementSection section = GetOrCreateSection<WasmElementSection>(
                 WasmObjectNodeSection.ElementSection,
