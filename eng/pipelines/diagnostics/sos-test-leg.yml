@@ -1,94 +1,233 @@
-# sos-test-leg.yml -- wraps the matrix + job + dep + artifact download +
-# standard postBuildSteps pattern used by the SOS-style test legs (cDAC and
-# DAC) that run on windows_x64.
-#
-# AzDO tasks workaround:
-#   PublishTestResults v2.270.0 garbles parameterized xUnit test names
-#   containing dots. Unsetting AllowPtrToDetectTestRunRetryFiles restores
-#   v2.262.0 behavior. Tracked at microsoft/azure-pipelines-tasks#21871.
+# sos-test-leg.yml -- downloads the per-platform cDAC build artifacts,
+# builds dotnet/diagnostics, then submits SOS.Tests to Helix.
 
 parameters:
-- name: name
-  type: string
-- name: dacMode
-  type: string
-  default: ''
-- name: useRuntimeCDac
-  type: boolean
-  default: false
+  buildConfig: ''
+  name: ''
+  archType: ''
+  hostedOs: ''
+  osGroup: ''
+  osSubgroup: ''
+  container: ''
+  crossBuild: false
+  variables: []
+  targetRid: ''
+  timeoutInMinutes: ''
+  dependsOn: []
+  dependsOnGlobalBuilds: []
+  pool: ''
+  platform: ''
+  condition: true
+  shouldContinueOnError: false
+  isOfficialBuild: false
+  runtimeFlavor: 'coreclr'
+  helixQueueGroup: ''
+  templatePath: 'templates'
+  templateContext: ''
+  disableComponentGovernance: ''
 
 jobs:
-- template: /eng/pipelines/common/platform-matrix.yml
+- template: /eng/common/${{ parameters.templatePath }}/job/job.yml
   parameters:
-    jobTemplate: /eng/pipelines/diagnostics/runtime-diag-job.yml
-    buildConfig: release
-    platforms:
-    - windows_x64
-    variables:
-      - name: AllowPtrToDetectTestRunRetryFiles
-        value: false
-    jobParameters:
-      name: ${{ parameters.name }}
-      dacMode: ${{ parameters.dacMode }}
-      useRuntimeCDac: ${{ parameters.useRuntimeCDac }}
-      testInterpreter: true
-      methodFilter: SOS*
-      isOfficialBuild: ${{ variables.isOfficialBuild }}
-      liveRuntimeDir: $(Build.SourcesDirectory)/artifacts/runtime
-      timeoutInMinutes: 360
+    name: ${{ parameters.name }}_${{ parameters.osGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    pool: ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    condition: and(succeeded(), ${{ parameters.condition }})
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    ${{ if ne(parameters.templateContext, '') }}:
+      templateContext: ${{ parameters.templateContext }}
+
+    artifacts:
+      publish:
+        logs:
+          name: Logs_Build_Attempt$(System.JobAttempt)_${{ parameters.osGroup }}_${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.name }}
+
+    # Component governance does not work on musl machines
+    ${{ if eq(parameters.osSubgroup, '_musl') }}:
+      disableComponentGovernance: true
+    ${{ else }}:
+      disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
+
+    workspace:
+      clean: all
+
+    ${{ if or(ne(parameters.dependsOn, ''), ne(parameters.dependsOnGlobalBuilds, '')) }}:
       dependsOn:
-      - build_windows_x64_release_AllSubsets_CoreCLR
-      preBuildSteps:
-      - template: /eng/pipelines/common/download-artifact-step.yml
-        parameters:
-          artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr
-          artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_coreclr$(archiveExtension)
-          unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
-          displayName: 'Runtime Build Artifacts'
-      - ${{ if eq(parameters.useRuntimeCDac, true) }}:
-        - template: /eng/pipelines/common/download-artifact-step.yml
-          parameters:
-            artifactName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac
-            artifactFileName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_cdac$(archiveExtension)
-            unpackFolder: $(Build.SourcesDirectory)/artifacts/cdac
-            displayName: 'cDAC Transport Package'
-        - powershell: |
-            $packageId = "runtime.win-$(archType).Microsoft.DotNet.Cdac.Transport"
-            $packages = @(Get-ChildItem -File -Path "$(Build.SourcesDirectory)\artifacts\cdac\$packageId.*.nupkg" | Where-Object Name -NotLike '*.symbols.nupkg')
-            if ($packages.Count -ne 1) {
-              throw "Expected one cDAC transport package, but found $($packages.Count)."
-            }
+      - ${{ each build in parameters.dependsOn }}:
+        - ${{ build }}
+      - ${{ each globalBuild in parameters.dependsOnGlobalBuilds }}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}', parameters.osGroup, parameters.osSubgroup, parameters.archType, coalesce(globalBuild.buildConfig, parameters.buildConfig), globalBuild.nameSuffix) }}
 
-            $packageNamePrefix = "$packageId."
-            $packageVersion = $packages[0].BaseName.Substring($packageNamePrefix.Length)
+    variables:
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: DotNet-HelixApi-Access
+      - group: AzureDevOps-Artifact-Feeds-Pats
+    - _PhaseName: ${{ parameters.name }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
+    - _Pipeline_StreamDumpDir: $(Build.SourcesDirectory)/artifacts/tmp/${{ parameters.buildConfig }}/streams
+    - _CrossBuildArg: ''
+    - ${{ if eq(parameters.crossBuild, true) }}:
+      - _CrossBuildArg: '-cross'
+    - ${{ each variable in parameters.variables }}:
+      - ${{ variable }}
 
-            Write-Host "##vso[task.setvariable variable=cdacTransportSource]$($packages[0].DirectoryName)"
-            Write-Host "##vso[task.setvariable variable=cdacTransportVersion]$packageVersion"
-          displayName: 'Configure cDAC Transport Package'
-      postBuildSteps:
-      - task: PublishTestResults@2
-        inputs:
-          testResultsFormat: xUnit
-          testResultsFiles: '**/*.xml'
-          searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults'
-          testRunTitle: 'Tests $(_PhaseName)'
-          failTaskOnFailedTests: true
-          publishRunAttachments: true
-          mergeTestResults: true
-          buildConfiguration: $(_BuildConfig)
-        continueOnError: true
+    steps:
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - template: /eng/pipelines/common/templates/disable-vsupdate-or-failfast.yml
+
+    - checkout: diagnostics
+      clean: true
+      fetchDepth: $(checkoutFetchDepth)
+      fetchTags: false
+
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+      - template: /eng/pipelines/common/restore-internal-tools.yml
+
+    - template: /eng/common/${{ parameters.templatePath }}/steps/enable-internal-sources.yml
+
+    - ${{ if or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.hostedOs, 'osx')) }}:
+      - template: /eng/pipelines/common/select-xcode.yml
+      - script: $(Build.SourcesDirectory)/eng/common/native/install-dependencies.sh osx
+        displayName: Install Build Dependencies
+
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+        artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime-build
+        displayName: 'cDAC Build Artifacts'
+
+    - pwsh: |
+        $runtimeDirs = @(Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/runtime-build/testhost/net*-${{ parameters.osGroup }}-$(_BuildConfig)-${{ parameters.archType }}/shared/Microsoft.NETCore.App/*")
+        if ($runtimeDirs.Count -ne 1) {
+          throw "Expected one private runtime directory, but found $($runtimeDirs.Count)."
+        }
+
+        Write-Host "##vso[task.setvariable variable=sosRuntimeDir]$($runtimeDirs[0].FullName)"
+      displayName: 'Find SOS Private Runtime'
+
+    - pwsh: |
+        $queue = switch ("${{ parameters.osGroup }}_${{ parameters.archType }}") {
+          "windows_x64"   { "$(helix_windows_x64)" }
+          "windows_x86"   { "$(helix_windows_x64)" }
+          "windows_arm64" { "$(helix_windows_arm64)" }
+          "linux_x64"     { "$(helix_linux_x64_oldest)" }
+          "linux_arm64"   { "$(helix_linux_arm64_oldest)" }
+          "linux_arm"     { "$(helix_linux_arm32_oldest)" }
+          "osx_x64"       { "$(helix_macos_x64)" }
+          "osx_arm64"     { "$(helix_macos_arm64)" }
+          default         { throw "Unsupported SOS platform: ${{ parameters.osGroup }}_${{ parameters.archType }}" }
+        }
+
+        Write-Host "##vso[task.setvariable variable=SOSHelixQueue]$queue"
+      displayName: 'Configure SOS Helix Queue'
+
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - powershell: |
+          & "$(Build.SourcesDirectory)\Build.cmd" `
+            -ci `
+            -configuration ${{ parameters.buildConfig }} `
+            -architecture ${{ parameters.archType }} `
+            -privatebuild `
+            $(_CrossBuildArg) `
+            /p:PackageWithCDac=false `
+            /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+          exit $LASTEXITCODE
+        displayName: Build
+
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - script: >
+          $(Build.SourcesDirectory)/build.sh
+          -ci
+          -configuration ${{ parameters.buildConfig }}
+          -architecture ${{ parameters.archType }}
+          -privatebuild
+          $(_CrossBuildArg)
+          /p:PackageWithCDac=false
+          /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+        displayName: Build
+
+    - pwsh: |
+        $targetOS = if ("${{ parameters.osGroup }}" -eq "windows") { "Windows_NT" } else { "${{ parameters.osGroup }}" }
+        $runtimeOS = if ("${{ parameters.osGroup }}" -eq "windows") { "windows" } else { "${{ parameters.osGroup }}" }
+        $sourceDir = "$(Build.SourcesDirectory)/artifacts/runtime-build/coreclr/$runtimeOS.${{ parameters.archType }}.Checked"
+        $destinationDir = "$(Build.SourcesDirectory)/artifacts/bin/$targetOS.${{ parameters.archType }}.$(_BuildConfig)"
+        if (-not (Test-Path -PathType Container $destinationDir)) {
+          throw "Diagnostics native output directory '$destinationDir' was not found."
+        }
+
+        $fileNames = switch ("${{ parameters.osGroup }}") {
+          "windows" { "mscordaccore_universal.dll", "mscordbi_universal.dll" }
+          "linux"   { "libmscordaccore_universal.so", "libmscordbi_universal.so" }
+          "osx"     { "libmscordaccore_universal.dylib", "libmscordbi_universal.dylib" }
+          default   { throw "Unsupported SOS platform: ${{ parameters.osGroup }}" }
+        }
+
+        foreach ($fileName in $fileNames) {
+          $source = Join-Path $sourceDir $fileName
+          if (-not (Test-Path -PathType Leaf $source)) {
+            throw "Private cDAC input '$source' was not found."
+          }
+
+          Copy-Item -Path $source -Destination $destinationDir
+        }
+      displayName: 'Install Private cDAC'
+
+    - template: /eng/pipelines/send-to-helix-step.yml@diagnostics
+      parameters:
+        displayName: Run SOS.Tests on Helix
+        osGroup: ${{ parameters.osGroup }}
+        sendParams: >
+          $(Build.SourcesDirectory)/eng/helix/SendToHelix.proj
+          /restore
+          /p:TreatWarningsAsErrors=false
+          /t:Test
+          /p:Configuration=${{ parameters.buildConfig }}
+          /p:TargetArch=${{ parameters.archType }}
+          /p:TargetOS=${{ replace(parameters.osGroup, 'windows', 'Windows_NT') }}
+          /p:TargetRid=${{ parameters.targetRid }}
+          /p:PackageWithCDac=false
+          /p:PrivateBuildTesting=true
+          /p:LiveRuntimeDir=$(sosRuntimeDir)
+          /p:HelixTestProject=$(Build.SourcesDirectory)/src/tests/SOS.Tests/SOS.Tests.csproj
+          /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
+          /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.buildConfig }}/SendTestsToHelix.binlog
+        env:
+          HelixSource: pr/dotnet/runtime/diagnostics
+          HelixType: tests/sos/
+          HelixConfiguration: ${{ parameters.targetRid }}_${{ parameters.buildConfig }}
+          HelixTargetQueues: $(SOSHelixQueue)
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          ${{ if eq(variables['System.TeamProject'], 'public') }}:
+            Creator: dotnet-bot
+          ${{ else }}:
+            HelixAccessToken: $(HelixApiAccessToken)
+
+    - task: CopyFiles@2
+      displayName: Gather Helix logs
+      inputs:
+        sourceFolder: '$(Build.SourcesDirectory)/artifacts'
+        contents: '?(log|TestResults)/**'
+        targetFolder: '$(Build.StagingDirectory)/HelixLogs'
+      continueOnError: true
+      condition: always()
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.StagingDirectory)/HelixLogs'
+        artifactName: 'Logs_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
+      displayName: 'Publish Helix Logs'
+      continueOnError: true
+      condition: always()
+
+    - ${{ if eq(parameters.osGroup, 'osx') }}:
+      - script: |
+          du -sh $(Build.SourcesDirectory)/*
+          df -h
+        displayName: Disk Usage after Build
         condition: always()
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: '$(Build.SourcesDirectory)/artifacts/tmp/$(_BuildConfig)/dumps'
-          artifactName: 'Dumps_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-        displayName: 'Publish Crash Dumps'
-        continueOnError: true
-        condition: failed()
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: '$(Build.SourcesDirectory)/artifacts/TestResults'
-          artifactName: 'TestResults_${{ parameters.name }}_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)_Attempt$(System.JobAttempt)'
-        displayName: 'Publish Test Results and SOS Logs'
-        continueOnError: true
-        condition: failed()
+
+    - ${{ if and(eq(parameters.isOfficialBuild, true), eq(parameters.osGroup, 'windows')) }}:
+      - powershell: ./eng/collect_vsinfo.ps1 -ArchiveRunName postbuild_log
+        displayName: Collect vslogs on exit
+        condition: always()
