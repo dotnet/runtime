@@ -6,7 +6,4 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).il" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
-  </ItemGroup>
 </Project>

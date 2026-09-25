@@ -15,7 +15,6 @@ using System.Reflection.Runtime.FieldInfos;
 using System.Reflection.Runtime.General;
 using System.Reflection.Runtime.MethodInfos;
 using System.Reflection.Runtime.Modules;
-using System.Reflection.Runtime.ParameterInfos;
 using System.Reflection.Runtime.PropertyInfos;
 
 using Internal.Metadata.NativeFormat;
