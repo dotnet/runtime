@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net12.0</TargetFramework>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' == ''">net12.0</TargetFramework>
+    <TargetFramework Condition="'$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)' != ''">$(WBT_BLAZOR_TEMPLATE_TARGET_FRAMEWORK)</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>

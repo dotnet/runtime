@@ -439,7 +439,11 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         return $"^{Regex.Escape(defaultPrefix)}{s_dotnetVersionHashRegex}{Regex.Escape(extension)}$";
     }
 
-    public static void AssertRuntimePackPath(string buildOutput, string targetFramework, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
+    public static void AssertRuntimePackPath(
+        string buildOutput,
+        string targetFramework,
+        RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded,
+        bool allowCompatibleRuntimePackVersion = false)
     {
         var match = s_runtimePackPathRegex.Match(buildOutput);
         if (!match.Success || match.Groups.Count != 2)
@@ -447,8 +451,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
         string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework, runtimeType);
         string actualPath = match.Groups[1].Value;
-        if (Directory.Exists(expectedRuntimePackDir) && string.Compare(actualPath, expectedRuntimePackDir) != 0)
+        if (Directory.Exists(expectedRuntimePackDir) &&
+            string.Compare(actualPath, expectedRuntimePackDir) != 0 &&
+            !IsCompatibleRuntimePack(actualPath))
+        {
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
+        }
 
         if (!Directory.Exists(expectedRuntimePackDir))
         {
@@ -459,11 +467,24 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             string actualPackName = actualPackDirectory.Parent!.Name;
             string actualPackVersion = actualPackDirectory.Name;
 
-            if (!string.Equals(actualPackName, expectedPackName, StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(actualPackVersion, expectedPackVersion, StringComparison.Ordinal))
+            if ((!string.Equals(actualPackName, expectedPackName, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(actualPackVersion, expectedPackVersion, StringComparison.Ordinal)) &&
+                !IsCompatibleRuntimePack(actualPath))
             {
                 throw new XunitException($"Runtime pack doesn't match.{Environment.NewLine}Expected: '{expectedPackName}/{expectedPackVersion}'{Environment.NewLine}Actual:   '{actualPackName}/{actualPackVersion}'");
             }
+        }
+
+        bool IsCompatibleRuntimePack(string runtimePackPath)
+        {
+            if (!allowCompatibleRuntimePackVersion)
+                return false;
+
+            var expectedPackDirectory = new DirectoryInfo(expectedRuntimePackDir);
+            var actualPackDirectory = new DirectoryInfo(runtimePackPath);
+            string targetFrameworkVersion = targetFramework["net".Length..];
+            return string.Equals(actualPackDirectory.Parent!.Name, expectedPackDirectory.Parent!.Name, StringComparison.OrdinalIgnoreCase) &&
+                actualPackDirectory.Name.StartsWith($"{targetFrameworkVersion}.", StringComparison.Ordinal);
         }
     }
 

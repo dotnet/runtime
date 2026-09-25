@@ -184,7 +184,17 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
         if (isUsingWorkloads && buildOutput is not null)
         {
             // In no-workload case, the path would be from a restored nuget
-            ProjectProviderBase.AssertRuntimePackPath(buildOutput, buildOptions.TargetFramework ?? DefaultTargetFramework, buildOptions.RuntimeType);
+            bool usesBootstrapBlazorTargetFramework =
+                buildOptions.TargetFramework == BuildTestBase.DefaultTargetFrameworkForBlazorTemplate &&
+                buildOptions.TargetFramework != BuildTestBase.DefaultTargetFramework;
+            string runtimePackTargetFramework = usesBootstrapBlazorTargetFramework
+                ? BuildTestBase.DefaultTargetFramework
+                : buildOptions.TargetFramework;
+            ProjectProviderBase.AssertRuntimePackPath(
+                buildOutput,
+                runtimePackTargetFramework,
+                buildOptions.RuntimeType,
+                allowCompatibleRuntimePackVersion: usesBootstrapBlazorTargetFramework);
         }
 
         // Capture the runtime-pack root the build actually used so downstream asserts (e.g. ICU
