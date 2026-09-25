@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- A valid report root with lifecycle output disabled must only emit compact output. -->
+  <PropertyGroup>
+    <AssemblyName>Android.Device_Emulator.InProcCrashReport.ConsoleOnly.Test</AssemblyName>
+    <MainLibraryFileName>Android.Device_Emulator.InProcCrashReport.ConsoleOnly.Test.dll</MainLibraryFileName>
+    <DefineConstants>$(DefineConstants);INPROC_SCENARIO_CONSOLEONLY</DefineConstants>
+  </PropertyGroup>
+  <Import Project="../Shared/InProcCrashReport.Common.props" />
+</Project>

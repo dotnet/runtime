@@ -144,6 +144,7 @@
       <!-- Configuration properties -->
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="IncludesTestRunner" />
+      <_ApplePropertyNames Include="EnableAppSandbox" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="ShouldILStrip" />

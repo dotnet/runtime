@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Abort: a SIGABRT crash thread with no managed exception and native-only
+       frames. Exercises the non-managed-exception path and the SIGABRT signal
+       formatting (distinct from the SIGSEGV scenarios). -->
+  <PropertyGroup>
+    <AssemblyName>Android.Device_Emulator.InProcCrashReport.Abort.Test</AssemblyName>
+    <MainLibraryFileName>Android.Device_Emulator.InProcCrashReport.Abort.Test.dll</MainLibraryFileName>
+    <DefineConstants>$(DefineConstants);INPROC_SCENARIO_ABORT</DefineConstants>
+  </PropertyGroup>
+
+  <Import Project="../Shared/InProcCrashReport.Common.props" />
+</Project>
