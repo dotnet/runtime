@@ -2560,25 +2560,7 @@ bool Lowering::LowerCallMemcmp(GenTreeCall* call, GenTree** next)
             GenTree* lArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             GenTree* rArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
-            ssize_t MaxUnrollSize = 16;
-
-#ifdef FEATURE_SIMD
-#ifdef TARGET_XARCH
-            if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX512))
-            {
-                MaxUnrollSize = 128;
-            }
-            else if (m_compiler->compOpportunisticallyDependsOn(InstructionSet_AVX2))
-            {
-                // We need AVX2 for TYP_SIMD32 based op_Equality, fallback to Vector128 if only AVX is available
-                MaxUnrollSize = 64;
-            }
-            else
-#endif // TARGET_XARCH
-            {
-                MaxUnrollSize = 32;
-            }
-#endif // FEATURE_SIMD
+            const ssize_t MaxUnrollSize = m_compiler->getUnrollThreshold(Compiler::Memcmp);
 
             if (cnsSize <= MaxUnrollSize)
             {
@@ -4198,7 +4180,6 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
 //    longer needed.
 //
 // Notes:
-//    - Narrow operands to enable memory operand containment (XARCH specific).
 //    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH/Arm64 specific but could
 //      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
 //    - Transform TEST(x, LSH(1, y)) into BT(x, y) (XARCH specific)
@@ -4274,22 +4255,7 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
     INT64 op2Value = op2->IntegralValue();
 
-#ifdef TARGET_XARCH
-    var_types op1Type = op1->TypeGet();
-    if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && FitsIn(op1Type, op2Value))
-    {
-        //
-        // If op1's type is small then try to narrow op2 so it has the same type as op1.
-        // Small types are usually used by memory loads and if both compare operands have
-        // the same type then the memory load can be contained. In certain situations
-        // (e.g "cmp ubyte, 200") we also get a smaller instruction encoding.
-        //
-
-        op2->gtType = op1Type;
-    }
-    else
-#endif
-        if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
+    if (op1->OperIs(GT_CAST) && !op1->gtOverflow())
     {
         GenTreeCast* cast       = op1->AsCast();
         var_types    castToType = cast->CastToType();
@@ -4687,23 +4653,7 @@ GenTree* Lowering::LowerCompare(GenTree* cmp)
         }
     }
 
-#ifdef TARGET_XARCH
-    if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
-    {
-        if (varTypeIsSmall(cmp->gtGetOp1()->TypeGet()) && varTypeIsUnsigned(cmp->gtGetOp1()->TypeGet()))
-        {
-            //
-            // If both operands have the same type then codegen will use the common operand type to
-            // determine the instruction type. For small types this would result in performing a
-            // signed comparison of two small unsigned values without zero extending them to TYP_INT
-            // which is incorrect. Note that making the comparison unsigned doesn't imply that codegen
-            // has to generate a small comparison, it can still correctly generate a TYP_INT comparison.
-            //
-
-            cmp->SetUnsigned();
-        }
-    }
-#elif defined(TARGET_RISCV64)
+#ifdef TARGET_RISCV64
     if (varTypeUsesIntReg(cmp->gtGetOp1()))
     {
         if (GenTree* next = LowerSavedIntegerCompare(cmp); next != cmp)
@@ -6807,7 +6757,10 @@ void Lowering::InsertPInvokeMethodProlog()
     noway_assert(m_compiler->info.compUnmanagedCallCountWithGCTransition);
     noway_assert(m_compiler->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-    if (!m_compiler->info.compPublishStubParam && m_compiler->opts.ShouldUsePInvokeHelpers())
+    const bool hasMDContextArg =
+        m_compiler->info.compIsVarArgs && m_compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB);
+
+    if (!hasMDContextArg && m_compiler->opts.ShouldUsePInvokeHelpers())
     {
         return;
     }
@@ -6827,9 +6780,10 @@ void Lowering::InsertPInvokeMethodProlog()
     // call to the init helper below, which links the frame into the thread
     // list on 32-bit platforms.
     // InlinedCallFrame.m_StubSecretArg = stubSecretArg;
-    if (m_compiler->info.compPublishStubParam)
+    if (hasMDContextArg)
     {
-        GenTree* value = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
+        assert(m_compiler->compHasSecretStubArgument());
+        GenTree* value = m_compiler->gtNewLclvNode(m_compiler->lvaGetSecretStubArgumentVar(), TYP_I_IMPL);
         GenTree* store = m_compiler->gtNewStoreLclFldNode(m_compiler->lvaInlinedPInvokeFrameVar, TYP_I_IMPL,
                                                           callFrameInfo.offsetOfSecretStubArg, value);
         firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(m_compiler, store));
@@ -8946,6 +8900,12 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 #endif // FEATURE_SIMD
 }
 
+//------------------------------------------------------------------------
+// Lowering::DoPhase -- lower the IR
+//
+// Returns:
+//    suitable phase status
+//
 PhaseStatus Lowering::DoPhase()
 {
     // If we have any PInvoke calls, insert the one-time prolog code. We'll insert the epilog code in the
@@ -9002,54 +8962,62 @@ PhaseStatus Lowering::DoPhase()
 
     AfterLowerBlocks();
 
-#ifdef DEBUG
-    JITDUMP("Lower has completed modifying nodes.\n");
-    if (VERBOSE)
+    if (m_compiler->m_dfsTree == nullptr)
     {
-        m_compiler->fgDispBasicBlocks(true);
+        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
+        // do this everywhere.
+        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
     }
-#endif
+
+    // Remove dead blocks before stack level setting analyzes throw helper usage.
+    //
+    m_compiler->fgRemoveBlocksOutsideDfsTree();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//------------------------------------------------------------------------
+// fgLateLiveness -- rerun liveness after lower / stacklevelsetter
+//
+// Returns:
+//    suitable phase status
+//
+PhaseStatus Compiler::fgLateLiveness()
+{
+    if (!backendRequiresLocalVarLifetimes())
+    {
+        fgInvalidateDfsTree();
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    assert(backendRequiresLocalVarLifetimes());
+    assert(m_dfsTree != nullptr);
 
     // Recompute local var ref counts before potentially sorting for liveness.
     // Note this does minimal work in cases where we are not going to sort.
     const bool isRecompute    = true;
     const bool setSlotNumbers = false;
-    m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->m_dfsTree == nullptr)
+    assert(opts.OptimizationEnabled());
+
+    fgPostLowerLiveness();
+    // local var liveness can delete code, which may create empty blocks
+    bool modified = fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
+
+    if (modified)
     {
-        // Compute DFS tree. We want to remove dead blocks even in MinOpts, so we
-        // do this everywhere. The dead blocks are removed below, however, some of
-        // lowering may use the DFS tree, so we compute that here.
-        m_compiler->m_dfsTree = m_compiler->fgComputeDfs();
+        fgDfsBlocksAndRemove();
+        JITDUMP("had to run another liveness pass:\n");
+        fgPostLowerLiveness();
     }
 
-    // Remove dead blocks. We want to remove unreachable blocks even in
-    // MinOpts.
-    m_compiler->fgRemoveBlocksOutsideDfsTree();
+    // Recompute local var ref counts again after liveness to reflect
+    // impact of any dead code removal. Note this may leave us with
+    // tracked vars that have zero refs.
+    lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
-    if (m_compiler->backendRequiresLocalVarLifetimes())
-    {
-        assert(m_compiler->opts.OptimizationEnabled());
-
-        m_compiler->fgPostLowerLiveness();
-        // local var liveness can delete code, which may create empty blocks
-        bool modified = m_compiler->fgUpdateFlowGraph(/* doTailDuplication */ false, /* isPhase */ false);
-
-        if (modified)
-        {
-            m_compiler->fgDfsBlocksAndRemove();
-            JITDUMP("had to run another liveness pass:\n");
-            m_compiler->fgPostLowerLiveness();
-        }
-
-        // Recompute local var ref counts again after liveness to reflect
-        // impact of any dead code removal. Note this may leave us with
-        // tracked vars that have zero refs.
-        m_compiler->lvaComputeRefCounts(isRecompute, setSlotNumbers);
-    }
-
-    m_compiler->fgInvalidateDfsTree();
+    fgInvalidateDfsTree();
 
     return PhaseStatus::MODIFIED_EVERYTHING;
 }
@@ -10023,6 +9991,9 @@ void Lowering::ContainCheckBitCast(GenTreeUnOp* node)
 //
 void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 {
+    // Keep direct copies small to limit GC suspension latency.
+    const unsigned BULK_WRITEBARRIER_SMALL_SIZE = 128;
+
     assert(blk->OperIs(GT_STORE_BLK));
     assert(blk->GetLayout()->HasGCPtr());
     assert(!blk->OperIsInitBlkOp());
@@ -10058,16 +10029,24 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     }
 
     // Size is a constant
-    GenTreeIntCon* size = m_compiler->gtNewIconNode((ssize_t)blk->GetLayout()->GetSize(), TYP_I_IMPL);
+    const unsigned blkSize = blk->GetLayout()->GetSize();
+    GenTreeIntCon* size    = m_compiler->gtNewIconNode((ssize_t)blkSize, TYP_I_IMPL);
     BlockRange().InsertBefore(data, size);
+
+    // CORINFO_HELP_BULK_WRITEBARRIER is a managed wrapper that splits the copy into chunks and polls
+    // for GC after each of them, so that a huge copy cannot starve the GC. When the size is a small
+    // compile-time constant none of that is needed and we can call the raw worker directly, saving a
+    // call and the size check.
+    const CorInfoHelpFunc helper = (blkSize <= BULK_WRITEBARRIER_SMALL_SIZE) ? CORINFO_HELP_BULK_WRITEBARRIER_SMALL
+                                                                             : CORINFO_HELP_BULK_WRITEBARRIER;
 
     // A hacky way to safely call fgMorphTree in Lower
     GenTree* destPlaceholder = m_compiler->gtNewZeroConNode(dest->TypeGet());
     GenTree* dataPlaceholder = m_compiler->gtNewZeroConNode(genActualType(data));
     GenTree* sizePlaceholder = m_compiler->gtNewZeroConNode(genActualType(size));
 
-    GenTreeCall* call = m_compiler->gtNewHelperCallNode(CORINFO_HELP_BULK_WRITEBARRIER, TYP_VOID, destPlaceholder,
-                                                        dataPlaceholder, sizePlaceholder);
+    GenTreeCall* call =
+        m_compiler->gtNewHelperCallNode(helper, TYP_VOID, destPlaceholder, dataPlaceholder, sizePlaceholder);
     m_compiler->fgMorphArgs(call);
 
     LIR::Range range      = LIR::SeqTree(m_compiler, call);

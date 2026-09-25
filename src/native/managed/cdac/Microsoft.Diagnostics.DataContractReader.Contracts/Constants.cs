@@ -91,6 +91,7 @@ public static class Constants
 
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
+        public const string InterpreterJitManagerAddress = nameof(InterpreterJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
         public const string ThePreStub = nameof(ThePreStub);
 

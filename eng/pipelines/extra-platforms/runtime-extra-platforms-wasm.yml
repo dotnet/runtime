@@ -2,6 +2,8 @@
 # These are run as part of runtime-extra-platforms by default.
 # But can also be triggered manually via `runtime-wasm` name
 #   /azp run runtime-wasm
+# Run the full trimmed CoreCLR ReadyToRun library tests with
+#   /azp run runtime-wasm-libtests
 
 parameters:
   isExtraPlatformsBuild: false
@@ -11,15 +13,32 @@ parameters:
   excludeNonLibTests: false
   excludeOptional: true
   debuggerTestsOnly: false
+  runFullR2RLibraryTests: false
 
 jobs:
 
 #
-# ************ Rolling builds: *************
-# - only run eat and aot tests
+# ************ runtime-extra-platforms invocation: *************
+# - only run full or expensive library-test configurations
 # - rest are covered by runtime
 #
-- ${{ if eq(variables.isRollingBuild, true) }}:
+- ${{ if eq(parameters.isExtraPlatformsBuild, true) }}:
+  # Full trimmed CoreCLR ReadyToRun library tests
+  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      nameSuffix: _R2R
+      readyToRun: true
+      timeoutInMinutes: 480
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: true
+      useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      scenarios:
+        - WasmTestOnChrome
+
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
     parameters:
@@ -61,11 +80,11 @@ jobs:
       useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
 #
-# ********** For !rolling builds, IOW - PR builds *************
+# ********** WASM-specific pipeline invocations: *************
 # - run everything, if relevant paths changed
 # - For runtime-wasm, force run all the jobs
 #
-- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+- ${{ if and(ne(parameters.isExtraPlatformsBuild, true), ne(parameters.excludeLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Library tests
   # these run on runtime also
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -80,21 +99,22 @@ jobs:
       scenarios:
         - WasmTestOnChrome
 
-  # CoreCLR ReadyToRun library tests, complementary to the default pipeline's lane.
-  - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
-    parameters:
-      platforms:
-        - browser_wasm
-      nameSuffix: _R2R
-      readyToRun: true
-      timeoutInMinutes: 480
-      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
-      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
-      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      useHelixMonitor: ${{ parameters.useHelixMonitor }}
-      scenarios:
-        - WasmTestOnChrome
+  # Full trimmed CoreCLR ReadyToRun library tests, available through runtime-wasm-libtests.
+  - ${{ if eq(parameters.runFullR2RLibraryTests, true) }}:
+    - template: /eng/pipelines/common/templates/wasm-coreclr-library-tests.yml
+      parameters:
+        platforms:
+          - browser_wasm
+        nameSuffix: _R2R
+        readyToRun: true
+        timeoutInMinutes: 480
+        extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+        isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+        isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+        alwaysRun: true
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
+        scenarios:
+          - WasmTestOnChrome
 
   # Library tests with full threading
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -185,12 +205,12 @@ jobs:
       # ignore test failures for runtime-extra-platforms, but not when this
       # is run as part of a wasm specific pipeline like runtime-wasm
       shouldContinueOnError: ${{ not(parameters.isWasmOnlyBuild) }}
-      alwaysRun: ${{ variables.isRollingBuild }}
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       useHelixMonitor: ${{ parameters.useHelixMonitor }}
       scenarios:
         - WasmTestOnWasmtime
 
-- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
+- ${{ if and(ne(parameters.isExtraPlatformsBuild, true), ne(parameters.excludeNonLibTests, true), ne(parameters.debuggerTestsOnly, true)) }}:
   # Builds only
   - template: /eng/pipelines/common/templates/wasm-build-only.yml
     parameters:
@@ -269,7 +289,7 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
-- ${{ if and(ne(variables.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
+- ${{ if and(ne(parameters.isExtraPlatformsBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
       platforms:
