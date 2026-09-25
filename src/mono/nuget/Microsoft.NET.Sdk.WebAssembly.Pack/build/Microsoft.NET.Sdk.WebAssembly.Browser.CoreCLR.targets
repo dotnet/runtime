@@ -240,6 +240,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
     </ItemGroup>
+    <!-- Crossgen2 arguments (e.g. toggling PublishReadyToRunStripDebugInfo) don't change any file input, so
+         stamp them; WriteOnlyWhenDifferent bumps the timestamp only when the arguments change. -->
+    <PropertyGroup>
+      <_WasmReadyToRunArgsStamp>$(IntermediateOutputPath)wasm-r2r-args.stamp</_WasmReadyToRunArgsStamp>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WasmReadyToRunArgsStamp)"
+                      Lines="$(PublishReadyToRunCrossgen2ExtraArgs)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunArgsStamp)" />
+      <FileWrites Include="$(_WasmReadyToRunArgsStamp)" />
+    </ItemGroup>
   </Target>
 
   <!-- Delete per-app images and composite component stubs left in obj/R2R by a previous build or
