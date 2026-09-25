@@ -79,7 +79,7 @@
 
   <PropertyGroup Condition="'$(TargetsNet11)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <_MonoWorkloadRuntimePackPackageVersion>$(_RuntimePackInWorkloadVersion11)</_MonoWorkloadRuntimePackPackageVersion>
-    <_KnownWebAssemblySdkPackVersion>$(_RuntimePackInWorkloadVersion11)</_KnownWebAssemblySdkPackVersion>
+    <_KnownWebAssemblySdkPackVersion>${WorkloadVersion}</_KnownWebAssemblySdkPackVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsNet11)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
