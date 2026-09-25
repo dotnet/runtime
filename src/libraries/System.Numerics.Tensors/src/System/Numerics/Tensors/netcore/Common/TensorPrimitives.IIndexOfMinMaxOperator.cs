@@ -142,7 +142,7 @@ namespace System.Numerics.Tensors
             // Pass 1: reduce every block to its best element; the first block whose best beats the running result wins ties.
             T result = xRef;
             int resultBlock = -1;
-            for (int i = 0; i < length; i += blockSize)
+            for (int i = 0; ; i += blockSize)
             {
                 int blockLength = Math.Min(blockSize, length - i);
                 T blockResult = BlockReduce128<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength);
@@ -162,6 +162,13 @@ namespace System.Numerics.Tensors
                 {
                     result = blockResult;
                     resultBlock = i;
+                }
+
+                // Subtractive bound: testing i < length after i += blockSize would wrap for lengths above int.MaxValue - blockSize
+                // and restart at a negative offset.
+                if (i >= length - blockSize)
+                {
+                    break;
                 }
             }
 
@@ -195,7 +202,7 @@ namespace System.Numerics.Tensors
                     acc2 = TOperator.Reduce(acc2, Vector128.LoadUnsafe(ref xRef, i + count));
                 }
 
-                if (i + count <= end)
+                if (i <= end - count)
                 {
                     acc1 = TOperator.Reduce(acc1, Vector128.LoadUnsafe(ref xRef, i));
                     i += count;
@@ -230,12 +237,12 @@ namespace System.Numerics.Tensors
             int count = Vector128<T>.Count;
             int i = 0;
 
-            for (; i + count <= length; i += count)
+            for (; i <= length - count; i += count)
             {
-                Vector128<T> nanMask = Vector128.IsNaN(Vector128.LoadUnsafe(ref xRef, (nuint)i));
-                if (nanMask != Vector128<T>.Zero)
+                var bits = Vector128.IsNaN(Vector128.LoadUnsafe(ref xRef, (nuint)i)).ExtractMostSignificantBits();
+                if (bits != 0) // in the integer domain: a NaN mask compared with a float operator takes NaN semantics
                 {
-                    return i + IndexOfFirstMatch(nanMask);
+                    return i + BitOperations.TrailingZeroCount(bits);
                 }
             }
 
@@ -264,7 +271,7 @@ namespace System.Numerics.Tensors
             Vector128<T> best = Vector128.Create(value);
             int i = 0;
 
-            for (; i + count <= length; i += count)
+            for (; i <= length - count; i += count)
             {
                 var bits = (~TOperator.Compare(best, Vector128.LoadUnsafe(ref xRef, (nuint)i))).ExtractMostSignificantBits();
                 if (bits != 0)
@@ -300,7 +307,7 @@ namespace System.Numerics.Tensors
             // Pass 1: reduce every block to its best element; the first block whose best beats the running result wins ties.
             T result = xRef;
             int resultBlock = -1;
-            for (int i = 0; i < length; i += blockSize)
+            for (int i = 0; ; i += blockSize)
             {
                 int blockLength = Math.Min(blockSize, length - i);
                 T blockResult = BlockReduce256<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength);
@@ -320,6 +327,13 @@ namespace System.Numerics.Tensors
                 {
                     result = blockResult;
                     resultBlock = i;
+                }
+
+                // Subtractive bound: testing i < length after i += blockSize would wrap for lengths above int.MaxValue - blockSize
+                // and restart at a negative offset.
+                if (i >= length - blockSize)
+                {
+                    break;
                 }
             }
 
@@ -353,7 +367,7 @@ namespace System.Numerics.Tensors
                     acc2 = TOperator.Reduce(acc2, Vector256.LoadUnsafe(ref xRef, i + count));
                 }
 
-                if (i + count <= end)
+                if (i <= end - count)
                 {
                     acc1 = TOperator.Reduce(acc1, Vector256.LoadUnsafe(ref xRef, i));
                     i += count;
@@ -388,12 +402,12 @@ namespace System.Numerics.Tensors
             int count = Vector256<T>.Count;
             int i = 0;
 
-            for (; i + count <= length; i += count)
+            for (; i <= length - count; i += count)
             {
-                Vector256<T> nanMask = Vector256.IsNaN(Vector256.LoadUnsafe(ref xRef, (nuint)i));
-                if (nanMask != Vector256<T>.Zero)
+                var bits = Vector256.IsNaN(Vector256.LoadUnsafe(ref xRef, (nuint)i)).ExtractMostSignificantBits();
+                if (bits != 0) // in the integer domain: a NaN mask compared with a float operator takes NaN semantics
                 {
-                    return i + IndexOfFirstMatch(nanMask);
+                    return i + BitOperations.TrailingZeroCount(bits);
                 }
             }
 
@@ -422,7 +436,7 @@ namespace System.Numerics.Tensors
             Vector256<T> best = Vector256.Create(value);
             int i = 0;
 
-            for (; i + count <= length; i += count)
+            for (; i <= length - count; i += count)
             {
                 var bits = (~TOperator.Compare(best, Vector256.LoadUnsafe(ref xRef, (nuint)i))).ExtractMostSignificantBits();
                 if (bits != 0)
@@ -458,7 +472,7 @@ namespace System.Numerics.Tensors
             // Pass 1: reduce every block to its best element; the first block whose best beats the running result wins ties.
             T result = xRef;
             int resultBlock = -1;
-            for (int i = 0; i < length; i += blockSize)
+            for (int i = 0; ; i += blockSize)
             {
                 int blockLength = Math.Min(blockSize, length - i);
                 T blockResult = BlockReduce512<T, TOperator>(ref Unsafe.Add(ref xRef, i), blockLength);
@@ -478,6 +492,13 @@ namespace System.Numerics.Tensors
                 {
                     result = blockResult;
                     resultBlock = i;
+                }
+
+                // Subtractive bound: testing i < length after i += blockSize would wrap for lengths above int.MaxValue - blockSize
+                // and restart at a negative offset.
+                if (i >= length - blockSize)
+                {
+                    break;
                 }
             }
 
@@ -511,7 +532,7 @@ namespace System.Numerics.Tensors
                     acc2 = TOperator.Reduce(acc2, Vector512.LoadUnsafe(ref xRef, i + count));
                 }
 
-                if (i + count <= end)
+                if (i <= end - count)
                 {
                     acc1 = TOperator.Reduce(acc1, Vector512.LoadUnsafe(ref xRef, i));
                     i += count;
@@ -546,12 +567,12 @@ namespace System.Numerics.Tensors
             int count = Vector512<T>.Count;
             int i = 0;
 
-            for (; i + count <= length; i += count)
+            for (; i <= length - count; i += count)
             {
-                Vector512<T> nanMask = Vector512.IsNaN(Vector512.LoadUnsafe(ref xRef, (nuint)i));
-                if (nanMask != Vector512<T>.Zero)
+                var bits = Vector512.IsNaN(Vector512.LoadUnsafe(ref xRef, (nuint)i)).ExtractMostSignificantBits();
+                if (bits != 0) // in the integer domain: a NaN mask compared with a float operator takes NaN semantics
                 {
-                    return i + IndexOfFirstMatch(nanMask);
+                    return i + BitOperations.TrailingZeroCount(bits);
                 }
             }
 
@@ -580,7 +601,7 @@ namespace System.Numerics.Tensors
             Vector512<T> best = Vector512.Create(value);
             int i = 0;
 
-            for (; i + count <= length; i += count)
+            for (; i <= length - count; i += count)
             {
                 var bits = (~TOperator.Compare(best, Vector512.LoadUnsafe(ref xRef, (nuint)i))).ExtractMostSignificantBits();
                 if (bits != 0)
