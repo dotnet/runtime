@@ -100,10 +100,10 @@ typedef enum
 /*
 Defines for current version numbers for the runtime and debugger.
 Runtime version must be bumped when:
-1. Any change to IPC events is made, except an addition of a runtime->debugger IPC notification.
+1. Any change to IPC events is made, except an addition of a runtime->debugger IPC notification that has no impact on debugger state.
 2. Layout of DebuggerIPCEvent is changed.
 Debugger version must be bumped when:
-1. Any change to IPC events is made, except an addition of a runtime->debugger IPC notification.
+1. Any change to IPC events is made, except an addition of a runtime->debugger IPC notification that has no impact on debugger state.
 2. Layout of DebuggerIPCEvent is changed.
 Debugger min supported version must be bumped when:
 1. Layout of DebuggerIPCEvent is changed in a non-additive manner - e.g., a field is removed, reordered,
