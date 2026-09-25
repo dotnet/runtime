@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         class DeconstructedVariable
         {
-            [ExpectedWarning("IL2077")]
+            [ExpectedWarning("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructVariableNoAnnotation((Type type, object instance) input)
             {
                 var (type, instance) = input;
@@ -31,7 +31,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static (Type type, object instance) GetInput(Type type, int unused) => (type, null);
 
-            [ExpectedWarning("IL2077")]
+            [ExpectedWarning("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructVariableFlowCapture(bool b = true)
             {
                 // This creates a control-flow graph where the tuple elements assigned to
@@ -68,7 +68,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // In IL based tools this is a behavior of the compiler. The attribute on the record declaration parameter
             // is only propagated to the .ctor constructor parameter. The property and field attributes are applied to the
             // generated property and field respectively. But none of the attributes is propagated to the Deconstruct method parameters.
-            [ExpectedWarning("IL2067")]
+            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructRecordWithAnnotation(TypeAndInstance value)
             {
                 var (type, instance) = value;
@@ -102,7 +102,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // test cases above. The source call and the synthesized Deconstruct() call must be
             // tracked as two independent calls, not merged together.
             [ExpectedWarning("IL2026", nameof(GetTypeAndInstance))]
-            [ExpectedWarning("IL2067")]
+            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructMethodCallSource()
             {
                 var (type, instance) = GetTypeAndInstance();
@@ -129,7 +129,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067")]
+            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructRecordManualWithMismatchAnnotation(TypeAndInstanceRecordManual value)
             {
                 var (type, instance) = value;
@@ -142,14 +142,14 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067")]
+            [ExpectedWarning("IL2067", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructExtensionWithMismatchAnnotation(TypeAndInstanceExtension value)
             {
                 var (type, instance) = value;
                 type.RequiresPublicFields();
             }
 
-            [ExpectedWarning("IL2077")]
+            [ExpectedWarning("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructNestedTuple(((Type type, object instance) nested, object instance) input)
             {
                 var ((type, instance), outerInstance) = input;
@@ -163,8 +163,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 type.RequiresPublicMethods();
             }
 
-            // The swap correctly propagates the annotation from typeWithMethods to first (via second),
-            // so no warning is produced here.
             static void DeconstructTupleSwapSuccess(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
                 Type typeWithoutMethods)
@@ -175,7 +173,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 first.RequiresPublicMethods();
             }
 
-            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods))]
+            [ExpectedWarning("IL2067", nameof(DataFlowTypeExtensions.RequiresPublicMethods), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructTupleSwap(
                 [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type typeWithMethods,
                 Type typeWithoutMethods)
@@ -268,8 +266,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // different places: the receiver ahead of the source (VisitDeconstructionTargetSideEffects),
             // and the index argument as part of performing the write (ProcessSingleTargetAssignment),
             // matching the same (pre-existing) evaluation order used for an ordinary indexer assignment.
-            [ExpectedWarning("IL2026", nameof(GetIndexerHolder))]
-            [ExpectedWarning("IL2026", nameof(GetIndex))]
+            [ExpectedWarning("IL2026", nameof(GetIndexerHolder), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
+            [ExpectedWarning("IL2026", nameof(GetIndex), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructIndexerTargetSideEffect(Type first, Type second)
             {
                 object other;
@@ -290,7 +288,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // A discard target (IDiscardOperation) drops the corresponding source value entirely -
             // there's nothing to check dataflow-wise, and it must not affect tracking of the other
             // target in the same deconstruction.
-            [ExpectedWarning("IL2072")]
+            [ExpectedWarning("IL2072", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructDiscardTarget()
             {
                 (_, Type type) = (new object(), GetUnannotatedType());
@@ -309,8 +307,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // no equivalent to the indexer-Arguments ordering quirk here), so both are visited twice
             // (once ahead of the source, once again performing the write) - verifying each still
             // produces exactly one warning despite the double-visit.
-            [ExpectedWarning("IL2026", nameof(GetArrayForElementTarget))]
-            [ExpectedWarning("IL2026", nameof(GetArrayIndex))]
+            [ExpectedWarning("IL2026", nameof(GetArrayForElementTarget), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
+            [ExpectedWarning("IL2026", nameof(GetArrayIndex), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructArrayElementTargetSideEffect(Type first, Type second)
             {
                 object other;
@@ -323,7 +321,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             // An implicit System.Index-based indexer target (IImplicitIndexerReferenceOperation),
             // e.g. 'arr[^1]'. The receiver is a side-effecting expression visited ahead of the source,
             // same as the explicit indexer and array element cases above.
-            [ExpectedWarning("IL2026", nameof(GetArrayForImplicitIndexerTarget))]
+            [ExpectedWarning("IL2026", nameof(GetArrayForImplicitIndexerTarget), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructImplicitIndexerTargetSideEffect(Type first, Type second)
             {
                 object other;
@@ -344,7 +342,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 (ConversionTarget converted, object instance) = (typeWithMethods, new object());
             }
 
-            [ExpectedWarning("IL2077")]
+            [ExpectedWarning("IL2077", Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
             static void DeconstructForeach((Type type, object instance)[] inputs)
             {
                 foreach (var (type, instance) in inputs)

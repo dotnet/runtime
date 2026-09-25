@@ -68,13 +68,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             GetWithMethods().ExtensionMembersMethodWithParamsMismatch(GetWithFields());
         }
 
-        [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.Deconstruct))]
+        [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.Deconstruct), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
         static void TestExtensionDeconstructMismatch()
         {
             var (first, second) = GetWithMethods();
         }
 
-        [ExpectedWarning("IL3050", nameof(RequiresDynamicCode), Tool.NativeAot, "NativeAOT doesn't model DoesNotReturnIf on Deconstruct methods")]
+        [UnexpectedWarning("IL3050", nameof(RequiresDynamicCode), Tool.Analyzer | Tool.NativeAot, "Analyzer and NativeAOT don't model DoesNotReturnIf on Deconstruct methods")]
         static void TestExtensionDeconstructDoesNotReturnIf()
         {
             (_, _) = !RuntimeFeature.IsDynamicCodeSupported;

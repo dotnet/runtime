@@ -17,7 +17,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static Type GetUnannotatedType() => null;
 
         // Verify that assigning a deconstructed value to an annotated static field is validated.
-        [ExpectedWarning("IL2074", nameof(GetUnannotatedType))]
+        [ExpectedWarning("IL2074", nameof(GetUnannotatedType), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
         public static void Main()
         {
             object other;

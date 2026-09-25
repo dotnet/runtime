@@ -20,7 +20,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         }
 
         // The converted value is the conversion operator's return value, whose type is unannotated.
-        [ExpectedWarning("IL2074", nameof(ConversionSource))]
+        [ExpectedWarning("IL2074", nameof(ConversionSource), Tool.Trimmer | Tool.NativeAot, "https://github.com/dotnet/runtime/issues/123767")]
         static void Test((ConversionSource value, object instance) input)
         {
             object instance;
