@@ -296,14 +296,13 @@ namespace System.Diagnostics
             value = null!;
             valueSpan = Trim(valueSpan);
 
-#if NET
-            // If nothing is percent-escaped and everything is already ASCII, the value decodes to itself.
-            if (valueSpan.IndexOf(Percent) < 0 && valueSpan.IndexOfAnyExceptInRange((char)0, (char)0x7F) < 0)
+            // If every character is already in the allowed (unescaped) baggage-value set, which
+            // excludes both '%' and non-ASCII, the value decodes to itself.
+            if (valueSpan.IndexOfAnyExcept(s_validBaggageValueChars) < 0)
             {
                 value = valueSpan.ToString();
                 return true;
             }
-#endif
 
             using ValueStringBuilder vsb = new ValueStringBuilder(stackalloc char[128]);
 
