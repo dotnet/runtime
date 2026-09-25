@@ -915,6 +915,9 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #endif // defined(TARGET_LOONGARCH64)
 
 #if defined(TARGET_WASM)
+// Experimental unchecked assumption that reference-type 'this' is non-null when compiling ReadyToRun images.
+RELEASE_CONFIG_INTEGER(JitWasmAssumeNonNullThis, "JitWasmAssumeNonNullThis", 0)
+
 // Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
 RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
 
