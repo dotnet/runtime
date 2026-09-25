@@ -486,6 +486,7 @@ namespace Internal.JitInterface
         private List<MethodDesc> _ilBodiesNeeded;
         private Dictionary<TypeDesc, bool> _preInitedTypes = new Dictionary<TypeDesc, bool>();
         private HashSet<MethodDesc> _synthesizedPgoDependencies;
+        private List<(ISymbolNode Location, int Offset)> _wasmMethodVirtualIPFixups;
         public bool HasColdCode { get; private set; }
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
@@ -1037,6 +1038,9 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_CHECKED_ASSIGN_REF:
                     id = ReadyToRunHelper.CheckedWriteBarrier;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER_SMALL:
+                    id = ReadyToRunHelper.BulkWriteBarrierSmall;
+                    break;
                 case CorInfoHelpFunc.CORINFO_HELP_BULK_WRITEBARRIER:
                     id = ReadyToRunHelper.BulkWriteBarrier;
                     break;
@@ -1269,6 +1273,10 @@ namespace Internal.JitInterface
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_END:
                     id = ReadyToRunHelper.PInvokeEnd;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_JIT_RESUME_AFTER_CATCH:
+                    id = ReadyToRunHelper.ResumeAfterCatch;
                     break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
@@ -2349,6 +2357,11 @@ namespace Internal.JitInterface
                 (_compilation.NodeFactory.Target.IsWasm &&
                     targetMethod.OwningType.IsInterface))
             {
+                if (!targetMethod.HasInstantiation)
+                {
+                    // If it is also a default interface method call, it should go through instantiating stub.
+                    useInstantiatingStub = useInstantiatingStub || (targetMethod.OwningType.IsInterface && !originalMethod.IsAbstract);
+                }
                 pResult->kind = CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN;  // stub dispatch can't handle generic method calls yet
                 pResult->nullInstanceCheck = true;
             }
@@ -2534,6 +2547,19 @@ namespace Internal.JitInterface
             // We validate the safety of the signature here, as it could have been adjusted
             // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
             ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
+
+            if (_compilation.NodeFactory.Target.IsWasm && targetMethod.OwningType.IsDelegate && targetMethod.Name == "Invoke"u8)
+            {
+                // The hidden-argument flags come from the resolved call signature: a shared generic
+                // delegate supplies its generic context through 'this', which the Invoke method's own
+                // instantiation flags do not reflect.
+                WasmLowering.LoweringFlags loweringFlags = WasmLowering.GetLoweringFlags(&pResult->sig);
+                Debug.Assert(!loweringFlags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly));
+
+                MethodSignature closedStaticSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(targetMethod.Signature);
+                WasmSignature wasmSignature = WasmLowering.GetSignature(closedStaticSignature, loweringFlags);
+                AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSignature), "R2R-to-interpreter thunk for closed-static delegate target");
+            }
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
@@ -3307,6 +3333,52 @@ namespace Internal.JitInterface
             handled = true;
         }
 
+        partial void TryGetWasmMethodVirtualIPRelocation(
+            void* target,
+            CorInfoReloc fRelocType,
+            BlockType locationBlock,
+            int relocOffset,
+            ref ISymbolNode relocTarget,
+            ref RelocType relocType,
+            ref bool handled)
+        {
+            if (!_compilation.NodeFactory.Target.IsWasm)
+                return;
+
+            if (fRelocType != CorInfoReloc.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32)
+                return;
+
+            Debug.Assert(locationBlock is BlockType.ROData or BlockType.RWData);
+            Debug.Assert(findKnownBlock(target, out int targetOffset) == BlockType.Code);
+            Debug.Assert(targetOffset == 0);
+
+            ISymbolNode dataBlobNode = locationBlock == BlockType.ROData ? _roDataBlob : _rwDataBlob;
+            Debug.Assert(dataBlobNode is not null);
+
+            relocTarget = _compilation.NodeFactory.WasmMethodRelativeVirtualIP(_methodCodeNode);
+            relocType = RelocType.WASM_METHOD_RELATIVE_VIRTUAL_IP_I32;
+            _wasmMethodVirtualIPFixups ??= new();
+            _wasmMethodVirtualIPFixups.Add((dataBlobNode, relocOffset));
+
+            handled = true;
+        }
+
+        partial void PublishWasmMethodVirtualIPFixups()
+        {
+            if (_wasmMethodVirtualIPFixups is null)
+                return;
+
+            foreach ((ISymbolNode location, int offset) in _wasmMethodVirtualIPFixups)
+            {
+                _compilation.NodeFactory.WasmAsyncResumeInfoFixups.AddFixup(location, offset);
+            }
+        }
+
+        partial void ClearWasmMethodVirtualIPFixups()
+        {
+            _wasmMethodVirtualIPFixups = null;
+        }
+
         private unsafe HRESULT allocPgoInstrumentationBySchema(CORINFO_METHOD_STRUCT_* ftnHnd, PgoInstrumentationSchema* pSchema, uint countSchemaItems, byte** pInstrumentationData)
         {
             CORJIT_FLAGS flags = default(CORJIT_FLAGS);
@@ -3393,6 +3465,12 @@ namespace Internal.JitInterface
                 if (method.IsRawPInvoke())
                 {
                     return false;
+                }
+
+                if (_compilation.NodeFactory.Target.IsWasm
+                    && !_compilation.CompilationModuleGroup.IsDirectPInvoke(method))
+                {
+                    return true;
                 }
 
                 // If this method is in another versioning unit, then the compilation cannot inline the pinvoke (as we aren't currently
@@ -3752,6 +3830,17 @@ namespace Internal.JitInterface
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                    MethodDesc method = methodHandle is null ? null : HandleToObject(methodHandle);
+                    // A closed static delegate target needs an adapter only when Invoke returns
+                    // through a hidden buffer ('S') and has no async-continuation hidden argument.
+                    if (method is not null &&
+                        method.OwningType.IsDelegate &&
+                        method.Name == "Invoke"u8 &&
+                        wasmSig.SignatureString[0] == 'S' &&
+                        !wasmSig.SignatureString.Contains('a'))
+                    {
+                        AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
+                    }
                 }
             }
         }
@@ -3782,8 +3871,38 @@ namespace Internal.JitInterface
                 if (!flags.HasFlag(WasmLowering.LoweringFlags.IsUnmanagedCallersOnly))
                 {
                     AddAdditionalDependency(_compilation.NodeFactory.WasmR2RToInterpreterThunk(wasmSig), "R2R-to-interpreter thunk for call site");
+                    ReadOnlySpan<WasmValueType> parameters = wasmSig.FuncType.Params.Types;
+                    // The adapter accepts the managed instance shape
+                    // (sp, this, retbuf, ..., pep). Require an indirect aggregate return,
+                    // no async-continuation argument, and pointer-typed this/retbuf positions.
+                    if (!sig.IsStatic &&
+                        wasmSig.SignatureString[0] == 'S' &&
+                        !wasmSig.SignatureString.Contains('a') &&
+                        parameters.Length >= 4 &&
+                        parameters[1] == WasmValueType.I32 &&
+                        parameters[2] == WasmValueType.I32)
+                    {
+                        AddWasmClosedStaticRetBufThunkDependencies(wasmSig);
+                    }
                 }
             }
+        }
+
+        private void AddWasmClosedStaticRetBufThunkDependencies(WasmSignature signature)
+        {
+            AddAdditionalDependency(
+                _compilation.NodeFactory.WasmClosedStaticRetBufThunk(signature),
+                "Closed static return-buffer thunk for call site");
+
+            // D code is shared by physical signature, but each target I thunk must preserve
+            // the full interpreter layout, including aggregate sizes and alignment.
+            MethodSignature delegateSignature = WasmLowering.RaiseSignature(signature, _compilation.TypeSystemContext);
+            MethodSignature targetSignature = WasmLowering.GetClosedStaticDelegateTargetSignature(delegateSignature);
+            WasmSignature targetWasmSignature = WasmLowering.GetSignature(targetSignature, WasmLowering.LoweringFlags.None);
+            Debug.Assert(targetWasmSignature.FuncType.Equals(signature.FuncType));
+            AddAdditionalDependency(
+                _compilation.NodeFactory.WasmR2RToInterpreterThunk(targetWasmSignature),
+                "Interpreter fallback for closed static delegate target");
         }
     }
 }

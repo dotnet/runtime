@@ -270,10 +270,10 @@ public:
         //
         // Calls with value type parameters must use the CallXXXWithValueTypes
         // variants.  Using the WithValueTypes variant indicates that the caller
-        // has gc-protected the contents of value types of size greater than
-        // ENREGISTERED_PARAMTYPE_MAXSIZE (when it is defined, which is currently
-        // only on AMD64).  ProtectValueClassFrame can be used to accomplish this,
-        // see CallDescrWithObjectArray in stackbuildersink.cpp.
+        // has GC-protected the contents of value types passed as implicit byrefs.
+        // These require writable copies outside the GC heap, since the callee
+        // may modify them without write barriers. ProtectValueClassFrame can be
+        // used to report the GC references in these copies.
         //
         // Not all usages of MethodDesc::CallXXX have been ported to the new convention. The end goal is to port them all and get
         //      rid of the non-portable BYTE* version.
@@ -520,13 +520,19 @@ public:
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-        GCX_PREEMP();
+        // The callee may be Ex::RhThrowEx/RhThrowHwEx/RhRethrow, which raise the managed exception
+        // that resumes execution by throwing a native WASM exception tag through this frame. The
+        // region form is required so a plain holder destructor does not flip the GC mode as that
+        // tag unwinds past this point.
+        GCX_PREEMP_REGION_BEGIN();
 
         PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
         _ASSERTE(methodEntry != (PCODE)NULL);
 
         auto fptr = reinterpret_cast<void(*)(Args...)>(methodEntry);
         fptr(args...);
+
+        GCX_PREEMP_REGION_END();
     }
 
     template<typename Ret, typename... Args>
@@ -544,13 +550,20 @@ public:
 
         OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
-        GCX_PREEMP();
+        Ret ret;
+
+        // See the comment in InvokeDirect above for why the region form is required here.
+        GCX_PREEMP_REGION_BEGIN();
 
         PCODE methodEntry = _pMD->GetSingleCallableAddrOfCodeForUnmanagedCallersOnly();
         _ASSERTE(methodEntry != (PCODE)NULL);
 
         auto fptr = reinterpret_cast<Ret(*)(Args...)>(methodEntry);
-        return fptr(args...);
+        ret = fptr(args...);
+
+        GCX_PREEMP_REGION_END();
+
+        return ret;
     }
 };
 

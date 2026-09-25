@@ -132,7 +132,7 @@ namespace System.Transactions
         }
 
         // If there was an exception that happened during promotion save that exception so that it
-        // can be used as an inner exception to the transaciton aborted exception.
+        // can be used as an inner exception to the transaction aborted exception.
         internal Exception? _innerException;
 
         // Note the number of Transaction objects supported by this object

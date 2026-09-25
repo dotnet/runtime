@@ -61,9 +61,9 @@ namespace System
 
             while (true)
             {
-                // Eat whitespace unless we've found a sign which isn't followed by a currency symbol.
-                // "-Kr 1231.47" is legal but "- 1231.47" is not.
-                if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && (state & StateCurrency) == 0 && info.NumberNegativePattern != 2))
+                // Eat leading whitespace. This mirrors the trailing loop below so that whitespace is
+                // allowed after a leading sign or opening parenthesis (e.g. "- 1231.47" and "(  1)").
+                if (!IsWhite(ch) || (styles & NumberStyles.AllowLeadingWhite) == 0)
                 {
                     int nextIndex;
 

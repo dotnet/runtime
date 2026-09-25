@@ -539,6 +539,10 @@ void Compiler::lvaAllocWasmStackPtr()
         LclVarDsc* varDsc              = lvaGetDesc(lvaWasmSpArg);
         varDsc->lvType                 = TYP_I_IMPL;
         varDsc->lvImplicitlyReferenced = 1;
+        // The prolog loads $sp from the __stack_pointer global (see genAllocLclFrame), so this local
+        // is explicitly initialized. Without this the optimizer treats its use-before-def as zero-init
+        // and value-numbers it to 0, folding the shadow-SP argument of outgoing calls to a null base.
+        varDsc->lvHasExplicitInit = 1;
     }
 }
 
@@ -2488,11 +2492,11 @@ bool Compiler::lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum)
 // lvaIsImplicitByRefLocal: Is the local an "implicit byref" parameter?
 //
 // We term structs passed via pointers to shadow copies "implicit byrefs".
-// They are used on Windows x64 for structs 3, 5, 6, 7, > 8 bytes in size,
-// and on ARM64/LoongArch64 for structs larger than 16 bytes.
+// They are used on Windows x64, ARM64, LoongArch64 and RISC-V; see
+// "By-value value types passed by reference" in clr-abi.md for the exact rules.
 //
-// They are "byrefs" because the VM sometimes uses memory allocated on the
-// GC heap for the shadow copies.
+// The shadow copies must be outside the GC heap, so stores into them do not
+// require write barriers. The caller is responsible for GC reporting their contents.
 //
 // Arguments:
 //    lclNum - The local in question
@@ -5365,7 +5369,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             if (varDsc->lvIsParam)
             {
 #ifdef TARGET_ARM64
-                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg))
+                if (info.compIsVarArgs && varDsc->lvIsRegArg && (lclNum != info.compRetBuffArg) &&
+                    (lclNum != lvaSecretStubArg))
                 {
                     const ABIPassingInformation& abiInfo =
                         lvaGetParameterABIInfo(varDsc->lvIsStructField ? varDsc->lvParentLcl : lclNum);

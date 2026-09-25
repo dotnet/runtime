@@ -8,10 +8,10 @@ using Xunit;
 public class AwaitingNoAsyncGeneric
 {
     [Fact]
-    public static void TestEntryPoint()
+    public static async Task TestEntryPoint()
     {
-        Assert.Equal("hello", new Caller<string>().RunAsync("hello").GetAwaiter().GetResult());
-        Assert.Equal(42, new Caller<int>().RunAsync(42).GetAwaiter().GetResult());
+        Assert.Equal("hello", await new Caller<string>().RunAsync("hello"));
+        Assert.Equal(42, await new Caller<int>().RunAsync(42));
     }
 }
 

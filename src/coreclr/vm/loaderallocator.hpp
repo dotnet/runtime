@@ -16,6 +16,7 @@
 #define __LoaderAllocator_h__
 
 class FuncPtrStubs;
+class ClosedStaticRetBufPortableEntryPoint;
 #include "qcall.h"
 #include "ilstubcache.h"
 
@@ -402,6 +403,7 @@ public:
     // ExecutionManager caches
     void * m_pLastUsedCodeHeap;
     void * m_pLastUsedDynamicCodeHeap;
+    void * m_pLastUsedOptimizedCodeHeap;
 #ifdef FEATURE_INTERPRETER
     void * m_pLastUsedInterpreterCodeHeap;
     void * m_pLastUsedInterpreterDynamicCodeHeap;
@@ -500,11 +502,15 @@ private:
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-    // Methods whose PortableEntryPoint was initialized without an R2R-to-interpreter thunk
-    // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
-    // these methods are re-checked and resolved if a thunk is now available.
-    // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
-    SArray<MethodDesc*> m_pendingPortableEntryPointThunks;
+    // Entries whose resolution couldn't complete immediately (e.g. a PortableEntryPoint
+    // initialized without an R2R-to-interpreter thunk because the thunk wasn't yet loaded,
+    // or a closed-static-retbuf adapter whose target wasn't yet resolved). When a new R2R
+    // module injects string thunks, these are re-checked and resolved if now available.
+    // Untyped so both pending lists can share the generic resolve-and-compact helper in
+    // pregeneratedstringthunks.cpp; elements are MethodDesc* / ClosedStaticRetBufPortableEntryPoint*
+    // respectively. Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
+    SArray<void*> m_pendingPortableEntryPointThunks;
+    SArray<void*> m_pendingClosedStaticRetBufThunks;
     bool m_registeredForPendingThunkResolution;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
@@ -918,6 +924,9 @@ public:
     // Add a MethodDesc to the pending list of methods waiting for an R2R-to-interpreter thunk.
     // Takes s_pendingThunkResolutionLock internally.
     void AddPendingPortableEntryPointThunk(MethodDesc* pMD);
+
+    void AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint);
+
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 
 #ifndef DACCESS_COMPILE
@@ -930,6 +939,7 @@ public:
     friend struct ::cdac_data<LoaderAllocator>;
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
     friend void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator*, MethodDesc*);
+    friend void AddPendingClosedStaticRetBufThunkUnderLock(LoaderAllocator*, ClosedStaticRetBufPortableEntryPoint*);
     friend void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator*);
     friend void ResolvePendingPortableEntryPointThunksGlobal();
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
