@@ -256,12 +256,13 @@ namespace ILCompiler
                 }
             }
 
-            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason)
+            public void AddCompilationRoot(MethodDesc method, bool rootMinimalDependencies, string reason, bool isJitHelper = false)
             {
                 MethodDesc canonMethod = method.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (_factory.CompilationModuleGroup.ContainsMethodBody(canonMethod, false))
                 {
                     MethodWithGCInfo methodEntryPoint = _factory.CompiledMethodNode(canonMethod);
+                    methodEntryPoint.IsJitHelper |= isJitHelper;
                     AddCompilationRootHelper(methodEntryPoint, rootMinimalDependencies, reason);
 
                     // Process unbox stubs inclusion for methods that have all type args Canon. InheritedVirtualMethodsNode
@@ -311,6 +312,8 @@ namespace ILCompiler
         private readonly FileLayoutOptimizer _fileLayoutOptimizer;
         private readonly HashSet<MethodDesc> _methodsWhichNeedMutableILBodies = new HashSet<MethodDesc>();
         private readonly HashSet<MethodWithGCInfo> _methodsToRecompile = new HashSet<MethodWithGCInfo>();
+        private HashSet<MethodDesc> _directManagedHelpers;
+        private bool _directManagedHelpersInitialized;
 
         public ProfileDataManager ProfileData => _profileData;
 
@@ -318,6 +321,13 @@ namespace ILCompiler
 
         public ReadyToRunSymbolNodeFactory SymbolNodeFactory { get; }
         public ReadyToRunCompilationModuleGroupBase CompilationModuleGroup { get; }
+
+        internal bool IsDirectManagedHelperEligible(MethodDesc method)
+        {
+            HashSet<MethodDesc> directManagedHelpers = Volatile.Read(ref _directManagedHelpers);
+            return directManagedHelpers is not null && directManagedHelpers.Contains(method);
+        }
+
         private readonly int _customPESectionAlignment;
         private readonly ReadyToRunContainerFormat _format;
 
@@ -754,7 +764,7 @@ namespace ILCompiler
                         {
                             if (ilProvider.NeedsCrossModuleInlineableTokens(typicalDef) &&
                                 !_methodsWhichNeedMutableILBodies.Contains(typicalDef) &&
-                                CorInfoImpl.IsMethodCompilable(this, method))
+                                CorInfoImpl.IsMethodCompilable(this, method, methodCodeNodeNeedingCode.IsJitHelper))
                             {
                                 _methodsWhichNeedMutableILBodies.Add(typicalDef);
                             }
@@ -774,22 +784,37 @@ namespace ILCompiler
 
                 ProcessMutableMethodBodiesList();
                 ResetILCache();
-                generatedColdCode |= CompileMethodList(obj);
 
-                while (_methodsToRecompile.Count > 0)
+                IReadOnlyList<DependencyNodeCore<NodeFactory>> methodsToCompile = obj;
+                if (!_directManagedHelpersInitialized && _nodeFactory.CompilationCurrentPhase == 0)
                 {
-                    ProcessMutableMethodBodiesList();
-                    ResetILCache();
-                    MethodWithGCInfo[] methodsToRecompile = new MethodWithGCInfo[_methodsToRecompile.Count];
-                    _methodsToRecompile.CopyTo(methodsToRecompile);
-                    _methodsToRecompile.Clear();
-                    Array.Sort(methodsToRecompile, new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
+                    List<MethodWithGCInfo> managedHelpers = new List<MethodWithGCInfo>();
+                    HashSet<MethodWithGCInfo> seenManagedHelpers = new HashSet<MethodWithGCInfo>();
+                    List<DependencyNodeCore<NodeFactory>> remainingMethods = new List<DependencyNodeCore<NodeFactory>>(obj.Count);
+                    foreach (DependencyNodeCore<NodeFactory> dependency in obj)
+                    {
+                        if (dependency is MethodWithGCInfo { IsJitHelper: true } managedHelper)
+                        {
+                            if (seenManagedHelpers.Add(managedHelper))
+                            {
+                                managedHelpers.Add(managedHelper);
+                            }
+                        }
+                        else
+                        {
+                            remainingMethods.Add(dependency);
+                        }
+                    }
 
-                    if (Logger.IsVerbose)
-                        Logger.Writer.WriteLine($"Processing {methodsToRecompile.Length} recompiles");
-
-                    generatedColdCode |= CompileMethodList(methodsToRecompile);
+                    if (managedHelpers.Count > 0)
+                    {
+                        generatedColdCode |= ProbeAndCompileManagedHelpers(managedHelpers);
+                        methodsToCompile = remainingMethods;
+                        _directManagedHelpersInitialized = true;
+                    }
                 }
+
+                generatedColdCode |= CompileMethodsAndRetries(methodsToCompile);
             }
 
             ResetILCache();
@@ -861,6 +886,188 @@ namespace ILCompiler
             {
                 if (_methodILCache.Count > 1000 || _methodILCache.ILProvider.Version != _methodILCache.ExpectedILProviderVersion)
                     _methodILCache = new ILCache(_methodILCache.ILProvider, NodeFactory.CompilationModuleGroup);
+            }
+
+            bool ProbeAndCompileManagedHelpers(List<MethodWithGCInfo> managedHelpers)
+            {
+                HashSet<MethodDesc> deniedHelpers = new HashSet<MethodDesc>();
+                SetDirectManagedHelpers(managedHelpers, deniedHelpers);
+
+                // Start by allowing direct calls to every helper. Remove helpers that cannot be
+                // compiled portably and repeat so remaining helpers are probed with the final call paths.
+                while (true)
+                {
+                    HashSet<MethodDesc> newlyDeniedHelpers = new HashSet<MethodDesc>();
+                    bool retryRequested = false;
+                    CorInfoImpl corInfoImpl;
+                    if (_parallelism == 1)
+                    {
+                        if (_singleThreadedWorkerState.CorInfoImpl is null)
+                        {
+                            _singleThreadedWorkerState.CorInfoImpl = new CorInfoImpl(this);
+                        }
+                        corInfoImpl = _singleThreadedWorkerState.CorInfoImpl;
+                    }
+                    else
+                    {
+                        corInfoImpl = new CorInfoImpl(this);
+                    }
+
+                    NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = true;
+                    try
+                    {
+                        foreach (MethodWithGCInfo managedHelper in managedHelpers)
+                        {
+                            if (deniedHelpers.Contains(managedHelper.Method))
+                                continue;
+
+                            try
+                            {
+                                CorInfoImpl.ManagedHelperProbeResult probeResult =
+                                    corInfoImpl.ProbeManagedHelper(managedHelper.Method, Logger);
+
+                                if (probeResult.RetryRequested)
+                                {
+                                    retryRequested = true;
+                                    if (probeResult.MethodsRequiringILBodies is not null)
+                                    {
+                                        foreach (MethodDesc method in probeResult.MethodsRequiringILBodies)
+                                        {
+                                            _methodsWhichNeedMutableILBodies.Add(method);
+                                        }
+                                    }
+                                }
+                                else if (!probeResult.CompilationSucceeded)
+                                {
+                                    LogManagedHelperProbeFailure(managedHelper.Method, "compilation did not produce code");
+                                    newlyDeniedHelpers.Add(managedHelper.Method);
+                                }
+                                else if (probeResult.RequiresInstructionSetSupportFixup)
+                                {
+                                    LogManagedHelperProbeFailure(managedHelper.Method, "processor feature fixups are required");
+                                    newlyDeniedHelpers.Add(managedHelper.Method);
+                                }
+                            }
+                            catch (TypeSystemException ex)
+                            {
+                                LogManagedHelperProbeFailure(managedHelper.Method, ex.Message);
+                                newlyDeniedHelpers.Add(managedHelper.Method);
+                            }
+                            catch (RequiresRuntimeJitException ex)
+                            {
+                                LogManagedHelperProbeFailure(managedHelper.Method, ex.Message);
+                                newlyDeniedHelpers.Add(managedHelper.Method);
+                            }
+                            catch (CodeGenerationFailedException ex)
+                            {
+                                LogManagedHelperProbeFailure(managedHelper.Method, ex.Message);
+                                newlyDeniedHelpers.Add(managedHelper.Method);
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        NodeFactory.ManifestMetadataTable._mutableModule.DisableNewTokens = false;
+                    }
+
+                    if (retryRequested)
+                    {
+                        ProcessMutableMethodBodiesList();
+                        ResetILCache();
+                        continue;
+                    }
+
+                    if (newlyDeniedHelpers.Count == 0)
+                        break;
+
+                    deniedHelpers.UnionWith(newlyDeniedHelpers);
+                    SetDirectManagedHelpers(managedHelpers, deniedHelpers);
+                }
+
+                int eligibleHelperCount = managedHelpers.Count - deniedHelpers.Count;
+                if (Logger.IsVerbose)
+                {
+                    Logger.Writer.WriteLine(
+                        $"Direct managed JIT helpers: {eligibleHelperCount} eligible, {deniedHelpers.Count} using helper cells");
+                }
+
+                DependencyNodeCore<NodeFactory>[] managedHelperDependencies =
+                    new DependencyNodeCore<NodeFactory>[managedHelpers.Count];
+                for (int i = 0; i < managedHelpers.Count; i++)
+                {
+                    managedHelperDependencies[i] = managedHelpers[i];
+                }
+
+                bool generatedHelperColdCode = CompileMethodsAndRetries(managedHelperDependencies);
+                foreach (MethodWithGCInfo managedHelper in managedHelpers)
+                {
+                    if (!deniedHelpers.Contains(managedHelper.Method) &&
+                        (managedHelper.IsEmpty || HasInstructionSetSupportFixup(managedHelper)))
+                    {
+                        throw new CodeGenerationFailedException(
+                            managedHelper.Method,
+                            new InvalidOperationException("Managed JIT helper eligibility changed during final compilation."));
+                    }
+                }
+
+                return generatedHelperColdCode;
+            }
+
+            void SetDirectManagedHelpers(
+                List<MethodWithGCInfo> managedHelpers,
+                HashSet<MethodDesc> deniedHelpers)
+            {
+                HashSet<MethodDesc> directManagedHelpers = new HashSet<MethodDesc>();
+                foreach (MethodWithGCInfo managedHelper in managedHelpers)
+                {
+                    if (!deniedHelpers.Contains(managedHelper.Method))
+                    {
+                        directManagedHelpers.Add(managedHelper.Method);
+                    }
+                }
+                Volatile.Write(ref _directManagedHelpers, directManagedHelpers);
+
+                // Single-threaded compilation reuses its CorInfoImpl across probe passes.
+                // Helper entry points cached before a denial must be recomputed using the new eligibility set.
+                _singleThreadedWorkerState.CorInfoImpl?.ClearHelperCache();
+            }
+
+            bool HasInstructionSetSupportFixup(MethodWithGCInfo managedHelper)
+            {
+                foreach (ISymbolNode fixup in managedHelper.Fixups)
+                {
+                    if (fixup is Import { Signature: ReadyToRunInstructionSetSupportSignature })
+                        return true;
+                }
+
+                return false;
+            }
+
+            bool CompileMethodsAndRetries(IReadOnlyList<DependencyNodeCore<NodeFactory>> methods)
+            {
+                bool generatedMethodColdCode = CompileMethodList(methods);
+                while (_methodsToRecompile.Count > 0)
+                {
+                    ProcessMutableMethodBodiesList();
+                    ResetILCache();
+                    MethodWithGCInfo[] methodsToRecompile = new MethodWithGCInfo[_methodsToRecompile.Count];
+                    _methodsToRecompile.CopyTo(methodsToRecompile);
+                    _methodsToRecompile.Clear();
+                    Array.Sort(methodsToRecompile, new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
+
+                    if (Logger.IsVerbose)
+                        Logger.Writer.WriteLine($"Processing {methodsToRecompile.Length} recompiles");
+
+                    generatedMethodColdCode |= CompileMethodList(methodsToRecompile);
+                }
+
+                return generatedMethodColdCode;
+            }
+
+            void LogManagedHelperProbeFailure(MethodDesc method, string reason)
+            {
+                if (Logger.IsVerbose)
+                    Logger.Writer.WriteLine($"Managed JIT helper `{method}` will use a helper cell because: {reason}");
             }
         }
 

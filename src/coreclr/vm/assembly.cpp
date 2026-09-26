@@ -2052,7 +2052,6 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_LOAD_EAGER_FIXUPS:
-        EagerFixups();
         break;
 
     case FILE_LOAD_DELIVER_EVENTS:
@@ -2070,6 +2069,7 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         break;
 
     case FILE_ACTIVE:
+        EagerFixups();
         Activate();
         break;
 

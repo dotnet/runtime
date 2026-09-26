@@ -1222,6 +1222,11 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append(" (METHOD_ENTRY)");
                     break;
 
+                case ReadyToRunFixupKind.MethodEntry_ReadyToRun:
+                    ParseMethod(builder);
+                    builder.Append(" (METHOD_ENTRY_READYTORUN)");
+                    break;
+
                 case ReadyToRunFixupKind.MethodEntry_DefToken:
                     uint methodDefToken = ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
