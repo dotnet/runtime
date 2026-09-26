@@ -595,8 +595,11 @@ namespace System.Runtime.CompilerServices
             // Normally getting the first generic argument involves checking the PerInstInfo to get the count of generic dictionaries
             // in the hierarchy, and then doing a bit of math to find the right dictionary, but since we know this is nullable
             // we can do a simple double deference to do the same thing.
-            Debug.Assert(typeMT->InstantiationArg0() == **typeMT->PerInstInfo);
+            // Note that the type argument is a TypeDesc instead of a MethodTable for the open Nullable<>
+            // and for Nullable<T> instantiated over a generic variable. Such type argument can never be
+            // equal or equivalent to boxedMT.
             MethodTable *pMTNullableArg = **typeMT->PerInstInfo;
+            Debug.Assert(new TypeHandle(pMTNullableArg).IsTypeDesc || typeMT->InstantiationArg0() == pMTNullableArg);
             if (pMTNullableArg == boxedMT)
             {
                 return true;
@@ -604,6 +607,11 @@ namespace System.Runtime.CompilerServices
             else
             {
 #if FEATURE_TYPEEQUIVALENCE
+                if (new TypeHandle(pMTNullableArg).IsTypeDesc)
+                {
+                    return false;
+                }
+
                 return AreTypesEquivalent(pMTNullableArg, boxedMT);
 #else
                 return false;
