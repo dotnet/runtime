@@ -11,6 +11,9 @@ public static class AsyncGenericUtility
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int GetAsyncGenericValue() => 42;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetSharedInlineeValue() => 43;
 }
 
 public class AsyncGenericWrapper<T>
@@ -24,5 +27,12 @@ public class AsyncGenericWrapper<T>
     {
         await Task.Yield();
         return AsyncGenericUtility.GetAsyncGenericValue();
+    }
+
+    // Not async, so both the task-returning method and its async variant are compiled from this IL.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public Task<int> GetValueTask()
+    {
+        return Task.FromResult(AsyncGenericUtility.GetSharedInlineeValue());
     }
 }

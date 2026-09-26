@@ -17,4 +17,18 @@ public static class AsyncGenericInlinerConsumer
         var wrapper = new AsyncGenericWrapper<LocalAsyncStruct>(new LocalAsyncStruct { Value = 1 });
         return await wrapper.InvokeGetValueAsync();
     }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static async Task<int> AwaitValueTask()
+    {
+        var wrapper = new AsyncGenericWrapper<LocalAsyncStruct>(new LocalAsyncStruct { Value = 2 });
+        return await wrapper.GetValueTask();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static Task<int> ReturnValueTask()
+    {
+        var wrapper = new AsyncGenericWrapper<LocalAsyncStruct>(new LocalAsyncStruct { Value = 3 });
+        return wrapper.GetValueTask();
+    }
 }

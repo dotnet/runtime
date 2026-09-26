@@ -2040,6 +2040,8 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasManifestRef(reader, "AsyncCrossModuleGenericLib", out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
             Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetAsyncGenericValue", ["InvokeGetValueAsync"], out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueTask", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinerCount(reader, "GetSharedInlineeValue", "GetValueTask", 1, out diag), diag);
         }
     }
 

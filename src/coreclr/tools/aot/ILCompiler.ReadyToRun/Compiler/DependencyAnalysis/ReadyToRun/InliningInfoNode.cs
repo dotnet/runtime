@@ -86,6 +86,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Only encode inlining info for inliners within the active module, or if cross module inline format is in use
                 Debug.Assert(AllowCrossModuleInlines || (inlinerDefinition.Module == _module));
 
+                // Cross-module inliners are encoded by their Check_IL_Body import, which cannot describe a compiler-generated async thunk.
+                if (AllowCrossModuleInlines && inlinerIdentity.IsCompilerGeneratedILBodyForAsync() && !factory.CompilationModuleGroup.VersionsWithMethodBody(inlinerDefinition))
+                {
+                    continue;
+                }
+
                 bool inlinerReportAllVersionsWithInlinee = !AllowCrossModuleInlines || factory.CompilationModuleGroup.CrossModuleCompileable(inlinerDefinition);
 
                 foreach (MethodDesc inlinee in inlinees)
@@ -133,7 +139,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
 
                     // Both variants of a method may inline the same inlinee; report it once, independent of enumeration order.
-                    if (!inliners.TryGetValue(inlinerDefinition, out MethodDesc existingInliner) || IsPreferredInliner(inlinerIdentity, existingInliner))
+                    if (!inliners.TryGetValue(inlinerDefinition, out MethodDesc existingInliner) || (inlinerIdentity is EcmaMethod && existingInliner is not EcmaMethod))
                     {
                         inliners[inlinerDefinition] = inlinerIdentity;
                     }
@@ -380,16 +386,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
-
-            // Compiler-generated async thunks cannot carry a Check_IL_Body fixup, so never prefer one.
-            static bool IsPreferredInliner(MethodDesc candidate, MethodDesc existing)
-            {
-                bool candidateIsThunk = candidate.IsCompilerGeneratedILBodyForAsync();
-                if (candidateIsThunk != existing.IsCompilerGeneratedILBodyForAsync())
-                    return !candidateIsThunk;
-
-                return candidate is EcmaMethod && existing is not EcmaMethod;
-            }
         }
 
         public override int ClassCode => -87382891;
