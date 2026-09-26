@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
+
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
@@ -9,11 +11,99 @@ using System.Linq;
 using System.Text;
 using ILCompiler.Reflection.ReadyToRun;
 using Internal.Runtime;
+using Xunit;
+using WebCilObjectWriter = crossgen2::ILCompiler.ObjectWriter.WebCilObjectWriter;
+using WebcilConstants = crossgen2::Microsoft.NET.WebAssembly.Webcil.WebcilConstants;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
 internal static class WasmR2RAssert
 {
+    public static void AssertWebcilSegmentLayout(WebcilImageReader reader, bool isComponentStub)
+    {
+        Assert.True(reader.IsWasmWrapped);
+        Assert.True(WasmIndexSpacesHaveExpectedEntries(reader, out string diagnostic), diagnostic);
+
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        Assert.True(image.Length >= 8 &&
+            image.Slice(0, 8) is [0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00],
+            "Expected wasm magic and version at the start of the image");
+
+        uint definedFunctionCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Function);
+        Assert.True(definedFunctionCount > 0, "Expected functions in the Webcil wrapper");
+        if (isComponentStub)
+        {
+            // Component forwarding stubs contain no compiled methods, only the two host-called stubs.
+            Assert.Equal(2u, definedFunctionCount);
+        }
+
+        string[] actualFunctionExports = ReadWasmExports(reader)
+            .Where(export => export.Value.Kind == WasmImportKind.Function)
+            .Select(export => export.Key)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        Assert.Equal(["getWebcilSize", "patchWebcilHeader"], actualFunctionExports);
+
+        Assert.True(
+            TryGetWasmSectionBounds(image, WasmSectionKind.Global, out int offset, out int end),
+            "Global section not found in the wasm image");
+        Assert.Equal(1u, ReadWasmUleb32(image, ref offset, end)); // webcilVersion
+        Assert.Equal((byte)0x7F, ReadWasmByte(image, ref offset, end)); // i32
+        Assert.Equal((byte)0x00, ReadWasmByte(image, ref offset, end)); // const
+        Assert.Equal((byte)0x41, ReadWasmByte(image, ref offset, end)); // i32.const
+        Assert.Equal((uint)WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING, ReadWasmUleb32(image, ref offset, end));
+        Assert.Equal((byte)0x0B, ReadWasmByte(image, ref offset, end));
+        Assert.Equal(end, offset);
+
+        Assert.True(
+            TryGetWasmSectionBounds(image, WasmSectionKind.Element, out offset, out end),
+            "Element section not found in the wasm image");
+        Assert.Equal(1u, ReadWasmUleb32(image, ref offset, end));
+        Assert.Equal(0u, ReadWasmUleb32(image, ref offset, end)); // active, table 0
+        AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.TableBaseGlobalIndex);
+
+        uint elementCount = ReadWasmUleb32(image, ref offset, end);
+        Assert.Equal(definedFunctionCount, elementCount);
+        for (uint index = 0; index < elementCount; index++)
+        {
+            // There are no imported functions, and every defined function occupies its own slot.
+            Assert.Equal(index, ReadWasmUleb32(image, ref offset, end));
+        }
+        Assert.Equal(end, offset);
+
+        Assert.True(
+            TryGetWasmSectionBounds(image, WasmSectionKind.Data, out offset, out end),
+            "Data section not found in the wasm image");
+        Assert.Equal(2u, ReadWasmUleb32(image, ref offset, end));
+        Assert.Equal(1u, ReadWasmUleb32(image, ref offset, end)); // passive size metadata
+
+        uint sizesLength = ReadWasmUleb32(image, ref offset, end);
+        Assert.InRange(sizesLength, 8u, (uint)(end - offset));
+        uint payloadSize = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset, sizeof(uint)));
+        uint tableSize = BinaryPrimitives.ReadUInt32LittleEndian(image.Slice(offset + sizeof(uint), sizeof(uint)));
+        Assert.Equal(elementCount, tableSize);
+        offset += checked((int)sizesLength);
+
+        Assert.Equal(0u, ReadWasmUleb32(image, ref offset, end)); // active, memory 0
+        AssertGlobalGetOffset(image, ref offset, end, WebCilObjectWriter.ImageBaseGlobalIndex);
+
+        uint payloadLength = ReadWasmUleb32(image, ref offset, end);
+        Assert.Equal(payloadSize, payloadLength);
+        Assert.Equal(0, offset % WebCilObjectWriter.WebcilSectionAlignment);
+        Assert.Equal((long)end, offset + (long)payloadLength);
+    }
+
+    private static void AssertGlobalGetOffset(
+        ReadOnlySpan<byte> image,
+        ref int offset,
+        int end,
+        int expectedGlobalIndex)
+    {
+        Assert.Equal((byte)0x23, ReadWasmByte(image, ref offset, end));
+        Assert.Equal((uint)expectedGlobalIndex, ReadWasmUleb32(image, ref offset, end));
+        Assert.Equal((byte)0x0B, ReadWasmByte(image, ref offset, end));
+    }
+
     public static bool HasExpectedAsyncResumeInfoFixups(ReadyToRunReader reader, out string diagnostic)
     {
         if (!reader.ReadyToRunHeader.Sections.TryGetValue(
@@ -137,13 +227,13 @@ internal static class WasmR2RAssert
         Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(reader);
         (string Name, WasmImportKind Kind, uint Index)[] expectedImports =
         [
-            ("stackPointer", WasmImportKind.Global, 0),
-            ("imageBase", WasmImportKind.Global, 1),
-            ("tableBase", WasmImportKind.Global, 2),
-            ("asyncContinuation", WasmImportKind.Global, 3),
-            ("table", WasmImportKind.Table, 0),
+            ("__stack_pointer", WasmImportKind.Global, 0),
+            ("__memory_base", WasmImportKind.Global, 1),
+            ("__table_base", WasmImportKind.Global, 2),
+            ("__async_continuation", WasmImportKind.Global, 3),
+            ("__indirect_function_table", WasmImportKind.Table, 0),
             ("memory", WasmImportKind.Memory, 0),
-            ("rtlRestoreContextTag", WasmImportKind.Tag, 0),
+            ("__coreclr_wasm_rtlrestorecontext_tag", WasmImportKind.Tag, 0),
         ];
 
         var failures = new List<string>();
@@ -259,21 +349,19 @@ internal static class WasmR2RAssert
         // Only the host-called stubs are exported. Exporting every compiled function counts towards
         // the engine's effective-type-size limit and makes a framework-sized composite unloadable;
         // function names live in the name section instead, which CheckFunctionNames verifies.
-        // A self-installing image needs two stubs; a host-installed component stub needs three.
+        // Every image needs the same two stubs: getWebcilSize, and patchWebcilHeader to record the table base.
         List<string> exportedFunctions = exports
             .Where(export => export.Value.Kind == WasmImportKind.Function)
             .Select(export => export.Key)
             .Order(StringComparer.Ordinal)
             .ToList();
 
-        string[] selfInstalling = ["getWebcilSize", "patchWebcilHeader"];
-        string[] hostInstalled = ["fillWebcilTable", "getWebcilPayload", "getWebcilSize"];
-        if (!exportedFunctions.SequenceEqual(selfInstalling, StringComparer.Ordinal) &&
-            !exportedFunctions.SequenceEqual(hostInstalled, StringComparer.Ordinal))
+        string[] expectedExports = ["getWebcilSize", "patchWebcilHeader"];
+        if (!exportedFunctions.SequenceEqual(expectedExports, StringComparer.Ordinal))
         {
             failures.Add(
-                $"Expected exactly the stub function exports [{string.Join(", ", selfInstalling)}] " +
-                $"or [{string.Join(", ", hostInstalled)}]; found [{string.Join(", ", exportedFunctions)}].");
+                $"Expected exactly the stub function exports [{string.Join(", ", expectedExports)}]; " +
+                $"found [{string.Join(", ", exportedFunctions)}].");
             return;
         }
 
@@ -650,6 +738,7 @@ internal static class WasmR2RAssert
         Global = 6,
         Export = 7,
         Element = 9,
+        Data = 11,
         Tag = 13,
     }
 

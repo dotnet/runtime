@@ -47,6 +47,93 @@ public class WebcilInWasmSizesTests
     }
 
     [Fact]
+    public void R2R_WithActivePayload_ReadsPayloadAndTableSize()
+    {
+        byte[] wasm = BuildWebcilInWasm(payloadSize: 0x00ABCDEF, tableSize: 0x42, activePayload: true);
+
+        using var stream = new MemoryStream(wasm);
+        bool ok = WebcilReader.TryReadWebcilInWasmSizes(stream, out int payloadSize, out int tableSize, out string? failureReason);
+
+        Assert.True(ok, failureReason);
+        Assert.Equal(0x00ABCDEF, payloadSize);
+        Assert.Equal(0x42, tableSize);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(128)]
+    public void R2R_WithActivePayload_WebcilReaderReadsMetadata(int? memoryIndex)
+    {
+        using var directory = new TempDirectory();
+        string assemblyPath = typeof(object).Assembly.Location;
+        string webcilPath = Path.Combine(directory.Path, "System.Private.CoreLib.webcil");
+        WebcilConverter converter = WebcilConverter.FromPortableExecutable(assemblyPath, webcilPath, webcilVersion: 1);
+        converter.WrapInWebAssembly = false;
+        converter.ConvertToWebcil();
+
+        byte[] payload = File.ReadAllBytes(webcilPath);
+        byte[] wasm = BuildWebcilInWasm(payload, tableSize: 1, activePayload: true, memoryIndex: memoryIndex);
+
+        using var stream = new MemoryStream(wasm);
+        using var reader = new WebcilReader(stream);
+        MetadataReader metadataReader = reader.GetMetadataReader();
+
+        Assert.Equal(
+            typeof(object).Assembly.GetName().Name,
+            metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name));
+        Assert.Equal(
+            typeof(object).Module.ModuleVersionId,
+            metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid));
+    }
+
+    [Theory]
+    [InlineData(0, 0, 1, new[] { "getWebcilPayload", "getWebcilSize" })]
+    [InlineData(1, 2, 0, new[] { "getWebcilSize" })]
+    public void WebcilConverter_WrapsPayloadForRuntime(
+        int payloadVersion,
+        int expectedWrapperVersion,
+        byte expectedPayloadSegmentMode,
+        string[] expectedFunctionExports)
+    {
+        using var directory = new TempDirectory();
+        string wasmPath = Path.Combine(directory.Path, "System.Private.CoreLib.wasm");
+        WebcilConverter.FromPortableExecutable(typeof(object).Assembly.Location, wasmPath, payloadVersion).ConvertToWebcil();
+        byte[] wasm = File.ReadAllBytes(wasmPath);
+
+        WrapperShape shape = ReadWrapperShape(wasm);
+        Assert.Equal(expectedWrapperVersion, shape.WrapperVersion);
+        Assert.Equal(expectedPayloadSegmentMode, shape.PayloadSegmentMode);
+        Assert.Equal(expectedFunctionExports, shape.FunctionExports);
+        if (expectedPayloadSegmentMode == 0)
+        {
+            // global.get of the imported __memory_base, the only imported global.
+            Assert.Equal(new byte[] { 0x23, 0x00, 0x0b }, shape.PayloadOffsetExpr);
+            Assert.Equal(new[] { "__memory_base" }, shape.GlobalImports);
+        }
+        else
+        {
+            Assert.Empty(shape.GlobalImports);
+        }
+
+        using (var stream = new MemoryStream(wasm))
+        {
+            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out int payloadSize, out int tableSize, out string? failureReason), failureReason);
+            Assert.Equal(shape.PayloadLength, payloadSize);
+            Assert.Equal(0, tableSize);
+        }
+
+        using (var stream = new MemoryStream(wasm))
+        using (var reader = new WebcilReader(stream))
+        {
+            MetadataReader metadataReader = reader.GetMetadataReader();
+            Assert.Equal(
+                typeof(object).Module.ModuleVersionId,
+                metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid));
+        }
+    }
+
+    [Fact]
     public void NotAWasmModule_Fails()
     {
         byte[] notWasm = { 0x7f, 0x45, 0x4c, 0x46, 0x00, 0x00, 0x00, 0x00 };
@@ -200,8 +287,12 @@ public class WebcilInWasmSizesTests
         Assert.True(r2rWebcil.SequenceEqual(File.ReadAllBytes(Path.Combine(outputDirectory, "R2RAssembly.wasm"))));
     }
 
-    [Fact]
-    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches()
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(true, 0)]
+    [InlineData(true, 128)]
+    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches(bool wrapInWebcil, int? memoryIndex)
     {
         // A prebuilt R2R image whose MVID differs from the candidate must never be staged: it would fail-fast
         // at load against the current version bubble. Use two real assemblies with distinct MVIDs.
@@ -214,7 +305,20 @@ public class WebcilInWasmSizesTests
         string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
         string outputDirectory = Path.Combine(directory.Path, "output");
         Directory.CreateDirectory(prebuiltDirectory);
-        File.Copy(mismatchedAssembly, Path.Combine(prebuiltDirectory, "System.Console.wasm"));
+        string prebuiltPath = Path.Combine(prebuiltDirectory, "System.Console.wasm");
+        if (wrapInWebcil)
+        {
+            string payloadPath = Path.Combine(directory.Path, "payload.webcil");
+            WebcilConverter converter = WebcilConverter.FromPortableExecutable(mismatchedAssembly, payloadPath, webcilVersion: 1);
+            converter.WrapInWebAssembly = false;
+            converter.ConvertToWebcil();
+            File.WriteAllBytes(prebuiltPath, BuildWebcilInWasm(
+                File.ReadAllBytes(payloadPath), tableSize: 1, activePayload: true, memoryIndex: memoryIndex));
+        }
+        else
+        {
+            File.Copy(mismatchedAssembly, prebuiltPath);
+        }
 
         var candidate = new TaskItem(candidatePath);
         candidate.SetMetadata("RelativePath", "System.Console.dll");
@@ -242,10 +346,13 @@ public class WebcilInWasmSizesTests
 
     // Builds a minimal webcil-in-wasm module: a data section with segment 0 holding payloadSize
     // (and, for R2R, tableSize) followed by a payload segment, mirroring the real layout.
-    private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize)
+    private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize, bool activePayload = false)
+        => BuildWebcilInWasm(new byte[] { 0xde, 0xad, 0xbe, 0xef }, tableSize, activePayload, payloadSize);
+
+    private static byte[] BuildWebcilInWasm(byte[] payload, int? tableSize, bool activePayload = false, int? payloadSize = null, int? memoryIndex = null)
     {
         var sizes = new List<byte>();
-        WriteUInt32LE(sizes, (uint)payloadSize);
+        WriteUInt32LE(sizes, (uint)(payloadSize ?? payload.Length));
         if (tableSize is int ts)
             WriteUInt32LE(sizes, (uint)ts);
 
@@ -256,8 +363,19 @@ public class WebcilInWasmSizesTests
         WriteULEB(body, (uint)sizes.Count);
         body.AddRange(sizes);
 
-        byte[] payload = { 0xde, 0xad, 0xbe, 0xef };
-        body.Add(0x01); // passive
+        if (activePayload)
+        {
+            body.Add(memoryIndex.HasValue ? (byte)0x02 : (byte)0x00); // active
+            if (memoryIndex is int index)
+                WriteULEB(body, (uint)index);
+            body.Add(0x23); // global.get
+            WriteULEB(body, 1); // __memory_base
+            body.Add(0x0B); // end
+        }
+        else
+        {
+            body.Add(0x01); // passive
+        }
         WriteULEB(body, (uint)payload.Length);
         body.AddRange(payload);
 
@@ -271,6 +389,129 @@ public class WebcilInWasmSizesTests
         WriteULEB(module, (uint)sectionBody.Count);
         module.AddRange(sectionBody);
         return module.ToArray();
+    }
+
+    private sealed record WrapperShape(
+        int WrapperVersion,
+        byte PayloadSegmentMode,
+        byte[] PayloadOffsetExpr,
+        int PayloadLength,
+        string[] FunctionExports,
+        string[] GlobalImports);
+
+    // Reads the parts of a converter-produced wrapper that distinguish the passive and self-installing forms.
+    private static WrapperShape ReadWrapperShape(byte[] wasm)
+    {
+        int wrapperVersion = -1;
+        byte payloadSegmentMode = 0xff;
+        byte[] payloadOffsetExpr = Array.Empty<byte>();
+        int payloadLength = -1;
+        var functionExports = new List<string>();
+        var globalImports = new List<string>();
+        var exportedGlobals = new Dictionary<uint, string>();
+        var definedGlobalValues = new List<int>();
+
+        int offset = 8;
+        while (offset < wasm.Length)
+        {
+            byte sectionId = wasm[offset++];
+            int sectionEnd = checked((int)ReadULEB(wasm, ref offset) + offset);
+            switch (sectionId)
+            {
+                case 2: // Import
+                    for (uint i = ReadULEB(wasm, ref offset); i > 0; i--)
+                    {
+                        ReadName(wasm, ref offset);
+                        string name = ReadName(wasm, ref offset);
+                        byte kind = wasm[offset++];
+                        if (kind == 2) // memory: flags, min
+                        {
+                            byte flags = wasm[offset++];
+                            ReadULEB(wasm, ref offset);
+                            if ((flags & 1) != 0)
+                                ReadULEB(wasm, ref offset);
+                        }
+                        else
+                        {
+                            Assert.Equal((byte)3, kind);
+                            offset += 2; // valtype, mutability
+                            globalImports.Add(name);
+                        }
+                    }
+                    break;
+                case 6: // Global
+                    for (uint i = ReadULEB(wasm, ref offset); i > 0; i--)
+                    {
+                        offset += 2; // valtype, mutability
+                        Assert.Equal((byte)0x41, wasm[offset++]); // i32.const
+                        definedGlobalValues.Add((int)ReadULEB(wasm, ref offset));
+                        Assert.Equal((byte)0x0b, wasm[offset++]);
+                    }
+                    break;
+                case 7: // Export
+                    for (uint i = ReadULEB(wasm, ref offset); i > 0; i--)
+                    {
+                        string name = ReadName(wasm, ref offset);
+                        byte kind = wasm[offset++];
+                        uint index = ReadULEB(wasm, ref offset);
+                        if (kind == 0)
+                            functionExports.Add(name);
+                        else if (kind == 3)
+                            exportedGlobals[index] = name;
+                    }
+                    break;
+                case 11: // Data
+                    Assert.Equal(2u, ReadULEB(wasm, ref offset));
+                    Assert.Equal((byte)1, wasm[offset++]); // segment 0 stays passive
+                    int sizesLength = (int)ReadULEB(wasm, ref offset);
+                    offset += sizesLength;
+                    payloadSegmentMode = wasm[offset++];
+                    if (payloadSegmentMode == 0)
+                    {
+                        int exprStart = offset;
+                        while (wasm[offset++] != 0x0b)
+                        {
+                        }
+                        payloadOffsetExpr = wasm.AsSpan(exprStart, offset - exprStart).ToArray();
+                    }
+                    payloadLength = (int)ReadULEB(wasm, ref offset);
+                    Assert.Equal(sectionEnd, offset + payloadLength);
+                    break;
+            }
+            offset = sectionEnd;
+        }
+
+        foreach ((uint index, string name) in exportedGlobals)
+        {
+            if (name == "webcilVersion")
+                wrapperVersion = definedGlobalValues[checked((int)index - globalImports.Count)];
+        }
+
+        functionExports.Sort(StringComparer.Ordinal);
+        return new WrapperShape(wrapperVersion, payloadSegmentMode, payloadOffsetExpr, payloadLength, functionExports.ToArray(), globalImports.ToArray());
+    }
+
+    private static string ReadName(byte[] wasm, ref int offset)
+    {
+        int length = (int)ReadULEB(wasm, ref offset);
+        string name = System.Text.Encoding.UTF8.GetString(wasm, offset, length);
+        offset += length;
+        return name;
+    }
+
+    private static uint ReadULEB(byte[] wasm, ref int offset)
+    {
+        uint value = 0;
+        int shift = 0;
+        byte b;
+        do
+        {
+            b = wasm[offset++];
+            value |= (uint)(b & 0x7f) << shift;
+            shift += 7;
+        }
+        while ((b & 0x80) != 0);
+        return value;
     }
 
     private static void WriteUInt32LE(List<byte> buffer, uint value)

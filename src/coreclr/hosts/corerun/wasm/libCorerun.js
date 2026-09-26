@@ -245,13 +245,13 @@ function libCoreRunFactory() {
                 wasmInstance = new WebAssembly.Instance(wasmModule, {
                     webcil: {
                         memory: wasmMemory,
-                        stackPointer: wasmExports.__stack_pointer,
-                        rtlRestoreContextTag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
-                        table: wasmTable,
-                        tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
+                        __stack_pointer: wasmExports.__stack_pointer,
+                        __coreclr_wasm_rtlrestorecontext_tag: wasmExports.__coreclr_wasm_rtlrestorecontext_tag,
+                        __indirect_function_table: wasmTable,
+                        __table_base: new WebAssembly.Global({ value: "i32", mutable: false }, tableStartIndex),
+                        __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, payloadPtr),
                         // Runtime-async continuation return value, shared with the runtime module.
-                        asyncContinuation: wasmExports.__async_continuation
+                        __async_continuation: wasmExports.__async_continuation
                     }
                 });
             } catch (e) {
@@ -262,15 +262,22 @@ function libCoreRunFactory() {
                 stackRestore(sp);
             }
 
+            // Only self-installing wrappers are supported (keep in sync with
+            // WebcilConstants.WASM_WRAPPER_VERSION_SELF_INSTALLING): the engine has already installed the
+            // payload, and any table slice, from the module's active segments.
             const webcilVersion = wasmInstance.exports.webcilVersion.value;
-            if ((webcilVersion > 1) || (webcilVersion < 0)) {
-                throw new Error(`Unsupported Webcil version: ${webcilVersion}`);
+            if (webcilVersion !== 2) {
+                throw new Error(`Webcil image '${wasmPath}' has unsupported Webcil wrapper version ${webcilVersion}; expected 2`);
             }
 
-            wasmInstance.exports.getWebcilPayload(payloadPtr, payloadSize);
             if (tableSize > 0) {
-                wasmInstance.exports.fillWebcilTable();
+                // The header's tableBase field lives in linear memory, so no segment can supply it.
+                if (typeof (wasmInstance.exports.patchWebcilHeader) !== "function") {
+                    throw new Error(`Webcil R2R image '${wasmPath}' does not export patchWebcilHeader`);
+                }
+                wasmInstance.exports.patchWebcilHeader(payloadPtr, payloadSize);
             }
+
             HEAPU32[outDataStartPtr >>> 2 >>> 0] = payloadPtr;
             HEAPU32[outSize >>> 2 >>> 0] = payloadSize;
             HEAPU32[(outSize + 4) >>> 2 >>> 0] = 0;
