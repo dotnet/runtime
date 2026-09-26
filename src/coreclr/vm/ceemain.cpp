@@ -673,7 +673,9 @@ void EEStartupHelper()
         InitCallStubGenerator();
 #endif // FEATURE_INTERPRETER
 
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
         JITInlineTrackingMap::StaticInitialize();
+#endif // FEATURE_INLINE_TRACKING_ENABLED
         MethodDescBackpatchInfoTracker::StaticInitialize();
 
 #ifdef FEATURE_CODE_VERSIONING

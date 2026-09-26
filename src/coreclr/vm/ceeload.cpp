@@ -85,6 +85,7 @@
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
+#ifdef FEATURE_INLINE_TRACKING_ENABLED
 BOOL Module::HasReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -108,6 +109,7 @@ COUNT_T Module::GetReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef in
 #endif
     return 0;
 }
+#endif // FEATURE_INLINE_TRACKING_ENABLED
 
 #if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 BOOL Module::HasJitInlineTrackingMap()
