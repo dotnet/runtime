@@ -100,7 +100,7 @@ int64_t SystemNative_GetBootTimeTicks(void)
 
     int64_t sinceBootTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
 
-    result = clock_gettime(CLOCK_REALTIME_COARSE, &ts);
+    result = clock_gettime(CLOCK_REALTIME, &ts);
     assert(result == 0);
 
     int64_t sinceEpochTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
