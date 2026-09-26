@@ -4,6 +4,7 @@
 using System;
 using System.Text;
 using System.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -11,6 +12,34 @@ public class Test_DelegatePInvokeTest
 {
     const int iNative = 11;//the value passed from Native side to Managed side
     const int iManaged = 10;//The value passed from Managed side to Native sid
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Inner<T>
+    {
+        public T Value;
+        public bool Flag;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct Outer
+    {
+        public Inner<int> Field;
+    }
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ReadFields(ref Outer value);
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int ReadNative(int* fields) => fields[0] + fields[1];
+
+    private static unsafe void TestGenericStructFieldMarshalling()
+    {
+        ReadFields read = Marshal.GetDelegateForFunctionPointer<ReadFields>(
+            (nint)(delegate* unmanaged[Cdecl]<int*, int>)&ReadNative);
+        Outer value = new() { Field = new Inner<int> { Value = 42, Flag = true } };
+
+        Assert.Equal(43, read(ref value));
+    }
 
     enum StructID
     {
@@ -695,6 +724,8 @@ public class Test_DelegatePInvokeTest
     {
         try
         {
+            TestGenericStructFieldMarshalling();
+
             #region calling method
 
             ////Delegate PInvoke,ByRef,Cdecl
