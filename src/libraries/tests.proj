@@ -90,8 +90,6 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false' and '$(RunDisabledWasmTests)' != 'true'">
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134200 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Dynamic.Runtime.Tests\System.Dynamic.Runtime.Tests.csproj" />
-    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134261 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
   </ItemGroup>
 
   <!-- Wasm aot on all platforms -->

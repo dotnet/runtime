@@ -3386,6 +3386,31 @@ SWITCH_OPCODE:
                         goto CALL_INTERP_METHOD;
                     }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
+#if defined(FEATURE_PORTABLE_ENTRYPOINTS) && defined(FEATURE_CACHED_INTERFACE_DISPATCH)
+                    else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
+                    {
+                        // An open virtual delegate invoked from compiled code reaches the delegate shuffle thunk, which
+                        // calls through _methodPtrAux. CID_VirtualOpenDelegateDispatch is not a portable entry point,
+                        // so resolve the virtual target here, as INTOP_CALLDELEGATE does. The shuffle thunk's 'this'
+                        // (the delegate) is its first argument, and the target's 'this' is the first call argument.
+                        DELEGATEREF delegateObj = LOCAL_VAR(0, DELEGATEREF);
+                        _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
+                        _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
+                        targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+                        OBJECTREF *pThisArg = (OBJECTREF*)callArgsAddress;
+                        NULL_CHECK(*pThisArg);
+                        targetMethod = CallWithSEHWrapper(
+                            [&targetMethod, &pThisArg]() {
+                                MethodTable* pMT = (*pThisArg)->GetMethodTable();
+                                MethodDesc *pTarget;
+                                GCX_PREEMP_REGION_BEGIN();
+                                pTarget = targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
+                                GCX_PREEMP_REGION_END();
+                                return pTarget;
+                            });
+                        goto CALL_INTERP_METHOD;
+                    }
+#endif // FEATURE_PORTABLE_ENTRYPOINTS && FEATURE_CACHED_INTERFACE_DISPATCH
                     else
                     {
                         Object** pCalliContinuationRet = pInterpreterFrame->GetContinuationPtr();
