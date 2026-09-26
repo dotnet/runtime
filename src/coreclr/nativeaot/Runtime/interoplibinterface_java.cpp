@@ -26,6 +26,19 @@ namespace
     Volatile<bool> g_GCBridgeActive = false;
     CLREventStatic g_bridgeFinished;
 
+    void ClearPendingBridgeBits(
+        uintptr_t* handles,
+        size_t handleCount)
+    {
+        for (size_t i = 0; i < handleCount; i++)
+        {
+            OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(handles[i]);
+            Object* object = ObjectFromHandle(handle);
+            if (object != nullptr)
+                object->GetHeader()->ClrBit(BIT_SBLK_BRIDGE_PENDING);
+        }
+    }
+
     void ReleaseGCBridgeArgumentsWorker(
         MarkCrossReferencesArgs* args)
     {
@@ -55,19 +68,17 @@ void JavaMarshalNative::TriggerClientBridgeProcessing(
 {
     _ASSERTE(GCHeapUtilities::IsGCInProgress());
 
-    if (g_GCBridgeActive)
-    {
-        // Release the memory allocated since the GCBridge
-        // is already running and we're not passing them to it.
-        ReleaseGCBridgeArgumentsWorker(args);
-        return;
-    }
+    size_t pendingBridgeHandleCount;
+    uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
+
+    _ASSERTE(!g_GCBridgeActive);
 
     // Not initialized
     if (g_MarkCrossReferences == NULL)
     {
         // Release the memory allocated since we
         // don't have a GC bridge callback.
+        ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
         ReleaseGCBridgeArgumentsWorker(args);
         return;
     }
@@ -122,12 +133,14 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
         pThisThread->DisablePreemptiveMode();
 
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+        size_t pendingBridgeHandleCount;
+        uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
+        ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
         OBJECTHANDLE* handles = (OBJECTHANDLE*)unreachableObjectHandles;
         for (size_t i = 0; i < length; i++)
             pHandleManager->DestroyHandleOfUnknownType(handles[i]);
-
         g_GCBridgeActive = false;
         g_bridgeFinished.Set();
 
@@ -139,12 +152,21 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
 
 FCIMPL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, OBJECTREF* pObjResult)
 {
-    if (g_GCBridgeActive)
+    Object* object = ObjectFromHandle(handle);
+    if (g_GCBridgeActive && object != nullptr &&
+        (object->GetHeader()->GetBitsAcquire() & BIT_SBLK_BRIDGE_PENDING) != 0)
     {
         FC_RETURN_BOOL(false);
     }
 
-    *pObjResult = ObjectFromHandle(handle);
+    // See explanation in Interop::TryGetObjectFromHandleWithoutBridgeWait
+    Object* confirmedObject = ObjectFromHandle(handle);
+    if (confirmedObject != object)
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pObjResult = confirmedObject;
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND
