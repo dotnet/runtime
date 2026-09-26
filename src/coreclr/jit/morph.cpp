@@ -8622,9 +8622,10 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
         // Try to narrow the operand of the cast and discard the cast.
         if (opts.OptEnabled(CLFLG_TREETRANS) && (genTypeSize(src) > genTypeSize(castToType)) &&
-            optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, false))
+            optNarrowTree(&cast->CastOp(), src->TypeGet(), castToType, cast->gtVNPair, false))
         {
-            optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, true);
+            optNarrowTree(&cast->CastOp(), src->TypeGet(), castToType, cast->gtVNPair, true);
+            src = cast->CastOp();
 
             // "optNarrowTree" may leave a redundant cast behind.
             if (src->OperIs(GT_CAST) && (src->AsCast()->CastToType() == genActualType(src->AsCast()->CastOp())))
@@ -9050,8 +9051,10 @@ SKIP:
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
 
-            op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
-            fgUpdateConstTreeValueNumber(op2);
+            GenTree* const newOp2 = gtNewIconNode(static_cast<int32_t>(op2->LngValue()));
+            fgUpdateConstTreeValueNumber(newOp2);
+            newOp2->SetMorphed(this);
+            cmp->gtOp2 = newOp2;
         }
 
         return cmp;
@@ -9084,9 +9087,10 @@ SKIP:
         // Such operands cannot be narrowed, but can still be cast to TYP_INT below.
         //
         // Now we narrow the first operand of AND to int.
-        if (andOpOp1->TypeIs(TYP_LONG) && optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
+        if (andOpOp1->TypeIs(TYP_LONG) && optNarrowTree(&andOp->gtOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
         {
-            optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
+            optNarrowTree(&andOp->gtOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
+            andOpOp1 = andOp->gtGetOp1();
 
             // "optNarrowTree" may leave a redundant cast behind.
             if (andOpOp1->OperIs(GT_CAST) &&
@@ -9105,13 +9109,17 @@ SKIP:
         assert(andMask == andOp->gtGetOp2());
 
         // Now replace the mask node.
-        andMask->BashToConst(static_cast<int32_t>(andMask->LngValue()));
+        GenTree* const newMask = gtNewIconNode(static_cast<int32_t>(andMask->LngValue()));
+        newMask->SetMorphed(this);
+        andOp->gtOp2 = newMask;
 
         // Now change the type of the AND node.
         andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-        op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
+        GenTree* const newOp2 = gtNewIconNode(static_cast<int32_t>(op2->LngValue()));
+        newOp2->SetMorphed(this);
+        cmp->gtOp2 = newOp2;
     }
 
     return cmp;
@@ -11056,8 +11064,10 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         auto transform = [this](GenTree** use) {
             if ((*use)->IsIntegralConst())
             {
-                (*use)->BashToConst(static_cast<int>((*use)->AsIntConCommon()->LngValue()));
-                fgUpdateConstTreeValueNumber(*use);
+                GenTree* const newCns = gtNewIconNode(static_cast<int>((*use)->AsIntConCommon()->LngValue()));
+                fgUpdateConstTreeValueNumber(newCns);
+                newCns->SetMorphed(this);
+                *use = newCns;
             }
             else
             {
@@ -15878,7 +15888,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 
     // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
     // accordingly
-    consTree->BashToConst(foldCount, tree->TypeGet());
+    consTree = tree->TypeIs(TYP_LONG) ? gtNewLconNode(foldCount) : gtNewIconNode(foldCount, tree->TypeGet());
 
     GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
     DEBUG_DESTROY_NODE(tree);

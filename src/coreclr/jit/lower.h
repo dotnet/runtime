@@ -189,7 +189,7 @@ private:
     template <typename GetRegisterInfoFunc>
     void LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList, unsigned numRegs, GetRegisterInfoFunc func);
     void LowerCallStruct(GenTreeCall* call);
-    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
+    bool LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
@@ -423,13 +423,13 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
-    void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
+    bool     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
-    void     LowerInitBlockStore(GenTreeBlk* blkNode);
-    void     LowerCopyBlockStore(GenTreeBlk* blkNode);
+    bool     LowerInitBlockStore(GenTreeBlk* blkNode);
+    bool     LowerCopyBlockStore(GenTreeBlk* blkNode);
     bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
-    void     LowerLclHeap(GenTree* node);
+    GenTree* LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStk(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);

@@ -3154,11 +3154,12 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
  *  get called with 'doit' being true, we actually perform the narrowing.
  */
 
-bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit)
+bool Compiler::optNarrowTree(GenTree** use, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit)
 {
     genTreeOps oper;
     unsigned   kind;
 
+    GenTree* const tree = *use;
     noway_assert(tree);
     noway_assert(genActualType(tree->gtType) == genActualType(srct));
 
@@ -3225,8 +3226,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    tree->BashToConst(static_cast<int32_t>(lval));
-                    fgUpdateConstTreeValueNumber(tree);
+                    GenTree* const cns = gtNewIconNode(static_cast<int32_t>(lval));
+                    fgUpdateConstTreeValueNumber(cns);
+                    cns->SetMorphed(this);
+                    *use = cns;
                 }
 
                 return true;
@@ -3322,8 +3325,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
 
-                GenTree* opToNarrow;
-                opToNarrow = nullptr;
+                GenTree** opToNarrowUse;
+                opToNarrowUse = nullptr;
                 GenTree** otherOpPtr;
                 otherOpPtr = nullptr;
                 bool foundOperandThatBlocksNarrowing;
@@ -3334,10 +3337,10 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 // The same is true if one of the operands is an int const and can be narrowed into 'dsst'.
                 if (op2->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt))
                 {
-                    if (optNarrowTree(op2, srct, dstt, NoVNPair, false))
+                    if (optNarrowTree(&tree->AsOp()->gtOp2, srct, dstt, NoVNPair, false))
                     {
-                        opToNarrow = op2;
-                        otherOpPtr = &tree->AsOp()->gtOp1;
+                        opToNarrowUse = &tree->AsOp()->gtOp2;
+                        otherOpPtr    = &tree->AsOp()->gtOp1;
                     }
                     else
                     {
@@ -3345,12 +3348,12 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     }
                 }
 
-                if ((opToNarrow == nullptr) && (op1->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt)))
+                if ((opToNarrowUse == nullptr) && (op1->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt)))
                 {
-                    if (optNarrowTree(op1, srct, dstt, NoVNPair, false))
+                    if (optNarrowTree(&tree->AsOp()->gtOp1, srct, dstt, NoVNPair, false))
                     {
-                        opToNarrow = op1;
-                        otherOpPtr = &tree->AsOp()->gtOp2;
+                        opToNarrowUse = &tree->AsOp()->gtOp1;
+                        otherOpPtr    = &tree->AsOp()->gtOp2;
                     }
                     else
                     {
@@ -3358,7 +3361,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                     }
                 }
 
-                if (opToNarrow != nullptr)
+                if (opToNarrowUse != nullptr)
                 {
                     // We will change the type of the tree and narrow opToNarrow
                     //
@@ -3367,7 +3370,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                         tree->gtType = genActualType(dstt);
                         tree->SetVNs(vnpNarrow);
 
-                        optNarrowTree(opToNarrow, srct, dstt, NoVNPair, true);
+                        optNarrowTree(opToNarrowUse, srct, dstt, NoVNPair, true);
                         // We may also need to cast away the upper bits of *otherOpPtr
                         if (srcSize == 8)
                         {
@@ -3403,7 +3406,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
             COMMON_BINOP:
-                if (!optNarrowTree(op1, srct, dstt, NoVNPair, doit) || !optNarrowTree(op2, srct, dstt, NoVNPair, doit))
+                if (!optNarrowTree(&tree->AsOp()->gtOp1, srct, dstt, NoVNPair, doit) ||
+                    !optNarrowTree(&tree->AsOp()->gtOp2, srct, dstt, NoVNPair, doit))
                 {
                     noway_assert(doit == false);
                     return false;
@@ -3502,7 +3506,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 return false;
 
             case GT_COMMA:
-                if (optNarrowTree(op2, srct, dstt, vnpNarrow, doit))
+                if (optNarrowTree(&tree->AsOp()->gtOp2, srct, dstt, vnpNarrow, doit))
                 {
                     /* Simply change the type of the tree */
 
