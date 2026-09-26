@@ -130,9 +130,33 @@ namespace System.Collections.Frozen
         {
             Debug.Assert(_thisSet.Count != 0, "EmptyFrozenSet should have been used.");
 
+            // Fast path for Overlaps when other is IReadOnlySet with fast lookup and same equality comparer
+            if (other is IReadOnlySet<T> otherAsSet && ComparersAreCompatible(otherAsSet))
+            {
+                return otherAsSet.Count > Count ? OverlapsCompatibleReadOnlySetImpl(this, otherAsSet) : OverlapsCompatibleReadOnlySetImpl(otherAsSet, this);
+            }
+
+            return OverlapsEnumerableImpl(other);
+        }        
+
+        private bool OverlapsEnumerableImpl(IEnumerable<T> other)
+        {
             foreach (T element in other)
             {
                 if (_thisSet.FindItemIndex(element) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool OverlapsCompatibleReadOnlySetImpl(IReadOnlySet<T> smaller, IReadOnlySet<T> larger)
+        {
+            foreach (T element in smaller)
+            {
+                if (larger.Contains(element))
                 {
                     return true;
                 }
