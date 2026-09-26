@@ -690,8 +690,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 // If there is more input available try to transition with the next character.
                 // Note: the order here is important so the transition itself gets taken
-                if (!DfaStateHandler.TryTakeTransition(this, ref currStateId, GetMintermId(mintermsLookup, c), timeoutOccursAt) ||
-                    pos >= lengthMinus1)
+                if (pos >= lengthMinus1 || !DfaStateHandler.TryTakeTransition(this, ref currStateId, GetMintermId(mintermsLookup, c), timeoutOccursAt))
                 {
                     if (pos + 1 < input.Length)
                     {
