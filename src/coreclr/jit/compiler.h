@@ -4117,6 +4117,7 @@ public:
 
     GenTree* gtFoldExpr(GenTree* tree);
     GenTree* gtFoldExprConst(GenTree* tree);
+    GenTree* gtFoldDistributiveArithmetic(GenTree* tree);
 
     GenTree* gtFoldExprUnary(GenTreeUnOp* tree);
     GenTree* gtFoldExprUnaryConst(GenTreeUnOp* tree);
