@@ -737,6 +737,48 @@ namespace Internal.JitInterface
                 case CorInfoHelpFunc.CORINFO_HELP_DBLREM:
                     id = ReadyToRunHelper.DblRem;
                     break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTADD:
+                    id = ReadyToRunHelper.FltAdd;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTSUB:
+                    id = ReadyToRunHelper.FltSub;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTMUL:
+                    id = ReadyToRunHelper.FltMul;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTDIV:
+                    id = ReadyToRunHelper.FltDiv;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLADD:
+                    id = ReadyToRunHelper.DblAdd;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLSUB:
+                    id = ReadyToRunHelper.DblSub;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLMUL:
+                    id = ReadyToRunHelper.DblMul;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLDIV:
+                    id = ReadyToRunHelper.DblDiv;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTCMP_LE:
+                    id = ReadyToRunHelper.FltCmpLe;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLTCMP_GE:
+                    id = ReadyToRunHelper.FltCmpGe;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLCMP_LE:
+                    id = ReadyToRunHelper.DblCmpLe;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBLCMP_GE:
+                    id = ReadyToRunHelper.DblCmpGe;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_FLT2DBL:
+                    id = ReadyToRunHelper.Flt2Dbl;
+                    break;
+                case CorInfoHelpFunc.CORINFO_HELP_DBL2FLT:
+                    id = ReadyToRunHelper.Dbl2Flt;
+                    break;
 
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_PINVOKE_BEGIN:
                     id = ReadyToRunHelper.PInvokeBegin;

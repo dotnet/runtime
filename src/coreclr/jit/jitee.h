@@ -40,7 +40,9 @@ public:
 
 #if defined(TARGET_ARM)
         JIT_FLAG_RELATIVE_CODE_RELOCS    = 29, // JIT should generate PC-relative address computations instead of EE relocation records
-        JIT_FLAG_SOFTFP_ABI              = 30, // Enable armel calling convention
+#endif
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+        JIT_FLAG_SOFTFP_ABI              = 30, // Enable the soft-float calling convention (armel; lp64 on RISC-V)
 #endif
 
         JIT_FLAG_USE_DISPATCH_HELPERS    = 31, // The JIT should use helpers for interface dispatch instead of virtual stub dispatch
@@ -141,8 +143,10 @@ public:
 
 #if defined(TARGET_ARM)
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
-        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
 #endif // TARGET_ARM
+#if defined(TARGET_ARM) || defined(TARGET_RISCV64)
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_SOFTFP_ABI, JIT_FLAG_SOFTFP_ABI);
+#endif // TARGET_ARM || TARGET_RISCV64
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_ASYNC, JIT_FLAG_ASYNC);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_USE_DISPATCH_HELPERS, JIT_FLAG_USE_DISPATCH_HELPERS);
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_VERIFY_GC_MODE_TRANSITIONS, JIT_FLAG_VERIFY_GC_MODE_TRANSITIONS);

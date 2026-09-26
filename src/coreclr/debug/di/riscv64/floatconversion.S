@@ -7,6 +7,8 @@
 //     input: (in A0) the address of the ULONGLONG to be converted to a double
 //     output: the double corresponding to the ULONGLONG input value
 LEAF_ENTRY FPFillR8, .TEXT
+#if __riscv_flen >= 64
         fld  fa0, 0(a0)
+#endif
         ret
 LEAF_END FPFillR8, .TEXT

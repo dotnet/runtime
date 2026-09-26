@@ -1105,7 +1105,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                 }
                 else
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                    if (varTypeIsFloating(varDsc) &&
+                    if (varTypeIsFloating(varDsc) && varTypeUsesFloatReg(varDsc) &&
                         !VarSetOps::IsMember(m_compiler, fpCalleeSaveCandidateVars, varIndex))
                     {
                         continue;
@@ -4330,6 +4330,15 @@ int LinearScan::BuildReturn(GenTree* tree)
             else
 #endif // FEATURE_MULTIREG_RET
             {
+#ifdef TARGET_RISCV64
+                if (varTypeIsFloating(tree) && !varTypeUsesFloatReg(tree))
+                {
+                    // Soft-float: FP values are returned in the integer return register.
+                    BuildUse(op1, RBM_INTRET.GetIntRegSet());
+                    return 1;
+                }
+#endif // TARGET_RISCV64
+
                 // Non-struct type return - determine useCandidates
                 switch (tree->TypeGet())
                 {

@@ -1789,6 +1789,24 @@ void EEJitManager::SetCpuInfo()
     if (g_pConfig->EnableHWIntrinsic())
     {
         CPUCompileFlags.Set(InstructionSet_RiscV64Base);
+
+        // F/D/C/A belong to the rv64gc baseline and are not reported through
+        // hwprobe; the floor is the ISA this runtime itself was built for.
+#if defined(__riscv_flen) && __riscv_flen >= 32
+        CPUCompileFlags.Set(InstructionSet_F);
+#endif
+#if defined(__riscv_flen) && __riscv_flen >= 64
+        CPUCompileFlags.Set(InstructionSet_D);
+#endif
+#ifdef __riscv_compressed
+        if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Compressed))
+        {
+            CPUCompileFlags.Set(InstructionSet_C);
+        }
+#endif
+#ifdef __riscv_atomic
+        CPUCompileFlags.Set(InstructionSet_A);
+#endif
     }
 
     if (((cpuFeatures & RiscV64IntrinsicConstants_Zba) != 0) && CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableRiscV64Zba))

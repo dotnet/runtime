@@ -1009,6 +1009,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegs[static_cast<int>(TYP_##tn)] = &regFld;
 #include "typelist.h"
 #undef DEF_TP
+#ifdef TARGET_RISCV64
+    if (m_compiler->opts.compUseSoftFP)
+    {
+        // No FP register file: float and double values are allocated integer registers.
+        availableRegs[TYP_FLOAT]  = &availableIntRegs;
+        availableRegs[TYP_DOUBLE] = &availableIntRegs;
+    }
+#endif // TARGET_RISCV64
     // Updating lowGprRegs with final value
 #if defined(TARGET_XARCH)
 #if defined(TARGET_AMD64)

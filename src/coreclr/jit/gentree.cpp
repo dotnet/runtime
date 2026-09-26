@@ -34280,11 +34280,14 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             m_regType[0] = returnType;
 
 #if defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
-            if (!lowering->byIntegerCallConv)
+            if (!comp->opts.compUseSoftFP)
             {
-                assert(lowering->numLoweredElements == 1);
-                m_fieldOffset[0] = lowering->offsets[0];
+                const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
+                if (!lowering->byIntegerCallConv)
+                {
+                    assert(lowering->numLoweredElements == 1);
+                    m_fieldOffset[0] = lowering->offsets[0];
+                }
             }
 #endif // defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
             break;
@@ -34356,8 +34359,9 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
             assert(structSize <= (2 * TARGET_POINTER_SIZE));
             BYTE gcPtrs[2] = {TYPE_GC_NONE, TYPE_GC_NONE};
             comp->info.compCompHnd->getClassGClayout(retClsHnd, &gcPtrs[0]);
-            const CORINFO_FPSTRUCT_LOWERING* lowering = comp->GetFpStructLowering(retClsHnd);
-            if (!lowering->byIntegerCallConv)
+            const CORINFO_FPSTRUCT_LOWERING* lowering =
+                comp->opts.compUseSoftFP ? nullptr : comp->GetFpStructLowering(retClsHnd);
+            if ((lowering != nullptr) && !lowering->byIntegerCallConv)
             {
                 comp->compFloatingPointUsed = true;
                 assert(lowering->numLoweredElements == MAX_RET_REG_COUNT);

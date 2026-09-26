@@ -775,9 +775,16 @@ int minipal_getcpufeatures(void)
 
     if (syscall(__NR_riscv_hwprobe, pairs, 1, 0, NULL, 0) == 0)
     {
-        // Our baseline support is for RV64GC (see #73437)
+        // The hardware must implement at least the ISA the runtime was built
+        // for. RV64GC is the supported baseline (see #73437); a build for a
+        // reduced -march only assumes the extensions it was compiled with.
+        // (hwprobe has no F-only bit, so an F-without-D build asserts nothing.)
+#if defined(__riscv_flen) && __riscv_flen >= 64
         assert(pairs[0].value & RISCV_HWPROBE_IMA_FD);
+#endif
+#ifdef __riscv_compressed
         assert(pairs[0].value & RISCV_HWPROBE_IMA_C);
+#endif
 
         if (pairs[0].value & RISCV_HWPROBE_EXT_ZBA)
         {

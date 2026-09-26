@@ -7285,6 +7285,15 @@ private:
     bool fgIsBlockCold(BasicBlock* block);
 
     GenTree* fgMorphCastIntoHelper(GenTree* tree, int helper, GenTree* oper);
+#ifdef TARGET_RISCV64
+    // Soft-float expansion of the FP operations into helper calls
+    GenTree*        fgMorphSoftFloatArith(GenTreeOp* tree);
+    GenTree*        fgMorphSoftFloatCast(GenTreeCast* tree, CorInfoHelpFunc helper, GenTree* oper);
+    GenTree*        fgMorphSoftFloatNeg(GenTreeOp* neg);
+    GenTree*        fgMorphSoftFloatRelop(GenTreeOp* relop);
+    GenTree*        fgMorphSoftFloatCkFinite(GenTreeOp* ckFinite);
+    GenTree*        fgMorphSoftFloatCastToInt32(GenTree* src, bool toUnsigned);
+#endif // TARGET_RISCV64
 
     GenTree* fgMorphIntoHelperCall(
         GenTree* tree, int helper, bool morphArgs, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr);
@@ -10961,7 +10970,7 @@ private:
     // support/nonsupport for an instruction set
     bool compIsaSupportedDebugOnly(CORINFO_InstructionSet isa) const
     {
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
         return opts.compSupportsISA.HasInstructionSet(isa);
 #else
         return false;
@@ -11654,7 +11663,9 @@ public:
         int compJitSaveFpLrWithCalleeSavedRegisters;
 #endif // defined(TARGET_ARM64)
 
-#ifdef CONFIGURABLE_ARM_ABI
+#if defined(CONFIGURABLE_ARM_ABI) || defined(TARGET_RISCV64)
+        // On RISCV64 the lp64 soft-float ABI is selected per compilation by
+        // JIT_FLAG_SOFTFP_ABI (no-F targets); see compInitOptions.
         bool compUseSoftFP = false;
 #else
 #ifdef ARM_SOFTFP

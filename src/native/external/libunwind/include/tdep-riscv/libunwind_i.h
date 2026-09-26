@@ -162,6 +162,12 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 static inline int
 dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
 {
+#if !defined(__riscv_flen)
+  /* No F/D extension: the target has no floating-point registers, so no
+     floating-point location can be valid. */
+  (void) c; (void) loc; (void) val;
+  return -UNW_EBADREG;
+#else
   char *valp = (char *) &val;
   unw_word_t addr;
 
@@ -180,11 +186,16 @@ dwarf_getfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t *val)
 #else
 # error "FIXME"
 #endif
+#endif /* !defined(__riscv_flen) */
 }
 
 static inline int
 dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
 {
+#if !defined(__riscv_flen)
+  (void) c; (void) loc; (void) val;
+  return -UNW_EBADREG;
+#else
   char *valp = (char *) &val;
   unw_word_t addr;
 
@@ -203,6 +214,7 @@ dwarf_putfp (struct dwarf_cursor *c, dwarf_loc_t loc, unw_fpreg_t val)
 #else
 # error "FIXME"
 #endif
+#endif /* !defined(__riscv_flen) */
 }
 
 static inline int

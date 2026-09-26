@@ -1359,6 +1359,13 @@ bool Compiler::fgCastRequiresHelper(var_types fromType, var_types toType, bool o
 #endif // TARGET_X86
     }
 #endif // TARGET_X86 || TARGET_ARM
+#ifdef TARGET_RISCV64
+    if (opts.compUseSoftFP && (varTypeIsFloating(fromType) || varTypeIsFloating(toType)))
+    {
+        // No FP instructions: every conversion to or from floating point is a helper call.
+        return true;
+    }
+#endif // TARGET_RISCV64
 
     return false;
 }
@@ -2171,7 +2178,7 @@ private:
                 retVarDsc->lvType = retLclType;
             }
 
-            if (varTypeIsFloating(retVarDsc->TypeGet()))
+            if (varTypeIsFloating(retVarDsc->TypeGet()) && varTypeUsesFloatReg(retVarDsc->TypeGet()))
             {
                 m_compiler->compFloatingPointUsed = true;
             }

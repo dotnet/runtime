@@ -86,7 +86,11 @@ const BYTE varTypeClassification[] = {
 #undef DEF_TP
 };
 
+#ifdef TARGET_RISCV64
+BYTE varTypeRegister[] = {
+#else
 const BYTE varTypeRegister[] = {
+#endif
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) regTyp,
 #include "typelist.h"
 #undef DEF_TP
@@ -1458,6 +1462,21 @@ void HelperCallProperties::init()
             case CORINFO_HELP_LLSH:
             case CORINFO_HELP_LRSH:
             case CORINFO_HELP_LRSZ:
+            // Soft-float helpers: leaf compiler-rt routines, no GC interaction.
+            case CORINFO_HELP_FLTADD:
+            case CORINFO_HELP_FLTSUB:
+            case CORINFO_HELP_FLTMUL:
+            case CORINFO_HELP_FLTDIV:
+            case CORINFO_HELP_DBLADD:
+            case CORINFO_HELP_DBLSUB:
+            case CORINFO_HELP_DBLMUL:
+            case CORINFO_HELP_DBLDIV:
+            case CORINFO_HELP_FLTCMP_LE:
+            case CORINFO_HELP_FLTCMP_GE:
+            case CORINFO_HELP_DBLCMP_LE:
+            case CORINFO_HELP_DBLCMP_GE:
+            case CORINFO_HELP_FLT2DBL:
+            case CORINFO_HELP_DBL2FLT:
                 isNoGC = true;
                 FALLTHROUGH;
             case CORINFO_HELP_LMUL:

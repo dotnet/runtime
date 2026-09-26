@@ -53,6 +53,9 @@ MethodSet* Compiler::s_pJitMethodSet               = nullptr;
 bool GlobalJitOptions::compFeatureHfa          = false;
 LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
 #endif // CONFIGURABLE_ARM_ABI
+#ifdef TARGET_RISCV64
+LONG GlobalJitOptions::compUseSoftFPConfigured = 0;
+#endif // TARGET_RISCV64
 
 /*****************************************************************************
  *
@@ -867,7 +870,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    if (structSize <= (TARGET_POINTER_SIZE * 2))
+    if ((structSize <= (TARGET_POINTER_SIZE * 2)) && !opts.compUseSoftFP)
     {
         const CORINFO_FPSTRUCT_LOWERING* lowering = GetFpStructLowering(clsHnd);
         if (!lowering->byIntegerCallConv)
@@ -1941,6 +1944,20 @@ void Compiler::compSetProcessor()
 
     // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif defined(TARGET_RISCV64)
+    // Ensure the required baseline ISA is supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_RiscV64Base);
+
+    // C is the one base extension with a config opt-out: turning it off only stops
+    // the JIT from emitting compressed encodings, so it is safe to honor here however
+    // the flags were seeded. F, D and A have no opt-out; a target without them is
+    // selected through the AOT compiler's instruction set.
+    if (JitConfig.EnableRiscV64Compressed() == 0)
+    {
+        instructionSetFlags.RemoveInstructionSet(InstructionSet_C);
+    }
+
+    instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
 #endif // TARGET_ARM64
 
     assert(instructionSetFlags.Equals(EnsureInstructionSetFlagsAreValid(instructionSetFlags)));
@@ -2488,6 +2505,11 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     if (compIsForInlining())
     {
+#ifdef TARGET_RISCV64
+        // The soft-float mode is decided by the root compilation (see below); the
+        // importer of an inlinee needs it too, for the intrinsics and casts it expands.
+        opts.compUseSoftFP = impInlineInfo->InlinerCompiler->opts.compUseSoftFP;
+#endif // TARGET_RISCV64
         return;
     }
 
@@ -2892,6 +2914,51 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     }
 
     GlobalJitOptions::compFeatureHfa = !opts.compUseSoftFP;
+#elif defined(TARGET_RISCV64)
+    // Soft-float, for targets without the F/D extensions (set by the AOT driver):
+    // the lp64 calling convention passes FP values in integer registers, and
+    // TYP_FLOAT/TYP_DOUBLE values live in the integer register file altogether;
+    // the FP arithmetic is done by helper calls (see fgMorphSmpOp). The register
+    // class of a type is a process-wide table, so the setting cannot change
+    // during the lifetime of the process.
+    opts.compUseSoftFP = jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI);
+
+    // The first compilation of the process fixes the mode: it claims the
+    // configuration, initializes the table and then publishes the mode. Every
+    // other compilation waits for the publication and must request the same
+    // mode, so the table is never written while another compilation may read it.
+    enum SoftFPConfig : LONG
+    {
+        SoftFPConfigUnset        = 0,
+        SoftFPConfigHard         = 1,
+        SoftFPConfigSoft         = 2,
+        SoftFPConfigInitializing = 3,
+    };
+    const LONG softFPConfig    = opts.compUseSoftFP ? SoftFPConfigSoft : SoftFPConfigHard;
+    LONG       oldSoftFPConfig = InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured,
+                                                            SoftFPConfigInitializing, SoftFPConfigUnset);
+    if (oldSoftFPConfig == SoftFPConfigUnset)
+    {
+        if (opts.compUseSoftFP)
+        {
+            varTypeRegister[TYP_FLOAT]  = VTR_INT;
+            varTypeRegister[TYP_DOUBLE] = VTR_INT;
+        }
+        InterlockedExchange(&GlobalJitOptions::compUseSoftFPConfigured, softFPConfig);
+    }
+    else
+    {
+        while (oldSoftFPConfig == SoftFPConfigInitializing)
+        {
+            // Atomic read; the initialization window is two byte stores long.
+            oldSoftFPConfig = InterlockedCompareExchange(&GlobalJitOptions::compUseSoftFPConfigured, SoftFPConfigUnset,
+                                                         SoftFPConfigUnset);
+        }
+        if (oldSoftFPConfig != softFPConfig)
+        {
+            NO_WAY("SoftFP setting changed during lifetime of process");
+        }
+    }
 #elif defined(ARM_SOFTFP) && defined(TARGET_ARM)
     // Armel is unconditionally enabled in the JIT. Verify that the VM side agrees.
     assert(jitFlags->IsSet(JitFlags::JIT_FLAG_SOFTFP_ABI));
@@ -6250,6 +6317,18 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableRiscV64Zicond() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
+        }
+
+        // F, D and A are part of the rv64gc baseline and cannot be turned off here: a target
+        // without them is selected through the AOT compiler's instruction set, which also
+        // checks that the ABI and the execution environment allow it.
+        instructionSetFlags.AddInstructionSet(InstructionSet_F);
+        instructionSetFlags.AddInstructionSet(InstructionSet_D);
+        instructionSetFlags.AddInstructionSet(InstructionSet_A);
+
+        if (JitConfig.EnableRiscV64Compressed() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_C);
         }
 #endif
 

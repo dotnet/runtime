@@ -8571,6 +8571,15 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
 //
 void CodeGen::genBitCast(var_types targetType, regNumber targetReg, var_types srcType, regNumber srcReg)
 {
+#ifdef TARGET_RISCV64
+    if (m_compiler->opts.compUseSoftFP && (srcType == TYP_FLOAT) && (targetType == TYP_INT))
+    {
+        // Soft-float: a float lives in an integer register with unspecified upper
+        // bits (RISC-V psABI), while an int is expected to be sign-extended.
+        GetEmitter()->emitIns_R_R_I(INS_addiw, EA_4BYTE, targetReg, srcReg, 0);
+        return;
+    }
+#endif // TARGET_RISCV64
     const bool srcFltReg = varTypeUsesFloatReg(srcType);
     assert(srcFltReg == genIsValidFloatReg(srcReg));
 

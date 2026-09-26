@@ -60,6 +60,26 @@ namespace ILCompiler
             _compilationOptions = options;
             InstructionSetSupport = instructionSetSupport;
 
+            if (nodeFactory.Target.Architecture == TargetArchitecture.RiscV64)
+            {
+                // The ABI is a property of the target, not of the instruction set: opting out of
+                // F/D does not make the runtime and the native libraries lp64, and the lp64
+                // target has no F/D by definition. The lp64f ABI (F without D) is not supported.
+                bool hasF = instructionSetSupport.IsInstructionSetSupported(InstructionSet.RiscV64_F);
+                bool hasD = instructionSetSupport.IsInstructionSetSupported(InstructionSet.RiscV64_D);
+                if (nodeFactory.Target.Abi == TargetAbi.NativeAotRiscV64SoftFloat)
+                {
+                    if (hasF || hasD)
+                        throw new NotSupportedException(
+                            "The riscv64-lp64 (soft-float) ABI target has no F and D extensions; remove them from the instruction set.");
+                }
+                else if (!hasF || !hasD)
+                {
+                    throw new NotSupportedException(
+                        "The riscv64 lp64d ABI requires the F and D extensions; targets without them must use the riscv64-lp64 (soft-float) ABI.");
+                }
+            }
+
             _profileDataManager = profileDataManager;
 
             _methodImportationErrorProvider = errorProvider;
@@ -125,6 +145,10 @@ namespace ILCompiler
 
             if ((_compilationOptions & RyuJitCompilationOptions.ControlFlowGuardAnnotations) != 0)
                 options |= ObjectWritingOptions.ControlFlowGuard;
+
+            if ((NodeFactory.Target.Architecture == TargetArchitecture.RiscV64)
+                && InstructionSetSupport.IsInstructionSetSupported(InstructionSet.RiscV64_C))
+                options |= ObjectWritingOptions.RiscV64Compressed;
 
             ObjectWriter.ObjectWriter.EmitObject(outputFile, nodes, NodeFactory, options, dumper, _logger);
         }

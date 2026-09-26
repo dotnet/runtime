@@ -4915,6 +4915,13 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
 
+            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotRiscV64SoftFloat)
+            {
+                // RISC-V lp64: FP values are passed in integer registers and the FP
+                // arithmetic goes through the soft-float helpers.
+                flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
+            }
+
             if (this.MethodBeingCompiled.IsAsyncCall()
 #if !READYTORUN
                 || (_compilation.TypeSystemContext.IsSpecialUnboxingThunk(this.MethodBeingCompiled) && _compilation.TypeSystemContext.GetTargetOfSpecialUnboxingThunk(this.MethodBeingCompiled).IsAsyncCall())

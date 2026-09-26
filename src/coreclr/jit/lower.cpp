@@ -5478,7 +5478,10 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
             }
 
             // If this is a float -> int insertion, then we need the bitcast now.
-            if (varTypeUsesFloatReg(value) && varTypeUsesIntReg(regInfo.RegType))
+            // (Also checked by type: under a soft-float ABI the FP value already
+            // lives in an integer register but still needs the integer view for
+            // the widening and shifting below.)
+            if ((varTypeUsesFloatReg(value) || varTypeIsFloating(value)) && varTypeUsesIntReg(regInfo.RegType))
             {
                 assert((genTypeSize(value) == 4) || (genTypeSize(value) == 8));
                 var_types castType = genTypeSize(value) == 4 ? TYP_INT : TYP_LONG;
