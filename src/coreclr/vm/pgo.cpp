@@ -1190,8 +1190,14 @@ HRESULT PgoManager::getPgoInstrumentationResultsInstance(MethodDesc* pMD, BYTE**
     }
 
     StackSArray<ICorJitInfo::PgoInstrumentationSchema> schemaArray;
-    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, 0, &schemaArray))
+    if (ReadInstrumentationSchemaWithLayoutIntoSArray(found->header.GetData(), found->header.countsOffset, found->header.countsOffset, &schemaArray))
     {
+        // Preserve the original padding when rebasing the snapshot's offsets.
+        for (unsigned iSchema = 0; iSchema < schemaArray.GetCount(); iSchema++)
+        {
+            schemaArray[iSchema].Offset -= found->header.countsOffset;
+        }
+
         size_t schemaDataSize = AlignUp(schemaArray.GetCount() * sizeof(ICorJitInfo::PgoInstrumentationSchema), sizeof(size_t));
         size_t instrumentationDataSize = 0;
         if (schemaArray.GetCount() > 0)
