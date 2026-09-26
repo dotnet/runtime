@@ -10,7 +10,7 @@ namespace Microsoft.Interop.JavaScript
             if (context.CurrentStage == StubIdentifierContext.Stage.Setup)
             {
                 var (_, js) = context.GetIdentifiers(TypeInfo);
-                writer.WriteLine($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.SkipInit(out {js});");
+                writer.WriteLine($"{js} = default;");
                 // Unlike the other arguments, the implicit arguments establish ambient state for the import.
                 writer.WriteLine($"{js}.Initialize();");
             }

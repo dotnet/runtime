@@ -18,7 +18,8 @@ namespace Microsoft.Interop.JavaScript
         protected override string AttributeMetadataName => Constants.JSImportAttribute;
         protected override DiagnosticDescriptor InvalidSignatureDescriptor => GeneratorDiagnostics.InvalidImportAttributedMethodSignature;
         protected override DiagnosticDescriptor ContainingTypeMissingModifiersDescriptor => GeneratorDiagnostics.InvalidImportAttributedMethodContainingTypeMissingModifiers;
-        protected override DiagnosticDescriptor RequiresAllowUnsafeBlocksDescriptor => GeneratorDiagnostics.JSImportRequiresAllowUnsafeBlocks;
+        // The generated JSImport stub no longer uses pointers, so it does not require AllowUnsafeBlocks.
+        protected override DiagnosticDescriptor? RequiresAllowUnsafeBlocksDescriptor => null;
         protected override bool RequiresImplementation => false;
 
         protected override ImmutableArray<DiagnosticInfo> CalculateDiagnostics(
@@ -49,7 +50,7 @@ namespace Microsoft.Interop.JavaScript
                 new CompositeMarshallingGeneratorResolver(
                     new NoSpanAndTaskMixingResolver(),
                     new JSGeneratorResolver()),
-                new CodeEmitOptions(SkipInit: true));
+                new CodeEmitOptions(SkipInit: false));
 
             return generatorDiagnostics.Diagnostics.ToImmutableArray();
         }

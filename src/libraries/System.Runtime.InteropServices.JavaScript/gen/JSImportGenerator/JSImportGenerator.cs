@@ -159,7 +159,7 @@ namespace Microsoft.Interop.JavaScript
                 new CompositeMarshallingGeneratorResolver(
                     new NoSpanAndTaskMixingResolver(),
                     new JSGeneratorResolver()),
-                new CodeEmitOptions(SkipInit: true));
+                new CodeEmitOptions(SkipInit: false));
 
             var writer = new IndentedTextWriter();
             incrementalContext.ContainingSyntaxContext.WriteTo(
@@ -182,16 +182,11 @@ namespace Microsoft.Interop.JavaScript
             writer.WriteLine($"{string.Join(" ", context.StubMethodSyntaxTemplate.Modifiers)} {signature.StubReturnType} {context.StubMethodSyntaxTemplate.Identifier}({string.Join(", ", signature.StubParameters.Select(static parameter => parameter.Declaration))})");
             using (writer.WriteBlock())
             {
-                // Under the updated rules a type-level modifier does not establish an unsafe context.
-                writer.WriteLine("unsafe");
-                using (writer.WriteBlock())
-                {
-                    WriteBinding(writer, context.JSImportData, context.SignatureContext);
-                    writer.WriteLine();
-                    stubGenerator.GenerateStubBody(writer, LocalFunctionName);
-                    writer.WriteLine();
-                    WriteInvokeFunction(writer, LocalFunctionName, context.SignatureContext, stubGenerator.GenerateTargetMethodSignatureData(), hasReturn);
-                }
+                WriteBinding(writer, context.JSImportData, context.SignatureContext);
+                writer.WriteLine();
+                stubGenerator.GenerateStubBody(writer, LocalFunctionName);
+                writer.WriteLine();
+                WriteInvokeFunction(writer, LocalFunctionName, context.SignatureContext, stubGenerator.GenerateTargetMethodSignatureData(), hasReturn);
             }
             writer.WriteLine();
             writer.WriteLine($"static {Constants.JSFunctionSignatureGlobal} {context.SignatureContext.BindingName};");

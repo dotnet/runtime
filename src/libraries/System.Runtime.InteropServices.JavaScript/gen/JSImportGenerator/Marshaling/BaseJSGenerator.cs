@@ -35,7 +35,7 @@ namespace Microsoft.Interop.JavaScript
                 && !TypeInfo.IsManagedReturnPosition)
             {
                 var (_, js) = context.GetIdentifiers(TypeInfo);
-                writer.WriteLine($"{TypeNames.GlobalAlias}{TypeNames.System_Runtime_CompilerServices_Unsafe}.SkipInit(out {js});");
+                writer.WriteLine($"{js} = default;");
             }
         }
 
