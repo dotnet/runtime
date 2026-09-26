@@ -5596,7 +5596,8 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop,
 //    stmt   -  Statement the indexing nodes belong to.
 //
 // Return Value:
-//    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
+//    The original "check" node, now removed from the statement. Its linear order
+//    links are left intact so that callers walking the node list can continue.
 //
 // Notes:
 //    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level
@@ -5636,24 +5637,23 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     gtExtractSideEffList(check->GetArrayLength(), &sideEffList, GTF_ASG);
     gtExtractSideEffList(check->GetIndex(), &sideEffList);
 
-    if (sideEffList != nullptr)
+    // Replace the check with its side effects, if any, or a NOP.
+    GenTree* replacement = sideEffList;
+    if (replacement == nullptr)
     {
-        // We've got some side effects.
-        if (tree->OperIs(GT_COMMA))
-        {
-            // Make the comma handle them.
-            tree->AsOp()->gtOp1 = sideEffList;
-        }
-        else
-        {
-            // Make the statement execute them instead of the check.
-            stmt->SetRootNode(sideEffList);
-            tree = sideEffList;
-        }
+        replacement = gtNewNothingNode();
+        // Keep the "index < length" assertion of the removed check visible to RangeCheck.
+        replacement->SetAssertionInfo(check->GetAssertionInfo());
+    }
+
+    if (tree->OperIs(GT_COMMA))
+    {
+        tree->AsOp()->gtOp1 = replacement;
     }
     else
     {
-        check->gtBashToNOP();
+        stmt->SetRootNode(replacement);
+        tree = replacement;
     }
 
     if (tree->OperIs(GT_COMMA))

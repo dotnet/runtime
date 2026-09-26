@@ -1414,7 +1414,7 @@ void ObjectAllocator::MorphAllocObjNode(AllocationCandidate& candidate)
 
         if (candidate.m_bashCall)
         {
-            candidate.m_statement->GetRootNode()->gtBashToNOP();
+            candidate.m_statement->SetRootNode(m_compiler->gtNewNothingNode());
         }
 
         m_compiler->optMethodFlags |= OMF_HAS_OBJSTACKALLOC;
@@ -4880,7 +4880,7 @@ void ObjectAllocator::CloneAndSpecialize(CloneInfo* info)
                 if (rootNode->AsLclVarCommon()->GetLclNum() == data->AsLclVarCommon()->GetLclNum())
                 {
                     JITDUMP("Bashing self-copy [%06u] to NOP\n", m_compiler->dspTreeID(rootNode));
-                    rootNode->gtBashToNOP();
+                    defStmt->SetRootNode(m_compiler->gtNewNothingNode());
                 }
             }
         }

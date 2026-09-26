@@ -453,7 +453,7 @@ private:
                 if (sideEffects == nullptr)
                 {
                     JITDUMP("\nInline return expression had no side effects\n");
-                    (*use)->gtBashToNOP();
+                    *use = m_compiler->gtNewNothingNode();
                 }
                 else
                 {
@@ -779,7 +779,7 @@ private:
             {
                 JITDUMP("... removing self-store\n");
                 DISPTREE(tree);
-                tree->gtBashToNOP();
+                *pTree        = m_compiler->gtNewNothingNode();
                 m_madeChanges = true;
             }
         }
@@ -826,10 +826,10 @@ private:
                 m_compiler->Metrics.InlinerBranchFold++;
 
                 // We have a constant operand, and should have the all clear to optimize.
-                // Update side effects on the tree, assert there aren't any, and bash to nop.
+                // Update side effects on the tree, assert there aren't any, and replace with a nop.
                 m_compiler->gtUpdateNodeSideEffects(tree);
                 assert((tree->gtFlags & GTF_SIDE_EFFECT) == 0);
-                tree->gtBashToNOP();
+                *pTree                 = m_compiler->gtNewNothingNode();
                 m_madeChanges          = true;
                 FlowEdge* removedEdge  = nullptr;
                 FlowEdge* retainedEdge = nullptr;

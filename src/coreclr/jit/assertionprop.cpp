@@ -4080,8 +4080,7 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
                         dspTreeID(store));
                 JITDUMPEXEC(optPrintAssertion(dstAssertion));
 
-                store->gtBashToNOP();
-                return optAssertionProp_Update(store, store, stmt);
+                return optAssertionProp_Update(gtNewNothingNode(), store, stmt);
             }
         }
     }

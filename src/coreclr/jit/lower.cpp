@@ -5545,7 +5545,11 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
                 GenTree* op = node->AsCast()->CastOp();
                 regEntry->SetNode(op);
                 op->ClearContained();
-                node->gtBashToNOP();
+                if (node == fieldListPrev)
+                {
+                    fieldListPrev = node->gtPrev;
+                }
+                BlockRange().Remove(node);
                 node = op;
             }
         }
@@ -8745,12 +8749,25 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
     if (op1->IsIntegralConst() && op2->IsIntegralConst())
     {
         GenTree* folded = m_compiler->gtFoldExprConst(node);
-        assert(folded == node);
-        if (!folded->OperIsConst())
+        if (folded == node)
         {
             return false;
         }
 
+        assert(folded->OperIsConst());
+        BlockRange().InsertAfter(node, folded);
+
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(folded);
+        }
+        else
+        {
+            folded->SetUnusedValue();
+        }
+
+        BlockRange().Remove(node);
         BlockRange().Remove(op1);
         BlockRange().Remove(op2);
         return true;
@@ -9861,12 +9878,25 @@ bool Lowering::TryRemoveCast(GenTreeCast* node)
     }
 
     GenTree* folded = m_compiler->gtFoldExprConst(node);
-    assert(folded == node);
-    if (folded->OperIs(GT_CAST))
+    if (folded == node)
     {
         return false;
     }
 
+    assert(folded->OperIsConst());
+    BlockRange().InsertAfter(node, folded);
+
+    LIR::Use use;
+    if (BlockRange().TryGetUse(node, &use))
+    {
+        use.ReplaceWith(folded);
+    }
+    else
+    {
+        folded->SetUnusedValue();
+    }
+
+    BlockRange().Remove(node);
     op->SetUnusedValue();
     return true;
 }

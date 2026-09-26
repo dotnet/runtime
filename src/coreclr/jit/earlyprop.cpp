@@ -194,8 +194,8 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree, LocalNumberToNullCheck
                             (check == compCurStmt->GetRootNode()))
                         {
                             // Both `tree` and `check` have been removed from the statement.
-                            // 'tree' was replaced with 'nop' or side effect list under 'comma'.
-                            // optRemoveRangeCheck returns this modified tree.
+                            // 'check' was replaced with 'nop' or side effect list under 'comma'.
+                            // optRemoveRangeCheck returns the removed 'check' so the linear walk can continue past it.
                             return optRemoveRangeCheck(check, comma, compCurStmt);
                         }
                     }

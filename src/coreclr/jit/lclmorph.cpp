@@ -1346,7 +1346,7 @@ public:
                 if (op.IsAddress())
                 {
                     JITDUMP("Bashing nullcheck of local [%06u] to NOP\n", m_compiler->dspTreeID(node));
-                    node->gtBashToNOP();
+                    *use = m_compiler->gtNewNothingNode();
                     INDEBUG(TopValue(0).Consume());
                     PopValue();
                     m_stmtModified = true;
@@ -1697,7 +1697,7 @@ private:
         switch (transform)
         {
             case IndirTransform::Nop:
-                indir->gtBashToNOP();
+                *use           = m_compiler->gtNewNothingNode();
                 m_stmtModified = true;
                 return;
 

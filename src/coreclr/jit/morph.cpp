@@ -8251,7 +8251,7 @@ DONE_MORPHING_CHILDREN:
                     }
                     else
                     {
-                        tree->gtBashToNOP();
+                        tree = gtNewNothingNode();
                     }
                 }
                 else if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
@@ -8261,7 +8261,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    tree->gtBashToNOP();
+                    tree = gtNewNothingNode();
                 }
                 return tree;
             }
@@ -10583,6 +10583,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         addTwo->gtOp1 = constOne;
         add->gtOp2    = gtFoldExprConst(add->gtOp2);
         op2           = add->gtGetOp2();
+        op2->SetMorphed(this);
     }
 
     // Fold (x + 0) - given it won't change the tree type.
@@ -14574,7 +14575,9 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
             {
                 // We can't remove the return as it might remove a sequence point. Convert it to a NOP.
-                ret->gtBashToNOP();
+                GenTree* const nop = gtNewNothingNode();
+                nop->SetMorphed(this);
+                lastStmt->SetRootNode(nop);
             }
             else
             {

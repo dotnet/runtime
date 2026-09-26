@@ -4130,9 +4130,9 @@ public:
     GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);
     GenTree* gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblCon1, GenTreeDblCon* dblCon2);
 
-    GenTree* gtBashTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
-    GenTree* gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
-    GenTree* gtBashTreeToConstDbl(GenTree* tree, double dconVal);
+    GenTree* gtNewFoldedIconNode(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtNewFoldedLconNode(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtNewFoldedDconNode(GenTree* tree, double dconVal);
 
     GenTree* gtFoldExprForOverflow(GenTree* tree);
 
