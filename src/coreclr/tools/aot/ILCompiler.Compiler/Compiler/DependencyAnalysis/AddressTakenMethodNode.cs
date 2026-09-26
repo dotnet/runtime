@@ -4,8 +4,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.DependencyAnalysisFramework;
 
+using Internal.JitInterface;
 using Internal.Text;
 using Internal.TypeSystem;
 
@@ -32,10 +34,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public MethodDesc Method => _methodNode.Method;
-        public override MethodSignature Signature => Method.Signature;
-        public override bool IsUnmanagedCallersOnly => Method.IsUnmanagedCallersOnly;
-        public override bool IsAsyncCall => Method.IsAsyncCall();
-        public override bool HasGenericContextArg => Method.RequiresInstMethodDescArg() || Method.RequiresInstMethodTableArg() || Method.IsArrayAddressMethod();
+
+        public override WasmSignature WasmSignature => WasmLowering.GetSignature((INodeWithTypeSignature)this);
 
         protected override string GetName(NodeFactory factory)
         {

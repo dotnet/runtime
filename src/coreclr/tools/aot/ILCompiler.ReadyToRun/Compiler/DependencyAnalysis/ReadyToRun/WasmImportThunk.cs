@@ -15,7 +15,7 @@ using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class WasmImportThunk : AssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmImportThunk : AssemblyStubNode, INodeWithWasmSignature, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly TypeSystemContext _context;
         private readonly Import _helperCell;
@@ -78,11 +78,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override int ClassCode => 948271336;
 
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
-
-        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
-        bool INodeWithTypeSignature.HasGenericContextArg => false;
+        WasmSignature INodeWithWasmSignature.WasmSignature => _wasmSignature;
 
         private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
         private bool HasGenericContextBeforeAsync

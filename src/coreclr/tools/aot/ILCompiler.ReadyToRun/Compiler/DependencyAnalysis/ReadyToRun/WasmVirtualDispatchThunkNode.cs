@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// Dispatches a virtual call through the vtable offsets stored in its portable entrypoint.
     /// </summary>
-    public sealed class WasmVirtualDispatchThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public sealed class WasmVirtualDispatchThunkNode : StringDiscoverableAssemblyStubNode, INodeWithWasmSignature, ISymbolDefinitionNode, ISortableSymbolNode
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _wasmSignature;
@@ -37,10 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         public override ObjectNodeSection GetSection(NodeFactory factory) => ObjectNodeSection.TextSection;
         public override string LookupString => _lookupString;
 
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
-        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
-        bool INodeWithTypeSignature.HasGenericContextArg => false;
+        WasmSignature INodeWithWasmSignature.WasmSignature => _wasmSignature;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

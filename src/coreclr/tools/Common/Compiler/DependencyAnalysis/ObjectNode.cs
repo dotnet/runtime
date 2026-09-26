@@ -68,7 +68,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (factory.Target.IsWasm && this is INodeWithTypeSignature wasmCodeNode)
+            if (factory.Target.IsWasm && this is INodeWithWasmSignature wasmCodeNode)
             {
                 dependencies ??= new DependencyList();
 

@@ -1547,9 +1547,9 @@ namespace ILCompiler.DependencyAnalysis
             return _wasmTypeNodes.GetOrAdd(funcType);
         }
 
-        public WasmTypeNode WasmTypeNode(INodeWithTypeSignature node)
+        public WasmTypeNode WasmTypeNode(INodeWithWasmSignature node)
         {
-            return _wasmTypeNodes.GetOrAdd(WasmLowering.GetSignature(node).FuncType);
+            return _wasmTypeNodes.GetOrAdd(node.WasmSignature.FuncType);
         }
 
         internal WasmMethodRelativeVirtualIPNode WasmMethodRelativeVirtualIP(MethodWithGCInfo method)

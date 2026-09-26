@@ -15,9 +15,8 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public sealed class WasmUnboxingStubNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISortableSymbolNode
+    public sealed class WasmUnboxingStubNode : StringDiscoverableAssemblyStubNode, INodeWithWasmSignature, ISortableSymbolNode
     {
-        private readonly TypeSystemContext _context;
         private readonly WasmSignature _signature;
         private readonly WasmTypeNode _targetType;
         private readonly UnboxingStubKind _kind;
@@ -31,7 +30,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             UnboxingStubKind kind,
             bool hasReturnBuffer)
         {
-            _context = factory.TypeSystemContext;
             _signature = signature;
             _targetType = targetType;
             _kind = kind;
@@ -46,10 +44,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _lookupString = GetLookupString(prefix, signature.FuncType, hasReturnBuffer);
         }
 
-        MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_signature, _context);
-        bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => false;
-        bool INodeWithTypeSignature.HasGenericContextArg => false;
+        WasmSignature INodeWithWasmSignature.WasmSignature => _signature;
 
         public override string LookupString => _lookupString;
 
