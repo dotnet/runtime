@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -46,24 +47,15 @@ namespace System.Buffers.Text
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="bytesLength"/> is less than 0 or greater than 1610612733.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetEncodedLength(int bytesLength)
         {
-#if NET
             ArgumentOutOfRangeException.ThrowIfGreaterThan<uint>((uint)bytesLength, MaximumEncodeLength);
 
-            (uint whole, uint remainder) = uint.DivRem((uint)bytesLength, 3);
+            uint whole = (uint)bytesLength / 3;
+            uint remainder = (uint)bytesLength % 3;
 
             return (int)(whole * 4 + (remainder > 0 ? remainder + 1 : 0)); // if remainder is 1 or 2, the encoded length will be 1 byte longer.
-#else
-            if ((uint)bytesLength > MaximumEncodeLength)
-            {
-                throw new ArgumentOutOfRangeException(nameof(bytesLength));
-            }
-
-            int remainder = (int)((uint)bytesLength % 3);
-
-            return (bytesLength / 3) * 4 + (remainder > 0 ? remainder + 1 : 0);
-#endif
         }
 
         /// <summary>
@@ -159,14 +151,13 @@ namespace System.Buffers.Text
         /// <param name="source">The input span which contains binary data that needs to be encoded.</param>
         /// <returns>A string which contains the result of the operation, i.e. the ASCII string in Base64Url.</returns>
         /// <remarks>This implementation of the base64url encoding omits the optional padding characters.</remarks>
-        public static unsafe string EncodeToString(ReadOnlySpan<byte> source)
+        public static string EncodeToString(ReadOnlySpan<byte> source)
         {
 #if NET
             int encodedLength = GetEncodedLength(source.Length);
 
-            return string.Create(encodedLength, (IntPtr)(&source), static (buffer, spanPtr) =>
+            return string.Create(encodedLength, source, static (buffer, source) =>
             {
-                ReadOnlySpan<byte> source = *(ReadOnlySpan<byte>*)spanPtr;
                 EncodeToChars(source, buffer, out _, out int charsWritten);
                 Debug.Assert(buffer.Length == charsWritten, $"The source length: {source.Length}, bytes written: {charsWritten}");
             });
@@ -253,70 +244,53 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int srcLength) => GetEncodedLength(srcLength);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, byte* dest, ref byte encodingMap)
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<byte> dest, ReadOnlySpan<byte> encodingMap)
             {
                 uint t0 = oneByte[0];
 
-                uint i = t0 << 8;
+                uint i0 = encodingMap[(int)(t0 >> 2)];
+                uint i1 = encodingMap[(int)(t0 << 4) & 0x3F];
 
-                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 10));
-                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 4) & 0x3F));
-
-                ushort result;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    result = (ushort)(i0 | (i1 << 8));
-                }
-                else
-                {
-                    result = (ushort)((i0 << 8) | i1);
-                }
-
-                Unsafe.WriteUnaligned(dest, result);
+                BinaryPrimitives.WriteUInt16LittleEndian(dest, (ushort)(i0 | (i1 << 8)));
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, byte* dest, ref byte encodingMap)
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<byte> dest, ReadOnlySpan<byte> encodingMap)
             {
-                uint t0 = twoBytes[0];
-                uint t1 = twoBytes[1];
+                uint i = ((uint)twoBytes[0] << 16) | ((uint)twoBytes[1] << 8);
 
-                uint i = (t0 << 16) | (t1 << 8);
+                byte i0 = encodingMap[(int)(i >> 18) & 0x3F];
+                byte i1 = encodingMap[(int)(i >> 12) & 0x3F];
+                byte i2 = encodingMap[(int)(i >> 6) & 0x3F];
 
-                byte i0 = Unsafe.Add(ref encodingMap, (IntPtr)(i >> 18));
-                byte i1 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 12) & 0x3F));
-                byte i2 = Unsafe.Add(ref encodingMap, (IntPtr)((i >> 6) & 0x3F));
-
-                dest[0] = i0;
-                dest[1] = i1;
                 dest[2] = i2;
+                dest[1] = i1;
+                dest[0] = i0;
             }
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector512ToDestination(byte* dest, byte* destStart, int destLength, Vector512<byte> str) =>
-                default(Base64EncoderByte).StoreVector512ToDestination(dest, destStart, destLength, str);
+            public void StoreVector512ToDestination(Span<byte> dest, Vector512<byte> str) =>
+                default(Base64EncoderByte).StoreVector512ToDestination(dest, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [CompExactlyDependsOn(typeof(Avx2))]
-            public unsafe void StoreVector256ToDestination(byte* dest, byte* destStart, int destLength, Vector256<byte> str) =>
-                default(Base64EncoderByte).StoreVector256ToDestination(dest, destStart, destLength, str);
+            public void StoreVector256ToDestination(Span<byte> dest, Vector256<byte> str) =>
+                default(Base64EncoderByte).StoreVector256ToDestination(dest, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector128ToDestination(byte* dest, byte* destStart, int destLength, Vector128<byte> str) =>
-                default(Base64EncoderByte).StoreVector128ToDestination(dest, destStart, destLength, str);
+            public void StoreVector128ToDestination(Span<byte> dest, Vector128<byte> str) =>
+                default(Base64EncoderByte).StoreVector128ToDestination(dest, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            public unsafe void StoreArmVector128x4ToDestination(byte* dest, byte* destStart, int destLength,
+            public void StoreArmVector128x4ToDestination(Span<byte> dest,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4) =>
-                default(Base64EncoderByte).StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
+                default(Base64EncoderByte).StoreArmVector128x4ToDestination(dest, res1, res2, res3, res4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, byte* destination, ref byte encodingMap) =>
-                default(Base64EncoderByte).EncodeThreeAndWrite(threeBytes, destination, ref encodingMap);
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<byte> destination, ReadOnlySpan<byte> encodingMap) =>
+                default(Base64EncoderByte).EncodeThreeAndWrite(threeBytes, destination, encodingMap);
         }
 
         private readonly struct Base64UrlEncoderChar : IBase64Encoder<ushort>
@@ -343,36 +317,36 @@ namespace System.Buffers.Text
             public int GetMaxEncodedLength(int _) => 0;  // not used for char encoding
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeOneOptionallyPadTwo(byte* oneByte, ushort* dest, ref byte encodingMap) =>
-                Base64Helper.EncodeOneOptionallyPadTwo(oneByte, dest, ref encodingMap);
+            public void EncodeOneOptionallyPadTwo(ReadOnlySpan<byte> oneByte, Span<ushort> dest, ReadOnlySpan<byte> encodingMap) =>
+                Base64Helper.EncodeOneOptionallyPadTwo(oneByte, dest, encodingMap);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeTwoOptionallyPadOne(byte* twoBytes, ushort* dest, ref byte encodingMap) =>
-                Base64Helper.EncodeTwoOptionallyPadOne(twoBytes, dest, ref encodingMap);
+            public void EncodeTwoOptionallyPadOne(ReadOnlySpan<byte> twoBytes, Span<ushort> dest, ReadOnlySpan<byte> encodingMap) =>
+                Base64Helper.EncodeTwoOptionallyPadOne(twoBytes, dest, encodingMap);
 
 #if NET
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector512ToDestination(ushort* dest, ushort* destStart, int destLength, Vector512<byte> str) =>
-                default(Base64EncoderChar).StoreVector512ToDestination(dest, destStart, destLength, str);
+            public void StoreVector512ToDestination(Span<ushort> dest, Vector512<byte> str) =>
+                default(Base64EncoderChar).StoreVector512ToDestination(dest, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector256ToDestination(ushort* dest, ushort* destStart, int destLength, Vector256<byte> str) =>
-                default(Base64EncoderChar).StoreVector256ToDestination(dest, destStart, destLength, str);
+            public void StoreVector256ToDestination(Span<ushort> dest, Vector256<byte> str) =>
+                default(Base64EncoderChar).StoreVector256ToDestination(dest, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void StoreVector128ToDestination(ushort* dest, ushort* destStart, int destLength, Vector128<byte> str) =>
-                default(Base64EncoderChar).StoreVector128ToDestination(dest, destStart, destLength, str);
+            public void StoreVector128ToDestination(Span<ushort> dest, Vector128<byte> str) =>
+                default(Base64EncoderChar).StoreVector128ToDestination(dest, str);
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
-            public unsafe void StoreArmVector128x4ToDestination(ushort* dest, ushort* destStart, int destLength,
+            public void StoreArmVector128x4ToDestination(Span<ushort> dest,
                 Vector128<byte> res1, Vector128<byte> res2, Vector128<byte> res3, Vector128<byte> res4) =>
-                default(Base64EncoderChar).StoreArmVector128x4ToDestination(dest, destStart, destLength, res1, res2, res3, res4);
+                default(Base64EncoderChar).StoreArmVector128x4ToDestination(dest, res1, res2, res3, res4);
 #endif // NET
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public unsafe void EncodeThreeAndWrite(byte* threeBytes, ushort* destination, ref byte encodingMap) =>
-                default(Base64EncoderChar).EncodeThreeAndWrite(threeBytes, destination, ref encodingMap);
+            public void EncodeThreeAndWrite(ReadOnlySpan<byte> threeBytes, Span<ushort> destination, ReadOnlySpan<byte> encodingMap) =>
+                default(Base64EncoderChar).EncodeThreeAndWrite(threeBytes, destination, encodingMap);
         }
     }
 }

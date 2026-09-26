@@ -99,7 +99,7 @@ namespace System.Buffers.Text
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64 character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static unsafe byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
+        public static byte[] DecodeFromUtf8(ReadOnlySpan<byte> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
@@ -231,7 +231,7 @@ namespace System.Buffers.Text
         /// <returns>A byte array which contains the result of the decoding operation.</returns>
         /// <exception cref="FormatException"><paramref name="source"/> contains an invalid Base64 character,
         /// more than two padding characters, or a non white space character among the padding characters.</exception>
-        public static unsafe byte[] DecodeFromChars(ReadOnlySpan<char> source)
+        public static byte[] DecodeFromChars(ReadOnlySpan<char> source)
         {
             int upperBound = GetMaxDecodedLength(source.Length);
             byte[]? rented = null;
