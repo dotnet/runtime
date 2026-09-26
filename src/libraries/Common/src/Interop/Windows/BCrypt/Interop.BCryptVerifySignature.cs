@@ -62,7 +62,8 @@ internal static partial class Interop
             SafeBCryptKeyHandle key,
             ReadOnlySpan<byte> hash,
             ReadOnlySpan<byte> signature,
-            string hashAlgorithmName)
+            string hashAlgorithmName,
+            int saltLength)
         {
 
             NTSTATUS status;
@@ -73,7 +74,7 @@ internal static partial class Interop
             {
                 BCRYPT_PSS_PADDING_INFO paddingInfo = default;
                 paddingInfo.pszAlgId = (IntPtr)pHashAlgorithmName;
-                paddingInfo.cbSalt = hash.Length;
+                paddingInfo.cbSalt = saltLength;
 
                 status = BCryptVerifySignature(
                     key,
