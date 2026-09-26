@@ -138,6 +138,42 @@ namespace System.Reflection.Tests
             }, options);
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50978", TestRuntimes.Mono)]
+        [ConditionalFact(typeof(ReflectionCacheTests), nameof(IsMetadataUpdateAndRemoteExecutorSupported))]
+        public void GetParameters_ClearCache_EqualsAndHashCodeEqual()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add("DOTNET_MODIFIABLE_ASSEMBLIES", "debug");
+
+            using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(() =>
+            {
+                Action<Type[]> clearCache = GetClearCacheMethod();
+                MethodInfo method1 = s_type.GetMethod(nameof(Method));
+                ParameterInfo parameter1 = method1.GetParameters()[0];
+                var valuesByParameter = new System.Collections.Generic.Dictionary<ParameterInfo, int>
+                {
+                    [parameter1] = 1
+                };
+
+                clearCache(new[] { typeof(ReflectionCacheTests) });
+
+                MethodInfo method2 = s_type.GetMethod(nameof(Method));
+                ParameterInfo parameter2 = method2.GetParameters()[0];
+
+                Assert.NotSame(method1, method2);
+                Assert.True(method1.Equals(method2));
+                Assert.NotSame(parameter1, parameter2);
+
+                // Parameters for equal members at the same position should remain equal
+                // after Hot Reload clears the reflection cache, including as dictionary keys.
+                Assert.True(parameter1.Equals(parameter2));
+                Assert.True(parameter2.Equals(parameter1));
+                Assert.Equal(parameter1.GetHashCode(), parameter2.GetHashCode());
+                Assert.True(valuesByParameter.TryGetValue(parameter2, out int value));
+                Assert.Equal(1, value);
+            }, options);
+        }
+
         private static void AssertNotSameSameButEqualAndHashCodeEqual(object o1, object o2)
         {
             // After the cache cleared the references of the same members will be Not Same.

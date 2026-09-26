@@ -7,22 +7,32 @@ namespace Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 internal sealed class RuntimeFunctionLookup
 {
-    public static RuntimeFunctionLookup Create(Target target)
-        => new RuntimeFunctionLookup(target);
+    private const uint WasmFuncletFlag = 0x80000000;
 
+    public static RuntimeFunctionLookup Create(Target target, bool isWasm = false)
+        => new RuntimeFunctionLookup(target, isWasm);
+
+    private readonly bool _isWasm;
     private readonly uint _runtimeFunctionSize;
     private readonly Target _target;
 
-    private RuntimeFunctionLookup(Target target)
+    private RuntimeFunctionLookup(Target target, bool isWasm)
     {
         _target = target;
+        _isWasm = isWasm;
         _runtimeFunctionSize = Data.RuntimeFunction.GetSize(target);
     }
+
+    public uint GetBeginAddress(Data.RuntimeFunction function)
+        => _isWasm ? function.BeginAddress & ~WasmFuncletFlag : function.BeginAddress;
+
+    public bool IsFunclet(Data.RuntimeFunction function)
+        => _isWasm && (function.BeginAddress & WasmFuncletFlag) != 0;
 
     public uint GetFunctionLength(TargetPointer imageBase, Data.RuntimeFunction function)
     {
         if (function.EndAddress.HasValue)
-            return function.EndAddress.Value - function.BeginAddress;
+            return function.EndAddress.Value - GetBeginAddress(function);
 
         Data.UnwindInfo unwindInfo = _target.ProcessedData.GetOrAdd<Data.UnwindInfo>(imageBase + function.UnwindData);
         if (unwindInfo.FunctionLength.HasValue)
@@ -38,6 +48,10 @@ internal sealed class RuntimeFunctionLookup
 
     public bool TryGetRuntimeFunctionIndexForAddress(TargetPointer runtimeFunctions, uint numRuntimeFunctions, TargetPointer relativeAddress, out uint index)
     {
+        index = 0;
+        if (numRuntimeFunctions == 0)
+            return false;
+
         // NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod
         uint start = 0;
         uint end = numRuntimeFunctions - 1;
@@ -49,7 +63,7 @@ internal sealed class RuntimeFunctionLookup
         bool Compare(uint index)
         {
             Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
-            return relativeAddress < func.BeginAddress;
+            return relativeAddress < GetBeginAddress(func);
         };
 
         bool Match(uint index)
@@ -58,12 +72,12 @@ internal sealed class RuntimeFunctionLookup
             if (index < numRuntimeFunctions - 1)
             {
                 Data.RuntimeFunction nextFunc = GetRuntimeFunction(runtimeFunctions, index + 1);
-                if (relativeAddress >= nextFunc.BeginAddress)
+                if (relativeAddress >= GetBeginAddress(nextFunc))
                     return false;
             }
 
             Data.RuntimeFunction func = GetRuntimeFunction(runtimeFunctions, index);
-            return relativeAddress >= func.BeginAddress;
+            return relativeAddress >= GetBeginAddress(func);
         }
     }
 

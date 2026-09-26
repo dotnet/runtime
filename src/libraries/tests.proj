@@ -87,6 +87,13 @@
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(TestWasmReadyToRun)' == 'true' and '$(PublishReadyToRun)' != 'false' and '$(RunDisabledWasmTests)' != 'true'">
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134200 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Dynamic.Runtime.Tests\System.Dynamic.Runtime.Tests.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/134261 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Linq.Expressions\tests\System.Linq.Expressions.Tests.csproj" />
+  </ItemGroup>
+
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
@@ -218,6 +225,10 @@
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'Mono' and '$(RunDisabledAndroidTests)' != 'true'">
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Test.csproj" />
     <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\JIT\Android.Device_Emulator.JIT.Static.Test.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' != 'CoreCLR'">
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InProcCrashReport\**\*.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(RunDisabledAndroidTests)' != 'true'">
@@ -678,6 +689,21 @@
                       Exclude="@(ProjectExclusions)"
                       Condition="'$(TestAssemblies)' == 'true'"
                       BuildInParallel="$(BuildTestInParallel)" />
+
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\InProcCrashReport\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(ArchiveTests)' == 'true' and
+                                 '$(TargetOS)' == 'android' and '$(RuntimeFlavor)' == 'CoreCLR' and
+                                 '$(TestNativeAOT)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+                      BuildInParallel="false" />
+
+    <ProjectReference Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\InProcCrashReport\**\*.Test.csproj"
+                      Exclude="@(ProjectExclusions)"
+                      Condition="'$(TestAssemblies)' == 'true' and '$(ArchiveTests)' == 'true' and
+                                 ('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'maccatalyst') and
+                                 '$(TargetArchitecture)' == 'arm64' and '$(RuntimeFlavor)' == 'CoreCLR' and
+                                 '$(TestNativeAOT)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'"
+                      BuildInParallel="false" />
 
     <ProjectReference Include="$(MSBuildThisFileDirectory)testPackages\testPackages.proj"
                       Condition="'$(TestPackages)' == 'true'" />

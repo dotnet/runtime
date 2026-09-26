@@ -78,6 +78,7 @@ LoaderAllocator::LoaderAllocator(bool collectible) :
     m_pCodeHeapInitialAlloc = NULL;
     m_pVSDHeapInitialAlloc = NULL;
     m_pLastUsedCodeHeap = NULL;
+    m_pLastUsedOptimizedCodeHeap = NULL;
     m_pLastUsedDynamicCodeHeap = NULL;
 #ifdef FEATURE_INTERPRETER
     m_pLastUsedInterpreterCodeHeap = NULL;
@@ -2494,6 +2495,19 @@ void LoaderAllocator::AddPendingPortableEntryPointThunk(MethodDesc* pMD)
     CONTRACTL_END;
 
     AddPendingPortableEntryPointThunkUnderLock(this, pMD);
+}
+
+void LoaderAllocator::AddPendingClosedStaticRetBufThunk(ClosedStaticRetBufPortableEntryPoint* pEntryPoint)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    AddPendingClosedStaticRetBufThunkUnderLock(this, pEntryPoint);
 }
 
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
