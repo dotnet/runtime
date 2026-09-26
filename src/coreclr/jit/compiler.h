@@ -1841,6 +1841,7 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     unsigned funWasmExnRefLocalIndex = UINT_MAX;
+    bool hasCalls;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
