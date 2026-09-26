@@ -302,7 +302,6 @@ LinqExpressions.CustomOperatorsWithUnusedArgumentTypes
 Logging.CommonLogs
 Logging.SourceLines
 Metadata.DebuggerDisplayNamesAreKept
-Metadata.NamesAreRemoved
 Metadata.RootAllAssemblyNamesAreKept
 Metadata.RootLibraryAssemblyNamesAreKept
 Metadata.RootVisibleAssemblyNamesAreKept
