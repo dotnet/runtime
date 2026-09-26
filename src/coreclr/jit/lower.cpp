@@ -275,10 +275,27 @@ bool Lowering::IsSafeToContainMem(GenTree* grandparentNode, GenTree* parentNode,
 //       interfere is due to it being address exposed. So this is the only unsafe
 //       case.
 //
+//    In addition to interference, a constant that codegen materializes directly
+//    into a register without any memory access has no spill/data-section home to
+//    consume from, so reg-optionality is reported as unsafe for it as well (see
+//    IsConstantMaterializableInRegWithoutMemory).
+//
 bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) const
 {
     if (!childNode->OperIs(GT_LCL_VAR))
     {
+        // A constant that codegen materializes directly into a register without a memory
+        // access (e.g. zero via xorps, all-bits-set via pcmpeqd) has no data-section home.
+        // Marking it reg-optional would let the register allocator resolve the use to memory,
+        // forcing a data-section load (and a new data-section entry) that is strictly worse
+        // than rematerializing the value in a register. Report it as unsafe so that a
+        // different operand can be chosen for reg-optionality instead; such constants are
+        // likewise never made contained.
+        if (IsConstantMaterializableInRegWithoutMemory(childNode))
+        {
+            return false;
+        }
+
         // LIR edges never interfere. This includes GT_LCL_FLD, see the remarks above.
         return true;
     }
@@ -292,6 +309,55 @@ bool Lowering::IsSafeToMarkRegOptional(GenTree* parentNode, GenTree* childNode) 
 
     // We expect this to have interference as otherwise we could have marked it
     // contained instead of reg-optional.
+    return false;
+}
+
+//------------------------------------------------------------------------
+// IsConstantMaterializableInRegWithoutMemory: Determine whether a constant is
+//    materialized directly into a register by an instruction that does not access
+//    memory.
+//
+// Arguments:
+//    node - the node to check
+//
+// Return Value:
+//    True if 'node' is a floating-point, SIMD, or mask constant that codegen
+//    materializes with a register-only instruction (for example xorps for zero or
+//    pcmpeqd for all-bits-set) rather than a data-section load.
+//
+// Notes:
+//    Such constants must never be made contained or reg-optional. Otherwise the
+//    register allocator could resolve the use to a memory operand, forcing a
+//    data-section load (and a new data-section entry) that is strictly worse than
+//    rematerializing the value in a register. Reg-optionality is prevented via
+//    IsSafeToMarkRegOptional, which consults this predicate. On xarch this is exactly
+//    the zero and all-bits-set constants (see genSetRegToConst). Other targets always
+//    assign these constants a register (they are never reg-optional), so they return
+//    false here.
+//
+bool Lowering::IsConstantMaterializableInRegWithoutMemory(GenTree* node) const
+{
+#if defined(TARGET_XARCH)
+    if (node->IsCnsFltOrDbl())
+    {
+        return node->IsFloatPositiveZero() || node->IsFloatAllBitsSet();
+    }
+#if defined(FEATURE_SIMD)
+    if (node->IsCnsVec())
+    {
+        // A TYP_SIMD32/TYP_SIMD64 constant only exists when the corresponding ISA
+        // (AVX2/AVX512) is available, so no ISA check is needed here.
+        return node->IsVectorZero() || node->IsVectorAllBitsSet();
+    }
+#endif // FEATURE_SIMD
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (node->IsCnsMsk())
+    {
+        return node->IsMaskZero() || node->IsMaskAllBitsSet();
+    }
+#endif // FEATURE_MASKED_HW_INTRINSICS
+#endif // TARGET_XARCH
+
     return false;
 }
 
