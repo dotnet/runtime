@@ -52,7 +52,7 @@
 
     <!-- Determine if we support running the .NET SDK on the target platform -->
     <_SdkToolsSupportedOS Condition="'$(TargetsMobile)' != 'true' and '$(TargetsLinuxBionic)' != 'true'">true</_SdkToolsSupportedOS>
-    <_SdkToolsSupportedArch Condition="'$(TargetArchitecture)' != 'armel' and '$(TargetsWasm)' != 'true'">true</_SdkToolsSupportedArch>
+    <_SdkToolsSupportedArch Condition="'$(TargetsWasm)' != 'true'">true</_SdkToolsSupportedArch>
     <SdkToolsSupported Condition="'$(_SdkToolsSupportedOS)' == 'true' and '$(_SdkToolsSupportedArch)' == 'true'">true</SdkToolsSupported>
 
     <_UseNativeAotForComponentsCrossOS Condition="'$(CrossBuild)' == 'true' and '$(_hostArchitecture)' == '$(_targetArchitecture)' and '$(_hostOS)' != 'windows'">true</_UseNativeAotForComponentsCrossOS>
@@ -112,7 +112,6 @@
 
   <PropertyGroup>
     <DefaultCoreClrSubsets>clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools+host.native</DefaultCoreClrSubsets>
-    <DefaultCoreClrSubsets Condition="'$(TargetRid)' == 'linux-armel'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAndroid)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsLinuxBionic)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
     <DefaultCoreClrSubsets Condition="'$(TargetsAppleMobile)' == 'true'">clr.native+clr.corelib+clr.tools+clr.nativecorelib+clr.packages+clr.nativeaotlibs+clr.crossarchtools</DefaultCoreClrSubsets>
@@ -390,7 +389,7 @@
     <_BuildAnyCrossArch Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)' or '$(TargetsLinuxBionic)' == 'true' or '$(EnableNativeSanitizers)' != '')">true</_BuildAnyCrossArch>
     <_BuildCrossComponents Condition="$(_subset.Contains('+clr.crossarchtools+'))">true</_BuildCrossComponents>
     <_BuildCrossComponents Condition="'$(ClrRuntimeBuildSubsets)' != '' and ('$(PrimaryRuntimeFlavor)' == 'CoreCLR' or '$(TargetsMobile)' == 'true')">true</_BuildCrossComponents>
-    <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm')">true</_CrossBitwidthBuild>
+    <_CrossBitwidthBuild Condition="'$(BuildArchitecture)' == 'x64' and ('$(TargetArchitecture)' == 'x86' or '$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel')">true</_CrossBitwidthBuild>
     <_BuildCrossDebugComponents Condition="'$(_BuildCrossComponents)' == 'true' and '$(TargetsWindows)' == 'true' and '$(_CrossBitwidthBuild)' != 'true'">true</_BuildCrossDebugComponents>
   </PropertyGroup>
 
@@ -446,7 +445,7 @@
 
   <PropertyGroup>
     <CrossDacHostArch>x64</CrossDacHostArch>
-    <CrossDacHostArch Condition="'$(TargetArchitecture)' == 'arm'">x86</CrossDacHostArch>
+    <CrossDacHostArch Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'">x86</CrossDacHostArch>
   </PropertyGroup>
 
   <ItemGroup Condition="$(_subset.Contains('+linuxdac+')) and $([MSBuild]::IsOsPlatform(Windows))  and ('$(BuildArchitecture)' == 'x64' or '$(BuildArchitecture)' == 'x86') and '$(TargetArchitecture)' != 'x86'">
@@ -735,8 +734,8 @@
 
           <PropertyGroup Condition="'$(DotNetBuildAllRuntimePacks)' == 'true'">
             <_BuildNativeAOTRuntimePack Condition="'$(NativeAOTSupported)' == 'true'">true</_BuildNativeAOTRuntimePack>
-            <_BuildHostPack Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildHostPack>
-            <_BuildBundle Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and '$(TargetArchitecture)' == 'arm')">true</_BuildBundle>
+            <_BuildHostPack Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'))">true</_BuildHostPack>
+            <_BuildBundle Condition="'$(TargetsMobile)' != 'true' and !('$(TargetsLinuxBionic)' == 'true' and ('$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel'))">true</_BuildBundle>
           </PropertyGroup>
 
           <ItemGroup>
