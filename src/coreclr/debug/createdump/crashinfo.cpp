@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include "cdaclite.h"
 
 typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
 typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
@@ -11,6 +12,16 @@ CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
 
+static HRESULT CdacEnumMemoryRegion(void* context, uint64_t address, uint32_t size)
+{
+    return static_cast<CrashInfo*>(context)->EnumMemoryRegion(address, size);
+}
+
+static void CdacLog(void* context, const char* message)
+{
+    static_cast<CrashInfo*>(context)->LogMessage(message);
+}
+
 CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
     m_pid(options.Pid),
@@ -18,6 +29,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_dacModule(nullptr),
     m_pClrDataEnumRegions(nullptr),
     m_pClrDataProcess(nullptr),
+    m_useCdacLite(false),
     m_appModel(options.AppModel),
     m_gatherFrames(options.CrashReport),
     m_crashThread(options.CrashThread),
@@ -294,17 +306,36 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     {
         return true;
     }
-    // Can't load the DAC if the runtime wasn't found
-    if (m_coreclrPath.empty())
+    bool useCdacLite = false;
+    if (dumpType != DumpType::Full)
+    {
+        CLRConfigNoCache cdacLiteConfig = CLRConfigNoCache::Get("DbgUseCdacLite", /* noprefix */ false, &getenv);
+        DWORD enabled = 0;
+        useCdacLite = cdacLiteConfig.IsSet() && cdacLiteConfig.TryAsInteger(10, enabled) && enabled == 1;
+    }
+
+    // The legacy DAC is loaded next to the runtime module. The statically linked cdac-lite path
+    // only needs the runtime base reported by DumpDataTarget.
+    if (!useCdacLite && m_coreclrPath.empty())
     {
         printf_error("InitializeDAC: coreclr not found; not using DAC\n");
         return true;
     }
-    ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
     HRESULT hr = S_OK;
+
+    if (useCdacLite)
+    {
+        printf_status("cdac-lite: collecting managed memory (DOTNET_DbgUseCdacLite=1, %s tier)\n",
+            dumpType == DumpType::Heap ? "heap" : "normal");
+
+        m_useCdacLite = true;
+        return true;
+    }
+
+    ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
 
     // We assume that the DAC is in the same location as the libcoreclr.so module
     std::string dacPath;
@@ -371,6 +402,30 @@ exit:
 bool
 CrashInfo::EnumerateMemoryRegionsWithDAC(DumpType dumpType)
 {
+    if (m_useCdacLite && dumpType != DumpType::Full)
+    {
+        TRACE("EnumerateMemoryRegionsWithDAC: cDAC-lite memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
+
+        ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
+        MINIDUMP_TYPE minidumpType = GetMiniDumpType(dumpType);
+        HRESULT hr = cdac::EnumerateMemoryRegions(
+            dataTarget,
+            RuntimeBaseAddress(),
+            minidumpType,
+            &CdacEnumMemoryRegion,
+            this,
+            &CdacLog,
+            this);
+        if (FAILED(hr))
+        {
+            printf_error("cdac-lite: EnumMemoryRegions FAILED %s (%08x)\n", GetHResultString(hr), hr);
+            return false;
+        }
+
+        TRACE("EnumerateMemoryRegionsWithDAC: cDAC-lite memory enumeration FINISHED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);
+        return true;
+    }
+
     if (m_pClrDataEnumRegions != nullptr && dumpType != DumpType::Full)
     {
         TRACE("EnumerateMemoryRegionsWithDAC: Memory enumeration STARTED (%d %d)\n", m_enumMemoryPagesAdded, m_dataTargetPagesAdded);

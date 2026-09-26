@@ -74,3 +74,50 @@ public class RuntimeInfoDumpTests : DumpTestBase
         Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, flavor);
     }
 }
+
+/// <summary>
+/// Verifies that dumps created through the strict cDAC-lite path contain enough
+/// bootstrap data to discover and initialize the contract descriptor.
+/// </summary>
+public class CdacLiteBootstrapDumpTests : DumpTestBase
+{
+    protected override string DebuggeeName => "CdacLiteBootstrap";
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "cDAC-lite strict minidump flags are Windows-specific.")]
+    public void CdacLite_ContractDescriptorIsDiscoverable(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        RuntimeInfoRuntimeFlavor flavor = Target.Contracts.RuntimeInfo.GetRuntimeFlavor();
+
+        Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, flavor);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "cDAC-lite is only available in the local runtime.")]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "cDAC-lite strict minidump flags are Windows-specific.")]
+    public void CdacLite_MiniDumpContractDescriptorIsDiscoverable(TestConfiguration config)
+    {
+        InitializeDumpTest(config, DebuggeeName, "mini");
+
+        RuntimeInfoRuntimeFlavor flavor = Target.Contracts.RuntimeInfo.GetRuntimeFlavor();
+
+        Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, flavor);
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "cDAC-lite is only available in the local runtime.")]
+    [SkipOnOS(IncludeOnly = "windows", Reason = "cDAC-lite strict minidump flags are Windows-specific.")]
+    public void CdacLite_FullDumpContractDescriptorIsDiscoverable(TestConfiguration config)
+    {
+        InitializeDumpTest(config, DebuggeeName, "full");
+
+        RuntimeInfoRuntimeFlavor flavor = Target.Contracts.RuntimeInfo.GetRuntimeFlavor();
+
+        Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, flavor);
+    }
+}
