@@ -401,6 +401,7 @@ public unsafe partial class TargetTests
             ["EcmaMetadata"] = "c1",
             ["Exception"] = "c1",
             ["ExecutionManager"] = "c1",
+            ["ExternalMemoryHandles"] = "c1",
             ["FeatureFlags"] = "c1",
             ["GC"] = "c1",
             ["GCInfo"] = "c1",
@@ -489,6 +490,52 @@ public unsafe partial class TargetTests
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
         Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_Net11Target_DoesNotRequireExternalMemoryHandles(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder
+            .SetContracts(
+                s_requiredDataAccessContracts
+                    .Where(static pair => pair.Key != "ExternalMemoryHandles")
+                    .ToDictionary(static pair => pair.Key, static pair => pair.Value))
+            .SetGlobals(
+            [
+                (Constants.Globals.RuntimeProductVersionString, null, "11.0.0", "string"),
+            ]);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ValidateForDataAccess_Net12Target_RequiresExternalMemoryHandles(MockTarget.Architecture arch)
+    {
+        TargetTestHelpers targetTestHelpers = new(arch);
+        ContractDescriptorBuilder builder = new(targetTestHelpers);
+        ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+        descriptorBuilder
+            .SetContracts(
+                s_requiredDataAccessContracts
+                    .Where(static pair => pair.Key != "ExternalMemoryHandles")
+                    .ToDictionary(static pair => pair.Key, static pair => pair.Value))
+            .SetGlobals(
+            [
+                (Constants.Globals.RuntimeProductVersionString, null, "12.0.0", "string"),
+            ]);
+
+        Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
+
+        ContractMissingException ex = Assert.Throws<ContractMissingException>(
+            () => Contracts.CoreCLRContracts.ValidateForDataAccess(target));
+        Assert.Equal("ExternalMemoryHandles", ex.ContractName);
     }
 
     [Theory]

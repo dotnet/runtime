@@ -17,6 +17,7 @@
 #include "daccess.h"
 #include "binder.h"
 #include "runtimeinfo.h"
+#include "externalmemoryhandle.h"
 
 #ifdef FEATURE_COMWRAPPERS
 #include <interoplibinterface.h>
