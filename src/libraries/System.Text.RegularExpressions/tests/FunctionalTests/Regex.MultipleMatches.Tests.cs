@@ -75,6 +75,18 @@ namespace System.Text.RegularExpressions.Tests
                     }
                 };
 
+                // Regression test for NonBacktracking dropping a match adjacent to an optional element.
+                yield return new object[]
+                {
+                    engine,
+                    " ?, ?", " a,,", RegexOptions.None,
+                    new CaptureData[]
+                    {
+                        new CaptureData(",", 2, 1),
+                        new CaptureData(",", 3, 1),
+                    }
+                };
+
                 yield return new object[]
                 {
                     engine,
