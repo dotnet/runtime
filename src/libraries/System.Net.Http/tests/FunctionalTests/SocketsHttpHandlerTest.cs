@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
@@ -6003,8 +6004,130 @@ namespace System.Net.Http.Functional.Tests
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class SocketsHttpHandlerTest_Cookies_Http3 : HttpClientHandlerTest_Cookies
     {
+        private Action<string> _cookieRedirectLog;
+
         public SocketsHttpHandlerTest_Cookies_Http3(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version30;
+        protected override Action<string> CookieRedirectLog => _cookieRedirectLog;
+        protected override GenericLoopbackOptions CookieRedirectOptions => new Http3Options { Log = _cookieRedirectLog };
+
+        [Fact]
+        public override async Task GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent()
+        {
+            if (!RemoteExecutor.IsSupported)
+            {
+                // Preserve coverage without enabling process-wide tracing alongside unrelated tests.
+                await RunCookieRedirectWithDiagnosticsAsync(enableClientTracing: false);
+                return;
+            }
+
+            RemoteInvokeHandle handle = RemoteExecutor.Invoke(static async () =>
+            {
+                using var test = new SocketsHttpHandlerTest_Cookies_Http3(new ConsoleOutputHelper());
+                await test.RunCookieRedirectWithDiagnosticsAsync(enableClientTracing: true);
+            }, new RemoteInvokeOptions
+            {
+                StartInfo = new ProcessStartInfo { RedirectStandardOutput = true },
+                TimeOut = 2 * LoopbackServerFactory.LoopbackServerTimeoutMilliseconds
+            });
+
+            using StreamReader reader = handle.Process.StandardOutput;
+            Task<string> output = reader.ReadToEndAsync();
+            try
+            {
+                await handle.DisposeAsync();
+            }
+            finally
+            {
+                _output.WriteLine(await output);
+            }
+        }
+
+        private async Task RunCookieRedirectWithDiagnosticsAsync(bool enableClientTracing)
+        {
+            const int MaximumEvents = 4096;
+            var events = new ConcurrentQueue<string>();
+            long started = Stopwatch.GetTimestamp();
+            int eventCount = 0;
+            void Log(string message)
+            {
+                int sequence = Interlocked.Increment(ref eventCount);
+                if (sequence <= MaximumEvents)
+                {
+                    events.Enqueue($"{sequence}: {Stopwatch.GetElapsedTime(started).TotalMilliseconds:F3}ms thread={Environment.CurrentManagedThreadId} {message}");
+                }
+            }
+
+            _cookieRedirectLog = Log;
+            using var listener = new TestEventListener();
+            try
+            {
+                Log($"Runtime={System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}; OS={System.Runtime.InteropServices.RuntimeInformation.OSDescription}; architecture={System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}; clientTracing={enableClientTracing}");
+                Log($"HTTP assembly={typeof(HttpClient).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}; QUIC assembly={typeof(QuicConnection).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
+                await listener.RunWithCallbackAsync(CaptureEvent, async () =>
+                {
+                    if (enableClientTracing)
+                    {
+                        listener.AddSource("Private.InternalDiagnostics.System.Net.Http", EventLevel.Verbose);
+                        listener.AddSource("Private.InternalDiagnostics.System.Net.Quic", EventLevel.Verbose);
+                    }
+
+                    await base.GetAsyncWithRedirect_SetCookieContainer_CorrectCookiesSent();
+                });
+            }
+            finally
+            {
+                // Callbacks only enqueue: abandoned server work must not write to a completed xUnit output helper.
+                foreach (string entry in events.ToArray())
+                {
+                    _output.WriteLine(entry);
+                }
+                _output.WriteLine($"Diagnostic events beyond limit: {Math.Max(0, Volatile.Read(ref eventCount) - MaximumEvents)}");
+            }
+
+            void CaptureEvent(EventWrittenEventArgs data)
+            {
+                if (data.EventSource.Name == "Private.InternalDiagnostics.System.Net.Http" &&
+                    data.EventName == "HandlerMessage" && data.Payload?.Count == 5 &&
+                    data.Payload[3] is string member && data.Payload[4] is string message)
+                {
+                    if (member == "SendAsync" && message.StartsWith("System.Net.Http.RedirectHandler: Redirecting ", StringComparison.Ordinal))
+                    {
+                        Log($"HTTP redirect: requestId={data.Payload[2]}; issuing redirected request.");
+                        return;
+                    }
+
+                    // Allow lifecycle messages only, not existing request/response dumps containing headers.
+                    bool capture = member switch
+                    {
+                        "SendAsync" => message.Contains("HTTP3 send start:", StringComparison.Ordinal) ||
+                            message.Contains("HTTP3 retry path:", StringComparison.Ordinal) ||
+                            message.Contains("Opened request stream:", StringComparison.Ordinal),
+                        "SendWithVersionDetectionAndRetryAsync" => message.StartsWith("Retry attempt ", StringComparison.Ordinal) ||
+                            message.StartsWith("MaxConnectionFailureRetries ", StringComparison.Ordinal),
+                        "TryGetPooledHttp3Connection" or "ReturnHttp3Connection" or "InvalidateHttp3Connection" or
+                        "CheckForHttp3ConnectionInjection" or "CheckForShutdown" or "OnServerGoAway" or
+                        "TryReserveStream" or "ReleaseStream" or "GoAway" => true,
+                        _ => false
+                    };
+                    if (capture)
+                    {
+                        Log($"HTTP pool={data.Payload[0]} worker={data.Payload[1]} stream={data.Payload[2]} {member}: {message}");
+                    }
+                }
+                else if (data.EventSource.Name == "Private.InternalDiagnostics.System.Net.Quic" &&
+                    data.EventName is "Info" or "ErrorMessage")
+                {
+                    Log($"QUIC {data.EventName}: {string.Join(" | ", data.Payload)}");
+                }
+            }
+        }
+
+        private sealed class ConsoleOutputHelper : ITestOutputHelper
+        {
+            public void WriteLine(string message) => Console.WriteLine(message);
+            public void WriteLine(string format, params object[] args) => Console.WriteLine(format, args);
+        }
     }
 
     [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]

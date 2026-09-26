@@ -15,6 +15,7 @@ namespace System.Net.Test.Common
     {
         private X509Certificate2 _cert;
         private QuicListener _listener;
+        private readonly Action<string> _log;
 
         public override Uri Address => new Uri($"https://{_listener.LocalEndPoint}/");
 
@@ -22,6 +23,7 @@ namespace System.Net.Test.Common
         {
             options ??= new Http3Options();
 
+            _log = options.Log;
             _cert = options.Certificate ?? Configuration.Certificates.GetServerCertificate();
 
             var listenerOptions = new QuicListenerOptions()
@@ -61,14 +63,18 @@ namespace System.Net.Test.Common
 
         public override void Dispose()
         {
+            _log?.Invoke("Disposing listener.");
             _listener.DisposeAsync().GetAwaiter().GetResult();
             _cert.Dispose();
+            _log?.Invoke("Listener disposed.");
         }
 
         private async Task<Http3LoopbackConnection> EstablishHttp3ConnectionAsync(params SettingsEntry[] settingsEntries)
         {
+            _log?.Invoke("Accepting connection.");
             QuicConnection con = await _listener.AcceptConnectionAsync().ConfigureAwait(false);
-            Http3LoopbackConnection connection = new Http3LoopbackConnection(con);
+            _log?.Invoke($"{con}: Connection accepted.");
+            Http3LoopbackConnection connection = new Http3LoopbackConnection(con, _log);
 
             await connection.EstablishControlStreamAsync(settingsEntries).ConfigureAwait(false);
             return connection;
@@ -94,7 +100,15 @@ namespace System.Net.Test.Common
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = "")
         {
             await using Http3LoopbackConnection con = await EstablishHttp3ConnectionAsync().ConfigureAwait(false);
-            return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
+            try
+            {
+                return await con.HandleRequestAsync(statusCode, headers, content).ConfigureAwait(false);
+            }
+            catch (Exception exception) when (_log is not null)
+            {
+                _log($"Handling request failed before connection disposal: {exception}");
+                throw;
+            }
         }
     }
 
@@ -143,6 +157,8 @@ namespace System.Net.Test.Common
     }
     public class Http3Options : GenericLoopbackOptions
     {
+        public Action<string> Log { get; set; }
+
         public int MaxInboundUnidirectionalStreams { get; set; }
 
         public int MaxInboundBidirectionalStreams { get; set; }
