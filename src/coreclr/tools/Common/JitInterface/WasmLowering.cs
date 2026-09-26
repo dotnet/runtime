@@ -443,7 +443,7 @@ namespace Internal.JitInterface
             _ => $"an unrecognized element '{c}'"
         };
 
-        private static int ParseStructSize(string sig, ref int pos)
+        internal static int ParseStructSize(string sig, ref int pos)
         {
             Debug.Assert(sig[pos] is 'S' or 'A');
             pos++; // skip 'S'/'A'

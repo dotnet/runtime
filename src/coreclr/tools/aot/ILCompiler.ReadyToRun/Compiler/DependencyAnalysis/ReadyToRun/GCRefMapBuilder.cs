@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
-using ILCompiler.DependencyAnalysis.Wasm;
-using Internal.JitInterface;
 using Internal.TypeSystem;
 using Internal.CallingConvention;
 
@@ -121,34 +119,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 intPtrTypeHandle: new TypeHandle(context.GetWellKnownType(WellKnownType.IntPtr)));
 
             return (argit, transitionBlock);
-        }
-
-        /// <summary>
-        /// Builds the argument layout for a Wasm thunk from its Wasm signature.
-        /// </summary>
-        internal static (MethodSignature, ArgIterator<TypeHandle>, TransitionBlock) BuildWasmThunkArgIterator(WasmSignature wasmSignature, TypeSystemContext context)
-        {
-            MethodSignature signature = WasmLowering.RaiseSignature(wasmSignature, context);
-            bool isAsyncCall = wasmSignature.SignatureString.Contains('a');
-            bool hasGenericContext = WasmLowering.HasGenericContextBeforeAsync(wasmSignature, context);
-            if (hasGenericContext)
-            {
-                // RaiseSignature returns the generic context as the first parameter; lay it out as the hidden
-                // instantiation argument instead, so it precedes the async continuation.
-                TypeDesc[] parameters = new TypeDesc[signature.Length - 1];
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    parameters[i] = signature[i + 1];
-                }
-
-                signature = new MethodSignature(signature.Flags, signature.GenericParameterCount, signature.ReturnType, parameters);
-            }
-
-            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildArgIterator(signature, context,
-                methodRequiresInstArg: hasGenericContext,
-                methodIsAsyncCall: isAsyncCall);
-
-            return (signature, argit, transitionBlock);
         }
 
         /// <summary>

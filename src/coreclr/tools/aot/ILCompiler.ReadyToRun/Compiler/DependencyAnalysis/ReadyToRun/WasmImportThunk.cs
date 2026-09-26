@@ -5,7 +5,6 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
-using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
@@ -111,32 +110,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
-            (MethodSignature methodSignature, ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildWasmThunkArgIterator(_wasmSignature, _context);
-            bool hasAsyncContinuation = argit.HasAsyncContinuation;
-            bool hasGenericContext = argit.HasParamType;
-
-            int[] offsets = new int[methodSignature.Length];
-            bool[] isIndirectStructArg = new bool[methodSignature.Length];
-            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
-
-            int argIndex = 0;
-            int argOffset;
-            while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
-            {
-                offsets[argIndex] = argOffset;
-                isIndirectStructArg[argIndex] = WasmLowering.CurrentArgLowersValueTypeToPassAsByref(argit);
-                argIndex++;
-            }
-
-            argit.Reset();
+            WasmThunkArgLayout layout = new WasmThunkArgLayout(_wasmSignature, _context);
 
             // The arguments are $sp, ARG0-ARGN, PortableEntrypointThunk.
             // Compute stack offset needed.
 
             // Align total allocation (args + transition block) to 16 byte boundaries
-            int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray() + transitionBlock.SizeOfTransitionBlock, 16);
-            int genericContextOffset = hasGenericContext ? argit.GetParamTypeArgOffset() : 0;
-            int asyncContinuationOffset = hasAsyncContinuation ? argit.GetAsyncContinuationArgOffset() : 0;
+            int sizeOfStoredLocals = AlignmentHelper.AlignUp(layout.SizeOfFrameArgumentArray + layout.TransitionBlock.SizeOfTransitionBlock, 16);
 
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
@@ -170,118 +150,40 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   i32(or i64/fp32/fp64).store (offset from base)
             // }
 
-            // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            // Iterate over the raised MethodSignature params rather than wasm-level types.
-            // This allows us to:
-            //   - Skip empty struct params (no wasm local exists)
-            //   - Zero-fill indirect struct params instead of copying the byref pointer
-            bool hasThis = !methodSignature.IsStatic;
-            int wasmLocalIndex = 1; // local 0 is $sp
-
-            // Store 'this' pointer if present — it occupies a wasm local but is not in the raised MethodSignature params
-            if (hasThis)
+            foreach (WasmThunkArg arg in layout.Args)
             {
-                expressions.Add(Local.Get(0));
-                expressions.Add(Local.Get(wasmLocalIndex));
-                expressions.Add(I32.Store((ulong)transitionBlock.ThisOffset));
-                wasmLocalIndex++;
-            }
-
-            if (hasRetBuffArg)
-            {
-                wasmLocalIndex++;
-            }
-
-            // The generic context and async continuation are wasm locals but not methodSignature params.
-            if (hasGenericContext)
-            {
-                expressions.Add(Local.Get(0));
-                expressions.Add(Local.Get(wasmLocalIndex));
-                expressions.Add(I32.Store((ulong)genericContextOffset));
-                wasmLocalIndex++;
-            }
-
-            if (hasAsyncContinuation)
-            {
-                expressions.Add(Local.Get(0));
-                expressions.Add(Local.Get(wasmLocalIndex));
-                expressions.Add(I32.Store((ulong)asyncContinuationOffset));
-                wasmLocalIndex++;
-            }
-
-            for (int i = 0; i < methodSignature.Length; i++)
-            {
-                TypeDesc paramType = methodSignature[i];
-
-                if (WasmLowering.IsEmptyStruct(paramType))
+                if (arg.Kind == WasmThunkArgKind.RetBuf)
                 {
-                    // Empty struct — no wasm local, nothing to store
                     continue;
                 }
 
-                int currentOffset = offsets[i];
-
-                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                if (arg.IsIndirectStruct)
                 {
-                    // Passed by value across several wasm locals — stash each one.
-                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
-                    for (int slot = 0; slot < slotCount; slot++)
-                    {
-                        expressions.Add(Local.Get(0));
-                        expressions.Add(Local.Get(wasmLocalIndex));
-                        ulong slotOffset = (ulong)(currentOffset + (slot * slotSize));
-                        expressions.Add(slotType == WasmValueType.I64 ? I64.Store(slotOffset) : V128.Store(slotOffset));
-                        wasmLocalIndex++;
-                    }
-                }
-                else if (isIndirectStructArg[i])
-                {
-                    // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
-                    int structSize = paramType.GetElementSize().AsInt;
-                    int fillSize = AlignmentHelper.AlignUp(structSize, 8);
+                    // Zero-fill the slot instead of copying the byref pointer.
+                    int fillSize = AlignmentHelper.AlignUp(arg.IndirectStructSize, 8);
 
                     // memory.fill: (dst, val, len) -> ()
                     expressions.Add(Local.Get(0));
-                    expressions.Add(I32.Const(currentOffset));
+                    expressions.Add(I32.Const(arg.Offset));
                     expressions.Add(I32.Add);
                     expressions.Add(I32.Const(0));
                     expressions.Add(I32.Const(fillSize));
                     expressions.Add(Memory.Fill());
-                    wasmLocalIndex++;
+                    continue;
                 }
-                else
+
+                int slotSize = arg.IsMultiSlot ? WasmLowering.GetMultiSegmentSlotSize(arg.WasmType) : 0;
+                for (int slot = 0; slot < arg.WasmParamCount; slot++)
                 {
                     expressions.Add(Local.Get(0));
-                    expressions.Add(Local.Get(wasmLocalIndex));
-                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
-                    switch (type)
-                    {
-                        case WasmValueType.I32:
-                            expressions.Add(I32.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.F32:
-                            expressions.Add(F32.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.I64:
-                            expressions.Add(I64.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.F64:
-                            expressions.Add(F64.Store((ulong)currentOffset));
-                            break;
-                        case WasmValueType.V128:
-                            expressions.Add(V128.Store((ulong)currentOffset));
-                            break;
-
-                        default:
-                            throw new System.Exception("Unexpected wasm type arg");
-                    }
-                    wasmLocalIndex++;
+                    expressions.Add(Local.Get(arg.WasmParamIndex + slot));
+                    expressions.Add(WasmThunkArgLayout.Store(arg.WasmType, arg.Offset + (slot * slotSize)));
                 }
             }
             //
             // ; Call the right helper to fill in the table
             // local.get (PortableEntrypointThunk)
-            int portableEntrypointLocalIndex = _typeNode.Type.Params.Types.Length - 1;
+            int portableEntrypointLocalIndex = layout.PortableEntrypointParamIndex;
 
             expressions.Add(Local.Get(0)); // The address of the args is passed as the first argument
             expressions.Add(Local.Get(portableEntrypointLocalIndex)); // The address of the portable entrypoint is passed as the second
@@ -317,96 +219,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             //   i32(or i64/fp32/fp64).load (offset from base)
             //   local.set (i+1)
             // }
-            // In the calling convention, the first arg is the sp arg, and the last is the portable entrypoint arg. Each of those are treated specially
-            // Iterate over the raised MethodSignature params to handle indirect/empty structs correctly
-            wasmLocalIndex = 1;
-
-            // Restore 'this' pointer if present
-            if (hasThis)
+            foreach (WasmThunkArg arg in layout.Args)
             {
-                expressions.Add(Local.Get(0));
-                expressions.Add(I32.Load((ulong)transitionBlock.ThisOffset));
-                wasmLocalIndex++;
-            }
-
-            // Pass return buffer argument if needed
-            if (hasRetBuffArg)
-            {
-                expressions.Add(Local.Get(wasmLocalIndex));
-                wasmLocalIndex++;
-            }
-
-            // Forward the generic context and async continuation stored above.
-            if (hasGenericContext)
-            {
-                expressions.Add(Local.Get(0));
-                expressions.Add(I32.Load((ulong)genericContextOffset));
-                wasmLocalIndex++;
-            }
-
-            if (hasAsyncContinuation)
-            {
-                expressions.Add(Local.Get(0));
-                expressions.Add(I32.Load((ulong)asyncContinuationOffset));
-                wasmLocalIndex++;
-            }
-
-            for (int i = 0; i < methodSignature.Length; i++)
-            {
-                TypeDesc paramType = methodSignature[i];
-
-                if (WasmLowering.IsEmptyStruct(paramType))
+                if ((arg.Kind == WasmThunkArgKind.RetBuf) || arg.IsIndirectStruct)
                 {
-                    // Empty struct — no wasm local, nothing to restore
+                    // Forward the caller's pointer.
+                    expressions.Add(Local.Get(arg.WasmParamIndex));
                     continue;
                 }
 
-                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
-                {
-                    // Passed by value across several wasm locals — reload each one.
-                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
-                    int slotBase = offsets[i];
-                    for (int slot = 0; slot < slotCount; slot++)
-                    {
-                        expressions.Add(Local.Get(0));
-                        ulong slotOffset = (ulong)(slotBase + (slot * slotSize));
-                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
-                        wasmLocalIndex++;
-                    }
-                }
-                else if (isIndirectStructArg[i])
-                {
-                    // Indirect struct — pass the original byref pointer from the caller
-                    expressions.Add(Local.Get(wasmLocalIndex));
-                    wasmLocalIndex++;
-                }
-                else
+                int slotSize = arg.IsMultiSlot ? WasmLowering.GetMultiSegmentSlotSize(arg.WasmType) : 0;
+                for (int slot = 0; slot < arg.WasmParamCount; slot++)
                 {
                     expressions.Add(Local.Get(0));
-                    WasmValueType type = _typeNode.Type.Params.Types[wasmLocalIndex];
-                    int currentOffset = offsets[i];
-                    switch (type)
-                    {
-                        case WasmValueType.I32:
-                            expressions.Add(I32.Load((ulong)currentOffset));
-                            break;
-                        case WasmValueType.F32:
-                            expressions.Add(F32.Load((ulong)currentOffset));
-                            break;
-                        case WasmValueType.I64:
-                            expressions.Add(I64.Load((ulong)currentOffset));
-                            break;
-                        case WasmValueType.F64:
-                            expressions.Add(F64.Load((ulong)currentOffset));
-                            break;
-                        case WasmValueType.V128:
-                            expressions.Add(V128.Load((ulong)currentOffset));
-                            break;
-
-                        default:
-                            throw new System.Exception("Unexpected wasm type arg");
-                    }
-                    wasmLocalIndex++;
+                    expressions.Add(WasmThunkArgLayout.Load(arg.WasmType, arg.Offset + (slot * slotSize)));
                 }
             }
             // ; Add the portable entrypoint arg

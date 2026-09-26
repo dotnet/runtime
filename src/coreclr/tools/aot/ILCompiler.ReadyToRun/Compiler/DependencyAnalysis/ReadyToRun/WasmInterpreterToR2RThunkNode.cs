@@ -5,7 +5,6 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
-using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using System;
@@ -84,29 +83,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             ISymbolNode targetTypeIndex = _targetTypeNode;
 
-            (MethodSignature methodSignature, ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildWasmThunkArgIterator(_wasmSignature, _context);
-            bool hasAsyncContinuation = argit.HasAsyncContinuation;
-            bool hasGenericContext = argit.HasParamType;
+            WasmThunkArgLayout layout = new WasmThunkArgLayout(_wasmSignature, _context);
 
-            bool hasRetBuffArg = _wasmSignature.SignatureString[0] == 'S';
-            bool hasThis = !methodSignature.IsStatic;
-
-            // Gather explicit-arg offsets and indirectness from ArgIterator.
-            // ArgIterator offsets are relative to the TransitionBlock base; the interpreter
-            // buffer has no TransitionBlock, so subtract SizeOfTransitionBlock (8) to get
-            // the byte offset into pArgs.
-            int sizeOfTransitionBlock = transitionBlock.SizeOfTransitionBlock;
-            int[] interpOffsets = new int[methodSignature.Length];
-            bool[] isIndirectStructArg = new bool[methodSignature.Length];
-
-            int argIndex = 0;
-            int argOffset;
-            while ((argOffset = argit.GetNextOffset()) != TransitionBlock.InvalidOffset)
-            {
-                interpOffsets[argIndex] = argOffset - sizeOfTransitionBlock;
-                isIndirectStructArg[argIndex] = WasmLowering.CurrentArgLowersValueTypeToPassAsByref(argit);
-                argIndex++;
-            }
+            // The interpreter buffer has no TransitionBlock, so pArgs offsets are ArgIterator offsets
+            // less SizeOfTransitionBlock.
+            int sizeOfTransitionBlock = layout.TransitionBlock.SizeOfTransitionBlock;
 
             WasmFuncType targetFuncType = _targetTypeNode.Type;
             bool hasWasmReturn = targetFuncType.Returns.Types.Length > 0;
@@ -140,12 +121,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(TerminateR2RStackWalk));
             expressions.Add(I32.Store(0));
 
-            // Build the arguments for the R2R call_indirect.
-            // Target R2R wasm params: ($sp, [this], [retbuf], [generic context], [async continuation], explicit_params..., portableEntrypoint)
-            // (matches Compiler::lvaInitArgs / WasmR2RToInterpreterThunkNode local order.)
-            // We track targetParamIndex to look up the correct wasm type for each arg.
-            int targetParamIndex = 0;
-
             // If there is a wasm return value, push pRet underneath all the call args
             // so that after call_indirect the stack is [pRet, return_value] for the store.
             if (hasWasmReturn)
@@ -155,93 +130,35 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Param 0: $sp — pointer to the framePointer on the shadow stack
             expressions.Add(Global.Get(WebCilObjectWriter.StackPointerGlobalIndex));
-            targetParamIndex++;
 
-            // If the method has a 'this' pointer, load it from pArgs at offset 0
-            // (ArgIterator offset for this = OffsetOfArgumentRegisters = SizeOfTransitionBlock)
-            if (hasThis)
+            foreach (WasmThunkArg arg in layout.Args)
             {
-                int thisInterpOffset = transitionBlock.OffsetOfArgumentRegisters - sizeOfTransitionBlock;
-                expressions.Add(Local.Get(LocalPArgs));
-                expressions.Add(I32.Load((ulong)thisInterpOffset));
-                targetParamIndex++;
-            }
+                int interpOffset = arg.Offset - sizeOfTransitionBlock;
 
-            // If the R2R function takes a return buffer, pass pRet directly as the retbuf arg
-            if (hasRetBuffArg)
-            {
-                expressions.Add(Local.Get(LocalPRet));
-                targetParamIndex++;
-            }
-
-            if (hasGenericContext)
-            {
-                expressions.Add(Local.Get(LocalPArgs));
-                expressions.Add(I32.Load((ulong)(argit.GetParamTypeArgOffset() - sizeOfTransitionBlock)));
-                targetParamIndex++;
-            }
-
-            if (hasAsyncContinuation)
-            {
-                expressions.Add(I32.Const(0));
-                targetParamIndex++;
-            }
-
-            // Explicit parameters — load each from pArgs at the ArgIterator-derived offset.
-            for (int i = 0; i < methodSignature.Length; i++)
-            {
-                TypeDesc paramType = methodSignature[i];
-
-                if (WasmLowering.IsEmptyStruct(paramType))
+                if (arg.Kind == WasmThunkArgKind.RetBuf)
                 {
-                    continue;
+                    // Pass pRet directly as the retbuf arg
+                    expressions.Add(Local.Get(LocalPRet));
                 }
-
-                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                else if (arg.Kind == WasmThunkArgKind.AsyncContinuation)
                 {
-                    // Passed by value across several wasm parameters — load each slot.
-                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
-                    for (int slot = 0; slot < slotCount; slot++)
-                    {
-                        expressions.Add(Local.Get(LocalPArgs));
-                        ulong slotOffset = (ulong)(interpOffsets[i] + (slot * slotSize));
-                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
-                        targetParamIndex++;
-                    }
+                    expressions.Add(I32.Const(0));
                 }
-                else if (isIndirectStructArg[i])
+                else if (arg.IsIndirectStruct)
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
-                    expressions.Add(I32.Const(interpOffsets[i]));
+                    expressions.Add(I32.Const(interpOffset));
                     expressions.Add(I32.Add);
-                    targetParamIndex++;
                 }
                 else
                 {
-                    WasmValueType wasmType = targetFuncType.Params.Types[targetParamIndex];
-                    expressions.Add(Local.Get(LocalPArgs));
-                    switch (wasmType)
+                    int slotSize = arg.IsMultiSlot ? WasmLowering.GetMultiSegmentSlotSize(arg.WasmType) : 0;
+                    for (int slot = 0; slot < arg.WasmParamCount; slot++)
                     {
-                        case WasmValueType.I32:
-                            expressions.Add(I32.Load((ulong)interpOffsets[i]));
-                            break;
-                        case WasmValueType.I64:
-                            expressions.Add(I64.Load((ulong)interpOffsets[i]));
-                            break;
-                        case WasmValueType.F32:
-                            expressions.Add(F32.Load((ulong)interpOffsets[i]));
-                            break;
-                        case WasmValueType.F64:
-                            expressions.Add(F64.Load((ulong)interpOffsets[i]));
-                            break;
-                        case WasmValueType.V128:
-                            expressions.Add(V128.Load((ulong)interpOffsets[i]));
-                            break;
-                        default:
-                            throw new Exception("Unexpected wasm type for interpreter-to-R2R arg");
+                        expressions.Add(Local.Get(LocalPArgs));
+                        expressions.Add(WasmThunkArgLayout.Load(arg.WasmType, interpOffset + (slot * slotSize)));
                     }
-                    targetParamIndex++;
                 }
             }
 
