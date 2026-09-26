@@ -927,7 +927,11 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
             return !addr->IsBoxedValue();
 
         case GT_LCL_VAR:
-            return !lvaIsImplicitByRefLocal(addr->AsLclVar()->GetLclNum());
+        {
+            // Implicit byrefs and return buffers always point to caller-allocated storage.
+            const unsigned lclNum = addr->AsLclVar()->GetLclNum();
+            return !lvaIsImplicitByRefLocal(lclNum) && (lclNum != impInlineRoot()->info.compRetBuffArg);
+        }
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
@@ -1017,6 +1021,12 @@ bool Compiler::fgAddrCouldBeHeap(GenTree* addr)
     if (op->OperIsScalarLocal() && (op->AsLclVarCommon()->GetLclNum() == impInlineRoot()->info.compRetBuffArg))
     {
         // RetBuf is known to be on the stack
+        return false;
+    }
+
+    if (op->OperIs(GT_LCL_VAR) && lvaIsImplicitByRefLocal(op->AsLclVar()->GetLclNum()))
+    {
+        // Implicit byrefs are known to not be on the heap
         return false;
     }
 
