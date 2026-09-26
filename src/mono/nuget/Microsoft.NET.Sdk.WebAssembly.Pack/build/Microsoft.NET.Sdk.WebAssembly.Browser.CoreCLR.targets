@@ -237,13 +237,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
     </ItemGroup>
-    <!-- Crossgen2 arguments (e.g. toggling PublishReadyToRunStripDebugInfo) don't change any file input, so
-         stamp them; WriteOnlyWhenDifferent bumps the timestamp only when the arguments change. -->
+    <!-- Crossgen2 configuration that isn't a file input: extra arguments (e.g. -p:PublishReadyToRunStripDebugInfo)
+         and the composite mode, whose component stubs share the per-assembly <name>.wasm output names and would
+         otherwise look up-to-date after a composite publish. WriteOnlyWhenDifferent bumps the timestamp only
+         when this configuration changes. -->
     <PropertyGroup>
       <_WasmReadyToRunArgsStamp>$(IntermediateOutputPath)wasm-r2r-args.stamp</_WasmReadyToRunArgsStamp>
     </PropertyGroup>
     <WriteLinesToFile File="$(_WasmReadyToRunArgsStamp)"
-                      Lines="$(PublishReadyToRunCrossgen2ExtraArgs)"
+                      Lines="PublishReadyToRunComposite=$(PublishReadyToRunComposite);$(PublishReadyToRunCrossgen2ExtraArgs)"
                       Overwrite="true"
                       WriteOnlyWhenDifferent="true" />
     <ItemGroup>

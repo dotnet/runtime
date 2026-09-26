@@ -116,6 +116,8 @@ namespace Wasm.Build.Tests
                 if (composite)
                     AssertCompositeReadyToRun(frameworkDir);
                 AssertNoDuplicateAssemblies(frameworkDir);
+                if (composite)
+                    AssertSwitchingCompositeModeRecompiles(info, config, extraArgs, frameworkDir);
             }
 
             bool suffixLibraryLoaded = false;
@@ -307,6 +309,22 @@ namespace Wasm.Build.Tests
                 Assert.True(tableSize > 0, $"Expected a ReadyToRun table in '{coreLib}', but the R2R table size was 0.");
             else
                 Assert.Equal(0, tableSize);
+        }
+
+        // Component stubs share the per-assembly <name>.wasm output names, so a mode switch must recompile them
+        // instead of treating them as up-to-date per-assembly images that probe for a pruned composite owner.
+        // Switch back afterwards so the caller still runs the composite app.
+        private void AssertSwitchingCompositeModeRecompiles(ProjectInfo info, Configuration config, string extraArgs, string frameworkDir)
+        {
+            string coreLibImage = Path.Combine(GetObjSubDir(config, "R2R"), "System.Private.CoreLib.wasm");
+            System.DateTime compositeStubTime = File.GetLastWriteTimeUtc(coreLibImage);
+
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: $"{extraArgs} -p:PublishReadyToRunComposite=false"));
+            Assert.True(File.GetLastWriteTimeUtc(coreLibImage) > compositeStubTime,
+                $"'{coreLibImage}' was not recompiled after switching from composite to per-assembly ReadyToRun.");
+
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+            AssertCompositeReadyToRun(frameworkDir);
         }
 
         // The boot config flags exactly the composite owner, delivered via coreAssembly under its crossgen2 name so
