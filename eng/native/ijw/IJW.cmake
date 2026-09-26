@@ -30,6 +30,19 @@ if (CLR_CMAKE_HOST_WIN32)
     set_target_properties(${targetName} PROPERTIES COMPILE_OPTIONS "${compileOptions}")
   endfunction()
 
+  function(disable_optimizations_for_directory)
+    # Some IJW tests need to emit fully unoptimized IL
+    # for us to validate basic JIT behavior.
+    # MSVC doesn't respect #pragma optimize("", off) for C++/CLI
+    # so we need to replace the existing optimization settings with /Od.
+    # We can't just append /Od otherwise we get warnings like the following:
+    # 'D9025: overriding /O2 with /Od'
+    get_directory_property(dirCompileOptions COMPILE_OPTIONS)
+    list(FILTER dirCompileOptions EXCLUDE REGEX "/O[2xd]>?$")
+    set_directory_properties(PROPERTIES COMPILE_OPTIONS "${dirCompileOptions}")
+    add_compile_options(/Od)
+  endfunction()
+
   function(add_ijw_msbuild_project_properties targetName ijwhost_target)
     # When we're building with MSBuild, we need to set some project properties
     # in case CMake has decided to use the SDK support.
