@@ -483,5 +483,5 @@ After triage, these skills can help with next steps:
 
 - **api-proposal** -- if an API proposal is recommended as KEEP, offer to draft a formal proposal with working prototype.
 - **jit-regression-test** -- if a bug with root cause is JIT-related, offer to create a regression test.
-- **performance-benchmark** -- if a performance regression is confirmed, offer to validate with ad hoc benchmarks.
+- **microbenchmark** -- if a performance regression is confirmed, offer to validate with ad hoc benchmarks.
 - **code-review** -- if a fix PR is linked, offer to review for correctness and consistency.

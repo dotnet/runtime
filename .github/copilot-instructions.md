@@ -16,7 +16,7 @@ Use the `code-review` skill when reviewing pull requests, and — when running u
 
 When starting work in an unfamiliar directory, search for `README.md` files in it and its parents up to the repository root. Read any you find — they contain conventions, patterns, and architectural context relevant to your work.
 
-If the changes are intended to improve performance, or if they could negatively impact performance, use the `performance-benchmark` skill to validate the impact before completing.
+If the changes are intended to improve performance, or if they could negatively impact performance, use the `microbenchmark` skill for method/API-level measurements or the `aspnet-benchmark` skill for end-to-end ASP.NET Core/HTTP server load testing.
 
 When writing or reviewing SIMD / hardware-intrinsics code (anything using `Vector128`/`Vector256`/`Vector512`, `Vector<T>`, or the platform intrinsics in `System.Runtime.Intrinsics.*`), use the `vectorization` skill.
 
