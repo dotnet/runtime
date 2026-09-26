@@ -56,6 +56,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly ImmutableHashSet<CaptureId> _deconstructionLValueFlowCaptures;
 
+        private readonly ImmutableHashSet<CaptureId> _tupleExpressionFlowCaptures;
+
         public InterproceduralState<TValue, TValueLattice> InterproceduralState;
 
         private bool IsLValueFlowCapture(CaptureId captureId)
@@ -80,11 +82,24 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             _semanticModel = cfg.OriginalOperation.SemanticModel ??
                 compilation.GetSemanticModel(cfg.OriginalOperation.Syntax.SyntaxTree);
             this.lValueFlowCaptures = lValueFlowCaptures;
-            _deconstructionLValueFlowCaptures = cfg
-                .DescendantOperations<IFlowCaptureReferenceOperation>(OperationKind.FlowCaptureReference)
-                .Where(reference => reference.IsInLeftOfDeconstructionAssignment(out _))
-                .Select(reference => reference.Id)
-                .ToImmutableHashSet();
+            var deconstructionLValueFlowCaptures = ImmutableHashSet.CreateBuilder<CaptureId>();
+            var tupleExpressionFlowCaptures = ImmutableHashSet.CreateBuilder<CaptureId>();
+            foreach (IOperation operation in cfg.DescendantOperations())
+            {
+                if (operation is IFlowCaptureReferenceOperation reference &&
+                    reference.IsInLeftOfDeconstructionAssignment(out _))
+                {
+                    deconstructionLValueFlowCaptures.Add(reference.Id);
+                }
+                else if (operation is IFlowCaptureOperation capture &&
+                    UnwrapDeconstructionSource(capture.Value) is ITupleOperation)
+                {
+                    tupleExpressionFlowCaptures.Add(capture.Id);
+                }
+            }
+
+            _deconstructionLValueFlowCaptures = deconstructionLValueFlowCaptures.ToImmutable();
+            _tupleExpressionFlowCaptures = tupleExpressionFlowCaptures.ToImmutable();
             InterproceduralState = interproceduralState;
         }
 
@@ -716,7 +731,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             bool sourceValueIsKnown,
             DeconstructionInfo deconstructionInfo,
             IDeconstructionAssignmentOperation operation,
-            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
+            bool useTopForTupleElements = false)
         {
             target = UnwrapDeconstructionTarget(target);
 
@@ -839,6 +855,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             }
 
             var tupleValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
+            useTopForTupleElements |= source is IFlowCaptureReferenceOperation flowCaptureReference &&
+                _tupleExpressionFlowCaptures.Contains(flowCaptureReference.Id);
             for (int i = 0; i < targetTuple.Elements.Length; i++)
             {
                 IFieldSymbol tupleElement = tupleType.TupleElements[i];
@@ -846,11 +864,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     targetTuple.Elements[i],
                     source: null,
                     tupleElement.Type,
-                    GetTupleElementValue(tupleElement),
+                    useTopForTupleElements
+                        ? TopValue
+                        : GetTupleElementValue(tupleElement),
                     sourceValueIsKnown: true,
                     deconstructionInfo.Nested[i],
                     operation,
-                    state);
+                    state,
+                    useTopForTupleElements);
                 if (tupleValue.DoesNotReturn)
                     return DeconstructionValue.NonReturning;
                 tupleValues.Add(tupleValue);
