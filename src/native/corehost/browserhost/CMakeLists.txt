@@ -132,6 +132,8 @@ target_link_options(browserhost PRIVATE
     -sEXIT_RUNTIME=1
     -sALLOW_TABLE_GROWTH=1
     -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
+    # Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. Value comes from GenerateEmccExports in eng/native.wasm.targets.
+    -sINCOMING_MODULE_JS_API=${CMAKE_EMCC_INCOMING_MODULE_JS_API}
     -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
