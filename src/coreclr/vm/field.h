@@ -350,6 +350,11 @@ public:
     void    GetInstanceField(OBJECTREF o, VOID * pOutVal);
     void    SetInstanceField(OBJECTREF o, const VOID * pInVal);
 
+#ifndef DACCESS_COMPILE
+    static void GetPrimitiveValue(void* pAddress, void* pOutVal, UINT size);
+    static void SetPrimitiveValue(void* pAddress, const void* pInVal, UINT size);
+#endif
+
     void*   GetInstanceAddress(OBJECTREF o);
 
     // Get the address of a field within object 'o'
@@ -452,61 +457,73 @@ public:
     void*   GetStaticValuePtr()
     {
         WRAPPER_NO_CONTRACT;
-        return *(void**)GetCurrentStaticAddress();
+        void* value;
+        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        return value;
     }
 
     VOID    SetStaticValuePtr(void *value)
     {
         WRAPPER_NO_CONTRACT;
-        *(void**)GetCurrentStaticAddress() = value;
+        SetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
     }
 
     DWORD   GetStaticValue32()
     {
         WRAPPER_NO_CONTRACT;
-        return *(DWORD*)GetCurrentStaticAddress();
+        DWORD value;
+        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        return value;
     }
 
     VOID    SetStaticValue32(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(DWORD*)GetCurrentStaticAddress() = dwValue;
+        SetPrimitiveValue(GetCurrentStaticAddress(), &dwValue, sizeof(dwValue));
     }
 
     USHORT  GetStaticValue16()
     {
         WRAPPER_NO_CONTRACT;
-        return *(USHORT*)GetCurrentStaticAddress();
+        USHORT value;
+        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        return value;
     }
 
     VOID    SetStaticValue16(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(USHORT*)GetCurrentStaticAddress() = (USHORT)dwValue;
+        USHORT value = (USHORT)dwValue;
+        SetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
     }
 
     BYTE    GetStaticValue8()
     {
         WRAPPER_NO_CONTRACT;
-        return *(BYTE*)GetCurrentStaticAddress();
+        BYTE value;
+        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        return value;
     }
 
     VOID    SetStaticValue8(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(BYTE*)GetCurrentStaticAddress() = (BYTE)dwValue;
+        BYTE value = (BYTE)dwValue;
+        SetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
     }
 
     int64_t GetStaticValue64()
     {
         WRAPPER_NO_CONTRACT;
-        return *(int64_t*)GetCurrentStaticAddress();
+        int64_t value;
+        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        return value;
     }
 
     VOID    SetStaticValue64(int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        *(int64_t*)GetCurrentStaticAddress() = qwValue;
+        SetPrimitiveValue(GetCurrentStaticAddress(), &qwValue, sizeof(qwValue));
     }
 
     void* GetCurrentStaticAddress()
@@ -745,4 +762,3 @@ struct cdac_data<FieldDesc>
 };
 
 #endif // _FIELD_H_
-
