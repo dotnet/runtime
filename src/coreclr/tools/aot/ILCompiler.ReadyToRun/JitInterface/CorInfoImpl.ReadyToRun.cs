@@ -3624,6 +3624,20 @@ namespace Internal.JitInterface
                 }
                 _precodeFixups = previouslyStashedFixups;
 
+                // Static methods, constructors, and instance methods on default-initialized value types
+                // can be the first use of a module.
+                // Preserve activation if the module has, or outside the version bubble can gain, an initializer.
+                EcmaModule inlineeModule = (inlinee.OwningType as MetadataType)?.Module as EcmaModule;
+                if ((inlinee.Signature.IsStatic || inlinee.IsConstructor || inlinee.OwningType.IsValueType) &&
+                    inlineeModule is not null &&
+                    inlineeModule != _compilation.TypeSystemContext.SystemModule &&
+                    inlineeModule != (MethodBeingCompiled.OwningType as MetadataType)?.Module &&
+                    (!_compilation.CompilationModuleGroup.VersionsWithModule(inlineeModule) ||
+                        inlineeModule.GetGlobalModuleType().HasStaticConstructor))
+                {
+                    classMustBeLoadedBeforeCodeIsRun(inlineeModule.GetGlobalModuleType());
+                }
+
                 // If during inlining we found new inlinees, then if the inline was successful, add them to the set of fixups
                 // for the entire method.
                 HashSet<MethodDesc> previouslyStashedInlinees = _stashedInlinedMethods.Pop();

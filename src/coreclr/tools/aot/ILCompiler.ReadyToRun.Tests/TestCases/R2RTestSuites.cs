@@ -66,6 +66,66 @@ public class R2RTestSuites
         }
     }
 
+    [ConditionalTheory(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void CrossModuleInliningPreservesModuleInitialization(bool composite, bool hasInitializer)
+    {
+        string testName = $"{nameof(CrossModuleInliningPreservesModuleInitialization)}_{composite}_{hasInitializer}";
+        var inlineableLib = new CompiledAssembly
+        {
+            AssemblyName = "InlineableLib",
+            SourceResourceNames = hasInitializer
+                ? ["CrossModuleInlining/Dependencies/InlineableLib.cs", "CrossModuleInlining/Dependencies/ModuleInitializer.cs"]
+                : ["CrossModuleInlining/Dependencies/InlineableLib.cs"],
+        };
+        var caller = new CompiledAssembly
+        {
+            AssemblyName = testName,
+            SourceResourceNames = ["CrossModuleInlining/BasicInlining.cs"],
+            References = [inlineableLib],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            testName,
+            [
+                new(testName,
+                [
+                    new CrossgenAssembly(inlineableLib)
+                    {
+                        Kind = composite ? Crossgen2InputKind.InputAssembly : Crossgen2InputKind.Reference,
+                        Options = composite ? [] : [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                    new CrossgenAssembly(caller),
+                ])
+                {
+                    Options = composite ? [Crossgen2Option.Composite, Crossgen2Option.Optimize] : [Crossgen2Option.Optimize],
+                    Validate = Validate,
+                },
+            ]));
+
+        void Validate(ReadyToRunReader reader)
+        {
+            ValidateMethod("TestGetValue", "InlineableLib.GetValue", !composite || hasInitializer);
+            ValidateMethod("TestConstructor", "InlineableInstance..ctor", !composite || hasInitializer);
+            ValidateMethod("TestInstanceMethod", "InlineableInstance.GetValue", false);
+            ValidateMethod("TestValueTypeInstanceMethod", "InlineableValueType.GetValue", !composite || hasInitializer);
+
+            void ValidateMethod(string callerName, string inlineeName, bool needsActivation)
+            {
+                Assert.True(R2RAssert.HasInlinedMethod(reader, callerName, inlineeName, out string diagnostic), diagnostic);
+                ReadyToRunMethod method = Assert.Single(R2RAssert.GetAllMethods(reader),
+                    method => method.SignatureString.Contains($".{callerName}(", StringComparison.Ordinal));
+                int activationFixups = (method.Fixups ?? []).Count(
+                    fixup => fixup.Signature.FixupKind == ReadyToRunFixupKind.TypeHandle &&
+                        fixup.Signature.ToString(new SignatureFormattingOptions()) == "<Module> (TYPE_HANDLE)");
+                Assert.Equal(needsActivation ? 1 : 0, activationFixups);
+            }
+        }
+    }
+
     [Fact]
     public void GenericTypeConstraintsAllowVariantParameters()
     {
