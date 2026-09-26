@@ -264,7 +264,8 @@ LoopDefinitions::LocalDefinitionsMap* LoopDefinitions::GetOrCreateMap(FlowGraphN
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTreeLclVarCommon* lcl = (*use)->AsLclVarCommon();
-            if (!lcl->OperIsLocalStore())
+            // A promoted field can also be defined through its parent's address.
+            if (!lcl->OperIsLocalStore() && !lcl->OperIs(GT_LCL_ADDR))
             {
                 return Compiler::WALK_CONTINUE;
             }
@@ -593,6 +594,7 @@ public:
         JITDUMP("On exposed: V%02u\n", lclNum);
         BitVecTraits localsTraits(m_compiler->lvaCount, m_compiler);
         BitVecOps::AddElemD(&localsTraits, m_localsToExpose, lclNum);
+        Clear(lclNum);
     }
 
     //-------------------------------------------------------------------
@@ -627,6 +629,12 @@ public:
                 *pIndex = index;
                 m_assertions.Push(assertion);
                 m_lclAssertions[dstLclNum] |= uint64_t(1) << index;
+                LclVarDsc* dsc = m_compiler->lvaGetDesc(dstLclNum);
+                if (dsc->lvIsStructField)
+                {
+                    // Definitions of the parent also invalidate this field assertion.
+                    m_lclAssertions[dsc->lvParentLcl] |= uint64_t(1) << index;
+                }
 
                 JITDUMP("Adding new assertion A%02u ", index);
                 DBEXEC(VERBOSE, assertion.Print());
@@ -995,6 +1003,31 @@ public:
     // to the visited node is encountered.
     fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
+        // Inlinees can leave constant index scaling that hides a local address's offset.
+        if ((*use)->OperIs(GT_MUL) && (*use)->gtGetOp1()->IsCnsIntOrI() && (*use)->gtGetOp2()->IsCnsIntOrI())
+        {
+            GenTree* folded = m_compiler->gtFoldExpr(*use);
+            m_stmtModified |= !folded->OperIs(GT_MUL);
+            *use = folded;
+        }
+
+        // Expose copies of byref wrappers to address propagation before global morph.
+        if ((m_lclAddrAssertions != nullptr) && (*use)->OperIs(GT_STORE_LCL_VAR) && (*use)->TypeIs(TYP_STRUCT) &&
+            (*use)->AsLclVar()->Data()->OperIs(GT_LCL_VAR))
+        {
+            GenTreeLclVar* store = (*use)->AsLclVar();
+            LclVarDsc*     dst   = m_compiler->lvaGetDesc(store);
+            LclVarDsc*     src   = m_compiler->lvaGetDesc(store->Data()->AsLclVar());
+            if (!dst->IsImplicitByRef() && !src->IsImplicitByRef() && dst->CanBeReplacedWithItsField(m_compiler) &&
+                src->CanBeReplacedWithItsField(m_compiler) && (dst->GetLayout() == src->GetLayout()) &&
+                m_compiler->lvaGetDesc(dst->lvFieldLclStart)->TypeIs(TYP_BYREF))
+            {
+                store->Data()->BashToLclVar(m_compiler, src->lvFieldLclStart);
+                store->SetLclNum(dst->lvFieldLclStart);
+                store->ChangeType(TYP_BYREF);
+                m_stmtModified = true;
+            }
+        }
         GenTree* const node = *use;
 
         switch (node->OperGet())
@@ -1539,6 +1572,10 @@ private:
 
             if (defSize != UINT_MAX)
             {
+                if (m_lclAddrAssertions != nullptr)
+                {
+                    m_lclAddrAssertions->Clear(lclNum);
+                }
                 INDEBUG(varDsc->SetDefinedViaAddress(true));
                 escapeAddr = false;
                 defFlags   = GTF_VAR_DEF;
@@ -2249,11 +2286,11 @@ private:
 
         if (data.IsAddress() && store->OperIs(GT_STORE_LCL_VAR))
         {
-            LclVarDsc* dsc = m_compiler->lvaGetDesc(store);
-            // TODO-CQ: We currently don't handle promoted fields, but that has
-            // no impact since practically all promoted structs end up with
-            // lvHasLdAddrOp set.
-            if (!dsc->lvPromoted && !dsc->lvIsStructField && !dsc->lvHasLdAddrOp)
+            LclVarDsc* dsc    = m_compiler->lvaGetDesc(store);
+            LclVarDsc* parent = dsc->lvIsStructField ? m_compiler->lvaGetDesc(dsc->lvParentLcl) : dsc;
+            if (!dsc->lvPromoted && !dsc->lvHasLdAddrOp &&
+                !m_lclAddrAssertions->IsMarkedForExposure(store->GetLclNum()) && !parent->IsAddressExposed() &&
+                !parent->lvImplicitlyReferenced && (!dsc->lvIsStructField || !parent->lvIsParam))
             {
                 m_lclAddrAssertions->Record(store->GetLclNum(), data.LclNum(), data.Offset());
             }
@@ -2668,6 +2705,15 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
             {
                 if (!BitVecOps::IsMember(&localsTraits, unreadLocals, lcl->GetLclNum()))
                 {
+                    LclVarDsc* dsc = lvaGetDesc(lcl);
+                    // A whole-struct read or escaped address can observe any field store.
+                    if (dsc->lvPromoted && !lcl->OperIsLocalStore())
+                    {
+                        for (unsigned i = 0; i < dsc->lvFieldCnt; i++)
+                        {
+                            BitVecOps::RemoveElemD(&localsTraits, unreadLocals, dsc->lvFieldLclStart + i);
+                        }
+                    }
                     continue;
                 }
 

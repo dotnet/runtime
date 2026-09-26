@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Run the copy and GC-lifetime checks with physical promotion enabled. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <DisableProjectBuild Condition="'$(TargetsMobile)' == 'true' and ('$(TargetsBrowser)' != 'true' or '$(RuntimeFlavor)' != 'coreclr')">true</DisableProjectBuild>
+    <Optimize>True</Optimize>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="CopyBetweenByrefs.cs" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+  </ItemGroup>
+</Project>

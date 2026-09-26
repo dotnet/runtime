@@ -5818,6 +5818,29 @@ void Compiler::optRemoveRedundantZeroInits()
 
                 switch (tree->gtOper)
                 {
+                    case GT_CALL:
+                    {
+                        // A return buffer is defined when the call returns. Unlike a
+                        // local store, evaluating its address is not itself a definition.
+                        // Only consider non-GC locals: the callee may collect before
+                        // initializing the buffer. Also retain initialization when an
+                        // exception path could observe the local before the call returns.
+                        GenTreeLclVarCommon* retBuf = gtCallGetDefinedRetBufLclAddr(tree->AsCall());
+                        if ((retBuf != nullptr) && !compIsAsync() && !hasImplicitControlFlow &&
+                            ((retBuf->gtFlags & GTF_VAR_USEASG) == 0))
+                        {
+                            unsigned   lclNum = retBuf->GetLclNum();
+                            LclVarDsc* lclDsc = lvaGetDesc(lclNum);
+                            unsigned   refs   = 0;
+                            if (!lclDsc->HasGCPtr() && !lclDsc->lvPromoted && !lclDsc->lvIsStructField &&
+                                refCounts.Lookup(lclNum, &refs) && (refs == 1))
+                            {
+                                lclDsc->lvHasExplicitInit = 1;
+                                JITDUMP("Marking V%02u as having an explicit retbuf init\n", lclNum);
+                            }
+                        }
+                        break;
+                    }
                     case GT_LCL_VAR:
                     case GT_LCL_FLD:
                     case GT_LCL_ADDR:
