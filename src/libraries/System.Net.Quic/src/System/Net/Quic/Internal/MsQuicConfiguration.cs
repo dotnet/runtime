@@ -188,7 +188,15 @@ internal static partial class MsQuicConfiguration
             allowedCipherSuites = CipherSuitePolicyToFlags(cipherSuitesPolicy);
         }
 
-        if (!MsQuicApi.UsesSChannelBackend)
+        if (MsQuicApi.UsesSChannelBackend)
+        {
+            // Either user code passed SslStreamCertificateContext and
+            // intermediates have already been retrieved, or they will be
+            // retrieved by the cert context we build internally, there is no
+            // need for MsQuic to do another AIA fetch
+            flags |= QUIC_CREDENTIAL_FLAGS.CACHE_ONLY_URL_RETRIEVAL;
+        }
+        else
         {
             flags |= QUIC_CREDENTIAL_FLAGS.USE_PORTABLE_CERTIFICATES;
         }
@@ -203,12 +211,13 @@ internal static partial class MsQuicConfiguration
 
     private static unsafe MsQuicConfigurationSafeHandle CreateInternal(QUIC_SETTINGS settings, QUIC_CREDENTIAL_FLAGS flags, X509Certificate? certificate, ReadOnlyCollection<X509Certificate2>? intermediates, List<SslApplicationProtocol> alpnProtocols, QUIC_ALLOWED_CIPHER_SUITE_FLAGS allowedCipherSuites)
     {
-        if (!MsQuicApi.UsesSChannelBackend && certificate is X509Certificate2 cert && intermediates is null)
+        SslStreamCertificateContext? context = null;
+        if (certificate is X509Certificate2 cert && intermediates is null)
         {
             // MsQuic will not lookup intermediates in local CA store if not explicitly provided,
             // so we build the cert context to get on feature parity with SslStream. Note that this code
             // path runs after the MsQuicConfigurationCache check.
-            SslStreamCertificateContext context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: true, trust: null);
+            context = SslStreamCertificateContext.Create(cert, additionalCertificates: null, offline: false);
             intermediates = context.IntermediateCertificates;
         }
 
@@ -308,6 +317,19 @@ internal static partial class MsQuicConfiguration
         {
             configurationHandle.Dispose();
             throw;
+        }
+        finally
+        {
+            if (context is not null)
+            {
+                // For Schannel, we pass reference only to the leaf, for
+                // OpenSSL, we serialize all certs, in either case we don't need
+                // to hold onto the intermediate certs references
+                foreach (X509Certificate2 cert in context.IntermediateCertificates)
+                {
+                    cert.Dispose();
+                }
+            }
         }
 
         return configurationHandle;
