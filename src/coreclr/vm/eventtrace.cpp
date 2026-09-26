@@ -1582,6 +1582,8 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
             break;
         }
 
+        // Allocate outside the lock, then revalidate and publish the candidate
+        // under the lock on the next iteration.
         pNewLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
         if (pNewLoggedTypesFromModule == NULL)
         {
