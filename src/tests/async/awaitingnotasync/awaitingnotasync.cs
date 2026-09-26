@@ -28,6 +28,7 @@ public class AwaitNotAsync
 
     private static T sIdentity<T>(T arg) => arg;
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/133953", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static async Task AsyncEntryPoint()
     {
