@@ -133,7 +133,9 @@ namespace System.Collections.Frozen
             // Fast path for Overlaps when other is IReadOnlySet with fast lookup and same equality comparer
             if (other is IReadOnlySet<T> otherAsSet && ComparersAreCompatible(otherAsSet))
             {
-                return otherAsSet.Count > Count ? OverlapsCompatibleReadOnlySetImpl(this, otherAsSet) : OverlapsCompatibleReadOnlySetImpl(otherAsSet, this);
+                return otherAsSet.Count > Count
+                    ? OverlapsCompatibleReadOnlySetImpl(this, otherAsSet)
+                    : OverlapsCompatibleReadOnlySetImpl(otherAsSet, this);
             }
 
             return OverlapsEnumerableImpl(other);
