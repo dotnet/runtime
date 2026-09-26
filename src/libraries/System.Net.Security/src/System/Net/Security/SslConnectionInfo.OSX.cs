@@ -10,38 +10,38 @@ namespace System.Net.Security
 {
     internal partial struct SslConnectionInfo
     {
-        public void UpdateSslConnectionInfo(SafeDeleteContext context)
+        public void UpdateSslConnectionInfo(SafeDeleteContext context, out string? negotiatedServerName)
         {
             switch (context)
             {
                 case SafeDeleteNwContext nwContext:
-                    UpdateSslConnectionInfoNetworkFramework(nwContext);
+                    negotiatedServerName = UpdateSslConnectionInfoNetworkFramework(nwContext);
                     break;
                 case SafeDeleteSslContext sslContext:
                     UpdateSslConnectionInfoAppleCrypto(sslContext);
+                    negotiatedServerName = null;
                     break;
                 default:
                     throw new NotSupportedException("Unsupported context type.");
             }
         }
 
-        private unsafe void UpdateSslConnectionInfoNetworkFramework(SafeDeleteNwContext context)
+        private unsafe string? UpdateSslConnectionInfoNetworkFramework(SafeDeleteNwContext context)
         {
             SafeNwHandle nwContext = context.ConnectionHandle;
             SslProtocols protocol;
             TlsCipherSuite cipherSuite;
 
-            Span<byte> alpn = stackalloc byte[256]; // Ensure the stack is initialized for alpnPtr
+            Span<byte> alpn = stackalloc byte[256];
             int alpnLength = alpn.Length;
+            Span<byte> serverName = stackalloc byte[256];
+            int serverNameLength = serverName.Length;
 
             int osStatus;
-            unsafe
+            fixed (byte* alpnPtr = alpn)
+            fixed (byte* serverNamePtr = serverName)
             {
-                fixed (byte* alpnPtr = alpn)
-                {
-                    // Call the native method to get connection info
-                    osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, context.StateHandle, out protocol, out cipherSuite, alpnPtr, ref alpnLength);
-                }
+                osStatus = Interop.NetworkFramework.Tls.GetConnectionInfo(nwContext, context.StateHandle, out protocol, out cipherSuite, alpnPtr, ref alpnLength, serverNamePtr, ref serverNameLength);
             }
 
             if (osStatus != 0)
@@ -57,6 +57,8 @@ namespace System.Net.Security
             Protocol = (int)protocol;
             TlsCipherSuite = cipherSuite;
             MapCipherSuite(cipherSuite);
+
+            return TlsFrameHelper.DecodeString(serverName.Slice(0, serverNameLength));
         }
 
         private void UpdateSslConnectionInfoAppleCrypto(SafeDeleteSslContext context)
