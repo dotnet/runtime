@@ -2460,6 +2460,7 @@ public:
     bool gtOverflow() const;
     bool gtOverflowEx() const;
     bool gtSetFlags() const;
+    bool IsFunnelShift() const;
 
 #ifdef DEBUG
     static int         gtDispFlags(GenTreeFlags flags, GenTreeDebugFlags debugFlags);
