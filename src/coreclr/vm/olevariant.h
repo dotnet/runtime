@@ -19,6 +19,7 @@ class OleVariant
     static void MarshalOleVariantForObject(OBJECTREF * const & pObj, VARIANT *pOle);
     static void MarshalObjectForOleVariant(const VARIANT *pOle, OBJECTREF * const & pObj);
     static void MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle);
+    static void MarshalVariantArrayElementForObject(OBJECTREF *pObj, VARIANT *pOle);
 
     static void ConvertBSTRToString(BSTR bstr, STRINGREF *pStringObj);
     static BSTR ConvertStringToBSTR(STRINGREF *pStringObj);

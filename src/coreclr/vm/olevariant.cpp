@@ -667,6 +667,25 @@ void OleVariant::MarshalOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
     }
 }
 
+void OleVariant::MarshalVariantArrayElementForObject(OBJECTREF *pObj, VARIANT *pOle)
+{
+   CONTRACTL
+   {
+       THROWS;
+       GC_TRIGGERS;
+       MODE_COOPERATIVE;
+       PRECONDITION(CheckPointer(pObj));
+       PRECONDITION(IsProtectedByGCFrame(pObj));
+       PRECONDITION(CheckPointer(pOle));
+   }
+   CONTRACTL_END;
+
+   if (!(V_VT(pOle) & VT_BYREF) || FAILED(MarshalCommonOleRefVariantForObject(pObj, pOle)))
+   {
+       MarshalOleVariantForObject(pObj, pOle);
+   }
+}
+
 HRESULT OleVariant::MarshalCommonOleRefVariantForObject(OBJECTREF *pObj, VARIANT *pOle)
 {
     CONTRACTL
@@ -1935,9 +1954,10 @@ namespace
                 MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(pElementMT, &bDispatch);
                 if (pDefaultItfMT != NULL)
                 {
-                    // Use the resolved interface type.
-                    TypeHandle thElement(pDefaultItfMT);
-                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thElement, 1)).AsMethodTable();
+                    TypeHandle thElement(pElementMT);
+                    TypeHandle thInterface(pDefaultItfMT);
+                    TypeHandle thArgs[2] = { thElement, thInterface };
+                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_CLASS_INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
                 }
                 else
                 {
@@ -1945,7 +1965,9 @@ namespace
                     MethodTable* pEnabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_ENABLED);
                     MethodTable* pDisabledMT = CoreLibBinder::GetClass(CLASS__MARSHALER_OPTION_DISABLED);
                     TypeHandle thDispatch(bDispatch ? pEnabledMT : pDisabledMT);
-                    return TypeHandle(CoreLibBinder::GetClass(CLASS__INTERFACE_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(&thDispatch, 1)).AsMethodTable();
+                    TypeHandle thElement(pElementMT);
+                    TypeHandle thArgs[2] = { thElement, thDispatch };
+                    return TypeHandle(CoreLibBinder::GetClass(CLASS__TYPED_CLASS_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
                 }
             }
             else
@@ -2046,16 +2068,7 @@ namespace
         case VT_DISPATCH:
             if (pElementMT == NULL || pElementMT == g_pObjectClass)
                 return TypeHandle(g_pObjectClass);
-            if (pElementMT->IsInterface())
-                return TypeHandle(pElementMT);
-            {
-                // For class types, resolve to the default interface type.
-                BOOL bDispatch = FALSE;
-                MethodTable* pDefaultItfMT = GetDefaultInterfaceMTForClass(pElementMT, &bDispatch);
-                if (pDefaultItfMT != NULL)
-                    return TypeHandle(pDefaultItfMT);
-                return TypeHandle(g_pObjectClass);
-            }
+            return TypeHandle(pElementMT);
         case VT_RECORD:
             _ASSERTE(pElementMT != NULL);
             return TypeHandle(pElementMT);
@@ -2677,4 +2690,3 @@ extern "C" void QCALLTYPE Variant_ConvertValueTypeToRecord(QCall::ObjectHandleOn
 
     END_QCALL;
 }
-

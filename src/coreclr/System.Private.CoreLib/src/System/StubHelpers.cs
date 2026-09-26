@@ -542,6 +542,15 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
         private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
 
+        internal static void ConvertToNativeVariantArrayElement(object objSrc, IntPtr pDstVariant)
+        {
+            ConvertToNativeVariantArrayElement(ObjectHandleOnStack.Create(ref objSrc), pDstVariant);
+        }
+
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNativeVariantArrayElement")]
+        private static partial void ConvertToNativeVariantArrayElement(ObjectHandleOnStack objSrc, IntPtr pDstVariant);
+
         internal static object ConvertToManaged(IntPtr pSrcVariant)
         {
             object? retObject = null;
@@ -2029,6 +2038,94 @@ namespace System.StubHelpers
     }
 
     [SupportedOSPlatform("windows")]
+    internal sealed class TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface> : IArrayElementMarshaler<TArrayElement?, TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface>>
+        where TArrayElement : class
+        where TInterface : class
+    {
+        public static unsafe void ConvertToUnmanaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else
+            {
+                *(IntPtr*)unmanaged = Marshal.GetComInterfaceForObject(managed, typeof(TInterface));
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = (TArrayElement)Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassInterfaceArrayElementMarshaler<TArrayElement, TInterface>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    [SupportedOSPlatform("windows")]
+    internal sealed class TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch> : IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>
+        where TArrayElement : class
+        where TIsDispatch : IMarshalerOption
+    {
+        public static unsafe void ConvertToUnmanaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            if (managed is null)
+            {
+                *(IntPtr*)unmanaged = IntPtr.Zero;
+            }
+            else if (TIsDispatch.Enabled)
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIDispatchForObject(managed);
+            }
+            else
+            {
+                *(IntPtr*)unmanaged = Marshal.GetIUnknownForObject(managed);
+            }
+        }
+
+        public static unsafe void ConvertToManaged(ref TArrayElement? managed, byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk == IntPtr.Zero)
+            {
+                managed = null;
+            }
+            else
+            {
+                managed = (TArrayElement)Marshal.GetObjectForIUnknown(pUnk);
+            }
+        }
+
+        public static unsafe void Free(byte* unmanaged)
+        {
+            IntPtr pUnk = *(IntPtr*)unmanaged;
+            if (pUnk != IntPtr.Zero)
+            {
+                Marshal.Release(pUnk);
+            }
+        }
+
+        static unsafe nuint IArrayElementMarshaler<TArrayElement?, TypedClassArrayElementMarshaler<TArrayElement, TIsDispatch>>.UnmanagedSize => (nuint)sizeof(IntPtr);
+    }
+
+    [SupportedOSPlatform("windows")]
     internal sealed class HeterogeneousInterfaceArrayElementMarshaler : IArrayElementMarshaler<object?, HeterogeneousInterfaceArrayElementMarshaler>
     {
         public static unsafe void ConvertToUnmanaged(ref object? managed, byte* unmanaged)
@@ -2081,11 +2178,12 @@ namespace System.StubHelpers
                 // Native buffer is uninitialized — zero it so ConvertToNative
                 // doesn't see garbage VT_BYREF bits.
                 *(ComVariant*)unmanaged = default;
+                ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
             }
-            // When TNativeDataValid is enabled, the existing VARIANT may have
-            // VT_BYREF set. ConvertToNative checks vt & VT_BYREF and calls
-            // MarshalOleRefVariantForObject to write through the byref pointer.
-            ObjectMarshaler.ConvertToNative(managed!, (IntPtr)unmanaged);
+            else
+            {
+                ObjectMarshaler.ConvertToNativeVariantArrayElement(managed!, (IntPtr)unmanaged);
+            }
         }
 
         public static unsafe void ConvertToManaged(ref object? managed, byte* unmanaged)

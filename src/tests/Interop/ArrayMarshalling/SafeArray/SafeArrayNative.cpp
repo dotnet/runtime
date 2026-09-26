@@ -515,3 +515,29 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE Verify2DStringSafeArray(SAFEARRA
 
     return S_OK;
 }
+
+using VariantArrayCallback = void(__cdecl*)(SAFEARRAY*);
+
+extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE ReplaceVariantArrayElement(
+    VariantArrayCallback callback,
+    LONG* nativeValue,
+    VARTYPE* elementType)
+{
+    if (callback == nullptr || nativeValue == nullptr || elementType == nullptr)
+        return E_POINTER;
+
+    SAFEARRAY* array = ::SafeArrayCreateVector(VT_VARIANT, 0, 1);
+    if (array == nullptr)
+        return E_OUTOFMEMORY;
+
+    LONG native = 4;
+    VARIANT* elements = static_cast<VARIANT*>(array->pvData);
+    V_VT(&elements[0]) = VT_BYREF | VT_I4;
+    V_I4REF(&elements[0]) = &native;
+
+    callback(array);
+
+    *nativeValue = native;
+    *elementType = V_VT(&elements[0]);
+    return ::SafeArrayDestroy(array);
+}

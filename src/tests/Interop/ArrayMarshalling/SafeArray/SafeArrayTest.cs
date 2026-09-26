@@ -196,6 +196,21 @@ public class SafeArrayMarshallingTest
         Assert.Throws<SafeArrayTypeMismatchException>(() => SafeArrayNative.Verify2DIntSafeArrayAsIntPtr(new IntPtr[2, 2], 2, 2));
     }
 
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("Requires COM support")]
+    public static void VariantArrayByRefElementIsReplacedWhenManagedTypeChanges()
+    {
+        SafeArrayNative.ReplaceVariantArrayElement(ReplaceVariantArrayElement, out int nativeValue, out ushort elementType);
+
+        Assert.Equal(4, nativeValue);
+        Assert.Equal((ushort)VarEnum.VT_BSTR, elementType);
+    }
+
+    private static void ReplaceVariantArrayElement(object[] values)
+    {
+        values[0] = "7";
+    }
+
     private static bool XorArray(bool[] values)
     {
         bool retVal = false;
@@ -319,6 +334,18 @@ class SafeArrayNative
         [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]
         object[] objects,
         out int result
+    );
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void VariantArrayCallback(
+        [In, Out, MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)] object[] values
+    );
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
+    public static extern void ReplaceVariantArrayElement(
+        VariantArrayCallback callback,
+        out int nativeValue,
+        out ushort elementType
     );
 
     [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
