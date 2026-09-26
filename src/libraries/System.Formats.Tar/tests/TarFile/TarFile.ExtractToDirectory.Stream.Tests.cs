@@ -74,6 +74,25 @@ namespace System.Formats.Tar.Tests
             Assert.True(File.Exists(Path.Join(root.Path, fileWithTwoSegments)));
         }
 
+        [Fact]
+        public void ExtractToDirectory_DifferentlyCasedSiblingDirectory_Throws()
+        {
+            using TempDirectory root = new TempDirectory();
+            string destinationPath = Path.Join(root.Path, "Dest");
+            Directory.CreateDirectory(destinationPath);
+
+            using MemoryStream archive = new MemoryStream();
+            using (TarWriter writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "../dest/pwn.txt"));
+            }
+
+            archive.Position = 0;
+
+            Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(archive, destinationPath, overwriteFiles: false));
+            Assert.False(File.Exists(Path.Join(root.Path, "dest", "pwn.txt")));
+        }
+
         [Theory]
         [InlineData(TarEntryType.SymbolicLink)]
         [InlineData(TarEntryType.HardLink)]
