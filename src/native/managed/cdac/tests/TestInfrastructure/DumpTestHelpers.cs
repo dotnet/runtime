@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
+using System;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
@@ -15,32 +14,28 @@ namespace Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 public static class DumpTestHelpers
 {
     /// <summary>
-    /// Resolves the method name for a <see cref="MethodDescHandle"/> using the
-    /// RuntimeTypeSystem, Loader, and EcmaMetadata contracts. Returns <c>null</c>
-    /// if the name cannot be resolved (e.g., missing metadata).
+    /// Resolves the unqualified method name for a <see cref="MethodDescHandle"/> using
+    /// <see cref="ISOSDacInterface.GetMethodDescName"/>.
     /// </summary>
-    public static string? GetMethodName(ContractDescriptorTarget target, MethodDescHandle mdHandle)
+    public static unsafe string? GetMethodName(ContractDescriptorTarget target, MethodDescHandle mdHandle)
     {
-        IRuntimeTypeSystem rts = target.Contracts.RuntimeTypeSystem;
-
-        if (rts.IsNoMetadataMethod(mdHandle, out string dynamicName))
-            return dynamicName;
-
-        uint token = rts.GetMethodToken(mdHandle);
-        TargetPointer mt = rts.GetMethodTable(mdHandle);
-        TargetPointer modulePtr = rts.GetModule(rts.GetTypeHandle(mt));
-
-        ILoader loader = target.Contracts.Loader;
-        ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
-
-        IEcmaMetadata ecmaMetadata = target.Contracts.EcmaMetadata;
-        MetadataReader? reader = ecmaMetadata.GetMetadata(moduleHandle);
-        if (reader is null)
+        ISOSDacInterface sosDac = new SOSDacImpl(target, legacyObj: null, new());
+        ClrDataAddress methodDesc = mdHandle.Address.ToClrDataAddress(target);
+        uint requiredLength;
+        int hr = sosDac.GetMethodDescName(methodDesc, 0, null, &requiredLength);
+        if (hr < 0 || requiredLength <= 1)
             return null;
 
-        MethodDefinitionHandle methodDef = MetadataTokens.MethodDefinitionHandle((int)(token & 0x00FFFFFF));
+        char[] nameBuffer = new char[requiredLength];
+        fixed (char* name = nameBuffer)
+        {
+            hr = sosDac.GetMethodDescName(methodDesc, requiredLength, name, &requiredLength);
+        }
 
-        return reader.GetString(reader.GetMethodDefinition(methodDef).Name);
+        if (hr < 0 || requiredLength <= 1)
+            return null;
+
+        return GetSimpleMethodName(new string(nameBuffer, 0, checked((int)requiredLength - 1)));
     }
 
     /// <summary>
@@ -94,5 +89,42 @@ public static class DumpTestHelpers
     public static ThreadData FindFailFastThread(ContractDescriptorTarget target)
     {
         return FindThreadWithMethod(target, "FailFast");
+    }
+
+    /// <summary>
+    /// Extracts the unqualified method name without generic arguments or parameter types
+    /// from a name formatted by <see cref="ISOSDacInterface.GetMethodDescName"/>.
+    /// </summary>
+    public static string GetSimpleMethodName(string formattedName)
+    {
+        ReadOnlySpan<char> name = formattedName;
+        int parametersStart = name.IndexOf('(');
+        if (parametersStart >= 0)
+            name = name[..parametersStart];
+
+        if (name.EndsWith("]", StringComparison.Ordinal))
+        {
+            int depth = 0;
+            for (int i = name.Length - 1; i >= 0; i--)
+            {
+                if (name[i] == ']')
+                    depth++;
+                else if (name[i] == '[' && --depth == 0)
+                {
+                    name = name[..i];
+                    break;
+                }
+            }
+        }
+
+        int methodStart = name.LastIndexOf('.') + 1;
+        // Constructors have a leading dot in addition to the declaring-type separator.
+        if (methodStart > 0 && name[methodStart..] is "ctor" or "cctor" &&
+            (methodStart == 1 || name[methodStart - 2] == '.'))
+        {
+            methodStart--;
+        }
+
+        return name[methodStart..].ToString();
     }
 }

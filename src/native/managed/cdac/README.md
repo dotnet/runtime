@@ -40,6 +40,17 @@ ISOSDacInterface* / IXCLRDataProcess (COM-style API surface)
   and algorithms each contract must implement.
 - **To write tests**: see the [tests README](tests/README.md).
 
+## Dump collection
+
+The separately built `Microsoft.Diagnostics.DataContractReader.EnumMemory` provider
+selects its collection mode from `miniDumpFlags`, as the native DAC does. The
+`CLRDataEnumMemoryFlags` argument to `EnumMemoryRegions` is reserved and ignored.
+Triage exception collection omits messages and remote stack traces from types
+that override the `StackTrace` getter. Stack-trace strings have source-file
+information removed through the optional `ICLRDataEnumMemoryRegionsCallback2`
+update callback, when the dump writer supports it. This does not guarantee that
+other memory selected by the dump writer is free of personal information.
+
 ## Project structure
 
 | Directory | Purpose |

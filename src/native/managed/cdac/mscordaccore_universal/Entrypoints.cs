@@ -337,7 +337,12 @@ internal static class Entrypoints
         try
         {
             object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
-            return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractDescriptorAddr, legacyImplPtr: IntPtr.Zero, new Lock(), iface);
+            return Legacy.SOSDacImpl.CreateInstance(
+                pIID,
+                legacyTarget,
+                contractDescriptorAddr,
+                legacyImplPtr: IntPtr.Zero,
+                iface);
         }
         catch (Exception ex)
         {
@@ -354,7 +359,7 @@ internal static class Entrypoints
 
         try
         {
-            return CLRDataCreateInstanceCore(pIID, pLegacyTarget, pLegacyImpl, new Lock(), iface);
+            return CLRDataCreateInstanceCore(pIID, pLegacyTarget, pLegacyImpl, iface);
         }
         catch (Exception ex)
         {
@@ -363,7 +368,7 @@ internal static class Entrypoints
         }
     }
 
-    private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, Lock apiLock, void** iface)
+    private static unsafe int CLRDataCreateInstanceCore(Guid* pIID, IntPtr /*ICLRDataTarget*/ pLegacyTarget, IntPtr pLegacyImpl, void** iface)
     {
         object legacyTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pLegacyTarget)!;
 
@@ -381,106 +386,12 @@ internal static class Entrypoints
             };
         }
 
-        return CreateInstanceFromContractDescriptorCore(pIID, legacyTarget, contractAddress, pLegacyImpl, apiLock, iface);
-    }
-
-    private static unsafe int CreateInstanceFromContractDescriptorCore(Guid* pIID, object legacyTarget, ulong contractAddress, IntPtr legacyImplPtr, Lock apiLock, void** iface)
-    {
-        ICLRDataTarget dataTarget = legacyTarget as ICLRDataTarget ?? throw new ArgumentException(
-            $"Data target does not implement {nameof(ICLRDataTarget)}", nameof(legacyTarget));
-
-        // Try to get ICLRDataTarget2 for memory allocation support (optional)
-        ICLRDataTarget2? dataTarget2 = legacyTarget as ICLRDataTarget2;
-
-        // Build the allocVirtual delegate if the target supports ICLRDataTarget2
-        ContractDescriptorTarget.AllocVirtualDelegate allocVirtual = (ulong size, out ulong allocatedAddress) =>
-        {
-            allocatedAddress = 0;
-            return HResults.E_NOTIMPL;
-        };
-
-        if (dataTarget2 is not null)
-        {
-            // Windows virtual memory allocation flags used by ICLRDataTarget2::AllocVirtual.
-            const uint MEM_COMMIT = 0x1000;
-            const uint PAGE_READWRITE = 0x04;
-
-            allocVirtual = (ulong size, out ulong allocatedAddress) =>
-            {
-                ClrDataAddress addr;
-                int result = dataTarget2.AllocVirtual(0, (uint)size, MEM_COMMIT, PAGE_READWRITE, &addr);
-                allocatedAddress = (ulong)addr;
-                return result;
-            };
-        }
-
-        ContractDescriptorTarget target = ContractDescriptorTarget.Create(
+        return Legacy.SOSDacImpl.CreateInstance(
+            pIID,
+            legacyTarget,
             contractAddress,
-            (address, buffer) =>
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    uint bytesRead;
-                    return dataTarget.ReadVirtual(address, bufferPtr, (uint)buffer.Length, &bytesRead);
-                }
-            },
-            (address, buffer) =>
-            {
-                fixed (byte* bufferPtr = buffer)
-                {
-                    uint bytesWritten;
-                    return dataTarget.WriteVirtual(address, bufferPtr, (uint)buffer.Length, &bytesWritten);
-                }
-            },
-            (threadId, contextFlags, bufferToFill) =>
-            {
-                fixed (byte* bufferPtr = bufferToFill)
-                {
-                    return dataTarget.GetThreadContext(threadId, contextFlags, (uint)bufferToFill.Length, bufferPtr);
-                }
-            },
-            (threadId, context) =>
-            {
-                fixed (byte* contextPtr = context)
-                {
-                    if (((nuint)contextPtr & (ContextAlignment - 1)) == 0)
-                    {
-                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, contextPtr);
-                    }
-
-                    byte* alignedBuffer = (byte*)NativeMemory.AlignedAlloc((nuint)context.Length, ContextAlignment);
-                    try
-                    {
-                        context.CopyTo(new Span<byte>(alignedBuffer, context.Length));
-                        return dataTarget.SetThreadContext(threadId, (uint)context.Length, alignedBuffer);
-                    }
-                    finally
-                    {
-                        NativeMemory.AlignedFree(alignedBuffer);
-                    }
-                }
-            },
-            allocVirtual,
-            [Contracts.CoreCLRContracts.Register]);
-
-        Contracts.CoreCLRContracts.ValidateForDataAccess(target, apiLock);
-
-        object? legacyImpl = legacyImplPtr != IntPtr.Zero
-            ? ComInterfaceMarshaller<ISOSDacInterface>.ConvertToManaged((void*)legacyImplPtr)
-            : null;
-
-        Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
-        void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
-        int hrQI = Marshal.QueryInterface((nint)ccw, *pIID, out nint ptrToIface);
-
-        // Decrement reference count on ccw because QI incremented it
-        ComInterfaceMarshaller<IXCLRDataProcess>.Free(ccw);
-
-        if (hrQI < 0)
-            return hrQI;
-
-        *iface = (void*)ptrToIface;
-        return 0;
+            pLegacyImpl,
+            iface);
     }
 
     private static unsafe ContractDescriptorTarget CreateTargetFromCorDebugDataTarget(object targetObject, ulong contractAddress)

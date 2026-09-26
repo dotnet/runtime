@@ -5,11 +5,30 @@
 
 typedef BOOL (PALAPI_NOEXPORT *PFN_DLLMAIN)(HINSTANCE, DWORD, LPVOID);      /* entry point of module */
 typedef HINSTANCE (PALAPI_NOEXPORT *PFN_REGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
+typedef HRESULT (STDAPICALLTYPE *PFN_CLRDataCreateInstanceFromContractDescriptor)(
+    REFIID iid,
+    ICLRDataTarget* dataTarget,
+    CLRDATA_ADDRESS contractDescriptorAddress,
+    void** iface);
 
 // This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
 CrashInfo* g_crashInfo;
 
 static bool ModuleInfoCompare(const ModuleInfo* lhs, const ModuleInfo* rhs) { return lhs->BaseAddress() < rhs->BaseAddress(); }
+
+static HRESULT
+CreateDacInterface(
+    PFN_CLRDataCreateInstance createInstance,
+    PFN_CLRDataCreateInstanceFromContractDescriptor createInstanceFromContractDescriptor,
+    REFIID iid,
+    ICLRDataTarget* dataTarget,
+    CLRDATA_ADDRESS contractDescriptorAddress,
+    void** iface)
+{
+    return createInstanceFromContractDescriptor != nullptr
+        ? createInstanceFromContractDescriptor(iid, dataTarget, contractDescriptorAddress, iface)
+        : createInstance(iid, dataTarget, iface);
+}
 
 CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_ref(1),
@@ -23,6 +42,7 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
     m_exceptionRecord(options.ExceptionRecord),
+    m_contractDescriptorAddress(0),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -302,6 +322,7 @@ CrashInfo::InitializeDAC(DumpType dumpType)
     }
     ReleaseHolder<DumpDataTarget> dataTarget{ new DumpDataTarget(*this) };
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
+    PFN_CLRDataCreateInstanceFromContractDescriptor pfnCLRDataCreateInstanceFromContractDescriptor = nullptr;
     PFN_DLLMAIN pfnDllMain = nullptr;
     bool result = false;
     HRESULT hr = S_OK;
@@ -348,13 +369,27 @@ CrashInfo::InitializeDAC(DumpType dumpType)
         printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", dlerror());
         goto exit;
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
+    pfnCLRDataCreateInstanceFromContractDescriptor =
+        (PFN_CLRDataCreateInstanceFromContractDescriptor)dlsym(m_dacModule, "CLRDataCreateInstanceFromContractDescriptor");
+    hr = CreateDacInterface(
+        pfnCLRDataCreateInstance,
+        pfnCLRDataCreateInstanceFromContractDescriptor,
+        __uuidof(ICLRDataEnumMemoryRegions),
+        dataTarget,
+        m_contractDescriptorAddress,
+        (void**)&m_pClrDataEnumRegions);
     if (FAILED(hr))
     {
-        printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
+        printf_error("InitializeDAC: CreateInstance(ICLRDataEnumMemoryRegions) FAILED %s (%08x)\n", GetHResultString(hr), hr);
         goto exit;
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
+    hr = CreateDacInterface(
+        pfnCLRDataCreateInstance,
+        pfnCLRDataCreateInstanceFromContractDescriptor,
+        __uuidof(IXCLRDataProcess),
+        dataTarget,
+        m_contractDescriptorAddress,
+        (void**)&m_pClrDataProcess);
     if (FAILED(hr))
     {
         printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %s (%08x)\n", GetHResultString(hr), hr);

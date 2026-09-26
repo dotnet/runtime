@@ -15,6 +15,31 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    [Theory]
+    [InlineData("MethodA", "MethodA")]
+    [InlineData("Program.MethodA", "MethodA")]
+    [InlineData("Namespace.Program.MethodA()", "MethodA")]
+    [InlineData("Namespace.Program.MethodA(System.String, Int32)", "MethodA")]
+    [InlineData("Namespace.Program.MethodAlternate()", "MethodAlternate")]
+    [InlineData("Namespace.MethodA.Other()", "Other")]
+    [InlineData("Program.Other(Namespace.MethodA)", "Other")]
+    [InlineData("Namespace.Program`1[System.String].MethodA()", "MethodA")]
+    [InlineData("Program.MethodA[System.String](System.String)", "MethodA")]
+    [InlineData("Program.MethodA[System.Collections.Generic.List`1[System.String[]]]()", "MethodA")]
+    [InlineData("Program.MethodA[System.String]", "MethodA")]
+    [InlineData("Namespace.Program`1[System.String].Other[Namespace.MethodA]()", "Other")]
+    [InlineData("Namespace.Program..ctor(Int32)", ".ctor")]
+    [InlineData("Namespace.Program..cctor()", ".cctor")]
+    [InlineData(".ctor", ".ctor")]
+    [InlineData("System.Int32[].Get(Int32)", "Get")]
+    [InlineData("ILStubClass.IL_STUB_PInvoke(IntPtr)", "IL_STUB_PInvoke")]
+    [InlineData("DynamicClass.DynamicMethod", "DynamicMethod")]
+    [InlineData("Program+<>c.<Main>b__0_0()", "<Main>b__0_0")]
+    public void GetSimpleMethodName_ExtractsOnlyMethodName(string formattedName, string expectedName)
+    {
+        Assert.Equal(expectedName, DumpTestHelpers.GetSimpleMethodName(formattedName));
+    }
+
     [Fact]
     public void LoongArch64Unwind_EpilogReturn_DoesNotRepeatStackAdjustment()
     {

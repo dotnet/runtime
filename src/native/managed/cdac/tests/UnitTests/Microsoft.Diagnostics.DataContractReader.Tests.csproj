@@ -9,6 +9,7 @@
   <Import Project="..\..\..\subproject.props" />
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.EnumMemory\Microsoft.Diagnostics.DataContractReader.EnumMemory.csproj" Aliases="Collector" GlobalPropertiesToRemove="RuntimeIdentifier" />
     <ProjectReference Include="..\..\mscordaccore_universal\mscordaccore_universal.csproj" AdditionalProperties="$(SplitSubprojectProps)" />
     <ProjectReference Include="..\TestInfrastructure\Microsoft.Diagnostics.DataContractReader.TestInfrastructure.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
   </ItemGroup>
