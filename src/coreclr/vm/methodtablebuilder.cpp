@@ -1310,23 +1310,50 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // parameters needed for BuildMethodTable Look at the struct definitions for a detailed list of all
     // parameters available to BuildMethodTableThrowing.
 
+    // Preserve StackingAllocator's 8-byte alignment for each record.
+    struct bmtInitialData
+    {
+        alignas(8) bmtErrorInfo error{};
+        alignas(8) bmtProperties properties{};
+        alignas(8) bmtVtable vtable{};
+        alignas(8) bmtParentInfo parent{};
+        alignas(8) bmtInterfaceInfo interfaces{};
+        alignas(8) bmtMetaDataInfo metadata{};
+        alignas(8) bmtMethodInfo methods{};
+        alignas(8) bmtMethAndFieldDescs descs{};
+        alignas(8) bmtFieldPlacement fieldPlacement{};
+        alignas(8) bmtInternalInfo internalInfo{};
+        alignas(8) bmtGCSeriesInfo gcSeries{};
+        alignas(8) bmtMethodImplInfo methodImpls{};
+        alignas(8) bmtEnumFieldInfo enumFields;
+        alignas(8) bmtLayoutInfo layout;
+
+        bmtInitialData(IMDInternalImport *pInternalImport, const bmtLayoutInfo &initialLayout)
+            : enumFields(pInternalImport), layout(initialLayout)
+        {
+        }
+    };
+
+    StackingAllocator * const pStackingAllocator = GetStackingAllocator();
+    bmtInitialData *pData = new (pStackingAllocator)
+        bmtInitialData(pModule->GetMDImport(), *initialLayoutInfo);
     SetBMTData(
         pAllocator,
-        new (GetStackingAllocator()) bmtErrorInfo(),
-        new (GetStackingAllocator()) bmtProperties(),
-        new (GetStackingAllocator()) bmtVtable(),
-        new (GetStackingAllocator()) bmtParentInfo(),
-        new (GetStackingAllocator()) bmtInterfaceInfo(),
-        new (GetStackingAllocator()) bmtMetaDataInfo(),
-        new (GetStackingAllocator()) bmtMethodInfo(),
-        new (GetStackingAllocator()) bmtMethAndFieldDescs(),
-        new (GetStackingAllocator()) bmtFieldPlacement(),
-        new (GetStackingAllocator()) bmtInternalInfo(),
-        new (GetStackingAllocator()) bmtGCSeriesInfo(),
-        new (GetStackingAllocator()) bmtMethodImplInfo(),
+        &pData->error,
+        &pData->properties,
+        &pData->vtable,
+        &pData->parent,
+        &pData->interfaces,
+        &pData->metadata,
+        &pData->methods,
+        &pData->descs,
+        &pData->fieldPlacement,
+        &pData->internalInfo,
+        &pData->gcSeries,
+        &pData->methodImpls,
         bmtGenericsInfo,
-        new (GetStackingAllocator()) bmtEnumFieldInfo(pModule->GetMDImport()),
-        new (GetStackingAllocator()) bmtLayoutInfo(*initialLayoutInfo));
+        &pData->enumFields,
+        &pData->layout);
 
     //Initialize structs
 
@@ -8627,7 +8654,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
                 // Avoid reordering of gcfields
                 if (i == LOG2SLOT) {
                     for ( ; j < bmtEnumFields->dwNumInstanceFields; j++) {
-                        if ((pFieldDescList[j].GetOffset() == FIELD_OFFSET_UNPLACED) &&
+                        if ((pFieldDescList[j].GetOffsetRaw() == FIELD_OFFSET_UNPLACED) &&
                             ((DWORD_PTR&)pFieldDescList[j].m_pMTOfEnclosingClass == (size_t)i))
                             break;
                     }
@@ -8666,9 +8693,11 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
         }
 
         // Place fields, largest first
+        bmtFieldPlacement * const pFieldPlacement = bmtFP;
         for (i = MAX_LOG2_PRIMITIVE_FIELD_SIZE; (signed int) i >= 0; i--)
         {
-            if (bmtFP->NumInstanceFieldsOfSize[i] == 0)
+            const DWORD dwNumInstanceFields = pFieldPlacement->NumInstanceFieldsOfSize[i];
+            if (dwNumInstanceFields == 0)
                 continue;
 
             // Align instance fields if we aren't already
@@ -8680,11 +8709,11 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             dwCumulativeInstanceFieldPos = (DWORD)ALIGN_UP(dwCumulativeInstanceFieldPos, dwDataAlignment);
 
             // Fields of this size start at the next available location
-            bmtFP->InstanceFieldStart[i] = dwCumulativeInstanceFieldPos;
-            dwCumulativeInstanceFieldPos += (bmtFP->NumInstanceFieldsOfSize[i] << i);
+            pFieldPlacement->InstanceFieldStart[i] = dwCumulativeInstanceFieldPos;
+            dwCumulativeInstanceFieldPos += (dwNumInstanceFields << i);
 
             // Reset counters for the loop after this one
-            bmtFP->NumInstanceFieldsOfSize[i]  = 0;
+            pFieldPlacement->NumInstanceFieldsOfSize[i] = 0;
         }
 
 
@@ -8705,7 +8734,7 @@ VOID MethodTableBuilder::HandleAutoLayout(MethodTable ** pByValueClassCache)
             DWORD dwFieldSize   = (DWORD)(DWORD_PTR&)pFieldDescList[i].m_pMTOfEnclosingClass;
             DWORD dwOffset;
 
-            dwOffset = pFieldDescList[i].GetOffset();
+            dwOffset = pFieldDescList[i].GetOffsetRaw();
 
             // Don't place already-placed fields
             if ((dwOffset == FIELD_OFFSET_UNPLACED || dwOffset == FIELD_OFFSET_UNPLACED_GC_PTR || dwOffset == FIELD_OFFSET_VALUE_CLASS))
@@ -12604,7 +12633,7 @@ BOOL MethodTableBuilder::bmtMethodImplInfo::IsBody(mdToken tok)
     CONSISTENCY_CHECK(TypeFromToken(tok) == mdtMethodDef);
     for (DWORD i = 0; i < pIndex; i++)
     {
-        if (GetBodyMethodDesc(i)->GetMemberDef() == tok)
+        if (GetImplementationMethod(i)->GetMethodSignature().GetToken() == tok)
         {
             return TRUE;
         }

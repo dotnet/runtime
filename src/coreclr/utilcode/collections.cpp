@@ -971,7 +971,7 @@ void CStructArray::Grow(
 //*****************************************************************************
 // Free the memory for this item.
 //*****************************************************************************
-void CStructArray::Clear()
+void CStructArray::Clear() noexcept
 {
     CONTRACTL
     {
