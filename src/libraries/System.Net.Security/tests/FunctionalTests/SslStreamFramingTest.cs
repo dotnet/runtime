@@ -135,6 +135,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [SkipOnPlatform(TestPlatforms.Android, "SslStream hangs waiting for more data instead of detecting the complete 5-byte TLS frame.")]
         public async Task Read_ExactlyFiveByteTlsRecord_DetectedAsCompleteFrame()
         {
             // Regression test: a TLS record that is exactly the 5-byte header with a
