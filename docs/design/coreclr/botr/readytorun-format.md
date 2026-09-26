@@ -1186,8 +1186,8 @@ for parameters because their placement in the transition block depends on it.
 
 **Hidden parameters** (inserted between `this` and explicit parameters, in order):
 
-1. **Generic context** (`i`): present when the method requires an inst method desc or
-   method table argument.
+1. **Generic context** (`g`): present when the method requires an inst method desc or
+   method table argument. It is passed as one pointer-sized Wasm parameter.
 2. **Async continuation** (`a`): present for async calls.
 
 Note: the hidden return buffer pointer is **not** encoded in the signature string. Its

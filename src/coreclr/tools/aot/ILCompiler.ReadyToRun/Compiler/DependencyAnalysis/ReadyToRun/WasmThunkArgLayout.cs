@@ -14,8 +14,6 @@ internal enum WasmThunkArgKind
 {
     This,
     RetBuf,
-    // The signature encodes the generic context like any pointer-sized argument, so it is only recognizable
-    // when the async continuation follows it; otherwise it occupies the first argument slot either way.
     GenericContext,
     AsyncContinuation,
     Argument,
@@ -109,9 +107,9 @@ internal sealed class WasmThunkArgLayout
             AddHiddenArg(WasmThunkArgKind.RetBuf, TransitionBlock.InvalidOffset);
         }
 
-        if (argit.HasParamType)
+        if (sig[pos] == WasmLowering.GenericContextSigChar)
         {
-            Debug.Assert(sig[pos] == ((context.Target.PointerSize == 4) ? 'i' : 'l'));
+            Debug.Assert(argit.HasParamType);
             AddHiddenArg(WasmThunkArgKind.GenericContext, argit.GetParamTypeArgOffset());
             pos++;
         }
@@ -175,24 +173,10 @@ internal sealed class WasmThunkArgLayout
     private static (MethodSignature, ArgIterator<TypeHandle>, TransitionBlock) BuildArgIterator(WasmSignature wasmSignature, TypeSystemContext context)
     {
         MethodSignature signature = WasmLowering.RaiseSignature(wasmSignature, context);
-        bool isAsyncCall = wasmSignature.SignatureString.Contains('a');
-        bool hasGenericContext = WasmLowering.HasGenericContextBeforeAsync(wasmSignature, context);
-        if (hasGenericContext)
-        {
-            // RaiseSignature returns the generic context as the first parameter; lay it out as the hidden
-            // instantiation argument instead, so it precedes the async continuation.
-            TypeDesc[] parameters = new TypeDesc[signature.Length - 1];
-            for (int i = 0; i < parameters.Length; i++)
-            {
-                parameters[i] = signature[i + 1];
-            }
-
-            signature = new MethodSignature(signature.Flags, signature.GenericParameterCount, signature.ReturnType, parameters);
-        }
-
+        WasmLowering.LoweringFlags hiddenArguments = WasmLowering.GetHiddenArgumentFlags(wasmSignature);
         (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(signature, context,
-            methodRequiresInstArg: hasGenericContext,
-            methodIsAsyncCall: isAsyncCall);
+            methodRequiresInstArg: hiddenArguments.HasFlag(WasmLowering.LoweringFlags.HasGenericContextArg),
+            methodIsAsyncCall: hiddenArguments.HasFlag(WasmLowering.LoweringFlags.IsAsyncCall));
 
         return (signature, argit, transitionBlock);
     }

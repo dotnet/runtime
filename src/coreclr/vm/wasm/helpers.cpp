@@ -1144,7 +1144,16 @@ namespace
 
         if (sig.HasGenericContextArg() && !suppressGenericContext)
         {
-            pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            if (wasmCallingConventionOnly)
+            {
+                pos += AppendWasmTypeCode(ConvertType::ToI32, keyBuffer, pos, maxSize);
+            }
+            else
+            {
+                if (pos < maxSize)
+                    keyBuffer[pos] = 'g';
+                pos++;
+            }
         }
 
         if (sig.HasAsyncContinuation())
