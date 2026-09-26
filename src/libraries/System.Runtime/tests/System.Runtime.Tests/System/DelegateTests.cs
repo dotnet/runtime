@@ -560,7 +560,12 @@ namespace System.Tests
             Assert.Equal(nameof(OpenVirtualDerived), toString(new OpenVirtualDerived()));
             Assert.Equal(typeof(Struct).ToString(), toString(new Struct()));
             Assert.Equal(nameof(DayOfWeek.Monday), toString(DayOfWeek.Monday));
+        }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134707", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        public static void OpenVirtualDelegates_InterfaceMethod_InvokeResolvesImplementation()
+        {
             Func<IOpenVirtual, int> interfaceMethod = typeof(IOpenVirtual).GetMethod(nameof(IOpenVirtual.M)).CreateDelegate<Func<IOpenVirtual, int>>();
             Assert.Equal(1, interfaceMethod(new OpenVirtualDerived()));
             Assert.Equal(2, interfaceMethod(new OpenVirtualStruct()));
