@@ -27,6 +27,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
     <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <!-- Strip R2R debug info (IL offset maps and variable locations) to minimize download size.
+         Set PublishReadyToRunStripDebugInfo=false to keep it for debugging R2R code. -->
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false'">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!-- Prebuilt R2R probe directory for ConvertDllsToWebcil. PublishTrimmed is deliberately not consulted:
@@ -236,6 +239,19 @@ Copyright (c) .NET Foundation. All rights reserved.
       <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
+    </ItemGroup>
+    <!-- Crossgen2 arguments (e.g. toggling PublishReadyToRunStripDebugInfo) don't change any file input, so
+         stamp them; WriteOnlyWhenDifferent bumps the timestamp only when the arguments change. -->
+    <PropertyGroup>
+      <_WasmReadyToRunArgsStamp>$(IntermediateOutputPath)wasm-r2r-args.stamp</_WasmReadyToRunArgsStamp>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WasmReadyToRunArgsStamp)"
+                      Lines="$(PublishReadyToRunCrossgen2ExtraArgs)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunArgsStamp)" />
+      <FileWrites Include="$(_WasmReadyToRunArgsStamp)" />
     </ItemGroup>
   </Target>
 
