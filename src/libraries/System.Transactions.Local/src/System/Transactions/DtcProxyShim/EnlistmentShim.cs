@@ -15,14 +15,14 @@ internal sealed class EnlistmentShim
     internal EnlistmentShim(EnlistmentNotifyShim notifyShim)
         => _enlistmentNotifyShim = notifyShim;
 
-    public void PrepareRequestDone(OletxPrepareVoteType voteType)
+    public void PrepareRequestDone(Interop.Xolehlp.OletxPrepareVoteType voteType)
     {
         var voteHr = OletxHelper.S_OK;
         var releaseEnlistment = false;
 
         switch (voteType)
         {
-            case OletxPrepareVoteType.ReadOnly:
+            case Interop.Xolehlp.OletxPrepareVoteType.ReadOnly:
                 {
                     // On W2k Proxy may send a spurious aborted notification if the TM goes down.
                     _enlistmentNotifyShim.SetIgnoreSpuriousProxyNotifications();
@@ -30,7 +30,7 @@ internal sealed class EnlistmentShim
                     break;
                 }
 
-            case OletxPrepareVoteType.SinglePhase:
+            case Interop.Xolehlp.OletxPrepareVoteType.SinglePhase:
                 {
                     // On W2k Proxy may send a spurious aborted notification if the TM goes down.
                     _enlistmentNotifyShim.SetIgnoreSpuriousProxyNotifications();
@@ -38,13 +38,13 @@ internal sealed class EnlistmentShim
                     break;
                 }
 
-            case OletxPrepareVoteType.Prepared:
+            case Interop.Xolehlp.OletxPrepareVoteType.Prepared:
                 {
                     voteHr = OletxHelper.S_OK;
                     break;
                 }
 
-            case OletxPrepareVoteType.Failed:
+            case Interop.Xolehlp.OletxPrepareVoteType.Failed:
                 {
                     // Proxy may send a spurious aborted notification if the TM goes down.
                     _enlistmentNotifyShim.SetIgnoreSpuriousProxyNotifications();
@@ -52,7 +52,7 @@ internal sealed class EnlistmentShim
                     break;
                 }
 
-            case OletxPrepareVoteType.InDoubt:
+            case Interop.Xolehlp.OletxPrepareVoteType.InDoubt:
                 {
                     releaseEnlistment = true;
                     break;
