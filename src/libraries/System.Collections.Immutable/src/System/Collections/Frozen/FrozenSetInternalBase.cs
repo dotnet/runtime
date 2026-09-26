@@ -139,7 +139,7 @@ namespace System.Collections.Frozen
             }
 
             return OverlapsEnumerableImpl(other);
-        }        
+        }
 
         private bool OverlapsEnumerableImpl(IEnumerable<T> other)
         {
