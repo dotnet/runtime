@@ -44,10 +44,5 @@ using std::max;
 #include "utilcode.h"
 #endif
 
-#ifndef TARGET_ARM
-#define DbiGetThreadContext(hThread, lpContext) ::GetThreadContext(hThread, (CONTEXT*)(lpContext))
-#define DbiSetThreadContext(hThread, lpContext) ::SetThreadContext(hThread, (CONTEXT*)(lpContext))
-#else
-BOOL DbiGetThreadContext(HANDLE hThread, DT_CONTEXT *lpContext);
-BOOL DbiSetThreadContext(HANDLE hThread, const DT_CONTEXT *lpContext);
-#endif
+BOOL DbiGetThreadContext(HANDLE hThread, T_CONTEXT *lpContext);
+BOOL DbiSetThreadContext(HANDLE hThread, const T_CONTEXT *lpContext);
