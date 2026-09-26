@@ -2550,9 +2550,11 @@ namespace System.StubHelpers
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD); // the byref is pinned so we can safely "cast" it to IntPtr
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void MulticastDebuggerTraceHelper(object o, int count)
+        internal static unsafe void MulticastDebuggerTraceHelper(MulticastDelegate d, ref Delegate.Wrapper position)
         {
-            MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref o), count);
+            nuint byteOffset = (nuint)Unsafe.ByteOffset(ref (((Delegate.Wrapper[])d._helperObject!))[0], ref position);
+            nuint count = byteOffset / (uint)sizeof(Delegate.Wrapper);
+            MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack.Create(ref d), (int)count);
         }
 
         [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
