@@ -79,8 +79,21 @@ namespace Microsoft.Win32.SafeHandles
 {
     internal sealed class SafeSslContextHandle : SafeHandle, ISafeHandleCachable
     {
+        // OpenSSL retires a TLS 1.3 session when the handshake using it finishes
+        // (tls_finish_handshake calls SSL_CTX_remove_session, which sets not_resumable on
+        // the shared object), so offering one session to several concurrent handshakes
+        // silently downgrades all but the first to a full handshake. Pooling several
+        // tickets per host lets concurrent connections each take a distinct one.
+        private const int TlsResumePoolSize = 8;
+
+        private readonly struct CachedSession(IntPtr session, bool isTls13)
+        {
+            public IntPtr Session { get; } = session;
+            public bool IsTls13 { get; } = isTls13;
+        }
+
         // This is session cache keyed by SNI e.g. TargetHost
-        private Dictionary<string, IntPtr>? _sslSessions;
+        private Dictionary<string, List<CachedSession>>? _sslSessions;
         private GCHandle _gch;
 
         // SSL_CTX handles are cached, so we need to keep track of the
@@ -146,9 +159,12 @@ namespace Microsoft.Win32.SafeHandles
 
                 lock (_sslSessions)
                 {
-                    foreach (IntPtr session in _sslSessions.Values)
+                    foreach (List<CachedSession> sessions in _sslSessions.Values)
                     {
-                        Interop.Ssl.SessionFree(session);
+                        foreach (CachedSession cached in sessions)
+                        {
+                            Interop.Ssl.SessionFree(cached.Session);
+                        }
                     }
 
                     _sslSessions.Clear();
@@ -168,14 +184,14 @@ namespace Microsoft.Win32.SafeHandles
         {
             Debug.Assert(_sslSessions == null);
 
-            _sslSessions = new Dictionary<string, IntPtr>();
+            _sslSessions = new Dictionary<string, List<CachedSession>>();
             _gch = GCHandle.Alloc(this);
             Debug.Assert(_gch.IsAllocated);
             // This is needed so we can find the handle from session in SessionRemove callback.
             Interop.Ssl.SslCtxSetData(this, (IntPtr)_gch);
         }
 
-        internal unsafe bool TryAddSession(byte* namePtr, IntPtr session)
+        internal unsafe bool TryAddSession(byte* namePtr, IntPtr session, bool isTls13)
         {
             Debug.Assert(_sslSessions != null && session != IntPtr.Zero);
 
@@ -187,70 +203,112 @@ namespace Microsoft.Win32.SafeHandles
             string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
-            if (!string.IsNullOrEmpty(targetName))
+            if (string.IsNullOrEmpty(targetName))
             {
-                // We do this only for lookup in RemoveSession.
-                // Since this is part of cache manipulation and no function impact it is done here.
-                // This will use strdup() so it is safe to pass in raw pointer.
-                Interop.Ssl.SessionSetHostname(session, namePtr);
-
-                IntPtr oldSession = IntPtr.Zero;
-
-                lock (_sslSessions)
-                {
-                    if (!_sslSessions.TryAdd(targetName, session))
-                    {
-                        // session to this target host exists, replace it
-                        _sslSessions.Remove(targetName, out oldSession);
-                        bool added = _sslSessions.TryAdd(targetName, session);
-                        Debug.Assert(added);
-                    }
-                }
-
-                if (oldSession != IntPtr.Zero)
-                {
-                    // remove old session also from the internal OpenSSL cache
-                    // and drop reference count. Since SSL_CTX_remove_session
-                    // will call session_remove_cb, we need to do this outside
-                    // of _sslSessions lock to avoid deadlock with another thread
-                    // which could be holding SSL_CTX lock and trying to acquire
-                    // _sslSessions lock.
-                    Interop.Ssl.SslCtxRemoveSession(this, oldSession);
-                    Interop.Ssl.SessionFree(oldSession);
-                }
-
-                return true;
+                return false;
             }
 
-            return false;
+            // We do this only for lookup in RemoveSession.
+            // Since this is part of cache manipulation and no function impact it is done here.
+            // This will use strdup() so it is safe to pass in raw pointer.
+            Interop.Ssl.SessionSetHostname(session, namePtr);
+
+            // A TLS 1.2 session stays usable after a resumption and is never replaced by a
+            // new one (OpenSSL skips new_session_cb on resumed TLS 1.2 handshakes), so a
+            // single entry is both sufficient and all we will ever be given.
+            int limit = isTls13 ? TlsResumePoolSize : 1;
+
+            IntPtr[]? evicted = null;
+            int evictedCount = 0;
+
+            lock (_sslSessions)
+            {
+                if (!_sslSessions.TryGetValue(targetName, out List<CachedSession>? sessions))
+                {
+                    sessions = new List<CachedSession>();
+                    _sslSessions[targetName] = sessions;
+                }
+
+                // Pooled tickets are only usable by the protocol version that produced them,
+                // so a change of negotiated version drops the pool rather than leaving a
+                // stale entry at the head masking everything behind it.
+                int toEvict = sessions.Count > 0 && sessions[0].IsTls13 != isTls13
+                    ? sessions.Count
+                    : Math.Max(0, sessions.Count - limit + 1);
+
+                if (toEvict > 0)
+                {
+                    evicted = new IntPtr[toEvict];
+                    for (; evictedCount < toEvict; evictedCount++)
+                    {
+                        evicted[evictedCount] = sessions[evictedCount].Session;
+                    }
+
+                    sessions.RemoveRange(0, toEvict);
+                }
+
+                sessions.Add(new CachedSession(session, isTls13));
+            }
+
+            for (int i = 0; i < evictedCount; i++)
+            {
+                // Remove the evicted session also from the internal OpenSSL cache and drop
+                // the reference count. Since SSL_CTX_remove_session will call
+                // session_remove_cb, we need to do this outside of the _sslSessions lock to
+                // avoid deadlock with another thread which could be holding the SSL_CTX lock
+                // and trying to acquire _sslSessions.
+                Interop.Ssl.SslCtxRemoveSession(this, evicted![i]);
+                Interop.Ssl.SessionFree(evicted[i]);
+            }
+
+            return true;
         }
 
         internal unsafe void RemoveSession(byte* namePtr, IntPtr session)
         {
             Debug.Assert(_sslSessions != null);
 
+            if (_sslSessions == null || namePtr == null)
+            {
+                return;
+            }
+
             string? targetName = Utf8StringMarshaller.ConvertToManaged(namePtr);
             Debug.Assert(targetName != null);
 
-            if (_sslSessions != null && targetName != null)
+            if (targetName == null)
             {
-                IntPtr oldSession = IntPtr.Zero;
-                bool removed = false;
-                lock (_sslSessions)
+                return;
+            }
+
+            bool removed = false;
+
+            lock (_sslSessions)
+            {
+                if (_sslSessions.TryGetValue(targetName, out List<CachedSession>? sessions))
                 {
-                    if (_sslSessions.TryGetValue(targetName, out IntPtr existingSession) && existingSession == session)
+                    for (int i = 0; i < sessions.Count; i++)
                     {
-                        removed = _sslSessions.Remove(targetName, out oldSession);
+                        if (sessions[i].Session == session)
+                        {
+                            sessions.RemoveAt(i);
+                            removed = true;
+                            break;
+                        }
+                    }
+
+                    if (sessions.Count == 0)
+                    {
+                        _sslSessions.Remove(targetName);
                     }
                 }
+            }
 
-                if (removed)
-                {
-                    // It seems like we may be called more than once. Since we grabbed only one refference
-                    // when added to Dictionary, we will also drop exactly one when removed.
-                    Interop.Ssl.SessionFree(oldSession);
-                }
-
+            if (removed)
+            {
+                // It seems like we may be called more than once. Since we grabbed only one
+                // reference when added to the cache, we will also drop exactly one when removed.
+                Interop.Ssl.SessionFree(session);
             }
         }
 
@@ -263,18 +321,44 @@ namespace Microsoft.Win32.SafeHandles
                 return false;
             }
 
+            IntPtr owned;
+
             lock (_sslSessions)
             {
-                if (_sslSessions.TryGetValue(name, out IntPtr session))
+                if (!_sslSessions.TryGetValue(name, out List<CachedSession>? sessions) || sessions.Count == 0)
                 {
-                    // This will increase reference count on the session as needed.
-                    // We need to hold lock here to prevent session being deleted before the call is done.
-                    Interop.Ssl.SslSetSession(sslHandle, session);
-                    return true;
+                    return false;
                 }
+
+                CachedSession cached = sessions[0];
+
+                // While the pool holds more than one ticket each concurrent handshake can
+                // take its own. The last one is still shared rather than withheld, since a
+                // shared ticket only costs a fallback to a full handshake, while withholding
+                // it guarantees one.
+                bool singleUse = cached.IsTls13 && sessions.Count > 1;
+
+                if (singleUse)
+                {
+                    // Taking the entry out of the cache transfers the cache's reference to us.
+                    // The pool holds more than one entry here, so it cannot become empty.
+                    sessions.RemoveAt(0);
+                }
+                else if (Interop.Ssl.SessionUpRef(cached.Session) != 1)
+                {
+                    return false;
+                }
+
+                owned = cached.Session;
             }
 
-            return false;
+            // Held outside the lock: RemoveSession frees on a callback OpenSSL raises while
+            // holding the SSL_CTX lock, so the reference taken above, not the lock, is what
+            // keeps the session alive across this call.
+            bool set = Interop.Ssl.SslSetSession(sslHandle, owned) == 1;
+            Interop.Ssl.SessionFree(owned);
+
+            return set;
         }
     }
 }
