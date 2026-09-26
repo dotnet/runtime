@@ -11,6 +11,7 @@ else()
     set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 endif()
 
+
 set(SOURCES
     ./error_writer_redirector.cpp
     ./get_native_search_directories_test.cpp
@@ -32,10 +33,12 @@ set(HEADERS
 
 if(CLR_CMAKE_TARGET_WIN32)
     list(APPEND SOURCES
-        ./comhost_test.cpp)
+        ./comhost_test.cpp
+        ./ijwhost_test.cpp)
 
     list(APPEND HEADERS
-        ./comhost_test.h)
+        ./comhost_test.h
+        ./ijwhost_test.h)
 endif()
 
 add_executable(nativehost ${SOURCES})
@@ -82,4 +85,3 @@ if (MSVC)
         INTERPROCEDURAL_OPTIMIZATION OFF
         CXX_LINKER_LAUNCHER "${CMAKE_COMMAND};-P;${CMAKE_CURRENT_SOURCE_DIR}/run-linker-verify-no-ltcg.cmake")
 endif()
-
