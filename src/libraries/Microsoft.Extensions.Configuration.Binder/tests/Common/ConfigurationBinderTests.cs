@@ -3689,5 +3689,71 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(1, result.Source.Addresses.Count());
             Assert.Equal("127.0.0.1", result.Source.Addresses.First());
         }
+
+        [Fact]
+        public void GetValue_EmptyStringForString_ReturnsEmptyString()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Equal(string.Empty, config.GetValue<string>("Value"));
+        }
+
+        [Fact]
+        public void GetValue_EmptyStringForInt32_Throws()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Throws<InvalidOperationException>(() => config.GetValue<int>("Value"));
+        }
+
+        [Fact]
+        public void GetValue_EmptyStringForNullableInt32_ReturnsNull()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Null(config.GetValue<int?>("Value"));
+        }
+
+        [Fact]
+        public void GetValue_EmptyStringForByteArray_ReturnsEmptyArray()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Empty(Assert.IsType<byte[]>(config.GetValue<byte[]>("Value")));
+        }
+
+        [Fact]
+        public void Get_EmptyStringForNullableInt32_ReturnsNull()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Null(config.GetSection("Value").Get<int?>());
+        }
+
+        [Fact]
+        public void Get_EmptyStringForInt32_ThrowsConversionException()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Throws<InvalidOperationException>(() => config.GetSection("Value").Get<int>());
+        }
+
+        [Fact]
+        public void Get_EmptyStringArrayElementWithErrorOnUnknownConfiguration_Throws()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Values": [ "" ] }""");
+
+            Assert.Throws<InvalidOperationException>(
+                () => config.GetSection("Values").Get<int[]>(o => o.ErrorOnUnknownConfiguration = true));
+        }
+
+        [Fact]
+        public void Get_EmptyStringDictionaryValueWithErrorOnUnknownConfiguration_Throws()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Values": { "Key": "" } }""");
+
+            Assert.Throws<InvalidOperationException>(
+                () => config.GetSection("Values").Get<Dictionary<string, int>>(o => o.ErrorOnUnknownConfiguration = true));
+        }
     }
 }
