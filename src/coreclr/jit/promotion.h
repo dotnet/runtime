@@ -17,15 +17,17 @@ const int PHYSICAL_PROMOTION_MAX_PROMOTIONS_PER_STRUCT = 64;
 // Represents a single replacement of a (field) access into a struct local.
 struct Replacement
 {
-    unsigned  Offset;
-    var_types AccessType;
-    unsigned  LclNum = BAD_VAR_NUM;
+    BasicBlock* ReadBackPlacement = nullptr;
+    unsigned    Offset;
+    var_types   AccessType;
+    unsigned    LclNum = BAD_VAR_NUM;
+    // Dense index into the inter-block pending-readback sets.
+    unsigned ReadBackIndex = BAD_VAR_NUM;
     // Is the replacement local (given by LclNum) fresher than the value in the struct local?
     bool NeedsWriteBack = true;
     // Is the value in the struct local fresher than the replacement local?
-    // Note that the invariant is that this is always false at the entrance to
-    // a basic block, i.e. all predecessors would have read the replacement
-    // back before transferring control if necessary.
+    // This may remain true across blocks when all incoming paths agree that
+    // the struct local contains the current value.
     bool NeedsReadBack = false;
 #ifdef DEBUG
     const char* Description = "";
@@ -154,8 +156,7 @@ class Promotion
 
     static bool     IsCandidateForPhysicalPromotion(LclVarDsc* dsc);
     static GenTree* EffectiveUser(Compiler::GenTreeStack& ancestors);
-    static bool     MapsToParameterRegister(
-            Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType, bool allowBitwiseExtraction = true);
+    static bool     MapsToParameterRegister(Compiler* comp, unsigned lclNum, unsigned offs, var_types accessType);
 public:
     explicit Promotion(Compiler* compiler)
         : m_compiler(compiler)
@@ -214,6 +215,8 @@ public:
     }
 
     void         Run();
+    bool         IsReplacementUsed(BasicBlock* bb, unsigned structLcl, unsigned replacement);
+    bool         IsReplacementDefined(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveIn(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     bool         IsReplacementLiveOut(BasicBlock* bb, unsigned structLcl, unsigned replacement);
     StructDeaths GetDeathsForStructLocal(GenTreeLclVarCommon* use);
@@ -249,6 +252,15 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Statement*         m_currentStmt         = nullptr;
     BasicBlock*        m_currentBlock        = nullptr;
 
+    FlowGraphDfsTree* m_dfsTree;
+    BitVecTraits*     m_readBackTraits;
+    BitVecTraits      m_postOrderTraits;
+    BitVec*           m_pendingReadBacks;
+    BitVec*           m_currentStructFields;
+    BitVec            m_processedBlocks;
+    BitVec            m_requiresAlreadyReadBackOnEntry;
+    BitVec            m_requiresReadBackOnExit;
+
 public:
     enum
     {
@@ -257,13 +269,12 @@ public:
         ComputeStack      = true,
     };
 
-    ReplaceVisitor(Promotion* prom, AggregateInfoMap& aggregates, PromotionLiveness* liveness)
-        : GenTreeVisitor(prom->m_compiler)
-        , m_promotion(prom)
-        , m_aggregates(aggregates)
-        , m_liveness(liveness)
-    {
-    }
+    ReplaceVisitor(Promotion*         prom,
+                   AggregateInfoMap&  aggregates,
+                   PromotionLiveness* liveness,
+                   FlowGraphDfsTree*  dfsTree);
+
+    void PrepareReadBacks();
 
     bool MadeChanges()
     {
@@ -282,6 +293,10 @@ public:
     fgWalkResult PostOrderVisit(GenTree** use, GenTree* user);
 
 private:
+    void PlanReadBacks();
+    bool MustMaterializeReadBacks(BasicBlock* block);
+    void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep);
+
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
     void SetNeedsReadBack(Replacement& rep);
