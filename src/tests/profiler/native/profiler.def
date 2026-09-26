@@ -9,4 +9,6 @@ EXPORTS
             SwitchJitOptimization   PRIVATE
             SwitchInlining  PRIVATE
             GetInlineCount          PRIVATE
-
+            BeginAllocationByClassCacheTest PRIVATE
+            IsAllocationByClassCacheTestComplete PRIVATE
+            IsNotificationProfilerWaitingForAllocationCallback PRIVATE

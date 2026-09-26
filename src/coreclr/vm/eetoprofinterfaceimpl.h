@@ -539,9 +539,9 @@ private:
         GCReferencesData * pNext;
     };
 
-    // Since this stuff can only be performed by one thread (right now), we don't need
-    // to make this thread safe and can just have one block we reuse every time around
-    static AllocByClassData * m_pSavedAllocDataBlock;
+    // Since this stuff can only be performed by one thread per profiler (right now), we don't
+    // need to make this thread safe and can just have one block we reuse every time around.
+    AllocByClassData * m_pSavedAllocDataBlock;
 
     // Pointer to the profiler's implementation of the callback interface(s).
     // Profilers MUST support ICorProfilerCallback2.

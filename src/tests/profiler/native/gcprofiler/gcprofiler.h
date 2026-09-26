@@ -33,7 +33,23 @@ public:
     virtual HRESULT STDMETHODCALLTYPE ObjectReferences(ObjectID objectId, ClassID classId, ULONG cObjectRefs, ObjectID objectRefIds[]);
     virtual HRESULT STDMETHODCALLTYPE RootReferences(ULONG cRootRefs, ObjectID rootRefIds[]);
 
+    static void BeginAllocationByClassCacheTest();
+    static bool IsAllocationByClassCacheTestComplete();
+
 private:
+    enum class AllocationByClassCacheTestState
+    {
+        Inactive,
+        CaptureBaseline,
+        VerifyDuringAttach,
+        VerifyAfterTeardown,
+        Complete,
+    };
+
+    static std::atomic<AllocationByClassCacheTestState> _allocationByClassCacheTestState;
+    static ClassID* _expectedClassIds;
+    static ULONG* _expectedObjectCounts;
+
     std::atomic<int> _gcStarts;
     std::atomic<int> _gcFinishes;
     std::atomic<int> _allocatedByClassCalls;
@@ -44,4 +60,5 @@ private:
     std::unordered_set<ObjectID> _objectReferencesSeen;
 
     int NumPOHObjectsSeen(std::unordered_set<ObjectID> objects);
+    void ValidateAllocationByClassCache(ClassID classIds[], ULONG cObjects[]);
 };

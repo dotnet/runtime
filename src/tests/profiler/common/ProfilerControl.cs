@@ -22,9 +22,26 @@ namespace Profiler.Tests
     {
         public static void AttachProfilerToSelf(Guid profilerGuid, string profilerPath)
         {
+            AttachProfilerToSelf(profilerGuid, profilerPath, null);
+        }
+
+        public static void AttachProfilerToSelf(Guid profilerGuid, string profilerPath, byte[] clientData)
+        {
             int processId = Process.GetCurrentProcess().Id;
             DiagnosticsClient client = new DiagnosticsClient(processId);
-            client.AttachProfiler(TimeSpan.MaxValue, profilerGuid, profilerPath, null);
+            client.AttachProfiler(TimeSpan.MaxValue, profilerGuid, profilerPath, clientData);
+        }
+
+        public static void AttachProfilerToSelfExpectFailure(Guid profilerGuid, string profilerPath, byte[] clientData)
+        {
+            try
+            {
+                AttachProfilerToSelf(profilerGuid, profilerPath, clientData);
+                throw new Exception("Profiler attach unexpectedly succeeded.");
+            }
+            catch (ServerErrorException)
+            {
+            }
         }
 
         public static EventPipeSession AttachEventPipeSessionToSelf(IEnumerable<EventPipeProvider> providers)
