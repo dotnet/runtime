@@ -23,7 +23,7 @@
 // src/native/managed/cdac/Microsoft.Diagnostics.DataContractReader.Contracts/Contracts/RuntimeInfo_1.cs
 // to match.
 #ifndef CDAC_RECOMMENDED_READER_VERSION
-#define CDAC_RECOMMENDED_READER_VERSION 1
+#define CDAC_RECOMMENDED_READER_VERSION 2
 #endif
 
 // When changes will break existing diagnostic tools (changes that are incompatible with the existing data contracts)

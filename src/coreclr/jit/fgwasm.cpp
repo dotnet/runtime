@@ -348,7 +348,10 @@ public:
                         else
                         {
                             JITDUMP("Multiple try entries in SCC %u entry set\n", m_num);
-                            NYI_WASM("SCC with multiple try entry headers");
+                            // Multiple try entries in an SCC is currently not supported. These cases appear to be
+                            // relatively rare, and it would potentially require some fairly complex additional handling
+                            // to support them.
+                            IMPL_LIMITATION("Wasm SCC with multiple try entry headers");
                         }
                     }
                 }

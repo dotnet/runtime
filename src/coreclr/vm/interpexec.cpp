@@ -2088,6 +2088,12 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
 #endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
+                INTOP_CASE(INTOP_PGO_COUNT)
+                    // Interlocked so concurrent executions of an instrumented method don't lose counts.
+                    InterlockedIncrement((LONG*)pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    INTOP_NEXT;
+
                 INTOP_CASE(INTOP_BR)
                     ip += ip[1];
                     INTOP_NEXT;
@@ -4479,6 +4485,44 @@ do                                                                      \
                     double value = LOCAL_VAR(ip[2], double);
                     LOCAL_VAR(ip[1], double) = sqrt(value);
                     ip += 3;
+                    INTOP_NEXT;
+                }
+
+                // Native min/max permits hardware-dependent NaN and signed-zero results, so these
+                // operations make no effort to match the JIT's target-specific result.
+                INTOP_CASE(INTOP_MAX_NATIVE_R4)
+                {
+                    float left = LOCAL_VAR(ip[2], float);
+                    float right = LOCAL_VAR(ip[3], float);
+                    LOCAL_VAR(ip[1], float) = left > right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MAX_NATIVE_R8)
+                {
+                    double left = LOCAL_VAR(ip[2], double);
+                    double right = LOCAL_VAR(ip[3], double);
+                    LOCAL_VAR(ip[1], double) = left > right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MIN_NATIVE_R4)
+                {
+                    float left = LOCAL_VAR(ip[2], float);
+                    float right = LOCAL_VAR(ip[3], float);
+                    LOCAL_VAR(ip[1], float) = left < right ? left : right;
+                    ip += 4;
+                    INTOP_NEXT;
+                }
+
+                INTOP_CASE(INTOP_MIN_NATIVE_R8)
+                {
+                    double left = LOCAL_VAR(ip[2], double);
+                    double right = LOCAL_VAR(ip[3], double);
+                    LOCAL_VAR(ip[1], double) = left < right ? left : right;
+                    ip += 4;
                     INTOP_NEXT;
                 }
 

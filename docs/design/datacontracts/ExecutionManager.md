@@ -42,11 +42,10 @@ public struct CodeBlockHandle
     TargetNUInt GetRelativeOffset(CodeBlockHandle codeInfoHandle);
     // Returns true if the instruction pointer is in managed code at a GC-safe point.
     bool IsGcSafe(TargetCodePointer instructionPointer);
-    // Gets information about the EEJitManager: its address, code type, and head of the code heap list.
-    JitManagerInfo GetEEJitManagerInfo();
-    // Walks the linked list of CodeHeapListNodes starting from the EEJitManager's AllCodeHeaps head
-    // and returns information about each code heap.
-    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos();
+    // Gets information about the specified JIT manager, or null when it is not present.
+    JitManagerInfo? GetJitManagerInfo(JitManagerKind kind);
+    // Walks the linked list of CodeHeapListNodes for the specified JIT manager.
+    IEnumerable<ICodeHeapInfo> GetCodeHeapInfos(JitManagerKind kind);
 
     // Get the exception clause info for the code block
     List<ExceptionClauseInfo> GetExceptionClauses(CodeBlockHandle codeInfoHandle);
@@ -73,6 +72,12 @@ public struct JitManagerInfo
     public TargetPointer ManagerAddress;
     public uint CodeType;
     public TargetPointer HeapListAddress;
+}
+
+public enum JitManagerKind
+{
+    EE,
+    Interpreter,
 }
 ```
 
@@ -184,7 +189,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `EEExceptionClause` | `TryStartPC` | `uint32` | Native offset of the start of the try block |
 | `EEExceptionClause` | `TypeHandle` | `nuint` | Union field: TypeHandle (cached), ClassToken, or FilterOffset |
 | `EEILException` | `Clauses` | `pointer` | Start address of the inline array of `EE_ILEXCEPTION_CLAUSE` entries |
-| `EEJitManager` | `AllCodeHeaps` | `pointer` | Pointer to the head of the linked list of all code heaps managed by the EEJitManager. |
+| `EEJitManager` | `AllCodeHeaps` | `pointer` | Pointer to the head of the linked list of all code heaps managed by the JIT manager. The field is inherited from EECodeGenManager and has the same offset for EEJitManager and InterpreterJitManager. |
 | `EEJitManager` | `StoreRichDebugInfo` | `uint8` | Boolean value determining if debug info associated with the JitManager contains rich info. |
 | `ExceptionLookupTableEntry` | *(type size)* | `uint32` | Size of an exception lookup table entry in bytes |
 | `ExceptionLookupTableEntry` | `ExceptionInfoRVA` | `uint32` | RVA of the exception clause data |
@@ -259,6 +264,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `GCInfoVersion` | `uint32` | JITted code GCInfo version |
 | `HashMapSlotsPerBucket` | `uint32` | Number of slots in each bucket of a `HashMap` |
 | `HashMapValueMask` | `uint64` | Bitmask used when storing values in a `HashMap` |
+| `InterpreterJitManagerAddress` | `pointer` | Address of the global pointer to the InterpreterJitManager instance. Present only when interpreter support is enabled. |
 | `ObjectMethodTable` | `pointer` | Address of the global variable holding the System.Object MethodTable pointer |
 | `StubCodeBlockLast` | `uint8` | Maximum sentinel code header value indentifying a stub code block |
 | `ThePreStub` | `pointer` | Address of the global containing the prestub entrypoint |
@@ -570,20 +576,43 @@ TargetPointer IExecutionManager.FindReadyToRunModule(TargetPointer address)
 }
 ```
 
-### EE JIT Manager and Code Heap Info
+### JIT Manager and Code Heap Info
+
+The optional `InterpreterJitManagerAddress` global identifies the interpreter JIT manager when
+interpreter support is enabled. `InterpreterJitManager` inherits its code-heap list from
+`EECodeGenManager`, so the `EEJitManager.AllCodeHeaps` descriptor provides the offset for both
+manager types.
 
 ```csharp
-JitManagerInfo IExecutionManager.GetEEJitManagerInfo()
+JitManagerInfo? IExecutionManager.GetJitManagerInfo(JitManagerKind kind)
 {
-    TargetPointer eeJitManagerPtr = Target.ReadGlobalPointer("EEJitManagerAddress");
-    TargetPointer eeJitManagerAddr = Target.ReadPointer(eeJitManagerPtr);
-    TargetPointer allCodeHeaps = Target.ReadPointer(eeJitManagerAddr + /* EEJitManager::AllCodeHeaps offset */);
+    TargetPointer jitManagerPtr;
+    uint codeType;
+    switch (kind)
+    {
+        case JitManagerKind.EE:
+            jitManagerPtr = Target.ReadGlobalPointer("EEJitManagerAddress");
+            codeType = 0; // miManaged | miIL
+            break;
+        case JitManagerKind.Interpreter:
+            if (!Target.TryReadGlobalPointer("InterpreterJitManagerAddress", out jitManagerPtr))
+                return null;
+            codeType = 2; // miManaged | miIL | miOPTIL
+            break;
+        default:
+            throw new ArgumentOutOfRangeException(nameof(kind));
+    }
+
+    TargetPointer jitManagerAddr = Target.ReadPointer(jitManagerPtr);
+    if (jitManagerAddr == TargetPointer.Null)
+        return null;
 
     return new JitManagerInfo
     {
-        ManagerAddress = eeJitManagerAddr,
-        CodeType = 0, // miManaged | miIL
-        HeapListAddress = allCodeHeaps,
+        ManagerAddress = jitManagerAddr,
+        CodeType = codeType,
+        HeapListAddress = Target.ReadPointer(
+            jitManagerAddr + /* EECodeGenManager::AllCodeHeaps offset */),
     };
 }
 
@@ -603,10 +632,13 @@ private ICodeHeapInfo GetCodeHeapInfo(TargetPointer codeHeapAddress)
     };
 }
 
-IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
+IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos(JitManagerKind kind)
 {
-    TargetPointer heapListHead = GetEEJitManagerInfo().HeapListAddress;
-    TargetPointer nodeAddr = heapListHead;
+    JitManagerInfo? jitManagerInfo = GetJitManagerInfo(kind);
+    if (jitManagerInfo is null)
+        yield break;
+
+    TargetPointer nodeAddr = jitManagerInfo.Value.HeapListAddress;
     while (nodeAddr != TargetPointer.Null)
     {
         TargetPointer heapAddr = Target.ReadPointer(nodeAddr + /* CodeHeapListNode::Heap offset */);

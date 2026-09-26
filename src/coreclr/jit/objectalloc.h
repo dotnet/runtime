@@ -267,6 +267,7 @@ private:
                                                Statement*           stmt);
     struct BuildConnGraphVisitorCallbackData;
     void AnalyzeParentStack(ArrayStack<GenTree*>* parentStack, unsigned int lclNum, BasicBlock* block);
+    void UpdateStoreType(GenTree* store, var_types newType);
     void UpdateAncestorTypes(
         GenTree* tree, ArrayStack<GenTree*>* parentStack, var_types newType, ClassLayout* newLayout, bool retypeFields);
     ObjectAllocationType AllocationKind(GenTree* tree);
@@ -301,6 +302,7 @@ private:
     static const unsigned int s_StackAllocMaxSize = 0x2000U;
 
     ClassLayout* GetBoxedLayout(ClassLayout* structLayout);
+    ClassLayout* GetRetypedLayout(ClassLayout* oldLayout, ClassLayout* newLayout);
     ClassLayout* GetNonGCLayout(ClassLayout* existingLayout);
     ClassLayout* GetByrefLayout(ClassLayout* existingLayout);
 

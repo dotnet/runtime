@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
@@ -13,13 +14,13 @@ namespace Microsoft.Interop
     {
         public string ClassName { get; init; }
         public ContainingSyntaxContext ContainingSyntaxContext { get; init; }
-        public ContainingSyntax ClassSyntax { get; init; }
+        public DeclarationHeader ClassSyntax { get; init; }
         public SequenceEqualImmutableArray<string> ImplementedInterfacesNames { get; init; }
 
         /// <inheritdoc cref="ComInterfaceInfo.UseUpdatedMemorySafetyRules"/>
         public bool UseUpdatedMemorySafetyRules { get; init; }
 
-        private ComClassInfo(string className, ContainingSyntaxContext containingSyntaxContext, ContainingSyntax classSyntax, SequenceEqualImmutableArray<string> implementedInterfacesNames)
+        private ComClassInfo(string className, ContainingSyntaxContext containingSyntaxContext, DeclarationHeader classSyntax, SequenceEqualImmutableArray<string> implementedInterfacesNames)
         {
             ClassName = className;
             ContainingSyntaxContext = containingSyntaxContext;
@@ -45,8 +46,8 @@ namespace Microsoft.Interop
 
             return new ComClassInfo(
                 type.ToDisplayString(),
-                new ContainingSyntaxContext(syntax),
-                new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                syntax.GetContainingSyntaxContext(),
+                ContainingTypeUtilities.GetDeclarationHeader(syntax),
                 new(names.ToImmutable()))
             {
                 UseUpdatedMemorySafetyRules = syntax.SyntaxTree.Options.Features.ContainsKey("updated-memory-safety-rules")
@@ -58,6 +59,7 @@ namespace Microsoft.Interop
             return other is not null
                 && ClassName == other.ClassName
                 && ContainingSyntaxContext.Equals(other.ContainingSyntaxContext)
+                && ClassSyntax.Equals(other.ClassSyntax)
                 && UseUpdatedMemorySafetyRules == other.UseUpdatedMemorySafetyRules
                 && ImplementedInterfacesNames.SequenceEqual(other.ImplementedInterfacesNames);
         }
@@ -69,7 +71,7 @@ namespace Microsoft.Interop
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(ClassName, ContainingSyntaxContext, ImplementedInterfacesNames);
+            return HashCode.Combine(ClassName, ContainingSyntaxContext, ClassSyntax, ImplementedInterfacesNames, UseUpdatedMemorySafetyRules);
         }
     }
 }

@@ -158,39 +158,3 @@ namespace System.Reflection.Runtime.MethodInfos
         }
     }
 }
-
-namespace System.Reflection.Runtime.ParameterInfos
-{
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos for MethodBase objects with no Parameter metadata.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeThinMethodParameterInfo : RuntimeMethodParameterInfo
-    {
-        internal static RuntimeThinMethodParameterInfo GetRuntimeThinMethodParameterInfo(MethodBase member, int position, QSignatureTypeHandle qualifiedParameterType, TypeContext typeContext)
-        {
-            return new RuntimeThinMethodParameterInfo(member, position, qualifiedParameterType, typeContext);
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos returned by PropertyInfo.GetIndexParameters()
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimePropertyIndexParameterInfo : RuntimeParameterInfo
-    {
-        internal static RuntimePropertyIndexParameterInfo GetRuntimePropertyIndexParameterInfo(RuntimePropertyInfo member, RuntimeParameterInfo backingParameter)
-        {
-            return new RuntimePropertyIndexParameterInfo(member, backingParameter);
-        }
-    }
-
-    //-----------------------------------------------------------------------------------------------------------
-    // ParameterInfos returned by Get/Set methods on array types.
-    //-----------------------------------------------------------------------------------------------------------
-    internal sealed partial class RuntimeSyntheticParameterInfo : RuntimeParameterInfo
-    {
-        internal static RuntimeSyntheticParameterInfo GetRuntimeSyntheticParameterInfo(MemberInfo member, int position, RuntimeTypeInfo parameterType)
-        {
-            return new RuntimeSyntheticParameterInfo(member, position, parameterType);
-        }
-    }
-}

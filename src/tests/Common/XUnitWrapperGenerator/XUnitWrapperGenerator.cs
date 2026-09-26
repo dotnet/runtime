@@ -333,7 +333,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         foreach (ITestInfo test in testInfos)
         {
             currentTestExecutor++;
-            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+            testExecutorBuilder.AppendLine($"{(test.IsAsync ? "async System.Threading.Tasks.Task" : "void")} TestExecutor{currentTestExecutor}("
                                            + "System.IO.StreamWriter tempLogSw, "
                                            + "System.IO.StreamWriter statsCsvSw"
                                            + (outOfProcessTestCount != 0
@@ -397,7 +397,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     for (int i = 1; i <= currentTestExecutor; i++)
                     {
-                        builder.AppendLine($"TestExecutor{i}(unusedWriter, unusedWriter, outOfProcessPlanWriter);");
+                        builder.AppendLine($"{(testInfos[i - 1].IsAsync ? "await " : "")}TestExecutor{i}(unusedWriter, unusedWriter, outOfProcessPlanWriter);");
                     }
                 }
                 builder.AppendLine("return 100;");
@@ -425,9 +425,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
             for (int i = 1; i <= currentTestExecutor; i++)
             {
-                builder.AppendLine(outOfProcessTestCount != 0
+                builder.AppendLine((testInfos[i - 1].IsAsync ? "await " : "") + (outOfProcessTestCount != 0
                     ? $"TestExecutor{i}(tempLogSw, statsCsvSw, null);"
-                    : $"TestExecutor{i}(tempLogSw, statsCsvSw);");
+                    : $"TestExecutor{i}(tempLogSw, statsCsvSw);"));
             }
 
             builder.AppendLine("summary.WriteFooterToTempLog(tempLogSw);");
@@ -529,7 +529,8 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         builder.AppendLine();
 
-        builder.AppendLine("XUnitWrapperLibrary.TestSummary RunTests(XUnitWrapperLibrary.TestFilter filter)");
+        bool hasAsyncTests = testInfos.Any(test => test.IsAsync);
+        builder.AppendLine($"{(hasAsyncTests ? "async " : "")}System.Threading.Tasks.Task<XUnitWrapperLibrary.TestSummary> RunTests(XUnitWrapperLibrary.TestFilter filter)");
 
         using (builder.NewBracesScope())
         {
@@ -572,14 +573,14 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                             }
 
                             currentTestExecutor++;
-                            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                            testExecutorBuilder.AppendLine($"{(test.IsAsync ? "async System.Threading.Tasks.Task" : "void")} TestExecutor{currentTestExecutor}("
                                                            + "XUnitWrapperLibrary.TestFilter filter, "
                                                            + "System.IO.StreamWriter tempLogSw, "
                                                            + "System.IO.StreamWriter statsCsvSw)");
                             testExecutorBuilder.AppendLine("{");
                             testExecutorBuilder.PushIndent();
 
-                            builder.AppendLine($"TestExecutor{currentTestExecutor}(filter, tempLogSw, statsCsvSw);");
+                            builder.AppendLine($"{(test.IsAsync ? "await " : "")}TestExecutor{currentTestExecutor}(filter, tempLogSw, statsCsvSw);");
                             testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
                         }
                         else
@@ -596,7 +597,7 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                     testExecutorBuilder.AppendLine();
                 }
             }
-            builder.AppendLine("return summary;");
+            builder.AppendLine(hasAsyncTests ? "return summary;" : "return System.Threading.Tasks.Task.FromResult(summary);");
 
             builder.Append(testExecutorBuilder);
         }
@@ -624,7 +625,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine("class __GeneratedMainWrapper");
         using (builder.NewBracesScope())
         {
-            builder.AppendLine("public static int Main()");
+            builder.AppendLine(testInfos.Any(test => test.IsAsync)
+                ? "public static async System.Threading.Tasks.Task<int> Main()"
+                : "public static int Main()");
             using (builder.NewBracesScope())
             {
                 if (reportOutOfProcessStatus)
@@ -776,7 +779,9 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             {
                 // todo: emit diagnostic
             }
-            else if (method.IsStatic && method.ReturnType.SpecialType == SpecialType.System_Int32)
+            else if (method.IsStatic && (method.ReturnType.SpecialType == SpecialType.System_Int32
+                || (BasicTestMethod.IsAwaitable(method.ReturnType) && method.ReturnType is INamedTypeSymbol { Arity: 1 } taskType
+                    && taskType.TypeArguments[0].SpecialType == SpecialType.System_Int32)))
             {
                 // Support the old executable-based test design where an int return of 100 is success.
                 testInfos = ImmutableArray.Create((ITestInfo)new LegacyStandaloneEntryPointTestMethod(method, aliasMap[method.ContainingAssembly.MetadataName]));

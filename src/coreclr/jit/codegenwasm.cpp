@@ -3466,6 +3466,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        // RhBulkMoveWithWriteBarrier
+        HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER_SMALL, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */,
+                   CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
             unreached();

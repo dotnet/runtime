@@ -90,6 +90,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 //
 static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
 {
+    // Only valid during global assertion prop, this relies on value numbers.
+    assert(comp->vnStore != nullptr);
+
     NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
 
     if (intrinsic != NI_Vector_ExtractMostSignificantBits)
@@ -5963,7 +5966,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
 #if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
-            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            // This optimization needs value numbers, which are not available during local assertion prop.
+            if (!optLocalAssertionProp)
+            {
+                optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            }
             return nullptr;
 #endif // FEATURE_HW_INTRINSICS
 
