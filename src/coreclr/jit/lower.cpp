@@ -8719,6 +8719,9 @@ GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 //
 void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 {
+#ifdef TARGET_XARCH
+    TryLowerDivRem(divMod);
+#endif
     ContainCheckDivOrMod(divMod);
 }
 #endif // !TARGET_WASM

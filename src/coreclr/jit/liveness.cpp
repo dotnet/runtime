@@ -2680,6 +2680,13 @@ bool Liveness<TLiveness>::TryRemoveNonLocalLIR(GenTree* node, LIR::Range* blockR
     }
 
     assert(!node->OperIsLocal());
+    // A paired divide also defines RDX for the following physical-register
+    // capture. That implicit use must survive even when the quotient is dead
+    // and the division has been proven non-throwing.
+    if (node->OperIs(GT_DIV, GT_UDIV) && node->IsDivRemPair())
+    {
+        return false;
+    }
     if (!node->IsValue() || node->IsUnusedValue())
     {
         // We are only interested in avoiding the removal of nodes with direct side effects
