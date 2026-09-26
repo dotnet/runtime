@@ -1780,6 +1780,15 @@ PRD_TYPE DebuggerController::GetPatchedOpcode(CORDB_ADDRESS_TYPE *address)
         // opcode.
         //
 
+#ifdef FEATURE_INTERPRETER
+        EECodeInfo codeInfo(reinterpret_cast<PCODE>(address));
+        if (codeInfo.IsInterpretedCode())
+        {
+            // Interpreter opcodes occupy a full 32-bit slot, independent of the native instruction size.
+            return static_cast<PRD_TYPE>(*reinterpret_cast<const int32_t*>(address));
+        }
+#endif // FEATURE_INTERPRETER
+
         if (g_pEEInterface->IsManagedNativeCode((const BYTE *)address))
         {
             opcode = CORDbgGetInstruction((CORDB_ADDRESS_TYPE *)address);
