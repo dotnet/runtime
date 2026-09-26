@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// <summary>
     /// Base class for all COM source generated Runtime Callable Wrapper (RCWs).
     /// </summary>
-    public sealed unsafe class ComObject : IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
+    public sealed unsafe class ComObject : ComWrappersObject, IDynamicInterfaceCastable, IUnmanagedVirtualMethodTableProvider, ComImportInteropInterfaceDetailsStrategy.IComImportAdapter
     {
         [FeatureSwitchDefinition("System.Runtime.InteropServices.BuiltInComInterop.IsSupported")]
         internal static bool BuiltInComSupported { get; } = AppContext.TryGetSwitch("System.Runtime.InteropServices.BuiltInComInterop.IsSupported", out bool supported) ? supported : true;
