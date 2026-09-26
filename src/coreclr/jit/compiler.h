@@ -6245,10 +6245,6 @@ public:
     void fgMorphBlock(BasicBlock* block, MorphUnreachableInfo* unreachableInfo = nullptr);
     void fgMorphStmts(BasicBlock* block);
 
-#ifdef DEBUG
-    void fgPostGlobalMorphChecks();
-#endif
-
     void fgMergeBlockReturn(BasicBlock* block);
 
     bool fgMorphBlockStmt(BasicBlock* block, Statement* stmt DEBUGARG(const char* msg), bool allowFGChange = true, bool invalidateDFSTreeOnFGChange = true);
@@ -7075,7 +7071,7 @@ public:
 
     void fgDebugCheckType(GenTree* node);
     void fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block);
-    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags, GenTreeDebugFlags debugFlags);
+    void fgDebugCheckDispFlags(GenTree* tree, GenTreeFlags dispFlags);
     void fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, GenTreeFlags expectedFlags);
     void fgDebugCheckTryFinallyExits();
     void fgDebugCheckProfile(PhaseChecks checks = PhaseChecks::CHECK_NONE);
