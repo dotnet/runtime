@@ -232,6 +232,53 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 
 #endif  // defined(TARGET_LINUX)
 
+#if defined(TARGET_LINUX)
+
+#ifndef SCHED_BATCH
+#define SCHED_BATCH 3
+#endif
+
+// Sets the scheduling policy of the calling thread.
+// The syscall is used directly instead of sched_setscheduler, since some libc implementations
+// (musl in particular) do not implement sched_setscheduler and unconditionally fail with ENOSYS.
+// The kernel interface is per-thread, which is exactly the scope that is needed here.
+static int32_t SetSchedulerPolicy(int32_t policy)
+{
+    // This matches the kernel's `struct sched_param`, which contains a single member.
+    struct
+    {
+        int32_t sched_priority;
+    } parameters;
+    parameters.sched_priority = 0;
+
+    if (syscall(SYS_sched_setscheduler, 0, policy, &parameters) != 0)
+    {
+        return errno;
+    }
+
+    return 0;
+}
+
+#endif // defined(TARGET_LINUX)
+
+int32_t SystemNative_SuppressWakePreemption(void)
+{
+#if defined(TARGET_LINUX)
+    return SetSchedulerPolicy(SCHED_BATCH);
+#else
+    return 0;
+#endif
+}
+
+int32_t SystemNative_RestoreWakePreemption(void)
+{
+#if defined(TARGET_LINUX)
+    return SetSchedulerPolicy(SCHED_OTHER);
+#else
+    return 0;
+#endif
+}
+
 int32_t SystemNative_CreateThread(uintptr_t stackSize, void *(*startAddress)(void*), void *parameter)
 {
     bool result = false;
