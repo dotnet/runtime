@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
 
@@ -62,42 +63,45 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string? parentPath)
         {
-            var results = new List<string>();
+            ArgumentNullException.ThrowIfNull(earlierKeys);
+            Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
 
-            if (parentPath is null)
+            ChildKeysAggregator? accumulator = earlierKeys as ChildKeysAggregator;
+            ChildKeysBag bag = new ChildKeysBag(accumulator, parentPath);
+            if (Data is Dictionary<string, string?> dictionary)
             {
-                foreach (KeyValuePair<string, string?> kv in Data)
+                foreach (string key in dictionary.Keys)
                 {
-                    results.Add(Segment(kv.Key, 0));
+                    bag.AddChildKey(key);
                 }
             }
             else
             {
-                Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
-
                 foreach (KeyValuePair<string, string?> kv in Data)
                 {
-                    if (kv.Key.Length > parentPath.Length &&
-                        kv.Key.StartsWith(parentPath, StringComparison.OrdinalIgnoreCase) &&
-                        kv.Key[parentPath.Length] == ':')
-                    {
-                        results.Add(Segment(kv.Key, parentPath.Length + 1));
-                    }
+                    bag.AddChildKey(kv.Key);
                 }
             }
 
-            results.AddRange(earlierKeys);
+            if (accumulator is not null)
+            {
+                // this is the shared accumulator
+                return accumulator;
+            }
 
-            results.Sort(ConfigurationKeyComparer.Comparison);
+            accumulator = bag.Accumulator;
+            if (accumulator is null)
+            {
+                return earlierKeys;
+            }
 
-            return results;
-        }
+            foreach (string key in earlierKeys)
+            {
+                accumulator.Add(key);
+            }
 
-        private static string Segment(string key, int prefixLength)
-        {
-            Debug.Assert(ConfigurationPath.KeyDelimiter == ":");
-            int indexOf = key.IndexOf(':', prefixLength);
-            return indexOf < 0 ? key.Substring(prefixLength) : key.Substring(prefixLength, indexOf - prefixLength);
+            ChildKeySorter.Sort(accumulator.Items, accumulator.Count);
+            return accumulator;
         }
 
         /// <summary>
@@ -123,5 +127,107 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <returns>The configuration name.</returns>
         public override string ToString() => GetType().Name;
+
+        private ref struct ChildKeysBag
+        {
+            private readonly string? _parentPath;
+            private readonly int _prefixLength;
+            private readonly char _lastPrefixChar;
+            private ReadOnlySpan<char> _last;
+            private int _divergence;
+
+            public ChildKeysBag(ChildKeysAggregator? accumulator, string? parentPath)
+            {
+                Accumulator = accumulator;
+                _parentPath = parentPath;
+                _prefixLength = parentPath?.Length ?? -1;
+                _lastPrefixChar = _prefixLength > 0 ? parentPath![_prefixLength - 1] : '\0';
+                _divergence = _prefixLength;
+            }
+
+            public ChildKeysAggregator? Accumulator { get; private set; }
+
+            public void AddChildKey(string key)
+            {
+                if (_prefixLength > -1)
+                {
+                    if (key.Length <= _prefixLength || key[_prefixLength] != ':')
+                    {
+                        return;
+                    }
+
+                    if (_prefixLength != 0 && !MayMatch(key[_prefixLength - 1], _lastPrefixChar))
+                    {
+                        return;
+                    }
+
+                    if (_divergence < _prefixLength && !MayMatch(key[_divergence], _parentPath![_divergence]))
+                    {
+                        return;
+                    }
+
+                    if (!StartsWithParent(key))
+                    {
+                        return;
+                    }
+                }
+
+                Add(key, _prefixLength + 1);
+            }
+
+            private bool StartsWithParent(string key)
+            {
+                if (key.StartsWith(_parentPath!, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+#if NET
+                _divergence = key.AsSpan(0, _prefixLength).CommonPrefixLength(_parentPath.AsSpan());
+#else
+                int common = 0;
+                while (common < _prefixLength && key[common] == _parentPath![common])
+                {
+                    common++;
+                }
+
+                _divergence = common;
+#endif
+                return false;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static bool MayMatch(char a, char b)
+            {
+                if (a == b || (a | b) >= 0x80)
+                {
+                    return true;
+                }
+
+                uint fold = (uint)(a | 0x20);
+                return fold == (uint)(b | 0x20) && fold - 'a' <= 'z' - 'a';
+            }
+
+            private void Add(string key, int start)
+            {
+                int delimiter = key.IndexOf(':', start);
+                int length = delimiter < 0 ? key.Length - start : delimiter - start;
+                ReadOnlySpan<char> segment = key.AsSpan(start, length);
+                if (length != 0 && segment.Equals(_last, StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                _last = segment;
+                ChildKeysAggregator accumulator = Accumulator ??= new ChildKeysAggregator();
+                if (start == 0 && length == key.Length)
+                {
+                    accumulator.Add(key);
+                }
+                else
+                {
+                    accumulator.Add(key.AsSpan(start, length));
+                }
+            }
+        }
     }
 }
