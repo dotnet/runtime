@@ -1260,7 +1260,7 @@ namespace System.Reflection.Emit
             // constructor).
             ConstructorInfo? con = null;
 
-            if (m_typeParent is TypeBuilderInstantiation)
+            if (m_typeParent is { IsConstructedGenericType: true } and not RuntimeType)
             {
                 Type? genericTypeDefinition = m_typeParent.GetGenericTypeDefinition();
 
@@ -1272,7 +1272,7 @@ namespace System.Reflection.Emit
 
                 Type inst = genericTypeDefinition.MakeGenericType(m_typeParent.GetGenericArguments());
 
-                if (inst is TypeBuilderInstantiation)
+                if (inst is not RuntimeType)
                     con = GetConstructor(inst, genericTypeDefinition.GetConstructor(
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, [], null)!);
                 else
