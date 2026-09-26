@@ -23,7 +23,8 @@ ValueNumFuncDef(PtrToStatic, 3, false, true)         // Pointer (byref) to a sta
 ValueNumFuncDef(MDArrLength, 2, false, false)        // MD array len, Args: 0: array, 1: dimension
 ValueNumFuncDef(MDArrLowerBound, 2, false, false)    // MD array lower bound, Args: 0: array, 1: dimension
 
-ValueNumFuncDef(InitVal, 1, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
+ValueNumFuncDef(InitVal, 1, false, false)           // An input arg, or init val of a local Args: 0: a constant VN.
+ValueNumFuncDef(InitValNonNull, 1, false, true)     // A non-null input arg. Args: 0: a constant VN.
 
 ValueNumFuncDef(Cast, 2, false, false)           // VNF_Cast: Cast Operation changes the representations size and unsigned-ness.
                                                                //           Args: 0: Source for the cast operation.
