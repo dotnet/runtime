@@ -289,6 +289,9 @@ extends:
               parameters:
                 displayName: 'Send cDAC Stress Tests to Helix'
                 sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/StressTests/cdac-stress-helix.proj /t:Test /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacStressHelixQueue)" /p:TestHostPayload=$(StressTestHostRootDir) /p:StressTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac-stress /bl:$(Build.SourcesDirectory)/artifacts/log/SendStressToHelix.binlog
+                useEntraAuthentication: ${{ eq(variables['helixUseEntraAuthentication'], true) }}
+                azureSubscription: ${{ variables.helixAzureSubscription }}
+                helixBaseUri: ${{ variables.helixBaseUri }}
                 environment:
                   _Creator: dotnet-bot
                   SYSTEM_ACCESSTOKEN: $(System.AccessToken)

@@ -83,6 +83,9 @@ jobs:
         parameters:
           displayName: ${{ parameters.sendDisplayName }}
           sendParams: ${{ parameters.sendParams }}
+          useEntraAuthentication: ${{ eq(variables['helixUseEntraAuthentication'], true) }}
+          azureSubscription: ${{ variables.helixAzureSubscription }}
+          helixBaseUri: ${{ variables.helixBaseUri }}
           environment:
             _Creator: dotnet-bot
             SYSTEM_ACCESSTOKEN: $(System.AccessToken)

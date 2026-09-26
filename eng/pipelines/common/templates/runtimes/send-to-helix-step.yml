@@ -55,10 +55,14 @@ steps:
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
+    useEntraAuthentication: ${{ eq(variables['helixUseEntraAuthentication'], true) }}
+    azureSubscription: ${{ variables.helixAzureSubscription }}
+    helixBaseUri: ${{ variables.helixBaseUri }}
     environment:
       _Creator: ${{ parameters.creator }}
       _PublishTestResults: ${{ parameters.publishTestResults }}
-      _HelixAccessToken: ${{ parameters.helixAccessToken }}
+      ${{ if ne(variables['helixUseEntraAuthentication'], true) }}:
+        _HelixAccessToken: ${{ parameters.helixAccessToken }}
       _HelixBuild: ${{ parameters.helixBuild }}
       _HelixSource: ${{ parameters.helixSource }}
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
