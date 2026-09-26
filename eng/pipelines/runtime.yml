@@ -1,4 +1,4 @@
-# Test-only smoke pipeline for Apple device scouting queues. Do not merge.
+# Test-only pipeline for full Apple device tests on scouting queues. Do not merge.
 trigger: none
 
 pr:
@@ -9,7 +9,7 @@ pr:
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: isRunSmokeTestsOnly
-    value: true
+    value: false
   - name: enableHelixJobMonitor
     value: true
   - template: /eng/pipelines/helix-platforms.yml
@@ -34,7 +34,7 @@ extends:
           helixAccessToken: $(HelixApiAccessToken)
           timeoutInMinutes: 540
 
-      # Build NativeAOT and run device library smoke tests.
+      # Build NativeAOT and run device library tests.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -46,19 +46,20 @@ extends:
             - tvos_arm64
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_NativeAOT_Smoke
-            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
+            nameSuffix: AllSubsets_NativeAOT
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) -testscope all /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:DevTeamProvisioning=- /p:BuildTestsOnHelix=true /p:UseNativeAOTRuntime=true /p:RunAOTCompilation=false /p:ContinuousIntegrationBuild=true
             timeoutInMinutes: 360
             useNativeAOTRuntime: true
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  testScope: all
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
-      # Build CoreCLR and run iOS library smoke tests.
+      # Build CoreCLR and run iOS library tests.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -69,18 +70,19 @@ extends:
             - ios_arm64
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_CoreCLR_Smoke
-            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=false
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) -testscope all /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=false
             timeoutInMinutes: 240
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  testScope: all
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
-      # Build CoreCLR and run tvOS library smoke tests.
+      # Build CoreCLR and run tvOS library tests.
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -91,13 +93,93 @@ extends:
             - tvos_arm64
           jobParameters:
             testGroup: innerloop
-            nameSuffix: AllSubsets_CoreCLR_Smoke
-            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
+            nameSuffix: AllSubsets_CoreCLR
+            buildArgs: -s clr+clr.runtime+libs+packs+libs.tests -c $(_BuildConfig) -testscope all /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:EnableAdditionalTimezoneChecks=true /p:UsePortableRuntimePack=false /p:EnableAggressiveTrimming=true
             timeoutInMinutes: 240
             postBuildSteps:
               - template: /eng/pipelines/libraries/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  testScope: all
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+
+      # Build CoreCLR and run device runtime tests.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: coreclr
+          platforms:
+            - ios_arm64
+            - tvos_arm64
+          variables:
+            - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+              - name: _HelixSource
+                value: pr/dotnet/runtime/$(Build.SourceBranch)
+            - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+              - name: _HelixSource
+                value: ci/dotnet/runtime/$(Build.SourceBranch)
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: outerloop
+            nameSuffix: AllSubsets_CoreCLR_RuntimeTests
+            buildArgs: -s clr+libs -c $(_BuildConfig)
+            timeoutInMinutes: 240
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=false /p:BuildTestsOnHelix=true
+                  testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+
+      # Build NativeAOT and run device runtime tests.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
+          runtimeFlavor: coreclr
+          platforms:
+            - ios_arm64
+            - tvos_arm64
+          variables:
+            - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+              - name: _HelixSource
+                value: pr/dotnet/runtime/$(Build.SourceBranch)
+            - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+              - name: _HelixSource
+                value: ci/dotnet/runtime/$(Build.SourceBranch)
+            - name: timeoutPerTestInMinutes
+              value: 60
+            - name: timeoutPerTestCollectionInMinutes
+              value: 180
+          jobParameters:
+            testGroup: outerloop
+            nameSuffix: AllSubsets_NativeAOT_RuntimeTests
+            buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig)
+            timeoutInMinutes: 360
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: outerloop
+                  useNativeAOTRuntime: true
+            postBuildSteps:
+              - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testBuildArgs: /p:DevTeamProvisioning=- /p:UseMonoRuntime=false /p:UseNativeAOTRuntime=true /p:BuildNativeAOTRuntimePack=true /p:BuildTestsOnHelix=true
+                  testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true /p:TestBuildMode=nativeaot /p:UseNativeAOTRuntime=true /p:BuildNativeAOTRuntimePack=true
