@@ -745,7 +745,13 @@ FCIMPLEND
 
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 {
-    FCALL_CONTRACT;
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
 
     if (iterations <= 0)
     {

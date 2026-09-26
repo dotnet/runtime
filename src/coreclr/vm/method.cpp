@@ -379,7 +379,7 @@ LPCUTF8 MethodDesc::GetName()
 {
     CONTRACTL
     {
-        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS; // MethodImpl::FindMethodDesc can throw.
+        NOTHROW;
         GC_NOTRIGGER;
         SUPPORTS_DAC;
     }
