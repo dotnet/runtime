@@ -35360,6 +35360,18 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
     return true;
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+#if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
+//------------------------------------------------------------------------
+// GenTree::IsSveMaskOperand:
+//   Return true if this node can be represented directly as an SVE predicate.
+//
+bool GenTree::IsSveMaskOperand() const
+{
+    return OperIsConvertMaskToVector() || varTypeIsMask(this) || IsVectorZero();
+}
+#endif // FEATURE_MASKED_HW_INTRINSICS && TARGET_ARM64
+
 //------------------------------------------------------------------------
 // gtFoldExprHWIntrinsic: Attempt to fold a HWIntrinsic
 //
@@ -35369,7 +35381,6 @@ bool GenTree::CanDivOrModPossiblyOverflow(Compiler* comp) const
 // Return Value:
 //    folded expression if it could be folded, else the original tree
 //
-#if defined(FEATURE_HW_INTRINSICS)
 GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 {
     assert(!optValnumCSE_phase);
@@ -35655,8 +35666,9 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
         for (size_t i = firstVectorOperand; (i <= opCount) && canFold; i++)
         {
             GenTree* operand = tree->Op(i);
-            canFold          = operand->OperIsConvertMaskToVector() &&
-                      (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType));
+            canFold          = operand->IsSveMaskOperand() &&
+                      (!operand->OperIsConvertMaskToVector() ||
+                       (genTypeSize(operand->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)));
         }
 
         if (canFold)
@@ -37164,20 +37176,20 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
 
                     // op2 = op2 & op1
                     simdmask_t result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op1->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     // op3 = op3 & ~op1
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_AND_NOT, false, simdBaseType, &result,
-                                                 op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_AND_NOT, false, simdBaseType, simdSize, &result,
+                                       op3->AsMskCon()->gtSimdMaskVal, op1->AsMskCon()->gtSimdMaskVal);
                     op3->AsMskCon()->gtSimdMaskVal = result;
 
                     // op2 = op2 | op3
                     result = {};
-                    EvaluateBinaryMask<simd16_t>(GT_OR, false, simdBaseType, &result, op2->AsMskCon()->gtSimdMaskVal,
-                                                 op3->AsMskCon()->gtSimdMaskVal);
+                    EvaluateBinaryMask(GT_OR, false, simdBaseType, simdSize, &result, op2->AsMskCon()->gtSimdMaskVal,
+                                       op3->AsMskCon()->gtSimdMaskVal);
                     op2->AsMskCon()->gtSimdMaskVal = result;
 
                     resultNode = op2;
