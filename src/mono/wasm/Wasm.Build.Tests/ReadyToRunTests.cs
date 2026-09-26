@@ -110,6 +110,52 @@ namespace Wasm.Build.Tests
             AssertPerAppCrossgenRan(config, expected: false);
         }
 
+        // A WasmReadyToRunProfile drives a crossgen2 --partial image: only the profiled subset is precompiled,
+        // the rest is interpreted at runtime. Publish once with the profile and once without (full closure) and
+        // prove the profiled image carries strictly fewer R2R bytes, then drive every page to prove the
+        // interpreter fallback (plus the retained intrinsics and rooted CoreLib JIT-helpers) covers the methods
+        // that were left out of the eager image.
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release)]
+        [TestCategory("no-workload")]
+        public async Task PublishPartialProfileRunsAllPages(Configuration config)
+        {
+            string profile = Path.Combine(BuildEnvironment.TestDataPath, "ReadyToRunPartial.mibc");
+            Assert.True(File.Exists(profile), $"Missing test profile '{profile}'.");
+
+            // Baseline full-closure publish (no profile) to size against.
+            string fullDir = PublishR2RClosure(config, "r2r_full_baseline", profile: null);
+            AssertCoreLibReadyToRun(fullDir, expectReadyToRun: true);
+            long fullBytes = SumFrameworkR2RTableBytes(fullDir);
+            Assert.True(fullBytes > 0, "Full-closure publish produced no R2R tables.");
+
+            // Partial publish driven by the profile - published last so _projectDir points at it for the run.
+            string partialDir = PublishR2RClosure(config, "r2r_partial", profile);
+            AssertCoreLibReadyToRun(partialDir, expectReadyToRun: true);
+            AssertPerAppCrossgenRan(config, expected: true);
+
+            long partialBytes = SumFrameworkR2RTableBytes(partialDir);
+            Assert.True(partialBytes > 0, "Partial image did not precompile the profiled subset.");
+            Assert.True(partialBytes < fullBytes,
+                $"Partial R2R ({partialBytes} B) should be smaller than the full closure ({fullBytes} B).");
+
+            await RunForPublishWithWebServer(new BlazorRunOptions(config,
+                CheckCounter: false,
+                ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+        }
+
+        private string PublishR2RClosure(Configuration config, string label, string? profile)
+        {
+            // Reset so each publish lands in its own project dir; InitPaths only assigns _projectDir when null,
+            // so without this the second CopyTestAsset would nest inside the first (App\App) and corrupt the run.
+            _projectDir = null!;
+            string profileProperty = profile is null ? "" : $"<WasmReadyToRunProfile>{profile}</WasmReadyToRunProfile>";
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishTrimmed>false</PublishTrimmed>{profileProperty}");
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: GetR2RBuildArgs(config)));
+            return GetBlazorBinFrameworkDir(config, forPublish: true);
+        }
+
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
         // at each step. DetectRuntimeFailures (default) fails the run on any unhandled managed/JS exception.
         private static async Task InteractAllPagesAsync(IPage page)
@@ -224,7 +270,7 @@ namespace Wasm.Build.Tests
         // under BASE_DIR: the no-workload leg ships the shim but resolves crossgen2 itself from the SDK pack (the
         // SDK restores it when PublishReadyToRun is set), so passing a non-existent Crossgen2InBuildDir there
         // would break the call-helpers generator. All inert if BASE_DIR is unset.
-        private static string GetR2RBuildArgs(Configuration config)
+        internal static string GetR2RBuildArgs(Configuration config)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
             if (string.IsNullOrEmpty(baseDir))
@@ -244,6 +290,24 @@ namespace Wasm.Build.Tests
             if (File.Exists(shimTargets))
                 args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
             return string.Join(" ", args);
+        }
+
+        // Total R2R table bytes across every staged managed framework assembly (dotnet* natives excluded). A
+        // full closure compiles the whole set; a --partial image compiles only the profiled subset, so its
+        // total is strictly smaller. Non-webcil files are skipped rather than counted.
+        private static long SumFrameworkR2RTableBytes(string frameworkDir)
+        {
+            long total = 0;
+            foreach (string wasm in Directory.EnumerateFiles(frameworkDir, "*.wasm"))
+            {
+                if (Path.GetFileName(wasm).StartsWith("dotnet", System.StringComparison.Ordinal))
+                    continue;
+
+                using FileStream stream = File.OpenRead(wasm);
+                if (WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out _))
+                    total += tableSize;
+            }
+            return total;
         }
 
         private static void AssertCoreLibReadyToRun(string frameworkDir, bool expectReadyToRun)
