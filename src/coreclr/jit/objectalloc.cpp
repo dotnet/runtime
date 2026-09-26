@@ -3456,6 +3456,30 @@ void ObjectAllocator::CheckForGuardedAllocationOrCopy(BasicBlock* block,
                     // they are properly disjoint and things will work out just fine.
                     //
                     JITDUMP("Looks like enumerator var re-use (multiple defining GDVs)\n");
+
+                    // Since we are walking in RPO, all appearances assigned to
+                    // earlier candidates have already been seen. The partition
+                    // is unsafe if this definition may reach those appearances
+                    // through a backedge, or if it is on a sibling flow path.
+                    //
+                    for (CloneInfo* const previousInfo : CloneMap::ValueIteration(&m_CloneMap))
+                    {
+                        if (previousInfo->m_local != enumeratorLocal)
+                        {
+                            continue;
+                        }
+
+                        EnumeratorVar* previousEnumeratorVar = nullptr;
+                        bool const     hasDominatingDef =
+                            previousInfo->m_appearanceMap->Lookup(enumeratorLocal, &previousEnumeratorVar) &&
+                            (previousEnumeratorVar->m_def != nullptr) &&
+                            m_compiler->m_domTree->Dominates(previousEnumeratorVar->m_def->m_block, block);
+
+                        if (block->HasFlag(BBF_BACKWARD_JUMP) || !hasDominatingDef)
+                        {
+                            previousInfo->m_hasConflictingRedefinition = true;
+                        }
+                    }
                 }
 
                 // We will query this info if we see CALL(enumeratorLocal)
@@ -3844,6 +3868,12 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     assert(!info->m_checkedCanClone);
     JITDUMP("** Seeing if we can clone to guarantee non-escape under V%02u\n", info->m_local);
     BasicBlock* const allocBlock = info->m_allocBlock;
+
+    if (info->m_hasConflictingRedefinition)
+    {
+        JITDUMP("V%02u has a later definition that may reach its guarded uses\n", info->m_local);
+        return false;
+    }
 
     // Cloning redirects the allocation block's sole outgoing edge to the fast path,
     // so the allocation block must be a block kind that has a single target.
