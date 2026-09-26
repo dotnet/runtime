@@ -96,6 +96,16 @@ namespace ILCompiler.DependencyAnalysis
             return _constructedTypes.GetOrAdd(type);
         }
 
+        NodeCache<EcmaType, LayoutTypeNode> _layoutTypes = new NodeCache<EcmaType, LayoutTypeNode>(key
+            => new LayoutTypeNode(key));
+        public LayoutTypeNode LayoutType(EcmaType type)
+        {
+            return _layoutTypes.GetOrAdd(type);
+        }
+
+        NodeCache<EcmaType, ReflectedTypeNode> _reflectedTypes = new NodeCache<EcmaType, ReflectedTypeNode>(key
+            => new ReflectedTypeNode(key));
+
         NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode> _objectGetTypeFlowDependencies = new NodeCache<MetadataType, ObjectGetTypeFlowDependenciesNode>(key
             => new ObjectGetTypeFlowDependenciesNode(key));
         internal ObjectGetTypeFlowDependenciesNode ObjectGetTypeFlowDependencies(MetadataType type)
@@ -303,8 +313,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public DependencyNode ReflectedType(TypeDesc type)
         {
-            // TODO: this should be a separate node with more logic
-
             while (type.IsParameterizedType)
                 type = ((ParameterizedType)type).ParameterType;
 
@@ -313,7 +321,7 @@ namespace ILCompiler.DependencyAnalysis
             if (!IsModuleTrimmed(definition.Module))
                 return NullDependencyNode.Instance;
 
-            return TypeDefinition(definition.Module, definition.Handle);
+            return _reflectedTypes.GetOrAdd(definition);
         }
 
         public DependencyNode ReflectedMethod(MethodDesc method)
