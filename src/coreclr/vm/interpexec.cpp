@@ -1358,6 +1358,21 @@ static void ShiftDelegateCallArgs(int8_t* stack, int32_t callArgsOffset, int32_t
     }
 }
 
+// Resolves the target of an open virtual delegate for the given 'this' argument.
+static MethodDesc* ResolveOpenVirtualDelegateTarget(DELEGATEREF delegateObj, OBJECTREF* pThisArg)
+{
+    MethodDesc* pDeclMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+    return CallWithSEHWrapper(
+        [pDeclMD, pThisArg]() {
+            MethodTable* pMT = (*pThisArg)->GetMethodTable();
+            MethodDesc* pTarget;
+            GCX_PREEMP_REGION_BEGIN();
+            pTarget = pDeclMD->GetMethodDescOfVirtualizedCode(pThisArg, pMT, pDeclMD->GetMethodTable());
+            GCX_PREEMP_REGION_END();
+            return pTarget;
+        });
+}
+
 static void UpdateFrameForTailCall(InterpMethodContextFrame *pFrame, PTR_InterpByteCodeStart targetIp, int8_t *callArgsAddress)
 {
     InterpMethod *pTargetMethod = targetIp->Method;
@@ -3385,6 +3400,19 @@ SWITCH_OPCODE:
                     {
                         goto CALL_INTERP_METHOD;
                     }
+#else // FEATURE_PORTABLE_ENTRYPOINTS
+                    else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
+                    {
+                        // _methodPtrAux of an open virtual delegate is not a portable entry point; resolve the target
+                        // as INTOP_CALLDELEGATE does. The shuffle thunk's 'this' is the delegate.
+                        DELEGATEREF delegateObj = LOCAL_VAR(0, DELEGATEREF);
+                        _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
+                        _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
+                        OBJECTREF *pThisArg = (OBJECTREF*)callArgsAddress;
+                        NULL_CHECK(*pThisArg);
+                        targetMethod = ResolveOpenVirtualDelegateTarget(delegateObj, pThisArg);
+                        goto CALL_INTERP_METHOD;
+                    }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
                     else
                     {
@@ -3500,18 +3528,9 @@ SWITCH_OPCODE:
 
                         if (isOpenVirtual)
                         {
-                            targetMethod = COMDelegate::GetMethodDescForOpenVirtualDelegate(*delegateObj);
                             OBJECTREF *pThisArg = LOCAL_VAR_ADDR(callArgsOffset + INTERP_STACK_SLOT_SIZE, OBJECTREF);
                             NULL_CHECK(*pThisArg);
-                            targetMethod = CallWithSEHWrapper(
-                                [&targetMethod, &pThisArg]() {
-                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
-                                    MethodDesc *pTarget;
-                                    GCX_PREEMP_REGION_BEGIN();
-                                    pTarget = targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
-                                    GCX_PREEMP_REGION_END();
-                                    return pTarget;
-                                });
+                            targetMethod = ResolveOpenVirtualDelegateTarget(*delegateObj, pThisArg);
                         }
                         else
                         {
