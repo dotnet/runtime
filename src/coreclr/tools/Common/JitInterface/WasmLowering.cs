@@ -443,7 +443,7 @@ namespace Internal.JitInterface
             _ => $"an unrecognized element '{c}'"
         };
 
-        private static int ParseStructSize(string sig, ref int pos)
+        internal static int ParseStructSize(string sig, ref int pos)
         {
             Debug.Assert(sig[pos] is 'S' or 'A');
             pos++; // skip 'S'/'A'
@@ -454,6 +454,19 @@ namespace Internal.JitInterface
             }
 
             return int.Parse(sig.AsSpan(start, pos - start));
+        }
+
+        /// <summary>
+        /// Returns true when the Wasm signature has a hidden generic context followed by an async continuation.
+        /// </summary>
+        public static bool HasGenericContextBeforeAsync(WasmSignature wasmSignature, TypeSystemContext context)
+        {
+            string sig = wasmSignature.SignatureString;
+            int asyncIndex = sig.IndexOf('a');
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+
+            // Index 0 is the return type, not a generic context.
+            return (asyncIndex > 1) && (sig[asyncIndex - 1] == hiddenParamChar);
         }
 
         public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
@@ -483,7 +496,6 @@ namespace Internal.JitInterface
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
             bool isAsyncCall = false;
-            bool hasGenericContextBeforeAsync = false;
 
             if (pos < sig.Length && sig[pos] == 'T')
             {
@@ -491,12 +503,12 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            // A generic context precedes the async marker in the Wasm ABI; it is encoded with the
+            // A generic context precedes the async continuation; it is encoded with the
             // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
             char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
-            if ((pos + 1 < sig.Length) && (sig[pos] == hiddenParamChar) && (sig[pos + 1] == 'a'))
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync(wasmSignature, context);
+            if (hasGenericContextBeforeAsync)
             {
-                hasGenericContextBeforeAsync = true;
                 parameters.Add(RaiseSigChar(sig[pos], context));
                 pos++;
             }

@@ -343,6 +343,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmInterpreterToR2RThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmMethodRelativeVirtualIPNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmR2RToInterpreterThunkNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmThunkArgLayout.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmUnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmVirtualDispatchThunkNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Win32ResourcesNode.cs" />
