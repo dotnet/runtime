@@ -28,15 +28,9 @@
     IN_PAGE_INDEX = 0
     .rept THUNK_POOL_NUM_THUNKS_PER_PAGE
 
-    // Set xip0 to the address of the current thunk's data block.
-    adr      xip0, THUNKS_MAP_SIZE
-
-    // start                                        : xip0 points to the current thunks first data cell in the data page
-    // set xip0 to beginning of data page           : xip0 <- xip0 - (THUNK_DATASIZE * current thunk's index)
-    // fix offset to point to last QWROD in page    : xip1 <- [xip0 + PAGE_SIZE - POINTER_SIZE]
-    // tailcall to the location pointed at by the last qword in the data page
-    ldr      xip1, [xip0, #(PAGE_SIZE - POINTER_SIZE - (THUNK_DATASIZE * IN_PAGE_INDEX))]
-    br       xip1
+    ldr      x10, THUNKS_MAP_SIZE + POINTER_SIZE
+    ldr      x12, THUNKS_MAP_SIZE - 4
+    br       x10
 
     brk     0xf000      // Stubs need to be 16-byte aligned for CFG table. Filling padding with a
                         // deterministic brk instruction, instead of having it just filled with zeros.

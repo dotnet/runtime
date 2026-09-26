@@ -150,7 +150,8 @@ namespace Internal.IL.Stubs
                             // through blittably, so the native signature matches the managed signature.
                             var builder = new MethodSignatureBuilder(delegateSignature);
                             builder.Flags = MethodSignatureFlags.Static | unmanagedCallingConvention;
-                            _signature = builder.ToSignature();
+                            MethodSignature blittableSignature = builder.ToSignature();
+                            _signature = CreateSignatureWithSecretStubArgument(blittableSignature, blittableSignature.Flags);
                             return _signature;
                         }
 
@@ -206,7 +207,12 @@ namespace Internal.IL.Stubs
                             nativeParameterTypes[i] = isByRefType ? nativeType.MakePointerType() : nativeType;
                         }
 
-                        _signature = new MethodSignature(MethodSignatureFlags.Static | unmanagedCallingConvention, 0, nativeReturnType, nativeParameterTypes);
+                        MethodSignature nativeSignature = new MethodSignature(
+                            MethodSignatureFlags.Static | unmanagedCallingConvention,
+                            0,
+                            nativeReturnType,
+                            nativeParameterTypes);
+                        _signature = CreateSignatureWithSecretStubArgument(nativeSignature, nativeSignature.Flags);
                     }
                 }
                 return _signature;
