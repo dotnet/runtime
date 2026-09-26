@@ -3016,7 +3016,7 @@ PCODE MethodDesc::GetPortableEntryPointIfExists()
 // fill in the native code slot, but if it is possible to do so it will.
 // This must be called before any R2R code may call the target method.
 //
-// This is called from GetMultiCallableAddrOfCode and from R2R virtual dispatch fixup.
+// This is called from GetMultiCallableAddrOfCode and from R2R external method fixups.
 void MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(PCODE entryPoint)
 {
     WRAPPER_NO_CONTRACT;
