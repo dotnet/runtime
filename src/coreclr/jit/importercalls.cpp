@@ -3942,6 +3942,24 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 break;
             }
 
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetRawData:
+            {
+                GenTree* obj = impPopStack().val;
+
+                if (fgAddrCouldBeNull(obj))
+                {
+                    GenTree* objClone;
+                    obj = impCloneExpr(obj, &objClone, CHECK_SPILL_ALL,
+                                       nullptr DEBUGARG("RuntimeHelpers.GetRawData obj"));
+                    impAppendTree(gtNewNullCheck(obj), CHECK_SPILL_ALL, impCurStmtDI);
+                    obj = objClone;
+                }
+
+                GenTree* offset = gtNewIconNode(OFFSETOF__CORINFO_Object__data, TYP_I_IMPL);
+                retNode         = gtNewOperNode(GT_ADD, TYP_BYREF, obj, offset);
+                break;
+            }
+
             case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
             {
                 assert(sig->numArgs == 1);
@@ -12352,6 +12370,10 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                             else if (strcmp(methodName, "GetMethodTable") == 0)
                             {
                                 result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                            }
+                            else if (strcmp(methodName, "GetRawData") == 0)
+                            {
+                                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetRawData;
                             }
                             else if (strcmp(methodName, "SetNextCallGenericContext") == 0)
                             {

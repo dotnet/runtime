@@ -124,6 +124,8 @@ NamedIntrinsic GetNamedIntrinsic(COMP_HANDLE compHnd, CORINFO_METHOD_HANDLE comp
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync;
                 else if (!strcmp(methodName, "GetMethodTable"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
+                else if (!strcmp(methodName, "GetRawData"))
+                    return NI_System_Runtime_CompilerServices_RuntimeHelpers_GetRawData;
                 else if (!strcmp(methodName, "SetNextCallGenericContext"))
                     return NI_System_Runtime_CompilerServices_RuntimeHelpers_SetNextCallGenericContext;
                 else if (!strcmp(methodName, "SetNextCallAsyncContinuation"))
