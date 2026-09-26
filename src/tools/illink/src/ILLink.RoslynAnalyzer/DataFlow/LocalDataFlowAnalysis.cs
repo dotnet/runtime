@@ -38,6 +38,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         private readonly IOperation OperationBlock;
 
+        private readonly TLattice ValueLattice;
+
         private static LocalStateAndContextLattice<TValue, TContext, TLattice, TContextLattice> GetLatticeAndEntryValue(
             TLattice lattice,
             TContextLattice contextLattice,
@@ -61,13 +63,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
         {
             Context = context;
             OperationBlock = operationBlock;
+            ValueLattice = lattice;
         }
 
         public bool InterproceduralAnalyze()
         {
             bool succeeded = true;
             ValueSetLattice<MethodBodyValue> methodGroupLattice = default;
-            DictionaryLattice<LocalKey, Maybe<TValue>, MaybeLattice<TValue, TLattice>> hoistedLocalLattice = default;
+            LocalValueLattice<TValue, TLattice> localValueLattice = new(ValueLattice);
+            DictionaryLattice<LocalKey, Maybe<LocalValue<TValue>>, MaybeLattice<LocalValue<TValue>, LocalValueLattice<TValue, TLattice>>> hoistedLocalLattice =
+                new(new MaybeLattice<LocalValue<TValue>, LocalValueLattice<TValue, TLattice>>(localValueLattice));
             var interproceduralStateLattice = new InterproceduralStateLattice<TValue, TLattice>(
                 methodGroupLattice, hoistedLocalLattice);
             var interproceduralState = interproceduralStateLattice.Top;
