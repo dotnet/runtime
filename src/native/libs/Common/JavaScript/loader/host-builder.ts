@@ -4,6 +4,7 @@
 import type { DotnetHostBuilder, LoaderConfig, RuntimeAPI, LoadBootResourceCallback, DotnetModuleConfig } from "./types";
 
 import { Module, dotnetApi } from "./cross-module";
+import { loaderCallbacks } from "./callbacks";
 import { loaderConfig, mergeLoaderConfig, validateLoaderConfig } from "./config";
 import { createRuntime } from "./run";
 import { exit } from "./exit";
@@ -92,7 +93,15 @@ export class HostBuilder implements DotnetHostBuilder {
         return this;
     }
     withDownloadResourceProgress(callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
-        Module.onDownloadResourceProgress = callback;
+        loaderCallbacks.downloadResourceProgress = callback;
+        return this;
+    }
+    withConfigLoaded(callback?: (config: LoaderConfig) => void | Promise<void>): DotnetHostBuilder {
+        loaderCallbacks.configLoaded = callback;
+        return this;
+    }
+    withDotnetReady(callback?: () => void | Promise<void>): DotnetHostBuilder {
+        loaderCallbacks.dotnetReady = callback;
         return this;
     }
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {

@@ -21,6 +21,7 @@ import { replace_linker_placeholders } from "./exports-binding";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { interp_pgo_load_data, interp_pgo_save_data } from "./interp-pgo";
 import { mono_log_debug, mono_log_error, mono_log_info, mono_log_warn } from "./logging";
+import { loaderCallbacks } from "./loader/callbacks";
 
 // threads
 import { populateEmscriptenPool, mono_wasm_init_threads } from "./pthreads";
@@ -356,13 +357,11 @@ export function postRunWorker () {
 async function mono_wasm_after_user_runtime_initialized (): Promise<void> {
     mono_log_debug("mono_wasm_after_user_runtime_initialized");
     try {
-        if (Module.onDotnetReady) {
-            try {
-                await Module.onDotnetReady();
-            } catch (err: any) {
-                mono_log_error("onDotnetReady () failed", err);
-                throw err;
-            }
+        try {
+            await loaderCallbacks.dotnetReady?.();
+        } catch (err: any) {
+            mono_log_error("onDotnetReady () failed", err);
+            throw err;
         }
     } catch (err: any) {
         mono_log_error("mono_wasm_after_user_runtime_initialized () failed", err);
