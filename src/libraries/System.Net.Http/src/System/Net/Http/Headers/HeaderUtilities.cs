@@ -201,41 +201,55 @@ namespace System.Net.Http.Headers
 
             // We have two unordered lists. So comparison is an O(n*m) operation which is expensive. Usually
             // headers have 1-2 parameters (if any), so this comparison shouldn't be too expensive.
-            bool[] alreadyFound = new bool[x.Count];
-            int i = 0;
-            foreach (var xItem in x)
+            const int StackallocThreshold = 32;
+            int count = x.Count;
+            bool[]? rentedArray = count > StackallocThreshold ? ArrayPool<bool>.Shared.Rent(count) : null;
+            Span<bool> alreadyFound = rentedArray is null ? stackalloc bool[StackallocThreshold] : rentedArray;
+            alreadyFound = alreadyFound.Slice(0, count);
+            alreadyFound.Clear();
+            try
             {
-                Debug.Assert(xItem != null);
-
-                i = 0;
-                bool found = false;
-                foreach (var yItem in y)
+                foreach (var xItem in x)
                 {
-                    if (!alreadyFound[i])
+                    Debug.Assert(xItem != null);
+
+                    int i = 0;
+                    bool found = false;
+                    foreach (var yItem in y)
                     {
-                        if (((comparer == null) && xItem.Equals(yItem)) ||
-                            ((comparer != null) && comparer.Equals(xItem, yItem)))
+                        if (!alreadyFound[i])
                         {
-                            alreadyFound[i] = true;
-                            found = true;
-                            break;
+                            if (((comparer == null) && xItem.Equals(yItem)) ||
+                                ((comparer != null) && comparer.Equals(xItem, yItem)))
+                            {
+                                alreadyFound[i] = true;
+                                found = true;
+                                break;
+                            }
                         }
+                        i++;
                     }
-                    i++;
+
+                    if (!found)
+                    {
+                        return false;
+                    }
                 }
 
-                if (!found)
+                // Since we never re-use a "found" value in 'y', we expect 'alreadyFound' to have all fields set to 'true'.
+                // Otherwise the two collections can't be equal and we should not get here.
+                Debug.Assert(!alreadyFound.Contains(false),
+                    "Expected all values in 'alreadyFound' to be true since collections are considered equal.");
+
+                return true;
+            }
+            finally
+            {
+                if (rentedArray is not null)
                 {
-                    return false;
+                    ArrayPool<bool>.Shared.Return(rentedArray);
                 }
             }
-
-            // Since we never re-use a "found" value in 'y', we expect 'alreadyFound' to have all fields set to 'true'.
-            // Otherwise the two collections can't be equal and we should not get here.
-            Debug.Assert(Array.TrueForAll(alreadyFound, value => value),
-                "Expected all values in 'alreadyFound' to be true since collections are considered equal.");
-
-            return true;
         }
 
         internal static int GetNextNonEmptyOrWhitespaceIndex(string input, int startIndex, bool skipEmptyValues,
