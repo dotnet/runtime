@@ -3391,6 +3391,21 @@ SWITCH_OPCODE:
                             InvokeUnmanagedCalliWithTransition(calliFunctionPointer, cookie, stack, pFrame, callArgsAddress, returnValueAddress);
                         }
                     }
+#ifdef FEATURE_CACHED_INTERFACE_DISPATCH
+                    else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
+                    {
+                        // The shuffle thunk's 'this' is the delegate. For an open virtual delegate, _methodPtrAux is
+                        // CID_VirtualOpenDelegateDispatch, which needs the delegate and so cannot be invoked through calli;
+                        // resolve the target as INTOP_CALLDELEGATE does.
+                        DELEGATEREF delegateObj = LOCAL_VAR(0, DELEGATEREF);
+                        _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
+                        _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
+                        OBJECTREF *pThisArg = (OBJECTREF*)callArgsAddress;
+                        NULL_CHECK(*pThisArg);
+                        targetMethod = ResolveOpenVirtualDelegateTarget(delegateObj, pThisArg);
+                        goto CALL_INTERP_METHOD;
+                    }
+#endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
 // If we're not using portable entrypoints, we can use NonVirtualEntry2MethodDesc to figure out where tailcalls go. Since this is
 // somewhat expensive, we only do it for tailcalls which are relatively rare.
@@ -3398,19 +3413,6 @@ SWITCH_OPCODE:
 //                   or possibly a slight variant where we build a path for NonVitualEntry2MethodDesc which is lock-free but might fail
                     else if (frameNeedsTailcallUpdate && (targetMethod = NonVirtualEntry2MethodDesc(calliFunctionPointer)) != NULL)
                     {
-                        goto CALL_INTERP_METHOD;
-                    }
-#else // FEATURE_PORTABLE_ENTRYPOINTS
-                    else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
-                    {
-                        // _methodPtrAux of an open virtual delegate is not a portable entry point; resolve the target
-                        // as INTOP_CALLDELEGATE does. The shuffle thunk's 'this' is the delegate.
-                        DELEGATEREF delegateObj = LOCAL_VAR(0, DELEGATEREF);
-                        _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
-                        _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
-                        OBJECTREF *pThisArg = (OBJECTREF*)callArgsAddress;
-                        NULL_CHECK(*pThisArg);
-                        targetMethod = ResolveOpenVirtualDelegateTarget(delegateObj, pThisArg);
                         goto CALL_INTERP_METHOD;
                     }
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
