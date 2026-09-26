@@ -69,10 +69,30 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(parameterInfo);
 
+            bool annotationsDisabled = false;
+            if (parameterInfo.Member is PropertyInfo propertyInfo)
+            {
+                // For property indexers, switch to the respective getter/setter parameter.
+                if (propertyInfo.GetGetMethod(true) is { } getter && !IsPrivateOrInternalMethodAndAnnotationDisabled(getter))
+                {
+                    parameterInfo = getter.GetParametersAsSpan()[parameterInfo.Position];
+                }
+                else if (propertyInfo.GetSetMethod(true) is { } setter && !IsPrivateOrInternalMethodAndAnnotationDisabled(setter))
+                {
+                    parameterInfo = setter.GetParametersAsSpan()[parameterInfo.Position];
+                }
+                else
+                {
+                    annotationsDisabled = true;
+                }
+            }
+            else if (parameterInfo.Member is MethodBase method)
+            {
+                annotationsDisabled = IsPrivateOrInternalMethodAndAnnotationDisabled(method);
+            }
+
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
-            NullableAttributeStateParser parser = parameterInfo.Member is MethodBase method && IsPrivateOrInternalMethodAndAnnotationDisabled(method)
-                ? NullableAttributeStateParser.Unknown
-                : CreateParser(attributes);
+            NullableAttributeStateParser parser = annotationsDisabled ? NullableAttributeStateParser.Unknown : CreateParser(attributes);
             NullabilityInfo nullability = GetNullabilityInfo(parameterInfo.Member, parameterInfo.ParameterType, parser);
 
             if (nullability.ReadState != NullabilityState.Unknown)
