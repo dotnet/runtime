@@ -11,7 +11,9 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 9
+#define GC_INTERFACE_MINOR_VERSION 10
+
+#define GC_PAUSE_REPORTING_INTERFACE_MINOR_VERSION 10
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -20,6 +22,16 @@
 struct ScanContext;
 struct gc_alloc_context;
 class CrawlFrame;
+
+struct GCPauseRecord
+{
+    uint64_t duration_microseconds;
+    uint64_t collection_index;
+    uint32_t generation;
+    uint32_t kind; // 0: blocking, 1: background.
+};
+
+static_assert(sizeof(GCPauseRecord) == 24);
 
 // Callback passed to GcScanRoots.
 typedef void promote_func(PTR_PTR_Object, ScanContext*, uint32_t);
@@ -1074,6 +1086,11 @@ public:
     virtual void DiagWalkHeapWithACHandling(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) PURE_VIRTUAL
 
     virtual void NullBridgeObjectsWeakRefs(size_t length, void* unreachableObjectHandles) PURE_VIRTUAL;
+
+    // Control and drain calls must be serialized by the consumer. Waiting must not hold its lock.
+    virtual bool ConfigureGCPauseReporting(bool enabled) PURE_VIRTUAL
+    virtual uint32_t DrainGCPauseRecords(GCPauseRecord* records, uint32_t capacity, uint64_t* dropped, uint32_t* remaining) PURE_VIRTUAL
+    virtual uint32_t WaitForGCPauseRecords(uint32_t millisecondsTimeout) PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK

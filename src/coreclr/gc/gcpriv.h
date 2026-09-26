@@ -5475,6 +5475,18 @@ private:
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t suspended_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t end_gc_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t total_suspended_time;
+    PER_HEAP_ISOLATED_METHOD void record_gc_pause(uint64_t duration_microseconds);
+#ifndef FEATURE_NATIVEAOT
+    PER_HEAP_ISOLATED_METHOD void publish_gc_pause(uint64_t duration_microseconds);
+    static constexpr uint32_t gc_pause_record_capacity = 4096;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY GCPauseRecord gc_pause_records[gc_pause_record_capacity];
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(bool) gc_pause_reporting_enabled;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(uint32_t) gc_pause_write_index;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(uint32_t) gc_pause_read_index;
+    alignas(8) PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t gc_pause_dropped;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY VOLATILE(int32_t) gc_pause_notification_pending;
+    PER_HEAP_ISOLATED_FIELD_DIAG_ONLY GCEvent gc_pause_event;
+#endif // !FEATURE_NATIVEAOT
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY uint64_t process_start_time;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_ephemeral_gc_info;
     PER_HEAP_ISOLATED_FIELD_DIAG_ONLY last_recorded_gc_info last_full_blocking_gc_info;
