@@ -1361,6 +1361,24 @@ namespace System
             return false;
         }
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.WriteBigEndian(byte[])" />
+        int IBinaryInteger<char>.WriteBigEndian(byte[] destination) => BinaryIntegerWriter.WriteBigEndian(this, destination);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.WriteBigEndian(byte[], int)" />
+        int IBinaryInteger<char>.WriteBigEndian(byte[] destination, int startIndex) => BinaryIntegerWriter.WriteBigEndian(this, destination.AsSpan(startIndex));
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.WriteBigEndian(Span{byte})" />
+        int IBinaryInteger<char>.WriteBigEndian(Span<byte> destination) => BinaryIntegerWriter.WriteBigEndian(this, destination);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.WriteLittleEndian(byte[])" />
+        int IBinaryInteger<char>.WriteLittleEndian(byte[] destination) => BinaryIntegerWriter.WriteLittleEndian(this, destination);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.WriteLittleEndian(byte[], int)" />
+        int IBinaryInteger<char>.WriteLittleEndian(byte[] destination, int startIndex) => BinaryIntegerWriter.WriteLittleEndian(this, destination.AsSpan(startIndex));
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.WriteLittleEndian(Span{byte})" />
+        int IBinaryInteger<char>.WriteLittleEndian(Span<byte> destination) => BinaryIntegerWriter.WriteLittleEndian(this, destination);
+
         //
         // IBinaryNumber
         //
