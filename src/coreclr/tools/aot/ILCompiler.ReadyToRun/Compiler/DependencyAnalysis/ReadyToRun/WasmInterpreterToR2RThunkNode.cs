@@ -157,7 +157,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     for (int slot = 0; slot < arg.WasmParamCount; slot++)
                     {
                         expressions.Add(Local.Get(LocalPArgs));
-                        expressions.Add(WasmThunkArgLayout.Load(arg.WasmType, interpOffset + (slot * slotSize)));
+                        expressions.Add(Memory.Load(arg.WasmType, (ulong)(interpOffset + (slot * slotSize))));
                     }
                 }
             }
@@ -177,26 +177,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 WasmValueType returnWasmType = targetFuncType.Returns.Types[0];
 
                 // Stack is [pRet, return_value]. Store consumes [addr, value].
-                switch (returnWasmType)
-                {
-                    case WasmValueType.I32:
-                        expressions.Add(I32.Store(0));
-                        break;
-                    case WasmValueType.I64:
-                        expressions.Add(I64.Store(0));
-                        break;
-                    case WasmValueType.F32:
-                        expressions.Add(F32.Store(0));
-                        break;
-                    case WasmValueType.F64:
-                        expressions.Add(F64.Store(0));
-                        break;
-                    case WasmValueType.V128:
-                        expressions.Add(V128.Store(0));
-                        break;
-                    default:
-                        throw new Exception("Unexpected wasm return type for interpreter-to-R2R");
-                }
+                expressions.Add(Memory.Store(returnWasmType, 0));
             }
 
             // For struct returns via retbuf the R2R function has already written the struct into

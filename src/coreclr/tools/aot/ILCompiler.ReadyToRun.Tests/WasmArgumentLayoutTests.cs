@@ -109,119 +109,6 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(false, false, "iiaip")]
-    [InlineData(true, false, "iTiaip")]
-    [InlineData(false, true, "S16iaip")]
-    [InlineData(true, true, "S16Tiaip")]
-    public void WasmThunkArgLayoutPlacesGenericContextBeforeAsyncContinuation(bool hasThis, bool returnsStruct, string expectedSignature)
-    {
-        ReadyToRunCompilerContext context = CreateWasmContext();
-        TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
-        TypeDesc returnType = returnsStruct ? MakeAlignedEightBlob(context, 16) : int32;
-        MethodSignature signature = new MethodSignature(hasThis ? MethodSignatureFlags.None : MethodSignatureFlags.Static, 0, returnType, [int32]);
-
-        WasmSignature lowered = WasmLowering.GetSignature(signature, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall);
-        Assert.Equal(expectedSignature, lowered.SignatureString);
-        Assert.True(WasmLowering.HasGenericContextBeforeAsync(lowered, context));
-
-        var (layoutSignature, argIterator, transitionBlock) = WasmThunkArgLayout.BuildArgIterator(lowered, context);
-        Assert.True(argIterator.HasParamType);
-        Assert.True(argIterator.HasAsyncContinuation);
-        Assert.Equal(1, layoutSignature.Length);
-        Assert.Same(int32, layoutSignature[0]);
-
-        // The interpreter and the method's GC ref map expect [this][generic context][async continuation][args].
-        int firstHiddenArgOffset = transitionBlock.OffsetOfArgs + (hasThis ? 8 : 0);
-        Assert.Equal(firstHiddenArgOffset, argIterator.GetParamTypeArgOffset());
-        Assert.Equal(firstHiddenArgOffset + 8, argIterator.GetAsyncContinuationArgOffset());
-        Assert.Equal(firstHiddenArgOffset + 16, argIterator.GetNextOffset());
-    }
-
-    [Theory]
-    [InlineData(WasmLowering.LoweringFlags.None, "iiip", 2)]
-    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg, "iiiip", 3)]
-    [InlineData(WasmLowering.LoweringFlags.IsAsyncCall, "iaiip", 2)]
-    public void WasmThunkArgLayoutKeepsExplicitParametersWithoutAsyncGenericContext(WasmLowering.LoweringFlags flags, string expectedSignature, int expectedParameters)
-    {
-        ReadyToRunCompilerContext context = CreateWasmContext();
-        TypeDesc int32 = context.GetWellKnownType(WellKnownType.Int32);
-        MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, int32, [int32, int32]);
-
-        WasmSignature lowered = WasmLowering.GetSignature(signature, flags);
-        Assert.Equal(expectedSignature, lowered.SignatureString);
-        Assert.False(WasmLowering.HasGenericContextBeforeAsync(lowered, context));
-
-        var (layoutSignature, argIterator, _) = WasmThunkArgLayout.BuildArgIterator(lowered, context);
-        Assert.False(argIterator.HasParamType);
-        Assert.Equal((flags & WasmLowering.LoweringFlags.IsAsyncCall) != 0, argIterator.HasAsyncContinuation);
-        Assert.Equal(expectedParameters, layoutSignature.Length);
-    }
-
-    /// <summary>
-    /// The delay-load GC ref map for a call is computed from the callee's <see cref="MethodDesc"/>, while the Wasm
-    /// import thunk that spills the arguments during the fixup only has the callee's Wasm signature. Both must agree
-    /// on every argument location, or a GC during the fixup reports the wrong slots.
-    /// </summary>
-    [Theory]
-    [InlineData("FromResult", true, false)]
-    [InlineData("FromResult", true, true)]
-    [InlineData("StartNew", true, true)]
-    [InlineData("Delay", false, true)]
-    public void WasmThunkArgLayoutMatchesCallRefMapLayout(string methodName, bool sharedGeneric, bool asyncVariant)
-    {
-        ReadyToRunCompilerContext context = CreateWasmContext();
-        MethodDesc method = GetTaskReturningCoreLibMethod(context, methodName);
-        if (sharedGeneric)
-        {
-            method = method.MakeInstantiatedMethod(context.CanonType);
-        }
-
-        if (asyncVariant)
-        {
-            method = context.GetAsyncVariantMethod(method);
-        }
-
-        Assert.Equal(sharedGeneric, method.RequiresInstArg());
-        Assert.Equal(asyncVariant, method.IsAsyncCall());
-
-        WasmSignature lowered = WasmLowering.GetSignature(method.Signature, WasmLowering.GetLoweringFlags(method));
-        var (callRefMapIterator, _) = GCRefMapBuilder.BuildCallRefMapArgIterator(method, isUnboxingStub: false);
-        var (_, thunkIterator, _) = WasmThunkArgLayout.BuildArgIterator(lowered, context);
-
-        Assert.Equal(callRefMapIterator.HasThis, thunkIterator.HasThis);
-
-        // The thunk only models the generic context as the hidden instantiation argument when it precedes the async
-        // continuation; otherwise it stays the first user argument, which must still land in the same slot.
-        Assert.Equal(sharedGeneric && asyncVariant, thunkIterator.HasParamType);
-        if (callRefMapIterator.HasParamType)
-        {
-            int thunkGenericContextOffset = thunkIterator.HasParamType ? thunkIterator.GetParamTypeArgOffset() : thunkIterator.GetNextOffset();
-            Assert.Equal(callRefMapIterator.GetParamTypeArgOffset(), thunkGenericContextOffset);
-        }
-
-        Assert.Equal(callRefMapIterator.HasAsyncContinuation, thunkIterator.HasAsyncContinuation);
-        if (callRefMapIterator.HasAsyncContinuation)
-        {
-            Assert.Equal(callRefMapIterator.GetAsyncContinuationArgOffset(), thunkIterator.GetAsyncContinuationArgOffset());
-        }
-
-        List<int> callRefMapArgOffsets = new();
-        int argOffset;
-        while ((argOffset = callRefMapIterator.GetNextOffset()) != TransitionBlock.InvalidOffset)
-        {
-            callRefMapArgOffsets.Add(argOffset);
-        }
-
-        List<int> thunkArgOffsets = new();
-        while ((argOffset = thunkIterator.GetNextOffset()) != TransitionBlock.InvalidOffset)
-        {
-            thunkArgOffsets.Add(argOffset);
-        }
-
-        Assert.Equal(callRefMapArgOffsets, thunkArgOffsets);
-    }
-
-    [Theory]
     [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iiaip",
         "GenericContext@8:1 AsyncContinuation@16:2 Argument@24:3")]
     [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iTiaip",
@@ -232,6 +119,8 @@ public class WasmArgumentLayoutTests
         "This@8:1 RetBuf@-1:2 GenericContext@16:3 AsyncContinuation@24:4 Argument@32:5")]
     [InlineData(false, false, WasmLowering.LoweringFlags.IsAsyncCall, "iaip",
         "AsyncContinuation@8:1 Argument@16:2")]
+    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iiip",
+        "Argument@8:1 Argument@16:2")]
     [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iTiip",
         "This@8:1 Argument@16:2 Argument@24:3")]
     [InlineData(false, false, WasmLowering.LoweringFlags.None, "iip",
@@ -245,12 +134,13 @@ public class WasmArgumentLayoutTests
 
         WasmSignature lowered = WasmLowering.GetSignature(signature, flags);
         Assert.Equal(expectedSignature, lowered.SignatureString);
+        Assert.Equal(expectedArgs.Contains("GenericContext"), WasmLowering.HasGenericContextBeforeAsync(lowered, context));
 
+        // The interpreter and the method's GC ref map expect [this][generic context][async continuation][args].
         WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
         Assert.Equal(expectedArgs, string.Join(" ", layout.Args.Select(arg => $"{arg.Kind}@{arg.Offset}:{arg.WasmParamIndex}")));
         Assert.All(layout.Args, arg => Assert.Equal(1, arg.WasmParamCount));
         Assert.Equal(lowered.FuncType.Params.Types.Length - 1, layout.PortableEntrypointParamIndex);
-        Assert.Equal(returnsStruct ? (hasThis ? 2 : 1) : (int?)null, layout.RetBufParamIndex);
     }
 
     [Fact]
@@ -282,14 +172,16 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// Every argument slot the thunk layout reads or writes must be one the call's GC ref map describes.
+    /// The delay-load GC ref map for a call is computed from the callee's <see cref="MethodDesc"/>, while the Wasm
+    /// import thunk that spills the arguments during the fixup only has the callee's Wasm signature. Both must agree
+    /// on every argument location, or a GC during the fixup reports the wrong slots.
     /// </summary>
     [Theory]
     [InlineData("FromResult", true, false)]
     [InlineData("FromResult", true, true)]
     [InlineData("StartNew", true, true)]
     [InlineData("Delay", false, true)]
-    public void WasmThunkArgLayoutEntriesMatchCallRefMapLayout(string methodName, bool sharedGeneric, bool asyncVariant)
+    public void WasmThunkArgLayoutMatchesCallRefMapLayout(string methodName, bool sharedGeneric, bool asyncVariant)
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
         MethodDesc method = GetTaskReturningCoreLibMethod(context, methodName);
@@ -302,6 +194,9 @@ public class WasmArgumentLayoutTests
         {
             method = context.GetAsyncVariantMethod(method);
         }
+
+        Assert.Equal(sharedGeneric, method.RequiresInstArg());
+        Assert.Equal(asyncVariant, method.IsAsyncCall());
 
         WasmSignature lowered = WasmLowering.GetSignature(method.Signature, WasmLowering.GetLoweringFlags(method));
         var (callRefMapIterator, transitionBlock) = GCRefMapBuilder.BuildCallRefMapArgIterator(method, isUnboxingStub: false);
@@ -328,6 +223,7 @@ public class WasmArgumentLayoutTests
             callRefMapOffsets.Add(argOffset);
         }
 
+        // Without an async continuation the generic context stays the first explicit argument, in the same slot.
         WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
         Assert.Equal(sharedGeneric && asyncVariant, layout.Args.Any(arg => arg.Kind == WasmThunkArgKind.GenericContext));
         Assert.Equal(callRefMapOffsets, layout.Args.Where(arg => arg.Kind != WasmThunkArgKind.RetBuf).Select(arg => arg.Offset));

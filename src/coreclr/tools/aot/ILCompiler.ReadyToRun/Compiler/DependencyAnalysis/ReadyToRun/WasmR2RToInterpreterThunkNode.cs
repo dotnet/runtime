@@ -138,10 +138,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Store((ulong)(transitionBlockOffset + 4)));
 
             // Store all arguments into the transition block area
+            int? retBufParamIndex = null;
             foreach (WasmThunkArg arg in layout.Args)
             {
                 if (arg.Kind == WasmThunkArgKind.RetBuf)
                 {
+                    retBufParamIndex = arg.WasmParamIndex;
                     continue;
                 }
 
@@ -191,7 +193,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         expressions.Add(Local.Get(0));
                         expressions.Add(Local.Get(arg.WasmParamIndex + slot));
-                        expressions.Add(WasmThunkArgLayout.Store(arg.WasmType, currentOffset + (slot * slotSize)));
+                        expressions.Add(Memory.Store(arg.WasmType, (ulong)(currentOffset + (slot * slotSize))));
                     }
                 }
             }
@@ -226,10 +228,10 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Const(sizeOfArgumentArray));
 
             //   arg4: return buffer pointer
-            if (layout.RetBufParamIndex is int retBufParamIndex)
+            if (retBufParamIndex is int retBufLocalIndex)
             {
                 // The retbuf is a wasm parameter — pass it through directly.
-                expressions.Add(Local.Get(retBufParamIndex));
+                expressions.Add(Local.Get(retBufLocalIndex));
             }
             else
             {
@@ -266,26 +268,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             {
                 Debug.Assert(_typeNode.Type.Returns.Types.Length == 1, "Expected exactly one wasm return type");
                 expressions.Add(Local.Get(0));
-                switch (returnWasmType)
-                {
-                    case WasmValueType.I32:
-                        expressions.Add(I32.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.F32:
-                        expressions.Add(F32.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.I64:
-                        expressions.Add(I64.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.F64:
-                        expressions.Add(F64.Load((ulong)localRetBufOffset));
-                        break;
-                    case WasmValueType.V128:
-                        expressions.Add(V128.Load((ulong)localRetBufOffset));
-                        break;
-                    default:
-                        throw new Exception("Unexpected wasm return type");
-                }
+                expressions.Add(Memory.Load(returnWasmType, (ulong)localRetBufOffset));
             }
 
             instructionEncoder.FunctionBody = new WasmFunctionBody(_typeNode.Type, new[] { WasmValueType.I32 }, expressions.ToArray());

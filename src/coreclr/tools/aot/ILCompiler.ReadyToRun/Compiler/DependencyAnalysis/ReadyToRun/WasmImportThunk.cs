@@ -141,15 +141,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             expressions.Add(I32.Add);
             expressions.Add(I32.Store(4));
 
-            //
-            // ; Stash all the locals away
-            // for (int i = 0; i < N; i++)
-            // {
-            //   local.get 0
-            //   local.get (i+1)
-            //   i32(or i64/fp32/fp64).store (offset from base)
-            // }
-
+            // Stash the arguments in the transition block
             foreach (WasmThunkArg arg in layout.Args)
             {
                 if (arg.Kind == WasmThunkArgKind.RetBuf)
@@ -177,7 +169,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     expressions.Add(Local.Get(0));
                     expressions.Add(Local.Get(arg.WasmParamIndex + slot));
-                    expressions.Add(WasmThunkArgLayout.Store(arg.WasmType, arg.Offset + (slot * slotSize)));
+                    expressions.Add(Memory.Store(arg.WasmType, (ulong)(arg.Offset + (slot * slotSize))));
                 }
             }
             //
@@ -211,14 +203,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // i32.add
             expressions.Add(I32.Add);
 
-            //
-            // ; Setup normal args
-            // for (int i = 0; i < N; i++)
-            // {
-            //   local.get 0
-            //   i32(or i64/fp32/fp64).load (offset from base)
-            //   local.set (i+1)
-            // }
+            // Reload the arguments for the final call
             foreach (WasmThunkArg arg in layout.Args)
             {
                 if ((arg.Kind == WasmThunkArgKind.RetBuf) || arg.IsIndirectStruct)
@@ -232,7 +217,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 for (int slot = 0; slot < arg.WasmParamCount; slot++)
                 {
                     expressions.Add(Local.Get(0));
-                    expressions.Add(WasmThunkArgLayout.Load(arg.WasmType, arg.Offset + (slot * slotSize)));
+                    expressions.Add(Memory.Load(arg.WasmType, (ulong)(arg.Offset + (slot * slotSize))));
                 }
             }
             // ; Add the portable entrypoint arg

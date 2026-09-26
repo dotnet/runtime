@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ILCompiler.DependencyAnalysis.Wasm;
-using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.CallingConvention;
 using Internal.JitInterface;
 using Internal.TypeSystem;
@@ -16,6 +14,7 @@ internal enum WasmThunkArgKind
 {
     This,
     RetBuf,
+    // Only when an async continuation follows; otherwise the context is encoded as the first explicit argument.
     GenericContext,
     AsyncContinuation,
     Argument,
@@ -26,7 +25,7 @@ internal enum WasmThunkArgKind
 /// </summary>
 internal readonly struct WasmThunkArg
 {
-    public WasmThunkArg(WasmThunkArgKind kind, int offset, int wasmParamIndex, int wasmParamCount, WasmValueType wasmType, int indirectStructSize, TypeDesc type)
+    public WasmThunkArg(WasmThunkArgKind kind, int offset, int wasmParamIndex, int wasmParamCount, WasmValueType wasmType, int indirectStructSize)
     {
         Kind = kind;
         Offset = offset;
@@ -34,7 +33,6 @@ internal readonly struct WasmThunkArg
         WasmParamCount = wasmParamCount;
         WasmType = wasmType;
         IndirectStructSize = indirectStructSize;
-        Type = type;
     }
 
     public WasmThunkArgKind Kind { get; }
@@ -54,9 +52,6 @@ internal readonly struct WasmThunkArg
     /// <summary>Size of a struct passed by reference, otherwise 0.</summary>
     public int IndirectStructSize { get; }
 
-    /// <summary>The raised argument type, or null for the hidden arguments.</summary>
-    public TypeDesc Type { get; }
-
     public bool IsIndirectStruct => IndirectStructSize != 0;
     public bool IsEmptyStruct => WasmParamCount == 0;
     public bool IsMultiSlot => WasmParamCount > 1;
@@ -68,28 +63,25 @@ internal readonly struct WasmThunkArg
 /// </summary>
 internal sealed class WasmThunkArgLayout
 {
-    public MethodSignature Signature { get; }
     public TransitionBlock TransitionBlock { get; }
     public int SizeOfFrameArgumentArray { get; }
     public WasmThunkArg[] Args { get; }
-    public int? RetBufParamIndex { get; }
     public int PortableEntrypointParamIndex { get; }
 
     public WasmThunkArgLayout(WasmSignature wasmSignature, TypeSystemContext context)
     {
         (MethodSignature signature, ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = BuildArgIterator(wasmSignature, context);
-        Signature = signature;
         TransitionBlock = transitionBlock;
         SizeOfFrameArgumentArray = argit.SizeOfFrameArgumentArray();
 
         string sig = wasmSignature.SignatureString;
         WasmResultType wasmParams = wasmSignature.FuncType.Params;
         List<WasmThunkArg> args = new List<WasmThunkArg>();
-        int wasmParamIndex = 1; // $sp
+        int wasmParamIndex = 1; // 0 is $sp
 
         void AddHiddenArg(WasmThunkArgKind kind, int offset)
         {
-            args.Add(new WasmThunkArg(kind, offset, wasmParamIndex, 1, wasmParams.Types[wasmParamIndex], 0, null));
+            args.Add(new WasmThunkArg(kind, offset, wasmParamIndex, 1, wasmParams.Types[wasmParamIndex], 0));
             wasmParamIndex++;
         }
 
@@ -113,7 +105,6 @@ internal sealed class WasmThunkArgLayout
 
         if (hasRetBuf)
         {
-            RetBufParamIndex = wasmParamIndex;
             AddHiddenArg(WasmThunkArgKind.RetBuf, TransitionBlock.InvalidOffset);
         }
 
@@ -165,7 +156,7 @@ internal sealed class WasmThunkArgLayout
 
             Debug.Assert(isIndirectStruct == (indirectStructSize != 0));
             WasmValueType wasmType = (wasmParamCount != 0) ? wasmParams.Types[wasmParamIndex] : default;
-            args.Add(new WasmThunkArg(WasmThunkArgKind.Argument, offset, wasmParamIndex, wasmParamCount, wasmType, indirectStructSize, type));
+            args.Add(new WasmThunkArg(WasmThunkArgKind.Argument, offset, wasmParamIndex, wasmParamCount, wasmType, indirectStructSize));
             wasmParamIndex += wasmParamCount;
         }
 
@@ -180,7 +171,7 @@ internal sealed class WasmThunkArgLayout
     /// <summary>
     /// Builds the ArgIterator for a Wasm thunk from its Wasm signature.
     /// </summary>
-    internal static (MethodSignature, ArgIterator<TypeHandle>, TransitionBlock) BuildArgIterator(WasmSignature wasmSignature, TypeSystemContext context)
+    private static (MethodSignature, ArgIterator<TypeHandle>, TransitionBlock) BuildArgIterator(WasmSignature wasmSignature, TypeSystemContext context)
     {
         MethodSignature signature = WasmLowering.RaiseSignature(wasmSignature, context);
         bool isAsyncCall = wasmSignature.SignatureString.Contains('a');
@@ -205,23 +196,4 @@ internal sealed class WasmThunkArgLayout
         return (signature, argit, transitionBlock);
     }
 
-    internal static WasmExpr Load(WasmValueType type, int offset) => type switch
-    {
-        WasmValueType.I32 => I32.Load((ulong)offset),
-        WasmValueType.I64 => I64.Load((ulong)offset),
-        WasmValueType.F32 => F32.Load((ulong)offset),
-        WasmValueType.F64 => F64.Load((ulong)offset),
-        WasmValueType.V128 => V128.Load((ulong)offset),
-        _ => throw new NotSupportedException($"Unexpected wasm type arg: {type}"),
-    };
-
-    internal static WasmExpr Store(WasmValueType type, int offset) => type switch
-    {
-        WasmValueType.I32 => I32.Store((ulong)offset),
-        WasmValueType.I64 => I64.Store((ulong)offset),
-        WasmValueType.F32 => F32.Store((ulong)offset),
-        WasmValueType.F64 => F64.Store((ulong)offset),
-        WasmValueType.V128 => V128.Store((ulong)offset),
-        _ => throw new NotSupportedException($"Unexpected wasm type arg: {type}"),
-    };
 }
