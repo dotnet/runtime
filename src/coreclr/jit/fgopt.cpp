@@ -2156,9 +2156,17 @@ bool Compiler::fgBlockIsGoodTailDuplicationCandidate(BasicBlock* target, unsigne
         return false;
     }
 
+    // Other statement in the block must be an assignment to the local being compared.
+    // RHS must be binary operation or another local.
+    GenTree* const data = firstTree->AsLclVar()->Data();
+    if (data->OperIs(GT_LCL_VAR))
+    {
+        *lclNum = data->AsLclVar()->GetLclNum();
+        return true;
+    }
+
     // Could allow unary here too...
     //
-    GenTree* const data = firstTree->AsLclVar()->Data();
     if (!data->OperIsBinary())
     {
         return false;
@@ -2387,12 +2395,46 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
         return false;
     }
 
-    if (!store->Data()->IsIntegralConst())
+    GenTree*  data     = store->Data();
+    var_types copyType = TYP_UNDEF;
+
+    // Look through one adjacent copy, ex.
+    // V01 = 1
+    // V02 = V01
+    // CMP V02, 0
+    if (data->OperIs(GT_LCL_VAR))
+    {
+        Statement* sourceStmt = secondLastStmt->GetPrevStmt();
+        if (sourceStmt == block->lastStmt())
+        {
+            return false;
+        }
+
+        GenTree* sourceTree = sourceStmt->GetRootNode();
+        if (!sourceTree->OperIs(GT_STORE_LCL_VAR))
+        {
+            return false;
+        }
+
+        GenTreeLclVarCommon* sourceStore = sourceTree->AsLclVarCommon();
+        if ((sourceStore->GetLclNum() != data->AsLclVarCommon()->GetLclNum()) ||
+            !sourceStore->Data()->IsIntegralConst() ||
+            (genActualType(sourceStore) != genActualType(sourceStore->Data())) ||
+            (genActualType(sourceStore) != genActualType(data)))
+        {
+            return false;
+        }
+
+        copyType = lvaGetDesc(data->AsLclVarCommon())->TypeGet();
+        data     = sourceStore->Data();
+    }
+
+    if (!data->IsIntegralConst())
     {
         return false;
     }
 
-    if (genActualType(store) != genActualType(store->Data()) || (genActualType(store) != genActualType(lcl)))
+    if (genActualType(store) != genActualType(data) || (genActualType(store) != genActualType(lcl)))
     {
         return false;
     }
@@ -2403,8 +2445,14 @@ bool Compiler::fgFoldSimpleCondByForwardSub(BasicBlock* block)
     JITDUMP("\nAfter:\n");
 
     LclVarDsc* varDsc  = lvaGetDesc(lcl);
-    GenTree*   newData = gtCloneExpr(store->Data());
-    if (varTypeIsSmall(varDsc) && fgCastNeeded(store->Data(), varDsc->TypeGet()))
+    GenTree*   newData = gtCloneExpr(data);
+    if ((copyType != TYP_UNDEF) && varTypeIsSmall(copyType) && fgCastNeeded(newData, copyType))
+    {
+        newData = gtNewCastNode(TYP_INT, newData, false, copyType);
+        newData = gtFoldExpr(newData);
+    }
+
+    if (varTypeIsSmall(varDsc) && fgCastNeeded(newData, varDsc->TypeGet()))
     {
         newData = gtNewCastNode(TYP_INT, newData, false, varDsc->TypeGet());
         newData = gtFoldExpr(newData);
