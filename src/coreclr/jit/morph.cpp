@@ -6591,9 +6591,13 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
                 }
             }
 
+            // Preserve array, index, value evaluation order before the store's range check.
+            gtPrepareOperandsForReordering(&index, &value);
+            gtPrepareOperandsForReordering(&arr, &value);
             GenTree* indexAddr = gtNewArrayIndexAddr(arr, index, TYP_REF, NO_CLASS_HANDLE);
-            GenTree* store     = gtNewStoreIndNode(TYP_REF, indexAddr, value);
-            GenTree* result    = fgMorphTree(store);
+            gtPrepareOperandsForReordering(&value, &indexAddr);
+            GenTree* store  = gtNewStoreIndNode(TYP_REF, indexAddr, value);
+            GenTree* result = fgMorphTree(store);
 
             if (argSetup != nullptr)
             {
