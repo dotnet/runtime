@@ -2906,6 +2906,60 @@ namespace System.Net.Security.Tests
             Assert.Equal(TestHelper.s_ping, appBuf);
         }
 
+        // A TLS 1.3 client that sets no certificate doesn't offer post-handshake authentication,
+        // so RequestClientCertificate() on a socket-bound server has nothing to request: it
+        // completes without re-arming the handshake and the session stays usable.
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task SocketBoundSession_RequestClientCertificate_Tls13PhaNotOffered_Completes()
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            using Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientAuth = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(() => DriveSocketHandshakeToCompletionAsync(session));
+            await Task.WhenAll(clientAuth, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+
+            byte[] appBuf = new byte[TestHelper.s_ping.Length];
+            Task<int> clientRead = clientSsl.ReadAsync(appBuf).AsTask();
+
+            Assert.Equal(TlsOperationStatus.Complete, session.RequestClientCertificate());
+            Assert.True(session.IsHandshakeComplete);
+            Assert.Null(session.GetRemoteCertificate());
+
+            await WriteAllOverSocketAsync(session, TestHelper.s_ping).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(TestHelper.s_ping.Length, await clientRead.WaitAsync(TimeSpan.FromSeconds(30)));
+            Assert.Equal(TestHelper.s_ping, appBuf);
+        }
+
         // Client-role socket-bound session validating the server certificate: a user
         // RemoteCertificateValidationCallback set on a client TlsSocketSession must be invoked
         // exactly once during the socket handshake and must receive the server certificate, a
