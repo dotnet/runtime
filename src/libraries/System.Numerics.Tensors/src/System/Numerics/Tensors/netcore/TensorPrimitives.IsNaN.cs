@@ -68,6 +68,14 @@ namespace System.Numerics.Tensors
             public static Vector128<T> Invoke(Vector128<T> x) => Vector128.IsNaN<T>(x);
             public static Vector256<T> Invoke(Vector256<T> x) => Vector256.IsNaN<T>(x);
             public static Vector512<T> Invoke(Vector512<T> x) => Vector512.IsNaN<T>(x);
+
+            // A NaN is a value whose absolute bit pattern lies above that of infinity.
+            public static bool HasThresholdForm => typeof(T) == typeof(float) || typeof(T) == typeof(double);
+            public static bool TrueBelowThreshold => false;
+            public static ulong ThresholdBits => PositiveInfinityBits<T>();
+            public static Vector128<T> Key(Vector128<T> x) => Vector128.Abs(x);
+            public static Vector256<T> Key(Vector256<T> x) => Vector256.Abs(x);
+            public static Vector512<T> Key(Vector512<T> x) => Vector512.Abs(x);
         }
     }
 }
