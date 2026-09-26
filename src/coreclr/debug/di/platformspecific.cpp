@@ -11,7 +11,7 @@
 // different source files based on build macros.
 //
 
-#if FEATURE_DBGIPC_TRANSPORT_DI
+#if HOST_UNIX
 #include "dbgtransportpipeline.cpp"
 #include "shimremotedatatarget.cpp"
 #include "remoteeventchannel.cpp"

@@ -9,7 +9,7 @@
 #include <minipal/time.h>
 #endif // RIGHT_SIDE_COMPILE
 
-#if (!defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_VM)) || (defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_DI))
+#if defined(HOST_UNIX)
 
 // This is the entry type for the IPC event queue owned by the transport.
 // Each entry contains the multiplexing type of the IPC event plus the
@@ -2810,4 +2810,4 @@ void DbgTransportLock::Leave()
 }
 #endif // RIGHT_SIDE_COMPILE
 
-#endif // (!defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_VM)) || (defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_DI))
+#endif // defined(HOST_UNIX)

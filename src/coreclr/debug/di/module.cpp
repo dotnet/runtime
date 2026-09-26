@@ -880,7 +880,7 @@ HRESULT CordbModule::InitPublicMetaDataFromFile(const WCHAR * pszFullPathName,
     }
 
     return hr;
-#endif // TARGET_UNIX
+#endif // HOST_UNIX
 }
 
 //---------------------------------------------------------------------------------------
@@ -1222,7 +1222,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
         szTempName = GetModulePath();
     );
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
     // To support VS when debugging remotely we act like the Compact Framework and return the assembly name
     // when asked for the name of an in-memory module.
     if (szTempName == NULL)
@@ -1251,7 +1251,7 @@ HRESULT CordbModule::GetNameWorker(ULONG32 cchName, ULONG32 *pcchName, _Out_writ
     }
 
 
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 
     EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY
@@ -2410,7 +2410,7 @@ HRESULT CordbModule::CreateReaderForInMemorySymbols(REFIID riid, void** ppObj)
         ReleaseHolder<ISymUnmanagedBinder> pBinder;
         if (symFormat == IDacDbiInterface::kSymbolFormatPDB)
         {
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
             // PDB format - use diasymreader.dll with COM activation
             InlineSString<MAX_PATH> ssBuf;
             IfFailThrow(GetClrModuleDirectory(ssBuf));

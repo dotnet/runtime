@@ -2726,7 +2726,6 @@ void CordbType::GatherTypeDataForInstantiation(unsigned int genericArgsCount, IC
     }
 }
 
-#ifdef FEATURE_64BIT_ALIGNMENT
 // checks if the type requires 8-byte alignment. the algorithm used here
 // was adapted from AdjustArgPtrForAlignment() in bcltype/VarArgsNative.cpp
 HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
@@ -2770,7 +2769,6 @@ HRESULT CordbType::RequiresAlign8(BOOL* isRequired)
 
     return hr;
 }
-#endif
 
 /* ------------------------------------------------------------------------- *
  * TypeParameter Enumerator class

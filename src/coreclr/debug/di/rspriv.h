@@ -168,10 +168,10 @@ class NeuterList;
 
 struct IDacDbiInterface;
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
 class DbgTransportTarget;
 class DbgTransportSession;
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
 // @dbgtodo  private shim hook - the RS has private hooks into the shim to help bridge the V2/V3 gap.
 // This helps provide a working dogfooding story throughout our transition.
@@ -803,13 +803,13 @@ public:
         // between RCET, W32ET, and user threads.
         LL_PROCESS_LOCK = 2,
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
         LL_DBG_TRANSPORT_MANAGER_LOCK = 1,
 
         LL_DBG_TRANSPORT_TARGET_LOCK = 0,
 
         LL_DD_MARSHAL_LOCK = 0,
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
 
         // These are all leaf locks (they don't take any other lock once they're held).
         LL_PROCESS_LIST_LOCK = 0,
@@ -1155,11 +1155,11 @@ typedef enum {
 struct NativePatch
 {
     void * pAddress; // pointer into the LS address space.
-    PRD_TYPE opcode; // opcode to restore with.
+    ULONG32 opcode; // opcode to restore with.
 
     inline bool operator==(NativePatch p2)
     {
-        return memcmp(this, &p2, sizeof(p2)) == 0;
+        return (pAddress == p2.pAddress) && (opcode == p2.opcode);
     }
 };
 
@@ -1168,13 +1168,13 @@ struct NativePatch
 //-----------------------------------------------------------------------------
 
 // Remove the int3 from the remote address
-HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE opcode);
+HRESULT RemoveRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 opcode);
 
 // This flavor is assuming our caller already knows the opcode.
 HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress);
 
 // Apply the patch and get the opcode that we're replacing.
-HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, PRD_TYPE * pOpcode);
+HRESULT ApplyRemotePatch(CordbProcess * pProcess, const void * pRemoteAddress, ULONG32 * pOpcode);
 
 
 class CordbHashTable;
@@ -2241,9 +2241,9 @@ public:
     // CorDebug
     //-----------------------------------------------------------
 
-#if defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if defined(HOST_UNIX)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
-#endif // FEATURE_DBGIPC_TRANSPORT_DI
+#endif // HOST_UNIX
     static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR lpwstrDacModulePath, REFIID id, void** object);
 
     //-----------------------------------------------------------
@@ -2862,6 +2862,8 @@ public:
 
     virtual bool IsThreadSuspendedOrHijacked(ICorDebugThread * pThread) = 0;
 
+    virtual HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo) = 0;
+
 #ifdef FEATURE_INTEROP_DEBUGGING
     virtual bool IsUnmanagedThreadHijacked(ICorDebugThread * pICorDebugThread) = 0;
 #endif
@@ -3279,6 +3281,12 @@ public:
     // Writes a buffer to the target
     void SafeWriteBuffer(TargetBuffer tb, const BYTE * pLocalBuffer);
 
+    // Reads the breakpoint opcode from the target, using the target's instruction width.
+    HRESULT SafeReadBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 * pOpcode);
+
+    // Writes an opcode to the target, using the target's instruction width.
+    HRESULT SafeWriteBreakpointInstruction(CORDB_ADDRESS pRemotePtr, ULONG32 opcode);
+
 #if defined(FEATURE_INTEROP_DEBUGGING)
     void DuplicateHandleToLocalProcess(CLREventBase * pLocalEvent, RemoteHANDLE * pRemoteHandle);
 #endif // FEATURE_INTEROP_DEBUGGING
@@ -3599,6 +3607,11 @@ public:
 
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
+
+    HRESULT GetTargetInfo(IDacDbiInterface::TargetInfo * pTargetInfo);
+
+    // Get the width, in bytes, of the breakpoint opcode in the target's instruction stream.
+    HRESULT GetTargetOpcodeSize(ULONG32 * pcbSize);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
@@ -3968,7 +3981,7 @@ public:
     PRD_TYPE             *m_rgUncommittedOpcode;
 
     // CORDB_ADDRESS's are UINT_PTR's (64 bit under HOST_64BIT, 32 bit otherwise)
-#if defined(TARGET_64BIT)
+#if defined(HOST_64BIT)
 #define MAX_ADDRESS     (UINT64_MAX)
 #else
 #define MAX_ADDRESS     (UINT32_MAX)
@@ -4095,6 +4108,9 @@ private:
     // Keeps the native fallback DAC alive until the managed cDAC has been released.
     IUnknown *           m_pLegacyDac;
 
+    IDacDbiInterface::TargetInfo m_cachedTargetInfo;
+    bool                m_fHasCachedTargetInfo;
+
     IEventChannel *     m_pEventChannel;
 
     // If true, then we'll ASSERT if we detect the target is corrupt or inconsistent
@@ -4113,7 +4129,7 @@ private:
     CUnmanagedThreadHashTableImpl m_unmanagedThreadHashTable;
     DWORD m_dwOutOfProcessStepping;
     bool m_fOutOfProcessSetThreadContextEventReceived;
-    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, PRD_TYPE opcode);
+    HRESULT EnableInPlaceSingleStepping(UnmanagedThreadTracker * pCurThread, CORDB_ADDRESS_TYPE *patchSkipAddr, ULONG32 opcode);
 public:
     void HandleDebugEventForInPlaceStepping(const DEBUG_EVENT * pEvent);
     bool CanDetach(); // Must only be called on the Win32ET, determines if it is safe to detach. Only used by W32ETA_CAN_DETACH
@@ -4779,11 +4795,9 @@ public:
     // Is this type a GC-root.
     bool IsGCRoot();
 
-#ifdef FEATURE_64BIT_ALIGNMENT
     // checks if the type requires 8-byte alignment.
     // this is not exposed via ICorDebug at present.
     HRESULT RequiresAlign8(BOOL* isRequired);
-#endif
 
     //-----------------------------------------------------------
     // Data members
@@ -10152,7 +10166,7 @@ private:
         {
             MachineInfo machineInfo;
             ProcessDescriptor processDescriptor;
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
             bool fWin32Attach;
 #endif
             CordbProcess *pProcess;
@@ -10160,7 +10174,7 @@ private:
             // Wrapper to determine if we're interop-debugging.
             bool IsInteropDebugging()
             {
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(HOST_UNIX)
                 return fWin32Attach;
 #else
                 return false;
@@ -10492,7 +10506,6 @@ public:
 
     void HijackToRaiseException();
     void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
     void ClearRaiseExceptionEntryContext();
     BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
 
@@ -10505,12 +10518,10 @@ public:
         return (DWORD) this->m_id;
     }
 
-#ifdef TARGET_X86
     // Stores the thread's current leaf SEH handler
     HRESULT SaveCurrentLeafSeh();
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
-#endif
 
     // Logs basic data about a context to the debugging log
     static VOID LogContext(DT_CONTEXT* pContext);
@@ -10553,10 +10564,8 @@ private:
     ULONG_PTR                  m_raiseExceptionExceptionInformation[EXCEPTION_MAXIMUM_PARAMETERS];
 
 
-#ifdef TARGET_X86
     // the SEH handler which was the leaf when SaveCurrentSeh was called (prior to hijack)
     REMOTE_PTR                 m_pSavedLeafSeh;
-#endif
 
     HRESULT EnableSSAfterBP();
 
@@ -11395,17 +11404,11 @@ inline void ValidateOrThrow(const void * p)
 // aligns argBase on platforms that require it else it's a no-op
 inline void AlignAddressForType(CordbType* pArgType, CORDB_ADDRESS& argBase)
 {
-#ifdef TARGET_ARM
-// TODO: review the following
-#ifdef FEATURE_64BIT_ALIGNMENT
     BOOL align = FALSE;
-    HRESULT hr = pArgType->RequiresAlign8(&align);
-    _ASSERTE(SUCCEEDED(hr));
+    pArgType->RequiresAlign8(&align);
 
     if (align)
         argBase = ALIGN_ADDRESS(argBase, 8);
-#endif // FEATURE_64BIT_ALIGNMENT
-#endif // TARGET_ARM
 }
 
 //-----------------------------------------------------------------------------
