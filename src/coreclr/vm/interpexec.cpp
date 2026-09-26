@@ -3395,8 +3395,8 @@ SWITCH_OPCODE:
                     else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
                     {
                         // The shuffle thunk's 'this' is the delegate. For an open virtual delegate, _methodPtrAux is
-                        // CID_VirtualOpenDelegateDispatch, which needs the delegate and so cannot be invoked through calli;
-                        // resolve the target as INTOP_CALLDELEGATE does.
+                        // CID_VirtualOpenDelegateDispatch, which expects the address of _methodPtrAux in a hidden argument
+                        // that calli cannot express; resolve the target as INTOP_CALLDELEGATE does.
                         DELEGATEREF delegateObj = LOCAL_VAR(0, DELEGATEREF);
                         _ASSERTE(((MethodDesc*)pMethod->methodHnd)->IsILStub() && ((MethodDesc*)pMethod->methodHnd)->AsDynamicMethodDesc()->IsDelegateShuffleThunk());
                         _ASSERTE(delegateObj != NULL && delegateObj->GetMethodPtrAux() == calliFunctionPointer);
