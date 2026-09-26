@@ -825,7 +825,7 @@ namespace Internal.JitInterface
                 }
 
                 var typicalDef = MethodBeingCompiled.GetTypicalMethodDefinition();
-                if (typicalDef is EcmaMethod or AsyncMethodVariant)
+                if (ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(MethodBeingCompiled) is not null)
                 {
                     var ecmaMethod = (EcmaMethod)typicalDef.GetPrimaryMethodDesc();
                     if ((methodIL.GetMethodILScopeDefinition() is IEcmaMethodIL && _compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && ecmaMethod.Module == typicalDef.Context.SystemModule) ||

@@ -1995,6 +1995,56 @@ public class R2RTestSuites
         }
     }
 
+    /// <summary>
+    /// Tests cross-module generic compilation where the runtime-async variant of a method from an
+    /// --opt-cross-module library is compiled into the consumer and inlines another library method.
+    /// The inlining info must reference the IL body fixup that was recorded for the async variant.
+    /// </summary>
+    [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
+    public void AsyncCrossModuleGenericInliner()
+    {
+        var asyncCrossModuleGenericLib = new CompiledAssembly
+        {
+            AssemblyName = "AsyncCrossModuleGenericLib",
+            SourceResourceNames = ["CrossModuleInlining/Dependencies/AsyncCrossModuleGenericLib.cs"],
+            Features = { RuntimeAsyncFeature },
+        };
+        var consumer = new CompiledAssembly
+        {
+            AssemblyName = "AsyncGenericInlinerConsumer",
+            SourceResourceNames = ["CrossModuleInlining/AsyncGenericInlinerConsumer.cs"],
+            References = [asyncCrossModuleGenericLib],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AsyncCrossModuleGenericInliner),
+            [
+                new(consumer.AssemblyName,
+                [
+                    new CrossgenAssembly(asyncCrossModuleGenericLib)
+                    {
+                        Kind = Crossgen2InputKind.Reference,
+                        Options = [Crossgen2AssemblyOption.CrossModuleOptimization],
+                    },
+                    new CrossgenAssembly(consumer),
+                ])
+                {
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string diag;
+            Assert.True(R2RAssert.HasManifestRef(reader, "AsyncCrossModuleGenericLib", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliningInfo(reader, out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInliners(reader, "GetAsyncGenericValue", ["InvokeGetValueAsync"], out diag), diag);
+            Assert.True(R2RAssert.HasAsyncVariant(reader, "GetValueTask", out diag), diag);
+            Assert.True(R2RAssert.HasCrossModuleInlinerCount(reader, "GetSharedInlineeValue", "GetValueTask", 1, out diag), diag);
+        }
+    }
+
     [ConditionalFact(typeof(TestPaths), nameof(TestPaths.IsNotWasmTarget))]
     public void VirtualMethodGenericsNonGVM()
     {
