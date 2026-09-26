@@ -657,6 +657,7 @@ public class ArrayMarshal
     }
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 public unsafe class ArrayPinningTests
 {
     private const string NativeLibraryName = "MarshalArrayLPArrayNative";
@@ -680,8 +681,6 @@ public unsafe class ArrayPinningTests
         UnicodeAsUInt8
     }
 
-    public static bool IsSupported => !PlatformDetection.PlatformDoesNotSupportNativeTestAssets;
-
     public static IEnumerable<object[]> ArrayCases()
     {
         foreach (int length in new[] { -1, 0, 1, 5, 21 })
@@ -702,7 +701,7 @@ public unsafe class ArrayPinningTests
         }
     }
 
-    [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(ArrayCases))]
     public static void EnumArrayPassesManagedContentsDirectly(int length, bool useDelegate)
     {
@@ -725,7 +724,7 @@ public unsafe class ArrayPinningTests
             useDelegate ? Marshal.GetDelegateForFunctionPointer<UInt64EnumReverser>(target).Invoke : ReverseArrayElements);
     }
 
-    [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(CharacterCases))]
     [SkipOnMono("Mono character-array marshalling uses different pinning semantics.")]
     public static void CharacterArraysUseSelectedRepresentation(CharacterMarshalling kind, int length, bool useDelegate)
@@ -755,7 +754,7 @@ public unsafe class ArrayPinningTests
         VerifyArrayPassesManagedContentsDirectly(values, passesManagedContentsDirectly ? sizeof(char) : sizeof(byte), passesManagedContentsDirectly, reverse);
     }
 
-    [ConditionalTheory(typeof(ArrayPinningTests), nameof(IsSupported))]
+    [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
     [InlineData(true, false)]
@@ -890,6 +889,7 @@ public unsafe class ArrayPinningTests
     private delegate nint ByteBoolReverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] bool[] values, int count, int elementSize);
 }
 
+[ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
 [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
 public unsafe class PointerArrayTests
 {
@@ -919,7 +919,6 @@ public unsafe class PointerArrayTests
     {
     }
 
-    public static bool IsSupported => !PlatformDetection.PlatformDoesNotSupportNativeTestAssets;
     public static bool IsMonoCompiled => PlatformDetection.IsMonoRuntime && !PlatformDetection.IsMonoInterpreter;
 
     public static IEnumerable<object[]> ArrayCases()
@@ -982,12 +981,12 @@ public unsafe class PointerArrayTests
     private static bool IsNonNullFunctionPointerArrayCase(object[] testCase)
         => (int)testCase[1] >= 0 && (ElementKind)testCase[0] is ElementKind.UnmanagedFunction or ElementKind.ManagedFunction;
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NonFunctionPointerArrayCases))]
     public static void PinArray(ElementKind kind, int length)
         => PinArrayCore(kind, length);
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(FunctionPointerArrayCases))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
     public static void PinFunctionPointerArray(ElementKind kind, int length)
@@ -1011,12 +1010,12 @@ public unsafe class PointerArrayTests
         }
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NonFunctionPointerDelegateCases))]
     public static void PinArrayThroughDelegate(ElementKind kind, int length)
         => PinArrayThroughDelegateCore(kind, length);
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(FunctionPointerDelegateCases))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
     public static void PinFunctionPointerArrayThroughDelegate(ElementKind kind, int length)
@@ -1048,12 +1047,12 @@ public unsafe class PointerArrayTests
         }
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NonFunctionPointerElementKinds))]
     public static void PinArrayAcrossCollection(ElementKind kind)
         => PinArrayAcrossCollectionCore(kind);
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [InlineData(ElementKind.UnmanagedFunction)]
     [InlineData(ElementKind.ManagedFunction)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/90308", typeof(PointerArrayTests), nameof(IsMonoCompiled))]
@@ -1072,13 +1071,13 @@ public unsafe class PointerArrayTests
         }
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NonNullArrayCases))]
     [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
     public static void CopyArrayByRef(ElementKind kind, int length)
         => CopyArrayByRefCore(kind, length);
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NullArrayCases))]
     [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
@@ -1106,7 +1105,7 @@ public unsafe class PointerArrayTests
         AssertResult(kind, length, values, expected, reversed: true);
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     [SkipOnMono("Mono passes byref blittable arrays directly instead of copying them.")]
@@ -1139,13 +1138,13 @@ public unsafe class PointerArrayTests
         AssertResult(kind, values.Length, values, expected, reversed: false);
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NonNullDelegateCases))]
     [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
     public static void CopyOutArray(ElementKind kind, int length)
         => CopyOutArrayCore(kind, length);
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [MemberData(nameof(NullDelegateCases))]
     [SkipOnMono("Pointer-array copy-back, including function-pointer layout, has not been validated on Mono.")]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/134628", typeof(Utilities), nameof(Utilities.IsNativeAot))]
@@ -1186,7 +1185,7 @@ public unsafe class PointerArrayTests
         AssertResult(kind, length, values, expected, reversed: false);
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [InlineData(0)]
     [InlineData(1)]
     [InlineData(2)]
@@ -1214,7 +1213,7 @@ public unsafe class PointerArrayTests
         AssertResult(ElementKind.Byte, values.Length, values, expected, reversed: true);
     }
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [InlineData(false, -1)]
     [InlineData(false, 0)]
     [InlineData(true, -1)]
@@ -1223,7 +1222,7 @@ public unsafe class PointerArrayTests
     public static void CopyArrayInReversePInvoke(bool functionPointers, int length)
         => CopyArrayInReversePInvokeCore(functionPointers, length);
 
-    [ConditionalTheory(typeof(PointerArrayTests), nameof(IsSupported))]
+    [Theory]
     [InlineData(false, 1)]
     [InlineData(false, 4)]
     [InlineData(false, ArrayLength)]
