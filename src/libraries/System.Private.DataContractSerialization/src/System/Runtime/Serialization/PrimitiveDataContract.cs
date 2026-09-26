@@ -921,6 +921,7 @@ namespace System.Runtime.Serialization.DataContracts
 
     internal sealed class ByteArrayDataContract : PrimitiveDataContract
     {
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public ByteArrayDataContract() : base(typeof(byte[]), DictionaryGlobals.ByteArrayLocalName, DictionaryGlobals.SchemaNamespace)
         {
         }
