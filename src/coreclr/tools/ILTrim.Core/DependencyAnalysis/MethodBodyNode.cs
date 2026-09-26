@@ -177,7 +177,7 @@ namespace ILCompiler.DependencyAnalysis
                         }, "Instruction operand");
 
                         if (opcode == ILOpcode.ldtoken &&
-                            _module.GetObject(token) is TypeDesc type &&
+                            _module.TryGetType(token) is TypeDesc type &&
                             type.GetTypeDefinition() is EcmaType typeDefinition &&
                             !typeDefinition.IsValueType &&
                             LayoutTypeNode.IsLayoutType(typeDefinition))
