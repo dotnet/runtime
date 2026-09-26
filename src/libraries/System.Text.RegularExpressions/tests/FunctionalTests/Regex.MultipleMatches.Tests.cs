@@ -787,5 +787,26 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.Equal(expected.Length, i);
             }
         }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/134653
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData(150_000)]
+        [InlineData(400_000)]
+        public void NonBacktrackingWithTimeout_MatchesAfterTimeoutCheckBoundary(int paddingLength)
+        {
+            const string Prefix = "a foo b ";
+            const string Suffix = " c foo d";
+
+            string input = Prefix + new string('x', paddingLength) + Suffix;
+            var regex = new Regex(@"\bfoo\b", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromSeconds(1));
+
+            MatchCollection matches = regex.Matches(input);
+
+            Assert.Equal(2, matches.Count);
+            RegexAssert.Equal("foo", matches[0]);
+            Assert.Equal(2, matches[0].Index);
+            RegexAssert.Equal("foo", matches[1]);
+            Assert.Equal(Prefix.Length + paddingLength + 3, matches[1].Index);
+        }
     }
 }
