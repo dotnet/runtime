@@ -14,22 +14,22 @@ using ILCompiler.DependencyAnalysisFramework;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    // Used for HandleKey<AssemblyReferenceValue> in NodeFactory,
-    // to compare assemblies by simple name.
+    // Used for HandleKey<AssemblyReferenceValue> in NodeFactory.
     public struct AssemblyReferenceValue : IEquatable<AssemblyReferenceValue>
     {
-        public readonly EcmaAssembly Reference;
-        public AssemblyReferenceValue(EcmaAssembly reference) => Reference = reference;
+        public readonly AssemblyNameInfo Reference;
+        public AssemblyReferenceValue(EcmaAssembly reference) => Reference = reference.GetName();
+        public AssemblyReferenceValue(AssemblyNameInfo reference) => Reference = reference;
 
         public override bool Equals(object obj) => obj is AssemblyReferenceValue asmRef && Equals(asmRef);
         public bool Equals(AssemblyReferenceValue other)
         {
-            return Reference.GetName().Name == other.Reference.GetName().Name;
+            return Reference.FullName == other.Reference.FullName;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Reference.GetName().Name);
+            return Reference.FullName.GetHashCode();
         }
     }
 
@@ -40,13 +40,19 @@ namespace ILCompiler.DependencyAnalysis
     /// </summary>
     public sealed class AssemblyReferenceNode : TokenWriterNode
     {
-        private readonly EcmaAssembly _reference;
+        private readonly AssemblyNameInfo _reference;
 
         public override TableIndex TableIndex => TableIndex.AssemblyRef;
 
         public AssemblyReferenceHandle? TargetToken = null;
 
         public AssemblyReferenceNode(EcmaModule module, EcmaAssembly reference)
+            : base(module)
+        {
+            _reference = reference.GetName();
+        }
+
+        public AssemblyReferenceNode(EcmaModule module, AssemblyNameInfo reference)
             : base(module)
         {
             _reference = reference;
@@ -61,14 +67,12 @@ namespace ILCompiler.DependencyAnalysis
         {
             MetadataReader reader = _module.MetadataReader;
             var builder = writeContext.MetadataBuilder;
-            var referenceName = _reference.GetName();
-
             return builder.AddAssemblyReference(
-                builder.GetOrAddString(referenceName.Name),
-                referenceName.Version,
-                builder.GetOrAddString(referenceName.CultureName),
-                builder.GetOrAddBlob(referenceName.PublicKeyOrToken),
-                default(AssemblyFlags),
+                builder.GetOrAddString(_reference.Name),
+                _reference.Version,
+                builder.GetOrAddString(_reference.CultureName),
+                builder.GetOrAddBlob(_reference.PublicKeyOrToken),
+                (AssemblyFlags)_reference.Flags,
                 default(BlobHandle));
         }
 
@@ -83,8 +87,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // All AssemblyReferenceNodes should have the same table index.
                 Debug.Assert(base.CompareToHelper(other) == 0);
-                // Sort by simple assembly name.
-                int result = _reference.GetName().Name.CompareTo(otherAssemblyReferenceNode._reference.GetName().Name);
+                int result = _reference.FullName.CompareTo(otherAssemblyReferenceNode._reference.FullName);
                 // It's only valid to compare these within the same module
                 Debug.Assert(result != 0 || this == other);
                 return result;
@@ -107,7 +110,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override string ToString()
         {
-            return _reference.GetName().ToString();
+            return _reference.ToString();
         }
     }
 }

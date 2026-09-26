@@ -27,6 +27,13 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         private MethodDefinitionHandle Handle => (MethodDefinitionHandle)_handle;
+        private bool _preserveUnresolvedBody;
+
+        internal MethodDefinitionNode PreserveUnresolvedBody()
+        {
+            _preserveUnresolvedBody = true;
+            return this;
+        }
 
         public bool IsInstanceMethodOnReferenceType
         {
@@ -42,6 +49,49 @@ namespace ILCompiler.DependencyAnalysis
 
         public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory factory)
         {
+            if (_preserveUnresolvedBody)
+            {
+                DependencyList unresolvedDependencies = new DependencyList();
+                MetadataReader unresolvedReader = _module.MetadataReader;
+                MethodDefinition unresolvedMethod = unresolvedReader.GetMethodDefinition(Handle);
+                unresolvedDependencies.Add(
+                    factory.TypeDefinition(_module, unresolvedMethod.GetDeclaringType()),
+                    "Method owning type");
+                try
+                {
+                    EcmaSignatureAnalyzer.AnalyzeMethodSignature(
+                        _module,
+                        unresolvedReader.GetBlobReader(unresolvedMethod.Signature),
+                        factory,
+                        unresolvedDependencies);
+                }
+                catch (TypeSystemException.FileNotFoundException)
+                {
+                    // Preserve the method even when a signature type is unavailable.
+                }
+                MethodBodyNode bodyNode = factory.MethodBody(_module, Handle);
+                bodyNode.PreserveUnmappedTokens();
+                unresolvedDependencies.Add(bodyNode, "Unresolved method body");
+                MethodBodyNode.AddMetadataDependencies(_module, Handle, factory, unresolvedDependencies);
+                CustomAttributeNode.AddDependenciesDueToCustomAttributes(
+                    ref unresolvedDependencies,
+                    factory,
+                    _module,
+                    unresolvedMethod.GetCustomAttributes());
+                foreach (ParameterHandle parameter in unresolvedMethod.GetParameters())
+                    unresolvedDependencies.Add(factory.Parameter(_module, parameter), "Parameter of method");
+                foreach (GenericParameterHandle parameter in unresolvedMethod.GetGenericParameters())
+                    unresolvedDependencies.Add(factory.GenericParameter(_module, parameter), "Generic parameter of method");
+                if ((unresolvedMethod.Attributes & (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName)) ==
+                    (MethodAttributes.SpecialName | MethodAttributes.RTSpecialName) &&
+                    unresolvedReader.StringComparer.Equals(unresolvedMethod.Name, ".ctor"))
+                {
+                    EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
+                    unresolvedDependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
+                }
+                return unresolvedDependencies;
+            }
+
             MetadataReader reader = _module.MetadataReader;
             MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
@@ -206,7 +256,12 @@ namespace ILCompiler.DependencyAnalysis
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
             int bodyOffset;
-            if (bodyNode.Marked)
+            if (_preserveUnresolvedBody)
+            {
+                bodyNode.PreserveUnmappedTokens();
+                bodyOffset = bodyNode.Write(writeContext);
+            }
+            else if (bodyNode.Marked)
             {
                 bodyOffset = bodyNode.Write(writeContext);
             }
