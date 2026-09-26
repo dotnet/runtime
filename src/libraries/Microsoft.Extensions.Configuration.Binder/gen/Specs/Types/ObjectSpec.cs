@@ -28,6 +28,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public ImmutableEquatableArray<ParameterSpec>? ConstructorParameters { get; }
 
         public string? InitExceptionMessage { get; }
+
+        public bool RequiresConstructorAccessor { get; init; }
+
+        public ConstructorAccessorSpec? ConstructorAccessor { get; init; }
+
+        public bool BindInitPropertiesAfterConstruction { get; init; }
     }
 
     public enum ObjectInstantiationStrategy

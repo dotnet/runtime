@@ -67,6 +67,16 @@
         <target state="translated">Не создана логика привязки для свойства типа</target>
         <note />
       </trans-unit>
+      <trans-unit id="PropertyTypeConverterRequiresReflectionMessageFormat">
+        <source>Binding logic was not generated for a binder call because a 'TypeConverterAttribute', init-only setter, or required-member initialization could not be handled statically. Binding requires the reflection-based binder, which is not compatible with trimming or Native AOT.</source>
+        <target state="new">Binding logic was not generated for a binder call because a 'TypeConverterAttribute', init-only setter, or required-member initialization could not be handled statically. Binding requires the reflection-based binder, which is not compatible with trimming or Native AOT.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyTypeConverterRequiresReflectionTitle">
+        <source>Configuration binding requires reflection</source>
+        <target state="new">Configuration binding requires reflection</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">Тип не поддерживается: "{0}".</target>
