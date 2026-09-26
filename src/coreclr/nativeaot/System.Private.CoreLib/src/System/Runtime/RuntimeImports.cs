@@ -28,17 +28,17 @@ namespace System.Runtime
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetThreadEntryPointAddress")]
-#if TARGET_UNIX
-        internal static extern unsafe delegate* unmanaged<nint, nint> RhGetThreadEntryPointAddress();
-#else
+#if TARGET_WINDOWS
         internal static extern unsafe delegate* unmanaged<nint, uint> RhGetThreadEntryPointAddress();
+#else
+        internal static extern unsafe delegate* unmanaged<nint, nint> RhGetThreadEntryPointAddress();
 #endif
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhGetCrashInfoBuffer")]
         internal static extern unsafe byte* RhGetCrashInfoBuffer(out int cbMaxSize);
 
-#if TARGET_UNIX
+#if !TARGET_WINDOWS
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhCreateCrashDumpIfEnabled")]
         internal static extern void RhCreateCrashDumpIfEnabled(IntPtr pExceptionRecord);

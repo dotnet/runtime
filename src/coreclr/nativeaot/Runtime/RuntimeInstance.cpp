@@ -50,7 +50,7 @@ FCIMPL1(uint8_t *, RhGetCrashInfoBuffer, int32_t* pcbMaxSize)
 }
 FCIMPLEND
 
-#if TARGET_UNIX
+#if TARGET_UNIX || TARGET_WASM
 #include "PalCreateDump.h"
 FCIMPL1(void, RhCreateCrashDumpIfEnabled, PEXCEPTION_RECORD pExceptionRecord)
 {
