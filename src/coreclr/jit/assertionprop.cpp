@@ -3594,48 +3594,50 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 //
 // Arguments:
 //    assertions - set of live assertions
-//    tree       - the tree to possibly replace with a zero
+//    use        - use of the tree to possibly replace with a zero
 //
 // Returns:
-//    The zero node the caller should replace "tree" with, or nullptr.
+//    Whether propagation took place.
 //
 // Notes:
 //    Because not all users of struct nodes support "zero" operands, instead of
 //    propagating ZEROOBJ on locals, we propagate it on their parents.
 //
-GenTree* Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions)
+bool Compiler::optZeroObjAssertionProp(GenTree** use, ASSERT_VALARG_TP assertions)
 {
+    GenTree* const tree = *use;
+
     // We only make ZEROOBJ assertions in local propagation.
     if (!optLocalAssertionProp)
     {
-        return nullptr;
+        return false;
     }
 
     // And only into local nodes
     if (!tree->OperIsLocal())
     {
-        return nullptr;
+        return false;
     }
 
     // No ZEROOBJ assertions for simd.
     //
     if (varTypeIsSIMD(tree))
     {
-        return nullptr;
+        return false;
     }
 
     LclVarDsc* const lclVarDsc = lvaGetDesc(tree->AsLclVarCommon());
 
     if (lclVarDsc->IsAddressExposed())
     {
-        return nullptr;
+        return false;
     }
 
     const unsigned lclNum         = tree->AsLclVarCommon()->GetLclNum();
     AssertionIndex assertionIndex = optLocalAssertionIsEqualOrNotEqual(O1K_LCLVAR, lclNum, O2K_ZEROOBJ, 0, assertions);
     if (assertionIndex == NO_ASSERTION_INDEX)
     {
-        return nullptr;
+        return false;
     }
 
     const AssertionDsc& assertion = optGetAssertion(assertionIndex);
@@ -3643,13 +3645,13 @@ GenTree* Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP asser
     JITDUMPEXEC(optPrintAssertion(assertion, assertionIndex));
     DISPNODE(tree);
 
-    GenTree* zero = gtNewIconNode(0);
-    zero->SetMorphed(this);
+    *use = gtNewIconNode(0);
+    (*use)->SetMorphed(this);
 
     JITDUMP(" =>\n");
-    DISPNODE(zero);
+    DISPNODE(*use);
 
-    return zero;
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -4040,15 +4042,10 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
     //
     bool     madeChanges = false;
     GenTree* value       = store->Data();
-    if (value->TypeIs(TYP_STRUCT))
+    if (value->TypeIs(TYP_STRUCT) && optZeroObjAssertionProp(&store->Data(), assertions))
     {
-        GenTree* zero = optZeroObjAssertionProp(value, assertions);
-        if (zero != nullptr)
-        {
-            store->Data() = zero;
-            value         = zero;
-            madeChanges   = true;
-        }
+        value       = store->Data();
+        madeChanges = true;
     }
 
     // If we're storing a value to a lcl/field that already has that value, suppress the store.
@@ -4122,13 +4119,7 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    GenTree* zero = optZeroObjAssertionProp(store->Data(), assertions);
-    if (zero != nullptr)
-    {
-        store->Data() = zero;
-    }
-
-    bool didZeroObjProp      = zero != nullptr;
+    bool didZeroObjProp      = optZeroObjAssertionProp(&store->Data(), assertions);
     bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
     bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
     if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
@@ -4370,10 +4361,9 @@ GenTree* Compiler::optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeO
     // Only propagate zeroes that lowering can deal with.
     if (!ret->TypeIs(TYP_VOID) && varTypeIsStruct(retValue) && !varTypeIsStruct(info.compRetNativeType))
     {
-        GenTree* zero = optZeroObjAssertionProp(retValue, assertions);
-        if (zero != nullptr)
+        GenTree** retValueUse = ret->OperIs(GT_SWIFT_ERROR_RET) ? &ret->gtOp2 : &ret->gtOp1;
+        if (optZeroObjAssertionProp(retValueUse, assertions))
         {
-            ret->SetReturnValue(zero);
             return optAssertionProp_Update(ret, ret, stmt);
         }
     }
@@ -4789,30 +4779,29 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
-        // Replace op1 with a constant.
-        GenTree* cns = nullptr;
+        // Change the oper to const.
         if (genActualType(op1->TypeGet()) == TYP_INT)
         {
-            cns = gtNewIconNode(vnStore->ConstantValue<int>(vnCns));
+            op1 = gtNewIconNode(vnStore->ConstantValue<int>(vnCns));
 
             if (vnStore->IsVNHandle(vnCns))
             {
-                cns->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
+                op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
         else if (op1->TypeIs(TYP_LONG))
         {
-            cns = gtNewLconNode(vnStore->ConstantValue<INT64>(vnCns));
+            op1 = gtNewLconNode(vnStore->ConstantValue<INT64>(vnCns));
 
             if (vnStore->IsVNHandle(vnCns))
             {
-                cns->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
+                op1->gtFlags |= (vnStore->GetHandleFlags(vnCns) & GTF_ICON_HDL_MASK);
             }
         }
         else if (op1->TypeIs(TYP_DOUBLE))
         {
             double constant = vnStore->ConstantValue<double>(vnCns);
-            cns             = gtNewDconNodeD(constant);
+            op1             = gtNewDconNodeD(constant);
 
             // Nothing can be equal to NaN. So if IL had "op1 == NaN", then we already made op1 NaN,
             // which will yield a false correctly. Instead if IL had "op1 != NaN", then we already
@@ -4823,27 +4812,26 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         else if (op1->TypeIs(TYP_FLOAT))
         {
             float constant = vnStore->ConstantValue<float>(vnCns);
-            cns            = gtNewDconNode(static_cast<double>(constant), TYP_FLOAT);
+            op1            = gtNewDconNodeF(constant);
 
             // See comments for TYP_DOUBLE.
             allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeIs(TYP_REF))
         {
-            cns = gtNewIconNode(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
+            op1 = gtNewIconNode(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
         else if (op1->TypeIs(TYP_BYREF))
         {
-            cns = gtNewIconNode(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
+            op1 = gtNewIconNode(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
         }
         else
         {
             noway_assert(!"unknown type in Global_RelOp");
         }
 
-        cns->gtVNPair.SetBoth(vnCns);
-        tree->AsOp()->gtOp1 = cns;
-        op1                 = cns;
+        op1->gtVNPair.SetBoth(vnCns);
+        tree->AsOp()->gtOp1 = op1;
 
         // set foldResult to either 0 or 1
         bool foldResult = assertionKindIsEqual;
@@ -4885,12 +4873,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // point only on JTrue nodes, so if the condition held earlier, it will hold
             // now. We don't create OAK_EQUAL assertion on floating point from stores
             // because we depend on value num which would constant prop the NaN.
-            GenTree* zero1 = gtNewDconNode(0.0, op1->TypeGet());
-            GenTree* zero2 = gtNewDconNode(0.0, op2->TypeGet());
-            zero1->SetVNsFromNode(op1);
-            zero2->SetVNsFromNode(op2);
-            tree->AsOp()->gtOp1 = zero1;
-            tree->AsOp()->gtOp2 = zero2;
+            tree->AsOp()->gtOp1 = gtNewDconNode(0.0, op1->TypeGet());
+            tree->AsOp()->gtOp2 = gtNewDconNode(0.0, op2->TypeGet());
         }
         // Change the op1 LclVar to the op2 LclVar
         else

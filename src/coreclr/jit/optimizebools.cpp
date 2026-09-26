@@ -740,8 +740,7 @@ bool FoldRangeTests(Compiler* comp, GenTreeOp* cmp1, bool cmp1IsReversed, GenTre
         cmp1->gtOp1 = comp->gtNewOperNode(GT_SUB, var1Node->TypeGet(), var1Node,
                                           comp->gtNewIconNode(rangeStart, var1Node->TypeGet()));
     }
-    cmp1->gtOp2 = comp->gtNewIconNode(rangeEnd - rangeStart, var1Node->TypeGet());
-    comp->fgUpdateConstTreeValueNumber(cmp1->gtOp2);
+    cmp1->gtOp2 = comp->gtNewIconNodeWithVN(comp, rangeEnd - rangeStart, var1Node->TypeGet());
     cmp1->SetOper(cmp2IsReversed ? GT_GT : GT_LE);
     cmp1->SetUnsigned();
     return true;

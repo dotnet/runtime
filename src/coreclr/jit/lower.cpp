@@ -4522,12 +4522,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             GenTree* notNode               = m_compiler->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
             cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
             BlockRange().InsertAfter(andOp1, notNode);
-
-            GenTreeIntConCommon* zero = m_compiler->gtNewZeroConNode(op2->TypeGet())->AsIntConCommon();
-            BlockRange().InsertAfter(op2, zero);
-            BlockRange().Remove(op2);
-            cmp->AsOp()->gtOp2 = zero;
-            op2                = zero;
+            ReplaceNode(op2, m_compiler->gtNewZeroConNode(op2->TypeGet()));
+            op2 = cmp->gtGetOp2()->AsIntConCommon();
 
             andOp1   = notNode;
             op2Value = 0;
@@ -5857,20 +5853,14 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
                 assert((genTypeSize(retVal) == genTypeSize(nativeReturnType)) || retVal->IsIntegralConst(0));
                 int64_t value = retVal->AsIntCon()->IconValue();
 
-                GenTree* newRetVal;
                 if (nativeReturnType == TYP_FLOAT)
                 {
-                    newRetVal =
-                        m_compiler->gtNewDconNode(static_cast<double>(*reinterpret_cast<float*>(&value)), TYP_FLOAT);
+                    ReplaceNode(retVal, m_compiler->gtNewDconNodeF(*reinterpret_cast<float*>(&value)));
                 }
                 else
                 {
-                    newRetVal = m_compiler->gtNewDconNodeD(*reinterpret_cast<double*>(&value));
+                    ReplaceNode(retVal, m_compiler->gtNewDconNodeD(*reinterpret_cast<double*>(&value)));
                 }
-
-                BlockRange().InsertAfter(retVal, newRetVal);
-                BlockRange().Remove(retVal);
-                ret->gtOp1 = newRetVal;
             }
             else
             {
@@ -5882,10 +5872,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 #if defined(TARGET_WASM)
                 if ((genActualType(retVal) != genActualType(nativeReturnType)) && retVal->IsIntegralConst(0))
                 {
-                    GenTree* newRetVal = m_compiler->gtNewZeroConNode(nativeReturnType);
-                    BlockRange().InsertAfter(retVal, newRetVal);
-                    BlockRange().Remove(retVal);
-                    ret->gtOp1 = newRetVal;
+                    ReplaceNode(retVal, m_compiler->gtNewZeroConNode(nativeReturnType));
                 }
 #endif // defined(TARGET_WASM)
             }
@@ -8016,22 +8003,10 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 
                 // TODO-CQ: we should allow this for AOT too. For that we need to guarantee that the new constant
                 // will be lowered as the original handle with offset in a reloc.
-                GenTree* cns = m_compiler->gtNewIconNode(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(),
-                                                         node->TypeGet());
-                BlockRange().InsertAfter(node, cns);
-                if (BlockRange().TryGetUse(node, &use))
-                {
-                    use.ReplaceWith(cns);
-                }
-                else
-                {
-                    cns->SetUnusedValue();
-                }
-
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op2);
-                BlockRange().Remove(node);
-                return cns->gtNext;
+                ssize_t sum = op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue();
+                return ReplaceNode(node, m_compiler->gtNewIconNode(sum, node->TypeGet()))->gtNext;
             }
         }
 
@@ -8784,25 +8759,12 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
     if (op1->IsIntegralConst() && op2->IsIntegralConst())
     {
         GenTree* folded = m_compiler->gtFoldExprConst(node);
-        if (folded == node)
+        if (!folded->OperIsConst())
         {
             return false;
         }
 
-        assert(folded->OperIsConst());
-        BlockRange().InsertAfter(node, folded);
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            use.ReplaceWith(folded);
-        }
-        else
-        {
-            folded->SetUnusedValue();
-        }
-
-        BlockRange().Remove(node);
+        ReplaceNode(node, folded);
         BlockRange().Remove(op1);
         BlockRange().Remove(op2);
         return true;
@@ -9913,25 +9875,12 @@ bool Lowering::TryRemoveCast(GenTreeCast* node)
     }
 
     GenTree* folded = m_compiler->gtFoldExprConst(node);
-    if (folded == node)
+    if (folded->OperIs(GT_CAST))
     {
         return false;
     }
 
-    assert(folded->OperIsConst());
-    BlockRange().InsertAfter(node, folded);
-
-    LIR::Use use;
-    if (BlockRange().TryGetUse(node, &use))
-    {
-        use.ReplaceWith(folded);
-    }
-    else
-    {
-        folded->SetUnusedValue();
-    }
-
-    BlockRange().Remove(node);
+    ReplaceNode(node, folded);
     op->SetUnusedValue();
     return true;
 }
@@ -12197,22 +12146,8 @@ GenTree* Lowering::LowerLclHeap(GenTree* node)
         if (size == 0)
         {
             // Replace with null for LCLHEAP(0)
-            GenTree* zero = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
-            BlockRange().InsertAfter(node, zero);
-
-            LIR::Use use;
-            if (BlockRange().TryGetUse(node, &use))
-            {
-                use.ReplaceWith(zero);
-            }
-            else
-            {
-                zero->SetUnusedValue();
-            }
-
             BlockRange().Remove(sizeNode);
-            BlockRange().Remove(node);
-            return zero->gtNext;
+            return ReplaceNode(node, m_compiler->gtNewIconNode(0, TYP_I_IMPL))->gtNext;
         }
 
         if (m_compiler->info.compInitMem)
@@ -12610,10 +12545,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 
         if (type != TYP_UNKNOWN)
         {
-            GenTree* newValue = m_compiler->gtNewIconNode(intCns, type);
-            BlockRange().InsertAfter(value, newValue);
-            BlockRange().Remove(value);
-            store->Data() = newValue;
+            ReplaceNode(value, m_compiler->gtNewIconNode(intCns, type));
 
             assert(!store->OperIsLocalStore() || m_compiler->lvaGetDesc(store->AsLclVarCommon())->lvDoNotEnregister);
             if (store->OperIs(GT_STORE_LCL_VAR))

@@ -283,6 +283,23 @@ private:
         return oldUseNode->AsLclVar();
     }
 
+    // Insert 'replacement' after 'node', redirect the use of 'node' (if any) to it and remove 'node'.
+    GenTree* ReplaceNode(GenTree* node, GenTree* replacement)
+    {
+        BlockRange().InsertAfter(node, replacement);
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(replacement);
+        }
+        else
+        {
+            replacement->SetUnusedValue();
+        }
+        BlockRange().Remove(node);
+        return replacement;
+    }
+
     // return true if this call target is within range of a pc-rel call on the machine
     bool IsCallTargetInRange(void* addr);
 

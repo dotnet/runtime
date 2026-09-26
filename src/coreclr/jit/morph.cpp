@@ -9051,10 +9051,8 @@ SKIP:
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
 
-            GenTree* const newOp2 = gtNewIconNode(static_cast<int32_t>(op2->LngValue()));
-            fgUpdateConstTreeValueNumber(newOp2);
-            newOp2->SetMorphed(this);
-            cmp->gtOp2 = newOp2;
+            cmp->gtOp2 = gtNewIconNodeWithVN(this, static_cast<int32_t>(op2->LngValue()));
+            cmp->gtOp2->SetMorphed(this);
         }
 
         return cmp;
@@ -9109,17 +9107,15 @@ SKIP:
         assert(andMask == andOp->gtGetOp2());
 
         // Now replace the mask node.
-        GenTree* const newMask = gtNewIconNode(static_cast<int32_t>(andMask->LngValue()));
-        newMask->SetMorphed(this);
-        andOp->gtOp2 = newMask;
+        andOp->gtOp2 = gtNewIconNode(static_cast<int32_t>(andMask->LngValue()));
+        andOp->gtOp2->SetMorphed(this);
 
         // Now change the type of the AND node.
         andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-        GenTree* const newOp2 = gtNewIconNode(static_cast<int32_t>(op2->LngValue()));
-        newOp2->SetMorphed(this);
-        cmp->gtOp2 = newOp2;
+        cmp->gtOp2 = gtNewIconNode(static_cast<int32_t>(op2->LngValue()));
+        cmp->gtOp2->SetMorphed(this);
     }
 
     return cmp;
@@ -11064,10 +11060,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         auto transform = [this](GenTree** use) {
             if ((*use)->IsIntegralConst())
             {
-                GenTree* const newCns = gtNewIconNode(static_cast<int>((*use)->AsIntConCommon()->LngValue()));
-                fgUpdateConstTreeValueNumber(newCns);
-                newCns->SetMorphed(this);
-                *use = newCns;
+                *use = gtNewIconNodeWithVN(this, static_cast<int>((*use)->AsIntConCommon()->LngValue()));
+                (*use)->SetMorphed(this);
             }
             else
             {
@@ -14585,9 +14579,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
             {
                 // We can't remove the return as it might remove a sequence point. Convert it to a NOP.
-                GenTree* const nop = gtNewNothingNode();
-                nop->SetMorphed(this);
-                lastStmt->SetRootNode(nop);
+                lastStmt->SetRootNode(gtNewNothingNode());
+                lastStmt->GetRootNode()->SetMorphed(this);
             }
             else
             {

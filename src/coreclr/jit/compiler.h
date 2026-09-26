@@ -4130,9 +4130,9 @@ public:
     GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);
     GenTree* gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblCon1, GenTreeDblCon* dblCon2);
 
-    GenTree* gtNewFoldedIconNode(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
-    GenTree* gtNewFoldedLconNode(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
-    GenTree* gtNewFoldedDconNode(GenTree* tree, double dconVal);
+    GenTree* gtFoldTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtFoldTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtFoldTreeToConstDbl(GenTree* tree, double dconVal);
 
     GenTree* gtFoldExprForOverflow(GenTree* tree);
 
@@ -9356,7 +9356,7 @@ public:
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt      DEBUGARG(AssertionIndex index));
     bool     optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* destParent, GenTree* value);
-    GenTree* optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
+    bool     optZeroObjAssertionProp(GenTree** use, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);
