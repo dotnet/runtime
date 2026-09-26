@@ -584,10 +584,13 @@
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Sockets\tests\FunctionalTests\System.Net.Sockets.Tests.csproj" />
   </ItemGroup>
 
-  <!-- wasi smoke tests CoreCLR. Start minimal (single library) for the bring-up leg;
-       expand as gaps close. See https://github.com/dotnet/runtime/issues/130129. -->
+  <!-- WASI smoke tests for CoreCLR. Keep broad System.Runtime coverage in the interpreter
+       lane and use a focused suite for the more expensive trimmed R2R publish path. -->
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RunAOTCompilation)' != 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
-    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj" />
+    <SmokeTestProject Remove="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests\System.Runtime.Tests.csproj"
+                      Condition="'$(TestWasmReadyToRun)' == 'true'" />
+    <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj"
+                      Condition="'$(TestWasmReadyToRun)' == 'true'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasiTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(RunSmokeTestsOnly)' != 'true'">
     <ProjectReference Include="$(MSBuildThisFileDirectory)Microsoft.XmlSerializer.Generator\tests\Microsoft.XmlSerializer.Generator.Tests.csproj" />

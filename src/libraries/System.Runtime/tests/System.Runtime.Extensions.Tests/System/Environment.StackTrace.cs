@@ -68,7 +68,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/50957", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm), nameof(PlatformDetection.IsMonoAOT))]
         public void StackTraceDoesNotStartWithInternalFrame()
         {
              string stackTrace = Environment.StackTrace;

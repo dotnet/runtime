@@ -112,7 +112,9 @@ steps:
 
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
-        ${{ if ne(parameters.readyToRun, true) }}:
+        ${{ if eq(parameters.readyToRun, true) }}:
+          helixType: 'test/functional/r2r/cli/'
+        ${{ else }}:
           helixType: 'test/functional/cli/'
 
         helixQueues: ${{ parameters.helixQueues }}

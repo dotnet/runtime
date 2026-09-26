@@ -579,7 +579,7 @@ public sealed partial class WebcilReader : IDisposable
             if (!TryReadPassiveDataSegment (out long _, out long _))
                 return false;
 
-            if (!TryReadPassiveDataSegment (out long _, out long segmentStart))
+            if (!TryReadDataSegment (allowActive: true, out long _, out long segmentStart))
                 return false;
 
             HasWebcil = true;

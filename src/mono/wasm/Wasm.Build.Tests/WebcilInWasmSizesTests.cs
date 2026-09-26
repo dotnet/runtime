@@ -47,6 +47,47 @@ public class WebcilInWasmSizesTests
     }
 
     [Fact]
+    public void R2R_WithActivePayload_ReadsPayloadAndTableSize()
+    {
+        byte[] wasm = BuildWebcilInWasm(payloadSize: 0x00ABCDEF, tableSize: 0x42, activePayload: true);
+
+        using var stream = new MemoryStream(wasm);
+        bool ok = WebcilReader.TryReadWebcilInWasmSizes(stream, out int payloadSize, out int tableSize, out string? failureReason);
+
+        Assert.True(ok, failureReason);
+        Assert.Equal(0x00ABCDEF, payloadSize);
+        Assert.Equal(0x42, tableSize);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData(0)]
+    [InlineData(128)]
+    public void R2R_WithActivePayload_WebcilReaderReadsMetadata(int? memoryIndex)
+    {
+        using var directory = new TempDirectory();
+        string assemblyPath = typeof(object).Assembly.Location;
+        string webcilPath = Path.Combine(directory.Path, "System.Private.CoreLib.webcil");
+        WebcilConverter converter = WebcilConverter.FromPortableExecutable(assemblyPath, webcilPath, webcilVersion: 1);
+        converter.WrapInWebAssembly = false;
+        converter.ConvertToWebcil();
+
+        byte[] payload = File.ReadAllBytes(webcilPath);
+        byte[] wasm = BuildWebcilInWasm(payload, tableSize: 1, activePayload: true, memoryIndex: memoryIndex);
+
+        using var stream = new MemoryStream(wasm);
+        using var reader = new WebcilReader(stream);
+        MetadataReader metadataReader = reader.GetMetadataReader();
+
+        Assert.Equal(
+            typeof(object).Assembly.GetName().Name,
+            metadataReader.GetString(metadataReader.GetAssemblyDefinition().Name));
+        Assert.Equal(
+            typeof(object).Module.ModuleVersionId,
+            metadataReader.GetGuid(metadataReader.GetModuleDefinition().Mvid));
+    }
+
+    [Fact]
     public void NotAWasmModule_Fails()
     {
         byte[] notWasm = { 0x7f, 0x45, 0x4c, 0x46, 0x00, 0x00, 0x00, 0x00 };
@@ -200,8 +241,12 @@ public class WebcilInWasmSizesTests
         Assert.True(r2rWebcil.SequenceEqual(File.ReadAllBytes(Path.Combine(outputDirectory, "R2RAssembly.wasm"))));
     }
 
-    [Fact]
-    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches()
+    [Theory]
+    [InlineData(false, null)]
+    [InlineData(true, null)]
+    [InlineData(true, 0)]
+    [InlineData(true, 128)]
+    public void ConvertDllsToWebcil_FallsBackToIL_WhenPrebuiltMvidMismatches(bool wrapInWebcil, int? memoryIndex)
     {
         // A prebuilt R2R image whose MVID differs from the candidate must never be staged: it would fail-fast
         // at load against the current version bubble. Use two real assemblies with distinct MVIDs.
@@ -214,7 +259,20 @@ public class WebcilInWasmSizesTests
         string prebuiltDirectory = Path.Combine(directory.Path, "prebuilt");
         string outputDirectory = Path.Combine(directory.Path, "output");
         Directory.CreateDirectory(prebuiltDirectory);
-        File.Copy(mismatchedAssembly, Path.Combine(prebuiltDirectory, "System.Console.wasm"));
+        string prebuiltPath = Path.Combine(prebuiltDirectory, "System.Console.wasm");
+        if (wrapInWebcil)
+        {
+            string payloadPath = Path.Combine(directory.Path, "payload.webcil");
+            WebcilConverter converter = WebcilConverter.FromPortableExecutable(mismatchedAssembly, payloadPath, webcilVersion: 1);
+            converter.WrapInWebAssembly = false;
+            converter.ConvertToWebcil();
+            File.WriteAllBytes(prebuiltPath, BuildWebcilInWasm(
+                File.ReadAllBytes(payloadPath), tableSize: 1, activePayload: true, memoryIndex: memoryIndex));
+        }
+        else
+        {
+            File.Copy(mismatchedAssembly, prebuiltPath);
+        }
 
         var candidate = new TaskItem(candidatePath);
         candidate.SetMetadata("RelativePath", "System.Console.dll");
@@ -242,10 +300,13 @@ public class WebcilInWasmSizesTests
 
     // Builds a minimal webcil-in-wasm module: a data section with segment 0 holding payloadSize
     // (and, for R2R, tableSize) followed by a payload segment, mirroring the real layout.
-    private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize)
+    private static byte[] BuildWebcilInWasm(int payloadSize, int? tableSize, bool activePayload = false)
+        => BuildWebcilInWasm(new byte[] { 0xde, 0xad, 0xbe, 0xef }, tableSize, activePayload, payloadSize);
+
+    private static byte[] BuildWebcilInWasm(byte[] payload, int? tableSize, bool activePayload = false, int? payloadSize = null, int? memoryIndex = null)
     {
         var sizes = new List<byte>();
-        WriteUInt32LE(sizes, (uint)payloadSize);
+        WriteUInt32LE(sizes, (uint)(payloadSize ?? payload.Length));
         if (tableSize is int ts)
             WriteUInt32LE(sizes, (uint)ts);
 
@@ -256,8 +317,19 @@ public class WebcilInWasmSizesTests
         WriteULEB(body, (uint)sizes.Count);
         body.AddRange(sizes);
 
-        byte[] payload = { 0xde, 0xad, 0xbe, 0xef };
-        body.Add(0x01); // passive
+        if (activePayload)
+        {
+            body.Add(memoryIndex.HasValue ? (byte)0x02 : (byte)0x00); // active
+            if (memoryIndex is int index)
+                WriteULEB(body, (uint)index);
+            body.Add(0x23); // global.get
+            WriteULEB(body, 1); // __memory_base
+            body.Add(0x0B); // end
+        }
+        else
+        {
+            body.Add(0x01); // passive
+        }
         WriteULEB(body, (uint)payload.Length);
         body.AddRange(payload);
 

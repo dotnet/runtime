@@ -17,6 +17,23 @@
 // Shared pal (path handling, CORE_ROOT/TPA helpers); header-only, so no corerun object is linked.
 #include "corerun.hpp"
 
+// Shared WASI R2R external-assembly probe (same code corerun uses), so the per-app test host serves
+// statically-composed R2R images instead of silently interpreting everything. Requires corerun.hpp
+// above (pal::try_map_file_readonly).
+#define WASI_R2R_EXTERNAL_IMAGE_BUFFER
+#include "wasi_r2r_probe.hpp"
+
+namespace wasi_r2r
+{
+// A ReadyToRun publish supplies strong definitions sized from its composite. Keep non-R2R app links
+// working without paying the 16 MiB development-host reservation.
+extern "C"
+{
+    alignas(16) __attribute__((weak)) uint8_t g_wasi_r2r_image[64] = {};
+    __attribute__((weak)) uint32_t g_wasi_r2r_image_cap = sizeof(g_wasi_r2r_image);
+}
+}
+
 #include <host_runtime_contract.h>
 
 using pal::char_t;
@@ -70,9 +87,34 @@ extern "C" __attribute__((weak)) int32_t GlobalizationNative_LoadICUData(const c
 static std::vector<std::string> s_property_keys;
 static std::vector<std::string> s_property_values;
 
+// R2R external-assembly probe search dirs, captured before coreclr_initialize so the probe callback
+// (invoked later by the runtime) can reach them.
+static string_t s_r2r_core_root;
+static string_t s_r2r_core_libs;
+
 static void log_error_info(const char* line)
 {
     std::fprintf(stderr, "%s\n", line);
+}
+
+// Serves statically-composed R2R images (the composite plus per-assembly stubs) to the runtime, using
+// the shared WASI probe. Returns false for everything else, so non-R2R assemblies load normally via the
+// TPA list.
+static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
+    const char* path,
+    void** data_start,
+    int64_t* size)
+{
+    const char* name = path;
+    const char* slash = ::strrchr(name, '/');
+    if (slash != nullptr)
+        name = slash + 1;
+
+    const char* const r2r_dirs[] = {
+        s_r2r_core_libs.empty() ? nullptr : s_r2r_core_libs.c_str(),
+        s_r2r_core_root.empty() ? nullptr : s_r2r_core_root.c_str()
+    };
+    return wasi_r2r::WasiStaticR2RProbe(name, r2r_dirs, 2, data_start, size);
 }
 
 // Include only the first instance of each simple assembly name (CoreCLR may otherwise prefer a
@@ -172,6 +214,10 @@ int main(int argc, char* argv[])
         core_root = app_path;
     pal::ensure_trailing_delimiter(core_root);
 
+    // Capture the R2R probe search dirs (trailing-delimited) for the external_assembly_probe callback.
+    s_r2r_core_root = core_root;
+    s_r2r_core_libs = core_libs;
+
     string_t exe_path = pal::get_exe_path();
 
     string_t tpa_list = build_tpa(core_root, core_libs);
@@ -193,6 +239,7 @@ int main(int argc, char* argv[])
     static host_runtime_contract host_contract = { sizeof(host_runtime_contract), nullptr };
     host_contract.get_runtime_property = &get_runtime_property;
     host_contract.pinvoke_override = &callhelpers_pinvoke_override;
+    host_contract.external_assembly_probe = &external_assembly_probe;
     {
         std::stringstream ss;
         ss << "0x" << std::hex << (size_t)(&host_contract);
