@@ -74,8 +74,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
                 MethodDesc inliner = methodNode.Method;
                 EcmaMethod inlinerDefinition = (EcmaMethod)inliner.GetPrimaryMethodDesc().GetTypicalMethodDefinition();
-                MethodDesc inlinerTypicalDefinition = inliner.GetTypicalMethodDefinition();
-                MethodDesc inlinerIdentity = inlinerTypicalDefinition is AsyncMethodVariant ? inlinerTypicalDefinition : inlinerDefinition;
+                MethodDesc inlinerIdentity = ILBodyFixupSignature.GetSignatureMethodForCompiledMethod(inliner);
 
                 if (inlinerDefinition.IsNonVersionable())
                 {
@@ -86,10 +85,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Only encode inlining info for inliners within the active module, or if cross module inline format is in use
                 Debug.Assert(AllowCrossModuleInlines || (inlinerDefinition.Module == _module));
 
-                // Cross-module inliners are encoded by their Check_IL_Body import, which cannot describe a compiler-generated async thunk.
-                if (AllowCrossModuleInlines && inlinerIdentity.IsCompilerGeneratedILBodyForAsync() && !factory.CompilationModuleGroup.VersionsWithMethodBody(inlinerDefinition))
+                if (AllowCrossModuleInlines && !factory.CompilationModuleGroup.VersionsWithMethodBody(inlinerDefinition))
                 {
-                    continue;
+                    // Cross-module inliners are encoded by their own Check_IL_Body import. Thunks and stubs don't have one.
+                    if (inlinerIdentity is null || inlinerIdentity.IsCompilerGeneratedILBodyForAsync())
+                        continue;
+                }
+                else
+                {
+                    // Inliners in the version bubble are encoded by metadata RID.
+                    inlinerIdentity = inlinerDefinition;
                 }
 
                 bool inlinerReportAllVersionsWithInlinee = !AllowCrossModuleInlines || factory.CompilationModuleGroup.CrossModuleCompileable(inlinerDefinition);
