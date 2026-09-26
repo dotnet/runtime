@@ -49,6 +49,7 @@ PTR_MethodTable CoreLibBinder::LookupClassLocal(BinderClassID id)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
 
         PRECONDITION(id != CLASS__NIL);
         PRECONDITION(id <= m_cClasses);
@@ -126,6 +127,7 @@ MethodDesc * CoreLibBinder::LookupMethodLocal(BinderMethodID id)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
 
         PRECONDITION(id != METHOD__NIL);
         PRECONDITION(id <= m_cMethods);
@@ -184,6 +186,7 @@ FieldDesc * CoreLibBinder::LookupFieldLocal(BinderFieldID id)
     {
         THROWS;
         GC_TRIGGERS;
+        MODE_ANY;
 
         PRECONDITION(id != FIELD__NIL);
         PRECONDITION(id <= m_cFields);

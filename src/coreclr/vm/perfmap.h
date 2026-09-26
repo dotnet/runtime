@@ -47,22 +47,12 @@ public:
 
     static void LogJITCompiledMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, PrepareCodeConfig *pConfig)
     {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 
     static void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
     {
-        CONTRACTL
-        {
-            THROWS;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
+        STANDARD_VM_CONTRACT;
     }
 
     static void LogStubs(const char* stubType, const char* stubOwner, PCODE pCode, size_t codeSize, PerfMapStubType stubAllocationType, bool applyGranularityFilter = true)

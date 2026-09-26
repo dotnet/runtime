@@ -473,8 +473,7 @@ public:
     {
         CONTRACTL
         {
-            THROWS;
-            MODE_PREEMPTIVE;
+            STANDARD_VM_CHECK;
             PRECONDITION(_alloc == NULL);
         }
         CONTRACTL_END;
@@ -488,8 +487,7 @@ public:
     {
         CONTRACTL
         {
-            THROWS;
-            MODE_PREEMPTIVE;
+            STANDARD_VM_CHECK;
             PRECONDITION(_alloc != NULL);
         }
         CONTRACTL_END;
@@ -511,8 +509,7 @@ static void* EnsureResultSize(
 {
     CONTRACTL
     {
-        THROWS;
-        MODE_PREEMPTIVE;
+        STANDARD_VM_CHECK;
         PRECONDITION(shortResultLen > 0);
         PRECONDITION(shortResult != NULL);
     }

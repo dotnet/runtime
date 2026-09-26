@@ -1019,12 +1019,7 @@ void MulticoreJitProfilePlayer::TraceSummary()
 
 HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 {
-    CONTRACTL
-    {
-        THROWS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     HRESULT hr = S_OK;
 

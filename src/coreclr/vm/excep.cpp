@@ -2420,8 +2420,9 @@ void StackTraceInfo::EnsureStackTraceArray(StackTraceArrayProtect *pStackTracePr
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStackTraceProtected));
     }
     CONTRACTL_END;
@@ -2459,8 +2460,9 @@ void StackTraceInfo::EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t 
 {
     CONTRACTL
     {
-        GC_TRIGGERS;
         THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(ppKeepAliveArray));
     }
     CONTRACTL_END;
