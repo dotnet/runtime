@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Linq
 {
@@ -104,51 +106,94 @@ namespace System.Linq
                 yield break;
             }
 
-            Queue<TSource> queue;
-
             if (isStartIndexFromEnd)
             {
-                // TakeLast compat: enumerator should be disposed before yielding the first element.
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                // Buffer the last `startIndex` elements using a pooled array as a ring buffer, avoiding the
+                // allocation and per-element enqueue/dequeue overhead of Queue<TSource>. The pooled array is
+                // returned to the pool when enumeration completes or is abandoned.
+                Debug.Assert(startIndex > 0);
+
+                // The pooled window retains at most `startIndex` elements, so the ring buffer wraps at this
+                // capacity. Capture it now because `startIndex` is repurposed below as the recomputed start index.
+                int capacity = startIndex;
+
+                TSource[]? buffer = null;
+                int bufferCount = 0; // number of valid elements currently retained
+                int head = 0;        // logical index of the oldest retained element (only advances once the ring is full)
+
+                // Own the rented buffer for the whole operation with a single finally. Buffering, the source
+                // enumerator's disposal, and yielding can each throw; this returns the buffer exactly once on every
+                // path (including abandoned enumeration) and never double-returns, because the buffer variable always
+                // identifies the single array currently rented from the pool.
+                try
                 {
-                    if (!e.MoveNext())
+                    // TakeLast compat: enumerator should be disposed before yielding the first element.
+                    using (IEnumerator<TSource> e = source.GetEnumerator())
                     {
-                        yield break;
-                    }
-
-                    queue = new Queue<TSource>();
-                    queue.Enqueue(e.Current);
-                    count = 1;
-
-                    while (e.MoveNext())
-                    {
-                        if (count < startIndex)
+                        if (!e.MoveNext())
                         {
-                            queue.Enqueue(e.Current);
-                            ++count;
+                            yield break;
                         }
-                        else
+
+                        buffer = ArrayPool<TSource>.Shared.Rent(Math.Min(startIndex, 4));
+                        buffer[0] = e.Current;
+                        bufferCount = 1;
+                        head = 0;
+                        count = 1;
+
+                        while (e.MoveNext())
                         {
-                            do
+                            if (count < startIndex)
                             {
-                                queue.Dequeue();
-                                queue.Enqueue(e.Current);
-                                checked { ++count; }
-                            } while (e.MoveNext());
-                            break;
+                                // The retained window isn't full yet; append, growing the pooled buffer if needed.
+                                if (bufferCount == buffer.Length)
+                                {
+                                    int newSize = (int)Math.Min((uint)capacity, 2 * (uint)buffer.Length);
+                                    TSource[] newBuffer = ArrayPool<TSource>.Shared.Rent(newSize);
+                                    Array.Copy(buffer, newBuffer, bufferCount);
+                                    ReturnToPool(buffer);
+                                    buffer = newBuffer;
+                                }
+
+                                buffer[bufferCount++] = e.Current;
+                                ++count;
+                            }
+                            else
+                            {
+                                // The window is full; overwrite the oldest element (ring buffer of capacity `startIndex`).
+                                do
+                                {
+                                    buffer[head] = e.Current;
+                                    head = head + 1 == capacity ? 0 : head + 1;
+                                    checked { ++count; }
+                                } while (e.MoveNext());
+                                break;
+                            }
                         }
                     }
 
-                    Debug.Assert(queue.Count == Math.Min(count, startIndex));
+                    Debug.Assert(bufferCount == Math.Min(count, startIndex));
+
+                    startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
+                    endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
+                    Debug.Assert(endIndex - startIndex <= bufferCount);
+
+                    // The retained window holds `bufferCount` elements in order starting at `head`. Its first
+                    // element corresponds to the recomputed original index `startIndex`, so the elements to yield
+                    // are simply the first (endIndex - startIndex) of the window.
+                    int index = head;
+                    for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
+                    {
+                        yield return buffer[index];
+                        index = index + 1 == capacity ? 0 : index + 1;
+                    }
                 }
-
-                startIndex = CalculateStartIndex(isStartIndexFromEnd: true, startIndex, count);
-                endIndex = CalculateEndIndex(isEndIndexFromEnd, endIndex, count);
-                Debug.Assert(endIndex - startIndex <= queue.Count);
-
-                for (int rangeIndex = startIndex; rangeIndex < endIndex; rangeIndex++)
+                finally
                 {
-                    yield return queue.Dequeue();
+                    if (buffer is not null)
+                    {
+                        ReturnToPool(buffer);
+                    }
                 }
             }
             else
@@ -166,7 +211,7 @@ namespace System.Linq
 
                 if (count == startIndex)
                 {
-                    queue = new Queue<TSource>();
+                    Queue<TSource> queue = new Queue<TSource>();
                     while (e.MoveNext())
                     {
                         if (queue.Count == endIndex)
@@ -192,6 +237,9 @@ namespace System.Linq
 
             static int CalculateEndIndex(bool isEndIndexFromEnd, int endIndex, int count) =>
                 Math.Min(count, isEndIndexFromEnd ? count - endIndex : endIndex);
+
+            static void ReturnToPool(TSource[] buffer) =>
+                ArrayPool<TSource>.Shared.Return(buffer, clearArray: RuntimeHelpers.IsReferenceOrContainsReferences<TSource>());
         }
 
         public static IEnumerable<TSource> TakeWhile<TSource>(this IEnumerable<TSource> source, Func<TSource, bool> predicate)
