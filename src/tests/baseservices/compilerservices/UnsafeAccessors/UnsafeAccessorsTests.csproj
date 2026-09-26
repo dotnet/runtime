@@ -3,9 +3,7 @@
     <!-- Needed for MonoAotIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Tracking issue: https://github.com/dotnet/runtime/issues/116937 -->
     <MonoAotIncompatible>true</MonoAotIncompatible>
-    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="UnsafeAccessorsTests.cs" />
