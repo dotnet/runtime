@@ -24,3 +24,8 @@ Currently managed ilasm does not do any optimizations of the IL written by the u
 ## -FOLD is a no-op
 
 Currently managed ilasm does not fold identical IL bodies from different methods into the same blob.
+
+## ARM32 target images are not supported
+
+Managed ilasm does not support generating ARM32 (AArch32) machine images. The native `/ARM`
+switch is rejected.

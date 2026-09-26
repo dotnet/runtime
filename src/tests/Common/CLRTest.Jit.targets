@@ -336,7 +336,8 @@ def is_managed_exe_assembly(file):
 print("")
 print("ILASM RoundTrips")
 
-if os.environ.get("IlasmRoundTripUseManagedIlasm") == "1":
+use_managed_ilasm = os.environ.get("IlasmRoundTripUseManagedIlasm") == "1"
+if use_managed_ilasm:
   ilasm_path = os.path.join(os.environ["CORE_ROOT"], "managed-ilasm", "ilasm")
 else:
   ilasm_path = os.path.join(os.environ["CORE_ROOT"], "ilasm")
@@ -345,6 +346,17 @@ if not os.path.exists("IL-RT"):
   os.mkdir("IL-RT")
 
 for inputAssemblyName in glob.glob("*.dll"):
+  assemblyNameWithoutExtension = os.path.splitext(inputAssemblyName)[0]
+  ilasm_incompatible_marker = assemblyNameWithoutExtension + ".IlasmRoundTripIncompatible"
+  if os.path.isfile(ilasm_incompatible_marker):
+      print("Skipping ILASM round trip for " + inputAssemblyName)
+      continue
+
+  managed_ilasm_incompatible_marker = assemblyNameWithoutExtension + ".ManagedIlasmRoundTripIncompatible"
+  if use_managed_ilasm and os.path.isfile(managed_ilasm_incompatible_marker):
+      print("Skipping managed ILASM round trip for " + inputAssemblyName)
+      continue
+
   if is_managed_assembly(inputAssemblyName):
       print("ILASM RoundTrip for " + inputAssemblyName)
 
