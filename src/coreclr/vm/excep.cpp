@@ -3092,7 +3092,7 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
                 STRESS_LOG0(LF_CORDB, LL_INFO10, "D::RFFE: About to call RaiseFailFastException\n");
 #ifdef HOST_WINDOWS
-                CreateCrashDumpIfEnabled(fSOException);
+                CreateCrashDumpIfEnabled(pExceptionInfo, fSOException);
 #endif
                 // RaiseFailFastException validates that the context matches a valid return address on the stack as part of CET.
                 // If the return address is not valid, it rejects the context, flags it as a potential attack and asserts in
@@ -3290,8 +3290,20 @@ LONG WatsonLastChance(                  // EXCEPTION_CONTINUE_SEARCH, _CONTINUE_
 
 #ifdef HOST_WINDOWS
 
-// Crash dump generating program arguments if enabled.
-LPCWSTR g_createDumpCommandLine = nullptr;
+// Crash dump generating program command line if enabled. Prebuilt at startup with room reserved at the end
+// so the crash-time arguments can be appended without allocating.
+static LPWSTR g_createDumpCommandLine = nullptr;
+
+// Room for " --crashthread <DWORD> --exception-pointers <UINT64>" (at most 66 characters) and the terminator
+static const size_t CreateDumpCrashArgumentsReserve = 80;
+
+// Arguments of LaunchCreateDumpOnCrash, which runs on a utility thread in the stack overflow case.
+struct CreateDumpOnCrashArgs
+{
+    LPWSTR commandLine;
+    DWORD crashThreadId;
+    EXCEPTION_POINTERS* pExceptionInfo;
+};
 
 static void
 BuildCreateDumpCommandLine(
@@ -3382,16 +3394,41 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
     return fSuccess;
 }
 
+static DWORD WINAPI
+LaunchCreateDumpOnCrash(LPVOID pArgs)
+{
+    CreateDumpOnCrashArgs* args = (CreateDumpOnCrashArgs*)pArgs;
+
+    if (args->pExceptionInfo != nullptr)
+    {
+        // Append the crash context so createdump can add an exception stream to the minidump. The pointers
+        // stay valid because the crashing thread waits for createdump to complete.
+        size_t length = u16_strlen(args->commandLine);
+        _snwprintf_s(args->commandLine + length, CreateDumpCrashArgumentsReserve, _TRUNCATE,
+            W(" --crashthread %u --exception-pointers %llu"),
+            args->crashThreadId, (unsigned long long)(ULONG_PTR)args->pExceptionInfo);
+    }
+
+    return LaunchCreateDump(args->commandLine);
+}
+
 void
-CreateCrashDumpIfEnabled(bool stackoverflow)
+CreateCrashDumpIfEnabled(EXCEPTION_POINTERS* pExceptionInfo, bool stackoverflow)
 {
     // If enabled, launch the create minidump utility and wait until it completes. Only launch createdump once for this process.
-    LPCWSTR createDumpCommandLine = InterlockedExchangeT<LPCWSTR>(&g_createDumpCommandLine, nullptr);
+    LPWSTR createDumpCommandLine = InterlockedExchangeT<LPWSTR>(&g_createDumpCommandLine, nullptr);
     if (createDumpCommandLine != nullptr)
     {
+        CreateDumpOnCrashArgs args;
+        args.commandLine = createDumpCommandLine;
+        // This function is always called on the crashing thread
+        args.crashThreadId = GetCurrentThreadId();
+        // Only complete exception information is useful to createdump
+        args.pExceptionInfo = (pExceptionInfo != nullptr && pExceptionInfo->ExceptionRecord != nullptr && pExceptionInfo->ContextRecord != nullptr) ? pExceptionInfo : nullptr;
+
         if (stackoverflow)
         {
-            HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper")) };
+            HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, LaunchCreateDumpOnCrash, &args, W(".NET SO Dumper")) };
             if (createDumpThreadHandle != NULL)
             {
                 // Wait for the dump to be generated
@@ -3401,7 +3438,7 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
         }
         else
         {
-            LaunchCreateDump(createDumpCommandLine);
+            LaunchCreateDumpOnCrash(&args);
         }
     }
 }
@@ -3437,7 +3474,13 @@ InitializeCrashDump()
 
         SString commandLine;
         BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag == 1);
-        g_createDumpCommandLine = commandLine.GetCopyOfUnicodeString();
+
+        // Keep a copy with room reserved for the crash-time arguments (see LaunchCreateDumpOnCrash)
+        LPCWSTR unicodeCommandLine = commandLine.GetUnicode();
+        size_t capacity = u16_strlen(unicodeCommandLine) + CreateDumpCrashArgumentsReserve;
+        LPWSTR buffer = new WCHAR[capacity];
+        wcscpy_s(buffer, capacity, unicodeCommandLine);
+        g_createDumpCommandLine = buffer;
     }
 }
 
@@ -3480,7 +3523,7 @@ void CrashDumpAndTerminateProcess(UINT exitCode)
 #endif
 
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled(exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW));
+    CreateCrashDumpIfEnabled(nullptr, exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW));
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }
@@ -4119,7 +4162,7 @@ LONG InternalUnhandledExceptionFilter(
     }
 
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
+    CreateCrashDumpIfEnabled(pExceptionInfo);
 #endif
 
     BOOL fShouldOurUEFDisplayUI = ShouldOurUEFDisplayUI(pExceptionInfo);
@@ -4627,7 +4670,7 @@ void NotifyAppDomainsOfUnhandledException(
     GCPROTECT_END();
 
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled();
+    CreateCrashDumpIfEnabled(pExceptionPointers);
 #endif
 
 #ifdef _DEBUG

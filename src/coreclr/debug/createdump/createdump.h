@@ -133,6 +133,8 @@ typedef struct
     int SignalErrno;
     uint64_t SignalAddress;
     uint64_t ExceptionRecord;
+    // Windows only: address of the crash EXCEPTION_POINTERS in the target process
+    uint64_t ExceptionPointers;
 } CreateDumpOptions;
 
 #ifdef HOST_UNIX

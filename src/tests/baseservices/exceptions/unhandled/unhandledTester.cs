@@ -15,7 +15,9 @@ namespace TestUnhandledExceptionTester
 {
     public class Program
     {
-        static void RunExternalProcess(string unhandledType, string assembly)
+        // When expectedDumpExceptionCodes is set, the crash writes a minidump that must contain an
+        // exception stream with one of the expected exception codes.
+        static void RunExternalProcess(string unhandledType, string assembly, uint[] expectedDumpExceptionCodes = null)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = Path.Combine(Environment.GetEnvironmentVariable("CORE_ROOT"), "corerun");
@@ -26,6 +28,15 @@ namespace TestUnhandledExceptionTester
             startInfo.Environment.Remove("DOTNET_DbgEnableMiniDump");
             startInfo.Environment.Remove("DOTNET_EnableCrashReport");
 
+            string dumpPath = null;
+            if (expectedDumpExceptionCodes != null)
+            {
+                dumpPath = Path.Combine(Path.GetTempPath(), $"unhandled-{Guid.NewGuid():N}.dmp");
+                startInfo.Environment["DOTNET_DbgEnableMiniDump"] = "1";
+                startInfo.Environment["DOTNET_DbgMiniDumpType"] = "1"; // MiniDumpNormal keeps the dump small
+                startInfo.Environment["DOTNET_DbgMiniDumpName"] = dumpPath;
+            }
+
             ProcessTextOutput result = Process.RunAndCaptureText(startInfo);
             Console.WriteLine($"Test process {assembly} with argument {unhandledType} exited");
 
@@ -34,7 +45,8 @@ namespace TestUnhandledExceptionTester
             {
                 string line = rawLine.TrimEnd('\r');
                 Console.WriteLine($"\"{line}\"");
-                if (!string.IsNullOrEmpty(line))
+                // createdump messages are not part of the runtime output being verified
+                if (!string.IsNullOrEmpty(line) && !line.StartsWith("[createdump]"))
                 {
                     lines.Add(line);
                 }
@@ -162,7 +174,79 @@ namespace TestUnhandledExceptionTester
                 }
             }
 
+            if (dumpPath != null)
+            {
+                try
+                {
+                    VerifyMinidumpExceptionStream(dumpPath, expectedDumpExceptionCodes);
+                }
+                finally
+                {
+                    File.Delete(dumpPath);
+                }
+            }
+
             Console.WriteLine("Test process exited with expected error code and produced expected output");
+        }
+
+        // Minidump format constants (see minidumpapiset.h)
+        private const uint MinidumpSignature = 0x504D444D; // 'MDMP'
+        private const uint ExceptionStreamType = 6;        // MINIDUMP_STREAM_TYPE.ExceptionStream
+
+        // Checks that the minidump has an exception stream identifying the crashing thread and the exception
+        static void VerifyMinidumpExceptionStream(string dumpPath, uint[] expectedExceptionCodes)
+        {
+            if (!File.Exists(dumpPath))
+            {
+                throw new Exception($"Dump file {dumpPath} was not created");
+            }
+            Console.WriteLine($"Verifying dump {dumpPath} ({new FileInfo(dumpPath).Length} bytes)");
+
+            using FileStream stream = File.OpenRead(dumpPath);
+            using BinaryReader reader = new BinaryReader(stream);
+
+            // MINIDUMP_HEADER: Signature, Version, NumberOfStreams, StreamDirectoryRva, ...
+            uint signature = reader.ReadUInt32();
+            if (signature != MinidumpSignature)
+            {
+                throw new Exception($"Invalid minidump signature 0x{signature:X8}");
+            }
+            reader.ReadUInt32(); // Version
+            uint numberOfStreams = reader.ReadUInt32();
+            uint streamDirectoryRva = reader.ReadUInt32();
+
+            // MINIDUMP_DIRECTORY entries: StreamType, Location.DataSize, Location.Rva
+            uint exceptionStreamRva = 0;
+            stream.Position = streamDirectoryRva;
+            for (uint i = 0; i < numberOfStreams; i++)
+            {
+                uint streamType = reader.ReadUInt32();
+                reader.ReadUInt32(); // DataSize
+                uint rva = reader.ReadUInt32();
+                if (streamType == ExceptionStreamType)
+                {
+                    exceptionStreamRva = rva;
+                }
+            }
+            if (exceptionStreamRva == 0)
+            {
+                throw new Exception("Dump has no exception stream");
+            }
+
+            // MINIDUMP_EXCEPTION_STREAM: ThreadId, __alignment, MINIDUMP_EXCEPTION { ExceptionCode, ... }, ThreadContext
+            stream.Position = exceptionStreamRva;
+            uint threadId = reader.ReadUInt32();
+            reader.ReadUInt32(); // __alignment
+            uint exceptionCode = reader.ReadUInt32();
+            Console.WriteLine($"Dump exception stream: thread {threadId}, exception code 0x{exceptionCode:X8}");
+            if (threadId == 0)
+            {
+                throw new Exception("Dump exception stream has no crashing thread id");
+            }
+            if (!Array.Exists(expectedExceptionCodes, code => code == exceptionCode))
+            {
+                throw new Exception($"Wrong dump exception code: 0x{exceptionCode:X8}, expected {string.Join(" or ", Array.ConvertAll(expectedExceptionCodes, code => $"0x{code:X8}"))}");
+            }
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80356", typeof(PlatformDetection), nameof(PlatformDetection.IsOSX), nameof(PlatformDetection.IsX64Process))]
@@ -182,6 +266,14 @@ namespace TestUnhandledExceptionTester
             RunExternalProcess("missingdependency", "unhandledmissingdependency.dll");
             if (!TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsNativeAot)
                 RunExternalProcess("collecteddelegate", "collecteddelegate.dll");
+
+            if (OperatingSystem.IsWindows() && !TestLibrary.Utilities.IsMonoRuntime && !TestLibrary.Utilities.IsNativeAot)
+            {
+                // The minidump must record the crash: an access violation (or the managed exception raised for
+                // it when the null check is done in software) and the managed exception of the software throw.
+                RunExternalProcess("mainhardware", "unhandled.dll", new uint[] { 0xC0000005, 0xE0434352 });
+                RunExternalProcess("main", "unhandled.dll", new uint[] { 0xE0434352 });
+            }
         }
     }
 }
