@@ -148,8 +148,15 @@ private:
     // the only one with a pointer to the crst.)
     //
     // For obvious reasons, this parameter must never be made public.
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    // There is no wait to make GC-safe, no other thread to orphan a shutdown lock,
+    // and no debugger helper thread to exclude. Keep these inline so holders disappear too.
+    void Enter() { LIMITED_METHOD_CONTRACT; }
+    void Leave() { LIMITED_METHOD_CONTRACT; }
+#else
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
+#endif
 
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
@@ -189,7 +196,11 @@ public:
     // Clean up critical section
     // Safe to call multiple times or on non-initialized critical section
     //-----------------------------------------------------------------
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    void Destroy() { LIMITED_METHOD_CONTRACT; }
+#else
     void Destroy();
+#endif
 
 #ifdef _DEBUG
     //-----------------------------------------------------------------
@@ -248,6 +259,9 @@ public:
     }
 
 protected:
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    void InitWorker(CrstFlags flags) { LIMITED_METHOD_CONTRACT; }
+#else
     void InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags);
 
 #ifdef _DEBUG
@@ -311,6 +325,7 @@ private:
     {
         m_dwFlags = 0;
     }
+#endif // !FEATURE_MULTITHREADING && !_DEBUG
 
     // ------------------------------- Holders ------------------------------
 public:
@@ -451,7 +466,9 @@ class CrstExplicitInit : public CrstStatic
 {
 public:
     CrstExplicitInit() {
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
         m_dwFlags = 0;
+#endif
     }
      ~CrstExplicitInit() {
 #ifndef DACCESS_COMPILE
