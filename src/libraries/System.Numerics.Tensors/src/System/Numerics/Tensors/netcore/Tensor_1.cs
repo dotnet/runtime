@@ -193,7 +193,7 @@ namespace System.Numerics.Tensors
         {
             // Ensure that the native code has just one forward branch that is predicted-not-taken.
             ref T ret = ref Unsafe.NullRef<T>();
-            if (_shape.FlattenedLength != 0) ret = ref MemoryMarshal.GetArrayDataReference(_values);
+            if (_shape.FlattenedLength != 0) ret = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(_values), _start);
             return ref ret;
         }
 

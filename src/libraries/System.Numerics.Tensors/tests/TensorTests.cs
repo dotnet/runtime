@@ -619,6 +619,24 @@ namespace System.Numerics.Tensors.Tests
         }
 
         [Fact]
+        public static unsafe void TensorSlicePinningTests()
+        {
+            int[] values = [91, 92, 11, 12, 21, 22];
+            int[] expected = [11, 12, 21, 22];
+
+            Tensor<int> parent = Tensor.Create(values, [3, 2]);
+            Tensor<int> slice = parent.Slice([1, 0]);
+
+            Assert.Equal(expected, slice.ToArray());
+            Assert.Equal(11, slice.GetPinnableReference());
+
+            using MemoryHandle handle = slice.GetPinnedHandle();
+            ReadOnlySpan<int> span = new(handle.Pointer, expected.Length);
+
+            Assert.Equal(expected, span.ToArray());
+        }
+
+        [Fact]
         public static void TensorCreateSingleElementTests()
         {
             // Tensor.Create with a single-element array should have stride 0
