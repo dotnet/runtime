@@ -285,6 +285,33 @@ private:
 
     unsigned AddObjLayout(Compiler* compiler, ClassLayout* layout)
     {
+        if (layout->HasGCPtr())
+        {
+            // Group the new layout with the representatives of the compatible layout
+            // classes (see ClassLayout::AreCompatible). Comparing only with layouts
+            // that are their own DSU parent keeps the number of slot comparisons
+            // proportional to the number of distinct compatible layout classes
+            // instead of the number of AreCompatible calls.
+            layout->m_dsuParent = layout;
+
+            for (unsigned i = 0; i < m_layoutCount; i++)
+            {
+                ClassLayout* rep = GetLayoutByIndex(i);
+
+                if ((rep->m_dsuParent != rep) || (rep->GetSize() != layout->GetSize()) ||
+                    (rep->GetType() != layout->GetType()))
+                {
+                    continue;
+                }
+
+                if (ClassLayout::AreCompatibleSlow(layout, rep))
+                {
+                    layout->m_dsuParent = rep;
+                    break;
+                }
+            }
+        }
+
         if (m_layoutCount < ArrLen(m_layoutArray))
         {
             m_layoutArray[m_layoutCount] = layout;
@@ -792,6 +819,94 @@ ClassLayout* ClassLayout::SliceLayout(Compiler* compiler, unsigned offset, unsig
 //
 // static
 bool ClassLayout::AreCompatible(const ClassLayout* layout1, const ClassLayout* layout2)
+{
+    if ((layout1 == nullptr) || (layout2 == nullptr))
+    {
+        return false;
+    }
+
+    CORINFO_CLASS_HANDLE clsHnd1 = layout1->GetClassHandle();
+    CORINFO_CLASS_HANDLE clsHnd2 = layout2->GetClassHandle();
+
+    if ((clsHnd1 != NO_CLASS_HANDLE) == (clsHnd2 != NO_CLASS_HANDLE))
+    {
+        // Either both are class-based layout or both are custom layouts.
+        // Custom layouts only match each other if they are the same pointer.
+        if (clsHnd1 == NO_CLASS_HANDLE)
+        {
+            return layout1 == layout2;
+        }
+
+        // For class-based layouts they are definitely compatible for the same
+        // handle
+        if (clsHnd1 == clsHnd2)
+        {
+            return true;
+        }
+
+        // But they may still be compatible for different handles.
+    }
+
+    if (layout1->GetSize() != layout2->GetSize())
+    {
+        return false;
+    }
+
+    if (layout1->HasGCPtr() != layout2->HasGCPtr())
+    {
+        return false;
+    }
+
+    if (layout1->GetType() != layout2->GetType())
+    {
+        return false;
+    }
+
+    if (!layout1->HasGCPtr() && !layout2->HasGCPtr())
+    {
+        return true;
+    }
+
+    assert(layout1->HasGCPtr() && layout2->HasGCPtr());
+
+    if (layout1->GetGCPtrCount() != layout2->GetGCPtrCount())
+    {
+        return false;
+    }
+
+    assert(layout1->GetSlotCount() == layout2->GetSlotCount());
+
+    // Both layouts are class-based layouts with GC pointers, so they participate in the
+    // DSU structure maintained by ClassLayoutTable: compatible layouts share the same
+    // representative, making the check below O(1) instead of a slot-by-slot comparison.
+    assert((layout1->m_dsuParent != nullptr) && (layout2->m_dsuParent != nullptr));
+
+    const bool areCompatible = layout1->m_dsuParent == layout2->m_dsuParent;
+
+    INDEBUG(assert(areCompatible == AreCompatibleSlow(layout1, layout2));)
+
+    return areCompatible;
+}
+
+//------------------------------------------------------------------------
+// AreCompatibleSlow: check if 2 layouts are the same for copying by comparing
+//                    their GC slots one by one.
+//
+// Arguments:
+//    layout1 - the first layout
+//    layout2 - the second layout
+//
+// Return value:
+//    true if compatible, false otherwise.
+//
+// Notes:
+//    This is the pre-DSU implementation of AreCompatible. It is used by
+//    ClassLayoutTable when a layout is created to find the representative of
+//    the compatible layout class the layout belongs to, and in DEBUG builds
+//    to verify the DSU-based AreCompatible result.
+//
+// static
+bool ClassLayout::AreCompatibleSlow(const ClassLayout* layout1, const ClassLayout* layout2)
 {
     if ((layout1 == nullptr) || (layout2 == nullptr))
     {
