@@ -114,14 +114,18 @@ namespace System.Data.Common
         public bool ConvertValueToBoolean(string keyName, bool defaultValue)
         {
             string? value;
-            // TODO: Is it possible for _parsetable to contain a null value here? If so there's a bug here, investigate.
             return _parsetable.TryGetValue(keyName, out value) ?
-                ConvertValueToBooleanInternal(keyName, value!) :
+                ConvertValueToBooleanInternal(keyName, value) :
                 defaultValue;
         }
 
-        internal static bool ConvertValueToBooleanInternal(string keyName, string stringValue)
+        internal static bool ConvertValueToBooleanInternal(string keyName, string? stringValue)
         {
+            if (stringValue is null)
+            {
+                throw ADP.InvalidConnectionOptionValue(keyName);
+            }
+
             if (CompareInsensitiveInvariant(stringValue, "true") || CompareInsensitiveInvariant(stringValue, "yes"))
                 return true;
             else if (CompareInsensitiveInvariant(stringValue, "false") || CompareInsensitiveInvariant(stringValue, "no"))
@@ -344,7 +348,7 @@ namespace System.Data.Common
                 }
                 buffer.Append(currentChar);
             }
-            ParserExit:
+        ParserExit:
             switch (parserState)
             {
                 case ParserState.Key:
@@ -541,48 +545,48 @@ namespace System.Data.Common
             try
             {
 #endif
-                int nextStartPosition = 0;
-                int endPosition = connectionString.Length;
-                while (nextStartPosition < endPosition)
-                {
-                    int startPosition = nextStartPosition;
+            int nextStartPosition = 0;
+            int endPosition = connectionString.Length;
+            while (nextStartPosition < endPosition)
+            {
+                int startPosition = nextStartPosition;
 
-                    string? keyname, keyvalue;
-                    nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
-                    if (string.IsNullOrEmpty(keyname))
-                    {
-                        break;
-                    }
+                string? keyname, keyvalue;
+                nextStartPosition = GetKeyValuePair(connectionString, startPosition, buffer, firstKey, out keyname, out keyvalue);
+                if (string.IsNullOrEmpty(keyname))
+                {
+                    break;
+                }
 #if DEBUG
                     DebugTraceKeyValuePair(keyname, keyvalue, synonyms);
 
                     Debug.Assert(IsKeyNameValid(keyname), "ParseFailure, invalid keyname");
                     Debug.Assert(IsValueValidInternal(keyvalue), "parse failure, invalid keyvalue");
 #endif
-                    string? synonym;
-                    string? realkeyname = null != synonyms ?
-                        (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
-                        keyname;
+                string? synonym;
+                string? realkeyname = null != synonyms ?
+                    (synonyms.TryGetValue(keyname, out synonym) ? synonym : null) :
+                    keyname;
 
-                    if (!IsKeyNameValid(realkeyname))
-                    {
-                        throw ADP.KeywordNotSupported(keyname);
-                    }
-                    if (!firstKey || !parsetable.ContainsKey(realkeyname))
-                    {
-                        parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
-                    }
-
-                    if (null != localKeychain)
-                    {
-                        localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
-                    }
-                    else if (buildChain)
-                    {
-                        // first time only - don't contain modified chain from UDL file
-                        keychain = localKeychain = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
-                    }
+                if (!IsKeyNameValid(realkeyname))
+                {
+                    throw ADP.KeywordNotSupported(keyname);
                 }
+                if (!firstKey || !parsetable.ContainsKey(realkeyname))
+                {
+                    parsetable[realkeyname] = keyvalue; // last key-value pair wins (or first)
+                }
+
+                if (null != localKeychain)
+                {
+                    localKeychain = localKeychain.Next = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                }
+                else if (buildChain)
+                {
+                    // first time only - don't contain modified chain from UDL file
+                    keychain = localKeychain = new NameValuePair(realkeyname, keyvalue, nextStartPosition - startPosition);
+                }
+            }
 #if DEBUG
             }
             catch (ArgumentException e)
