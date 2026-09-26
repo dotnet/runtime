@@ -3400,7 +3400,7 @@ SWITCH_OPCODE:
                     {
                         goto CALL_INTERP_METHOD;
                     }
-#else // !FEATURE_PORTABLE_ENTRYPOINTS
+#else // FEATURE_PORTABLE_ENTRYPOINTS
                     else if (calliFunctionPointer == (PCODE)CID_VirtualOpenDelegateDispatch)
                     {
                         // _methodPtrAux of an open virtual delegate is not a portable entry point; resolve the target
