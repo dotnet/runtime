@@ -1195,7 +1195,7 @@ namespace System.Text.Json
                     if (span[i] != literal[i])
                     {
                         _bytePositionInLine += i;
-                        ThrowInvalidLiteral(span);
+                        ThrowInvalidLiteral(span.Slice(0, i + 1));
                     }
                 }
                 else
