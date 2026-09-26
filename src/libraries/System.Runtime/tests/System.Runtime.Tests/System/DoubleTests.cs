@@ -1096,6 +1096,37 @@ namespace System.Tests
             Assert.Equal(d, double.Parse(expected, CultureInfo.InvariantCulture));
         }
 
+        [Theory]
+        [InlineData(0x405A000000000000, "104")] // small integer
+        [InlineData(0x433FFFFFFFFFFFFF, "9007199254740991")] // largest odd integer below 2^53
+        [InlineData(0x4341C37937E08000, "10000000000000000")] // integer with trailing zeros
+        [InlineData(0x40C81C8000000000, "12345")]
+        [InlineData(0x3FB999999999999A, "0.1")] // short decimal on the common path
+        [InlineData(0x40C81CD6C8B43958, "12345.678")]
+        [InlineData(0x3FD3333333333333, "0.3")]
+        [InlineData(0x3EE4F8B588E368F1, "1E-05")]
+        [InlineData(0x3F1A36E2EB1C432D, "0.0001")]
+        [InlineData(0x4029000000000000, "12.5")] // exact binary fraction, trailing-zero path
+        [InlineData(0x3FE0000000000000, "0.5")]
+        [InlineData(0x4004000000000000, "2.5")]
+        [InlineData(0x44B52D02C7E14AF6, "1E+23")] // Grisu3 bails to Dragon4 here
+        [InlineData(0x437B69B4BA630F35, "1.2345678901234568E+17")] // 17 significant digits
+        [InlineData(0xC0506745803CD140, "-65.61361699999998")]
+        [InlineData(0x3FD5555555555555, "0.3333333333333333")]
+        [InlineData(0x3FF0000000000001, "1.0000000000000002")]
+        [InlineData(0x000FFFFFFFFFFFFF, "2.225073858507201E-308")] // largest subnormal
+        [InlineData(0x0010000000000000, "2.2250738585072014E-308")] // smallest normal
+        [InlineData(0x7FEFFFFFFFFFFFFF, "1.7976931348623157E+308")]
+        [InlineData(0x0000000000000001, "5E-324")]
+        public static void ToString_Shortest(ulong bits, string expected)
+        {
+            double d = BitConverter.UInt64BitsToDouble(bits);
+
+            Assert.Equal(expected, d.ToString("R", CultureInfo.InvariantCulture));
+            Assert.Equal(expected, d.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(d, double.Parse(expected, CultureInfo.InvariantCulture));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
         [SkipOnMono("Frequently throws OOM on Mono")]
