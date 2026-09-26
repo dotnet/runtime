@@ -63,7 +63,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Reflection\RuntimeParameterInfo.cs" />
     <!-- TODO: (async) once we know which helpers can actually be shared, move those to libraries partition -->
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.CoreCLR.cs" />
     <Compile Include="$(CoreClrProjectRoot)System.Private.CoreLib\src\System\Runtime\CompilerServices\AsyncHelpers.ValueTaskSourceContinuation.cs" />
