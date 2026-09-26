@@ -17422,6 +17422,37 @@ bool emitter::IsRedundantMov(instruction ins, emitAttr size, regNumber dst, regN
                 JITDUMP("\n -- suppressing mov because ldr already cleared upper 4 bytes\n");
                 return true;
             }
+
+            // See if the previous instruction is a verified 32-bit scalar ALU form that writes this register.
+            if ((ins == INS_mov) && canOptimize && isGeneralRegister(dst))
+            {
+                bool is32BitAluProducer = false;
+
+                if (emitLastIns->idInsFmt() == IF_DR_3A)
+                {
+                    switch (emitLastIns->idIns())
+                    {
+                        case INS_add:
+                        case INS_mul:
+                        case INS_lsl:
+                        case INS_eor:
+                        case INS_and:
+                            is32BitAluProducer = true;
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
+
+                if (is32BitAluProducer && (size == EA_4BYTE) && (emitLastIns->idReg1() == dst) &&
+                    (emitLastIns->idOpSize() == EA_4BYTE))
+                {
+                    JITDUMP("\n -- suppressing mov because the previous 32-bit ALU instruction already cleared upper "
+                            "4 bytes\n");
+                    return true;
+                }
+            }
         }
     }
 
