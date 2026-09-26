@@ -79,8 +79,27 @@
     <CommonTestPath>$([MSBuild]::NormalizeDirectory('$(CommonPathRoot)', 'tests'))</CommonTestPath>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- List test projects that use xUnit v3 below. -->
+    <XUnitV3TestProject>
+      System.Collections.Tests;
+    </XUnitV3TestProject>
+    <UseXUnitV3 Condition="'$(UseXUnitV3)' == ''
+      and $(XUnitV3TestProject.Contains('$(MSBuildProjectName);'))
+      and '$(TestSingleFile)' != 'true'
+      and '$(TestNativeAot)' != 'true'
+      and '$(TestReadyToRun)' != 'true'
+      and '$(TargetsMobile)' != 'true'
+      and '$(TargetOS)' != 'android'
+      and '$(TargetOS)' != 'browser'
+      and '$(TargetOS)' != 'wasi'">true</UseXUnitV3>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(IsTestProject)' == 'true' and '$(SkipTestUtilitiesReference)' != 'true'">
-    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.csproj"
+                      Condition="'$(UseXUnitV3)' != 'true'" />
+    <ProjectReference Include="$(CommonTestPath)TestUtilities\TestUtilities.XUnitV3.csproj"
+                      Condition="'$(UseXUnitV3)' == 'true'" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">

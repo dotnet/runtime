@@ -16,8 +16,8 @@ namespace System.Collections.Generic.Tests
             {
                 get
                 {
-                    return this.Select(array => array[0])
-                        .Concat(this.Select(array => array[1]))
+                    return this.Select(row => row.Data.Item1)
+                        .Concat(this.Select(row => row.Data.Item2))
                         .Cast<T>();
                 }
             }

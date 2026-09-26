@@ -19,5 +19,17 @@
     <RunArguments>$(TargetPath) --settings:$(OutDir).runsettings</RunArguments>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" />
+  <PropertyGroup Condition="'$(UseXUnitV3)' == 'true' and '$(TestSingleFile)' != 'true'">
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+
+  <Target Name="_XunitValidateBuild"
+          BeforeTargets="BeforeBuild"
+          Condition="'$(UseXUnitV3)' == 'true' and '$(TargetFramework)' != ''">
+    <Error Text="xUnit.net v3 test projects must be executable (set project property '&lt;OutputType&gt;Exe&lt;/OutputType&gt;'). If this is not a test project, reference xunit.v3.extensibility.core instead."
+           Condition="'$(OutputType)' != 'Exe'" />
+  </Target>
+
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets" Condition="'$(UseXUnitV3)' != 'true'" />
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.v3.targets" Condition="'$(UseXUnitV3)' == 'true'" />
 </Project>
