@@ -1097,7 +1097,7 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         }
         else
         {
-            domTree->BashToConst(domRelopValue);
+            domJumpTree->AsUnOp()->gtOp1 = gtNewIconNodeWithVN(this, domRelopValue);
         }
 
         JITDUMP("\nRedundant dominating branch opt in " FMT_BB ":\n", domBlockProbe->bbNum);
@@ -1435,7 +1435,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     }
     else
     {
-        tree->BashToConst(relopValue);
+        jumpTree->AsUnOp()->gtOp1 = gtNewIconNodeWithVN(this, relopValue);
     }
 
     JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);

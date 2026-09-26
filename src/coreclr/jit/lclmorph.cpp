@@ -1171,7 +1171,7 @@ public:
                         assert(node->TypeIs(TYP_I_IMPL, TYP_BYREF));
 
                         ssize_t result = (ssize_t)(lhsOffset - rhsOffset);
-                        node->BashToConst(result, TYP_I_IMPL);
+                        *use           = m_compiler->gtNewIconNode(result, TYP_I_IMPL);
                         INDEBUG(lhs.Consume());
                         INDEBUG(rhs.Consume());
                         PopValue();
@@ -1346,7 +1346,7 @@ public:
                 if (op.IsAddress())
                 {
                     JITDUMP("Bashing nullcheck of local [%06u] to NOP\n", m_compiler->dspTreeID(node));
-                    node->gtBashToNOP();
+                    *use = m_compiler->gtNewNothingNode();
                     INDEBUG(TopValue(0).Consume());
                     PopValue();
                     m_stmtModified = true;
@@ -1697,13 +1697,14 @@ private:
         switch (transform)
         {
             case IndirTransform::Nop:
-                indir->gtBashToNOP();
+                *use           = m_compiler->gtNewNothingNode();
                 m_stmtModified = true;
                 return;
 
             case IndirTransform::BitCast:
                 indir->ChangeOper(GT_BITCAST);
-                lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
+                lclNode              = m_compiler->gtNewLclVarNode(lclNum);
+                indir->AsOp()->gtOp1 = lclNode;
                 break;
 
             case IndirTransform::NarrowCast:
@@ -1712,7 +1713,7 @@ private:
                 assert(genTypeSize(varDsc) >= genTypeSize(indir));
                 assert(!isDef);
 
-                lclNode = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
+                lclNode = m_compiler->gtNewLclVarNode(lclNum);
                 *use    = m_compiler->gtNewCastNode(genActualType(indir), lclNode, false, indir->TypeGet());
                 break;
 
@@ -1726,7 +1727,7 @@ private:
             {
                 GenTree*  hwiNode     = nullptr;
                 var_types elementType = indir->TypeGet();
-                lclNode               = indir->gtGetOp1()->BashToLclVar(m_compiler, lclNum);
+                lclNode               = m_compiler->gtNewLclVarNode(lclNum);
 
                 switch (elementType)
                 {
@@ -2703,7 +2704,7 @@ bool Compiler::fgExposeUnpropagatedLocals(bool propagatedAny, LocalEqualsLocalAd
             JITDUMP("V%02u is unread; removing store data of [%06u]\n", store.Tree->GetLclNum(), dspTreeID(store.Tree));
             DISPTREE(store.Tree);
 
-            store.Tree->Data()->BashToConst(0, store.Tree->Data()->TypeGet());
+            store.Tree->Data() = gtNewIconNode(0, store.Tree->Data()->TypeGet());
             fgSequenceLocals(store.Statement);
 
             JITDUMP("\nResult:\n");

@@ -3594,7 +3594,7 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 //
 // Arguments:
 //    assertions - set of live assertions
-//    tree       - the tree to possibly replace, in-place, with a zero
+//    use        - use of the tree to possibly replace with a zero
 //
 // Returns:
 //    Whether propagation took place.
@@ -3603,8 +3603,10 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
 //    Because not all users of struct nodes support "zero" operands, instead of
 //    propagating ZEROOBJ on locals, we propagate it on their parents.
 //
-bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions)
+bool Compiler::optZeroObjAssertionProp(GenTree** use, ASSERT_VALARG_TP assertions)
 {
+    GenTree* const tree = *use;
+
     // We only make ZEROOBJ assertions in local propagation.
     if (!optLocalAssertionProp)
     {
@@ -3643,10 +3645,11 @@ bool Compiler::optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertion
     JITDUMPEXEC(optPrintAssertion(assertion, assertionIndex));
     DISPNODE(tree);
 
-    tree->BashToZeroConst(TYP_INT);
+    *use = gtNewIconNode(0);
+    (*use)->SetMorphed(this);
 
     JITDUMP(" =>\n");
-    DISPNODE(tree);
+    DISPNODE(*use);
 
     return true;
 }
@@ -4039,8 +4042,9 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
     //
     bool     madeChanges = false;
     GenTree* value       = store->Data();
-    if (value->TypeIs(TYP_STRUCT) && optZeroObjAssertionProp(value, assertions))
+    if (value->TypeIs(TYP_STRUCT) && optZeroObjAssertionProp(&store->Data(), assertions))
     {
+        value       = store->Data();
         madeChanges = true;
     }
 
@@ -4080,8 +4084,7 @@ GenTree* Compiler::optAssertionProp_LocalStore(ASSERT_VALARG_TP assertions, GenT
                         dspTreeID(store));
                 JITDUMPEXEC(optPrintAssertion(dstAssertion));
 
-                store->gtBashToNOP();
-                return optAssertionProp_Update(store, store, stmt);
+                return optAssertionProp_Update(gtNewNothingNode(), store, stmt);
             }
         }
     }
@@ -4116,7 +4119,7 @@ GenTree* Compiler::optAssertionProp_BlockStore(ASSERT_VALARG_TP assertions, GenT
 {
     assert(store->OperIs(GT_STORE_BLK));
 
-    bool didZeroObjProp      = optZeroObjAssertionProp(store->Data(), assertions);
+    bool didZeroObjProp      = optZeroObjAssertionProp(&store->Data(), assertions);
     bool didNonNullProp      = optNonNullAssertionProp_Ind(assertions, store);
     bool didWriteBarrierProp = optWriteBarrierAssertionProp_StoreBlk(assertions, store);
     if (didZeroObjProp || didNonNullProp || didWriteBarrierProp)
@@ -4358,7 +4361,8 @@ GenTree* Compiler::optAssertionProp_Return(ASSERT_VALARG_TP assertions, GenTreeO
     // Only propagate zeroes that lowering can deal with.
     if (!ret->TypeIs(TYP_VOID) && varTypeIsStruct(retValue) && !varTypeIsStruct(info.compRetNativeType))
     {
-        if (optZeroObjAssertionProp(retValue, assertions))
+        GenTree** retValueUse = ret->OperIs(GT_SWIFT_ERROR_RET) ? &ret->gtOp2 : &ret->gtOp1;
+        if (optZeroObjAssertionProp(retValueUse, assertions))
         {
             return optAssertionProp_Update(ret, ret, stmt);
         }
@@ -4778,7 +4782,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         // Change the oper to const.
         if (genActualType(op1->TypeGet()) == TYP_INT)
         {
-            op1->BashToConst(vnStore->ConstantValue<int>(vnCns));
+            op1 = gtNewIconNode(vnStore->ConstantValue<int>(vnCns));
 
             if (vnStore->IsVNHandle(vnCns))
             {
@@ -4787,7 +4791,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         }
         else if (op1->TypeIs(TYP_LONG))
         {
-            op1->BashToConst(vnStore->ConstantValue<INT64>(vnCns));
+            op1 = gtNewLconNode(vnStore->ConstantValue<INT64>(vnCns));
 
             if (vnStore->IsVNHandle(vnCns))
             {
@@ -4797,7 +4801,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         else if (op1->TypeIs(TYP_DOUBLE))
         {
             double constant = vnStore->ConstantValue<double>(vnCns);
-            op1->BashToConst(constant);
+            op1             = gtNewDconNodeD(constant);
 
             // Nothing can be equal to NaN. So if IL had "op1 == NaN", then we already made op1 NaN,
             // which will yield a false correctly. Instead if IL had "op1 != NaN", then we already
@@ -4808,25 +4812,26 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
         else if (op1->TypeIs(TYP_FLOAT))
         {
             float constant = vnStore->ConstantValue<float>(vnCns);
-            op1->BashToConst(constant);
+            op1            = gtNewDconNodeF(constant);
 
             // See comments for TYP_DOUBLE.
             allowReverse = !FloatingPointUtils::isNaN(constant);
         }
         else if (op1->TypeIs(TYP_REF))
         {
-            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
+            op1 = gtNewIconNode(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_REF);
         }
         else if (op1->TypeIs(TYP_BYREF))
         {
-            op1->BashToConst(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
+            op1 = gtNewIconNode(static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)), TYP_BYREF);
         }
         else
         {
             noway_assert(!"unknown type in Global_RelOp");
         }
 
-        op1->gtVNPair.SetBoth(vnCns); // Preserve the ValueNumPair, as BashToConst will clear it.
+        op1->gtVNPair.SetBoth(vnCns);
+        tree->AsOp()->gtOp1 = op1;
 
         // set foldResult to either 0 or 1
         bool foldResult = assertionKindIsEqual;
@@ -4868,8 +4873,8 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             // point only on JTrue nodes, so if the condition held earlier, it will hold
             // now. We don't create OAK_EQUAL assertion on floating point from stores
             // because we depend on value num which would constant prop the NaN.
-            op1->BashToConst(0.0, op1->TypeGet());
-            op2->BashToConst(0.0, op2->TypeGet());
+            tree->AsOp()->gtOp1 = gtNewDconNode(0.0, op1->TypeGet());
+            tree->AsOp()->gtOp2 = gtNewDconNode(0.0, op2->TypeGet());
         }
         // Change the op1 LclVar to the op2 LclVar
         else
@@ -4994,9 +4999,7 @@ GenTree* Compiler::optAssertionPropLocal_RelOp(ASSERT_VALARG_TP assertions, GenT
         foldResult = !foldResult;
     }
 
-    op2->BashToConst((ssize_t)foldResult, TYP_INT);
-
-    return optAssertionProp_Update(op2, tree, stmt);
+    return optAssertionProp_Update(gtNewIconNode(foldResult ? 1 : 0), tree, stmt);
 }
 
 //------------------------------------------------------------------------

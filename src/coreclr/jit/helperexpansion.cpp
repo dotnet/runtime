@@ -1516,7 +1516,7 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     if (replacementNode == nullptr)
     {
-        (*callUse)->gtBashToNOP();
+        *callUse = gtNewNothingNode();
     }
     else
     {

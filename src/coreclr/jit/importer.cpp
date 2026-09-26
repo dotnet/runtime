@@ -12221,12 +12221,12 @@ bool Compiler::impFoldAwaitedTopOfStack()
         impPopStack();
         if (info.compRetType == TYP_VOID)
         {
-            lastTree->gtBashToNOP();
+            lastStmt->SetRootNode(gtNewNothingNode());
         }
         else if (info.compRetType != TYP_STRUCT)
         {
             impPushOnStack(gtNewZeroConNode(info.compRetType), typeInfo(info.compRetType));
-            lastTree->gtBashToNOP();
+            lastStmt->SetRootNode(gtNewNothingNode());
         }
         else
         {
@@ -12280,7 +12280,7 @@ bool Compiler::impFoldAwaitedTopOfStack()
         DISPTREE(value);
 
         // Finally remove the old constructor call, which is unneeded.
-        lastTree->gtBashToNOP();
+        lastStmt->SetRootNode(gtNewNothingNode());
         return true;
     }
 

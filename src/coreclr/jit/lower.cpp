@@ -571,17 +571,20 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
 
         case GT_STORE_BLK:
-            if (node->AsBlk()->Data()->IsCall())
+        {
+            // Some lowerings replace the store with new nodes and remove it from LIR.
+            GenTree* const next    = node->gtNext;
+            const bool     removed = node->AsBlk()->Data()->IsCall() ? LowerStoreSingleRegCallStruct(node->AsBlk())
+                                                                     : LowerBlockStoreCommon(node->AsBlk());
+            if (removed)
             {
-                LowerStoreSingleRegCallStruct(node->AsBlk());
-                break;
+                return next;
             }
-            LowerBlockStoreCommon(node->AsBlk());
             break;
+        }
 
         case GT_LCLHEAP:
-            LowerLclHeap(node);
-            break;
+            return LowerLclHeap(node);
 
 #ifdef TARGET_XARCH
         case GT_INTRINSIC:
@@ -4519,7 +4522,8 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
             GenTree* notNode               = m_compiler->gtNewOperNode(GT_NOT, andOp1->TypeGet(), andOp1);
             cmp->gtGetOp1()->AsOp()->gtOp1 = notNode;
             BlockRange().InsertAfter(andOp1, notNode);
-            op2->BashToZeroConst(op2->TypeGet());
+            ReplaceNode(op2, m_compiler->gtNewZeroConNode(op2->TypeGet()));
+            op2 = cmp->gtGetOp2()->AsIntConCommon();
 
             andOp1   = notNode;
             op2Value = 0;
@@ -5545,7 +5549,11 @@ void Lowering::LowerFieldListToFieldListOfRegisters(GenTreeFieldList*   fieldLis
                 GenTree* op = node->AsCast()->CastOp();
                 regEntry->SetNode(op);
                 op->ClearContained();
-                node->gtBashToNOP();
+                if (node == fieldListPrev)
+                {
+                    fieldListPrev = node->gtPrev;
+                }
+                BlockRange().Remove(node);
                 node = op;
             }
         }
@@ -5759,13 +5767,15 @@ GenTree* Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             objStore->SetData(src);
 
             BlockRange().InsertBefore(objStore, addr);
-            LowerNode(objStore);
+
+            // Lowering may replace objStore with new nodes and remove it from LIR.
+            GenTree* next = LowerNode(objStore);
 
             JITDUMP("lowering store lcl var/field (after):\n");
-            DISPTREERANGE(BlockRange(), objStore);
+            DISPTREERANGE(BlockRange(), (next != nullptr) ? next->gtPrev : BlockRange().LastNode());
             JITDUMP("\n");
 
-            return objStore->gtNext;
+            return next;
         }
     }
 
@@ -5845,11 +5855,11 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 
                 if (nativeReturnType == TYP_FLOAT)
                 {
-                    retVal->BashToConst(*reinterpret_cast<float*>(&value));
+                    ReplaceNode(retVal, m_compiler->gtNewDconNodeF(*reinterpret_cast<float*>(&value)));
                 }
                 else
                 {
-                    retVal->BashToConst(*reinterpret_cast<double*>(&value));
+                    ReplaceNode(retVal, m_compiler->gtNewDconNodeD(*reinterpret_cast<double*>(&value)));
                 }
             }
             else
@@ -5862,7 +5872,7 @@ void Lowering::LowerRetStruct(GenTreeUnOp* ret)
 #if defined(TARGET_WASM)
                 if ((genActualType(retVal) != genActualType(nativeReturnType)) && retVal->IsIntegralConst(0))
                 {
-                    retVal->BashToZeroConst(nativeReturnType);
+                    ReplaceNode(retVal, m_compiler->gtNewZeroConNode(nativeReturnType));
                 }
 #endif // defined(TARGET_WASM)
             }
@@ -6206,11 +6216,14 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 // Arguments:
 //     store - The store node to lower.
 //
+// Return Value:
+//    true if "store" was replaced and removed from LIR.
+//
 // Notes:
 //    - the function is only for calls that return one register;
 //    - it spills the call's result if it can be retyped as a primitive type;
 //
-void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
+bool Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
 {
     assert(store->Data()->IsCall());
     GenTreeCall* call = store->Data()->AsCall();
@@ -6237,7 +6250,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
         store->ChangeType(regType);
         store->SetOper(GT_STOREIND);
         LowerStoreIndirCommon(store->AsStoreInd());
-        return;
+        return false;
     }
     else
     {
@@ -6249,7 +6262,7 @@ void Lowering::LowerStoreSingleRegCallStruct(GenTreeBlk* store)
         store->gtBlkOpKind         = GenTreeBlk::BlkOpKindUnroll;
         GenTreeLclVar* spilledCall = SpillStructCallResult(call);
         store->SetData(spilledCall);
-        LowerBlockStoreCommon(store);
+        return LowerBlockStoreCommon(store);
 #endif // WINDOWS_AMD64_ABI
     }
 }
@@ -7992,7 +8005,8 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
                 // will be lowered as the original handle with offset in a reloc.
                 BlockRange().Remove(op1);
                 BlockRange().Remove(op2);
-                node->BashToConst(op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue(), node->TypeGet());
+                ssize_t sum = op1->AsIntCon()->IconValue() + op2->AsIntCon()->IconValue();
+                return ReplaceNode(node, m_compiler->gtNewIconNode(sum, node->TypeGet()))->gtNext;
             }
         }
 
@@ -8745,12 +8759,12 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
     if (op1->IsIntegralConst() && op2->IsIntegralConst())
     {
         GenTree* folded = m_compiler->gtFoldExprConst(node);
-        assert(folded == node);
         if (!folded->OperIsConst())
         {
             return false;
         }
 
+        ReplaceNode(node, folded);
         BlockRange().Remove(op1);
         BlockRange().Remove(op2);
         return true;
@@ -9861,12 +9875,12 @@ bool Lowering::TryRemoveCast(GenTreeCast* node)
     }
 
     GenTree* folded = m_compiler->gtFoldExprConst(node);
-    assert(folded == node);
     if (folded->OperIs(GT_CAST))
     {
         return false;
     }
 
+    ReplaceNode(node, folded);
     op->SetUnusedValue();
     return true;
 }
@@ -10054,7 +10068,7 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
     GenTree*   rangeEnd   = range.LastNode();
 
     BlockRange().InsertBefore(blk, std::move(range));
-    blk->gtBashToNOP();
+    BlockRange().Remove(blk);
 
     LIR::Use destUse;
     LIR::Use sizeUse;
@@ -10111,7 +10125,10 @@ void Lowering::LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blk)
 // Arguments:
 //    blkNode - The block store node to lower. Must be a copy (non-InitBlk).
 //
-void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
+// Return Value:
+//    true if blkNode was replaced and removed from LIR.
+//
+bool Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK));
     assert(!blkNode->OperIsInitBlkOp());
@@ -10177,7 +10194,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
             // Otherwise, use the bulk copy.
             LowerBlockStoreAsGcBulkCopyCall(blkNode);
         }
-        return;
+        return true;
     }
 
 #ifdef TARGET_WASM
@@ -10192,6 +10209,7 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
     {
         SetMultiplyUsed(dstAddr DEBUGARG("LowerCopyBlockStore destination address"));
     }
+    return false;
 #else
     if (size <= unrollLimit)
     {
@@ -10201,11 +10219,12 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
             ContainBlockStoreAddress(blkNode, size, src->AsIndir()->Addr(), src->AsIndir());
         }
         ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        return;
+        return false;
     }
 
     // Use memcpy
     LowerBlockStoreAsHelperCall(blkNode);
+    return true;
 #endif // TARGET_WASM
 }
 
@@ -10216,7 +10235,10 @@ void Lowering::LowerCopyBlockStore(GenTreeBlk* blkNode)
 // Arguments:
 //    blkNode - The block store node to lower. Must be an init (not copy).
 //
-void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
+// Return Value:
+//    true if blkNode was replaced and removed from LIR.
+//
+bool Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsInitBlkOp());
 
@@ -10281,7 +10303,7 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
         src->AsIntCon()->SetIconValue(fill);
         ContainBlockStoreAddress(blkNode, size, dstAddr, nullptr);
-        return;
+        return false;
     }
 
     // Zeroing a GC-pointer struct must not use the CORINFO_HELP_MEMSET/MEMZERO helper: it is a
@@ -10297,11 +10319,11 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
         // We can use the hardware zero register as the contained source.
         src->SetContained();
 #endif
+        return false;
     }
-    else
-    {
-        LowerBlockStoreAsHelperCall(blkNode);
-    }
+
+    LowerBlockStoreAsHelperCall(blkNode);
+    return true;
 }
 #endif // !TARGET_WASM
 
@@ -10393,7 +10415,7 @@ void Lowering::LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode)
     GenTree*   rangeEnd   = range.LastNode();
 
     BlockRange().InsertBefore(blkNode, std::move(range));
-    blkNode->gtBashToNOP();
+    BlockRange().Remove(blkNode);
 
     LIR::Use destUse;
     LIR::Use sizeUse;
@@ -12108,7 +12130,10 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* m_compile
 // Arguments:
 //    node - the LCLHEAP node we are lowering.
 //
-void Lowering::LowerLclHeap(GenTree* node)
+// Return Value:
+//    The next node to lower.
+//
+GenTree* Lowering::LowerLclHeap(GenTree* node)
 {
     assert(node->OperIs(GT_LCLHEAP));
 
@@ -12121,9 +12146,8 @@ void Lowering::LowerLclHeap(GenTree* node)
         if (size == 0)
         {
             // Replace with null for LCLHEAP(0)
-            node->BashToZeroConst(TYP_I_IMPL);
             BlockRange().Remove(sizeNode);
-            return;
+            return ReplaceNode(node, m_compiler->gtNewIconNode(0, TYP_I_IMPL))->gtNext;
         }
 
         if (m_compiler->info.compInitMem)
@@ -12132,7 +12156,7 @@ void Lowering::LowerLclHeap(GenTree* node)
             if ((size > UINT_MAX) || (alignedSize > UINT_MAX))
             {
                 // Size is too big - don't mark sizeNode as contained
-                return;
+                return node->gtNext;
             }
 
             LIR::Use use;
@@ -12158,12 +12182,13 @@ void Lowering::LowerLclHeap(GenTree* node)
             else
             {
                 // Value is unused and we don't mark the size node as contained
-                return;
+                return node->gtNext;
             }
         }
     }
 #endif
     ContainCheckLclHeap(node->AsOp());
+    return node->gtNext;
 }
 
 //------------------------------------------------------------------------
@@ -12172,7 +12197,10 @@ void Lowering::LowerLclHeap(GenTree* node)
 // Arguments:
 //    blkNode - the store blk/obj node we are lowering.
 //
-void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
+// Return Value:
+//    true if blkNode was replaced and removed from LIR.
+//
+bool Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIs(GT_STORE_BLK));
 
@@ -12191,19 +12219,16 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 
     if (TryTransformStoreObjAsStoreInd(blkNode))
     {
-        return;
+        return false;
     }
 
-    if (blkNode->OperIsInitBlkOp())
+    bool removed = blkNode->OperIsInitBlkOp() ? LowerInitBlockStore(blkNode) : LowerCopyBlockStore(blkNode);
+    if (!removed)
     {
-        LowerInitBlockStore(blkNode);
-    }
-    else
-    {
-        LowerCopyBlockStore(blkNode);
+        LowerStoreIndirCoalescing(blkNode);
     }
 
-    LowerStoreIndirCoalescing(blkNode);
+    return removed;
 }
 
 //------------------------------------------------------------------------
@@ -12214,7 +12239,7 @@ void Lowering::LowerBlockStoreCommon(GenTreeBlk* blkNode)
 //   blkNode - the GT_STORE_BLK to potentially decompose.
 //
 // Return value:
-//   true if the node was decomposed (and bashed to a NOP), false otherwise.
+//   true if the node was decomposed (and removed from LIR), false otherwise.
 //
 bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
 {
@@ -12342,15 +12367,14 @@ bool Lowering::TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode)
         }
     }
 
-    // Remove the now-orphan operand nodes and bash blkNode to a NOP so the
-    // LowerNode driver continues from blkNode->gtNext.
+    // Remove the now-orphan operand nodes and blkNode itself.
     BlockRange().Remove(blkNode->Addr());
     if (src->OperIs(GT_IND))
     {
         BlockRange().Remove(src->AsIndir()->Addr());
     }
     BlockRange().Remove(src);
-    blkNode->gtBashToNOP();
+    BlockRange().Remove(blkNode);
     return true;
 }
 
@@ -12521,7 +12545,7 @@ void Lowering::TryRetypingFloatingPointStoreToIntegerStore(GenTree* store)
 
         if (type != TYP_UNKNOWN)
         {
-            value->BashToConst(intCns, type);
+            ReplaceNode(value, m_compiler->gtNewIconNode(intCns, type));
 
             assert(!store->OperIsLocalStore() || m_compiler->lvaGetDesc(store->AsLclVarCommon())->lvDoNotEnregister);
             if (store->OperIs(GT_STORE_LCL_VAR))

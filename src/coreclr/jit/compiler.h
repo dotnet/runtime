@@ -4130,9 +4130,9 @@ public:
     GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);
     GenTree* gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblCon1, GenTreeDblCon* dblCon2);
 
-    GenTree* gtBashTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
-    GenTree* gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
-    GenTree* gtBashTreeToConstDbl(GenTree* tree, double dconVal);
+    GenTree* gtFoldTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtFoldTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq = nullptr);
+    GenTree* gtFoldTreeToConstDbl(GenTree* tree, double dconVal);
 
     GenTree* gtFoldExprForOverflow(GenTree* tree);
 
@@ -7852,7 +7852,7 @@ private:
                            unsigned*  iterCount);
 
 protected:
-    bool optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
+    bool optNarrowTree(GenTree** use, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit);
 
     //  The following is the upper limit on how many expressions we'll keep track
     //  of for the CSE analysis.
@@ -9356,7 +9356,7 @@ public:
                                       GenTreeLclVarCommon* tree,
                                       Statement* stmt      DEBUGARG(AssertionIndex index));
     bool     optIsProfitableToSubstitute(GenTree* dest, BasicBlock* destBlock, GenTree* destParent, GenTree* value);
-    bool     optZeroObjAssertionProp(GenTree* tree, ASSERT_VALARG_TP assertions);
+    bool     optZeroObjAssertionProp(GenTree** use, ASSERT_VALARG_TP assertions);
 
     // Assertion propagation functions.
     GenTree* optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, Statement* stmt, BasicBlock* block);

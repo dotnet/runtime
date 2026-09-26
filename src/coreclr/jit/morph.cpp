@@ -8251,7 +8251,7 @@ DONE_MORPHING_CHILDREN:
                     }
                     else
                     {
-                        tree->gtBashToNOP();
+                        tree = gtNewNothingNode();
                     }
                 }
                 else if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
@@ -8261,7 +8261,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    tree->gtBashToNOP();
+                    tree = gtNewNothingNode();
                 }
                 return tree;
             }
@@ -8622,9 +8622,10 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
         // Try to narrow the operand of the cast and discard the cast.
         if (opts.OptEnabled(CLFLG_TREETRANS) && (genTypeSize(src) > genTypeSize(castToType)) &&
-            optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, false))
+            optNarrowTree(&cast->CastOp(), src->TypeGet(), castToType, cast->gtVNPair, false))
         {
-            optNarrowTree(src, src->TypeGet(), castToType, cast->gtVNPair, true);
+            optNarrowTree(&cast->CastOp(), src->TypeGet(), castToType, cast->gtVNPair, true);
+            src = cast->CastOp();
 
             // "optNarrowTree" may leave a redundant cast behind.
             if (src->OperIs(GT_CAST) && (src->AsCast()->CastToType() == genActualType(src->AsCast()->CastOp())))
@@ -9050,8 +9051,8 @@ SKIP:
             // Simply make this into an integer comparison.
             cmp->gtOp1 = op1->AsCast()->CastOp();
 
-            op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
-            fgUpdateConstTreeValueNumber(op2);
+            cmp->gtOp2 = gtNewIconNodeWithVN(this, static_cast<int32_t>(op2->LngValue()));
+            cmp->gtOp2->SetMorphed(this);
         }
 
         return cmp;
@@ -9084,9 +9085,10 @@ SKIP:
         // Such operands cannot be narrowed, but can still be cast to TYP_INT below.
         //
         // Now we narrow the first operand of AND to int.
-        if (andOpOp1->TypeIs(TYP_LONG) && optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
+        if (andOpOp1->TypeIs(TYP_LONG) && optNarrowTree(&andOp->gtOp1, TYP_LONG, TYP_INT, ValueNumPair(), false))
         {
-            optNarrowTree(andOpOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
+            optNarrowTree(&andOp->gtOp1, TYP_LONG, TYP_INT, ValueNumPair(), true);
+            andOpOp1 = andOp->gtGetOp1();
 
             // "optNarrowTree" may leave a redundant cast behind.
             if (andOpOp1->OperIs(GT_CAST) &&
@@ -9105,13 +9107,15 @@ SKIP:
         assert(andMask == andOp->gtGetOp2());
 
         // Now replace the mask node.
-        andMask->BashToConst(static_cast<int32_t>(andMask->LngValue()));
+        andOp->gtOp2 = gtNewIconNode(static_cast<int32_t>(andMask->LngValue()));
+        andOp->gtOp2->SetMorphed(this);
 
         // Now change the type of the AND node.
         andOp->ChangeType(TYP_INT);
 
         // Finally we replace the comparand.
-        op2->BashToConst(static_cast<int32_t>(op2->LngValue()));
+        cmp->gtOp2 = gtNewIconNode(static_cast<int32_t>(op2->LngValue()));
+        cmp->gtOp2->SetMorphed(this);
     }
 
     return cmp;
@@ -10583,6 +10587,7 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         addTwo->gtOp1 = constOne;
         add->gtOp2    = gtFoldExprConst(add->gtOp2);
         op2           = add->gtGetOp2();
+        op2->SetMorphed(this);
     }
 
     // Fold (x + 0) - given it won't change the tree type.
@@ -11055,8 +11060,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         auto transform = [this](GenTree** use) {
             if ((*use)->IsIntegralConst())
             {
-                (*use)->BashToConst(static_cast<int>((*use)->AsIntConCommon()->LngValue()));
-                fgUpdateConstTreeValueNumber(*use);
+                *use = gtNewIconNodeWithVN(this, static_cast<int>((*use)->AsIntConCommon()->LngValue()));
+                (*use)->SetMorphed(this);
             }
             else
             {
@@ -14574,7 +14579,8 @@ void Compiler::fgMergeBlockReturn(BasicBlock* block)
             if (opts.compDbgCode && lastStmt->GetDebugInfo().IsValid())
             {
                 // We can't remove the return as it might remove a sequence point. Convert it to a NOP.
-                ret->gtBashToNOP();
+                lastStmt->SetRootNode(gtNewNothingNode());
+                lastStmt->GetRootNode()->SetMorphed(this);
             }
             else
             {
@@ -15875,7 +15881,7 @@ GenTree* Compiler::fgMorphReduceAddOps(GenTree* tree)
 
     // V0 + V0 ... + V0 becomes V0 * foldCount, where postorder transform will optimize
     // accordingly
-    consTree->BashToConst(foldCount, tree->TypeGet());
+    consTree = tree->TypeIs(TYP_LONG) ? gtNewLconNode(foldCount) : gtNewIconNode(foldCount, tree->TypeGet());
 
     GenTree* morphed = gtNewOperNode(GT_MUL, tree->TypeGet(), lclVarTree, consTree);
     DEBUG_DESTROY_NODE(tree);
