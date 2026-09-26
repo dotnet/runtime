@@ -60,9 +60,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            // Maps each inlinee to its inliners. Inliners are keyed by their metadata definition; the value is the
-            // method identity whose IL body fixup was recorded when the inliner was compiled, which differs from
-            // the metadata definition for runtime-async variants.
+            // Inliners are keyed by metadata definition; the value is the identity whose Check_IL_Body fixup was recorded when compiling it.
             Dictionary<MethodDesc, Dictionary<EcmaMethod, MethodDesc>> inlineeToInliners = new Dictionary<MethodDesc, Dictionary<EcmaMethod, MethodDesc>>();
 
             // Build a map from inlinee to the list of inliners
@@ -134,10 +132,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         inlineeToInliners.Add(inlineeDefinition, inliners);
                     }
 
-                    // Both the task-returning and the async variant of a method may inline the same inlinee.
-                    // Report the method once, preferring the task-returning definition so the result does
-                    // not depend on the order in which compiled methods are enumerated.
-                    if (!inliners.TryGetValue(inlinerDefinition, out MethodDesc existingInliner) || existingInliner is not EcmaMethod)
+                    // Both variants of a method may inline the same inlinee; report it once, independent of enumeration order.
+                    if (!inliners.TryGetValue(inlinerDefinition, out MethodDesc existingInliner) || IsPreferredInliner(inlinerIdentity, existingInliner))
                     {
                         inliners[inlinerDefinition] = inlinerIdentity;
                     }
@@ -384,6 +380,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 relocs: null,
                 alignment: 8,
                 definedSymbols: new ISymbolDefinitionNode[] { this });
+
+            // Compiler-generated async thunks cannot carry a Check_IL_Body fixup, so never prefer one.
+            static bool IsPreferredInliner(MethodDesc candidate, MethodDesc existing)
+            {
+                bool candidateIsThunk = candidate.IsCompilerGeneratedILBodyForAsync();
+                if (candidateIsThunk != existing.IsCompilerGeneratedILBodyForAsync())
+                    return !candidateIsThunk;
+
+                return candidate is EcmaMethod && existing is not EcmaMethod;
+            }
         }
 
         public override int ClassCode => -87382891;
