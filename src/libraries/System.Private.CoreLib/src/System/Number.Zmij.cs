@@ -15,8 +15,9 @@ namespace System
     //
     // A value is scaled by one 128-bit power of ten so that the integer part holds all but the last
     // candidate digit; the fractional part decides rounding and whether that last digit is needed.
-    // The 128-bit significands of 10^-293..10^324 are stored directly (9.9 KB); vitaut/zmij and
-    // ZmijSharp also have a 670-byte reconstructed cache that costs about 10 % on this path.
+    // The 128-bit significands of 10^-307..10^341 are stored directly (10.4 KB); vitaut/zmij and
+    // ZmijSharp also have a 670-byte reconstructed cache that costs about 10 % on this path. Bounded
+    // precision (1..18 significant digits, ties to even) uses the same table; Dragon4 remains for more.
     internal static partial class Number
     {
         internal static class Zmij
@@ -28,8 +29,8 @@ namespace System
             private const int ExtraShift = 6;
             private const ulong BiasedHalf = 0x8000_0000_0000_0006UL;
 
-            private const int MinCacheExponent = -293;
-            private const int MaxCacheExponent = 324;
+            private const int MinCacheExponent = -307;
+            private const int MaxCacheExponent = 341;
 
             // Produces the shortest round-trippable digits for a finite, non-zero double, float, Half or BFloat16.
             // Returns false for other types.
@@ -92,6 +93,100 @@ namespace System
                 number.DigitsCount = length;
                 return true;
             }
+
+            // Produces exactly precision (1..18) significant digits of a finite, non-zero value, correctly rounded
+            // with ties to even (the port of write_scientific's fixed-precision path in vitaut/zmij). Returns false
+            // when precision is out of that range or the required power of ten is outside the table, in which
+            // case the caller falls back to Dragon4.
+            public static bool TryRun<TNumber>(TNumber value, int precision, ref NumberBuffer number)
+                where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            {
+                if ((precision < 1) || (precision > MaxPrecision))
+                {
+                    return false;
+                }
+
+                ulong bits = TNumber.FloatToBits(value);
+                int biasedExponent = (int)(bits >> TNumber.DenormalMantissaBits) & TNumber.InfinityExponent;
+                ulong significand = bits & TNumber.DenormalMantissaMask;
+                int exponent;
+
+                Debug.Assert(biasedExponent != TNumber.InfinityExponent);
+                Debug.Assert((biasedExponent | (int)(significand != 0 ? 1 : 0)) != 0);
+
+                if (biasedExponent == 0)
+                {
+                    exponent = 1 - TNumber.ExponentBias - TNumber.DenormalMantissaBits;
+                }
+                else
+                {
+                    significand |= 1UL << TNumber.DenormalMantissaBits;
+                    exponent = biasedExponent - TNumber.ExponentBias - TNumber.DenormalMantissaBits;
+                }
+
+                // Normalize so that value = significand * 2^exponent with bit 63 of the significand set.
+                int leadingZeros = BitOperations.LeadingZeroCount(significand);
+                significand <<= leadingZeros;
+                exponent -= leadingZeros;
+
+                // Scale by 10^-decimalExponent so that the integral part has precision digits; the estimate uses the
+                // lower bound of the value's magnitude, so it can come out one digit too long, never too short.
+                int decimalExponent = ComputeDecimalExponent(exponent + 63, regular: true) - (precision - 1);
+                if ((-decimalExponent < MinCacheExponent) || (-decimalExponent > MaxCacheExponent))
+                {
+                    return false;
+                }
+
+                int pointShift = -ComputeExponentShift(exponent, decimalExponent);
+                Debug.Assert((pointShift >= 1) && (pointShift < 64));
+
+                // High 128 bits of the 192-bit product (pow10High:pow10Low + 1) * significand; the +1 turns the
+                // rounded-down power into an upper bound so that a truncated product cannot fake an exact tie.
+                GetPowerOf10(-decimalExponent, out ulong pow10High, out ulong pow10Low);
+                ulong productHigh = Math.BigMul(pow10High, significand, out ulong productLow);
+                ulong lowHigh = Math.BigMul(pow10Low + 1, significand, out _);
+                productLow += lowHigh;
+                productHigh += (productLow < lowHigh) ? 1UL : 0UL;
+
+                ulong integral = productHigh >> pointShift;
+                ulong fraction = productHigh << (64 - pointShift);
+                ulong fractionTail = productLow;
+
+                const ulong Half = 1UL << 63;
+                bool roundUp = (fraction > Half) || ((fraction == Half) && ((fractionTail != 0) || ((integral & 1) != 0)));
+                ulong digits = integral + (roundUp ? 1UL : 0UL);
+
+                if (digits >= Read(Pow10, precision))
+                {
+                    // One digit too many: round one place coarser, the dropped fraction disambiguating a trailing 5.
+                    digits = integral / 10;
+                    ulong lastDigit = integral - digits * 10;
+                    bool hasFraction = (fraction | fractionTail) != 0;
+                    roundUp = (lastDigit > 5) || ((lastDigit == 5) && (hasFraction || ((digits & 1) != 0)));
+                    digits += roundUp ? 1UL : 0UL;
+                    decimalExponent++;
+                }
+
+                Debug.Assert((digits >= Read(Pow10, precision - 1)) && (digits < Read(Pow10, precision)));
+
+                int start = UInt64ToDecChars(number.Digits, precision, digits);
+                Debug.Assert(start == 0);
+
+                number.Scale = decimalExponent + precision;
+                number.Digits[precision] = (byte)('\0');
+                number.DigitsCount = precision;
+                return true;
+            }
+
+            private const int MaxPrecision = 18;
+
+            // 10^0 .. 10^18
+            private static ReadOnlySpan<ulong> Pow10 =>
+            [
+                1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000,
+                10000000000, 100000000000, 1000000000000, 10000000000000, 100000000000000,
+                1000000000000000, 10000000000000000, 100000000000000000, 1000000000000000000,
+            ];
 
             private static void ToDecimal(ulong bits, out ulong significand, out int exponent)
             {
@@ -364,9 +459,23 @@ namespace System
                 low = Read(FullCache, index + 1);
             }
 
-            // 128-bit significands of 10^q for q = -293..324, high word then low word (Zmij full cache).
+            // 128-bit significands of 10^q for q = -307..341, rounded down, high word then low word (vitaut/zmij's table).
             private static ReadOnlySpan<ulong> FullCache =>
             [
+                0x8FD0C16206306BAB, 0xA5D3B6D479F8E056, // q = -307
+                0xB3C4F1BA87BC8696, 0x8F48A4899877186C, // q = -306
+                0xE0B62E2929ABA83C, 0x331ACDABFE94DE87, // q = -305
+                0x8C71DCD9BA0B4925, 0x9FF0C08B7F1D0B14, // q = -304
+                0xAF8E5410288E1B6F, 0x07ECF0AE5EE44DD9, // q = -303
+                0xDB71E91432B1A24A, 0xC9E82CD9F69D6150, // q = -302
+                0x892731AC9FAF056E, 0xBE311C083A225CD2, // q = -301
+                0xAB70FE17C79AC6CA, 0x6DBD630A48AAF406, // q = -300
+                0xD64D3D9DB981787D, 0x092CBBCCDAD5B108, // q = -299
+                0x85F0468293F0EB4E, 0x25BBF56008C58EA5, // q = -298
+                0xA76C582338ED2621, 0xAF2AF2B80AF6F24E, // q = -297
+                0xD1476E2C07286FAA, 0x1AF5AF660DB4AEE1, // q = -296
+                0x82CCA4DB847945CA, 0x50D98D9FC890ED4D, // q = -295
+                0xA37FCE126597973C, 0xE50FF107BAB528A0, // q = -294
                 0xCC5FC196FEFD7D0C, 0x1E53ED49A96272C8, // q = -293
                 0xFF77B1FCBEBCDC4F, 0x25E8E89C13BB0F7A, // q = -292
                 0x9FAACF3DF73609B1, 0x77B191618C54E9AC, // q = -291
@@ -985,6 +1094,23 @@ namespace System
                 0xCA5E89B18B602368, 0x385BB19CB14BDFC4, // q = 322
                 0xFCF62C1DEE382C42, 0x46729E03DD9ED7B5, // q = 323
                 0x9E19DB92B4E31BA9, 0x6C07A2C26A8346D1, // q = 324
+                0xC5A05277621BE293, 0xC7098B7305241885, // q = 325
+                0xF70867153AA2DB38, 0xB8CBEE4FC66D1EA7, // q = 326
+                0x9A65406D44A5C903, 0x737F74F1DC043328, // q = 327
+                0xC0FE908895CF3B44, 0x505F522E53053FF2, // q = 328
+                0xF13E34AABB430A15, 0x647726B9E7C68FEF, // q = 329
+                0x96C6E0EAB509E64D, 0x5ECA783430DC19F5, // q = 330
+                0xBC789925624C5FE0, 0xB67D16413D132072, // q = 331
+                0xEB96BF6EBADF77D8, 0xE41C5BD18C57E88F, // q = 332
+                0x933E37A534CBAAE7, 0x8E91B962F7B6F159, // q = 333
+                0xB80DC58E81FE95A1, 0x723627BBB5A4ADB0, // q = 334
+                0xE61136F2227E3B09, 0xCEC3B1AAA30DD91C, // q = 335
+                0x8FCAC257558EE4E6, 0x213A4F0AA5E8A7B1, // q = 336
+                0xB3BD72ED2AF29E1F, 0xA988E2CD4F62D19D, // q = 337
+                0xE0ACCFA875AF45A7, 0x93EB1B80A33B8605, // q = 338
+                0x8C6C01C9498D8B88, 0xBC72F130660533C3, // q = 339
+                0xAF87023B9BF0EE6A, 0xEB8FAD7C7F8680B4, // q = 340
+                0xDB68C2CA82ED2A05, 0xA67398DB9F6820E1, // q = 341
             ];
         }
     }

@@ -1004,12 +1004,11 @@ namespace System
 
             if (value != default)
             {
-                if ((precision != -1) || !Zmij.TryRun(value, ref number))
+                bool done = (precision == -1) ? Zmij.TryRun(value, ref number)
+                                              : (isSignificantDigits && Zmij.TryRun(value, precision, ref number));
+                if (!done)
                 {
-                    if (!isSignificantDigits || !Grisu3.TryRun(value, precision, ref number))
-                    {
-                        Dragon4(value, precision, isSignificantDigits, ref number);
-                    }
+                    Dragon4(value, precision, isSignificantDigits, ref number);
                 }
             }
 
