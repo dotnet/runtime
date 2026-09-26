@@ -14,7 +14,8 @@ internal enum WasmThunkArgKind
 {
     This,
     RetBuf,
-    // Only when an async continuation follows; otherwise the context is encoded as the first explicit argument.
+    // The signature encodes the generic context like any pointer-sized argument, so it is only recognizable
+    // when the async continuation follows it; otherwise it occupies the first argument slot either way.
     GenericContext,
     AsyncContinuation,
     Argument,
