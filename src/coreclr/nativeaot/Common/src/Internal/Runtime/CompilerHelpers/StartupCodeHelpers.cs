@@ -138,7 +138,7 @@ namespace Internal.Runtime.CompilerHelpers
 
                 // Call write barrier directly. Assigning object reference does a type check.
                 Debug.Assert((uint)moduleIndex < (uint)gcStaticBaseSpines.Length);
-                ref object rawSpineIndexData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(gcStaticBaseSpines).Data);
+                ref object rawSpineIndexData = ref MemoryMarshal.GetArrayDataReference(gcStaticBaseSpines);
                 Unsafe.Add(ref rawSpineIndexData, moduleIndex) = spine;
             }
 
@@ -191,7 +191,7 @@ namespace Internal.Runtime.CompilerHelpers
 
             object[] spine = new object[length / (MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))];
 
-            ref object rawSpineData = ref Unsafe.As<byte, object>(ref Unsafe.As<RawArrayData>(spine).Data);
+            ref object rawSpineData = ref MemoryMarshal.GetArrayDataReference(spine);
 
             int currentBase = 0;
             for (byte* block = (byte*)gcStaticRegionStart;
