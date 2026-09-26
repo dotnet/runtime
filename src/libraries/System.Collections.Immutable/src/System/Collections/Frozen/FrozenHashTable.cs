@@ -175,6 +175,10 @@ namespace System.Collections.Frozen
                     codes.Add(hashCode);
                 }
                 uniqueCodesCount = codes.Count;
+                if (uniqueCodesCount == hashCodes.Length)
+                {
+                    codes = null;
+                }
             }
             Debug.Assert(uniqueCodesCount != 0);
 
@@ -238,13 +242,13 @@ namespace System.Collections.Frozen
             {
                 // Get the number of buckets to try, and clear our seen bucket bitmap.
                 numBuckets = primes[primeIndex];
-                Array.Clear(seenBuckets, 0, Math.Min(numBuckets, seenBuckets.Length));
+                Array.Clear(seenBuckets, 0, (numBuckets / BitsPerInt32) + 1);
 
                 // Determine the bucket for each hash code and mark it as seen. If it was already seen,
                 // track it as a collision.
                 numCollisions = 0;
 
-                if (codes is not null && uniqueCodesCount != hashCodes.Length)
+                if (codes is not null)
                 {
                     foreach (int code in codes)
                     {
