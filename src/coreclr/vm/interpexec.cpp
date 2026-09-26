@@ -868,17 +868,19 @@ static void InterpBreakpoint(const int32_t *ip, const InterpMethodContextFrame *
             EX_END_CATCH
             pThread->SetFilterContext(NULL);
 
-            // The debugger may have moved execution via SetIP. If so, drop the bypass
-            // (it was set up for the original IP) and resume at the new context via
-            // ResumeAfterCatchException.
+            // Function evaluation can move the IP or change the destination breakpoint.
+            // Rebuild the bypass for the final context instead of restoring stale state.
+            pThreadContext->ClearBypass();
+            PRD_TYPE bypassOpcode;
+            if (g_pDebugInterface->CheckGetPatchedOpcode((CORDB_ADDRESS_TYPE *)GetIP(&ctx), &bypassOpcode))
+            {
+                pThreadContext->SetBypass((const int32_t *)GetIP(&ctx), (int32_t)bypassOpcode);
+            }
+
             if ((GetIP(&ctx) != (PCODE)ip) || (GetSP(&ctx) != (DWORD64)pFrame))
             {
                 ThrowResumeAfterCatchException(GetSP(&ctx), GetIP(&ctx));
             }
-
-            // No SetIP change — restore the bypass so the original opcode runs once.
-            pThreadContext->m_bypassAddress = savedBypassAddress;
-            pThreadContext->m_bypassOpcode = savedBypassOpcode;
         }
     }
 }
@@ -1527,10 +1529,17 @@ SWITCH_OPCODE:
                 INTOP_CASE(INTOP_BREAKPOINT)
                 {
                     pFrame->ip = ip;
-                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
-                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     int32_t bypassOpcode = 0;
+                    if (pThreadContext->HasBypass(ip, &bypassOpcode))
+                    {
+                        LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Pre-callback bypass at IP %p with opcode 0x%x\n", ip, bypassOpcode));
+                        pThreadContext->ClearBypass();
+                        INTOP_DISPATCH(bypassOpcode);
+                    }
+
+                    LOG((LF_CORDB, LL_INFO10000, "InterpExecMethod: Hit breakpoint at IP %p\n", ip));
+                    InterpBreakpoint(ip, pFrame, stack, pInterpreterFrame);
 
                     // After debugger callback, check if bypass was set on the thread context
                     if (pThreadContext->HasBypass(ip, &bypassOpcode))
