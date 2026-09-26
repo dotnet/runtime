@@ -194,6 +194,14 @@ stale staged assets can otherwise cause assembly-loading failures before tests s
 The `LibraryTestsCoreCLR_R2R` CI jobs use the same configuration and archive the published
 tests for execution on Helix. The existing interpreter jobs remain separate.
 
+For CoreCLR browser applications, set `PublishReadyToRun=true` and
+`PublishReadyToRunComposite=true` to publish a single composite ReadyToRun image and
+component WebCIL stubs instead of per-assembly images. Publishing requires a wasm-capable
+crossgen2 and WebCIL enabled; the composite is loaded before the runtime starts.
+`ReadyToRunTests.PublishRunAllPagesComposite` exercises trimmed, untrimmed, and
+native-relinked publishes in a browser, including asset fingerprinting when
+`USE_FINGERPRINTING_FOR_TESTS=true`.
+
 ## AOT library tests
 
 - Building library tests with AOT, and (even) with `EnableAggressiveTrimming` takes 3-9mins on CI, and that adds up for all the assemblies, causing

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.NET.Sdk.WebAssembly;
 using Microsoft.NET.WebAssembly.Webcil;
 using Microsoft.Playwright;
 using Xunit;
@@ -53,7 +54,15 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
         public Task PublishRunAllPages(Configuration config, bool trimmed)
-            => PublishRunAllPagesCore(config, trimmed, nativeRelink: false);
+            => PublishRunAllPagesCore(config, trimmed, nativeRelink: false, composite: false);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ false)]
+        [InlineData(Configuration.Release, /*trimmed*/ false, /*nativeRelink*/ false)]
+        [InlineData(Configuration.Release, /*trimmed*/ true, /*nativeRelink*/ true)]
+        [TestCategory("no-workload")]
+        public Task PublishRunAllPagesComposite(Configuration config, bool trimmed, bool nativeRelink)
+            => PublishRunAllPagesCore(config, trimmed, nativeRelink, composite: true);
 
         // CoreCLR relinks dotnet.native.wasm for Blazor when WasmBuildNative=true; the relink is driven by the
         // IsBrowserWasmProject triggers in BrowserWasmApp.CoreCLR.targets. AssertBundle(isNativeBuild: true)
@@ -63,16 +72,22 @@ namespace Wasm.Build.Tests
         [InlineData(Configuration.Release, /*trimmed*/ false)]
         [TestCategory("no-workload")]
         public Task PublishRunAllPagesNativeRelink(Configuration config, bool trimmed)
-            => PublishRunAllPagesCore(config, trimmed, nativeRelink: true);
+            => PublishRunAllPagesCore(config, trimmed, nativeRelink: true, composite: false);
 
-        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink)
+        private async Task PublishRunAllPagesCore(Configuration config, bool trimmed, bool nativeRelink, bool composite)
         {
             // Publish runs per-app crossgen2 for the whole closure, trimmed or not: even the untrimmed CoreLib
             // is a per-app image, not the runtime pack's. nativeRelink also relinks dotnet.native.wasm.
-            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}";
+            string label = $"r2r_pub_{(trimmed ? "trim" : "notrim")}{(nativeRelink ? "_native" : "")}{(composite ? "_composite" : "")}";
+            string extraItems = composite
+                ? """<ProjectReference Include="../R2rSuffixLibrary/R2rSuffixLibrary.csproj" />"""
+                : string.Empty;
             ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, label,
-                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>");
-            string extraArgs = GetR2RBuildArgs(config);
+                extraProperties: $"<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>{(composite ? "true" : "false")}</PublishReadyToRunComposite><PublishTrimmed>{(trimmed ? "true" : "false")}</PublishTrimmed>",
+                extraItems: extraItems);
+            if (composite)
+                LogR2RSuffixLibraryMarker();
+            string extraArgs = GetR2RBuildArgs(config, composite);
             if (nativeRelink)
             {
                 // CoreCLR relinks dotnet.native.wasm via the in-tree targets + EMSDK_PATH, not the browser
@@ -86,15 +101,32 @@ namespace Wasm.Build.Tests
                 isNativeBuild: nativeRelink ? true : (bool?)null);
 
             string frameworkDir = GetBlazorBinFrameworkDir(config, forPublish: true);
-            AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
+            if (composite)
+                AssertCompositeReadyToRun(frameworkDir);
+            else
+                AssertCoreLibReadyToRun(frameworkDir, expectReadyToRun: true);
             AssertNoDuplicateAssemblies(frameworkDir);
             AssertNoManagedAssembliesOutsideFramework(frameworkDir);
             AssertTrimmedClosureIsFullyStaged(config, frameworkDir);
             AssertPerAppCrossgenRan(config, expected: true);
 
+            if (trimmed && !nativeRelink)
+            {
+                BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+                if (composite)
+                    AssertCompositeReadyToRun(frameworkDir);
+                AssertNoDuplicateAssemblies(frameworkDir);
+                if (composite)
+                    AssertSwitchingCompositeModeRecompiles(info, config, extraArgs, frameworkDir);
+            }
+
+            bool suffixLibraryLoaded = false;
             await RunForPublishWithWebServer(new BlazorRunOptions(config,
                 CheckCounter: false,
+                OnConsoleMessage: (_, msg) => suffixLibraryLoaded |= msg.Contains(SuffixLibraryLoadedMessage),
                 ExecuteAfterLoaded: (_, page) => InteractAllPagesAsync(page)));
+            if (composite)
+                Assert.True(suffixLibraryLoaded, $"'{SuffixLibraryLoadedMessage}' was not logged; R2rSuffixLibrary.r2r did not load as a component assembly.");
         }
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
@@ -108,6 +140,19 @@ namespace Wasm.Build.Tests
 
             AssertCoreLibReadyToRun(GetBuildWebcilDir(config), expectReadyToRun: false);
             AssertPerAppCrossgenRan(config, expected: false);
+        }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [InlineData(Configuration.Release)]
+        [TestCategory("no-workload")]
+        public void CompositeRequiresWebcil(Configuration config)
+        {
+            ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "r2r_composite_no_webcil",
+                extraProperties: "<PublishReadyToRun>true</PublishReadyToRun><PublishReadyToRunComposite>true</PublishReadyToRunComposite><WasmEnableWebcil>false</WasmEnableWebcil>");
+            (string _, string output) = BlazorPublish(info, config,
+                new PublishOptions(ExpectSuccess: false, ExtraMSBuildArgs: GetR2RBuildArgs(config, composite: true)));
+
+            Assert.Contains("PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies", output);
         }
 
         // Navigate Home -> Counter (increment 0 -> 1) -> Weather (forecast rows) -> Home, asserting content
@@ -219,12 +264,13 @@ namespace Wasm.Build.Tests
                 Assert.True(imageCount == 0, $"Expected no per-app crossgen2 output, found {imageCount} file(s) under '{r2rDir}'.");
         }
 
-        // Wire the wasm-aware Crossgen2Tasks shim (the wasm-container crossgen tasks) so R2R images use the
-        // right container, and the in-build crossgen2 when this leg shipped it. Each is passed only when present
-        // under BASE_DIR: the no-workload leg ships the shim but resolves crossgen2 itself from the SDK pack (the
-        // SDK restores it when PublishReadyToRun is set), so passing a non-existent Crossgen2InBuildDir there
-        // would break the call-helpers generator. All inert if BASE_DIR is unset.
-        private static string GetR2RBuildArgs(Configuration config)
+        // Wire the in-build crossgen2 when this leg shipped it, and for composite the wasm-aware Crossgen2Tasks shim:
+        // composite needs the shim's wasm output naming (<entry>.r2r.wasm owner, <name>.wasm stubs), which the base
+        // SDK's ReadyToRun tasks don't implement yet (dotnet/sdk#56395). Per-assembly R2R keeps the base SDK tasks so
+        // that path stays covered. Each is passed only when present under BASE_DIR: the no-workload leg resolves
+        // crossgen2 itself from the SDK pack (the SDK restores it when PublishReadyToRun is set), so passing a
+        // non-existent Crossgen2InBuildDir there would break the call-helpers generator. All inert if BASE_DIR is unset.
+        private static string GetR2RBuildArgs(Configuration config, bool composite)
         {
             string? baseDir = EnvironmentVariables.BaseDir;
             if (string.IsNullOrEmpty(baseDir))
@@ -239,11 +285,18 @@ namespace Wasm.Build.Tests
             var args = new List<string>();
             if (Directory.Exists(crossgenDir))
                 args.Add($"-p:Crossgen2InBuildDir=\"{crossgenDir}\"");
-            if (File.Exists(shimProps))
+            if (composite && File.Exists(shimProps))
                 args.Add($"-p:Crossgen2SdkOverridePropsPath=\"{shimProps}\"");
-            if (File.Exists(shimTargets))
+            if (composite && File.Exists(shimTargets))
                 args.Add($"-p:Crossgen2SdkOverrideTargetsPath=\"{shimTargets}\"");
             return string.Join(" ", args);
+        }
+
+        private static int GetReadyToRunTableSize(string webcilPath)
+        {
+            using FileStream stream = File.OpenRead(webcilPath);
+            Assert.True(WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? failureReason), failureReason);
+            return tableSize;
         }
 
         private static void AssertCoreLibReadyToRun(string frameworkDir, bool expectReadyToRun)
@@ -251,14 +304,57 @@ namespace Wasm.Build.Tests
             string? coreLib = Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").FirstOrDefault();
             Assert.True(coreLib is not null, $"Expected a System.Private.CoreLib webcil under '{frameworkDir}'.");
 
-            using FileStream stream = File.OpenRead(coreLib!);
-            bool ok = WebcilReader.TryReadWebcilInWasmSizes(stream, out _, out int tableSize, out string? failureReason);
-            Assert.True(ok, failureReason);
-
+            int tableSize = GetReadyToRunTableSize(coreLib!);
             if (expectReadyToRun)
                 Assert.True(tableSize > 0, $"Expected a ReadyToRun table in '{coreLib}', but the R2R table size was 0.");
             else
                 Assert.Equal(0, tableSize);
         }
+
+        // Component stubs share the per-assembly <name>.wasm output names, so a mode switch must recompile them
+        // instead of treating them as up-to-date per-assembly images that probe for a pruned composite owner.
+        // Switch back afterwards so the caller still runs the composite app.
+        private void AssertSwitchingCompositeModeRecompiles(ProjectInfo info, Configuration config, string extraArgs, string frameworkDir)
+        {
+            string coreLibImage = Path.Combine(GetObjSubDir(config, "R2R"), "System.Private.CoreLib.wasm");
+            System.DateTime compositeStubTime = File.GetLastWriteTimeUtc(coreLibImage);
+
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: $"{extraArgs} -p:PublishReadyToRunComposite=false"));
+            Assert.True(File.GetLastWriteTimeUtc(coreLibImage) > compositeStubTime,
+                $"'{coreLibImage}' was not recompiled after switching from composite to per-assembly ReadyToRun.");
+
+            BlazorPublish(info, config, new PublishOptions(UseCache: false, ExtraMSBuildArgs: extraArgs));
+            AssertCompositeReadyToRun(frameworkDir);
+        }
+
+        // The boot config flags exactly the composite owner, delivered via coreAssembly under its crossgen2 name so
+        // component stubs can probe for it; an assembly merely named *.r2r stays an ordinary, unflagged assembly.
+        private void AssertCompositeReadyToRun(string frameworkDir)
+        {
+            AssetsData assets = (AssetsData)_provider.GetBootJson(_provider.GetBootConfigPath(frameworkDir)).resources;
+            WebcilAsset composite = Assert.Single(assets.coreAssembly, asset => asset.isCompositeImage == true);
+            Assert.Equal("BlazorBasicTestApp.r2r.wasm", composite.virtualPath);
+            if (EnvironmentVariables.UseFingerprinting)
+                Assert.Matches(@"^BlazorBasicTestApp\.r2r\.[a-z0-9]{10}\.wasm$", composite.name);
+            Assert.DoesNotContain(assets.assembly, asset => asset.isCompositeImage == true);
+            Assert.Contains(assets.coreAssembly,
+                asset => asset.virtualPath?.StartsWith("System.Private.CoreLib", System.StringComparison.Ordinal) == true);
+            Assert.Contains(assets.assembly, asset => asset.virtualPath == "R2rSuffixLibrary.r2r.wasm");
+
+            string compositePath = Path.Combine(frameworkDir, composite.name);
+            Assert.True(GetReadyToRunTableSize(compositePath) > 0, $"Expected compiled methods in '{compositePath}'.");
+            Assert.True(Directory.EnumerateFiles(frameworkDir, "System.Private.CoreLib*.wasm").Any(),
+                $"Expected a component stub for System.Private.CoreLib in '{frameworkDir}'.");
+        }
+
+        private const string SuffixLibraryLoadedMessage = "Loaded R2rSuffixLibrary.r2r: 42";
+
+        // Make the app call into the R2rSuffixLibrary test asset (referenced for composite runs) so the run proves
+        // it loaded as a component assembly rather than being mistaken for the composite owner.
+        private void LogR2RSuffixLibraryMarker()
+            => UpdateFile("Program.cs", new Dictionary<string, string>
+            {
+                { "var builder", "System.Console.WriteLine($\"Loaded {typeof(R2rSuffixLibraryMarker).Assembly.GetName().Name}: {R2rSuffixLibraryMarker.Value}\");\nvar builder" }
+            });
     }
 }

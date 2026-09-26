@@ -19,9 +19,9 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
-         An explicit unsupported value is left as-is and rejected by _WasmCoreClrSelectR2RDirectories. -->
+         An explicit unsupported value is left as-is and rejected by _WasmCoreClrValidateReadyToRun. -->
     <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
-    <!-- Default non-composite when unset; an explicit composite request is rejected below. -->
+    <!-- Keep the existing per-assembly behavior unless composite is explicitly requested. -->
     <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
     <!-- Compile every assembly into one shared (large) version bubble. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--opt-cross-module:*</PublishReadyToRunCrossgen2ExtraArgs>
@@ -36,13 +36,6 @@ Copyright (c) .NET Foundation. All rights reserved.
        _ResolveGlobalizationConfiguration. -->
   <Target Name="_WasmCoreClrSelectR2RDirectories"
           DependsOnTargets="_ResolveWasmConfiguration">
-    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
-           Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
-    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'"
-           Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
-    <!-- CPU sampling observes only interpreted frames, so R2R (native wasm) methods are missing from traces until #130521. -->
-    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmPerformanceInstrumentation)' != ''"
-           Text="WasmPerformanceInstrumentation is not supported together with PublishReadyToRun on CoreCLR browser-wasm. See https://github.com/dotnet/runtime/issues/130521." />
     <PropertyGroup>
       <_WasmRuntimePackR2RDir Condition="'$(_WasmRuntimePackR2RDir)' == '' and '$(_RuntimePackNativeDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_RuntimePackNativeDir)', 'r2r'))</_WasmRuntimePackR2RDir>
       <!-- Computed unconditionally: the trimmed-closure restriction below needs it with ReadyToRun off too. -->
@@ -58,24 +51,41 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
   </Target>
 
-  <!-- Fail comprehensibly instead of emitting composite/PE images the runtime cannot load. The config checks
+  <!-- Fail comprehensibly instead of emitting PE images the runtime cannot load. The config checks
        run on both build and publish; the crossgen2 requirement is publish-only, since a dev-loop build stages
        the pack R2R and never invokes crossgen2. -->
   <Target Name="_WasmCoreClrValidateReadyToRun"
           Condition="'$(PublishReadyToRun)' == 'true'"
-          BeforeTargets="_WasmCoreClrSelectR2RDirectories">
-    <Error Condition="'$(PublishReadyToRunComposite)' == 'true'"
-           Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
+          BeforeTargets="_WasmCoreClrSelectR2RDirectories;_ResolveWasmOutputs">
+    <Error Condition="'$(PublishReadyToRunComposite)' == 'true' and '$(_WasmEnableWebcil)' != 'true'"
+           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires WebCIL-in-Wasm assemblies; enable WasmEnableWebcil." />
     <Error Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'"
            Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
+    <!-- CPU sampling observes only interpreted frames, so R2R (native wasm) methods are missing from traces until #130521. -->
+    <Error Condition="'$(WasmPerformanceInstrumentation)' != ''"
+           Text="WasmPerformanceInstrumentation is not supported together with PublishReadyToRun on CoreCLR browser-wasm. See https://github.com/dotnet/runtime/issues/130521." />
     <Error Condition="('$(_IsPublishing)' == 'true' or '$(WasmBuildingForNestedPublish)' == 'true' or '$(WasmBuildOnlyAfterPublish)' == 'true') and ('$(Crossgen2InBuildDir)' == '' or !Exists('$(Crossgen2InBuildDir)')) and '@(ResolvedCrossgen2Pack)' == ''"
            Text="PublishReadyToRun=true for CoreCLR browser-wasm requires a wasm-capable crossgen2, but none was resolved. Set Crossgen2InBuildDir to an in-build crossgen2 directory (or provide a ResolvedCrossgen2Pack) until wasm crossgen2 support flows through the base SDK (dotnet/sdk#55785)." />
+  </Target>
+
+  <!-- Composite needs wasm-aware ReadyToRun tasks: the component stubs probe for the owner as <entry>.r2r.wasm,
+       and crossgen2 writes each component stub as <name>.wasm. Tasks without wasm naming plan <entry>.r2r.dll
+       and <name>.dll outputs that are never produced, so fail before the (long) composite compile. -->
+  <Target Name="_WasmCoreClrValidateCompositeTasks"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
+          BeforeTargets="_CreateR2RImages">
+    <ItemGroup>
+      <_WasmCompositeOwnerEntry Include="@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', 'true'))" />
+    </ItemGroup>
+    <Error Condition="'@(_WasmCompositeOwnerEntry)' != '' and !$([System.String]::Copy('%(_WasmCompositeOwnerEntry.OutputR2RImage)').EndsWith('.r2r.wasm'))"
+           Text="PublishReadyToRunComposite for CoreCLR browser-wasm requires ReadyToRun SDK tasks that name the composite image '&lt;entry&gt;.r2r.wasm', but they planned '$([System.IO.Path]::GetFileName('%(_WasmCompositeOwnerEntry.OutputR2RImage)'))'. Use an SDK with wasm ReadyToRun output naming (dotnet/sdk#56395), or set Crossgen2SdkOverridePropsPath and Crossgen2SdkOverrideTargetsPath to the dotnet/runtime Crossgen2Tasks." />
   </Target>
 
   <!-- PublishTrimmed selects the staged closure (untrimmed pack vs linker output) exactly like
        PublishReadyToRun selects its flavour, so it belongs in the webcil staging stamp too. -->
   <ItemGroup>
     <_WasmWebcilStampProperty Include="PublishTrimmed" />
+    <_WasmWebcilStampProperty Include="PublishReadyToRunComposite" />
   </ItemGroup>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
@@ -157,14 +167,26 @@ Copyright (c) .NET Foundation. All rights reserved.
        publish, and _GatherWasmFilesToPublish when a native relink is in play. The relink crossgens inside
        WasmNestedPublishApp, where ProcessPublishFilesForWasm is never scheduled; without the second hook every
        crossgen'd assembly is still named .wasm when _GatherWasmFilesToPublish filters to .dll and silently drops
-       out of the bundle - a publish that exits 0 with no System.Private.CoreLib. -->
+       out of the bundle - a publish that exits 0 with no System.Private.CoreLib. In composite mode, restore
+       all component IL candidates so ConvertDllsToWebcil can stage their forwarding stubs; the composite
+       itself is separately defined as a publish static web asset. -->
   <Target Name="_WasmCoreClrRoutePerAppR2RToFramework"
           Condition="'$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories;CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm;_GatherWasmFilesToPublish">
     <ItemGroup>
-      <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <ResolvedFileToPublish Remove="@(_ReadyToRunCompileList->'%(OutputR2RImage)')"
+                             Condition="'$(PublishReadyToRunComposite)' != 'true'" />
       <ResolvedFileToPublish Include="@(_ReadyToRunCompileList)"
+                             RelativePath="%(FileName)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest"
+                             Condition="'$(PublishReadyToRunComposite)' != 'true'" />
+      <_WasmCompositeR2RInput Include="@(_ReadyToRunCompositeBuildInput);@(_ReadyToRunCompositeUnrootedBuildInput);@(_ReadyToRunCompileList->WithMetadataValue('CreateCompositeImage', ''))"
+                              Condition="'$(PublishReadyToRunComposite)' == 'true'" />
+      <_WasmCompositeR2RImage Include="@(_ReadyToRunFilesToPublish)"
+                              Condition="'$(PublishReadyToRunComposite)' == 'true' and '%(Extension)' == '.wasm'" />
+      <ResolvedFileToPublish Remove="@(_WasmCompositeR2RInput);@(_WasmCompositeR2RImage)" />
+      <ResolvedFileToPublish Include="@(_WasmCompositeR2RInput)"
                              RelativePath="%(FileName)%(Extension)"
                              CopyToPublishDirectory="PreserveNewest" />
     </ItemGroup>
@@ -174,7 +196,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        On the Blazor/SWA route ILLink stamps PostprocessAssembly=true on its own collection, not on
        ResolvedFileToPublish, so the mainline compile list is empty and crossgen2 never runs. -->
   <Target Name="_WasmFeedReadyToRunCompileList"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishTrimmed)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(IntermediateLinkDir)' != ''"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishTrimmed)' == 'true' and '$(IntermediateLinkDir)' != ''"
           BeforeTargets="_PrepareForReadyToRunCompilation">
     <ItemGroup>
       <!-- Clear the stale base-SDK R2R mark on the untrimmed runtime-pack copy (e.g. CoreLib under native/)
@@ -199,38 +221,55 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Force crossgen (CreateReadyToRunImages) before ProcessPublishFilesForWasm: the latter runs
        AfterTargets=ILLink, which a Blazor publish schedules ahead of R2R, so the images would ship too late. -->
   <Target Name="_WasmEnsureReadyToRunBeforePublish"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          Condition="'$(PublishReadyToRun)' == 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
           DependsOnTargets="CreateReadyToRunImages"
           BeforeTargets="ProcessPublishFilesForWasm" />
 
-  <!-- Per-app crossgen must be conservative: any change has to recompile EVERY per-app R2R image, because
-       cross-module inlining lets any image inline from any other and a stale image fail-fasts at startup.
-       _CreateR2RImages batches its Outputs per assembly, which alone would rebuild only the changed image;
-       adding the whole closure and the compiler as non-correlated inputs makes the whole target re-run.
-       Mirrors the framework build's sfxproj _ReadyToRunCompilerInputs. -->
+  <!-- Per-app crossgen must be conservative: cross-module inlining makes all images depend on the
+       whole closure. Include reference-only assemblies and the compiler as non-correlated inputs
+       so _CreateR2RImages reruns even when its per-assembly outputs are otherwise up-to-date. -->
   <Target Name="_WasmCoreClrConservativeR2RInputs"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          Condition="'$(PublishReadyToRun)' == 'true'"
           BeforeTargets="_CreateR2RImages">
     <ItemGroup>
-      <_ReadyToRunCompilerInputs Include="@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference)" />
+      <_ReadyToRunCompilerInputs Include="@(_ReadyToRunCompileList);@(_ReadyToRunAssembliesToReference);@(_ReadyToRunCompositeBuildReferences);@(_ReadyToRunCompositeUnrootedBuildInput)" />
       <!-- crossgen2 itself, not just the JIT: an updated compiler with an unchanged JIT must still invalidate. -->
       <_ReadyToRunCompilerInputs Include="$(_WasmResolvedCrossgen2Dir)crossgen2*;$(_WasmResolvedCrossgen2Dir)clrjit_universal_wasm_*"
                                  Condition="'$(_WasmResolvedCrossgen2Dir)' != ''" />
     </ItemGroup>
+    <!-- Crossgen2 configuration that isn't a file input: extra arguments (e.g. -p:PublishReadyToRunStripDebugInfo)
+         and the composite mode, whose component stubs share the per-assembly <name>.wasm output names and would
+         otherwise look up-to-date after a composite publish. WriteOnlyWhenDifferent bumps the timestamp only
+         when this configuration changes. -->
+    <PropertyGroup>
+      <_WasmReadyToRunArgsStamp>$(IntermediateOutputPath)wasm-r2r-args.stamp</_WasmReadyToRunArgsStamp>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_WasmReadyToRunArgsStamp)"
+                      Lines="PublishReadyToRunComposite=$(PublishReadyToRunComposite);$(PublishReadyToRunCrossgen2ExtraArgs)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <_ReadyToRunCompilerInputs Include="$(_WasmReadyToRunArgsStamp)" />
+      <FileWrites Include="$(_WasmReadyToRunArgsStamp)" />
+    </ItemGroup>
   </Target>
 
-  <!-- Delete per-app R2R images left in obj/R2R by a previous build whose assembly is no longer in the compile
-       closure. A stale orphan would otherwise be staged and fail-fast at load. Mirrors the framework build's
-       sfxproj _WasmFrameworkR2RLayoutObsolete. -->
+  <!-- Delete per-app images and composite component stubs left in obj/R2R by a previous build or
+       publish mode. A stale orphan would otherwise be staged and fail-fast at load. -->
   <Target Name="_WasmCoreClrPruneStalePerAppR2R"
-          Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'"
+          Condition="'$(PublishReadyToRun)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           AfterTargets="_CreateR2RImages">
     <ItemGroup Condition="'$(_WasmPublishR2RDir)' != '' and Exists('$(_WasmPublishR2RDir)')">
+      <!-- Keep what crossgen2 actually emitted, not the task's publish plan: every compiled image, plus in
+           composite mode a <name>.wasm component stub beside the owner for each composite input. -->
+      <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+      <_WasmEmittedPerAppR2R Include="@(_ReadyToRunCompositeBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm');@(_ReadyToRunCompositeUnrootedBuildInput->'$(_WasmPublishR2RDir)%(FileName).wasm')"
+                             Condition="'$(PublishReadyToRunComposite)' == 'true'" />
       <!-- Both extensions: ConvertDll probes PrebuiltR2RDirectory for .dll before .wasm (a stock SDK names the
            R2R output <name>.dll), so a surviving .dll would win the probe over the current .wasm. -->
       <_WasmStalePerAppR2R Include="$(_WasmPublishR2RDir)*.wasm;$(_WasmPublishR2RDir)*.dll"
-                           Exclude="@(_ReadyToRunCompileList->'%(OutputR2RImage)')" />
+                           Exclude="@(_WasmEmittedPerAppR2R)" />
     </ItemGroup>
     <Delete Files="@(_WasmStalePerAppR2R)" />
   </Target>

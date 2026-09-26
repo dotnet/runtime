@@ -269,6 +269,11 @@ export type WebcilAsset = AssemblyAsset & {
      * plain (non-R2R) webcil.
      */
     tableSize?: number;
+    /**
+     * Set on the composite ReadyToRun owner image. It carries native code for its component assemblies
+     * but is not itself a managed assembly: it keeps its .wasm virtual path and is not a trusted platform assembly.
+     */
+    isCompositeImage?: boolean;
 };
 export type PdbAsset = Asset & {
     virtualPath: string;
