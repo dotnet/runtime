@@ -7,12 +7,14 @@
 #endif
 
 using RegNumUnderlyingType                               = regNumberSmall;
-static const RegNumUnderlyingType WASM_REG_TYPE_BITS     = 3;
-static const RegNumUnderlyingType WASM_REG_TYPE_SHIFT    = 8 * sizeof(RegNumUnderlyingType) - WASM_REG_TYPE_BITS;
+static const RegNumUnderlyingType WASM_REG_TYPE_BITS     = ICorDebugInfo::WASM_REG_TYPE_BITS;
+static const RegNumUnderlyingType WASM_REG_TYPE_SHIFT    = ICorDebugInfo::WASM_REG_TYPE_SHIFT;
 static const RegNumUnderlyingType WASM_REG_TYPE_MASK     = ~0u << WASM_REG_TYPE_SHIFT;
 static const unsigned             WASM_LOCAL_INDEX_LIMIT = WASM_REG_TYPE_MASK;
 
 static_assert(sizeof(RegNumUnderlyingType) >= sizeof(unsigned));
+static_assert(WASM_REG_TYPE_SHIFT == (8 * sizeof(RegNumUnderlyingType) - WASM_REG_TYPE_BITS));
+static_assert(static_cast<unsigned>(WasmValueType::Count) == ICorDebugInfo::WASM_VALUE_TYPE_COUNT);
 static_assert(((static_cast<RegNumUnderlyingType>(WasmValueType::Count) - 1) >> WASM_REG_TYPE_BITS) == 0);
 
 //------------------------------------------------------------------------
