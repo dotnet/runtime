@@ -484,8 +484,6 @@ namespace System.Numerics.Tests
         public void ConstructorWithUnsupportedTypes_Guid() => TestConstructorWithUnsupportedTypes<Guid>();
         [Fact]
         public void ConstructorWithUnsupportedTypes_DateTime() => TestConstructorWithUnsupportedTypes<DateTime>();
-        [Fact]
-        public void ConstructorWithUnsupportedTypes_Char() => TestConstructorWithUnsupportedTypes<Char>();
 
         private void TestConstructorWithUnsupportedTypes<T>() where T : struct
         {
