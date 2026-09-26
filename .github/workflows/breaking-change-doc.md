@@ -5,7 +5,7 @@ description: >
   (issue-draft.md and pr-comment.md) and optionally comments on the PR.
 
 concurrency:
-  group: "breaking-change-doc-${{ github.event.pull_request.number || inputs.pr_number || github.run_id }}"
+  group: "breaking-change-doc-${{ inputs.pr_number || github.run_id }}"
   cancel-in-progress: true
 
 permissions:
@@ -22,14 +22,6 @@ safe-outputs:
   noop:
     report-as-issue: false  # Disable posting noop messages as issue comments
 
-if: |
-  github.event_name == 'workflow_dispatch' ||
-  (
-    !github.event.repository.fork &&
-    github.event.pull_request.merged &&
-    contains(github.event.pull_request.labels.*.name, 'needs-breaking-change-doc-created')
-  )
-
 post-steps:
   - name: Upload breaking change drafts
     if: always()
@@ -41,8 +33,8 @@ post-steps:
       if-no-files-found: ignore
 
 on:
-  pull_request_target:
-    types: [closed, labeled]
+  bots: [github-actions]
+  permissions: {}
   workflow_dispatch:
     inputs:
       pr_number:
@@ -81,15 +73,13 @@ Create breaking change documentation for the pull request identified below.
 
 ## PR to document
 
-- If triggered by a pull request event, the PR number is `${{ github.event.pull_request.number }}`.
-- If triggered by `workflow_dispatch`, the PR number is `${{ github.event.inputs.pr_number }}`.
+The PR number is `${{ github.event.inputs.pr_number }}`.
 
 ## Dry-run mode
 
-- If triggered by `workflow_dispatch` with `suppress_output` = `true`,
-  **do not** post a comment on the PR after producing the files. Just
-  write the markdown files and stop.
-- For pull_request triggers, always post the comment.
+- If `suppress_output` = `true`, **do not** post a comment on the PR after producing the files.
+  Just write the markdown files and stop.
+- Otherwise, post the comment.
 
 ## Instructions
 
