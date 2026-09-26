@@ -1503,122 +1503,97 @@ BOOL ETW::TypeSystemLog::AddTypeToGlobalCacheIfNotExists(TypeHandle th, BOOL * p
     }
     CONTRACTL_END;
 
+    *pfCreatedNew = FALSE;
+
     BOOL fSucceeded = FALSE;
 
-   {
-        CrstHolder _crst(GetHashCrst());
-
-        // Check if ETW is enabled, and if not, bail here.
-        // We do this inside of the lock to ensure that we don't immediately
-        // re-allocate the global type hash after it has been cleaned up.
-        if (!ETW_TRACING_CATEGORY_ENABLED(
-           MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-            TRACE_LEVEL_INFORMATION,
-            CLR_TYPE_KEYWORD))
-        {
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-
-        if (s_pAllLoggedTypes == NULL)
-        {
-            s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
-            if (s_pAllLoggedTypes == NULL)
-            {
-                // out of memory.  Bail on ETW stuff
-                *pfCreatedNew = FALSE;
-                return fSucceeded;
-            }
-        }
-    }
-
-    // Step 1: go from LoaderModule to hash of types.
     Module * pLoaderModule = th.GetLoaderModule();
     _ASSERTE(pLoaderModule != NULL);
-    LoggedTypesFromModule * pLoggedTypesFromModule = nullptr;
-    {
-        CrstHolder _crst(GetHashCrst());
-        pLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
-    }
+    TypeLoggingInfo typeLoggingInfoNew(th);
+    LoggedTypesFromModule * pNewLoggedTypesFromModule = NULL;
 
-    if (pLoggedTypesFromModule == NULL)
+    while (TRUE)
     {
-        pLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
-        if (pLoggedTypesFromModule == NULL)
-        {
-            // out of memory.  Bail on ETW stuff
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
+        BOOL fAllocateLoggedTypesFromModule = FALSE;
+
         {
             CrstHolder _crst(GetHashCrst());
-            // recheck if the type has been added by another thread since we last checked above
-            LoggedTypesFromModule * recheckLoggedTypesFromModule = s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
-            if (recheckLoggedTypesFromModule == NULL)
+
+            // Check if ETW is enabled, and if not, bail here.
+            // We do this inside of the lock to ensure that we don't immediately
+            // re-allocate the global type hash after it has been cleaned up.
+            if (!ETW_TRACING_CATEGORY_ENABLED(
+                MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
+                TRACE_LEVEL_INFORMATION,
+                CLR_TYPE_KEYWORD))
             {
-                EX_TRY
+                break;
+            }
+
+            if (s_pAllLoggedTypes == NULL)
+            {
+                s_pAllLoggedTypes = new (nothrow) AllLoggedTypes;
+                if (s_pAllLoggedTypes == NULL)
                 {
-                    s_pAllLoggedTypes->allLoggedTypesHash.Add(pLoggedTypesFromModule);
-                    fSucceeded = TRUE;
+                    break;
                 }
-                EX_SWALLOW_NONTERMINAL
-            }
-            else
-            {
-                delete pLoggedTypesFromModule;
-                pLoggedTypesFromModule = recheckLoggedTypesFromModule;
             }
 
-            if (!fSucceeded)
+            LoggedTypesFromModule * pLoggedTypesFromModule =
+                s_pAllLoggedTypes->allLoggedTypesHash.Lookup(pLoaderModule);
+            if (pLoggedTypesFromModule == NULL)
             {
-                *pfCreatedNew = FALSE;
-                return fSucceeded;
+                if (pNewLoggedTypesFromModule == NULL)
+                {
+                    fAllocateLoggedTypesFromModule = TRUE;
+                }
+                else
+                {
+                    EX_TRY
+                    {
+                        s_pAllLoggedTypes->allLoggedTypesHash.Add(pNewLoggedTypesFromModule);
+                        pLoggedTypesFromModule = pNewLoggedTypesFromModule;
+                        pNewLoggedTypesFromModule = NULL;
+                    }
+                    EX_SWALLOW_NONTERMINAL
+                }
             }
+
+            if (!fAllocateLoggedTypesFromModule && pLoggedTypesFromModule != NULL)
+            {
+                // The cache objects must not be used after releasing this lock because
+                // provider disable and module unload can delete them under the same lock.
+                if (pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
+                {
+                    EX_TRY
+                    {
+                        pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
+                        fSucceeded = TRUE;
+                    }
+                    EX_SWALLOW_NONTERMINAL
+                }
+
+                break;
+            }
+        }
+
+        if (!fAllocateLoggedTypesFromModule)
+        {
+            break;
+        }
+
+        // Allocate outside the lock, then revalidate and publish the candidate
+        // under the lock on the next iteration.
+        pNewLoggedTypesFromModule = new (nothrow) LoggedTypesFromModule(pLoaderModule);
+        if (pNewLoggedTypesFromModule == NULL)
+        {
+            break;
         }
     }
 
-    // Step 2: From hash of types, see if our TypeHandle is there already
-    TypeLoggingInfo typeLoggingInfoPreexisting;
-    {
-        CrstHolder _crst(GetHashCrst());
-        typeLoggingInfoPreexisting = pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th);
-        if (!typeLoggingInfoPreexisting.th.IsNull())
-        {
-            // Type is already hashed, so it's already logged, so we don't need to
-            // log it again.
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-    }
+    delete pNewLoggedTypesFromModule;
 
-    // We haven't logged this type, so we need to continue with this function to
-    // log it below. Add it to the hash table first so any recursive calls will
-    // see that this type is already being taken care of
-    fSucceeded = FALSE;
-    TypeLoggingInfo typeLoggingInfoNew(th);
-    {
-        CrstHolder _crst(GetHashCrst());
-        // Like above, check if the type has been added from a different thread since we last looked it up.
-        if (!pLoggedTypesFromModule->loggedTypesFromModuleHash.Lookup(th).th.IsNull())
-        {
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-
-        EX_TRY
-        {
-            pLoggedTypesFromModule->loggedTypesFromModuleHash.Add(typeLoggingInfoNew);
-            fSucceeded = TRUE;
-        }
-        EX_SWALLOW_NONTERMINAL
-        if (!fSucceeded)
-        {
-            *pfCreatedNew = FALSE;
-            return fSucceeded;
-        }
-    } // RELEASE: CrstHolder _crst(GetHashCrst());
-
-    *pfCreatedNew = TRUE;
+    *pfCreatedNew = fSucceeded;
     return fSucceeded;
 }
 
