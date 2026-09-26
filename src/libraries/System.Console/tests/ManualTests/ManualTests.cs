@@ -59,6 +59,10 @@ namespace System
             {
                 Assert.Equal((byte)expectedLine[i], inputStream.ReadByte());
             }
+            if (OperatingSystem.IsWindows())
+            {
+                Assert.Equal((byte)'\r', inputStream.ReadByte());
+            }
             Assert.Equal((byte)'\n', inputStream.ReadByte());
             AssertUserExpectedResults("the characters you typed properly echoed as you typed");
         }
@@ -66,7 +70,7 @@ namespace System
         [ConditionalFact(typeof(ConsoleManualTests), nameof(ManualTestsEnabled))]
         public static void ConsoleReadSupportsBackspace()
         {
-            const string expectedLine = "aab\r";
+            string expectedLine = OperatingSystem.IsWindows() ? "aab\r\n" : "aab\r";
 
             Console.WriteLine($"Please type 'a' 3 times, press 'Backspace' to erase 1, then type a single 'b' and press 'Enter'.");
             foreach (char c in expectedLine)
@@ -322,6 +326,7 @@ namespace System
         }
 
         [ConditionalFact(typeof(ConsoleManualTests), nameof(ManualTestsEnabled))]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Tests the Unix cached cursor position.
         public static void CursorLeftFromLastColumn()
         {
             Console.CursorLeft = Console.BufferWidth - 1;
