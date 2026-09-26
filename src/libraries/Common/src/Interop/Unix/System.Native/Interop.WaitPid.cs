@@ -14,7 +14,9 @@ internal static partial class Interop
         /// <returns>
         /// 1) when a child is reaped, its process id is returned
         /// 2) if pid is not a child or there are no unwaited-for children, -1 is returned (errno=ECHILD)
-        /// 3) if the child has not yet terminated, 0 is returned
+        /// 3) if the child has not yet terminated -- including if it is merely stopped or continued rather
+        ///    than exited, which some platforms report to a ptrace tracer even without WUNTRACED/WCONTINUED
+        ///    -- 0 is returned
         /// 4) on error, -1 is returned.
         /// </returns>
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitPidExitedNoHang", SetLastError = true)]
