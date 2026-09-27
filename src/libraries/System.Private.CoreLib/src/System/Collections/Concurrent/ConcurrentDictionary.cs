@@ -2659,13 +2659,13 @@ namespace System.Collections.Concurrent
             typeof(T) == typeof(nuint) ||
             typeof(T) == typeof(bool) ||
             typeof(T) == typeof(byte) ||
+            typeof(T) == typeof(sbyte) ||
             typeof(T) == typeof(char) ||
             typeof(T) == typeof(short) ||
-            typeof(T) == typeof(int) ||
-            typeof(T) == typeof(sbyte) ||
-            typeof(T) == typeof(float) ||
             typeof(T) == typeof(ushort) ||
+            typeof(T) == typeof(int) ||
             typeof(T) == typeof(uint) ||
+            typeof(T) == typeof(float) ||
             typeof(T) == typeof(double) ||
             typeof(T) == typeof(long) ||
             typeof(T) == typeof(ulong) ||
