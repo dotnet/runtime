@@ -3657,6 +3657,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Type_op_Equality:
             case NI_System_Type_op_Inequality:
 
+            // This allows folding "obj.GetType() == typeof(...)"
+            case NI_System_Object_GetType:
+
             // This allows folding "typeof(...).GetGenericTypeDefinition() == typeof(...)"
             case NI_System_Type_GetGenericTypeDefinition:
 
