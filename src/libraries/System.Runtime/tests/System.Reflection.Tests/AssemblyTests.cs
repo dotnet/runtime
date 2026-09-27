@@ -960,7 +960,6 @@ namespace System.Reflection.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/124344", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsCoreCLR))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/134263", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;
