@@ -3,8 +3,9 @@
 
 using System;
 using System.Linq;
-using System.Threading;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Xunit;
 
 #pragma warning disable CS0612, CS0618
@@ -206,6 +207,23 @@ public class SafeArrayMarshallingTest
         Assert.Equal((ushort)VarEnum.VT_BSTR, elementType);
     }
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int AutoDualArrayReader([MarshalAs(UnmanagedType.LPArray, SizeConst = 1)] AutoDualArrayElement[] values);
+
+    [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
+    [SkipOnMono("Requires COM support")]
+    public static unsafe void AutoDualClassArrayMarshalsDefaultInterface()
+    {
+        AutoDualArrayReader read = Marshal.GetDelegateForFunctionPointer<AutoDualArrayReader>(
+            (IntPtr)(delegate* unmanaged[Cdecl]<IntPtr*, int>)&HasInterfacePointer);
+
+        Assert.Equal(1, read([new AutoDualArrayElement()]));
+        SafeArrayNative.VerifyAutoDualArray([new AutoDualArrayElement()]);
+    }
+
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+    private static unsafe int HasInterfacePointer(IntPtr* values) => values[0] != IntPtr.Zero ? 1 : 0;
+
     private static void ReplaceVariantArrayElement(object[] values)
     {
         values[0] = "7";
@@ -227,6 +245,14 @@ public class SafeArrayMarshallingTest
         Array.Reverse(chars);
         return new string(chars);
     }
+}
+
+[ComVisible(true)]
+[Guid("A7CC0C2F-8E38-46D8-B53B-BA845484A713")]
+[ClassInterface(ClassInterfaceType.AutoDual)]
+public class AutoDualArrayElement
+{
+    public int GetValue() => 42;
 }
 
 class SafeArrayNative
@@ -327,6 +353,16 @@ class SafeArrayNative
     public static void VerifyIDispatchArray(object[] objects)
     {
         VerifyInterfaceArrayIDispatch(objects, (short)VarEnum.VT_DISPATCH);
+    }
+
+    [DllImport(nameof(SafeArrayNative), PreserveSig = false, EntryPoint = "VerifyInterfaceArray")]
+    private static extern void VerifyAutoDualSafeArray(
+        [MarshalAs(UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_UNKNOWN)] AutoDualArrayElement[] values,
+        short expectedVarType);
+
+    public static void VerifyAutoDualArray(AutoDualArrayElement[] values)
+    {
+        VerifyAutoDualSafeArray(values, (short)VarEnum.VT_UNKNOWN);
     }
 
     [DllImport(nameof(SafeArrayNative), PreserveSig = false)]
