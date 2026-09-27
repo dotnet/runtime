@@ -2670,42 +2670,6 @@ namespace System.Collections.Concurrent
             typeof(T) == typeof(long) ||
             typeof(T) == typeof(ulong) ||
             typeof(T).IsEnum);
-
-        private static bool IsWriteAtomicPrivate()
-        {
-            // Section 12.6.6 of ECMA CLI explains which types can be read and written atomically without
-            // the risk of tearing. See https://www.ecma-international.org/publications/files/ECMA-ST/ECMA-335.pdf
-
-            if (!typeof(T).IsValueType ||
-                typeof(T) == typeof(IntPtr) ||
-                typeof(T) == typeof(UIntPtr) ||
-                typeof(T) == typeof(bool) ||
-                typeof(T) == typeof(byte) ||
-                typeof(T) == typeof(char) ||
-                typeof(T) == typeof(short) ||
-                typeof(T) == typeof(int) ||
-                typeof(T) == typeof(sbyte) ||
-                typeof(T) == typeof(float) ||
-                typeof(T) == typeof(ushort) ||
-                typeof(T) == typeof(uint))
-            {
-                return true;
-            }
-
-            if (typeof(T) == typeof(double) ||
-                typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong))
-            {
-                return sizeof(nint) == 8;
-            }
-
-            if (typeof(T).IsEnum)
-            {
-                return sizeof(T) <= sizeof(nint);
-            }
-
-            return false;
-        }
     }
 
     internal sealed class IDictionaryDebugView<TKey, TValue> where TKey : notnull
