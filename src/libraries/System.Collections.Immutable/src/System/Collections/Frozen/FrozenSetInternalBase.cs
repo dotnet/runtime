@@ -134,8 +134,8 @@ namespace System.Collections.Frozen
             if (other is IReadOnlySet<T> otherAsSet && ComparersAreCompatible(otherAsSet))
             {
                 return otherAsSet.Count > Count
-                    ? OverlapsCompatibleReadOnlySetImpl(this, otherAsSet)
-                    : OverlapsCompatibleReadOnlySetImpl(otherAsSet, this);
+                    ? OverlapsCompatibleSetImpl(this, otherAsSet)
+                    : OverlapsCompatibleSetImpl(otherAsSet, this);
             }
 
             return OverlapsEnumerableImpl(other);
@@ -154,7 +154,20 @@ namespace System.Collections.Frozen
             return false;
         }
 
-        private static bool OverlapsCompatibleReadOnlySetImpl(IReadOnlySet<T> smaller, IReadOnlySet<T> larger)
+        private static bool OverlapsCompatibleSetImpl(FrozenSet<T> smaller, IReadOnlySet<T> larger)
+        {
+            foreach (T element in smaller)
+            {
+                if (larger.Contains(element))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool OverlapsCompatibleSetImpl(IReadOnlySet<T> smaller, FrozenSet<T> larger)
         {
             foreach (T element in smaller)
             {
