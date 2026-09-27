@@ -350,11 +350,6 @@ public:
     void    GetInstanceField(OBJECTREF o, VOID * pOutVal);
     void    SetInstanceField(OBJECTREF o, const VOID * pInVal);
 
-#ifndef DACCESS_COMPILE
-    static void GetPrimitiveValue(void* pAddress, void* pOutVal, UINT size);
-    static void SetPrimitiveValue(void* pAddress, const void* pInVal, UINT size);
-#endif
-
     void*   GetInstanceAddress(OBJECTREF o);
 
     // Get the address of a field within object 'o'
@@ -457,73 +452,61 @@ public:
     void*   GetStaticValuePtr()
     {
         WRAPPER_NO_CONTRACT;
-        void* value;
-        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
-        return value;
+        return *(void**)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValuePtr(void *value)
     {
         WRAPPER_NO_CONTRACT;
-        SetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        *(void**)GetCurrentStaticAddress() = value;
     }
 
     DWORD   GetStaticValue32()
     {
         WRAPPER_NO_CONTRACT;
-        DWORD value;
-        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
-        return value;
+        return *(DWORD*)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValue32(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        SetPrimitiveValue(GetCurrentStaticAddress(), &dwValue, sizeof(dwValue));
+        *(DWORD*)GetCurrentStaticAddress() = dwValue;
     }
 
     USHORT  GetStaticValue16()
     {
         WRAPPER_NO_CONTRACT;
-        USHORT value;
-        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
-        return value;
+        return *(USHORT*)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValue16(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        USHORT value = (USHORT)dwValue;
-        SetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        *(USHORT*)GetCurrentStaticAddress() = (USHORT)dwValue;
     }
 
     BYTE    GetStaticValue8()
     {
         WRAPPER_NO_CONTRACT;
-        BYTE value;
-        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
-        return value;
+        return *(BYTE*)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValue8(DWORD dwValue)
     {
         WRAPPER_NO_CONTRACT;
-        BYTE value = (BYTE)dwValue;
-        SetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
+        *(BYTE*)GetCurrentStaticAddress() = (BYTE)dwValue;
     }
 
     int64_t GetStaticValue64()
     {
         WRAPPER_NO_CONTRACT;
-        int64_t value;
-        GetPrimitiveValue(GetCurrentStaticAddress(), &value, sizeof(value));
-        return value;
+        return *(int64_t*)GetCurrentStaticAddress();
     }
 
     VOID    SetStaticValue64(int64_t qwValue)
     {
         WRAPPER_NO_CONTRACT;
-        SetPrimitiveValue(GetCurrentStaticAddress(), &qwValue, sizeof(qwValue));
+        *(int64_t*)GetCurrentStaticAddress() = qwValue;
     }
 
     void* GetCurrentStaticAddress()

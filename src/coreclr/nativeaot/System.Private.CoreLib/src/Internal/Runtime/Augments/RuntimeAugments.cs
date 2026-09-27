@@ -231,42 +231,46 @@ namespace Internal.Runtime.Augments
 
         public static unsafe void StoreValueTypeField(IntPtr address, object fieldValue, RuntimeTypeHandle fieldType)
         {
-            RuntimeImports.RhUnbox(fieldValue, ref *(byte*)address, fieldType.ToMethodTable());
+            RuntimeExports.RhUnboxUnaligned(fieldValue, ref *(byte*)address, fieldType.ToMethodTable());
         }
 
         public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeExports.RhBox(fieldType.ToMethodTable(), ref *(byte*)address);
+            return RuntimeExports.RhBoxUnaligned(fieldType.ToMethodTable(), ref *(byte*)address);
         }
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            if (fieldType.ToMethodTable()->IsFunctionPointer)
-                return *(IntPtr*)address;
+            IntPtr value = Unsafe.ReadUnaligned<IntPtr>((void*)address);
 
-            return ReflectionPointer.Box(*(void**)address, Type.GetTypeFromHandle(fieldType));
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return value;
+
+            return ReflectionPointer.Box((void*)value, Type.GetTypeFromHandle(fieldType));
         }
 
         public static unsafe void StoreValueTypeField(object obj, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            RuntimeImports.RhUnbox(fieldValue, ref address, fieldType.ToMethodTable());
+            RuntimeExports.RhUnboxUnaligned(fieldValue, ref address, fieldType.ToMethodTable());
         }
 
         public static unsafe object LoadValueTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return RuntimeExports.RhBox(fieldType.ToMethodTable(), ref address);
+            return RuntimeExports.RhBoxUnaligned(fieldType.ToMethodTable(), ref address);
         }
 
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
 
-            if (fieldType.ToMethodTable()->IsFunctionPointer)
-                return RuntimeExports.RhBox(MethodTable.Of<IntPtr>(), ref address);
+            IntPtr value = Unsafe.ReadUnaligned<IntPtr>(ref address);
 
-            return ReflectionPointer.Box((void*)Unsafe.As<byte, IntPtr>(ref address), Type.GetTypeFromHandle(fieldType));
+            if (fieldType.ToMethodTable()->IsFunctionPointer)
+                return value;
+
+            return ReflectionPointer.Box((void*)value, Type.GetTypeFromHandle(fieldType));
         }
 
         public static unsafe void StoreReferenceTypeField(IntPtr address, object fieldValue)
@@ -296,7 +300,10 @@ namespace Internal.Runtime.Augments
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
-            RuntimeImports.RhUnbox(fieldValue, ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldTypeHandle.ToMethodTable());
+            RuntimeExports.RhUnboxUnaligned(
+                fieldValue,
+                ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset),
+                fieldTypeHandle.ToMethodTable());
         }
 
         [CLSCompliant(false)]
@@ -305,7 +312,9 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
             Debug.Assert(fieldTypeHandle.ToMethodTable()->IsValueType);
 
-            return RuntimeExports.RhBox(fieldTypeHandle.ToMethodTable(), ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return RuntimeExports.RhBoxUnaligned(
+                fieldTypeHandle.ToMethodTable(),
+                ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
         }
 
         [CLSCompliant(false)]
@@ -328,7 +337,7 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
-            IntPtr ptrValue = Unsafe.As<byte, IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            IntPtr ptrValue = Unsafe.ReadUnaligned<IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
 
             if (fieldTypeHandle.ToMethodTable()->IsFunctionPointer)
                 return ptrValue;

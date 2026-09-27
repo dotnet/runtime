@@ -861,7 +861,7 @@ static OBJECTREF DirectPrimitiveFieldGet(FieldDesc* pField, MethodTable* pFieldM
     OBJECTREF obj = AllocateObject(pFieldMT);
     GCPROTECT_BEGIN(obj);
     void* pFieldAddress = reinterpret_cast<BYTE*>(pTarget->data) + pField->GetOffset();
-    FieldDesc::GetPrimitiveValue(pFieldAddress, obj->UnBox(), fieldSize);
+    InvokeUtil::GetPrimitiveFieldValue(pFieldAddress, obj->UnBox(), fieldSize);
     GCPROTECT_END();
 
     return obj;
@@ -946,7 +946,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_GetValueDirect(FieldDesc* fieldDesc
     {
         p = ((BYTE*) pTarget->data) + fieldDesc->GetOffset();
         void* value;
-        FieldDesc::GetPrimitiveValue(p, &value, sizeof(value));
+        InvokeUtil::GetPrimitiveFieldValue(p, &value, sizeof(value));
         result.Set(InvokeUtil::CreatePointer(fieldType, value));
         break;
     }
@@ -1062,37 +1062,37 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
     case ELEMENT_TYPE_BOOLEAN:  // boolean
     case ELEMENT_TYPE_I1:       // byte
     case ELEMENT_TYPE_U1:       // unsigned byte
-        FieldDesc::SetPrimitiveValue(pDst, &value, sizeof(UINT8));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &value, sizeof(UINT8));
     break;
 
     case ELEMENT_TYPE_I2:       // short
     case ELEMENT_TYPE_U2:       // unsigned short
     case ELEMENT_TYPE_CHAR:     // char
-        FieldDesc::SetPrimitiveValue(pDst, &value, sizeof(UINT16));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &value, sizeof(UINT16));
     break;
 
     case ELEMENT_TYPE_I4:       // int
     case ELEMENT_TYPE_U4:       // unsigned int
     case ELEMENT_TYPE_R4:       // float
-        FieldDesc::SetPrimitiveValue(pDst, &value, sizeof(UINT32));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &value, sizeof(UINT32));
     break;
 
     case ELEMENT_TYPE_I8:       // long
     case ELEMENT_TYPE_U8:       // unsigned long
     case ELEMENT_TYPE_R8:       // double
-        FieldDesc::SetPrimitiveValue(pDst, &value, sizeof(UINT64));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &value, sizeof(UINT64));
     break;
 
     case ELEMENT_TYPE_I:
     {
         INT_PTR valuePtr = (INT_PTR) InvokeUtil::GetIntPtrValue(gc.Value);
-        FieldDesc::SetPrimitiveValue(pDst, &valuePtr, sizeof(valuePtr));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &valuePtr, sizeof(valuePtr));
     }
     break;
     case ELEMENT_TYPE_U:
     {
         UINT_PTR valuePtr = (UINT_PTR) InvokeUtil::GetIntPtrValue(gc.Value);
-        FieldDesc::SetPrimitiveValue(pDst, &valuePtr, sizeof(valuePtr));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &valuePtr, sizeof(valuePtr));
     }
     break;
 
@@ -1103,7 +1103,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
             if (CoreLibBinder::IsClass(gc.Value->GetMethodTable(), CLASS__POINTER))
             {
                 value = (SIZE_T) InvokeUtil::GetPointerValue(gc.Value);
-                FieldDesc::SetPrimitiveValue(pDst, &value, sizeof(SIZE_T));
+                InvokeUtil::SetPrimitiveFieldValue(pDst, &value, sizeof(SIZE_T));
                 break;
             }
         }
@@ -1116,7 +1116,7 @@ extern "C" void QCALLTYPE RuntimeFieldHandle_SetValueDirect(FieldDesc* fieldDesc
             CorElementType objType = gc.Value->GetTypeHandle().GetInternalCorElementType();
             InvokeUtil::CreatePrimitiveValue(objType, objType, gc.Value, &value);
         }
-        FieldDesc::SetPrimitiveValue(pDst, &value, sizeof(SIZE_T));
+        InvokeUtil::SetPrimitiveFieldValue(pDst, &value, sizeof(SIZE_T));
     }
     break;
 

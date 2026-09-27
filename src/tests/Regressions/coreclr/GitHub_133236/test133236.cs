@@ -78,6 +78,7 @@ public unsafe class Program
         VerifyFirstSetReflectionAccess();
         VerifyStaticReflectionAccesses();
         VerifyDirectReflectionAccess();
+        VerifyInt64DirectReflectionAccess();
         VerifyAlignedDirectReflectionAccess();
         VerifyEnumDirectReflectionAccess();
         VerifyFunctionPointerDirectReflectionAccess();
@@ -333,6 +334,31 @@ public unsafe class Program
                 Assert.Equal(FirstReplacement, value.Value);
                 field.SetValueDirect(reference, SecondReplacement);
                 Assert.Equal(SecondReplacement, value.Value);
+            });
+    }
+
+    private static void VerifyInt64DirectReflectionAccess()
+    {
+        const long InitialValue = 0x0123456789abcdef;
+        const long ReplacementValue = -0x0123456789abcdef;
+
+        FieldInfo field = typeof(PackedInt64).GetField(nameof(PackedInt64.Value)) ??
+            throw new InvalidOperationException($"Field {nameof(PackedInt64.Value)} was not found.");
+        int fieldOffset = Marshal.OffsetOf<PackedInt64>(nameof(PackedInt64.Value)).ToInt32();
+
+        RunWithPinnedBoxAtReflectionSensitiveAddress(
+            new PackedInt64 { Value = InitialValue },
+            fieldOffset,
+            sizeof(long),
+            boxed =>
+            {
+                ref PackedInt64 value = ref Unsafe.Unbox<PackedInt64>(boxed);
+                TypedReference reference = __makeref(value);
+
+                Assert.Equal(InitialValue, (long)field.GetValueDirect(reference));
+                field.SetValueDirect(reference, ReplacementValue);
+                Assert.Equal(ReplacementValue, value.Value);
+                Assert.Equal(ReplacementValue, (long)field.GetValueDirect(reference));
             });
     }
 

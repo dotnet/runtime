@@ -137,6 +137,9 @@ public:
 
     static OBJECTREF GetFieldValue(FieldDesc* pField, TypeHandle fieldType, OBJECTREF* target, TypeHandle declaringType, BOOL *pIsClassInitialized);
 
+    static void GetPrimitiveFieldValue(void* pAddress, void* pOutVal, UINT size);
+    static void SetPrimitiveFieldValue(void* pAddress, const void* pInVal, UINT size);
+
     // ValidateObjectTarget
     // This method will validate the Object/Target relationship
     //  is correct.  It throws an exception if this is not the case.
