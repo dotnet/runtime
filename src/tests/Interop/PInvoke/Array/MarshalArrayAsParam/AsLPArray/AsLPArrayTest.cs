@@ -701,6 +701,80 @@ public unsafe class ArrayPinningTests
         }
     }
 
+    public static IEnumerable<object[]> CurrencyCases()
+    {
+        foreach (object[] testCase in ArrayCases())
+        {
+            for (int direction = 0; direction < 4; direction++)
+            {
+                yield return new object[] { testCase[0], testCase[1], direction };
+            }
+        }
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR), nameof(PlatformDetection.IsBuiltInComEnabled))]
+    [MemberData(nameof(CurrencyCases))]
+    public static void CurrencyArrayDoesNotPassManagedContentsDirectly(int length, bool useDelegate, int direction)
+    {
+        decimal[] values = CreateDecimalArray(length);
+        decimal[] expected = values is null ? null : (decimal[])values.Clone();
+        if (expected is not null && direction >= 2)
+        {
+            for (int i = 0; i < expected.Length; i++)
+            {
+                expected[i] = direction == 2 ? 0 : decimal.FromOACurrency(decimal.ToOACurrency(expected[i]));
+            }
+            Array.Reverse(expected);
+        }
+
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        Func<decimal[], int, int, nint> reverse = direction switch
+        {
+            0 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayReverser>(target).Invoke : ReverseCurrencyArray,
+            1 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayInReverser>(target).Invoke : ReverseCurrencyArrayIn,
+            2 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayOutReverser>(target).Invoke : ReverseCurrencyArrayOut,
+            3 => useDelegate ? Marshal.GetDelegateForFunctionPointer<CurrencyArrayInOutReverser>(target).Invoke : ReverseCurrencyArrayInOut,
+            _ => throw new ArgumentOutOfRangeException(nameof(direction))
+        };
+
+        if (values is null)
+        {
+            Assert.Equal(nint.Zero, reverse(null, 0, sizeof(long)));
+            return;
+        }
+
+        fixed (decimal* address = &MemoryMarshal.GetArrayDataReference(values))
+        {
+            Assert.NotEqual((nint)address, reverse(values, values.Length, sizeof(long)));
+        }
+        Assert.Equal(expected, values);
+    }
+
+    [Theory]
+    [MemberData(nameof(ArrayCases))]
+    public static void DecimalArrayPassesManagedContentsDirectly(int length, bool useDelegate)
+    {
+        nint target = useDelegate ? GetArrayElementReverser() : 0;
+        VerifyArrayPassesManagedContentsDirectly(CreateDecimalArray(length), sizeof(decimal), true,
+            useDelegate ? Marshal.GetDelegateForFunctionPointer<DecimalArrayReverser>(target).Invoke : ReverseDecimalArray);
+    }
+
+    private static decimal[] CreateDecimalArray(int length)
+    {
+        if (length < 0)
+        {
+            return null;
+        }
+
+        ReadOnlySpan<decimal> pattern = [1m, -2m, 12.3456m, 0.00006m, decimal.FromOACurrency(long.MinValue), decimal.FromOACurrency(long.MaxValue)];
+        decimal[] values = new decimal[length];
+        for (int i = 0; i < values.Length; i++)
+        {
+            values[i] = pattern[i % pattern.Length];
+        }
+        return values;
+    }
+
     [Theory]
     [MemberData(nameof(ArrayCases))]
     public static void EnumArrayPassesManagedContentsDirectly(int length, bool useDelegate)
@@ -818,6 +892,27 @@ public unsafe class ArrayPinningTests
 
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern nint GetArrayElementReverser();
+
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArray([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArrayIn([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArrayOut([Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseCurrencyArrayInOut([In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [DllImport(NativeLibraryName, EntryPoint = nameof(ReverseArrayElements), CallingConvention = CallingConvention.Cdecl)]
+    private static extern nint ReverseDecimalArray(decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayReverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayInReverser([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayOutReverser([Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint CurrencyArrayInOutReverser([In, Out, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.Currency)] decimal[] values, int count, int elementSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate nint DecimalArrayReverser(decimal[] values, int count, int elementSize);
 
     [DllImport(NativeLibraryName, CallingConvention = CallingConvention.Cdecl)]
     private static extern nint ReverseArrayElements(SByteEnum[] values, int count, int elementSize);

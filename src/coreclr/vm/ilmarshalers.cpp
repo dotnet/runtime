@@ -3855,9 +3855,9 @@ bool ILNativeArrayMarshaler::CanMarshalViaPinning()
 
     CREATE_MARSHALER_CARRAY_OPERANDS mops;
     m_pargs->m_pMarshalInfo->GetMops(&mops);
-    if (mops.elementNativeType != NATIVE_TYPE_DEFAULT)
+    if (mops.elementNativeType != NATIVE_TYPE_DEFAULT || mops.elementType == VT_CY)
     {
-        // This means that we have some sort of custom marshaling logic.
+        // Currency and non-default native types require element conversion.
         return false;
     }
 
