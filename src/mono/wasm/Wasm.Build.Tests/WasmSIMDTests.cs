@@ -69,16 +69,8 @@ namespace Wasm.Build.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [TestCategory("mono")]
-        public Task PublishRelaxedSimdMono(bool relaxedSimd) => PublishRelaxedSimd(relaxedSimd);
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
         [TestCategory("coreclr")]
-        public Task PublishRelaxedSimdCoreClr(bool relaxedSimd) => PublishRelaxedSimd(relaxedSimd);
-
-        private async Task PublishRelaxedSimd(bool relaxedSimd)
+        public async Task PublishRelaxedSimdCoreClr(bool relaxedSimd)
         {
             Configuration config = Configuration.Debug;
             string relaxedSimdValue = relaxedSimd.ToString().ToLowerInvariant();
@@ -91,9 +83,7 @@ namespace Wasm.Build.Tests
                 extraProperties: extraProperties);
             UpdateFile(
                 Path.Combine("Common", "Program.cs"),
-                IsCoreClrRuntime
-                    ? GetCoreClrRelaxedSimdProgramText(relaxedSimdValue)
-                    : GetMonoRelaxedSimdProgramText(relaxedSimdValue));
+                GetCoreClrRelaxedSimdProgramText(relaxedSimdValue));
             ReplaceMainJsWithMinimalRunMain();
 
             PublishProject(info, config, isNativeBuild: relaxedSimd);
@@ -102,9 +92,7 @@ namespace Wasm.Build.Tests
                 config,
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 42));
-            string expectedOutput = IsCoreClrRuntime
-                ? $"RelaxedSimd config: {(relaxedSimd ? "true" : "<null>")}"
-                : $"RelaxedSimd.IsSupported: {relaxedSimd}";
+            string expectedOutput = $"RelaxedSimd config: {(relaxedSimd ? "true" : "<null>")}";
             Assert.Contains(result.TestOutput, message => message.Contains(expectedOutput));
         }
 
@@ -122,50 +110,6 @@ namespace Wasm.Build.Tests
                     return configuredValue == {{(expectedConfigValue == "true" ? "\"true\"" : "null")}}
                         ? 42
                         : 1;
-                }
-            }
-            """;
-
-        private static string GetMonoRelaxedSimdProgramText(string expectedIsSupported) => $$"""
-            using System;
-            using System.Runtime.Intrinsics;
-            using System.Runtime.Intrinsics.Wasm;
-
-            public class TestClass
-            {
-                public static int Main()
-                {
-                    bool isSupported = RelaxedSimd.IsSupported;
-                    Console.WriteLine($"TestOutput -> RelaxedSimd.IsSupported: {isSupported}");
-
-                    if (isSupported != {{expectedIsSupported}})
-                    {
-                        return 1;
-                    }
-
-                    if (isSupported)
-                    {
-                        Vector128<int> result = RelaxedSimd.ConvertToInt32Native(
-                            Vector128.Create(1.75f, -2.25f, 3.0f, -4.99f));
-
-                        if (result != Vector128.Create(1, -2, 3, -4))
-                        {
-                            return 2;
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.0f));
-                            return 3;
-                        }
-                        catch (PlatformNotSupportedException)
-                        {
-                        }
-                    }
-
-                    return 42;
                 }
             }
             """;

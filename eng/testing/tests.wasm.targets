@@ -89,8 +89,9 @@
       -->
     <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' != 'false'">WasmIntrinsics</_WasmIntrinsicsSubstitutions>
     <_WasmIntrinsicsSubstitutions Condition="'$(WasmEnableSIMD)' == 'false'">NoWasmIntrinsics</_WasmIntrinsicsSubstitutions>
-    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' == 'true'">WasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
-    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' != 'true'">NoWasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
+    <!-- RelaxedSimd is only implemented by CoreCLR (R2R); Mono always reports it unsupported. -->
+    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableSIMD)' != 'false' and '$(WasmEnableRelaxedSimd)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">WasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
+    <_WasmRelaxedSimdSubstitutions Condition="'$(WasmEnableSIMD)' != 'false' and '$(_WasmRelaxedSimdSubstitutions)' == ''">NoWasmRelaxedSimd</_WasmRelaxedSimdSubstitutions>
     <!-- WasmEnableSIMD is about native codegen, and CoreCLR browser-wasm forces it on, but the CoreCLR
          interpreter maps every System.Runtime.Intrinsics arch intrinsic except get_IsSupported to
          PlatformNotSupportedException. Only crossgen'd code can execute them, so without ReadyToRun stubbing

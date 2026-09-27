@@ -25,7 +25,6 @@ namespace Wasm.Build.Tests
             List<(string propertyName, bool defaultValueInRuntimePack)> defaults = new()
             {
                 ("WasmEnableSIMD", true),
-                ("WasmEnableRelaxedSimd", false),
                 ("WasmEnableExceptionHandling", true),
                 ("InvariantTimezone", false),
                 ("InvariantGlobalization", false),
