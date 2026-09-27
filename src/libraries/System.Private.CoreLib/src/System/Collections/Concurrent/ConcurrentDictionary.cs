@@ -2678,16 +2678,10 @@ namespace System.Collections.Concurrent
 
             if (typeof(T) == typeof(double) ||
                 typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong))
+                typeof(T) == typeof(ulong) ||
+                typeof(T).IsEnum)
             {
-                return IntPtr.Size == 8;
-            }
-
-            // Enums are as atomic as their primitive underlying type, which only depends on its size.
-            // Avoids Type.GetTypeCode, which is not foldable and roots enum reflection in NativeAOT.
-            if (typeof(T).IsEnum)
-            {
-                return Unsafe.SizeOf<T>() <= IntPtr.Size;
+                return sizeof(T) <= sizeof(nint);
             }
 
             return false;
