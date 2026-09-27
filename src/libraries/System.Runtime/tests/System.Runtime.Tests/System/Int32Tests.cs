@@ -131,6 +131,8 @@ namespace System.Tests
             }
 
             NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
+            yield return new object[] { 7, "A1111111111-0", invariantFormat, "A1111111111-7" };
+            yield return new object[] { 7, "A1234567890Z", invariantFormat, "A1234567897Z" };
             yield return new object[] { 32, "C100", invariantFormat, "\u00A432.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" };
             yield return new object[] { 32, "P100", invariantFormat, "3,200.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 %" };
             yield return new object[] { 32, "D100", invariantFormat, "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000032" };
@@ -197,6 +199,7 @@ namespace System.Tests
             int i = 123;
             Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y", null)); // Invalid format
+            Assert.Throws<FormatException>(() => i.ToString("D1000000000")); // Precision too large
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
