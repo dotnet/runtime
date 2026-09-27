@@ -252,6 +252,9 @@
   <data name="FieldAccess" xml:space="preserve">
     <value>Field is not visible.</value>
   </data>
+  <data name="FilterAndHandlerSameOffset" xml:space="preserve">
+    <value>Exception filter and handler start at the same offset.</value>
+  </data>
   <data name="FilterOrCatchUnexpectedStack" xml:space="preserve">
     <value>Attempt to enter a filter or catch block with unexpected stack state.</value>
   </data>
