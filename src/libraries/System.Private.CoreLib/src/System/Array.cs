@@ -39,6 +39,45 @@ namespace System
                 new ReadOnlyCollection<T>(array);
         }
 
+        /// <summary>
+        /// Creates a new array of the specified length, filled with the given value.
+        /// </summary>
+        /// <param name="length">Required lenght of the array.</param>
+        /// <param name="value">Value to be filled in the array.</param>
+        /// <typeparam name="T">Type of the result array.</typeparam>
+        /// <returns>Array with the specified length initialized with the result from the factory function.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="length"></paramref> is negative.</exception>
+        public static T[] CreateFilled<T>(int length, T value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            T[] array = GC.AllocateUninitializedArray<T>(length);
+            Fill(array, value);
+            return array;
+        }
+
+        /// <summary>
+        /// Creates a new array of the specified length, initializing each element with the result of a factory function
+        /// </summary>
+        /// <param name="length">Required lenght of the array.</param>
+        /// <param name="factory">Factory function for each element. Argument of the function is index in the array.</param>
+        /// <typeparam name="T">Type of the result array.</typeparam>
+        /// <returns>Array with the specified length initialized with the result from the factory function.</returns>
+        /// <exception cref="ArgumentNullException">If <paramref name="factory"></paramref> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="length"></paramref> is negative.</exception>
+        public static T[] CreateFilled<T>(int length, Func<int, T> factory)
+        {
+            ArgumentNullException.ThrowIfNull(factory);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            T[] array = GC.AllocateUninitializedArray<T>(length);
+
+            for (int i = 0; i < length; i++)
+                array[i] = factory(i);
+
+            return array;
+        }
+
         public static void Resize<T>([NotNull] ref T[]? array, int newSize)
         {
             if (newSize < 0)

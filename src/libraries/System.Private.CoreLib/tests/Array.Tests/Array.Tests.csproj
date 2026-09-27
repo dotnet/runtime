@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRunRequiresLiveRefPack>true</TestRunRequiresLiveRefPack>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Array_CreateFilledTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\coreclr\System.Private.CoreLib\System.Private.CoreLib.csproj" />
+    <Compile Include="Array_CreateFilledTests.cs" />
+  </ItemGroup>
+</Project>
