@@ -2678,8 +2678,12 @@ namespace System.Collections.Concurrent
 
             if (typeof(T) == typeof(double) ||
                 typeof(T) == typeof(long) ||
-                typeof(T) == typeof(ulong) ||
-                typeof(T).IsEnum)
+                typeof(T) == typeof(ulong))
+            {
+                return sizeof(nint) == 8;
+            }
+
+            if (typeof(T).IsEnum)
             {
                 return sizeof(T) <= sizeof(nint);
             }
