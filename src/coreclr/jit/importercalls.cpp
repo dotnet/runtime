@@ -3944,7 +3944,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetRawData:
             {
-                GenTree* obj = impPopStack().val;
+                GenTree* obj      = impPopStack().val;
                 GenTree* objClone = nullptr;
 
                 if (fgAddrCouldBeNull(obj))
