@@ -815,16 +815,13 @@ namespace System.Net.Test.Common
                     requestData.Headers.Add(new HttpHeaderData(name, value, raw: lineBytes, rawValueStart: offset + 1));
                 }
 
-                if (requestData.Method != "GET")
+                if (requestData.GetHeaderValueCount("Content-Length") != 0)
                 {
-                    if (requestData.GetHeaderValueCount("Content-Length") != 0)
-                    {
-                        _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
-                    }
-                    else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
-                    {
-                        _contentLength = -1;
-                    }
+                    _contentLength = int.Parse(requestData.GetSingleHeaderValue("Content-Length"));
+                }
+                else if (requestData.GetHeaderValueCount("Transfer-Encoding") != 0 && requestData.GetSingleHeaderValue("Transfer-Encoding") == "chunked")
+                {
+                    _contentLength = -1;
                 }
 
                 if (readBody)

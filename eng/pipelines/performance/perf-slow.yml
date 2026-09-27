@@ -14,6 +14,7 @@ trigger:
   branches:
     include:
     - main
+    - release/*.0
   paths:
     include:
     - '*'
@@ -34,6 +35,8 @@ resources:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
 
 schedules:
 - cron: "30 2 * * *"
@@ -48,7 +51,17 @@ extends:
   parameters:
     stages:
     - stage: Build
+      variables:
+      # The standalone monitor does not inherit the submitter jobs' variable groups.
+      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        - group: DotNet-HelixApi-Access
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
+
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - template: /eng/pipelines/runtime-slow-perf-jobs.yml@performance
           parameters:

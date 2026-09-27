@@ -194,6 +194,73 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR_END()          __gcHolder.Leave();
 #endif
 
+// The GCX_*_REGION_BEGIN/END macros are the region form of the corresponding GCX_ holders.
+//
+// WHEN THE REGION FORM MUST BE USED
+// --------------------------------
+// A region must be used instead of the plain GCX_ holder whenever the foreign WebAssembly
+// exception tag used by RtlRestoreContext to resume a managed catch can unwind through the holder
+// while its GC mode transition is still active.
+//
+// This occurs in two principal shapes:
+//
+//   - The holder spans a transition into managed execution from which an exception can be handled
+//     by an older managed frame. Examples include CallDescrWorker, interpreter-to-managed calls,
+//     and UnmanagedCallersOnlyCaller::InvokeDirect when invoking Ex::RhThrowEx, Ex::RhThrowHwEx,
+//     or Ex::RhRethrow. The foreign tag bypasses native typed catches while unwinding toward the
+//     managed catch continuation.
+//
+//   - The holder's scope contains a complete INSTALL/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER or
+//     INSTALL/UNINSTALL_MANAGED_EXCEPTION_DISPATCHER pair using the default uninstall form or
+//     _EX(false), or calls a function that performs equivalent redispatch while the holder remains
+//     active. The UNINSTALL catches an ordinary native exception and redispatches it as a managed
+//     exception before the outer holder leaves its scope.
+//
+// The containment direction matters. A holder nested entirely inside an installed handler span
+// is not made unsafe merely by that span: an ordinary native exception unwinds the holder before
+// reaching the matching catch. This does not make the holder safe if it independently spans a
+// transition into managed execution; in that case the foreign tag can bypass the installed native
+// catch and unwind directly through the holder.
+//
+// UnmanagedCallersOnlyCaller::InvokeThrowing/InvokeThrowing_Ret do not themselves require region
+// form for their inner GCX_PREEMP holder. Their calling convention marshals managed exceptions
+// through an exception out-parameter, and that holder ends before COMPlusThrow raises the
+// corresponding ordinary native exception. This does not make an outer holder containing a
+// complete dispatcher INSTALL/UNINSTALL pair safe.
+//
+// Type loading, JIT compilation, entrypoint acquisition, or other GC-triggering work does not by
+// itself require region form. It does so only if its dynamic call path can enter managed execution
+// or redispatch a managed exception while the holder remains active.
+//
+// On WASM, Clang lowers a C++ destructor cleanup to a catch_all, which intercepts the foreign tag,
+// runs the destructor, and rethrows. A plain GCX_ holder on such a frame would therefore change
+// the thread's GC mode as the tag passes through. Clang lowers an explicit catch (...) to a catch
+// of the C++ exception tag only, so a region built from try/catch (...) does not misfire.
+//
+// Do not confuse the exception-dispatcher macros above with
+// INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME/_CONTEXT. The latter are guarded by
+// `#if defined(FEATURE_INTERPRETER) && !defined(HOST_WASM)`, are no-ops on WASM, and are unrelated
+// to this hazard.
+//
+// It is always correct to use the plain GCX_ holder when none of the above applies; the region
+// form simply carries the restriction below, so prefer the holder where there is a choice.
+//
+// RESTRICTION
+// -----------
+// Semantically a region is equivalent to the corresponding GCX_ holder, as long as the region
+// does not contain an early return, break, continue, or goto out of the region. Such a jump
+// skips the _END macro and leaks the mode transition; restructure the code to fall out of the
+// region instead (for example by assigning to a result variable declared before the _BEGIN).
+#ifdef TARGET_WASM
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_COOP_REGION_BEGIN/END block.
+#define GCX_COOP_REGION_BEGIN()         { GCX_COOP_NO_DTOR(); try { do {} while (0)
+#define GCX_COOP_REGION_END()           } catch (...) { GCX_COOP_NO_DTOR_END(); throw; } GCX_COOP_NO_DTOR_END(); } do {} while (0)
+#else
+#define GCX_COOP_REGION_BEGIN()         { GCX_COOP(); { do {} while (0)
+#define GCX_COOP_REGION_END()           } } do {} while (0)
+#endif
+
 #ifdef ENABLE_CONTRACTS_IMPL
 #define GCX_PREEMP()                                    GCPreemp __gcHolder("GCX_PREEMP", __FUNCTION__, __FILE__, __LINE__)
 #define GCX_PREEMP_NO_DTOR()                            GCPreempNoDtor __gcHolder; __gcHolder.Enter(TRUE, "GCX_PREEMP_NO_DTOR", __FUNCTION__, __FILE__, __LINE__)
@@ -204,6 +271,18 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_PREEMP_NO_DTOR_HAVE_THREAD(curThreadNullOk) GCPreempNoDtor __gcHolder; __gcHolder.Enter(curThreadNullOk, TRUE)
 #define GCX_PREEMP_NO_DTOR()                            GCPreempNoDtor __gcHolder; __gcHolder.Enter(TRUE)
 #define GCX_PREEMP_NO_DTOR_END()                        __gcHolder.Leave()
+#endif
+
+#ifdef TARGET_WASM
+// On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
+// See the comment on GCX_COOP_REGION_BEGIN above for when the region form must be used instead of
+// the plain GCX_PREEMP holder.
+// THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_PREEMP_REGION_BEGIN/END block.
+#define GCX_PREEMP_REGION_BEGIN()       { GCX_PREEMP_NO_DTOR(); try { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } catch (...) { GCX_PREEMP_NO_DTOR_END(); throw; } GCX_PREEMP_NO_DTOR_END(); } do {} while (0)
+#else
+#define GCX_PREEMP_REGION_BEGIN()       { GCX_PREEMP(); { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } } do {} while (0)
 #endif
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -226,6 +305,18 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_MAYBE_COOP(_cond)                             GCCoop __gcHolder(_cond)
 #define GCX_MAYBE_COOP_NO_DTOR(_cond)   GCCoopNoDtor __gcHolder; __gcHolder.Enter(_cond)
 #define GCX_MAYBE_COOP_NO_DTOR_END()    __gcHolder.Leave();
+#endif
+
+#ifdef TARGET_WASM
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// See the comment on GCX_COOP_REGION_BEGIN above for when the region form must be used instead of
+// the plain GCX_MAYBE_COOP holder.
+// THERE MUST NOT BE A return, break, goto, or continue that escapes from a GCX_MAYBE_COOP_REGION_BEGIN/END block.
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { GCX_MAYBE_COOP_NO_DTOR(_cond); try { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } catch (...) { GCX_MAYBE_COOP_NO_DTOR_END(); throw; } GCX_MAYBE_COOP_NO_DTOR_END(); } do {} while (0)
+#else
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { GCX_MAYBE_COOP(_cond); { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } } do {} while (0)
 #endif
 
 #ifdef ENABLE_CONTRACTS_IMPL
@@ -272,15 +363,39 @@ typedef GCAssert<FALSE>                 GCAssertPreemp;
 #define GCX_COOP_NO_DTOR()
 #define GCX_COOP_NO_DTOR_END()
 
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_COOP_REGION_BEGIN()         { do {} while (0)
+#define GCX_COOP_REGION_END()           } do {} while (0)
+
 #define GCX_PREEMP()
 #define GCX_PREEMP_NO_DTOR()
 #define GCX_PREEMP_NO_DTOR_HAVE_THREAD(curThreadNullOk)
 #define GCX_PREEMP_NO_DTOR_END()
 
+// On WASM, this prevents the PREEMP transition from being triggered as part of RtlRestoreContext.
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_PREEMP_REGION_BEGIN()       { do {} while (0)
+#define GCX_PREEMP_REGION_END()         } do {} while (0)
+
 #define GCX_MAYBE_PREEMP(_cond)
 
 #define GCX_COOP_NO_THREAD_BROKEN()
 #define GCX_MAYBE_COOP_NO_THREAD_BROKEN(_cond)
+
+// On WASM, this prevents the COOP transition from being triggered as part of RtlRestoreContext.
+// Semantically it's equivalent to the corresponding GCX_ holder on other platforms, as long as
+// the region does not contain an early return, break, continue, or goto out of the region. Such
+// a jump skips the _END macro and leaks the mode transition; restructure the code to fall out of
+// the region instead (for example by assigning to a result variable declared before the _BEGIN).
+#define GCX_MAYBE_COOP_REGION_BEGIN(_cond)  { do {} while (0)
+#define GCX_MAYBE_COOP_REGION_END()         } do {} while (0)
 
 #define GCX_PREEMP_THREAD_EXISTS(curThread)
 #define GCX_COOP_THREAD_EXISTS(curThread)

@@ -10,6 +10,7 @@ using System.Text;
 
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler.PortableCallHelpers
 {
@@ -18,35 +19,44 @@ namespace ILCompiler.PortableCallHelpers
     /// </summary>
     internal sealed class PInvokeTableGenerator(InteropLogger log)
     {
-        public void EmitPInvokeTable(TextWriter w, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
+        public void EmitPInvokeTable(TextWriter w, TargetDetails target, IEnumerable<string> pinvokeModules, List<PInvokeInfo> pinvokes)
         {
             // Modules an unresolved P/Invoke has already been reported for, so each is logged once.
             // Only the logging is suppressed: a module a later P/Invoke does resolve - through
             // [WasmImportLinkage], say - still has to make it into the table.
             var skippedModules = new HashSet<string>(StringComparer.Ordinal);
             var modules = new SortedSet<string>(StringComparer.Ordinal);
-            foreach (string module in pinvokeModules)
-                modules.Add(module);
 
-            // What actually gets linked in, captured before the scan below starts adding to modules.
-            // The lib-prefix fallback has to resolve against this rather than against modules, or an
-            // alias could be derived from another alias, or from a module that is only imported for
-            // [WasmImportLinkage] and has no archive behind it at all.
-            var linkedModules = new HashSet<string>(modules, StringComparer.Ordinal);
+            // Normalize what gets linked separately from the exact managed module names emitted into
+            // the table. Runtime lookup uses the latter, while availability accepts the same prefix
+            // and suffix variations as direct P/Invoke compilation.
+            var linkedModules = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string module in pinvokeModules)
+            {
+                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, module))
+                {
+                    linkedModules.Add(variation);
+                }
+            }
 
             foreach (PInvokeInfo pinvoke in pinvokes)
             {
                 if (modules.Contains(pinvoke.Module))
                     continue;
 
-                // A static archive is named libFoo.a, so the module list - built from the file names
-                // of what gets linked in - carries "libFoo", while the managed side spells the
-                // [DllImport] "Foo", the name it would use on Windows. That is also the name the
-                // runtime resolver looks up, so accept it as naming the same module.
-                if (linkedModules.Contains($"lib{pinvoke.Module}"))
+                bool isLinked = false;
+                foreach (string variation in MarshalHelpers.GetPInvokeModuleNameVariations(target, pinvoke.Module))
+                {
+                    if (linkedModules.Contains(variation))
+                    {
+                        isLinked = true;
+                        break;
+                    }
+                }
+
+                if (isLinked)
                 {
                     modules.Add(pinvoke.Module);
-                    log.Verbose($"Adding module {pinvoke.Module} for statically linked lib{pinvoke.Module}");
                     continue;
                 }
 
