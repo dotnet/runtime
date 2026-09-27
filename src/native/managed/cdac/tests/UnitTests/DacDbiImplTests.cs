@@ -983,6 +983,78 @@ public unsafe class DacDbiImplTests
         return new DacDbiImpl(target, legacyObj: null, new());
     }
 
+    [UnmanagedCallersOnly]
+    private static unsafe void CollectAsyncLocalCallback(AsyncLocalData* pLocal, nint pUserData)
+    {
+        GCHandle handle = GCHandle.FromIntPtr(pUserData);
+        ((List<AsyncLocalData>)handle.Target!).Add(*pLocal);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EnumerateAsyncLocals_MapsEntryPointToDiagnosticCodeStart(bool useCodeAddress)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TargetPointer methodDesc = new(0xf0003000);
+        TargetCodePointer entryPoint = new(0xf0005000);
+        TargetCodePointer codeStart = new(0xf0006100);
+        const ulong CodeAddress = 0xf0006140;
+        MethodDescHandle methodDescHandle = new(methodDesc);
+        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(methodDesc);
+
+        var rts = new Mock<IRuntimeTypeSystem>();
+        rts.Setup(r => r.GetMethodDescHandle(methodDesc)).Returns(methodDescHandle);
+        rts.Setup(r => r.GetAsyncMethodFlags(methodDescHandle)).Returns(AsyncMethodFlags.None);
+        rts.Setup(r => r.GetNativeCode(methodDescHandle)).Returns(entryPoint);
+
+        var codeVersions = new Mock<ICodeVersions>();
+        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(new TargetCodePointer(CodeAddress))).Returns(nativeCodeVersion);
+        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(entryPoint);
+
+        var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(entryPoint)).Returns(codeStart);
+
+        var debugInfo = new Mock<IDebugInfo>(MockBehavior.Strict);
+        debugInfo.Setup(d => d.GetAsyncSuspensionPoints(codeStart)).Returns(
+        [
+            new AsyncSuspensionInfo
+            {
+                NativeOffset = 0x10,
+                Locals = [new AsyncLocalInfo { Offset = 8, ILVarNumber = 1 }, new AsyncLocalInfo { Offset = 16, ILVarNumber = 3 }],
+            },
+        ]);
+
+        var target = new TestPlaceholderTarget.Builder(arch)
+            .UseReader((_, _) => -1)
+            .AddMockContract(rts)
+            .AddMockContract(codeVersions)
+            .AddMockContract(executionManager)
+            .AddMockContract(debugInfo)
+            .Build();
+        DacDbiImpl dacDbi = new(target, legacyObj: null, new());
+
+        List<AsyncLocalData> locals = new();
+        GCHandle gcHandle = GCHandle.Alloc(locals);
+        try
+        {
+            int hr = dacDbi.EnumerateAsyncLocals(
+                methodDesc.Value,
+                useCodeAddress ? CodeAddress : 0,
+                state: 0,
+                &CollectAsyncLocalCallback,
+                GCHandle.ToIntPtr(gcHandle));
+
+            Assert.Equal(System.HResults.S_OK, hr);
+        }
+        finally
+        {
+            gcHandle.Free();
+        }
+
+        Assert.Equal([(8u, 1u), (16u, 3u)], locals.ConvertAll(l => (l.Offset, l.IlVarNum)));
+    }
+
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void GetNativeCodeInfo_FillsDataForAsyncVariant(MockTarget.Architecture arch)

@@ -6483,6 +6483,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
 
                 if (pCode != TargetCodePointer.Null)
                 {
+                    pCode = _target.Contracts.ExecutionManager.GetDiagnosticCodeStartFromEntryPoint(pCode);
                     IReadOnlyList<AsyncSuspensionInfo> suspensionPoints = _target.Contracts.DebugInfo.GetAsyncSuspensionPoints(pCode);
                     if (state < (uint)suspensionPoints.Count)
                     {
