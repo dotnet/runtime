@@ -55,13 +55,13 @@ namespace Array.Tests
         }
 
 
-        public void CreateFilled_NullFactory_Test()
+        public void CreateFilled_NullFactory_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => System.Array.CreateFilled<Foo>(7, null));
         }
 
         [Fact]
-        public void CreateFilled_NegativeIndex_Test()
+        public void CreateFilled_NegativeLength_Throws()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => System.Array.CreateFilled<int>(-1, index => index));
             Assert.Throws<ArgumentOutOfRangeException>(() => System.Array.CreateFilled<object>(-1, index => new object()));
