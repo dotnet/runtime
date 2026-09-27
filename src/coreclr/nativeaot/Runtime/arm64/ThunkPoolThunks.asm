@@ -8,7 +8,7 @@
 THUNK_CODESIZE                      equ 0x10    ;; 3 instructions, 4 bytes each (and we also have 4 bytes of padding)
 THUNK_DATASIZE                      equ 0x10    ;; 2 qwords
 
-THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 0xFA    ;; 250 thunks per page
+THUNK_POOL_NUM_THUNKS_PER_PAGE      equ 0x100   ;; 256 thunks per page
 
 POINTER_SIZE                        equ 0x08
 
@@ -27,13 +27,9 @@ RO$name % 8
     MEND
 
     MACRO
-        LOAD_TARGET $groupIndex, $index, $pageIndex
-        ldr      x10, label_$groupIndex_$index_P$pageIndex + POINTER_SIZE
-    MEND
-
-    MACRO
-        LOAD_CONTEXT_AND_JUMP $groupIndex, $index, $pageIndex
-        ldr      x12, label_$groupIndex_$index_P$pageIndex
+        THUNK $index, $pageIndex
+        ldr      x10, label_$index_P$pageIndex + POINTER_SIZE
+        ldr      x12, label_$index_P$pageIndex
         br       x10
 
         brk     0xf000      ;; Stubs need to be 16-byte aligned for CFG table. Filling padding with a
@@ -41,128 +37,35 @@ RO$name % 8
     MEND
 
     MACRO
-        THUNK_LABELED_DATA_BLOCK $groupIndex, $index, $pageIndex
+        THUNK_DATA_BLOCK $index, $pageIndex
 
         ;; Each data block contains 2 qword cells. The data block is also labeled so it can be addressed
         ;; using PC relative instructions
-label_$groupIndex_$index_P$pageIndex
+label_$index_P$pageIndex
         DCQ 0
         DCQ 0
-    MEND
-
-    MACRO
-        TenThunks $groupIndex, $pageIndex
-
-        ;; Each data block used by a thunk consists of two qword values:
-        ;;      - Context: some value given to the thunk as context (passed in x12). Example for fat-fptrs: context = generic dictionary
-        ;;      - Target : target code that the thunk eventually jumps to.
-
-        LOAD_TARGET           $groupIndex,0,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,0,$pageIndex
-
-        LOAD_TARGET           $groupIndex,1,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,1,$pageIndex
-
-        LOAD_TARGET           $groupIndex,2,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,2,$pageIndex
-
-        LOAD_TARGET           $groupIndex,3,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,3,$pageIndex
-
-        LOAD_TARGET           $groupIndex,4,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,4,$pageIndex
-
-        LOAD_TARGET           $groupIndex,5,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,5,$pageIndex
-
-        LOAD_TARGET           $groupIndex,6,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,6,$pageIndex
-
-        LOAD_TARGET           $groupIndex,7,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,7,$pageIndex
-
-        LOAD_TARGET           $groupIndex,8,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,8,$pageIndex
-
-        LOAD_TARGET           $groupIndex,9,$pageIndex
-        LOAD_CONTEXT_AND_JUMP $groupIndex,9,$pageIndex
-    MEND
-
-    MACRO
-        TenThunkDataBlocks $groupIndex, $pageIndex
-
-        ;; Similar to the thunks stubs block, we declare the thunks data blocks here
-
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 0, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 1, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 2, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 3, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 4, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 5, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 6, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 7, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 8, $pageIndex
-        THUNK_LABELED_DATA_BLOCK $groupIndex, 9, $pageIndex
     MEND
 
     MACRO
         THUNKS_PAGE_BLOCK $pageIndex
 
-        TenThunks 0, $pageIndex
-        TenThunks 1, $pageIndex
-        TenThunks 2, $pageIndex
-        TenThunks 3, $pageIndex
-        TenThunks 4, $pageIndex
-        TenThunks 5, $pageIndex
-        TenThunks 6, $pageIndex
-        TenThunks 7, $pageIndex
-        TenThunks 8, $pageIndex
-        TenThunks 9, $pageIndex
-        TenThunks 10, $pageIndex
-        TenThunks 11, $pageIndex
-        TenThunks 12, $pageIndex
-        TenThunks 13, $pageIndex
-        TenThunks 14, $pageIndex
-        TenThunks 15, $pageIndex
-        TenThunks 16, $pageIndex
-        TenThunks 17, $pageIndex
-        TenThunks 18, $pageIndex
-        TenThunks 19, $pageIndex
-        TenThunks 20, $pageIndex
-        TenThunks 21, $pageIndex
-        TenThunks 22, $pageIndex
-        TenThunks 23, $pageIndex
-        TenThunks 24, $pageIndex
+    LCLA CurrentThunk
+CurrentThunk SETA 0
+    WHILE CurrentThunk < THUNK_POOL_NUM_THUNKS_PER_PAGE
+        THUNK $CurrentThunk, $pageIndex
+CurrentThunk SETA CurrentThunk + 1
+    WEND
     MEND
 
     MACRO
         THUNKS_DATA_PAGE_BLOCK $pageIndex
 
-        TenThunkDataBlocks 0, $pageIndex
-        TenThunkDataBlocks 1, $pageIndex
-        TenThunkDataBlocks 2, $pageIndex
-        TenThunkDataBlocks 3, $pageIndex
-        TenThunkDataBlocks 4, $pageIndex
-        TenThunkDataBlocks 5, $pageIndex
-        TenThunkDataBlocks 6, $pageIndex
-        TenThunkDataBlocks 7, $pageIndex
-        TenThunkDataBlocks 8, $pageIndex
-        TenThunkDataBlocks 9, $pageIndex
-        TenThunkDataBlocks 10, $pageIndex
-        TenThunkDataBlocks 11, $pageIndex
-        TenThunkDataBlocks 12, $pageIndex
-        TenThunkDataBlocks 13, $pageIndex
-        TenThunkDataBlocks 14, $pageIndex
-        TenThunkDataBlocks 15, $pageIndex
-        TenThunkDataBlocks 16, $pageIndex
-        TenThunkDataBlocks 17, $pageIndex
-        TenThunkDataBlocks 18, $pageIndex
-        TenThunkDataBlocks 19, $pageIndex
-        TenThunkDataBlocks 20, $pageIndex
-        TenThunkDataBlocks 21, $pageIndex
-        TenThunkDataBlocks 22, $pageIndex
-        TenThunkDataBlocks 23, $pageIndex
-        TenThunkDataBlocks 24, $pageIndex
+    LCLA CurrentThunk
+CurrentThunk SETA 0
+    WHILE CurrentThunk < THUNK_POOL_NUM_THUNKS_PER_PAGE
+        THUNK_DATA_BLOCK $CurrentThunk, $pageIndex
+CurrentThunk SETA CurrentThunk + 1
+    WEND
     MEND
 
 
