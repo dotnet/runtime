@@ -3945,18 +3945,21 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetRawData:
             {
                 GenTree* obj = impPopStack().val;
+                GenTree* objClone = nullptr;
 
                 if (fgAddrCouldBeNull(obj))
                 {
-                    GenTree* objClone;
                     obj = impCloneExpr(obj, &objClone, CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("RuntimeHelpers.GetRawData obj"));
-                    impAppendTree(gtNewNullCheck(obj), CHECK_SPILL_ALL, impCurStmtDI);
-                    obj = objClone;
                 }
 
                 GenTree* offset = gtNewIconNode(OFFSETOF__CORINFO_Object__data, TYP_I_IMPL);
                 retNode         = gtNewOperNode(GT_ADD, TYP_BYREF, obj, offset);
+
+                if (objClone != nullptr)
+                {
+                    retNode = gtNewOperNode(GT_COMMA, TYP_BYREF, gtNewNullCheck(objClone), retNode);
+                }
                 break;
             }
 
