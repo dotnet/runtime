@@ -37,6 +37,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNetFuzzing.TestData" Version="$(MicrosoftDotNetFuzzingTestDataVersion)" />
     <ProjectReference Include="..\..\System.Formats.Nrbf\src\System.Formats.Nrbf.csproj" />
+    <ProjectReference Include="..\..\System.Numerics.Tensors\src\System.Numerics.Tensors.csproj" />
   </ItemGroup>
 
 </Project>
