@@ -2665,7 +2665,7 @@ namespace System.Collections.Concurrent
             typeof(T) == typeof(sbyte) ||
             typeof(T) == typeof(float) ||
             typeof(T) == typeof(ushort) ||
-            typeof(T) == typeof(uint)) ||
+            typeof(T) == typeof(uint) ||
             typeof(T) == typeof(double) ||
             typeof(T) == typeof(long) ||
             typeof(T) == typeof(ulong) ||
