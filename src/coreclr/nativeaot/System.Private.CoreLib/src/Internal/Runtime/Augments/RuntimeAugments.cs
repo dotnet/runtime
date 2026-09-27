@@ -231,17 +231,18 @@ namespace Internal.Runtime.Augments
 
         public static unsafe void StoreValueTypeField(IntPtr address, object fieldValue, RuntimeTypeHandle fieldType)
         {
-            RuntimeExports.RhUnboxUnaligned(fieldValue, ref *(byte*)address, fieldType.ToMethodTable());
+            StoreValueTypeField(ref *(byte*)address, fieldValue, fieldType);
         }
 
         public static unsafe object LoadValueTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            return RuntimeExports.RhBoxUnaligned(fieldType.ToMethodTable(), ref *(byte*)address);
+            return LoadValueTypeField(ref *(byte*)address, fieldType);
         }
 
         public static unsafe object LoadPointerTypeField(IntPtr address, RuntimeTypeHandle fieldType)
         {
-            IntPtr value = Unsafe.ReadUnaligned<IntPtr>((void*)address);
+            IntPtr value = default;
+            LoadPrimitiveField(ref *(byte*)address, ref Unsafe.As<IntPtr, byte>(ref value), (uint)IntPtr.Size);
 
             if (fieldType.ToMethodTable()->IsFunctionPointer)
                 return value;
@@ -252,20 +253,21 @@ namespace Internal.Runtime.Augments
         public static unsafe void StoreValueTypeField(object obj, int fieldOffset, object fieldValue, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            RuntimeExports.RhUnboxUnaligned(fieldValue, ref address, fieldType.ToMethodTable());
+            StoreValueTypeField(ref address, fieldValue, fieldType);
         }
 
         public static unsafe object LoadValueTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
-            return RuntimeExports.RhBoxUnaligned(fieldType.ToMethodTable(), ref address);
+            return LoadValueTypeField(ref address, fieldType);
         }
 
         public static unsafe object LoadPointerTypeField(object obj, int fieldOffset, RuntimeTypeHandle fieldType)
         {
             ref byte address = ref Unsafe.AddByteOffset(ref obj.GetRawData(), new IntPtr(fieldOffset - ObjectHeaderSize));
 
-            IntPtr value = Unsafe.ReadUnaligned<IntPtr>(ref address);
+            IntPtr value = default;
+            LoadPrimitiveField(ref address, ref Unsafe.As<IntPtr, byte>(ref value), (uint)IntPtr.Size);
 
             if (fieldType.ToMethodTable()->IsFunctionPointer)
                 return value;
@@ -300,10 +302,7 @@ namespace Internal.Runtime.Augments
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
 
-            RuntimeExports.RhUnboxUnaligned(
-                fieldValue,
-                ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset),
-                fieldTypeHandle.ToMethodTable());
+            StoreValueTypeField(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldValue, fieldTypeHandle);
         }
 
         [CLSCompliant(false)]
@@ -312,9 +311,7 @@ namespace Internal.Runtime.Augments
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
             Debug.Assert(fieldTypeHandle.ToMethodTable()->IsValueType);
 
-            return RuntimeExports.RhBoxUnaligned(
-                fieldTypeHandle.ToMethodTable(),
-                ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            return LoadValueTypeField(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset), fieldTypeHandle);
         }
 
         [CLSCompliant(false)]
@@ -337,12 +334,128 @@ namespace Internal.Runtime.Augments
         public static unsafe object LoadPointerTypeFieldValueFromValueType(TypedReference typedReference, int fieldOffset, RuntimeTypeHandle fieldTypeHandle)
         {
             Debug.Assert(TypedReference.TargetTypeToken(typedReference).ToMethodTable()->IsValueType);
-            IntPtr ptrValue = Unsafe.ReadUnaligned<IntPtr>(ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset));
+            IntPtr ptrValue = default;
+            LoadPrimitiveField(
+                ref Unsafe.Add<byte>(ref typedReference.Value, fieldOffset),
+                ref Unsafe.As<IntPtr, byte>(ref ptrValue),
+                (uint)IntPtr.Size);
 
             if (fieldTypeHandle.ToMethodTable()->IsFunctionPointer)
                 return ptrValue;
 
             return ReflectionPointer.Box((void*)ptrValue, Type.GetTypeFromHandle(fieldTypeHandle));
+        }
+
+        private static object LoadValueTypeField(ref byte address, RuntimeTypeHandle fieldType)
+        {
+            MethodTable* fieldMethodTable = fieldType.ToMethodTable();
+            if (!fieldMethodTable->IsPrimitive &&
+                (fieldMethodTable->ContainsGCPointers || fieldMethodTable->IsNullable))
+            {
+                return RuntimeExports.RhBox(fieldMethodTable, ref address);
+            }
+
+            object result = RuntimeImports.RhNewObject(fieldMethodTable);
+            if (fieldMethodTable->IsPrimitive)
+            {
+                LoadPrimitiveField(ref address, ref result.GetRawData(), fieldMethodTable->ValueTypeSize);
+            }
+            else
+            {
+                Unsafe.CopyBlockUnaligned(ref result.GetRawData(), ref address, fieldMethodTable->ValueTypeSize);
+            }
+
+            return result;
+        }
+
+        private static void StoreValueTypeField(ref byte address, object fieldValue, RuntimeTypeHandle fieldType)
+        {
+            MethodTable* fieldMethodTable = fieldType.ToMethodTable();
+            if (!fieldMethodTable->IsPrimitive &&
+                (fieldMethodTable->ContainsGCPointers || fieldMethodTable->IsNullable))
+            {
+                RuntimeImports.RhUnbox(fieldValue, ref address, fieldMethodTable);
+                return;
+            }
+
+            if (fieldMethodTable->IsPrimitive)
+            {
+                StorePrimitiveField(ref address, ref fieldValue.GetRawData(), fieldMethodTable->ValueTypeSize);
+            }
+            else
+            {
+                Unsafe.CopyBlockUnaligned(ref address, ref fieldValue.GetRawData(), fieldMethodTable->ValueTypeSize);
+            }
+        }
+
+        private static unsafe void LoadPrimitiveField(ref byte source, ref byte destination, uint size)
+        {
+            Debug.Assert(size is 1 or 2 or 4 or 8);
+
+            fixed (byte* sourcePointer = &source)
+            {
+                if (((nuint)sourcePointer & (size - 1)) != 0)
+                {
+                    Unsafe.CopyBlockUnaligned(ref destination, ref source, size);
+                    return;
+                }
+
+                switch (size)
+                {
+                    case 1:
+                        destination = Volatile.Read(ref source);
+                        break;
+                    case 2:
+                        Unsafe.As<byte, short>(ref destination) = Volatile.Read(ref Unsafe.As<byte, short>(ref source));
+                        break;
+                    case 4:
+                        Unsafe.As<byte, int>(ref destination) = Volatile.Read(ref Unsafe.As<byte, int>(ref source));
+                        break;
+                    case 8:
+#if TARGET_64BIT
+                        Unsafe.As<byte, long>(ref destination) = Volatile.Read(ref Unsafe.As<byte, long>(ref source));
+#else
+                        Unsafe.As<byte, long>(ref destination) = Unsafe.As<byte, long>(ref source);
+                        Interlocked.MemoryBarrier();
+#endif
+                        break;
+                }
+            }
+        }
+
+        private static unsafe void StorePrimitiveField(ref byte destination, ref byte source, uint size)
+        {
+            Debug.Assert(size is 1 or 2 or 4 or 8);
+
+            fixed (byte* destinationPointer = &destination)
+            {
+                if (((nuint)destinationPointer & (size - 1)) != 0)
+                {
+                    Unsafe.CopyBlockUnaligned(ref destination, ref source, size);
+                    return;
+                }
+
+                switch (size)
+                {
+                    case 1:
+                        Volatile.Write(ref destination, source);
+                        break;
+                    case 2:
+                        Volatile.Write(ref Unsafe.As<byte, short>(ref destination), Unsafe.As<byte, short>(ref source));
+                        break;
+                    case 4:
+                        Volatile.Write(ref Unsafe.As<byte, int>(ref destination), Unsafe.As<byte, int>(ref source));
+                        break;
+                    case 8:
+#if TARGET_64BIT
+                        Volatile.Write(ref Unsafe.As<byte, long>(ref destination), Unsafe.As<byte, long>(ref source));
+#else
+                        Interlocked.MemoryBarrier();
+                        Unsafe.As<byte, long>(ref destination) = Unsafe.As<byte, long>(ref source);
+#endif
+                        break;
+                }
+            }
         }
 
         public static unsafe object GetThreadStaticBase(IntPtr cookie)

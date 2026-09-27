@@ -74,11 +74,19 @@ public unsafe class Program
             initialValue: (nint)0x12345678,
             replacementValue: (nint)(-0x12345678));
 
+        VerifyReflectionAccess(
+            new PackedPair { Value = new Pair { X = 0x12345678, Y = -123456789 } },
+            nameof(PackedPair.Value),
+            expectedOffset: 1,
+            initialValue: new Pair { X = 0x12345678, Y = -123456789 },
+            replacementValue: new Pair { X = -42, Y = 42 });
+
         VerifyAlignedReflectionAccesses();
         VerifyFirstSetReflectionAccess();
         VerifyStaticReflectionAccesses();
         VerifyDirectReflectionAccess();
         VerifyInt64DirectReflectionAccess();
+        VerifyStructDirectReflectionAccess();
         VerifyAlignedDirectReflectionAccess();
         VerifyEnumDirectReflectionAccess();
         VerifyFunctionPointerDirectReflectionAccess();
@@ -359,6 +367,31 @@ public unsafe class Program
                 field.SetValueDirect(reference, ReplacementValue);
                 Assert.Equal(ReplacementValue, value.Value);
                 Assert.Equal(ReplacementValue, (long)field.GetValueDirect(reference));
+            });
+    }
+
+    private static void VerifyStructDirectReflectionAccess()
+    {
+        Pair initialValue = new Pair { X = 0x12345678, Y = -123456789 };
+        Pair replacementValue = new Pair { X = -42, Y = 42 };
+
+        FieldInfo field = typeof(PackedPair).GetField(nameof(PackedPair.Value)) ??
+            throw new InvalidOperationException($"Field {nameof(PackedPair.Value)} was not found.");
+        int fieldOffset = Marshal.OffsetOf<PackedPair>(nameof(PackedPair.Value)).ToInt32();
+
+        RunWithPinnedBoxAtReflectionSensitiveAddress(
+            new PackedPair { Value = initialValue },
+            fieldOffset,
+            Unsafe.SizeOf<Pair>(),
+            boxed =>
+            {
+                ref PackedPair value = ref Unsafe.Unbox<PackedPair>(boxed);
+                TypedReference reference = __makeref(value);
+
+                Assert.Equal(initialValue, (Pair)field.GetValueDirect(reference));
+                field.SetValueDirect(reference, replacementValue);
+                Assert.Equal(replacementValue, value.Value);
+                Assert.Equal(replacementValue, (Pair)field.GetValueDirect(reference));
             });
     }
 
@@ -758,6 +791,19 @@ public unsafe class Program
     {
         public byte Padding;
         public delegate*<void> Value;
+    }
+
+    private struct Pair
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    private struct PackedPair
+    {
+        public byte Padding;
+        public Pair Value;
     }
 
     private static class StaticFields

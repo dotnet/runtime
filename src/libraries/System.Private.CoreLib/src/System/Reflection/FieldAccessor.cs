@@ -508,6 +508,8 @@ namespace System.Reflection
             else if (fieldType == typeof(long) ||
                 fieldType == typeof(ulong) ||
                 fieldType == typeof(double))
+                // Managed Volatile.Read/Write<long> are atomic on 32-bit. Keep
+                // reflection on the native path, which does not guarantee atomicity.
                 accessorType = IntPtr.Size == 8 ?
                     FieldAccessorType.StaticValueTypeSize8 :
                     FieldAccessorType.SlowPath;

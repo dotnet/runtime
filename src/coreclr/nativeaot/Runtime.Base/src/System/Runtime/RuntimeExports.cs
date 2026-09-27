@@ -120,16 +120,6 @@ namespace System.Runtime
 
         public static unsafe object RhBox(MethodTable* pEEType, ref byte data)
         {
-            return RhBox(pEEType, ref data, isDataUnaligned: false);
-        }
-
-        public static unsafe object RhBoxUnaligned(MethodTable* pEEType, ref byte data)
-        {
-            return RhBox(pEEType, ref data, isDataUnaligned: true);
-        }
-
-        private static unsafe object RhBox(MethodTable* pEEType, ref byte data, bool isDataUnaligned)
-        {
             // A null can be passed for boxing of a null ref.
             _ = Unsafe.ReadUnaligned<byte>(ref data);
 
@@ -172,14 +162,7 @@ namespace System.Runtime
             }
             else
             {
-                if (isDataUnaligned)
-                {
-                    Unsafe.CopyBlockUnaligned(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
-                }
-                else
-                {
-                    Unsafe.CopyBlock(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
-                }
+                Unsafe.CopyBlock(ref result.GetRawData(), ref dataAdjustedForNullable, pEEType->ValueTypeSize);
             }
 
             return result;
@@ -261,16 +244,6 @@ namespace System.Runtime
         [RuntimeExport("RhUnbox")]
         public static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType)
         {
-            RhUnbox(obj, ref data, pUnboxToEEType, isDataUnaligned: false);
-        }
-
-        public static unsafe void RhUnboxUnaligned(object? obj, ref byte data, MethodTable* pUnboxToEEType)
-        {
-            RhUnbox(obj, ref data, pUnboxToEEType, isDataUnaligned: true);
-        }
-
-        private static unsafe void RhUnbox(object? obj, ref byte data, MethodTable* pUnboxToEEType, bool isDataUnaligned)
-        {
             // When unboxing to a Nullable the input object may be null.
             if (obj == null)
             {
@@ -313,14 +286,7 @@ namespace System.Runtime
             else
             {
                 // Copy the boxed fields into the new location.
-                if (isDataUnaligned)
-                {
-                    Unsafe.CopyBlockUnaligned(ref data, ref fields, pEEType->ValueTypeSize);
-                }
-                else
-                {
-                    Unsafe.CopyBlock(ref data, ref fields, pEEType->ValueTypeSize);
-                }
+                Unsafe.CopyBlock(ref data, ref fields, pEEType->ValueTypeSize);
             }
         }
 
