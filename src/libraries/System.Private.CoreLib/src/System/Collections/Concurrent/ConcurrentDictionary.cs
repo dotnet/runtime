@@ -2653,7 +2653,11 @@ namespace System.Collections.Concurrent
     internal static class ConcurrentDictionaryTypeProps<T>
     {
         /// <summary>Whether T's type can be written atomically (i.e., with no danger of torn reads).</summary>
-        internal static bool IsWriteAtomic => sizeof(T) <= sizeof(nint) && (typeof(T).IsPrimitive || typeof(T).IsEnum);
+        internal static bool IsWriteAtomic
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => sizeof(T) <= sizeof(nint) && (typeof(T).IsPrimitive || typeof(T).IsEnum);
+        }
     }
 
     internal sealed class IDictionaryDebugView<TKey, TValue> where TKey : notnull
