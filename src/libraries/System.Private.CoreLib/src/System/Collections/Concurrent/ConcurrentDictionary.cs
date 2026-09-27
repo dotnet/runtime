@@ -2662,32 +2662,35 @@ namespace System.Collections.Concurrent
 
             if (!typeof(T).IsValueType ||
                 typeof(T) == typeof(IntPtr) ||
-                typeof(T) == typeof(UIntPtr))
+                typeof(T) == typeof(UIntPtr) ||
+                typeof(T) == typeof(bool) ||
+                typeof(T) == typeof(byte) ||
+                typeof(T) == typeof(char) ||
+                typeof(T) == typeof(short) ||
+                typeof(T) == typeof(int) ||
+                typeof(T) == typeof(sbyte) ||
+                typeof(T) == typeof(float) ||
+                typeof(T) == typeof(ushort) ||
+                typeof(T) == typeof(uint))
             {
                 return true;
             }
 
-            switch (Type.GetTypeCode(typeof(T)))
+            if (typeof(T) == typeof(double) ||
+                typeof(T) == typeof(long) ||
+                typeof(T) == typeof(ulong))
             {
-                case TypeCode.Boolean:
-                case TypeCode.Byte:
-                case TypeCode.Char:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.SByte:
-                case TypeCode.Single:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                    return true;
-
-                case TypeCode.Double:
-                case TypeCode.Int64:
-                case TypeCode.UInt64:
-                    return IntPtr.Size == 8;
-
-                default:
-                    return false;
+                return IntPtr.Size == 8;
             }
+
+            // Enums are as atomic as their primitive underlying type, which only depends on its size.
+            // Avoids Type.GetTypeCode, which is not foldable and roots enum reflection in NativeAOT.
+            if (typeof(T).IsEnum)
+            {
+                return Unsafe.SizeOf<T>() <= IntPtr.Size;
+            }
+
+            return false;
         }
     }
 
