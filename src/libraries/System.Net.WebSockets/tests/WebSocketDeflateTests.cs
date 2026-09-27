@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (!Debugger.IsAttached)
             {
-                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                _cancellation = new CancellationTokenSource(TestHelper.PassingTestTimeout);
             }
         }
 

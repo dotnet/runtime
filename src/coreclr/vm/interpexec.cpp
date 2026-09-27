@@ -2088,6 +2088,12 @@ SWITCH_OPCODE:
                     INTOP_NEXT;
 #endif // TARGET_BROWSER && PERFTRACING_DISABLE_THREADS
 
+                INTOP_CASE(INTOP_PGO_COUNT)
+                    // Interlocked so concurrent executions of an instrumented method don't lose counts.
+                    InterlockedIncrement((LONG*)pMethod->pDataItems[ip[1]]);
+                    ip += 2;
+                    INTOP_NEXT;
+
                 INTOP_CASE(INTOP_BR)
                     ip += ip[1];
                     INTOP_NEXT;

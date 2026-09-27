@@ -4211,8 +4211,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                // The code for handling floating-point is decently complex but also expected
-                // to be rare, so we fallback to the managed implementation, which is accelerated
+                // Use the managed implementation for floating-point classification.
                 break;
             }
 
@@ -4283,8 +4282,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             if (varTypeIsFloating(simdBaseType))
             {
-                // The code for handling floating-point is decently complex but also expected
-                // to be rare, so we fallback to the managed implementation, which is accelerated
+                // Use the managed implementation for floating-point classification.
                 break;
             }
 
