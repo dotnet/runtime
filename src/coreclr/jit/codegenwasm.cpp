@@ -4140,13 +4140,14 @@ void CodeGen::genCallFinally(BasicBlock* block)
         return;
     }
 
-    // Branch to the continuation block if it's not the next block.
+    // Branch to the continuation block unless we can fall into it. Falling through is
+    // not possible across the end of a try_table, even when the continuation is next.
     assert(block->isBBCallFinallyPair());
     BasicBlock* const callFinallyRet = block->Next();
     assert(callFinallyRet->KindIs(BBJ_CALLFINALLYRET));
     BasicBlock* const continuation = callFinallyRet->GetTarget();
 
-    if (continuation != callFinallyRet->Next())
+    if (!callFinallyRet->CanRemoveJumpToTarget(continuation, m_compiler))
     {
         inst_JMP(EJ_jmp, continuation);
     }
