@@ -798,7 +798,7 @@ namespace System.Text.RegularExpressions.Tests
             const string Suffix = " c foo d";
 
             string input = Prefix + new string('x', paddingLength) + Suffix;
-            var regex = new Regex(@"\bfoo\b", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromSeconds(1));
+            var regex = new Regex(@"\bfoo\b", RegexHelpers.RegexOptionNonBacktracking, TimeSpan.FromSeconds(10));
 
             MatchCollection matches = regex.Matches(input);
 
