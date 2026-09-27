@@ -3974,14 +3974,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 assert(jitType != CORINFO_TYPE_UNDEF);
                 assert((jitType != CORINFO_TYPE_VALUECLASS) || (elemHnd != NO_CLASS_HANDLE));
 
+                GenTree* arrayClone = nullptr;
                 if (!notNull && fgAddrCouldBeNull(array))
                 {
-                    GenTree* arrayClone;
                     array = impCloneExpr(array, &arrayClone, CHECK_SPILL_ALL,
                                          nullptr DEBUGARG("MemoryMarshal.GetArrayDataReference array"));
-
-                    impAppendTree(gtNewNullCheck(array), CHECK_SPILL_ALL, impCurStmtDI);
-                    array = arrayClone;
                 }
 
                 GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
@@ -3989,6 +3986,11 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                 indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
                 indexAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
                 retNode = indexAddr;
+
+                if (arrayClone != nullptr)
+                {
+                    retNode = gtNewOperNode(GT_COMMA, TYP_BYREF, gtNewNullCheck(arrayClone), retNode);
+                }
                 break;
             }
 
