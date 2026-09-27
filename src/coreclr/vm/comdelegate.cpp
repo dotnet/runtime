@@ -815,7 +815,7 @@ static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
 
     pCode->EmitLoadThis();
     pCode->EmitLDFLD(pCode->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR_AUX)));
-    // For open virtual delegates, _methodPtrAux is a dispatch stub that expects the address of _methodPtrAux in a
+    // TODO: For open virtual delegates, _methodPtrAux is a dispatch stub that expects the address of _methodPtrAux in a
     // hidden argument, which calli does not pass: https://github.com/dotnet/runtime/issues/134733
     pCode->EmitCALLI(TOKEN_ILSTUB_TARGET_SIG, sig.NumFixedArgs(), sig.IsReturnTypeVoid() ? 0 : 1);
     pCode->EmitRET();
