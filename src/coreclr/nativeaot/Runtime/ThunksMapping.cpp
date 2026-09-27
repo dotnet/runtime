@@ -52,7 +52,7 @@ FCIMPL0(int, RhpGetNumThunksPerBlock)
 {
     return (int)min(
         OS_PAGE_SIZE / THUNK_SIZE,                              // Number of thunks that can fit in a page
-        (OS_PAGE_SIZE - POINTER_SIZE) / (POINTER_SIZE * 2)      // Number of pointer pairs, minus the jump stub cell, that can fit in a page
+        OS_PAGE_SIZE / (POINTER_SIZE * 2)                       // Number of pointer pairs that can fit in a page
     );
 }
 FCIMPLEND
@@ -151,14 +151,14 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             *pCurrentThunkAddress++ = 0x4c;
             *pCurrentThunkAddress++ = 0x8b;
             *pCurrentThunkAddress++ = 0x15;
-            *((int32_t*)pCurrentThunkAddress) =
-                (int32_t)(pCurrentDataAddress - (pCurrentThunkAddress + 4));
+            int32_t delta = (int32_t)(pCurrentDataAddress - (pCurrentThunkAddress + 4));
+            memcpy(pCurrentThunkAddress, &delta, sizeof(delta));
             pCurrentThunkAddress += 4;
 
             *pCurrentThunkAddress++ = 0xff;
             *pCurrentThunkAddress++ = 0x25;
-            *((int32_t*)pCurrentThunkAddress) =
-                (int32_t)((pCurrentDataAddress + POINTER_SIZE) - (pCurrentThunkAddress + 4));
+            delta = (int32_t)((pCurrentDataAddress + POINTER_SIZE) - (pCurrentThunkAddress + 4));
+            memcpy(pCurrentThunkAddress, &delta, sizeof(delta));
             pCurrentThunkAddress += 4;
 
             // nops for alignment
@@ -172,12 +172,15 @@ EXTERN_C HRESULT QCALLTYPE RhAllocateThunksMapping(void** ppThunksSection)
             // jmp [<target address>]
 
             *pCurrentThunkAddress++ = 0xa1;
-            *((void **)pCurrentThunkAddress) = (void *)pCurrentDataAddress;
+            uint32_t contextAddress = (uint32_t)(uintptr_t)pCurrentDataAddress;
+            memcpy(pCurrentThunkAddress, &contextAddress, sizeof(contextAddress));
             pCurrentThunkAddress += 4;
 
-            *((uint16_t*)pCurrentThunkAddress) = 0x25ff;
+            uint16_t jumpOpcode = 0x25ff;
+            memcpy(pCurrentThunkAddress, &jumpOpcode, sizeof(jumpOpcode));
             pCurrentThunkAddress += 2;
-            *((void **)pCurrentThunkAddress) = pCurrentDataAddress + POINTER_SIZE;
+            uint32_t targetAddress = (uint32_t)(uintptr_t)(pCurrentDataAddress + POINTER_SIZE);
+            memcpy(pCurrentThunkAddress, &targetAddress, sizeof(targetAddress));
             pCurrentThunkAddress += 4;
 
             // nops for alignment

@@ -19,13 +19,12 @@
 #error Unsupported OS
 #endif
 
-// THUNK_POOL_NUM_THUNKS_PER_PAGE = min(PAGE_SIZE / THUNK_CODESIZE, (PAGE_SIZE - POINTER_SIZE) / THUNK_DATASIZE)
-#define THUNK_POOL_NUM_THUNKS_PER_PAGE 0x3ff
+// THUNK_POOL_NUM_THUNKS_PER_PAGE = min(PAGE_SIZE / THUNK_CODESIZE, PAGE_SIZE / THUNK_DATASIZE)
+#define THUNK_POOL_NUM_THUNKS_PER_PAGE 0x400
 
 //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Thunk Pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .macro THUNKS_PAGE_BLOCK
-    IN_PAGE_INDEX = 0
     .rept THUNK_POOL_NUM_THUNKS_PER_PAGE
 
     ldr      x10, THUNKS_MAP_SIZE + POINTER_SIZE
@@ -35,7 +34,6 @@
     brk     0xf000      // Stubs need to be 16-byte aligned for CFG table. Filling padding with a
                         // deterministic brk instruction, instead of having it just filled with zeros.
 
-    IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
 .endm
 

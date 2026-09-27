@@ -159,9 +159,8 @@ NAMED_READONLY_DATA_SECTION PaddingFor64KAlignment14, ".pad14"
 
 ;;
 ;; Thunk Stubs
-;; NOTE: Keep number of blocks in sync with macro/constant named 'NUM_THUNK_BLOCKS' in:
-;;      - ndp\FxCore\src\System.Private.CoreLib\System\Runtime\InteropServices\ThunkPool.cs
-;;      - ndp\rh\src\tools\rhbind\zapimage.h
+;; NOTE: Keep the number of thunk blocks in sync with the value returned by
+;; RhpGetNumThunkBlocksPerMapping below.
 ;;
 NAMED_LEAF_ENTRY ThunkPool, TKS0, ".tks0"
     THUNKS_PAGE_BLOCK ThunkPool

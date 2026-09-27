@@ -214,9 +214,8 @@ label_$groupIndex_$index_P$pageIndex
 
     ;;
     ;; Thunk Stubs
-    ;; NOTE: Keep number of blocks in sync with macro/constant named 'NUM_THUNK_BLOCKS' in:
-    ;;      - ndp\FxCore\src\System.Private.CoreLib\System\Runtime\InteropServices\ThunkPool.cs
-    ;;      - ndp\rh\src\tools\rhbind\zapimage.h
+    ;; NOTE: Keep the number of thunk blocks in sync with the value returned by
+    ;; RhpGetNumThunkBlocksPerMapping below.
     ;;
 
     LEAF_ENTRY ThunkPool, "|.tks0|"

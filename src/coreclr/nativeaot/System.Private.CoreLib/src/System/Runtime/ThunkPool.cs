@@ -37,7 +37,7 @@ namespace System.Runtime
         public static readonly int ThunkCodeSize = RuntimeImports.RhpGetThunkSize();
         public static readonly int NumThunksPerBlock = RuntimeImports.RhpGetNumThunksPerBlock();
         public static readonly int NumThunkBlocksPerMapping = RuntimeImports.RhpGetNumThunkBlocksPerMapping();
-        public static readonly uint PageSize = BitOperations.RoundUpToPowerOf2((uint)Math.Max(ThunkCodeSize * NumThunksPerBlock, ThunkDataSize * NumThunksPerBlock + IntPtr.Size));
+        public static readonly uint PageSize = BitOperations.RoundUpToPowerOf2((uint)Math.Max(ThunkCodeSize * NumThunksPerBlock, ThunkDataSize * NumThunksPerBlock));
         public static readonly nuint PageSizeMask = PageSize - 1;
     }
 

@@ -16,13 +16,12 @@
 #define PAGE_SIZE 0x1000
 #define PAGE_SIZE_LOG2 12
 
-// THUNK_POOL_NUM_THUNKS_PER_PAGE = min(PAGE_SIZE / THUNK_CODESIZE, (PAGE_SIZE - POINTER_SIZE) / THUNK_DATASIZE)
-#define THUNK_POOL_NUM_THUNKS_PER_PAGE 0xff
+// THUNK_POOL_NUM_THUNKS_PER_PAGE = min(PAGE_SIZE / THUNK_CODESIZE, PAGE_SIZE / THUNK_DATASIZE)
+#define THUNK_POOL_NUM_THUNKS_PER_PAGE 0x100
 
 //;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Thunk Pages ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 .macro THUNKS_PAGE_BLOCK
-    IN_PAGE_INDEX = 0
     .rept THUNK_POOL_NUM_THUNKS_PER_PAGE
 
     .p2align 4
@@ -30,7 +29,6 @@
     mov     r10, qword ptr [rip + THUNKS_MAP_SIZE - 7]
     jmp     qword ptr [rip + THUNKS_MAP_SIZE + POINTER_SIZE - 13]
 
-    IN_PAGE_INDEX = IN_PAGE_INDEX + 1
     .endr
 .endm
 
