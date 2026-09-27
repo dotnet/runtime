@@ -1005,7 +1005,7 @@ TADDR GetDiagnosticCodeStartFromEntryPoint(MethodDesc* pMD, TADDR entryPoint)
     TADDR start = GetInterpreterCodeFromEntryPointIfPresent(entryPoint);
 
 #if defined(TARGET_WASM) && defined(FEATURE_PORTABLE_ENTRYPOINTS)
-    if (start != (TADDR)NULL && start == entryPoint && entryPoint == pMD->GetPortableEntryPointIfExists() &&
+    if (start == entryPoint && entryPoint == pMD->GetPortableEntryPointIfExists() &&
         PortableEntryPoint::HasNativeEntryPoint((PCODE)entryPoint))
     {
         // Native R2R portable entry points store a function-table index rather than an address
