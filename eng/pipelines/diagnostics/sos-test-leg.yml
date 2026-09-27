@@ -93,18 +93,25 @@ jobs:
 
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        artifactName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)
-        artifactFileName: CdacBuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
-        unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime-build
-        displayName: 'cDAC Build Artifacts'
+        artifactName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+        artifactFileName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
+        displayName: 'SOS Runtime Artifacts'
+
+    - template: /eng/pipelines/common/download-artifact-step.yml
+      parameters:
+        artifactName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)
+        artifactFileName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+        unpackFolder: $(Build.SourcesDirectory)/artifacts/private-cdac
+        displayName: 'SOS cDAC Artifacts'
 
     - pwsh: |
-        $runtimeDirs = @(Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/runtime-build/testhost/net*-${{ parameters.osGroup }}-$(_BuildConfig)-${{ parameters.archType }}/shared/Microsoft.NETCore.App/*")
-        if ($runtimeDirs.Count -ne 1) {
-          throw "Expected one private runtime directory, but found $($runtimeDirs.Count)."
+        $runtimeDir = "$(Build.SourcesDirectory)/artifacts/runtime"
+        if (-not (Test-Path -PathType Leaf "$runtimeDir/System.Private.CoreLib.dll")) {
+          throw "The SOS private runtime was not found at '$runtimeDir'."
         }
 
-        Write-Host "##vso[task.setvariable variable=sosRuntimeDir]$($runtimeDirs[0].FullName)"
+        Write-Host "##vso[task.setvariable variable=sosRuntimeDir]$runtimeDir"
       displayName: 'Find SOS Private Runtime'
 
     - pwsh: |
@@ -150,12 +157,13 @@ jobs:
 
     - pwsh: |
         $targetOS = if ("${{ parameters.osGroup }}" -eq "windows") { "Windows_NT" } else { "${{ parameters.osGroup }}" }
-        $runtimeOS = if ("${{ parameters.osGroup }}" -eq "windows") { "windows" } else { "${{ parameters.osGroup }}" }
-        $sourceDir = "$(Build.SourcesDirectory)/artifacts/runtime-build/coreclr/$runtimeOS.${{ parameters.archType }}.Checked"
+        $sourceDir = "$(Build.SourcesDirectory)/artifacts/private-cdac"
         $destinationDir = "$(Build.SourcesDirectory)/artifacts/bin/$targetOS.${{ parameters.archType }}.$(_BuildConfig)"
+        $overrideDir = "$(Build.SourcesDirectory)/artifacts/cdac-override/$(_BuildConfig)"
         if (-not (Test-Path -PathType Container $destinationDir)) {
           throw "Diagnostics native output directory '$destinationDir' was not found."
         }
+        New-Item -ItemType Directory -Force -Path $overrideDir | Out-Null
 
         $fileNames = switch ("${{ parameters.osGroup }}") {
           "windows" { "mscordaccore_universal.dll", "mscordbi_universal.dll" }
@@ -171,6 +179,7 @@ jobs:
           }
 
           Copy-Item -Path $source -Destination $destinationDir
+          Copy-Item -Path $source -Destination $overrideDir
         }
       displayName: 'Install Private cDAC'
 
