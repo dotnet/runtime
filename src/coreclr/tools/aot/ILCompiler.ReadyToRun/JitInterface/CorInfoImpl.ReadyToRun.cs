@@ -1311,6 +1311,14 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.AllocContinuationClass;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_DELEGATE_CONSTRUCT:
+                    id = ReadyToRunHelper.DelegateConstruct;
+                    break;
+
+                case CorInfoHelpFunc.CORINFO_HELP_DELEGATE_CTOR_CLOSED:
+                    id = ReadyToRunHelper.DelegateCtorClosed;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_INITCLASS:
                     id = ReadyToRunHelper.InitClass;
                     break;
@@ -1366,26 +1374,29 @@ namespace Internal.JitInterface
             pResult = CreateConstLookupToSymbol(entrypoint);
         }
 
-        private CORINFO_METHOD_STRUCT_* GetDelegateCtorForReadyToRun(
-            CORINFO_CLASS_STRUCT_* clsHnd,
-            CORINFO_METHOD_STRUCT_* targetMethodHnd)
+        private CorInfoHelpFunc getDelegateCtorHelper(CORINFO_CLASS_STRUCT_* delegateType, CORINFO_METHOD_STRUCT_* targetMethod)
         {
-            MethodDesc targetMethod = HandleToObject(targetMethodHnd);
-            TypeDesc delegateType = HandleToObject(clsHnd);
-            MethodDesc delegateInvoke = delegateType.GetKnownMethod("Invoke"u8, null);
-            MetadataType systemDelegate = _compilation.TypeSystemContext.SystemModule.GetType("System"u8, "Delegate"u8);
+            if (!_compilation.NodeFactory.Target.IsWasm)
+                return CorInfoHelpFunc.CORINFO_HELP_UNDEF;
 
-            MethodDesc delegateCtor = systemDelegate.GetKnownMethod("DelegateConstruct"u8, null);
-            if (!targetMethod.Signature.IsStatic &&
-                !targetMethod.OwningType.IsValueType &&
-                !targetMethod.HasInstantiation &&
-                !targetMethod.OwningType.HasInstantiation &&
-                delegateInvoke.Signature.Length == targetMethod.Signature.Length)
+            if (targetMethod != null)
             {
-                delegateCtor = systemDelegate.GetKnownMethod("CtorClosed"u8, null);
+                MethodDesc method = HandleToObject(targetMethod);
+                MethodDesc delegateInvoke = HandleToObject(delegateType).GetKnownMethod("Invoke"u8, null);
+
+                // Closed over a reference type instance with matching arity. Virtual and generic targets conservatively use DelegateConstruct.
+                if (!method.Signature.IsStatic &&
+                    !method.IsVirtual &&
+                    !method.OwningType.IsValueType &&
+                    !method.HasInstantiation &&
+                    !method.OwningType.HasInstantiation &&
+                    delegateInvoke.Signature.Length == method.Signature.Length)
+                {
+                    return CorInfoHelpFunc.CORINFO_HELP_DELEGATE_CTOR_CLOSED;
+                }
             }
 
-            return ObjectToHandle(delegateCtor);
+            return CorInfoHelpFunc.CORINFO_HELP_DELEGATE_CONSTRUCT;
         }
 
         private FieldWithToken ComputeFieldWithToken(FieldDesc field, ref CORINFO_RESOLVED_TOKEN pResolvedToken)

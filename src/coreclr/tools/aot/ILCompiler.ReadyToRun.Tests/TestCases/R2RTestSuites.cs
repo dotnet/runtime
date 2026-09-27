@@ -180,30 +180,23 @@ public class R2RTestSuites
         {
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
 
-            List<ReadyToRunImportSection.ImportSectionEntry> importEntries = reader.ImportSections
+            var signatureFormattingOptions = new SignatureFormattingOptions();
+            List<string> importSignatures = reader.ImportSections
                 .Where(section => section.Entries is not null)
                 .SelectMany(section => section.Entries)
-                .ToList();
-            var signatureFormattingOptions = new SignatureFormattingOptions();
-
-            List<string> delegateCtorSignatures = importEntries
-                .Where(entry => entry.Signature?.FixupKind == ReadyToRunFixupKind.DelegateCtor)
-                .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
-                .ToList();
-            Assert.Empty(delegateCtorSignatures);
-
-            List<string> importSignatures = importEntries
                 .Where(entry => entry.Signature is not null)
                 .Select(entry => entry.Signature!.ToString(signatureFormattingOptions))
                 .ToList();
-            Assert.True(
+            string diagnostic = string.Join(Environment.NewLine, importSignatures);
+
+            // Delegate construction is lowered to R2R helpers rather than references to CoreLib methods.
+            Assert.True(importSignatures.Contains("DELEGATE_CONSTRUCT (HELPER)"), diagnostic);
+            Assert.True(importSignatures.Contains("DELEGATE_CTOR_CLOSED (HELPER)"), diagnostic);
+            Assert.False(
                 importSignatures.Any(signature =>
-                    signature.Contains("System.Delegate.DelegateConstruct", StringComparison.Ordinal)),
-                string.Join(Environment.NewLine, importSignatures));
-            Assert.True(
-                importSignatures.Any(signature =>
-                    signature.Contains("System.Delegate.CtorClosed", StringComparison.Ordinal)),
-                string.Join(Environment.NewLine, importSignatures));
+                    signature.Contains("System.Delegate.", StringComparison.Ordinal) ||
+                    signature.Contains("DelegateCtor", StringComparison.Ordinal)),
+                diagnostic);
         }
     }
 

@@ -593,6 +593,10 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
+    // Managed delegate constructors called directly where dynamically composed delegate constructor helpers are unavailable
+    CORINFO_HELP_DELEGATE_CONSTRUCT,        // General delegate constructor (Delegate.DelegateConstruct)
+    CORINFO_HELP_DELEGATE_CTOR_CLOSED,      // Closed instance delegate constructor (Delegate.CtorClosed)
+
     CORINFO_HELP_COUNT,
 };
 
@@ -2772,6 +2776,15 @@ public:
             CORINFO_CLASS_HANDLE        delegateType,
             CORINFO_METHOD_HANDLE       callerHandle,
             CORINFO_LOOKUP *            pLookup
+            ) = 0;
+
+    // Returns the managed helper to call in place of a delegate constructor on targets that
+    // cannot use dynamically composed delegate constructor helpers. The helper takes the same
+    // (delegate, target, methodPtr) arguments as the constructor. targetMethod may be NULL when
+    // the target is not known. Returns CORINFO_HELP_UNDEF to keep the original constructor call.
+    virtual CorInfoHelpFunc getDelegateCtorHelper(
+            CORINFO_CLASS_HANDLE        delegateType,
+            CORINFO_METHOD_HANDLE       targetMethod
             ) = 0;
 
     // This function tries to initialize the class (run the class constructor).

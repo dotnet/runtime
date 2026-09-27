@@ -272,8 +272,8 @@ public class WasmInterpreterTransitions
         S52 s52 = self.InterpretedInstanceReturnsS52(); Assert.Equal(A, s52.A); Assert.Equal(B, s52.M);           // IS52Tp
         Assert.Equal(unchecked((short)C), InterpretedStaticReturnsS2NoArgs().A);                                             // IS2p
 
-        // R2R delegate construction calls CtorClosed directly for bounded closed-instance shapes
-        // and uses the general DelegateConstruct helper for open, static, generic, and fallback shapes.
+        // R2R delegate construction uses the DELEGATE_CTOR_CLOSED helper for bounded closed-instance shapes
+        // and the general DELEGATE_CONSTRUCT helper for open, static, virtual, generic, and fallback shapes.
         TransformDelegate openStatic = CreateOpenStaticDelegate();
         Assert.Equal(A + 1, openStatic(A));
         Assert.Null(openStatic.Target);
@@ -306,8 +306,19 @@ public class WasmInterpreterTransitions
         Assert.Throws<ArgumentException>(() => CreateClosedInstanceDelegate(null!));
         TransformDelegate virtualDelegate = self.CreateVirtualDelegate();
         Assert.Equal(A + C, virtualDelegate(A));
+        Assert.Same(self, virtualDelegate.Target);
+        Assert.Equal(nameof(VirtualDelegateTarget), virtualDelegate.Method.Name);
+
+        GenericDelegateTarget<string> genericTarget = new(C);
+        TransformDelegate genericOwnerDelegate = CreateGenericOwnerDelegate(genericTarget);
+        Assert.Equal(A + C, genericOwnerDelegate(A));
+        Assert.Same(genericTarget, genericOwnerDelegate.Target);
+        Assert.Equal(nameof(GenericDelegateTarget<string>.Transform), genericOwnerDelegate.Method.Name);
 
         ReturnsS8Delegate closedStaticRetBufDelegate = CreateClosedStaticRetBufDelegate(self);
+        S8 closedStaticRetBufResult = closedStaticRetBufDelegate(A);
+        Assert.Equal(A, closedStaticRetBufResult.A);
+        Assert.Equal(C, closedStaticRetBufResult.B);
         Assert.Same(self, closedStaticRetBufDelegate.Target);
         Assert.Equal(nameof(WasmDelegateTargets.ClosedStaticRetBufDelegateTarget), closedStaticRetBufDelegate.Method.Name);
 
@@ -353,6 +364,9 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private TransformDelegate CreateVirtualDelegate() => new(VirtualDelegateTarget);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static TransformDelegate CreateGenericOwnerDelegate(GenericDelegateTarget<string> target) => new(target.Transform);
 
     private static void VerifyDynamicClosedStaticDelegate()
     {
@@ -818,6 +832,12 @@ public class WasmInterpreterTransitions
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private int R2RInstanceTakesS16AndTwoInt(S16 s, int a, int b) => (int)(s.A + s.B) + a + b + _state; // MiTS16iip
+}
+
+internal sealed class GenericDelegateTarget<T>(int state)
+{
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal int Transform(int value) => value + state;
 }
 
 internal static class WasmDelegateTargets

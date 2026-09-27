@@ -1131,59 +1131,75 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     }
 
 #ifdef FEATURE_READYTORUN
-    if (IsAot() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
+    if (IsAot())
     {
-        if (ldftnToken != nullptr)
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            JITDUMP("optimized\n");
-
-            GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetNode();
-            GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
-            CORINFO_LOOKUP pLookup;
-            info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
-                                                              clsHnd, info.compMethodHnd, &pLookup);
-            if (!pLookup.lookupKind.needsRuntimeLookup)
+            if (ldftnToken != nullptr)
             {
-                call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                           targetObjPointers);
-                call->setEntryPoint(pLookup.constLookup);
-            }
-            else
-            {
-                assert(oper != GT_FTN_ADDR);
+                JITDUMP("optimized\n");
 
-                if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
+                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetNode();
+                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
+                CORINFO_LOOKUP pLookup;
+                info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
+                                                                  clsHnd, info.compMethodHnd, &pLookup);
+                if (!pLookup.lookupKind.needsRuntimeLookup)
                 {
-                    assert((pLookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
-                           (pLookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
-                    GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
-                    call             = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
-                                                           targetObjPointers, ctxTree);
-                    call->setEntryPoint(pLookup.runtimeLookup.helperEntryPoint);
+                    call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                               targetObjPointers);
+                    call->setEntryPoint(pLookup.constLookup);
                 }
                 else
                 {
-                    // Runtime does not support inlining of all shapes of runtime lookups
-                    // Inlining has to be aborted in such a case
-                    assert(compIsForInlining());
-                    compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
-                    JITDUMP("not optimized, generic inlining restriction\n");
+                    assert(oper != GT_FTN_ADDR);
+
+                    if (pLookup.lookupKind.runtimeLookupKind != CORINFO_LOOKUP_NOT_SUPPORTED)
+                    {
+                        assert((pLookup.runtimeLookup.indirections == CORINFO_USEHELPER) &&
+                               (pLookup.runtimeLookup.helper == CORINFO_HELP_READYTORUN_DELEGATE_CTOR));
+                        GenTree* ctxTree = getRuntimeContextTree(pLookup.lookupKind.runtimeLookupKind);
+                        call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer,
+                                                   targetObjPointers, ctxTree);
+                        call->setEntryPoint(pLookup.runtimeLookup.helperEntryPoint);
+                    }
+                    else
+                    {
+                        // Runtime does not support inlining of all shapes of runtime lookups
+                        // Inlining has to be aborted in such a case
+                        assert(compIsForInlining());
+                        compInlineResult->NoteFatal(InlineObservation::CALLSITE_GENERIC_DICTIONARY_LOOKUP);
+                        JITDUMP("not optimized, generic inlining restriction\n");
+                    }
                 }
             }
+            else
+            {
+                JITDUMP("not optimized, NATIVEAOT no ldftnToken\n");
+            }
         }
+#ifdef TARGET_WASM
+        // Wasm does not use the dynamically composed delegate constructor helpers. Call a managed
+        // helper that takes the same arguments as the constructor instead.
         else
         {
-            JITDUMP("not optimized, NATIVEAOT no ldftnToken\n");
+            CorInfoHelpFunc helper = info.compCompHnd->getDelegateCtorHelper(clsHnd, targetMethodHnd);
+            if (helper != CORINFO_HELP_UNDEF)
+            {
+                JITDUMP("optimized, Wasm delegate constructor helper %d\n", helper);
+
+                GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
+                GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
+                call = gtNewHelperCallNode(helper, TYP_VOID, thisPointer, targetObjPointers, targetMethod);
+            }
+            else
+            {
+                JITDUMP("not optimized, no Wasm delegate constructor helper\n");
+            }
         }
-
-        return call;
-    }
-
-#ifndef TARGET_WASM
-    if (IsAot())
-    {
-        // ReadyToRun has this optimization for non-virtual function pointers only for now.
-        if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
+#else
+        // ReadyToRun has this optimization for a non-virtual function pointers only for now.
+        else if ((oper == GT_FTN_ADDR) && (ldftnToken != nullptr))
         {
             JITDUMP("optimized\n");
 
@@ -1201,13 +1217,11 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("not optimized, R2R virtual case\n");
         }
-
-        return call;
-    }
-#endif // !TARGET_WASM
 #endif
-
-    if (targetMethodHnd != nullptr)
+    }
+    else
+#endif
+        if (targetMethodHnd != nullptr)
     {
         CORINFO_METHOD_HANDLE alternateCtor = nullptr;
         DelegateCtorArgs      ctorData;
@@ -1225,16 +1239,6 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             *ExactContextHnd = nullptr;
 
             call->gtCallMethHnd = alternateCtor;
-
-#ifdef FEATURE_READYTORUN
-            if (IsAot())
-            {
-                // The entry point was computed for the original constructor.
-                CORINFO_CONST_LOOKUP entryPoint;
-                info.compCompHnd->getFunctionEntryPoint(alternateCtor, &entryPoint);
-                call->setEntryPoint(entryPoint);
-            }
-#endif
 
             CallArg* lastArg = nullptr;
             if (ctorData.pArg3 != nullptr)

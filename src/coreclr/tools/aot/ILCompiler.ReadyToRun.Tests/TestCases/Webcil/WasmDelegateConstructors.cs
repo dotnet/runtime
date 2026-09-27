@@ -44,7 +44,6 @@ public static class WasmDelegateConstructors
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static ReturnsStruct CreateClosedStaticRetBuf(WasmDelegateTarget target) =>
         new(target.ClosedStaticRetBufTarget);
-
 }
 
 public static class WasmDelegateTargetExtensions

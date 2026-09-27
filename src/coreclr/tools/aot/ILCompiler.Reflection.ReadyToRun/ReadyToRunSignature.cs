@@ -2117,6 +2117,13 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("R2R_TO_INTERPRETER");
                     break;
 
+                case ReadyToRunHelper.DelegateConstruct:
+                    builder.Append("DELEGATE_CONSTRUCT");
+                    break;
+                case ReadyToRunHelper.DelegateCtorClosed:
+                    builder.Append("DELEGATE_CTOR_CLOSED");
+                    break;
+
                 default:
                     throw new BadImageFormatException(helperType.ToString());
             }

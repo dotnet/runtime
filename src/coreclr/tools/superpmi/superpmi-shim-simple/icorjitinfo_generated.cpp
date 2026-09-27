@@ -522,6 +522,13 @@ void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
     original_ICorJitInfo->getReadyToRunDelegateCtorHelper(pTargetMethod, targetConstraint, delegateType, callerHandle, pLookup);
 }
 
+CorInfoHelpFunc interceptor_ICJI::getDelegateCtorHelper(
+          CORINFO_CLASS_HANDLE delegateType,
+          CORINFO_METHOD_HANDLE targetMethod)
+{
+    return original_ICorJitInfo->getDelegateCtorHelper(delegateType, targetMethod);
+}
+
 CorInfoInitClassResult interceptor_ICJI::initClass(
           CORINFO_FIELD_HANDLE field,
           CORINFO_METHOD_HANDLE method,

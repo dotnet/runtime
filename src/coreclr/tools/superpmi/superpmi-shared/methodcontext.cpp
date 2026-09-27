@@ -5476,6 +5476,39 @@ bool MethodContext::repCanTailCall(CORINFO_METHOD_HANDLE callerHnd,
     return value != 0;
 }
 
+void MethodContext::recGetDelegateCtorHelper(CORINFO_CLASS_HANDLE  delegateType,
+                                              CORINFO_METHOD_HANDLE targetMethod,
+                                              CorInfoHelpFunc       result)
+{
+    if (GetDelegateCtorHelper == nullptr)
+        GetDelegateCtorHelper = new LightWeightMap<DLDL, DWORD>();
+
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(delegateType);
+    key.B = CastHandle(targetMethod);
+
+    DWORD value = (DWORD)result;
+    GetDelegateCtorHelper->Add(key, value);
+    DEBUG_REC(dmpGetDelegateCtorHelper(key, value));
+}
+void MethodContext::dmpGetDelegateCtorHelper(DLDL key, DWORD value)
+{
+    printf("GetDelegateCtorHelper key delegateType-%016" PRIX64 " targetMethod-%016" PRIX64 " result-%u", key.A, key.B, value);
+}
+CorInfoHelpFunc MethodContext::repGetDelegateCtorHelper(CORINFO_CLASS_HANDLE delegateType, CORINFO_METHOD_HANDLE targetMethod)
+{
+    DLDL key;
+    ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
+    key.A = CastHandle(delegateType);
+    key.B = CastHandle(targetMethod);
+
+    DWORD value = LookupByKeyOrMissNoMessage(GetDelegateCtorHelper, key);
+
+    DEBUG_REP(dmpGetDelegateCtorHelper(key, value));
+    return (CorInfoHelpFunc)value;
+}
+
 void MethodContext::recIsDelegateCreationAllowed(CORINFO_CLASS_HANDLE  delegateHnd,
                                                  CORINFO_METHOD_HANDLE calleeHnd,
                                                  bool                  result)
