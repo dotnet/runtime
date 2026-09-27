@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using TestLibrary;
 using Xunit;
 
@@ -982,6 +983,288 @@ public unsafe class ArrayPinningTests
     private delegate nint BoolReverser(bool[] values, int count, int elementSize);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate nint ByteBoolReverser([MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] bool[] values, int count, int elementSize);
+}
+
+[ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+public unsafe class AnsiCharArrayTests
+{
+    private const uint CpAcp = 0;
+    private const uint WcNoBestFitChars = 0x400;
+
+    public enum StringKind
+    {
+        Empty,
+        Ascii,
+        TwoByte,
+        ThreeByte,
+        SurrogatePair,
+        EmbeddedNull,
+        Long
+    }
+
+    public static IEnumerable<object[]> StringCases()
+    {
+        foreach (StringKind kind in Enum.GetValues<StringKind>())
+        {
+            yield return new object[] { kind };
+        }
+    }
+
+    public static IEnumerable<object[]> NonEmptyStringCases() => StringCases().Where(static testCase => (StringKind)testCase[0] != StringKind.Empty);
+
+    private static string GetString(StringKind kind) => kind switch
+    {
+        StringKind.Empty => "",
+        StringKind.Ascii => "A",
+        StringKind.TwoByte => "\u00E9",
+        StringKind.ThreeByte => "\u4E2D",
+        StringKind.SurrogatePair => "\uD83D\uDE00",
+        StringKind.EmbeddedNull => "A\0\u00E9\u4E2DZ",
+        StringKind.Long => new string('\u00E9', 33),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind))
+    };
+
+    public static IEnumerable<object[]> ConversionCases()
+    {
+        foreach (object[] testCase in StringCases())
+        {
+            foreach (bool bestFit in new[] { false, true })
+            {
+                foreach (bool copyBack in new[] { false, true })
+                {
+                    yield return new object[] { testCase[0], bestFit, copyBack };
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ConversionCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void ConvertAnsiCharArray(StringKind kind, bool bestFit, bool copyBack)
+    {
+        string value = GetString(kind);
+        char[] values = value.ToCharArray();
+        byte[] expectedBytes = GetEncodedBytes(value, bestFit);
+        byte[] replacement = new byte[expectedBytes.Length];
+        replacement.AsSpan().Fill(0xFF);
+        replacement.AsSpan(0, Math.Min(values.Length, replacement.Length)).Fill((byte)'X');
+        nint target = (nint)(delegate* unmanaged[Cdecl]<byte*, int, byte*, byte*, int>)&ValidateAndReplaceBytes;
+        ArrayConverter convert = (bestFit, copyBack) switch
+        {
+            (false, false) => Marshal.GetDelegateForFunctionPointer<AnsiArrayIn>(target).Invoke,
+            (true, false) => Marshal.GetDelegateForFunctionPointer<AnsiArrayBestFitIn>(target).Invoke,
+            (false, true) => Marshal.GetDelegateForFunctionPointer<AnsiArrayInOut>(target).Invoke,
+            (true, true) => Marshal.GetDelegateForFunctionPointer<AnsiArrayBestFitInOut>(target).Invoke
+        };
+
+        fixed (byte* expected = expectedBytes)
+        fixed (byte* changed = replacement)
+        {
+            Assert.Equal(1, convert(values, expectedBytes.Length, expected, copyBack ? changed : null));
+        }
+
+        char[] expectedValues = value.ToCharArray();
+        if (copyBack)
+        {
+            expectedValues.AsSpan().Clear();
+            expectedValues.AsSpan(0, Math.Min(values.Length, replacement.Length)).Fill('X');
+        }
+        Assert.Equal(expectedValues, values);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void ExplicitAnsiArraySubType(bool unsigned)
+    {
+        char[] values = "\u00E9\u4E2D".ToCharArray();
+        byte[] expectedBytes = GetEncodedBytes(new string(values), bestFit: false);
+        nint target = (nint)(delegate* unmanaged[Cdecl]<byte*, int, byte*, byte*, int>)&ValidateAndReplaceBytes;
+        ArrayConverter convert = unsigned
+            ? Marshal.GetDelegateForFunctionPointer<AnsiArrayU1>(target).Invoke
+            : Marshal.GetDelegateForFunctionPointer<AnsiArrayI1>(target).Invoke;
+        fixed (byte* expected = expectedBytes)
+        {
+            Assert.Equal(1, convert(values, expectedBytes.Length, expected, null));
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StringCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void AnsiOutArrayUsesNativeByteCount(StringKind kind)
+    {
+        string value = GetString(kind);
+        byte[] bytes = GetEncodedBytes(value, bestFit: false);
+        CreateAnsiArray create = Marshal.GetDelegateForFunctionPointer<CreateAnsiArray>(
+            (nint)(delegate* unmanaged[Cdecl]<byte**, int, byte*, void>)&AllocateBytes);
+        fixed (byte* native = bytes)
+        {
+            create(out char[] actual, bytes.Length, native);
+            Assert.Equal(GetExpectedCharacters(bytes), actual);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(StringCases))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/124219", typeof(PlatformDetection), nameof(PlatformDetection.IsWasm))]
+    public static void ReverseAnsiArrayKeepsNativeByteCapacity(StringKind kind)
+    {
+        byte[] bytes = GetEncodedBytes(GetString(kind), bestFit: false);
+        char[] expected = GetExpectedCharacters(bytes);
+        byte[] buffer = new byte[bytes.Length + 8];
+        buffer.AsSpan().Fill(0xA5);
+        bytes.CopyTo(buffer, 0);
+        AnsiArrayCallback callback = (values, count) =>
+        {
+            if (values.Length != count || !values.AsSpan().SequenceEqual(expected))
+            {
+                return 0;
+            }
+            values.AsSpan().Fill('Y');
+            return 1;
+        };
+        delegate* unmanaged[Cdecl]<byte*, int, int> target =
+            (delegate* unmanaged[Cdecl]<byte*, int, int>)Marshal.GetFunctionPointerForDelegate(callback);
+        fixed (byte* native = buffer)
+        {
+            Assert.Equal(1, target(native, bytes.Length));
+        }
+        GC.KeepAlive(callback);
+        Assert.Equal(-1, buffer.AsSpan(0, bytes.Length).IndexOfAnyExcept((byte)'Y'));
+        Assert.Equal(-1, buffer.AsSpan(bytes.Length).IndexOfAnyExcept((byte)0xA5));
+    }
+
+    [Theory]
+    [MemberData(nameof(NonEmptyStringCases))]
+    public static void AsAnyAnsiCharArrayUsesExpandedBuffer(StringKind kind)
+    {
+        string value = GetString(kind);
+        byte[] expected = GetEncodedBytes(value, bestFit: true);
+        char[] values = value.ToCharArray();
+        for (int i = 0; i < expected.Length; i++)
+        {
+            Assert.Equal(expected[i], Marshal.ReadByte(values, i));
+        }
+    }
+
+    [Theory]
+    [InlineData("AB")]
+    [InlineData("\u00E9A")]
+    [InlineData("\u4E2DB")]
+    [InlineData("\uD83D\uDE00")]
+    public static void FixedAnsiCharArrayKeepsInlineByteCapacity(string value)
+    {
+        FixedAnsiChars managed = new() { Before = 0x11, Values = value.ToCharArray(), After = 0x22 };
+        Assert.Equal(4, Marshal.SizeOf<FixedAnsiChars>());
+        byte* native = stackalloc byte[12];
+        new Span<byte>(native, 12).Fill(0xA5);
+        byte[] expected = GetEncodedBytes(value, bestFit: false);
+        if (expected.Length > 2)
+        {
+            nint address = (nint)native;
+            Assert.Throws<ArgumentException>(() => Marshal.StructureToPtr(managed, address, false));
+        }
+        else
+        {
+            Marshal.StructureToPtr(managed, (nint)native, false);
+            Assert.Equal(0x11, native[0]);
+            Assert.True(new ReadOnlySpan<byte>(native + 1, expected.Length).SequenceEqual(expected));
+            Assert.Equal(0x22, native[3]);
+        }
+        Assert.Equal(-1, new ReadOnlySpan<byte>(native + 4, 8).IndexOfAnyExcept((byte)0xA5));
+    }
+
+    private static char[] GetExpectedCharacters(byte[] bytes)
+    {
+        char[] expected = new char[bytes.Length];
+        if (bytes.Length != 0)
+        {
+            fixed (byte* native = bytes)
+            {
+                Marshal.PtrToStringAnsi((nint)native, bytes.Length).AsSpan().CopyTo(expected);
+            }
+        }
+        return expected;
+    }
+
+    private static byte[] GetEncodedBytes(string value, bool bestFit)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return Encoding.UTF8.GetBytes(value);
+        }
+        if (value.Length == 0)
+        {
+            return Array.Empty<byte>();
+        }
+
+        fixed (char* chars = value)
+        {
+            uint flags = bestFit ? 0u : WcNoBestFitChars;
+            int count = WideCharToMultiByte(CpAcp, flags, chars, value.Length, null, 0, null, null);
+            Assert.True(count > 0);
+            byte[] bytes = new byte[count];
+            fixed (byte* native = bytes)
+            {
+                Assert.Equal(count, WideCharToMultiByte(CpAcp, flags, chars, value.Length, native, count, null, null));
+            }
+            return bytes;
+        }
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static int ValidateAndReplaceBytes(byte* values, int count, byte* expected, byte* replacement)
+    {
+        if (!new ReadOnlySpan<byte>(values, count).SequenceEqual(new ReadOnlySpan<byte>(expected, count)))
+        {
+            return 0;
+        }
+        if (replacement is not null)
+        {
+            new ReadOnlySpan<byte>(replacement, count).CopyTo(new Span<byte>(values, count));
+        }
+        return 1;
+    }
+
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    private static void AllocateBytes(byte** values, int count, byte* source)
+    {
+        *values = (byte*)Marshal.AllocCoTaskMem(count);
+        new ReadOnlySpan<byte>(source, count).CopyTo(new Span<byte>(*values, count));
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 1)]
+    [BestFitMapping(false)]
+    private struct FixedAnsiChars
+    {
+        public byte Before;
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 2)]
+        public char[] Values;
+        public byte After;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern int WideCharToMultiByte(uint codePage, uint flags, char* chars, int charCount, byte* bytes, int byteCount, byte* defaultChar, int* usedDefaultChar);
+    private delegate int ArrayConverter(char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false)]
+    private delegate int AnsiArrayIn([In, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = true)]
+    private delegate int AnsiArrayBestFitIn([In, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false)]
+    private delegate int AnsiArrayInOut([In, Out, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = true)]
+    private delegate int AnsiArrayBestFitInOut([In, Out, MarshalAs(UnmanagedType.LPArray)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode, BestFitMapping = false)]
+    private delegate int AnsiArrayI1([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.I1)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode, BestFitMapping = false)]
+    private delegate int AnsiArrayU1([In, MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1)] char[] values, int count, byte* expected, byte* replacement);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+    private delegate void CreateAnsiArray([Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] out char[] values, int count, byte* source);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Ansi, BestFitMapping = false)]
+    private delegate int AnsiArrayCallback([In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] char[] values, int count);
 }
 
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]

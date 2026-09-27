@@ -4134,7 +4134,7 @@ namespace
 {
     // Resolve the managed marshaler MethodTable and the element type it marshals.
     // Both are returned together to guarantee they are consistent.
-    void GetMarshalerAndElementTypes(MarshalInfo* pMarshalInfo, MethodTable** ppMarshalerMT, TypeHandle* pElementType)
+    void GetMarshalerAndElementTypes(MarshalInfo* pMarshalInfo, MethodTable** ppMarshalerMT, TypeHandle* pElementType, bool fixedNativeBuffer)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4184,9 +4184,9 @@ namespace
         case NATIVE_TYPE_U1:
         {
             _ASSERTE(thElement == TypeHandle(CoreLibBinder::GetClass(CLASS__CHAR)));
-            TypeHandle thArgs[2] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT) };
+            TypeHandle thArgs[3] = { TypeHandle(pBestFitMT), TypeHandle(pThrowOnUnmappableMT), TypeHandle(fixedNativeBuffer ? pEnabledMT : pDisabledMT) };
             *pElementType = thElement;
-            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 2)).AsMethodTable();
+            *ppMarshalerMT = TypeHandle(CoreLibBinder::GetClass(CLASS__ANSICHAR_ARRAY_ELEMENT_MARSHALER)).Instantiate(Instantiation(thArgs, 3)).AsMethodTable();
             return;
         }
 
@@ -4341,7 +4341,7 @@ namespace
 
 
     // Instantiate one of the generic StubHelpers array methods with the element type and marshaler type.
-    MethodDesc* GetInstantiatedArrayMethod(MarshalInfo* pMarshalInfo, BinderMethodID methodId)
+    MethodDesc* GetInstantiatedArrayMethod(MarshalInfo* pMarshalInfo, BinderMethodID methodId, bool fixedNativeBuffer = false)
 {
     STANDARD_VM_CONTRACT;
 
@@ -4351,7 +4351,7 @@ namespace
     // to guarantee they are consistent.
     TypeHandle thElementType;
     MethodTable* pMarshalerMT;
-    GetMarshalerAndElementTypes(pMarshalInfo, &pMarshalerMT, &thElementType);
+    GetMarshalerAndElementTypes(pMarshalInfo, &pMarshalerMT, &thElementType, fixedNativeBuffer);
 
     TypeHandle thMarshalerType(pMarshalerMT);
     TypeHandle thArgs[2] = { thElementType, thMarshalerType };
@@ -4491,7 +4491,9 @@ void ILNativeArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILE
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pSkipLabel);
 
-    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
+    // A by-value reverse P/Invoke writes into the caller's buffer, not an allocation we can expand.
+    bool fixedNativeBuffer = !IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
+    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, fixedNativeBuffer);
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeValue(pslILEmit);
@@ -4631,7 +4633,7 @@ void ILFixedArrayMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEm
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullLabel);
 
-    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED);
+    MethodDesc* pMD = GetInstantiatedArrayMethod(m_pargs->m_pMarshalInfo, METHOD__STUBHELPERS__CONVERT_ARRAY_CONTENTS_TO_UNMANAGED, true /* fixedNativeBuffer */);
 
     EmitLoadManagedValue(pslILEmit);
     EmitLoadNativeHomeAddr(pslILEmit);

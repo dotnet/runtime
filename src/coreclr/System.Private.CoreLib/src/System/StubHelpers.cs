@@ -1148,10 +1148,10 @@ namespace System.StubHelpers
         {
             return (IsBestFit(dwFlags), IsThrowOn(dwFlags)) switch
             {
-                (true, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.EnabledOption>>(isOut),
-                (true, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
-                (false, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.EnabledOption>>(isOut),
-                (false, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (true, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (true, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (false, true) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.EnabledOption, IMarshalerOption.DisabledOption>>(isOut),
+                (false, false) => new ArrayImplementation<char, AnsiCharArrayMarshaler<IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption, IMarshalerOption.DisabledOption>>(isOut),
             };
         }
 
@@ -1780,12 +1780,14 @@ namespace System.StubHelpers
         static unsafe nuint IArrayElementMarshaler<string?, LPWSTRMarshaler>.UnmanagedSize => (nuint)sizeof(IntPtr);
     }
 
-    internal sealed class AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable> : IArrayMarshaler<char, AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable>>
+    internal sealed class AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable, TFixedBuffer> : IArrayMarshaler<char, AnsiCharArrayMarshaler<TBestFit, TThrowOnUnmappable, TFixedBuffer>>
         where TBestFit : IMarshalerOption
         where TThrowOnUnmappable : IMarshalerOption
+        where TFixedBuffer : IMarshalerOption
     {
         public static unsafe void ConvertContentsToUnmanaged(Array managedArray, byte* unmanaged, int length)
         {
+            int byteCapacity = GetNativeBufferSize(length);
             fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
             {
                 char* pChars = (char*)pCharBytes;
@@ -1798,7 +1800,7 @@ namespace System.StubHelpers
                     pChars,
                     length,
                     unmanaged,
-                    length,
+                    byteCapacity,
                     null,
                     TThrowOnUnmappable.Enabled ? &defaultCharUsed : null);
 
@@ -1812,7 +1814,7 @@ namespace System.StubHelpers
                     throw new ArgumentException(SR.Interop_Marshal_Unmappable_Char);
                 }
 #else
-                Encoding.UTF8.GetBytes(pChars, length, unmanaged, length);
+                Encoding.UTF8.GetBytes(pChars, length, unmanaged, byteCapacity);
 #endif
             }
 
@@ -1820,6 +1822,7 @@ namespace System.StubHelpers
 
         public static unsafe void ConvertContentsToManaged(Array managedArray, byte* unmanaged, int length)
         {
+            // The native byte count is independent of the maximum allocation size used for multibyte expansion.
             fixed (byte* pCharBytes = &MemoryMarshal.GetArrayDataReference(managedArray))
             {
                 char* pChars = (char*)pCharBytes;
@@ -1853,8 +1856,7 @@ namespace System.StubHelpers
                 return null;
             }
 
-            // Native layout for ANSI char arrays uses 1 byte per element.
-            int allocSize = managedArray.Length;
+            int allocSize = GetNativeBufferSize(managedArray.Length);
             byte* pNative = (byte*)Marshal.AllocCoTaskMem(allocSize);
             NativeMemory.Clear(pNative, (nuint)allocSize);
             return pNative;
@@ -1869,6 +1871,9 @@ namespace System.StubHelpers
 
             return new char[length];
         }
+
+        private static int GetNativeBufferSize(int length)
+            => TFixedBuffer.Enabled ? length : checked(length * Marshal.SystemMaxDBCSCharSize);
     }
 
     internal sealed class LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable> : IArrayElementMarshaler<string?, LPSTRArrayElementMarshaler<TBestFit, TThrowOnUnmappable>>
