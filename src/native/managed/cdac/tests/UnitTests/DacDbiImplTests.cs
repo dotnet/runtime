@@ -1018,9 +1018,9 @@ public unsafe class DacDbiImplTests
         rts.Setup(r => r.GetMethodTable(asyncVariantHandle)).Throws(new VirtualReadException());
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(interpreterPrecode)).Returns(nativeCode);
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(interpreterPrecode)).Returns(nativeCode);
         executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
         executionManager
             .Setup(e => e.GetMethodRegionInfo(codeBlock, out It.Ref<uint>.IsAny, out It.Ref<TargetPointer>.IsAny, out It.Ref<uint>.IsAny))
@@ -1103,9 +1103,9 @@ public unsafe class DacDbiImplTests
         ILCodeVersionHandle ilCodeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x8000));
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(CodeAddress))).Returns(nativeCode);
         executionManager.Setup(e => e.GetCodeBlockHandle(nativeCode)).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
         executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
@@ -1163,9 +1163,9 @@ public unsafe class DacDbiImplTests
         ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
 
         var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
 
         var executionManager = new Mock<IExecutionManager>();
+        executionManager.Setup(e => e.GetDiagnosticCodeStartFromEntryPoint(new TargetCodePointer(CodeAddress))).Throws(new VirtualReadException());
         executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(CodeAddress))).Returns(codeBlock);
         executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(codeStart);
         executionManager.Setup(e => e.GetMethodDesc(codeBlock)).Returns(methodDesc);
