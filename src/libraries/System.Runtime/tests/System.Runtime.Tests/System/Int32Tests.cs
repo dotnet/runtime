@@ -200,6 +200,7 @@ namespace System.Tests
             Assert.Throws<FormatException>(() => i.ToString("Y")); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("Y", null)); // Invalid format
             Assert.Throws<FormatException>(() => i.ToString("D1000000000")); // Precision too large
+            Assert.Throws<FormatException>(() => i.ToString("A1234567890")); // Standard-shaped format
         }
 
         public static IEnumerable<object[]> Parse_Valid_TestData()
