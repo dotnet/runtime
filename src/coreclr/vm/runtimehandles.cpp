@@ -2026,7 +2026,11 @@ extern "C" PCODE QCALLTYPE RuntimeMethodHandle_GetNativeCode(MethodDesc* pMethod
         pMethod = pWrapped;
     }
 
-    result = GetInterpreterCodeFromEntryPointIfPresent(pMethod->GetNativeCodeAnyVersion());
+    PCODE entryPoint = pMethod->GetNativeCodeAnyVersion();
+    if (entryPoint != (PCODE)NULL)
+    {
+        result = GetDiagnosticCodeStartFromEntryPoint(pMethod, entryPoint);
+    }
 
     END_QCALL;
 
