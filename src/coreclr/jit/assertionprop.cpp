@@ -5270,7 +5270,7 @@ bool Compiler::optAssertionIsNonNull(GenTree* op, ASSERT_VALARG_TP assertions)
 //
 bool Compiler::optAssertionVNIsNonNull(ValueNum vn, ASSERT_VALARG_TP assertions, int budget)
 {
-    if (vn == ValueNumStore::NoVN)
+    if ((vn == ValueNumStore::NoVN) || !varTypeIsI(vnStore->TypeOfVN(vn)))
     {
         return false;
     }
