@@ -52,7 +52,7 @@
 #include <minipal/thread.h>
 #include <generatedumpflags.h>
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
 // of entries if every createdump option/argument is passed.
@@ -209,9 +209,6 @@ CreateCrashDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-#ifdef HOST_WASM
-    return false;
-#else
     int pipe_descs[4];
     if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
     {
@@ -348,11 +345,11 @@ CreateCrashDump(
         }
     }
     return true;
-#endif // HOST_WASM
 }
 
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
+#ifndef HOST_WASM
 // Helper function to prevent compiler from optimizing away a variable
 #if defined(__llvm__)
 __attribute__((noinline, optnone))
@@ -380,14 +377,13 @@ Parameters:
 
 (no return value)
 --*/
-#ifndef HOST_WASM
 void
 PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void* exceptionRecord)
 {
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     // If enabled, launch the create minidump utility and wait until it completes
     if (g_argvCreateDump[0] != nullptr)
     {
@@ -473,7 +469,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
         free(signalAddressArg);
         free(exceptionRecordArg);
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 #endif // !HOST_WASM
 
@@ -522,7 +518,7 @@ PalGenerateCoreDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     const char* argvCreateDump[MAX_ARGV_ENTRIES];
     if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
@@ -540,7 +536,7 @@ PalGenerateCoreDump(
     return result;
 #else
     return false;
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
 
 /*++
