@@ -88,25 +88,68 @@ internal sealed class CompositeFormatFuzzer : IFuzzer
             return;
         }
 
-        // Parse succeeded. MinimumArgumentCount is the number of args needed.
+        // Parse succeeded. MinimumArgumentCount is the number of args needed (a hole index can be up to ~1e9, so it's unbounded).
         int required = composite!.MinimumArgumentCount;
-        Check(required >= 0 && required <= 100, () => $"CompositeFormat '{Escape(format)}' has MinimumArgumentCount {required}");
+        Check(required >= 0, () => $"CompositeFormat '{Escape(format)}' has negative MinimumArgumentCount {required}");
 
-        if (required > s_args.Length)
+        if (required > s_args.Length || HasOverflowingIndex(format))
         {
-            // string.Format with our fixed args would throw for the missing index; that's expected and not a disagreement.
+            // string.Format with our fixed args would throw for the missing index, and an index that overflows Int32 (finding 47)
+            // makes CompositeFormat and string.Format diverge; neither is a disagreement worth flagging again.
             return;
         }
 
-        // Both should format identically.
-        string composed = string.Format(culture, composite, s_args);
-        Check(formatError is null, () => $"CompositeFormat.Parse succeeded and formats '{Escape(format)}' but string.Format threw {formatError!.GetType().Name}");
-        Check(composed == formatResult, () => $"CompositeFormat and string.Format disagree for '{Escape(format)}': '{Escape(composed)}' vs '{Escape(formatResult)}'");
+        // Both should format the same way, including throwing the same way at format time (e.g. an invalid numeric format
+        // specifier reached with a real argument throws FormatException from both paths).
+        string? composed = null;
+        Exception? composeError = null;
+        try
+        {
+            composed = string.Format(culture, composite, s_args);
+        }
+        catch (FormatException ex)
+        {
+            composeError = ex;
+        }
 
-        // Formatting again is stable, and the interpolated-handler path (AppendFormat) agrees.
-        var sb = new StringBuilder();
-        sb.AppendFormat(culture, format, s_args);
-        Check(sb.ToString() == formatResult, () => $"StringBuilder.AppendFormat disagrees with string.Format for '{Escape(format)}'");
+        Check((formatError is null) == (composeError is null),
+            () => $"string.Format {(formatError is null ? "succeeded" : "threw")} but string.Format(CompositeFormat) {(composeError is null ? "succeeded" : "threw")} for '{Escape(format)}'");
+        if (composeError is null)
+        {
+            Check(composed == formatResult, () => $"CompositeFormat and string.Format disagree for '{Escape(format)}': '{Escape(composed)}' vs '{Escape(formatResult)}'");
+
+            var sb = new StringBuilder();
+            sb.AppendFormat(culture, format, s_args);
+            Check(sb.ToString() == formatResult, () => $"StringBuilder.AppendFormat disagrees with string.Format for '{Escape(format)}'");
+        }
+    }
+
+    // Finding 47: CompositeFormat.Parse accepts a hole index that overflows Int32, which string.Format rejects, so a format with
+    // such an index (a run of more than 9 digits right after '{') is skipped from the equality check.
+    private static bool HasOverflowingIndex(string format)
+    {
+        for (int i = 0; i < format.Length - 1; i++)
+        {
+            if (format[i] == '{' && format[i + 1] != '{' && format[i + 1] != '}')
+            {
+                int digits = 0;
+                int j = i + 1;
+                while (j < format.Length && char.IsAsciiDigit(format[j]))
+                {
+                    digits++;
+                    j++;
+                }
+
+                if (digits >= 10 || (digits > 0 && long.Parse(format.AsSpan(i + 1, digits)) > 1_000_000))
+                {
+                    return true;
+                }
+
+                i = j - 1;
+            }
+        }
+
+        return false;
     }
 
     private static string Escape(string? text) =>

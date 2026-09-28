@@ -61,6 +61,7 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 44 | Number parsing | UTF-8 `TryParse`/`Parse` reads past the end of the span when matching a 3-byte NaN/Infinity symbol or sign: `AccessViolationException` at a page boundary, and a UTF-8/UTF-16 mismatch | High (memory safety) | Yes | [44](repros/44-NumberParsing-Utf8-OutOfBoundsRead.cs) |
 | 45 | IPNetwork | `IPNetwork` silently masks host bits after the prefix although the constructor, `Parse` and `TryParse` all document that they reject them | Low | Yes | [45](repros/45-IPNetwork-SilentHostBitMasking.cs) |
 | 46 | HttpHeaders | `StringWithQualityHeaderValue` keeps a q-value with more than 3 decimals but `ToString` rounds to 3, so it doesn't round-trip | Low | Yes | [46](repros/46-StringWithQualityHeaderValue-QualityRoundTrip.cs) |
+| 47 | CompositeFormat | `CompositeFormat.Parse` doesn't bound the hole index, so it accepts `Int32`-overflowing indices that `string.Format` rejects; `MinimumArgumentCount` wraps and formatting throws `IndexOutOfRangeException` | Low | Yes | [47](repros/47-CompositeFormat-IndexOverflow.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -272,6 +273,10 @@ The tail should subtract the 2 it read from `range` (or set `range` from `byteOf
 ### 46. StringWithQualityHeaderValue quality precision
 
 [Repro](repros/46-StringWithQualityHeaderValue-QualityRoundTrip.cs). `StringWithQualityHeaderValue.ToString` formats the quality with `$"{_value}; q={_quality:0.0##}"`, so at most three decimals, but the parser and the `(string, double)` constructor accept and keep more. `new StringWithQualityHeaderValue("gzip", 0.1234)` and `Parse("gzip; q=0.1234")` both report `Quality = 0.1234`, while `ToString()` is `"gzip; q=0.123"`, which parses back to `0.123`, so the value doesn't round-trip. RFC 9110 defines the quality value as at most three digits after the decimal point, so rejecting or rounding on input (as `MediaTypeWithQualityHeaderValue`, which stores the q-value as a parameter string, effectively does) would match `ToString`. As it stands an `Accept-Encoding` or `TE` header rebuilt from these objects carries a different weight than the object reports. Found by `HttpHeaderValuesFuzzer`.
+
+### 47. CompositeFormat argument index overflow
+
+[Repro](repros/47-CompositeFormat-IndexOverflow.cs). The digit loop in `CompositeFormat.TryParseLiterals` does `index = index * 10 + ch - '0'` with no overflow or upper-bound check, unlike `string.Format`, whose parser rejects an argument index above 1,000,000 with `FormatException`. So `CompositeFormat.Parse("{2147483648}")` succeeds with a wrapped `ArgIndex`; the resulting object reports `MinimumArgumentCount = 0` (the wrapped index is negative and skipped by the `ArgIndex >= 0` check), and `"{9999999999}"` reports a wrapped positive `1410065408`. Two consequences: `string.Format(compositeFormat, args)` throws `IndexOutOfRangeException` rather than the documented `FormatException`, and `MinimumArgumentCount` misreports how many arguments the format needs, which a caller may use to size an argument array. `string.Format(string, args)` rejects all of these with `FormatException`. Capping the index the way the shared format parser does fixes it. Found by `CompositeFormatFuzzer`.
 
 ## Things that looked like bugs but aren't
 
