@@ -382,6 +382,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     {
         m_NumInterruptibleRanges = (UINT32) m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE);
     }
+    _ASSERTE(GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES || m_NumInterruptibleRanges == 0);
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
@@ -736,9 +737,7 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 {
 
     unsigned executionAborted = (inputFlags & ExecutionAborted);
-#ifdef TARGET_WASM
     bool reportUntrackedOnly = false;
-#endif // TARGET_WASM
 
     // In order to make ARM more x86-like we only ever report the leaf frame
     // of any given function. We accomplish this by having the stackwalker
@@ -780,6 +779,13 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
             m_Reader.DecodeVarLengthUnsigned( GcInfoEncoding::INTERRUPTIBLE_RANGE_DELTA2_ENCBASE );
         }
     }
+    else if constexpr (!GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
+    {
+        // Outside of safe points only untracked slots can be reported. Report them for aborted
+        // frames too: an aborted funclet shares them with parent frames that are skipped.
+        _ASSERTE(m_NumInterruptibleRanges == 0);
+        reportUntrackedOnly = true;
+    }
     else
     {
         //
@@ -810,20 +816,8 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
         _ASSERTE(countIntersections <= 1);
         if(countIntersections == 0 && executionAborted)
         {
-#ifdef TARGET_WASM
-            // Wasm R2R code has no interruptible ranges and reports all frame GC refs as untracked
-            // slots, which an aborted funclet shares with parent frames that are skipped.
-            if (m_NumInterruptibleRanges == 0)
-            {
-                LOG((LF_GCROOTS, LL_INFO100000, "Reporting only untracked slots because this frame is aborted and not interruptible.\n"));
-                reportUntrackedOnly = true;
-            }
-            else
-#endif // TARGET_WASM
-            {
-                LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it is aborted and not fully interruptible.\n"));
-                goto ExitSuccess;
-            }
+            LOG((LF_GCROOTS, LL_INFO100000, "Not reporting this frame because it is aborted and not fully interruptible.\n"));
+            goto ExitSuccess;
         }
     }
 #else   // !PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
@@ -844,10 +838,8 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
 
     slotDecoder.DecodeSlotTable(m_Reader);
 
-#ifdef TARGET_WASM
     if (reportUntrackedOnly)
         goto ReportUntracked;
-#endif // TARGET_WASM
 
     {
         UINT32 numSlots = slotDecoder.GetNumTracked();

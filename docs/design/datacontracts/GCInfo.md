@@ -647,6 +647,8 @@ For each chunk, the encoding stores:
 
 To determine liveness at the target offset: start from the chunk's final state, then apply any transitions that occur *after* the target offset (toggling the state backwards). A slot is live if its final state (after toggle adjustment) is 1.
 
+For encodings without interruptible ranges (`HAS_INTERRUPTIBLE_RANGES` is false, as for Wasm R2R), this step is replaced by reporting only untracked slots, including for `ExecutionAborted` frames. An aborted funclet shares those slots with parent frames that are skipped.
+
 **Step 4 — Report untracked slots**: Untracked slots are always live (they represent stack locations the JIT doesn't track at each safe point). They are reported unconditionally unless `ParentOfFuncletStackFrame` or `NoReportUntracked` flags are set. Untracked slots are reported with `reportScratchSlots=true` since the JIT may produce untracked scratch register slots for interior pointers.
 
 **Slot filtering**: Before reporting any slot, the algorithm checks:

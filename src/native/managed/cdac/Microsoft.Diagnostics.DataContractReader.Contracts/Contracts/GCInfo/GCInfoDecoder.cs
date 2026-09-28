@@ -976,6 +976,13 @@ internal class GcInfoDecoder<TTraits> : IGCInfoDecoder where TTraits : IGCInfoTr
             {
                 // We have a safe point match — skip interruptible range computation
             }
+            else if (!TTraits.HAS_INTERRUPTIBLE_RANGES)
+            {
+                // Outside of safe points only untracked slots can be reported. Report them for aborted
+                // frames too: an aborted funclet shares them with parent frames that are skipped.
+                Debug.Assert(_interruptibleRanges.Count == 0);
+                return ReportUntrackedAndSucceed();
+            }
             else
             {
                 // Compute pseudoBreakOffset from interruptible ranges

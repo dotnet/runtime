@@ -612,6 +612,8 @@ template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::WriteSlo
 
 template <typename GcInfoEncoding> void TGcInfoEncoder<GcInfoEncoding>::DefineInterruptibleRange( UINT32 startInstructionOffset, UINT32 length )
 {
+    _ASSERTE(GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES);
+
     UINT32 stopInstructionOffset = startInstructionOffset + length;
 
     UINT32 normStartOffset = GcInfoEncoding::NORMALIZE_CODE_OFFSET(startInstructionOffset);
