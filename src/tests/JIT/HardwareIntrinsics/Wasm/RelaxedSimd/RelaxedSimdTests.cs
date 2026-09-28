@@ -26,9 +26,14 @@ public sealed class RelaxedSimdTests
             () => RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.0f)));
     }
 
-    [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+    [Fact]
     public static void ConvertToIntegerNativeInRangeMatchesExpected()
     {
+        if (!RelaxedSimd.IsSupported)
+        {
+            return;
+        }
+
         Assert.Equal(
             Vector128.Create(1, -2, 3, -4),
             RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.75f, -2.25f, 3.0f, -4.99f)));
@@ -43,9 +48,14 @@ public sealed class RelaxedSimdTests
             RelaxedSimd.ConvertToUInt32Native(Vector128.Create(5.75, 6.25)));
     }
 
-    [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+    [Fact]
     public static void DotProductNativeByteSByteMatchesScalar()
     {
+        if (!RelaxedSimd.IsSupported)
+        {
+            return;
+        }
+
         Vector128<sbyte> signed = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
         Vector128<byte> unsigned = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
 
@@ -58,9 +68,14 @@ public sealed class RelaxedSimdTests
         }
     }
 
-    [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+    [Fact]
     public static void DotProductAddNativeByteSByteMatchesScalar()
     {
+        if (!RelaxedSimd.IsSupported)
+        {
+            return;
+        }
+
         Vector128<sbyte> signed = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
         Vector128<byte> unsigned = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
         Vector128<int> accumulator = Vector128.Create(100, 200, 300, 400);
@@ -78,9 +93,14 @@ public sealed class RelaxedSimdTests
         }
     }
 
-    [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+    [Fact]
     public static void MultiplyAddFloatMatchesScalarApproximately()
     {
+        if (!RelaxedSimd.IsSupported)
+        {
+            return;
+        }
+
         Vector128<float> left = Vector128.Create(1.5f, 2.25f, -3.125f, 4.0f);
         Vector128<float> right = Vector128.Create(2.0f, -1.5f, 0.5f, 6.25f);
         Vector128<float> addend = Vector128.Create(0.5f, 1.0f, -0.25f, -2.0f);
@@ -97,9 +117,14 @@ public sealed class RelaxedSimdTests
         }
     }
 
-    [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+    [Fact]
     public static void LaneSelectNativeAllOnesAllZerosBehavesLikeConditionalSelect()
     {
+        if (!RelaxedSimd.IsSupported)
+        {
+            return;
+        }
+
         Vector128<byte> left = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
         Vector128<byte> right = Vector128.Create((byte)17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32);
         Vector128<byte> mask = Vector128.Create((byte)0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00,
@@ -111,9 +136,14 @@ public sealed class RelaxedSimdTests
         Assert.Equal(expected, actual);
     }
 
-    [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+    [Fact]
     public static void SwizzleNativeInRangeMatchesVector128Shuffle()
     {
+        if (!RelaxedSimd.IsSupported)
+        {
+            return;
+        }
+
         Vector128<byte> value = Vector128.Create((byte)10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160);
         Vector128<byte> indices = Vector128.Create((byte)15, 0, 14, 1, 13, 2, 12, 3, 11, 4, 10, 5, 9, 6, 8, 7);
 

@@ -28,9 +28,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
                 () => RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.0f)));
         }
 
-        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        [Fact]
         public void ConvertToIntegerNativeInRangeMatchesExpected()
         {
+            if (!RelaxedSimd.IsSupported)
+            {
+                return;
+            }
+
             Assert.Equal(
                 Vector128.Create(1, -2, 3, -4),
                 RelaxedSimd.ConvertToInt32Native(Vector128.Create(1.75f, -2.25f, 3.0f, -4.99f)));
@@ -45,9 +50,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
                 RelaxedSimd.ConvertToUInt32Native(Vector128.Create(5.75, 6.25)));
         }
 
-        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        [Fact]
         public void DotProductNativeByteSByteMatchesScalar()
         {
+            if (!RelaxedSimd.IsSupported)
+            {
+                return;
+            }
+
             // Per the finished spec, `a` is signed and `b` is unsigned-7-bit. When every lane
             // of `b` is in [0, 127] every implementation must match a straightforward
             // pairwise (sbyte, byte) -> int16 multiply-add.
@@ -63,9 +73,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             }
         }
 
-        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        [Fact]
         public void DotProductAddNativeByteSByteMatchesScalar()
         {
+            if (!RelaxedSimd.IsSupported)
+            {
+                return;
+            }
+
             var s = Vector128.Create((sbyte)-1, 2, -3, 4, -5, 6, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16);
             var u = Vector128.Create((byte)2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3, 2, 3);
             var acc = Vector128.Create(100, 200, 300, 400);
@@ -81,9 +96,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             }
         }
 
-        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        [Fact]
         public void MultiplyAddFloatMatchesScalarApproximately()
         {
+            if (!RelaxedSimd.IsSupported)
+            {
+                return;
+            }
+
             // Relaxed FMA may or may not round the intermediate product; verify the result is
             // within a small relative tolerance of the unfused result. float.Epsilon is a
             // subnormal (~1.4e-45) and is not a meaningful ULP scale for this comparison, so we
@@ -104,9 +124,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             }
         }
 
-        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        [Fact]
         public void LaneSelectNativeAllOnesAllZerosBehavesLikeConditionalSelect()
         {
+            if (!RelaxedSimd.IsSupported)
+            {
+                return;
+            }
+
             // For mask lanes that are all-ones or all-zeros the relaxed lane select must match
             // the deterministic semantics.
             var left = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
@@ -120,9 +145,14 @@ namespace System.Runtime.Intrinsics.Wasm.Tests
             Assert.Equal(expected, actual);
         }
 
-        [ConditionalFact(typeof(RelaxedSimd), nameof(RelaxedSimd.IsSupported))]
+        [Fact]
         public void SwizzleNativeInRangeMatchesVector128Shuffle()
         {
+            if (!RelaxedSimd.IsSupported)
+            {
+                return;
+            }
+
             // For index lanes in [0, 16) the relaxed swizzle must agree with Vector128.Shuffle.
             var v = Vector128.Create((byte)10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160);
             var idx = Vector128.Create((byte)15, 0, 14, 1, 13, 2, 12, 3, 11, 4, 10, 5, 9, 6, 8, 7);
