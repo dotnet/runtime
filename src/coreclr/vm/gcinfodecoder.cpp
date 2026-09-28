@@ -374,7 +374,7 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     m_SafePointIndex = m_NumSafePoints;
 #endif
 
-    if (slimHeader)
+    if (slimHeader || !GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES)
     {
         m_NumInterruptibleRanges = 0;
     }
@@ -382,7 +382,6 @@ TGcInfoDecoder<GcInfoEncoding>::TGcInfoDecoder(
     {
         m_NumInterruptibleRanges = (UINT32) m_Reader.DecodeVarLengthUnsigned(GcInfoEncoding::NUM_INTERRUPTIBLE_RANGES_ENCBASE);
     }
-    _ASSERTE(GcInfoEncoding::HAS_INTERRUPTIBLE_RANGES || m_NumInterruptibleRanges == 0);
 
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     if(flags & (DECODE_GC_LIFETIMES | DECODE_INTERRUPTIBILITY))
@@ -783,7 +782,6 @@ template <typename GcInfoEncoding> bool TGcInfoDecoder<GcInfoEncoding>::Enumerat
     {
         // Outside of safe points only untracked slots can be reported. Report them for aborted
         // frames too: an aborted funclet shares them with parent frames that are skipped.
-        _ASSERTE(m_NumInterruptibleRanges == 0);
         reportUntrackedOnly = true;
     }
     else

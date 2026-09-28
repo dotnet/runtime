@@ -220,7 +220,7 @@ The fat header is used for methods that cannot be encoded using the compact slim
 | ReversePInvokeFrameSlot | `REVERSE_PINVOKE_FRAME_ENCBASE` | Normalized reverse P/Invoke frame slot | If GC_INFO_REVERSE_PINVOKE_FRAME |
 | SizeOfStackOutgoingAndScratchArea | `SIZE_OF_STACK_AREA_ENCBASE` | Size of stack parameter area | Platform dependent |
 | NumSafePoints | `NUM_SAFE_POINTS_ENCBASE` | Number of safe points/callsites | #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED |
-| NumInterruptibleRanges | `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | Number of interruptible ranges | |
+| NumInterruptibleRanges | `NUM_INTERRUPTIBLE_RANGES_ENCBASE` | Number of interruptible ranges | If `HAS_INTERRUPTIBLE_RANGES` (omitted for Wasm R2R) |
 
 ##### Header Flags
 
@@ -517,7 +517,10 @@ if HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA:  // platform-dependent
     fixedStackParameterScratchArea = DenormalizeSizeOfStackArea(DecodeVarLengthUnsigned(...))
 
 numSafePoints = DecodeVarLengthUnsigned(NUM_SAFE_POINTS_ENCBASE)
-numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+if HAS_INTERRUPTIBLE_RANGES:  // false for Wasm R2R, which never has interruptible ranges
+    numInterruptibleRanges = DecodeVarLengthUnsigned(NUM_INTERRUPTIBLE_RANGES_ENCBASE)
+else:
+    numInterruptibleRanges = 0
 ```
 
 #### Body Decoding
