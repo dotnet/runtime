@@ -312,7 +312,6 @@ internal sealed class Program
             }
             catch (Exception e)
             {
-                Console.ResetColor();
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Error.WriteLine("Error: " + e.Message);
                 Console.ResetColor();
