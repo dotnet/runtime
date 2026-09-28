@@ -65,12 +65,10 @@ DWORD SharedMemoryException::GetErrorCode() const
 const mode_t SharedMemoryHelpers::PermissionsMask_OwnerUser_ReadWrite = S_IRUSR | S_IWUSR;
 const mode_t SharedMemoryHelpers::PermissionsMask_OwnerUser_ReadWriteExecute =
     PermissionsMask_OwnerUser_ReadWrite | S_IXUSR;
-const mode_t SharedMemoryHelpers::PermissionsMask_NonOwnerUsers_Write = S_IWGRP | S_IWOTH;
 const mode_t SharedMemoryHelpers::PermissionsMask_AllUsers_ReadWrite =
     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 const mode_t SharedMemoryHelpers::PermissionsMask_AllUsers_ReadWriteExecute =
     PermissionsMask_AllUsers_ReadWrite | (S_IXUSR | S_IXGRP | S_IXOTH);
-const mode_t SharedMemoryHelpers::PermissionsMask_Sticky = S_ISVTX;
 const int SharedMemoryHelpers::TransientRetryCount = 10;
 const UINT32 SharedMemoryHelpers::InvalidProcessId = static_cast<UINT32>(-1);
 const SIZE_T SharedMemoryHelpers::InvalidThreadId = static_cast<SIZE_T>(-1);
@@ -442,11 +440,7 @@ void SharedMemoryHelpers::EnsureUserFallbackBasePathExists(const SharedMemoryId 
                 statResult = lstat(path, &statInfo);
             }
 
-            if (statResult == 0 &&
-                statInfo.st_uid == id->GetUserScopeUid() &&
-                (statInfo.st_mode & PermissionsMask_OwnerUser_ReadWriteExecute) ==
-                    PermissionsMask_OwnerUser_ReadWriteExecute &&
-                (statInfo.st_mode & PermissionsMask_NonOwnerUsers_Write) == 0)
+            if (statResult == 0 && S_ISDIR(statInfo.st_mode))
             {
                 break;
             }
@@ -603,17 +597,7 @@ bool SharedMemoryHelpers::EnsureDirectoryExists(
         bool isValid;
         if (isSystemDirectory)
         {
-            isValid =
-                (statInfo.st_mode & PermissionsMask_OwnerUser_ReadWriteExecute) ==
-                    PermissionsMask_OwnerUser_ReadWriteExecute &&
-                (
-                    !id->IsUserScope() ||
-                    (statInfo.st_mode & PermissionsMask_Sticky) != 0 ||
-                    (
-                        statInfo.st_uid == id->GetUserScopeUid() &&
-                        (statInfo.st_mode & PermissionsMask_NonOwnerUsers_Write) == 0
-                    )
-                );
+            isValid = S_ISDIR(statInfo.st_mode);
         }
         else if (id->IsUserScope())
         {

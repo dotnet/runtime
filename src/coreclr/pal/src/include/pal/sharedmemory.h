@@ -95,10 +95,8 @@ class SharedMemoryHelpers
 private:
     static const mode_t PermissionsMask_OwnerUser_ReadWrite;
     static const mode_t PermissionsMask_OwnerUser_ReadWriteExecute;
-    static const mode_t PermissionsMask_NonOwnerUsers_Write;
     static const mode_t PermissionsMask_AllUsers_ReadWrite;
     static const mode_t PermissionsMask_AllUsers_ReadWriteExecute;
-    static const mode_t PermissionsMask_Sticky;
     static const int TransientRetryCount;
 public:
     static const UINT32 InvalidProcessId;
