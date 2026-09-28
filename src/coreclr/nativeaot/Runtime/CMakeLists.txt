@@ -200,11 +200,21 @@ else()
     ${RUNTIME_DIR}/unix/CLREventBase.cpp
     unix/PalUnix.cpp
     unix/PalCreateDump.cpp
-    ${GC_DIR}/unix/gcenv.unix.cpp
-    ${GC_DIR}/unix/numasupport.cpp
     ${GC_DIR}/unix/events.cpp
-    ${GC_DIR}/unix/cgroup.cpp
   )
+
+  if(CLR_CMAKE_TARGET_ARCH_WASM)
+    list(APPEND COMMON_RUNTIME_SOURCES
+      ${GC_DIR}/wasm/gcenv.cpp
+    )
+    include_directories(${GC_DIR}/unix)
+  else()
+    list(APPEND COMMON_RUNTIME_SOURCES
+      ${GC_DIR}/unix/gcenv.unix.cpp
+      ${GC_DIR}/unix/numasupport.cpp
+      ${GC_DIR}/unix/cgroup.cpp
+    )
+  endif()
 
   list(APPEND FULL_RUNTIME_SOURCES
     unix/cgroupcpu.cpp
@@ -214,18 +224,6 @@ else()
     unix/UnwindHelpers.cpp
     unix/UnixNativeCodeManager.cpp
   )
-
-  if(CLR_CMAKE_TARGET_ARCH_WASM)
-    list(REMOVE_ITEM COMMON_RUNTIME_SOURCES
-      ${GC_DIR}/unix/gcenv.unix.cpp
-      ${GC_DIR}/unix/numasupport.cpp
-      ${GC_DIR}/unix/cgroup.cpp
-    )
-    list(APPEND COMMON_RUNTIME_SOURCES
-      ${GC_DIR}/wasm/gcenv.cpp
-    )
-    include_directories(${GC_DIR}/unix)
-  endif()
 
   include(${CLR_SRC_NATIVE_DIR}/external/llvm-libunwind.cmake)
 

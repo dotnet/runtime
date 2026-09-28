@@ -16,7 +16,9 @@
 #include "gcenv.ee.h"
 #include "gcconfig.h"
 #include "holder.h"
+#ifdef FEATURE_HIJACK
 #include "UnixSignals.h"
+#endif // FEATURE_HIJACK
 #include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
@@ -185,17 +187,17 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 #endif
 }
 
+#ifdef FEATURE_HIJACK
 static void UnmaskActivationSignal()
 {
-#ifndef HOST_WASM
     sigset_t signal_set;
     sigemptyset(&signal_set);
     sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
 
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
-#endif // !HOST_WASM
 }
+#endif // FEATURE_HIJACK
 
 // This functions configures behavior of the signals that are not
 // related to hardware exception handling.
@@ -312,12 +314,10 @@ bool PalInit()
 
     ConfigureSignals();
 
-#ifndef HOST_WASM
     if (!PalCreateDumpInitialize())
     {
         return false;
     }
-#endif // !HOST_WASM
 
     GCConfig::Initialize();
 
@@ -387,7 +387,9 @@ void PalAttachThread(void* thread)
     tls_destructionMonitor.SetThread(thread);
 #endif
 
+#ifdef FEATURE_HIJACK
     UnmaskActivationSignal();
+#endif // FEATURE_HIJACK
 }
 
 #if !defined(FEATURE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
