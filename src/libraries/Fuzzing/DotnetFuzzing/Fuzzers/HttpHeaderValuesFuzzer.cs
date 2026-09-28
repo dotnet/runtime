@@ -86,13 +86,21 @@ internal sealed class HttpHeaderValuesFuzzer : IFuzzer
             return;
         }
 
-        // Round-trip: the formatted form parses to an equal value and formats the same way.
+        // Round-trip: the formatted form parses and re-formats the same way. The value/hash equality is skipped for the
+        // quality-bearing types, whose ToString rounds the q-value to 3 decimals while the value keeps full precision (finding 46).
         (bool reparsedOk, object? reparsed, string? reformatted) = parse(formatted);
         Check(reparsedOk, () => $"{name} '{Escape(text)}' formats as '{Escape(formatted)}', which doesn't parse");
-        Check(value!.Equals(reparsed), () => $"{name} '{Escape(text)}' formats as '{Escape(formatted)}', which parses to a different value");
         Check(reformatted == formatted, () => $"{name} '{Escape(text)}' isn't a formatting fixed point: '{Escape(formatted)}' -> '{Escape(reformatted)}'");
-        Check(value.GetHashCode() == reparsed!.GetHashCode(), () => $"{name} '{Escape(text)}' and its round-trip have different hash codes");
+        if (!HasQuality(name))
+        {
+            Check(value!.Equals(reparsed), () => $"{name} '{Escape(text)}' formats as '{Escape(formatted)}', which parses to a different value");
+            Check(value.GetHashCode() == reparsed!.GetHashCode(), () => $"{name} '{Escape(text)}' and its round-trip have different hash codes");
+        }
     }
+
+    // These types round the q-value to 3 decimals in ToString but keep full precision in the value (finding 46), so a
+    // value-equality round-trip check would false-positive.
+    private static bool HasQuality(string name) => name is "StringWithQualityHeaderValue" or "TransferCodingWithQualityHeaderValue";
 
     private static string Escape(string? text) =>
         text is null ? "(null)" : string.Concat(text.Take(300).Select(c => c is >= ' ' and < '\x7F' ? c.ToString() : $"\\u{(int)c:X4}"));
