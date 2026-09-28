@@ -1,17 +1,14 @@
 #include "pal.hpp"
 #include <cstring>
 #include <cassert>
+#include <exception>
 #include <functional>
 #include <limits>
+#include <new>
+#include <minipal/rwlock.h>
 #include <minipal/utf8.h>
 #include <minipal/sha1.h>
 #include <minipal/strings.h>
-
-#if defined(BUILD_WINDOWS)
-#include <windows.h>
-#else
-#include <pthread.h>
-#endif
 
 // String conversion functions
 HRESULT pal::ConvertUtf16ToUtf8(
@@ -120,73 +117,47 @@ bool pal::ComputeSha1Hash(span<uint8_t const> data, std::array<uint8_t, SHA1_HAS
 // Read-write lock implementation
 // The implementation type matches the C++11 BasicLockable and the C++14 SharedLockable requirements (excluding the try_lock_shared method).
 // This allows us to move to exposing the C++14 API surface in the future more easily.
-#if defined(BUILD_WINDOWS)
 namespace pal
 {
     class ReadWriteLock::Impl final
     {
-        SRWLOCK _lock;
+        minipal_rwlock _lock{};
     public:
         Impl()
         {
-            ::InitializeSRWLock(&_lock);
+            if (!minipal_rwlock_init(&_lock))
+                throw std::bad_alloc();
         }
 
+        ~Impl()
+        {
+            minipal_rwlock_destroy(&_lock);
+        }
+
+        // BasicLockable cannot report acquisition failure; never continue without the lock.
         void lock_shared() noexcept
         {
-            ::AcquireSRWLockShared(&_lock);
+            if (!minipal_rwlock_enter_read(&_lock))
+                std::terminate();
         }
 
         void unlock_shared() noexcept
         {
-            ::ReleaseSRWLockShared(&_lock);
+            minipal_rwlock_leave_read(&_lock);
         }
 
         void lock() noexcept
         {
-            ::AcquireSRWLockExclusive(&_lock);
+            if (!minipal_rwlock_enter_write(&_lock))
+                std::terminate();
         }
 
         void unlock() noexcept
         {
-            ::ReleaseSRWLockExclusive(&_lock);
+            minipal_rwlock_leave_write(&_lock);
         }
     };
 }
-#else
-namespace pal
-{
-    class ReadWriteLock::Impl final
-    {
-        pthread_rwlock_t _lock;
-    public:
-        Impl()
-        {
-            ::pthread_rwlock_init(&_lock, nullptr);
-        }
-
-        void lock_shared() noexcept
-        {
-            ::pthread_rwlock_rdlock(&_lock);
-        }
-
-        void unlock_shared() noexcept
-        {
-            ::pthread_rwlock_unlock(&_lock);
-        }
-
-        void lock() noexcept
-        {
-            ::pthread_rwlock_wrlock(&_lock);
-        }
-
-        void unlock() noexcept
-        {
-            ::pthread_rwlock_unlock(&_lock);
-        }
-    };
-}
-#endif
 
 pal::ReadWriteLock::ReadWriteLock()
     : _impl{ std::make_unique<Impl>() }

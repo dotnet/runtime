@@ -20,7 +20,7 @@ namespace
 {
     class MDDispenser final : public TearOffBase<IMetaDataDispenserEx>
     {
-        bool _threadSafe;
+        bool _threadSafe = false;
     private:
         minipal::com_ptr<ControllingIUnknown> CreateExposedObject(minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner)
         {

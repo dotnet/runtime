@@ -337,7 +337,7 @@ HRESULT ImportSignatureIntoModule(
     std::function<void(mdcursor_t)> onRowAdded,
     inline_span<uint8_t>& importedSignature)
 {
-    HRESULT hr;
+    HRESULT hr = S_OK;
     // We are going to copy over the signature and replace the tokens from the source module in the signature
     // with equivalent tokens in the destination module, creating them if needed.
     std::vector<uint8_t> importedSignatureBuffer;
@@ -436,7 +436,7 @@ HRESULT ImportSignatureIntoModule(
 
     try
     {
-        importedSignature.resize(importedSignature.size());
+        importedSignature.resize(importedSignatureBuffer.size());
     }
     catch (std::bad_alloc const&)
     {

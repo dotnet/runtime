@@ -1,5 +1,6 @@
 set(SOURCES
 	typeref.cpp
+	import.cpp
 	module.cpp
 	typedef.cpp
 	moduleref.cpp

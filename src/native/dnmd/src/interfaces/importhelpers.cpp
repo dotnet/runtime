@@ -577,7 +577,7 @@ namespace
         // In most cases, the target module will be the same as the target assembly, so this will be a no-op.
         // However, if the target module is a netmodule, then the target assembly will be the main assembly.
         // CoreCLR doesn't support multi-module assemblies, but they're still valid in ECMA-335.
-        if (targetModule != targetAssembly)
+        if (targetAssembly != nullptr && targetModule != targetAssembly)
         {
             mdcursor_t ignored;
             RETURN_IF_FAILED(ImportReferenceToAssemblyRef(sourceAssemblyRef, targetAssembly, onRowAdded, &ignored));
@@ -707,6 +707,9 @@ namespace
         mdcursor_t* assemblyRefInTargetModule)
     {
         HRESULT hr;
+        if (sourceAssembly == nullptr)
+            return E_UNEXPECTED;
+
         mdcursor_t importAssembly;
         if (!md_token_to_cursor(sourceAssembly, TokenFromRid(1, mdtAssembly), &importAssembly))
             return E_FAIL;
@@ -718,7 +721,7 @@ namespace
         // In most cases, the target module will be the same as the target assembly, so this will be a no-op.
         // However, if the target module is a netmodule, then the target assembly will be the main assembly.
         // CoreCLR doesn't support multi-module assemblies, but they're still valid in ECMA-335.
-        if (targetModule != targetAssembly)
+        if (targetAssembly != nullptr && targetModule != targetAssembly)
         {
             mdcursor_t ignored;
             RETURN_IF_FAILED(ImportReferenceToAssembly(importAssembly, sourceAssemblyHash, targetAssembly, onRowAdded, &ignored));
@@ -746,12 +749,17 @@ HRESULT ImportReferenceToTypeDef(
     mdguid_t sourceAssemblyMvid = {};
     mdguid_t sourceModuleMvid = {};
     RETURN_IF_FAILED(GetMvid(targetModule, &targetModuleMvid));
-    RETURN_IF_FAILED(GetMvid(targetAssembly, &targetAssemblyMvid));
+    if (targetAssembly != nullptr)
+        RETURN_IF_FAILED(GetMvid(targetAssembly, &targetAssemblyMvid));
     RETURN_IF_FAILED(GetMvid(sourceModule, &sourceModuleMvid));
-    RETURN_IF_FAILED(GetMvid(sourceAssembly, &sourceAssemblyMvid));
+    if (sourceAssembly != nullptr)
+        RETURN_IF_FAILED(GetMvid(sourceAssembly, &sourceAssemblyMvid));
 
     bool sameModuleMvid = std::memcmp(&targetModuleMvid, &sourceModuleMvid, sizeof(mdguid_t)) == 0;
     bool sameAssemblyMvid = std::memcmp(&targetAssemblyMvid, &sourceAssemblyMvid, sizeof(mdguid_t)) == 0;
+
+    if (!sameAssemblyMvid && sourceAssembly == nullptr)
+        return E_UNEXPECTED;
 
     mdcursor_t resolutionScope;
     if (sameAssemblyMvid && sameModuleMvid)
@@ -1195,7 +1203,7 @@ namespace
         std::function<void(mdcursor_t)> onRowAdded,
         mdcursor_t* targetTypeRef)
     {
-        assert(sourceAssembly != nullptr && targetAssembly != nullptr && targetModule != nullptr);
+        assert(targetModule != nullptr);
 
         HRESULT hr;
         std::stack<mdcursor_t> typesForTypeRefs;
@@ -1218,9 +1226,11 @@ namespace
         mdguid_t sourceAssemblyMvid = {};
         mdguid_t sourceModuleMvid = {};
         RETURN_IF_FAILED(GetMvid(targetModule, &targetModuleMvid));
-        RETURN_IF_FAILED(GetMvid(targetAssembly, &targetAssemblyMvid));
+        if (targetAssembly != nullptr)
+            RETURN_IF_FAILED(GetMvid(targetAssembly, &targetAssemblyMvid));
         RETURN_IF_FAILED(GetMvid(sourceModule, &sourceModuleMvid));
-        RETURN_IF_FAILED(GetMvid(sourceAssembly, &sourceAssemblyMvid));
+        if (sourceAssembly != nullptr)
+            RETURN_IF_FAILED(GetMvid(sourceAssembly, &sourceAssemblyMvid));
 
         bool sameModuleMvid = std::memcmp(&targetModuleMvid, &sourceModuleMvid, sizeof(mdguid_t)) == 0;
         bool sameAssemblyMvid = std::memcmp(&targetAssemblyMvid, &sourceAssemblyMvid, sizeof(mdguid_t)) == 0;
@@ -1325,7 +1335,7 @@ namespace
         }
         else if (!sameAssemblyMvid)
         {
-            assert(!sameModuleMvid);
+            assert(!sameModuleMvid || sourceAssembly == nullptr);
 
             mdToken scopeToken;
             if (!md_cursor_to_token(scope, &scopeToken))
@@ -1333,6 +1343,9 @@ namespace
 
             if (IsNilToken(scopeToken))
             {
+                if (sourceAssembly == nullptr)
+                    return E_UNEXPECTED;
+
                 // Lookup ExportedType entry in the source assembly for this type.
                 mdcursor_t exportedType;
                 uint32_t count;

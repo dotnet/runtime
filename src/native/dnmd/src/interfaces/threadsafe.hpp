@@ -1465,6 +1465,18 @@ public: // IMetaDataEmit
         ULONG       cbTranslatedSigMax,
         ULONG       *pcbTranslatedSig) override
     {
+        if (emit == nullptr)
+            return E_INVALIDARG;
+
+        if (emit != static_cast<IMetaDataEmit*>(this))
+        {
+            minipal::com_ptr<IDNMDOwner> destination;
+            HRESULT hr = emit->QueryInterface(IID_IDNMDOwner, (void**)&destination);
+            if (FAILED(hr))
+                return hr;
+            return emit->TranslateSigWithScope(pAssemImport, pbHashValue, cbHashValue, import, pbSigBlob, cbSigBlob, pAssemEmit, emit, pvTranslatedSig, cbTranslatedSigMax, pcbTranslatedSig);
+        }
+
         std::lock_guard<pal::WriteLock> lock { this->_lock.GetWriteLock() };
         return _emit->TranslateSigWithScope(pAssemImport, pbHashValue, cbHashValue, import, pbSigBlob, cbSigBlob, pAssemEmit, emit, pvTranslatedSig, cbTranslatedSigMax, pcbTranslatedSig);
     }

@@ -24,6 +24,11 @@
 
 namespace
 {
+    mdhandle_t MetaDataOrNull(IDNMDOwner* owner)
+    {
+        return owner == nullptr ? nullptr : owner->MetaData();
+    }
+
     void SplitTypeName(
         char* typeName,
         char const** nspace,
@@ -277,9 +282,6 @@ HRESULT MetadataEmit::DefineNestedType(
     if (TypeFromToken(tdEncloser) != mdtTypeDef || IsNilToken(tdEncloser))
         return E_INVALIDARG;
 
-    if (IsTdNested(dwTypeDefFlags))
-        return E_INVALIDARG;
-
     RETURN_IF_FAILED(DefineTypeDef(szTypeDef, dwTypeDefFlags, tkExtends, rtkImplements, ptd));
 
     md_added_row_t c;
@@ -444,9 +446,9 @@ HRESULT MetadataEmit::DefineImportType(
 
     RETURN_IF_FAILED(ImportReferenceToTypeDef(
         originalTypeDef,
-        assemImport->MetaData(),
+        MetaDataOrNull(assemImport.p),
         { reinterpret_cast<uint8_t const*>(pbHashValue), cbHashValue },
-        assemEmit->MetaData(),
+        MetaDataOrNull(assemEmit.p),
         MetaData(),
         false,
         [](mdcursor_t){},
@@ -2211,7 +2213,7 @@ HRESULT MetadataEmit::TranslateSigWithScope(
     if (pAssemEmit != nullptr)
         RETURN_IF_FAILED(pAssemEmit->QueryInterface(IID_IDNMDOwner, (void**)&assemEmit));
 
-    if (import == nullptr)
+    if (import == nullptr || emit == nullptr)
         return E_INVALIDARG;
 
     minipal::com_ptr<IDNMDOwner> moduleImport{};
@@ -2222,10 +2224,10 @@ HRESULT MetadataEmit::TranslateSigWithScope(
 
     inline_span<uint8_t> translatedSig;
     RETURN_IF_FAILED(ImportSignatureIntoModule(
-        assemImport->MetaData(),
+        MetaDataOrNull(assemImport.p),
         moduleImport->MetaData(),
         { reinterpret_cast<uint8_t const*>(pbHashValue), cbHashValue },
-        assemEmit->MetaData(),
+        MetaDataOrNull(assemEmit.p),
         moduleEmit->MetaData(),
         { pbSigBlob, cbSigBlob },
         [](mdcursor_t){},
