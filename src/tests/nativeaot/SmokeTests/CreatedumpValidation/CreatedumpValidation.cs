@@ -1071,7 +1071,7 @@ internal static class CreatedumpValidation
         string triageJson = Encoding.UTF8.GetString(triageBytes);
         if (!triageJson.StartsWith('{') ||
             !triageJson.EndsWith('}') ||
-            !triageJson.Contains("\"reason\":1", StringComparison.Ordinal) ||
+            !triageJson.Contains("\"reason\":\"1\"", StringComparison.Ordinal) ||
             !triageJson.Contains(ExceptionMessage, StringComparison.Ordinal) ||
             !triageJson.Contains("System.InvalidOperationException", StringComparison.Ordinal))
         {

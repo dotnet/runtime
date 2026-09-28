@@ -14,7 +14,7 @@
   <ItemGroup>
     <Compile Include="CreatedumpValidation.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot' and ('$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx')">
-    <Content Include="$(CoreCLRArtifactsPath)createdump" Link="native/createdump" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+  <Target Name="SignNativeExecutableForCreatedump" AfterTargets="NativeCompile" Condition="'$(TargetOS)' == 'osx'">
+    <Exec Command="codesign -s - -f --entitlements &quot;$(RepositoryEngineeringDir)native/entitlements.plist&quot; &quot;$(NativeBinary)&quot;" />
+  </Target>
 </Project>
