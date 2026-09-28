@@ -2989,6 +2989,9 @@ GenTree* Lowering::LowerCall(GenTree* node)
     {
         if (call->gtDirectCallAddress != nullptr)
         {
+            // A direct call target has no portable entrypoint to dispatch through, so there is
+            // nothing meaningful to pass here. The argument still needs to be present to satisfy
+            // the calling convention shared with indirect PEP calls, so pass a constant zero.
             AddWasmPortableEntryPointArg(call, m_compiler->gtNewIconNode(0, TYP_I_IMPL));
         }
         else
