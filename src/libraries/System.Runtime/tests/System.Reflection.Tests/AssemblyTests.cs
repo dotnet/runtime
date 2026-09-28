@@ -958,7 +958,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77821", TestPlatforms.Android)]
         public static void AssemblyGetForwardedTypesLoadFailure()
         {
             Assembly a = typeof(TypeInForwardedAssembly).Assembly;
