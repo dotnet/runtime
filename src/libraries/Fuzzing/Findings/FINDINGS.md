@@ -58,6 +58,7 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 41 | Convert | `FromHexString` OperationStatus overloads: `charsConsumed` can be odd or point past an invalid char, and a trailing non-hex char gives `NeedMoreData` | Observation | Yes | [41](repros/41-Convert-FromHexString-Consumed.cs) |
 | 42 | Reflection.Metadata | `PEReader.ReadDebugDirectory()` throws `NullReferenceException` for COFF-only images (Debug builds assert) | Low | Yes | [42](repros/42-PEReader-CoffDebugDirectory.cs) |
 | 43 | Complex | `Sqrt(0 + εi)` with `ε = T.Epsilon` is `(0, ∞)` for double, float and Half | Low | Yes | [43](repros/43-Complex-SqrtSubnormal.cs) |
+| 44 | Number parsing | UTF-8 `TryParse`/`Parse` reads past the end of the span when matching a 3-byte NaN/Infinity symbol or sign: `AccessViolationException` at a page boundary, and a UTF-8/UTF-16 mismatch | High (memory safety) | Yes | [44](repros/44-NumberParsing-Utf8-OutOfBoundsRead.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -251,12 +252,30 @@ The expected values match C99 `casin`/`cacos`/`catan` and CPython's `cmath`. `Sq
 
 [Repro](repros/43-Complex-SqrtSubnormal.cs). `Sqrt(0 + yi)` with `|y| == T.Epsilon` returns `(0, ∞)`: `|y| / 2` underflows to zero, the real part comes out as 0, and the imaginary part is computed as `y / (2 · real)`. The right answer is about `1.57e-162 · (1 + i)` for double. `2 · Epsilon` already works, and float and Half fail the same way at their own `Epsilon`.
 
+### 44. Out-of-bounds read parsing numbers from UTF-8
+
+[Repro](repros/44-NumberParsing-Utf8-OutOfBoundsRead.cs). This is the most serious finding here: a memory-safety over-read reachable from public `double.TryParse(ReadOnlySpan<byte>, ...)` (and every other numeric UTF-8 `TryParse`/`Parse`). Matching the NaN, `PositiveInfinity` or `NegativeInfinity` symbol or the negative sign goes through `Ordinal.EqualsIgnoreCaseUtf8_Scalar` / `StartsWithIgnoreCaseUtf8_Scalar`. The tail that handles exactly 3 leftover bytes reads a `ushort` and one more byte, advancing `byteOffset` by 2, but doesn't subtract that from `range`. When those bytes are non-ASCII it jumps to the non-ASCII fallback with the pointer moved forward 2 while the length still counts the full 3 bytes, so `EqualsStringIgnoreCaseNonAsciiUtf8` reads 2 bytes past the end of the span. It fires whenever the symbol's UTF-8 length is 3 mod 4 and the input ends with it.
+
+Two symptoms:
+
+- Memory safety: `en-US` `PositiveInfinitySymbol` is `∞` (`E2 88 9E`, 3 bytes). Parsing a span that holds just that symbol and ends at an unmapped page throws `AccessViolationException` and crashes the process. Against ordinary heap buffers the over-read usually lands on readable memory and only perturbs the result.
+- Correctness: with a format whose `NegativeSign` is `−` (U+2212, 3 bytes), `"−nan"` parses to `NaN` from a string but fails from UTF-8, because the mis-lengthed compare rejects the sign.
+
+The tail should subtract the 2 it read from `range` (or set `range` from `byteOffset`) before the non-ASCII fallback, in both `EqualsIgnoreCaseUtf8_Scalar` and `StartsWithIgnoreCaseUtf8_Scalar`. Found by `NumberParsingUtf8Fuzzer`.
+
 ## Things that looked like bugs but aren't
 
 - `NrbfDecoderFuzzer` OOM on the repo's own seed `largeArrayOfNulls.nrbf`: the input asks for an `Array.MaxLength` array, and the `ArrayRecord.GetArray` docs tell callers to check `Lengths` first. It only fails on machines that can't allocate 16 GB.
 - NaN-propagating reductions (`Max`, `Min`, ...) don't always return the *first* NaN as documented, and `Half` can return a quieted signalling NaN. Minor doc mismatch, no repro file.
 - `Sigmoid` throws for an empty span. That's documented, unlike the other element-wise ops.
 - The incremental `CborReader` fails a few tokens later than a one-shot reader on a declared length that exceeds the buffer. That's inherent to streaming; the outcome is the same.
+- The web encoders always escape the U+FFFD that replaces invalid input (lone surrogates, bad UTF-8), even when U+FFFD itself is allowed. That's deliberate in `OptimizedInboxTextEncoder`.
+- `Matcher.AddInclude` throws `ArgumentException` for `..` anywhere but at the start of a pattern. Documented.
+- `Encoding.Latin1` best-fits some characters above U+00FF (`Ā` becomes `A`) instead of writing `?`, and replaces each half of a surrogate pair separately. Long-standing behavior.
+- `OrdinalIgnoreCase` doesn't treat `ſ`, `ı` or the Kelvin sign as equal to ASCII letters, so the ASCII-only frozen collection strategies stay correct in Release builds.
+- `UnmanagedMemoryAccessor.ReadArray`/`WriteArray` throw when `position == Capacity`. That's intentional (`PositionLessThanCapacityRequired`), although the docs only mention `position > Capacity`.
+- `Ascii.ToUpper` and `Convert.FromHexString` return `DestinationTooSmall` rather than `InvalidData` when the destination fills up before the bad input is reached. Either answer is reasonable.
+- `BigInteger`: about 290K executions over the new kernels (repeated limbs, factors of 3/5/7, `B^k - 1` divisors, Toom-sized operands) turned up nothing.
 
 ## Coverage
 
@@ -275,6 +294,17 @@ Clean runs, with the known issues above tolerated so the fuzzers could get past 
 | HttpClient response parsing (HTTP/1.1, h2c, decompression) | `HttpClientResponseFuzzer` | 0.3M on a Debug build (only finding 19), then 3.7M on a Release build with no findings |
 | Brotli decode/encode, three APIs each | `BrotliFuzzer` | 0.23M on a Release build (quality 11 round-trips are slow) |
 | MailAddress, MailAddressCollection, ContentType, ContentDisposition, CookieContainer.SetCookies | `NetHeaderParsersFuzzer` | 1.6M |
+| System.IO.Hashing: CRC-32/CRC-64 parameter sets, XxHash32/64/3/128, Adler32, vectorized and scalar | `HashingFuzzer` | 0.4M |
+| Managed `HttpListener` request parsing over loopback | `HttpListenerFuzzer` | 7.1M |
+| Managed NTLM and SPNEGO client | `ManagedNtlmFuzzer` | 8.6M |
+| `Matcher` (FileSystemGlobbing) against a reference glob matcher | `GlobbingFuzzer` | 11.8M, no findings |
+| HTML, JavaScript and URL encoders, built-in and custom settings | `TextEncodingsWebFuzzer` | 0.8M, no findings |
+| `BigInteger` against a word-based reference, operands aimed at the special-case kernels | `BigIntegerFuzzer` | 0.29M (large operands, about 35 exec/s), no findings |
+| `Complex<T>` for double, float and Half | `ComplexFuzzer` | 64M |
+| `FrozenDictionary`/`FrozenSet`, every string strategy plus integer and enum keys | `FrozenCollectionsFuzzer` | 6.3M |
+| `PEReader`/`MetadataReader` over guard-paged images, PDBs included | `MetadataReaderFuzzer` | 0.1M (Debug build, then Release) |
+| BitArray, Ascii, hex, UnmanagedMemoryAccessor, MemoryMarshal, OrdinalIgnoreCase, Latin-1 | `UnsafeBuffersFuzzer` | 2.8M |
+| MemoryExtensions search and comparison (SpanHelpers), eight element types | `SpanHelpersFuzzer` | 0.3M |
 
 A planted tie-breaking bug in `argmin-blocks` was caught by the saved corpus in under a second, so the clean result on those branches means something.
 
@@ -287,6 +317,8 @@ The upstream harness is Windows-only. On Linux I built libfuzzer-dotnet with `cl
 ```sh
 libfuzzer-dotnet --target_path=<publish dir>/DotnetFuzzing --target_arg=CborReaderFuzzer -fork=1 -ignore_crashes=1 corpus/
 ```
+
+`libfuzzer-dotnet` leaks one SysV shared memory segment per crashing child. After a few thousand crashes `shmget()` fails and every job dies at startup, which shows up as thousands of zero-length "crashes". `ipcrm -m` on segments with no attached processes fixes it; the campaigns here ran a small cleaner loop for that.
 
 For vector-width-specific code, `DOTNET_PreferredVectorBitWidth=512`, `DOTNET_EnableAVX512=0` and `DOTNET_EnableAVX=0` select the 512, 256 and 128-bit paths.
 
