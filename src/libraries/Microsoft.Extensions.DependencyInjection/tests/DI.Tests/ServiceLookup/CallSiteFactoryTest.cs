@@ -1002,6 +1002,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is trimming)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         public void VerifyOpenGenericTrimmabilityChecks()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -1047,6 +1048,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // RuntimeConfigurationOptions are not supported on .NET Framework (and neither is NativeAOT)
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/130129", typeof(PlatformDetection), nameof(PlatformDetection.IsWasi), nameof(PlatformDetection.IsCoreCLR))]
         public void VerifyDynamicCodeNotSupportedChecks()
         {
             Func<Type, ServiceCallSite> CreateAotCompatibilityCallSiteFactory()

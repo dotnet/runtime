@@ -4,6 +4,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CORERUN_IN_BROWSER 0)
 
+# Reserve the composite's function-table slots in the standalone WASI test host.
+option(CORERUN_WASI_COMPOSITE_R2R "Reserve table slots for a spliced WASI R2R composite" ON)
+set(CORERUN_WASI_R2R_TABLE_BASE "65537" CACHE STRING "First table slot for corerun functions")
+
 if(CLR_CMAKE_HOST_WIN32)
     add_definitions(-DFX_VER_INTERNALNAME_STR=corerun.exe)
 else()
@@ -157,7 +161,19 @@ else()
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
                 -Wl,--max-memory=4294967296
-                "-Wl,--component-type,${_wasi_http_world_wit}")
+                "-Wl,--component-type,${_wasi_http_world_wit}"
+                -Wl,--export=GetDotNetRuntimeContractDescriptor
+                -Wl,--export=__async_continuation)
+
+            if (CORERUN_WASI_COMPOSITE_R2R)
+                target_link_options(corerun PRIVATE
+                    -Wl,--table-base=${CORERUN_WASI_R2R_TABLE_BASE}
+                    -Wl,--export-table
+                    -Wl,--export=__stack_pointer
+                    -Wl,--export=__coreclr_wasm_rtlrestorecontext_tag)
+            else()
+                target_compile_definitions(corerun PRIVATE WASI_R2R_IMAGE_CAP=64u)
+            endif()
         endif()
 
         if (CORERUN_IN_BROWSER)

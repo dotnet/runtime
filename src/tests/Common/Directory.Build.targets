@@ -99,6 +99,15 @@
           TargetDir="build/"/>
     </ItemGroup>
 
+    <ItemGroup Condition="'$(TargetOS)' == 'wasi' and '$(RuntimeFlavor)' == 'coreclr'">
+      <RunTimeDependencyCopyLocal
+        Include="$(ArtifactsBinDir)WasmAppBuilder\$(HostConfiguration)\net\*"
+        TargetDir="wasi-r2r/" />
+      <RunTimeDependencyCopyLocal
+        Include="$(MSBuildThisFileDirectory)WasiR2RComposer.proj"
+        TargetDir="wasi-r2r/" />
+    </ItemGroup>
+
     <ItemGroup>
       <RunTimeDependencyCopyLocal Include="$(CoreDisToolsLibrary)" Condition="$(CopyCoreDisToolsToCoreRoot)" />
     </ItemGroup>

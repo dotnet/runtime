@@ -6,6 +6,7 @@ parameters:
   isWasmOnlyBuild: false
   nameSuffix: ''
   platforms: []
+  readyToRun: false
   scenarios: ['WasmTestOnWasmtime']
   shouldContinueOnError: false
   shouldRunSmokeOnly: false
@@ -66,12 +67,17 @@ jobs:
           ]
       - name: _wasmRunSmokeTestsOnlyArg
         value: /p:RunSmokeTestsOnly=$(shouldRunSmokeOnlyVar)
+      - name: wasmReadyToRunArgs
+        ${{ if eq(parameters.readyToRun, true) }}:
+          value: /p:TestWasmReadyToRun=true /p:EnableAggressiveTrimming=true
+        ${{ else }}:
+          value: ''
 
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       testGroup: innerloop
       nameSuffix: LibraryTestsCoreCLR_WASI${{ parameters.nameSuffix }}
-      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_wasmRunSmokeTestsOnlyArg) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
+      buildArgs: -s clr+libs+host+packs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_wasmRunSmokeTestsOnlyArg) $(wasmReadyToRunArgs) /maxcpucount:1 ${{ parameters.extraBuildArgs }}
       timeoutInMinutes: 240
       condition: >-
         or(
@@ -82,7 +88,7 @@ jobs:
         - template: /eng/pipelines/libraries/helix.yml
           parameters:
             creator: dotnet-bot
-            testRunNamePrefixSuffix: CoreCLR_WASI_$(_BuildConfig)
-            extraHelixArguments: $(_wasmRunSmokeTestsOnlyArg) ${{ parameters.extraHelixArguments }}
+            testRunNamePrefixSuffix: CoreCLR_WASI${{ parameters.nameSuffix }}_$(_BuildConfig)
+            extraHelixArguments: $(_wasmRunSmokeTestsOnlyArg) $(wasmReadyToRunArgs) ${{ parameters.extraHelixArguments }}
             scenarios: ${{ parameters.scenarios }}
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
