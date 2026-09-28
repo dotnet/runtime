@@ -261,12 +261,12 @@ namespace System.Net.Tests
             _listener.ExtendedProtectionSelectorDelegate = request =>
                 request.QueryString["strict"] == "1" ? strictPolicy : relaxedPolicy;
 
-            NtlmHandshakeResult baselineResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: false);
-            if (baselineResult == NtlmHandshakeResult.CredentialsUnavailable)
+            if (!CanAuthenticateWithDefaultCredentials())
             {
                 throw new SkipTestException("Unable to establish baseline NTLM authentication with default credentials.");
             }
 
+            NtlmHandshakeResult baselineResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: false);
             Assert.Equal(NtlmHandshakeResult.Authenticated, baselineResult);
 
             NtlmHandshakeResult strictSecondLegResult = await TryCompleteNtlmOverSingleConnection(secondLegStrict: true);
@@ -490,6 +490,56 @@ namespace System.Net.Tests
         private Task ValidateValidUser() =>
             ValidateValidUser(string.Format("{0}:{1}", TestUser, TestPassword), TestUser, TestPassword);
 
+        private static bool CanAuthenticateWithDefaultCredentials()
+        {
+            NegotiateAuthenticationClientOptions clientOptions =
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = CredentialCache.DefaultNetworkCredentials,
+                    TargetName = "HTTP/lax-target"
+                };
+
+            NegotiateAuthenticationServerOptions serverOptions =
+                new NegotiateAuthenticationServerOptions
+                {
+                    Package = "NTLM",
+                    Policy = new ExtendedProtectionPolicy(PolicyEnforcement.Never)
+                };
+
+            using NegotiateAuthentication clientContext = new NegotiateAuthentication(clientOptions);
+            using NegotiateAuthentication serverContext = new NegotiateAuthentication(serverOptions);
+
+            byte[]? token = clientContext.GetOutgoingBlob(ReadOnlySpan<byte>.Empty, out NegotiateAuthenticationStatusCode clientStatus);
+            if (token is null || clientStatus >= NegotiateAuthenticationStatusCode.GenericFailure)
+            {
+                return false;
+            }
+
+            const int MaxIterations = 20;
+            for (int i = 0; i < MaxIterations; i++)
+            {
+                token = serverContext.GetOutgoingBlob(token, out NegotiateAuthenticationStatusCode serverStatus);
+                if (serverStatus == NegotiateAuthenticationStatusCode.Completed)
+                {
+                    return serverContext.IsAuthenticated;
+                }
+
+                if (token is null || serverStatus >= NegotiateAuthenticationStatusCode.GenericFailure)
+                {
+                    return false;
+                }
+
+                token = clientContext.GetOutgoingBlob(token, out clientStatus);
+                if (token is null || clientStatus >= NegotiateAuthenticationStatusCode.GenericFailure)
+                {
+                    return false;
+                }
+            }
+
+            return false;
+        }
+
         private async Task<NtlmHandshakeResult> TryCompleteNtlmOverSingleConnection(bool secondLegStrict)
         {
             using Socket client = _factory.GetConnectedSocket();
@@ -542,9 +592,7 @@ namespace System.Net.Tests
             byte[]? type3 = clientContext.GetOutgoingBlob(type2, out NegotiateAuthenticationStatusCode type3Status);
             if (type3 is null)
             {
-                return type3Status == NegotiateAuthenticationStatusCode.UnknownCredentials
-                    ? NtlmHandshakeResult.CredentialsUnavailable
-                    : NtlmHandshakeResult.UnexpectedFailure;
+                return NtlmHandshakeResult.UnexpectedFailure;
             }
 
             if (type3Status != NegotiateAuthenticationStatusCode.Completed)
@@ -679,7 +727,6 @@ namespace System.Net.Tests
         {
             Authenticated,
             Unauthorized,
-            CredentialsUnavailable,
             UnexpectedFailure
         }
 

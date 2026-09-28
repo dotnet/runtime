@@ -883,20 +883,32 @@ namespace System.Net
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"context: {sessionContext} for connectionId: {connectionId}");
 
                             string package = headerScheme == AuthenticationSchemes.Ntlm ? NegotiationInfoClass.NTLM : NegotiationInfoClass.Negotiate;
+                            ExtendedProtectionPolicy authenticationExtendedProtectionPolicy = GetAuthenticationExtendedProtectionPolicy(extendedProtectionPolicy);
                             if (sessionContext is null || sessionContext.IsAuthenticated || contextPackage != package ||
-                                !AreExtendedProtectionPoliciesEquivalent(contextExtendedProtectionPolicy, extendedProtectionPolicy))
+                                !AreExtendedProtectionPoliciesEquivalent(contextExtendedProtectionPolicy, authenticationExtendedProtectionPolicy))
                             {
-                                sessionContext?.Dispose();
+                                if (sessionContext is not null)
+                                {
+                                    if (disconnectResult is not null)
+                                    {
+                                        disconnectResult.Session = null;
+                                        disconnectResult.SessionPackage = null;
+                                        disconnectResult.SessionExtendedProtectionPolicy = null;
+                                    }
+
+                                    sessionContext.Dispose();
+                                }
 
                                 binding = GetChannelBinding(session, connectionId, isSecureConnection, extendedProtectionPolicy);
                                 NegotiateAuthenticationServerOptions serverOptions = new NegotiateAuthenticationServerOptions
                                 {
                                     Package = package,
                                     Binding = binding,
-                                    Policy = GetAuthenticationExtendedProtectionPolicy(extendedProtectionPolicy)
+                                    Policy = authenticationExtendedProtectionPolicy
                                 };
                                 sessionContext = new NegotiateAuthentication(serverOptions);
                                 contextPackage = package;
+                                contextExtendedProtectionPolicy = authenticationExtendedProtectionPolicy;
                             }
 
                             try
@@ -1113,7 +1125,7 @@ namespace System.Net
 
                     disconnectResult.Session = sessionContext;
                     disconnectResult.SessionPackage = contextPackage;
-                    disconnectResult.SessionExtendedProtectionPolicy = extendedProtectionPolicy;
+                    disconnectResult.SessionExtendedProtectionPolicy = contextExtendedProtectionPolicy;
                     // Prevent finally from disposing the context
                     sessionContext = null;
                 }
@@ -1277,8 +1289,7 @@ namespace System.Net
                 return false;
             }
 
-            // Compare custom service name lists.  Null means "use listener defaults", which is the
-            // same object for both calls, so null == null is always equivalent.
+            // Compare the effective service name lists.
             ServiceNameCollection? storedNames = stored.CustomServiceNames;
             ServiceNameCollection? currentNames = current.CustomServiceNames;
 
