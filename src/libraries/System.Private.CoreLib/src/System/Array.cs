@@ -70,6 +70,56 @@ namespace System
             Debug.Assert(array != null);
         }
 
+        /// <summary>
+        /// Creates a new array of the specified length and fills all elements with the specified value.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the array.</typeparam>
+        /// <param name="length">The size of the array to create.</param>
+        /// <param name="value">The value to assign to each element of the array.</param>
+        /// <returns>A newly allocated array filled with <paramref name="value"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        public static T[] CreateFilled<T>(int length, T value)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            if (length == 0)
+            {
+                return [];
+            }
+
+            T[] array = GC.AllocateUninitializedArray<T>(length);
+            new Span<T>(array).Fill(value);
+            return array;
+        }
+
+        /// <summary>
+        /// Creates a new array of the specified length and populates each element using the provided factory.
+        /// </summary>
+        /// <typeparam name="T">The type of the elements in the array.</typeparam>
+        /// <param name="length">The size of the array to create.</param>
+        /// <param name="factory">The function invoked with the element's index to produce each value.</param>
+        /// <returns>A newly allocated array populated with the results of invoking <paramref name="factory"/>.</returns>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is negative.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+        public static T[] CreateFilled<T>(int length, Func<int, T> factory)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+            ArgumentNullException.ThrowIfNull(factory);
+
+            if (length == 0)
+            {
+                return [];
+            }
+
+            T[] array = GC.AllocateUninitializedArray<T>(length);
+            for (int i = 0; i < array.Length; i++)
+            {
+                array[i] = factory(i);
+            }
+
+            return array;
+        }
+
         [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstance(Type elementType, int length)
         {

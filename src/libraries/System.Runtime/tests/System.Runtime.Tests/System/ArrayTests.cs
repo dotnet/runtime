@@ -4542,6 +4542,151 @@ namespace System.Tests
             Assert.Equal(CreateBarArray(), barArray);
         }
 
+        [Fact]
+        public static void CreateFilled_Value_ZeroLength_ReturnsEmptyArray()
+        {
+            int[] emptyInts = Array.CreateFilled(0, 42);
+            Assert.Same(Array.Empty<int>(), emptyInts);
+
+            string[] emptyStrings = Array.CreateFilled(0, "test");
+            Assert.Same(Array.Empty<string>(), emptyStrings);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public static void CreateFilled_Value_NegativeLength_ThrowsArgumentOutOfRangeException(int length)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled(length, 42));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled(length, "hello"));
+        }
+
+        [Theory]
+        [InlineData(1, 42)]
+        [InlineData(5, -1)]
+        [InlineData(16, 12345)]
+        [InlineData(2048, 99)]
+        [InlineData(4096, 777)]
+        public static void CreateFilled_Value_ValueType(int length, int value)
+        {
+            int[] array = Array.CreateFilled(length, value);
+            Assert.Equal(length, array.Length);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.Equal(value, array[i]);
+            }
+        }
+
+        [Fact]
+        public static void CreateFilled_Value_ReferenceType()
+        {
+            object obj = new object();
+            object[] array = Array.CreateFilled(100, obj);
+            Assert.Equal(100, array.Length);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.Same(obj, array[i]);
+            }
+
+            string?[] nullArray = Array.CreateFilled<string?>(50, (string?)null);
+            Assert.Equal(50, nullArray.Length);
+            for (int i = 0; i < nullArray.Length; i++)
+            {
+                Assert.Null(nullArray[i]);
+            }
+        }
+
+        [Fact]
+        public static void CreateFilled_Value_StructWithReference()
+        {
+            (string, int) val = ("hello", 123);
+            (string, int)[] array = Array.CreateFilled(2500, val);
+            Assert.Equal(2500, array.Length);
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.Equal(val, array[i]);
+            }
+        }
+
+        [Fact]
+        public static void CreateFilled_Factory_NullFactory_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("factory", () => Array.CreateFilled<int>(10, null!));
+            AssertExtensions.Throws<ArgumentNullException>("factory", () => Array.CreateFilled<int>(0, null!));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(-10)]
+        [InlineData(int.MinValue)]
+        public static void CreateFilled_Factory_NegativeLength_ThrowsArgumentOutOfRangeException(int length)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateFilled(length, i => i));
+        }
+
+        [Fact]
+        public static void CreateFilled_Factory_ZeroLength_ReturnsEmptyArray_DoesNotInvokeFactory()
+        {
+            bool invoked = false;
+            int[] array = Array.CreateFilled(0, i => { invoked = true; return i; });
+            Assert.Same(Array.Empty<int>(), array);
+            Assert.False(invoked);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(4096)]
+        public static void CreateFilled_Factory_PopulatesElementsSequentially(int length)
+        {
+            int expectedNextIndex = 0;
+            int[] array = Array.CreateFilled(length, i =>
+            {
+                Assert.Equal(expectedNextIndex, i);
+                expectedNextIndex++;
+                return i * 2;
+            });
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(length, expectedNextIndex);
+            for (int i = 0; i < length; i++)
+            {
+                Assert.Equal(i * 2, array[i]);
+            }
+        }
+
+        [Fact]
+        public static void CreateFilled_Factory_ReferenceTypes_DistinctInstances()
+        {
+            object[] array = Array.CreateFilled(50, _ => new object());
+            Assert.Equal(50, array.Length);
+            HashSet<object> set = new HashSet<object>();
+            for (int i = 0; i < array.Length; i++)
+            {
+                Assert.NotNull(array[i]);
+                Assert.True(set.Add(array[i]));
+            }
+        }
+
+        [Fact]
+        public static void CreateFilled_Factory_ExceptionThrown_Propagates()
+        {
+            InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() =>
+            {
+                Array.CreateFilled<int>(10, i =>
+                {
+                    if (i == 5)
+                    {
+                        throw new InvalidOperationException("Boom");
+                    }
+                    return i;
+                });
+            });
+            Assert.Equal("Boom", ex.Message);
+        }
+
         public static IEnumerable<object[]> Reverse_Generic_Int_TestData()
         {
             // TODO: use (or merge this data into) Reverse_TestData if/when xunit/xunit#965 is merged
