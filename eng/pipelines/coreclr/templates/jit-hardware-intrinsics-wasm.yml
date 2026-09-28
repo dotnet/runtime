@@ -31,8 +31,9 @@ jobs:
           parameters:
             creator: dotnet-bot
             testBuildArgs: ${{ parameters.testBuildArgs }}
-            testRunNamePrefixSuffix: CoreCLR
-            sendToHelix: false
+            testRunNamePrefixSuffix: CoreCLR_R2R
+            # The CoreCLR interpreter does not implement Wasm SIMD; ReadyToRun code does.
+            readyToRun: true
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
           parameters:
