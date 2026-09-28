@@ -2051,9 +2051,6 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         BeforeTypeLoad();
         break;
 
-    case FILE_LOAD_EAGER_FIXUPS:
-        break;
-
     case FILE_LOAD_DELIVER_EVENTS:
         DeliverSyncEvents();
         break;
@@ -2068,8 +2065,11 @@ BOOL Assembly::DoIncrementalLoad(FileLoadLevel level)
         FinishLoad();
         break;
 
-    case FILE_ACTIVE:
+    case FILE_LOAD_EAGER_FIXUPS:
         EagerFixups();
+        break;
+
+    case FILE_ACTIVE:
         Activate();
         break;
 
