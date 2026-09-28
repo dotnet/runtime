@@ -178,7 +178,7 @@ enum class ReadyToRunImportSectionType : uint8_t
 enum class ReadyToRunImportSectionFlags : uint16_t
 {
     None  = 0x0000,
-    Eager = 0x0001, // Section before module activation.
+    Eager = 0x0001, // Fixups must be resolved at module load time before any code in the module runs.
     PCode = 0x0004, // Section contains pointers to code
 };
 
