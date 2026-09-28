@@ -16,134 +16,21 @@ namespace System.Reflection
 {
     internal sealed partial class RuntimeParameterInfo : ParameterInfo
     {
-        #region Static Members
-#if !NATIVEAOT
-        internal static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
-        {
-            Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
+        private volatile bool _nameIsCached;
+        private readonly bool _noMetadata;
+        private bool _noDefaultValue;
+        private readonly MethodBase? _originalMember;
 
-            return GetParameters(method, member, sig, out _, fetchReturnParameter: false);
-        }
-
-        internal static ParameterInfo GetReturnParameter(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
-        {
-            Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-
-            GetParameters(method, member, sig, out ParameterInfo? returnParameter, fetchReturnParameter: true);
-            return returnParameter!;
-        }
-
-        private static ParameterInfo[] GetParameters(
-            IRuntimeMethodInfo methodHandle, MemberInfo member, Signature sig, out ParameterInfo? returnParameter, bool fetchReturnParameter)
-        {
-            // The lifetime rules for MetadataImport expect these two objects to be the same instance.
-            // See the lifetime of MetadataImport, acquired through IRuntimeMethodInfo, but extended
-            // through the MemberInfo instance.
-            Debug.Assert(ReferenceEquals(methodHandle, member));
-
-            returnParameter = null;
-            int sigArgCount = sig.Arguments.Length;
-            ParameterInfo[] args =
-                fetchReturnParameter ? null! :
-                sigArgCount == 0 ? [] :
-                new ParameterInfo[sigArgCount];
-
-            int tkMethodDef = RuntimeMethodHandle.GetMethodDef(methodHandle);
-            int cParamDefs = 0;
-
-            // Not all methods have tokens. Arrays, pointers and byRef types do not have tokens as they
-            // are generated on the fly by the runtime.
-            if (!MdToken.IsNullToken(tkMethodDef))
-            {
-                MetadataImport scope = RuntimeMethodHandle.GetDeclaringType(methodHandle).GetRuntimeModule().MetadataImport;
-
-                scope.EnumParams(tkMethodDef, out MetadataEnumResult tkParamDefs);
-
-                cParamDefs = tkParamDefs.Length;
-
-                // Not all parameters have tokens. Parameters may have no token
-                // if they have no name and no attributes.
-                if (cParamDefs > sigArgCount + 1 /* return type */)
-                    throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
-
-                for (int i = 0; i < cParamDefs; i++)
-                {
-                    #region Populate ParameterInfos
-                    int tkParamDef = tkParamDefs[i];
-
-                    scope.GetParamDefProps(tkParamDef, out int position, out ParameterAttributes attr);
-
-                    position--;
-
-                    if (fetchReturnParameter && position == -1)
-                    {
-                        // more than one return parameter?
-                        if (returnParameter != null)
-                            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
-
-                        returnParameter = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
-                    }
-                    else if (!fetchReturnParameter && position >= 0)
-                    {
-                        // position beyond sigArgCount?
-                        if (position >= sigArgCount)
-                            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
-
-                        args[position] = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
-                    }
-                    #endregion
-                }
-            }
-
-            // Fill in empty ParameterInfos for those without tokens
-            if (fetchReturnParameter)
-            {
-                returnParameter ??= new RuntimeParameterInfo(sig, default, 0, -1, (ParameterAttributes)0, member);
-            }
-            else
-            {
-                if (cParamDefs < args.Length + 1)
-                {
-                    for (int i = 0; i < args.Length; i++)
-                    {
-                        if (args[i] != null)
-                            continue;
-
-                        args[i] = new RuntimeParameterInfo(sig, default, 0, i, (ParameterAttributes)0, member);
-                    }
-                }
-            }
-
-            return args;
-        }
-#endif
-        #endregion
-
-        #region Private Data Members
-#if !NATIVEAOT
-        private readonly int m_tkParamDef;
-        private readonly MetadataImport m_scope;
-        private readonly Signature? m_signature;
-#endif
-        private volatile bool m_nameIsCached;
-        private readonly bool m_noMetadata;
-        private bool m_noDefaultValue;
-        private readonly MethodBase? m_originalMember;
-        #endregion
-
-        #region Internal Properties
         internal MethodBase DefiningMethod
         {
             get
             {
-                MethodBase? result = m_originalMember ?? MemberImpl as MethodBase;
+                MethodBase? result = _originalMember ?? MemberImpl as MethodBase;
                 Debug.Assert(result != null);
                 return result;
             }
         }
-        #endregion
 
-        #region Internal Methods
         internal void SetName(string? name)
         {
             NameImpl = name;
@@ -153,17 +40,15 @@ namespace System.Reflection
         {
             AttrsImpl = attributes;
         }
-        #endregion
 
-        #region Constructor
         // used by RuntimePropertyInfo
         internal RuntimeParameterInfo(RuntimeParameterInfo accessor, RuntimePropertyInfo property)
             : this(accessor, (MemberInfo)property)
         {
 #if NATIVEAOT
-            m_signature = property.GetParameterTypeHandle(PositionImpl);
+            _signature = property.GetParameterTypeHandle(PositionImpl);
 #else
-            m_signature = property.Signature;
+            _signature = property.Signature;
 #endif
         }
 
@@ -174,12 +59,12 @@ namespace System.Reflection
 
             // The original owner should always be a method, because this method is only used to
             // change the owner from a method to a property.
-            m_originalMember = accessor.MemberImpl as MethodBase;
-            Debug.Assert(m_originalMember != null);
+            _originalMember = accessor.MemberImpl as MethodBase;
+            Debug.Assert(_originalMember != null);
 
             // Populate all the caches -- we inherit this behavior from RTM
             NameImpl = accessor.Name;
-            m_nameIsCached = true;
+            _nameIsCached = true;
             ClassImpl = accessor.ParameterType;
             PositionImpl = accessor.Position;
             AttrsImpl = accessor.Attributes;
@@ -187,53 +72,14 @@ namespace System.Reflection
             // Strictly speaking, properties don't contain parameter tokens
             // However we need this to make ca's work... oh well...
 #if NATIVEAOT
-            m_tkParamDef = accessor.m_tkParamDef;
-            m_typeContext = accessor.m_typeContext;
+            _tkParamDef = accessor._tkParamDef;
+            _typeContext = accessor._typeContext;
 #else
-            m_tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
+            _tkParamDef = MdToken.IsNullToken(accessor.MetadataToken) ? (int)MetadataTokenType.ParamDef : accessor.MetadataToken;
 #endif
-            m_scope = accessor.m_scope;
+            _scope = accessor._scope;
         }
 
-#if !NATIVEAOT
-        private RuntimeParameterInfo(
-            Signature signature, MetadataImport scope, int tkParamDef,
-            int position, ParameterAttributes attributes, MemberInfo member)
-        {
-            Debug.Assert(member != null);
-            Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals((MetadataImport)default));
-            Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
-
-            PositionImpl = position;
-            MemberImpl = member;
-            m_signature = signature;
-            m_tkParamDef = MdToken.IsNullToken(tkParamDef) ? (int)MetadataTokenType.ParamDef : tkParamDef;
-            m_scope = scope;
-            AttrsImpl = attributes;
-
-            ClassImpl = null;
-            NameImpl = null;
-        }
-#endif
-
-        // ctor for no metadata MethodInfo in the DynamicMethod and RuntimeMethodInfo cases
-        internal RuntimeParameterInfo(MethodInfo owner, string? name, Type parameterType, int position)
-        {
-            MemberImpl = owner;
-            NameImpl = name;
-            m_nameIsCached = true;
-            m_noMetadata = true;
-            ClassImpl = parameterType;
-            PositionImpl = position;
-            AttrsImpl = ParameterAttributes.None;
-#if !NATIVEAOT
-            m_tkParamDef = (int)MetadataTokenType.ParamDef;
-#endif
-            m_scope = default;
-        }
-        #endregion
-
-        #region Public Methods
         public override bool Equals(object? obj) =>
             obj is RuntimeParameterInfo other &&
             PositionImpl == other.PositionImpl &&
@@ -250,15 +96,15 @@ namespace System.Reflection
                 if (ClassImpl == null)
                 {
 #if NATIVEAOT
-                    ClassImpl = m_signature.Resolve(m_typeContext).ToType();
+                    ClassImpl = _signature.Resolve(_typeContext).ToType();
 #else
-                    Debug.Assert(m_signature != null);
+                    Debug.Assert(_signature != null);
 
                     RuntimeType parameterType;
                     if (PositionImpl == -1)
-                        parameterType = m_signature.ReturnType;
+                        parameterType = _signature.ReturnType;
                     else
-                        parameterType = m_signature.Arguments[PositionImpl];
+                        parameterType = _signature.Arguments[PositionImpl];
 
                     Debug.Assert(parameterType != null);
                     // different thread could only write ClassImpl to the same value, so a race condition is not a problem here
@@ -274,18 +120,18 @@ namespace System.Reflection
         {
             get
             {
-                if (!m_nameIsCached)
+                if (!_nameIsCached)
                 {
-                    if (!MdToken.IsNullToken(m_tkParamDef))
+                    if (!MdToken.IsNullToken(_tkParamDef))
                     {
-                        string name = m_scope.GetName(m_tkParamDef).ToString();
+                        string name = _scope.GetName(_tkParamDef).ToString();
                         GC.KeepAlive(this);
                         NameImpl = name;
                     }
 
                     // other threads could only write it to true, so a race condition is OK
                     // this field is volatile, so the write ordering is guaranteed
-                    m_nameIsCached = true;
+                    _nameIsCached = true;
                 }
 
                 // name may be null
@@ -297,7 +143,7 @@ namespace System.Reflection
         {
             get
             {
-                if (m_noMetadata || m_noDefaultValue)
+                if (_noMetadata || _noDefaultValue)
                     return false;
 
                 return TryGetDefaultValueInternal(false, out _);
@@ -312,19 +158,17 @@ namespace System.Reflection
             // OLD COMMENT (Is this even true?)
             // Cannot cache because default value could be non-agile user defined enumeration.
             // OLD COMMENT ends
-            if (m_noMetadata)
+            if (_noMetadata)
                 return null;
 
             // for dynamic method we pretend to have cached the value so we do not go to metadata
             if (!TryGetDefaultValueInternal(raw, out object? defaultValue))
             {
-                #region Handle case if no default value was found
                 if (IsOptional)
                 {
                     // If the argument is marked as optional then the default value is Missing.Value.
                     defaultValue = Missing.Value;
                 }
-                #endregion
             }
 
             return defaultValue;
@@ -367,22 +211,21 @@ namespace System.Reflection
         // returns DBNull.Value if the parameter doesn't have a default value
         private bool TryGetDefaultValueInternal(bool raw, out object? defaultValue)
         {
-            Debug.Assert(!m_noMetadata);
+            Debug.Assert(!_noMetadata);
 
-            if (m_noDefaultValue || MdToken.IsNullToken(m_tkParamDef))
+            if (_noDefaultValue || MdToken.IsNullToken(_tkParamDef))
             {
                 defaultValue = DBNull.Value;
-                m_noDefaultValue = true;
+                _noDefaultValue = true;
                 return false;
             }
 
             // Prioritize metadata constant over custom attribute constant
-            #region Look for a default value in metadata
-            // This will return DBNull.Value if no constant value is defined on m_tkParamDef in the metadata.
+            // This will return DBNull.Value if no constant value is defined on _tkParamDef in the metadata.
 #if NATIVEAOT
             defaultValue = GetDefaultValueFromMetadata(raw);
 #else
-            defaultValue = MdConstant.GetValue(m_scope, m_tkParamDef, ParameterType.TypeHandle, raw);
+            defaultValue = MdConstant.GetValue(_scope, _tkParamDef, ParameterType.TypeHandle, raw);
             GC.KeepAlive(this);
 #endif
 
@@ -400,14 +243,12 @@ namespace System.Reflection
 
                 if (defaultValue == DBNull.Value)
                 {
-                    m_noDefaultValue = true;
+                    _noDefaultValue = true;
                     return false;
                 }
             }
 
             return true;
-
-            #endregion
         }
 
         private static decimal GetRawDecimalConstant(CustomAttributeData attr)
@@ -453,45 +294,9 @@ namespace System.Reflection
             return DBNull.Value;
         }
 
-#if !NATIVEAOT
-        internal RuntimeModule? GetRuntimeModule()
-        {
-            RuntimeMethodInfo? method = Member as RuntimeMethodInfo;
-            RuntimeConstructorInfo? constructor = Member as RuntimeConstructorInfo;
-            RuntimePropertyInfo? property = Member as RuntimePropertyInfo;
-
-            if (method != null)
-                return method.GetRuntimeModule();
-            else if (constructor != null)
-                return constructor.GetRuntimeModule();
-            else if (property != null)
-                return property.GetRuntimeModule();
-            else
-                return null;
-        }
-
-        public override int MetadataToken => m_tkParamDef;
-
-        public override Type[] GetRequiredCustomModifiers()
-        {
-            return m_signature is null ? [] : m_signature.GetCustomModifiers(PositionImpl + 1, true);
-        }
-
-        public override Type[] GetOptionalCustomModifiers()
-        {
-            return m_signature is null ? [] : m_signature.GetCustomModifiers(PositionImpl + 1, false);
-        }
-
-        public override Type GetModifiedParameterType() =>
-            ModifiedType.Create(unmodifiedType: ParameterType, m_signature, parameterIndex: PositionImpl + 1);
-#endif
-
-        #endregion
-
-        #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            if (MdToken.IsNullToken(m_tkParamDef))
+            if (MdToken.IsNullToken(_tkParamDef))
                 return [];
 
             return RuntimeCustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
@@ -504,7 +309,7 @@ namespace System.Reflection
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
-            if (MdToken.IsNullToken(m_tkParamDef))
+            if (MdToken.IsNullToken(_tkParamDef))
                 return RuntimeCustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, 0);
 
             return RuntimeCustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -514,7 +319,7 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(attributeType);
 
-            if (MdToken.IsNullToken(m_tkParamDef))
+            if (MdToken.IsNullToken(_tkParamDef))
                 return false;
 
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
@@ -525,15 +330,14 @@ namespace System.Reflection
 
         public override IList<CustomAttributeData> GetCustomAttributesData()
         {
-            if (MdToken.IsNullToken(m_tkParamDef))
+            if (MdToken.IsNullToken(_tkParamDef))
                 return Array.Empty<CustomAttributeData>();
 
             return RuntimeCustomAttributeData.GetCustomAttributesInternal(this);
         }
-        #endregion
     }
-#if NATIVEAOT
 
+#if NATIVEAOT
     file static class MdToken
     {
         public static bool IsNullToken(ParameterHandle token) => token.IsNil;
