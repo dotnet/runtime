@@ -1334,26 +1334,24 @@ MethodTableBuilder::BuildMethodTableThrowing(
         }
     };
 
-    StackingAllocator * const pStackingAllocator = GetStackingAllocator();
-    bmtInitialData *pData = new (pStackingAllocator)
-        bmtInitialData(pModule->GetMDImport(), *initialLayoutInfo);
+    bmtInitialData initialData(pModule->GetMDImport(), *initialLayoutInfo);
     SetBMTData(
         pAllocator,
-        &pData->error,
-        &pData->properties,
-        &pData->vtable,
-        &pData->parent,
-        &pData->interfaces,
-        &pData->metadata,
-        &pData->methods,
-        &pData->descs,
-        &pData->fieldPlacement,
-        &pData->internalInfo,
-        &pData->gcSeries,
-        &pData->methodImpls,
+        &initialData.error,
+        &initialData.properties,
+        &initialData.vtable,
+        &initialData.parent,
+        &initialData.interfaces,
+        &initialData.metadata,
+        &initialData.methods,
+        &initialData.descs,
+        &initialData.fieldPlacement,
+        &initialData.internalInfo,
+        &initialData.gcSeries,
+        &initialData.methodImpls,
         bmtGenericsInfo,
-        &pData->enumFields,
-        &pData->layout);
+        &initialData.enumFields,
+        &initialData.layout);
 
     //Initialize structs
 
