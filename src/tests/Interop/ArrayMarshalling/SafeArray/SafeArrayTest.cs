@@ -198,7 +198,6 @@ public class SafeArrayMarshallingTest
     }
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static void VariantArrayByRefElementIsReplacedWhenManagedTypeChanges()
     {
         SafeArrayNative.ReplaceVariantArrayElement(ReplaceVariantArrayElement, out int nativeValue, out ushort elementType);
@@ -211,7 +210,6 @@ public class SafeArrayMarshallingTest
     private delegate int AutoDualArrayReader([MarshalAs(UnmanagedType.LPArray, SizeConst = 1)] AutoDualArrayElement[] values);
 
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBuiltInComEnabled))]
-    [SkipOnMono("Requires COM support")]
     public static unsafe void AutoDualClassArrayMarshalsDefaultInterface()
     {
         AutoDualArrayReader read = Marshal.GetDelegateForFunctionPointer<AutoDualArrayReader>(
