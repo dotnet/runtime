@@ -3,11 +3,9 @@
 
 #pragma once
 
-#include <signal.h>
+#include "UnixSignals.h"
 
 extern bool PalCreateDumpInitialize();
 extern void PalCreateCrashDumpIfEnabled();
-#ifndef HOST_WASM
 extern void PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo = nullptr, void* context = nullptr, void* exceptionRecord = nullptr);
-#endif // !HOST_WASM
 extern void PalCreateCrashDumpIfEnabled(void* pExceptionRecord);

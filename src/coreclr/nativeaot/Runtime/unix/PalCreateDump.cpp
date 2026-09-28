@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sal.h>
 #include "config.h"
+#include "PalCreateDump.h"
 #include <pthread.h>
 #include <string.h>
 #include <assert.h>
@@ -15,7 +16,6 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #if HAVE_PRCTL_H
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -349,7 +349,6 @@ CreateCrashDump(
 
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
-#ifndef HOST_WASM
 // Helper function to prevent compiler from optimizing away a variable
 #if defined(__llvm__)
 __attribute__((noinline, optnone))
@@ -471,22 +470,17 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
     }
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 }
-#endif // !HOST_WASM
 
 void
 PalCreateCrashDumpIfEnabled()
 {
-#ifndef HOST_WASM
     PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, nullptr);
-#endif
 }
 
 void
 PalCreateCrashDumpIfEnabled(void* pExceptionRecord)
 {
-#ifndef HOST_WASM
     PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, pExceptionRecord);
-#endif
 }
 
 /*++

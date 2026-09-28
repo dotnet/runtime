@@ -16,9 +16,7 @@
 #include "gcenv.ee.h"
 #include "gcconfig.h"
 #include "holder.h"
-#ifdef FEATURE_HIJACK
 #include "UnixSignals.h"
-#endif // FEATURE_HIJACK
 #include "NativeContext.h"
 #include "HardwareExceptions.h"
 #include "PalCreateDump.h"
