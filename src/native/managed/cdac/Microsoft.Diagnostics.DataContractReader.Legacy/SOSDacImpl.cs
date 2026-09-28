@@ -896,11 +896,11 @@ public sealed unsafe partial class SOSDacImpl
 
             IExecutionManager em = _target.Contracts.ExecutionManager;
 #if DEBUG
-            Contracts.JitManagerInfo jitManagerInfo = em.GetEEJitManagerInfo();
+            Contracts.JitManagerInfo jitManagerInfo = em.GetJitManagerInfo(JitManagerKind.EE)!.Value;
             Debug.Assert(jitManager.ToTargetPointer(_target) == jitManagerInfo.ManagerAddress);
 #endif
 
-            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos().ToList();
+            List<ICodeHeapInfo> heapInfos = em.GetCodeHeapInfos(JitManagerKind.EE).ToList();
             int i = 0;
             if (codeHeaps is not null)
             {
@@ -2235,7 +2235,7 @@ public sealed unsafe partial class SOSDacImpl
                 if (count >= 1)
                 {
                     *managers = default;
-                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetEEJitManagerInfo();
+                    Contracts.JitManagerInfo jitManagerInfo = _target.Contracts.ExecutionManager.GetJitManagerInfo(JitManagerKind.EE)!.Value;
                     managers->managerAddr = jitManagerInfo.ManagerAddress.ToClrDataAddress(_target);
                     managers->codeType = jitManagerInfo.CodeType;
                     managers->ptrHeapList = jitManagerInfo.HeapListAddress.ToClrDataAddress(_target);

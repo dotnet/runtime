@@ -19,11 +19,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 {
     private const int TYPE_MASK_OFFSET = 27; // offset of type in field desc flags2
     private readonly Target _target;
-    private readonly TargetPointer _freeObjectMethodTablePointer;
-    private readonly TargetPointer _objectMethodTablePointer;
-    private TargetPointer _continuationMethodTablePointer;
-    private TargetPointer _continuationSingletonEEClassPointer;
-    private readonly TargetPointer _multicastDelegateMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _freeObjectMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _objectMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationMethodTablePointer;
+    private readonly CachedValue<TargetPointer> _continuationSingletonEEClassPointer;
+    private readonly CachedValue<TargetPointer> _multicastDelegateMethodTablePointer;
     private readonly ulong _methodDescAlignment;
     private readonly TypeValidation _typeValidation;
     private readonly MethodValidation _methodValidation;
@@ -40,6 +40,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     public void Flush(FlushScope scope)
     {
+        _freeObjectMethodTablePointer.Clear();
+        _objectMethodTablePointer.Clear();
+        _continuationMethodTablePointer.Clear();
+        _continuationSingletonEEClassPointer.Clear();
+        _multicastDelegateMethodTablePointer.Clear();
         _methodTables.Clear();
         _methodDescs.Clear();
         _typeHandles.Clear();
@@ -438,16 +443,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     internal RuntimeTypeSystem_1(Target target)
     {
         _target = target;
-        _freeObjectMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable));
-        _objectMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable));
-        _continuationMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-        _continuationSingletonEEClassPointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-        _multicastDelegateMethodTablePointer = target.ReadPointer(
-            target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable));
+        _freeObjectMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.FreeObjectMethodTable)));
+        _objectMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ObjectMethodTable)));
+        _continuationMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable)));
+        _continuationSingletonEEClassPointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass)));
+        _multicastDelegateMethodTablePointer = new(() => target.ReadPointer(target.ReadGlobalPointer(Constants.Globals.MulticastDelegateMethodTable)));
         _methodDescAlignment = target.ReadGlobal<ulong>(Constants.Globals.MethodDescAlignment);
         _typeValidation = new TypeValidation(target, _continuationMethodTablePointer, _continuationSingletonEEClassPointer);
         _methodValidation = new MethodValidation(target, _methodDescAlignment);
@@ -456,29 +456,8 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     internal TargetPointer FreeObjectMethodTablePointer => _freeObjectMethodTablePointer;
     internal TargetPointer ObjectMethodTablePointer => _objectMethodTablePointer;
-    internal TargetPointer ContinuationMethodTablePointer
-    {
-        get
-        {
-            if (_continuationMethodTablePointer != TargetPointer.Null)
-                return _continuationMethodTablePointer;
-            _continuationMethodTablePointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationMethodTable));
-            return _continuationMethodTablePointer;
-        }
-    }
-
-    internal TargetPointer ContinuationSingletonEEClassPointer
-    {
-        get
-        {
-            if (_continuationSingletonEEClassPointer != TargetPointer.Null)
-                return _continuationSingletonEEClassPointer;
-            _continuationSingletonEEClassPointer = _target.ReadPointer(
-                _target.ReadGlobalPointer(Constants.Globals.ContinuationSingletonEEClass));
-            return _continuationSingletonEEClassPointer;
-        }
-    }
+    internal TargetPointer ContinuationMethodTablePointer => _continuationMethodTablePointer;
+    internal TargetPointer ContinuationSingletonEEClassPointer => _continuationSingletonEEClassPointer;
 
     internal ulong MethodDescAlignment => _methodDescAlignment;
 

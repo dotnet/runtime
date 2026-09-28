@@ -4482,9 +4482,9 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
                         // similarly have its control flow straightened out.
                         // Try to compact it and repeat the optimization for
                         // it.
-                        if (bDest->bbRefs == 1)
+                        BasicBlock* const otherPred = bDest->GetUniquePred(this);
+                        if (otherPred != nullptr)
                         {
-                            BasicBlock* otherPred = bDest->bbPreds->getSourceBlock();
                             JITDUMP("Trying to compact last pred " FMT_BB " of " FMT_BB " that we now bypass\n",
                                     otherPred->bbNum, bDest->bbNum);
                             if (fgCanCompactBlock(otherPred))

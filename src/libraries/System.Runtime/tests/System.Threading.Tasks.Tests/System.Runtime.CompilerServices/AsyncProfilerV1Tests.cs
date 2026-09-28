@@ -3187,6 +3187,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3260,6 +3261,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_ValueTask_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>
@@ -3336,6 +3338,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/134145", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
         public async Task StateMachineAsync_PoolingValueTask_SingleThread_ChainEventsAndCallstack()
         {
             var events = await CollectEventsAsync(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords | StateMachineAsyncMethodKeywords, async () =>

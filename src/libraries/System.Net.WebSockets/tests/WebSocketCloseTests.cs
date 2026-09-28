@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Net.Http.Functional.Tests;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +18,7 @@ namespace System.Net.WebSockets.Tests
         {
             if (!Debugger.IsAttached)
             {
-                _cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+                _cancellation = new CancellationTokenSource(TestHelper.PassingTestTimeout);
             }
         }
 
