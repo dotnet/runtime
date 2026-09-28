@@ -62,6 +62,10 @@ namespace ILCompiler.DependencyAnalysis
 
             _eagerReadyToRunMethodEntries = new NodeCache<MethodWithToken, Import>(method =>
             {
+                // These fixups must be sorted last: running one permanently commits the
+                // target method to using R2R code. Every other eager fixup in the module must
+                // run first, since those are what establish whether it is even legal to use any
+                // R2R code in the module at all.
                 return new Import(
                     _codegenNodeFactory.EagerImports,
                     _codegenNodeFactory.MethodSignature(
