@@ -26,6 +26,21 @@ struct ThreadCommand
 #endif
 };
 
+// ThreadCommand is serialized directly as an LC_THREAD load command. Verify
+// that each state immediately follows its flavor and count without padding.
+static_assert(offsetof(ThreadCommand, gpregisters) == sizeof(thread_command) + (2 * sizeof(uint32_t)));
+#if defined(__x86_64__)
+static_assert(offsetof(ThreadCommand, fpflavor) == offsetof(ThreadCommand, gpregisters) + sizeof(x86_thread_state64_t));
+static_assert(offsetof(ThreadCommand, fpregisters) == offsetof(ThreadCommand, fpflavor) + (2 * sizeof(uint32_t)));
+static_assert(offsetof(ThreadCommand, padding) == offsetof(ThreadCommand, fpregisters) + sizeof(x86_float_state64_t));
+static_assert(sizeof(ThreadCommand) == offsetof(ThreadCommand, padding) + sizeof(uint32_t));
+#elif defined(__aarch64__)
+static_assert(offsetof(ThreadCommand, fpflavor) == offsetof(ThreadCommand, gpregisters) + sizeof(arm_thread_state64_t));
+static_assert(offsetof(ThreadCommand, fpregisters) == offsetof(ThreadCommand, fpflavor) + (2 * sizeof(uint32_t)));
+static_assert(sizeof(ThreadCommand) == offsetof(ThreadCommand, fpregisters) + sizeof(arm_neon_state64_t));
+#endif
+static_assert((sizeof(ThreadCommand) & 7) == 0);
+
 class DumpWriter
 {
 private:
