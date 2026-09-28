@@ -33,6 +33,7 @@ internal sealed class ComplexFuzzer : IFuzzer
     // * For float and Half, Log, Log10 and Atan overflow when |z| exceeds MaxValue; double scales correctly.
     // * A huge finite value divided by an infinity gives (0, NaN) instead of zero (G.5.2).
     // * Sqrt of a huge negative real part with a subnormal imaginary part returns the wrong sign of the imaginary part.
+    // * Sqrt(0 + yi) with |y| == T.Epsilon returns (0, INF).
     // Not a bug report: float/Half Sqrt loses precision for subnormal inputs, so the accuracy check skips those.
     private static readonly bool s_strict = Environment.GetEnvironmentVariable("TENSOR_FUZZ_STRICT") == "1";
 
@@ -325,6 +326,7 @@ internal sealed class ComplexFuzzer : IFuzzer
             "Tan" or "Tanh" => true,
             "Divide" or "Reciprocal" or "DivideReal" => IsHuge(w) || IsHuge(z),
             "Log" or "Log10" or "Atan" => typeof(T) != typeof(double) && IsHuge(z),
+            "Sqrt" => T.Abs(z.Imaginary) == T.Epsilon || T.Abs(z.Real) == T.Epsilon,
             _ => false,
         };
     }

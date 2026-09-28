@@ -27,6 +27,7 @@ internal sealed class MetadataReaderFuzzer : IFuzzer
     // Known issues on main, tolerated unless TENSOR_FUZZ_STRICT=1 (shared switch name with the other new fuzzers):
     // * GetAssemblyName() throws CultureNotFoundException for culture strings CultureInfo doesn't accept.
     // * A stream count of 0x8000 or more makes the MetadataReader constructor throw OverflowException.
+    // * ReadDebugDirectory throws NullReferenceException for COFF-only images.
     private static readonly bool s_strict = Environment.GetEnvironmentVariable("TENSOR_FUZZ_STRICT") == "1";
 
     public string[] TargetAssemblies { get; } = ["System.Reflection.Metadata"];
@@ -119,6 +120,11 @@ internal sealed class MetadataReaderFuzzer : IFuzzer
 
         Try(() =>
         {
+            if (headers.PEHeader is null && !s_strict)
+            {
+                return; // Known issue: ReadDebugDirectory throws NullReferenceException for COFF-only images.
+            }
+
             foreach (DebugDirectoryEntry entry in peReader.ReadDebugDirectory())
             {
                 Try(() =>

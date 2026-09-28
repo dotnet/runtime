@@ -56,6 +56,8 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 39 | Reflection.Metadata | `BlobReader.ReadTypeHandle` lets big row numbers spill into the table byte: rows alias (`0x02000005` → TypeDef 5), and `SignatureDecoder` hits an impossible `Debug.Assert` | Low | Yes (aliasing); Debug builds (assert) | [39](repros/39-Metadata-ReadTypeHandle-RowOverflow.cs) |
 | 40 | BitArray | Growing `Length` past the storage brings back bits cut off by an earlier shrink (778 of 1000 set instead of 10) | Medium | Yes | [40](repros/40-BitArray-StaleBitsOnGrow.cs) |
 | 41 | Convert | `FromHexString` OperationStatus overloads: `charsConsumed` can be odd or point past an invalid char, and a trailing non-hex char gives `NeedMoreData` | Observation | Yes | [41](repros/41-Convert-FromHexString-Consumed.cs) |
+| 42 | Reflection.Metadata | `PEReader.ReadDebugDirectory()` throws `NullReferenceException` for COFF-only images (Debug builds assert) | Low | Yes | [42](repros/42-PEReader-CoffDebugDirectory.cs) |
+| 43 | Complex | `Sqrt(0 + εi)` with `ε = T.Epsilon` is `(0, ∞)` for double, float and Half | Low | Yes | [43](repros/43-Complex-SqrtSubnormal.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -240,6 +242,14 @@ The expected values match C99 `casin`/`cacos`/`catan` and CPython's `cmath`. `Sq
 ### 41. FromHexString and charsConsumed (observation)
 
 [Repro](repros/41-Convert-FromHexString-Consumed.cs). For the `OperationStatus` overloads of `Convert.FromHexString`, `charsConsumed` on `InvalidData` is the index of the first invalid char, so `"0A1g"` reports 3 chars consumed with 1 byte written, and a caller resuming at `charsConsumed` loses the `1`. When both chars of a pair are invalid non-ASCII chars (`"\uFF10\uFF10"`) it reports 1 even though char 0 is the invalid one. A trailing single char is `NeedMoreData` even when it isn't a hex digit (`"0Ag"`), although the `OperationStatus` contract reserves `NeedMoreData` for input that more data could complete. None of this is covered by the tests, which only check the status.
+
+### 42. ReadDebugDirectory on COFF images
+
+[Repro](repros/42-PEReader-CoffDebugDirectory.cs). `PEReader.ReadDebugDirectory` starts with `Debug.Assert(PEHeaders.PEHeader != null)` and then reads `PEHeaders.PEHeader.DebugTableDirectory`. `PEHeaders` accepts COFF-only images (object files, or any input without an `MZ` header that parses as COFF), where `PEHeader` is null, so Release builds throw `NullReferenceException` for a 20-byte empty AMD64 COFF header and Debug builds abort. A COFF file has no debug directory, so returning an empty array would be the natural answer. Found by `MetadataReaderFuzzer` on the Release build.
+
+### 43. Complex Sqrt of the smallest subnormal
+
+[Repro](repros/43-Complex-SqrtSubnormal.cs). `Sqrt(0 + yi)` with `|y| == T.Epsilon` returns `(0, ∞)`: `|y| / 2` underflows to zero, the real part comes out as 0, and the imaginary part is computed as `y / (2 · real)`. The right answer is about `1.57e-162 · (1 + i)` for double. `2 · Epsilon` already works, and float and Half fail the same way at their own `Epsilon`.
 
 ## Things that looked like bugs but aren't
 
