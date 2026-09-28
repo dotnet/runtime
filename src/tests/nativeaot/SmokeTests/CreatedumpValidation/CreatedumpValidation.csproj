@@ -3,6 +3,8 @@
     <OutputType>Exe</OutputType>
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="('$(TargetOS)' != 'linux' and '$(TargetOS)' != 'osx') or ('$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64') or '$(TestBuildMode)' != 'nativeaot'">true</CLRTestTargetUnsupported>
+    <!-- Full dumps of sanitized processes can be prohibitively large. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <!-- Linked createdump is Linux-only; macOS validates the external createdump shipped in the test payload. -->
     <CreatedumpSupport Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetOS)' == 'linux'">true</CreatedumpSupport>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -11,5 +13,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreatedumpValidation.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot' and ('$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx')">
+    <Content Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)createdump" Link="native/createdump" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
