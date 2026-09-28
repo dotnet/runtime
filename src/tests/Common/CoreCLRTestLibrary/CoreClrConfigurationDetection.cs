@@ -24,7 +24,8 @@ public static class CoreClrConfigurationDetection
     public static bool IsTieredCompilation => string.Equals(GetEnvironmentVariableValue("TieredCompilation", "1"), "1", StringComparison.InvariantCulture);
     public static bool IsHeapVerify => string.Equals(GetEnvironmentVariableValue("HeapVerify"), "1", StringComparison.InvariantCulture);
 
-    public static bool IsCoreClrInterpreter
+    // An interpreter test mode (RuntimeTestModes.InterpreterActive): the interpreter is configured, or there is no JIT and the test is not ReadyToRun-compiled.
+    public static bool IsInterpreterMode
     {
         get
         {
