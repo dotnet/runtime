@@ -528,7 +528,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // The search did not finish, so we either failed to transition (which should only happen if we were in DFA mode and
                 // need to switch over to NFA mode) or ran out of input in the inner loop. Check if the inner loop still had more
                 // input available.
-                if (pos < innerLoopLength)
+                if (pos <= innerLoopLength)
                 {
                     // Because there was still more input available, a failure to transition in DFA mode must be the cause
                     // of the early exit. Upgrade to NFA mode.
