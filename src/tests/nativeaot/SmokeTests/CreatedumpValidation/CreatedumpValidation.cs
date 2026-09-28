@@ -31,6 +31,23 @@ internal static class CreatedumpValidation
     private const int ElfHeaderSize = 64;
     private const int ProgramHeaderSize = 56;
     private const int PrPsInfoPidOffset = 24;
+    private const ulong ElfLoadAlignment = 4096;
+
+    private const uint MhMagic64 = 0xFEEDFACF;
+    private const uint MhCore = 4;
+    private const uint CpuTypeX86_64 = 0x01000007;
+    private const uint CpuTypeArm64 = 0x0100000C;
+    private const uint LcThread = 0x4;
+    private const uint LcSegment64 = 0x19;
+    private const uint LcNote = 0x31;
+    private const uint VmProtRead = 1;
+    private const uint VmProtMask = 7;
+    private const int MachHeader64Size = 32;
+    private const int MachLoadCommandSize = 8;
+    private const int MachSegmentCommand64Size = 72;
+    private const int MachNoteCommandSize = 40;
+    private const int SpecialThreadInfoHeaderSize = 24;
+    private const int SpecialThreadInfoEntrySize = 16;
 
     private const uint NtPrStatus = 1;
     private const uint NtFpRegSet = 2;
@@ -43,7 +60,10 @@ internal static class CreatedumpValidation
     private const ulong AtPhdr = 3;
     private const ulong AtPageSize = 6;
 
-    private const ulong SpecialDiagInfoAddress = 0x00007ffffff10000;
+    private const ulong LinuxAndMacArm64SpecialDiagInfoAddress = 0x00007ffffff10000;
+    private const ulong MacX64SpecialDiagInfoAddress = 0x7fffffff10000000;
+    private const ulong MacArm64SpecialThreadInfoAddress = 0x00007ffffff00000;
+    private const ulong MacX64SpecialThreadInfoAddress = 0x7fffffff00000000;
     private const ulong SpecialDiagInfoSize = 0x1000;
     private const int SpecialDiagInfoVersion = 2;
     private const int SpecialDiagExceptionRecordOffset = 24;
@@ -53,6 +73,7 @@ internal static class CreatedumpValidation
     private const uint ExceptionNoncontinuable = 1;
     private const ulong FastFailExceptionDotNetAot = 0x48;
     private const uint InvalidOperationHResult = 0x80131509;
+    private const ulong MaximumTriageBufferSize = 8192;
     private const int ExceptionRecordSize = 152;
     private const int ExceptionRecordParameterCountOffset = 24;
     private const int ExceptionRecordInformationOffset = 32;
@@ -63,8 +84,11 @@ internal static class CreatedumpValidation
     private const string ExternalHelperEnvironmentVariable = "CREATEDUMP_VALIDATION_EXTERNAL_HELPER";
 
     private static readonly byte[] ElfMagic = { 0x7f, 0x45, 0x4c, 0x46 };
+    private static readonly byte[] MachMagic64 = { 0xcf, 0xfa, 0xed, 0xfe };
     private static readonly byte[] DeletedMappingPattern = { 0x43, 0x44, 0x55, 0x4d, 0x50, 0x8a, 0x41, 0xc4 };
     private static readonly byte[] SpecialDiagSignature = Encoding.ASCII.GetBytes("DIAGINFOHEADER");
+    private static readonly byte[] SpecialThreadInfoSignature = Encoding.ASCII.GetBytes("THREADINFO");
+    private static readonly byte[] ProcessMetadataOwner = Encoding.ASCII.GetBytes("process metadata");
 
     private static MemoryMappedFile? s_deletedMappingFile;
     private static MemoryMappedViewAccessor? s_deletedMappingView;
@@ -172,8 +196,9 @@ internal static class CreatedumpValidation
             File.Delete(_defaultHelperPath);
             if (_originalHelperBackup is not null)
             {
+                Debug.Assert(_originalHelperMode.HasValue);
                 File.Copy(_originalHelperBackup, _defaultHelperPath, overwrite: true);
-                File.SetUnixFileMode(_defaultHelperPath, _originalHelperMode!.Value);
+                File.SetUnixFileMode(_defaultHelperPath, _originalHelperMode.Value);
             }
         }
 
@@ -220,6 +245,17 @@ internal static class CreatedumpValidation
                 externalCreatedump,
                 scenarioName: "automatic",
                 forceExternal: false);
+
+            if (OperatingSystem.IsMacOS())
+            {
+                if (!automaticUsedExternal)
+                {
+                    throw new InvalidDataException("The macOS scenario did not invoke the external createdump helper.");
+                }
+
+                Console.WriteLine("PASS: the macOS external dump contains the expected process, memory, and managed exception data.");
+                return Pass;
+            }
 
             bool forcedUsedExternal = RunScenario(
                 processPath,
@@ -301,6 +337,7 @@ internal static class CreatedumpValidation
         if (!child.WaitForExit(TimeoutMilliseconds))
         {
             child.Kill(entireProcessTree: true);
+            child.WaitForExit();
             throw new TimeoutException($"The {scenarioName} crash child did not exit within {TimeoutMilliseconds} ms.");
         }
 
@@ -347,7 +384,18 @@ internal static class CreatedumpValidation
                 $"Expected exactly '{dumpFile}', but found: {string.Join(", ", dumpFiles)}");
         }
 
-        ValidateElfCore(dumpFile, processPath, deletedMappingProbe, deletedMappingFile, child.Id);
+        if (OperatingSystem.IsLinux())
+        {
+            ValidateElfCore(dumpFile, processPath, deletedMappingProbe, deletedMappingFile, child.Id);
+        }
+        else if (OperatingSystem.IsMacOS())
+        {
+            ValidateMachOCore(dumpFile, deletedMappingProbe, child.Id);
+        }
+        else
+        {
+            throw new PlatformNotSupportedException();
+        }
         return usedExternal;
     }
 
@@ -419,10 +467,10 @@ internal static class CreatedumpValidation
                 {
                     throw new InvalidDataException($"Invalid PT_LOAD sizes at index {index}: file {fileSize}, memory {memorySize}.");
                 }
-                if (alignment != (ulong)Environment.SystemPageSize)
+                if (alignment != ElfLoadAlignment)
                 {
                     throw new InvalidDataException(
-                        $"PT_LOAD alignment {alignment} does not match page size {Environment.SystemPageSize}.");
+                        $"PT_LOAD alignment {alignment} does not match the createdump alignment {ElfLoadAlignment}.");
                 }
                 if (fileOffset % alignment != virtualAddress % alignment)
                 {
@@ -477,11 +525,288 @@ internal static class CreatedumpValidation
             throw new InvalidDataException("The deleted mapping contents do not match the expected pattern.");
         }
 
-        ValidateSpecialDiagnostics(stream, loadSegments);
+        ValidateSpecialDiagnostics(
+            stream,
+            loadSegments,
+            LinuxAndMacArm64SpecialDiagInfoAddress,
+            PfRead,
+            ElfMagic);
         Console.WriteLine(
             $"Validated {Path.GetFileName(dumpFile)}: {loadSegments.Count} PT_LOAD segments, " +
             $"{noteSummary.PrStatus} threads, managed exception record and crash JSON present.");
     }
+
+    private static void ValidateMachOCore(string dumpFile, ulong deletedMappingProbe, int expectedPid)
+    {
+        using FileStream stream = File.OpenRead(dumpFile);
+        byte[] header = ReadBytes(stream, 0, MachHeader64Size);
+
+        if (BinaryPrimitives.ReadUInt32LittleEndian(header) != MhMagic64)
+        {
+            throw new InvalidDataException("The dump does not have 64-bit Mach-O magic.");
+        }
+
+        uint expectedCpuType = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => CpuTypeX86_64,
+            Architecture.Arm64 => CpuTypeArm64,
+            _ => throw new PlatformNotSupportedException($"Unsupported architecture {RuntimeInformation.ProcessArchitecture}."),
+        };
+        uint cpuType = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(4));
+        uint fileType = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(12));
+        uint loadCommandCount = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(16));
+        uint loadCommandBytes = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(20));
+        if (cpuType != expectedCpuType || fileType != MhCore || loadCommandCount == 0 ||
+            (ulong)loadCommandCount * MachLoadCommandSize > loadCommandBytes)
+        {
+            throw new InvalidDataException(
+                $"Invalid Mach-O header: CPU=0x{cpuType:X}, fileType={fileType}, " +
+                $"commands={loadCommandCount}, commandBytes={loadCommandBytes}.");
+        }
+
+        ulong commandOffset = MachHeader64Size;
+        ulong commandTableEnd = checked(commandOffset + loadCommandBytes);
+        ValidateFileRange(stream, commandOffset, loadCommandBytes, "Mach-O load-command table");
+
+        List<LoadSegment> loadSegments = new List<LoadSegment>();
+        int threadCommandCount = 0;
+        int processMetadataNoteCount = 0;
+        ulong processMetadataOffset = 0;
+        ulong processMetadataSize = 0;
+
+        for (uint index = 0; index < loadCommandCount; index++)
+        {
+            byte[] loadCommandHeader = ReadBytes(stream, commandOffset, MachLoadCommandSize);
+            uint command = BinaryPrimitives.ReadUInt32LittleEndian(loadCommandHeader);
+            uint commandSize = BinaryPrimitives.ReadUInt32LittleEndian(loadCommandHeader.AsSpan(4));
+            ulong nextCommandOffset = checked(commandOffset + commandSize);
+            if (commandSize < MachLoadCommandSize || (commandSize & 7) != 0 ||
+                commandSize > int.MaxValue || nextCommandOffset > commandTableEnd)
+            {
+                throw new InvalidDataException(
+                    $"Invalid Mach-O load command {index}: type=0x{command:X}, size={commandSize}.");
+            }
+
+            byte[] loadCommand = ReadBytes(stream, commandOffset, checked((int)commandSize));
+            switch (command)
+            {
+                case LcSegment64:
+                    if (commandSize != MachSegmentCommand64Size)
+                    {
+                        throw new InvalidDataException($"LC_SEGMENT_64 has unexpected size {commandSize}.");
+                    }
+
+                    ulong virtualAddress = BinaryPrimitives.ReadUInt64LittleEndian(loadCommand.AsSpan(24));
+                    ulong memorySize = BinaryPrimitives.ReadUInt64LittleEndian(loadCommand.AsSpan(32));
+                    ulong fileOffset = BinaryPrimitives.ReadUInt64LittleEndian(loadCommand.AsSpan(40));
+                    ulong fileSize = BinaryPrimitives.ReadUInt64LittleEndian(loadCommand.AsSpan(48));
+                    uint maximumProtection = BinaryPrimitives.ReadUInt32LittleEndian(loadCommand.AsSpan(56));
+                    uint initialProtection = BinaryPrimitives.ReadUInt32LittleEndian(loadCommand.AsSpan(60));
+                    uint sectionCount = BinaryPrimitives.ReadUInt32LittleEndian(loadCommand.AsSpan(64));
+                    uint segmentFlags = BinaryPrimitives.ReadUInt32LittleEndian(loadCommand.AsSpan(68));
+                    if (fileSize == 0 || memorySize != fileSize || maximumProtection != initialProtection ||
+                        (initialProtection & ~VmProtMask) != 0 || sectionCount != 0 || segmentFlags != 0)
+                    {
+                        throw new InvalidDataException(
+                            $"Invalid LC_SEGMENT_64: vm=0x{virtualAddress:X}+0x{memorySize:X}, " +
+                            $"file=0x{fileOffset:X}+0x{fileSize:X}, protections={maximumProtection}/{initialProtection}, " +
+                            $"sections={sectionCount}, flags=0x{segmentFlags:X}.");
+                    }
+
+                    ValidateFileRange(stream, fileOffset, fileSize, $"Mach-O segment {loadSegments.Count}");
+                    loadSegments.Add(new LoadSegment(initialProtection, fileOffset, virtualAddress, fileSize, memorySize));
+                    break;
+
+                case LcThread:
+                    ValidateMachThreadCommand(loadCommand);
+                    threadCommandCount++;
+                    break;
+
+                case LcNote:
+                    processMetadataNoteCount++;
+                    if (commandSize != MachNoteCommandSize ||
+                        !loadCommand.AsSpan(8, ProcessMetadataOwner.Length).SequenceEqual(ProcessMetadataOwner))
+                    {
+                        throw new InvalidDataException("The process metadata LC_NOTE is invalid.");
+                    }
+
+                    processMetadataOffset = BinaryPrimitives.ReadUInt64LittleEndian(loadCommand.AsSpan(24));
+                    processMetadataSize = BinaryPrimitives.ReadUInt64LittleEndian(loadCommand.AsSpan(32));
+                    if (processMetadataSize == 0 || processMetadataSize > int.MaxValue)
+                    {
+                        throw new InvalidDataException($"The process metadata LC_NOTE has invalid size {processMetadataSize}.");
+                    }
+                    ValidateFileRange(stream, processMetadataOffset, processMetadataSize, "process metadata");
+                    break;
+
+                default:
+                    throw new InvalidDataException($"Unexpected Mach-O load command 0x{command:X} at index {index}.");
+            }
+
+            commandOffset = nextCommandOffset;
+        }
+
+        if (commandOffset != commandTableEnd || loadSegments.Count == 0 || threadCommandCount == 0 ||
+            processMetadataNoteCount != 1 || processMetadataOffset != commandTableEnd)
+        {
+            throw new InvalidDataException(
+                $"Unexpected Mach-O commands: segments={loadSegments.Count}, threads={threadCommandCount}, " +
+                $"processMetadata={processMetadataNoteCount}, commandEnd=0x{commandOffset:X}, " +
+                $"metadataOffset=0x{processMetadataOffset:X}.");
+        }
+
+        List<uint> threadIds = ValidateSpecialThreadInfo(stream, loadSegments, expectedPid, threadCommandCount);
+        ValidateProcessMetadata(stream, processMetadataOffset, checked((int)processMetadataSize), threadIds);
+
+        byte[] deletedPattern = ReadVirtualMemory(stream, loadSegments, deletedMappingProbe, DeletedMappingPattern.Length);
+        if (!deletedPattern.AsSpan().SequenceEqual(DeletedMappingPattern))
+        {
+            throw new InvalidDataException("The deleted mapping contents do not match the expected pattern.");
+        }
+
+        ValidateSpecialDiagnostics(
+            stream,
+            loadSegments,
+            GetMacSpecialDiagInfoAddress(),
+            VmProtRead,
+            MachMagic64);
+        Console.WriteLine(
+            $"Validated {Path.GetFileName(dumpFile)}: {loadSegments.Count} LC_SEGMENT_64 commands, " +
+            $"{threadCommandCount} threads, process metadata, managed exception record and crash JSON present.");
+    }
+
+    private static void ValidateMachThreadCommand(byte[] command)
+    {
+        int offset = MachLoadCommandSize;
+        uint previousFlavor = 0;
+        for (int stateIndex = 0; stateIndex < 2; stateIndex++)
+        {
+            if (offset > command.Length - 8)
+            {
+                throw new InvalidDataException("LC_THREAD is missing a thread-state header.");
+            }
+
+            uint flavor = BinaryPrimitives.ReadUInt32LittleEndian(command.AsSpan(offset));
+            uint count = BinaryPrimitives.ReadUInt32LittleEndian(command.AsSpan(offset + 4));
+            if (flavor == 0 || flavor == previousFlavor || count == 0 || count > int.MaxValue / sizeof(uint))
+            {
+                throw new InvalidDataException($"LC_THREAD has invalid flavor {flavor} or count {count}.");
+            }
+
+            previousFlavor = flavor;
+            offset = checked(offset + 8 + checked((int)count * sizeof(uint)));
+            if (offset > command.Length)
+            {
+                throw new InvalidDataException("LC_THREAD state extends past the load command.");
+            }
+        }
+
+        if (offset != command.Length)
+        {
+            throw new InvalidDataException("LC_THREAD has trailing or missing state data.");
+        }
+    }
+
+    private static List<uint> ValidateSpecialThreadInfo(
+        FileStream stream,
+        List<LoadSegment> loadSegments,
+        int expectedPid,
+        int expectedThreadCount)
+    {
+        ulong specialThreadInfoAddress = GetMacSpecialThreadInfoAddress();
+        LoadSegment? specialThreadInfoSegment = null;
+        foreach (LoadSegment segment in loadSegments)
+        {
+            if (segment.VirtualAddress == specialThreadInfoAddress)
+            {
+                if (specialThreadInfoSegment is not null)
+                {
+                    throw new InvalidDataException("The dump has multiple special thread-info segments.");
+                }
+                specialThreadInfoSegment = segment;
+            }
+        }
+
+        byte[] header = ReadVirtualMemory(stream, loadSegments, specialThreadInfoAddress, SpecialThreadInfoHeaderSize);
+        if (!header.AsSpan(0, SpecialThreadInfoSignature.Length).SequenceEqual(SpecialThreadInfoSignature) ||
+            header[SpecialThreadInfoSignature.Length] != 0)
+        {
+            throw new InvalidDataException("The special thread-info signature is missing.");
+        }
+
+        uint pid = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(16));
+        uint threadCount = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(20));
+        ulong expectedSize = checked((ulong)SpecialThreadInfoHeaderSize + (ulong)threadCount * SpecialThreadInfoEntrySize);
+        if (pid != (uint)expectedPid || threadCount == 0 || threadCount != (uint)expectedThreadCount ||
+            threadCount > int.MaxValue || specialThreadInfoSegment is not LoadSegment segment ||
+            segment.Flags != VmProtRead || segment.FileSize != expectedSize || segment.MemorySize != expectedSize)
+        {
+            throw new InvalidDataException(
+                $"Invalid special thread info: pid={pid}, threads={threadCount}, expectedSize={expectedSize}.");
+        }
+
+        byte[] entries = ReadVirtualMemory(
+            stream,
+            loadSegments,
+            checked(specialThreadInfoAddress + SpecialThreadInfoHeaderSize),
+            checked((int)threadCount * SpecialThreadInfoEntrySize));
+        List<uint> threadIds = new List<uint>(checked((int)threadCount));
+        HashSet<uint> uniqueThreadIds = new HashSet<uint>();
+        for (int index = 0; index < threadCount; index++)
+        {
+            int offset = index * SpecialThreadInfoEntrySize;
+            uint threadId = BinaryPrimitives.ReadUInt32LittleEndian(entries.AsSpan(offset));
+            ulong stackPointer = BinaryPrimitives.ReadUInt64LittleEndian(entries.AsSpan(offset + 8));
+            if (threadId == 0 || stackPointer == 0 || !uniqueThreadIds.Add(threadId))
+            {
+                throw new InvalidDataException(
+                    $"Invalid special thread-info entry {index}: tid={threadId}, sp=0x{stackPointer:X}.");
+            }
+            threadIds.Add(threadId);
+        }
+
+        return threadIds;
+    }
+
+    private static void ValidateProcessMetadata(
+        FileStream stream,
+        ulong processMetadataOffset,
+        int processMetadataSize,
+        List<uint> threadIds)
+    {
+        string actual = Encoding.UTF8.GetString(ReadBytes(stream, processMetadataOffset, processMetadataSize));
+        StringBuilder expected = new StringBuilder("{\"threads\":[");
+        for (int index = 0; index < threadIds.Count; index++)
+        {
+            if (index != 0)
+            {
+                expected.Append(',');
+            }
+            expected.Append("{\"thread_id\":");
+            expected.Append(threadIds[index].ToString(CultureInfo.InvariantCulture));
+            expected.Append('}');
+        }
+        expected.Append("]}");
+
+        if (!actual.Equals(expected.ToString(), StringComparison.Ordinal))
+        {
+            throw new InvalidDataException($"Unexpected process metadata: {actual}");
+        }
+    }
+
+    private static ulong GetMacSpecialDiagInfoAddress() => RuntimeInformation.ProcessArchitecture switch
+    {
+        Architecture.X64 => MacX64SpecialDiagInfoAddress,
+        Architecture.Arm64 => LinuxAndMacArm64SpecialDiagInfoAddress,
+        _ => throw new PlatformNotSupportedException($"Unsupported architecture {RuntimeInformation.ProcessArchitecture}."),
+    };
+
+    private static ulong GetMacSpecialThreadInfoAddress() => RuntimeInformation.ProcessArchitecture switch
+    {
+        Architecture.X64 => MacX64SpecialThreadInfoAddress,
+        Architecture.Arm64 => MacArm64SpecialThreadInfoAddress,
+        _ => throw new PlatformNotSupportedException($"Unsupported architecture {RuntimeInformation.ProcessArchitecture}."),
+    };
 
     private static void ReadNotes(
         byte[] notes,
@@ -631,6 +956,7 @@ internal static class CreatedumpValidation
 
         string executableName = Path.GetFileName(processPath);
         string deletedName = Path.GetFileName(deletedMappingFile);
+        string deletedNameWithSuffix = deletedName + " (deleted)";
         int current = namesOffset;
         for (ulong index = 0; index < count; index++)
         {
@@ -645,7 +971,9 @@ internal static class CreatedumpValidation
             {
                 summary.HasExecutableFileName = true;
             }
-            if (Path.GetFileName(fileName).Equals(deletedName, StringComparison.Ordinal))
+            string fileNameWithoutPath = Path.GetFileName(fileName);
+            if (fileNameWithoutPath.Equals(deletedName, StringComparison.Ordinal) ||
+                fileNameWithoutPath.Equals(deletedNameWithSuffix, StringComparison.Ordinal))
             {
                 summary.HasDeletedMappingFileName = true;
             }
@@ -653,12 +981,17 @@ internal static class CreatedumpValidation
         }
     }
 
-    private static void ValidateSpecialDiagnostics(FileStream stream, List<LoadSegment> loadSegments)
+    private static void ValidateSpecialDiagnostics(
+        FileStream stream,
+        List<LoadSegment> loadSegments,
+        ulong specialDiagInfoAddress,
+        uint expectedReadPermission,
+        byte[] runtimeImageMagic)
     {
         LoadSegment? specialDiagnosticsSegment = null;
         foreach (LoadSegment segment in loadSegments)
         {
-            if (segment.VirtualAddress == SpecialDiagInfoAddress)
+            if (segment.VirtualAddress == specialDiagInfoAddress)
             {
                 if (specialDiagnosticsSegment is not null)
                 {
@@ -669,14 +1002,14 @@ internal static class CreatedumpValidation
         }
 
         if (specialDiagnosticsSegment is not LoadSegment diagnosticsSegment ||
-            diagnosticsSegment.Flags != PfRead ||
+            diagnosticsSegment.Flags != expectedReadPermission ||
             diagnosticsSegment.FileSize != SpecialDiagInfoSize ||
             diagnosticsSegment.MemorySize != SpecialDiagInfoSize)
         {
             throw new InvalidDataException("The special diagnostics PT_LOAD segment is missing or invalid.");
         }
 
-        byte[] header = ReadVirtualMemory(stream, loadSegments, SpecialDiagInfoAddress, 40);
+        byte[] header = ReadVirtualMemory(stream, loadSegments, specialDiagInfoAddress, 40);
         if (!header.AsSpan(0, SpecialDiagSignature.Length).SequenceEqual(SpecialDiagSignature) ||
             header[SpecialDiagSignature.Length] != 0)
         {
@@ -695,10 +1028,10 @@ internal static class CreatedumpValidation
                 $"Special diagnostics has invalid addresses: exception=0x{exceptionRecordAddress:X}, runtime=0x{runtimeBaseAddress:X}.");
         }
 
-        byte[] runtimeHeader = ReadVirtualMemory(stream, loadSegments, runtimeBaseAddress, ElfMagic.Length);
-        if (!runtimeHeader.AsSpan().SequenceEqual(ElfMagic))
+        byte[] runtimeHeader = ReadVirtualMemory(stream, loadSegments, runtimeBaseAddress, runtimeImageMagic.Length);
+        if (!runtimeHeader.AsSpan().SequenceEqual(runtimeImageMagic))
         {
-            throw new InvalidDataException("RuntimeBaseAddress does not point to an ELF image.");
+            throw new InvalidDataException("RuntimeBaseAddress does not point to the expected runtime image.");
         }
 
         byte[] exceptionRecord = ReadVirtualMemory(stream, loadSegments, exceptionRecordAddress, ExceptionRecordSize);
@@ -721,7 +1054,7 @@ internal static class CreatedumpValidation
             exceptionHResult != InvalidOperationHResult ||
             triageBufferAddress == 0 ||
             triageBufferSize == 0 ||
-            triageBufferSize > 1024 * 1024)
+            triageBufferSize > MaximumTriageBufferSize)
         {
             throw new InvalidDataException(
                 $"Unexpected fail-fast record: code=0x{exceptionCode:X8}, flags={exceptionFlags}, nested=0x{nestedRecord:X}, " +
@@ -751,7 +1084,7 @@ internal static class CreatedumpValidation
         foreach (LoadSegment segment in loadSegments)
         {
             if (virtualAddress >= segment.VirtualAddress &&
-                virtualAddress - segment.VirtualAddress <= segment.FileSize &&
+                virtualAddress - segment.VirtualAddress < segment.FileSize &&
                 unsignedSize <= segment.FileSize - (virtualAddress - segment.VirtualAddress))
             {
                 ulong fileOffset = checked(segment.FileOffset + virtualAddress - segment.VirtualAddress);
