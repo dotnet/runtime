@@ -25,6 +25,7 @@ set(GC_WKS_SVR_SOURCES
 )
 
 set(COMMON_RUNTIME_SOURCES
+    AsmOffsetsVerify.cpp
     rhassert.cpp
     ${RUNTIME_DIR}/MiscNativeHelpers.cpp
     Crst.cpp
@@ -89,7 +90,6 @@ set(STANDALONEGC_ENABLED_SOURCES
 )
 
 set(FULL_RUNTIME_SOURCES
-    AsmOffsetsVerify.cpp
     ThunksMapping.cpp
 )
 

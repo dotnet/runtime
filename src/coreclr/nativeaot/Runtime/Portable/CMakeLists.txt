@@ -11,7 +11,6 @@ set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUI
 add_library(PortableRuntime STATIC
     ${COMMON_RUNTIME_SOURCES}
     ${PORTABLE_RUNTIME_SOURCES}
-    ${NATIVEAOT_RUNTIME_DIR}/AsmOffsetsVerify.cpp
     $<TARGET_OBJECTS:Runtime.GC.Workstation>)
 target_link_libraries(PortableRuntime PRIVATE aotminipal)
 
