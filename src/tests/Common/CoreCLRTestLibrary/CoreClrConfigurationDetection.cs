@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -27,12 +28,12 @@ public static class CoreClrConfigurationDetection
     {
         get
         {
-            // WASM-TODO: update when codegen is in place
-            if (PlatformDetection.IsWasm)
-                return true;
             if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
                 return true;
             if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
+                return true;
+            // Without a JIT (WebAssembly, Apple mobile), code that isn't ReadyToRun-compiled runs in the interpreter.
+            if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled && !PlatformDetection.IsReadyToRunCompiled)
                 return true;
             return false;
         }

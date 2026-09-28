@@ -122,6 +122,7 @@ public class GetGenerationTest
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [SkipOnCoreClr("Interpreter reports locals as pinned, causing generation demotion that this test does not expect.", RuntimeTestModes.InterpreterActive)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/134803", typeof(PlatformDetection), nameof(PlatformDetection.IsWasmReadyToRun))]
     [Fact]
     public static int TestEntryPoint()
     {

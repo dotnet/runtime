@@ -31,6 +31,11 @@
     <RuntimePackAsset Include="$(TargetingPackPath)/*.dll" AssetType="runtime" />
   </ItemGroup>
 
+  <!-- Lets PlatformDetection.IsReadyToRunCompiled (and the InterpreterActive test mode) see that test code is precompiled. -->
+  <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(UseMonoRuntime)' != 'true' and '$(UseNativeAOTRuntime)' != 'true' and '$(PublishReadyToRun)' == 'true'">
+    <EnvironmentVariables Include="TEST_READY_TO_RUN_MODE=1" />
+  </ItemGroup>
+
   <!-- F# tests load FSharp.Core from CORE_ROOT elsewhere; the app bundle has to carry it. -->
   <Target Name="_AddFSharpCoreToMobileRunner"
           AfterTargets="ResolveAssemblyReferences"

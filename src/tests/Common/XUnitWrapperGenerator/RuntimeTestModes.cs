@@ -44,6 +44,6 @@ namespace Xunit
 
         HeapVerify = 1 << 9, // DOTNET_HeapVerify (or COMPlus_HeapVerify) is set.
 
-        InterpreterActive = 1 << 10, // DOTNET_Interpreter != "" or DOTNET_InterpMode != 0
+        InterpreterActive = 1 << 10, // DOTNET_Interpreter != "", DOTNET_InterpMode != 0, or no JIT and not ReadyToRun-compiled (TEST_READY_TO_RUN_MODE != 1)
     }
 }
