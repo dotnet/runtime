@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO.Compression.Tests;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,77 @@ namespace System.IO.Compression
         public override Stream CreateStream(Stream stream, ZLibCompressionOptions options, bool leaveOpen) => new DeflateStream(stream, options, leaveOpen);
         public override Stream BaseStream(Stream stream) => ((DeflateStream)stream).BaseStream;
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("DeflateTestData", Path.GetFileName(uncompressedPath));
+
+        [Fact]
+        public void DeflaterPool_ReusesDeflaterForSequentialStreams()
+        {
+            const int Iterations = 16;
+            byte[] input = Encoding.UTF8.GetBytes("Short-lived DeflateStream compression should reuse native state.");
+            FieldInfo? deflaterField = typeof(DeflateStream).GetField("_deflater", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.NotNull(deflaterField);
+
+            byte[]? expectedCompressedData = null;
+            object? previousDeflater = null;
+
+            for (int i = 0; i < Iterations; i++)
+            {
+                using var compressedData = new MemoryStream();
+                object? currentDeflater;
+                using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    currentDeflater = deflaterField.GetValue(compressor);
+                    compressor.Write(input);
+                }
+
+                Assert.NotNull(currentDeflater);
+                if (previousDeflater is not null)
+                {
+                    Assert.Same(previousDeflater, currentDeflater);
+                }
+
+                byte[] compressedBytes = compressedData.ToArray();
+                if (expectedCompressedData is null)
+                {
+                    expectedCompressedData = compressedBytes;
+                }
+                else
+                {
+                    Assert.Equal(expectedCompressedData, compressedBytes);
+                }
+
+                using var compressedInput = new MemoryStream(compressedBytes);
+                using var decompressor = new DeflateStream(compressedInput, CompressionMode.Decompress);
+                using var decompressedData = new MemoryStream();
+                decompressor.CopyTo(decompressedData);
+                Assert.Equal(input, decompressedData.ToArray());
+
+                previousDeflater = currentDeflater;
+            }
+        }
+
+        [Fact]
+        public void DeflaterPool_ConcurrentShortLivedStreamsProduceCorrectOutput()
+        {
+            Parallel.For(0, 8, worker =>
+            {
+                byte[] input = Encoding.UTF8.GetBytes($"Concurrent compression payload {worker}.");
+
+                for (int i = 0; i < 8; i++)
+                {
+                    using var compressedData = new MemoryStream();
+                    using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                    {
+                        compressor.Write(input);
+                    }
+
+                    compressedData.Position = 0;
+                    using var decompressor = new DeflateStream(compressedData, CompressionMode.Decompress);
+                    using var decompressedData = new MemoryStream();
+                    decompressor.CopyTo(decompressedData);
+                    Assert.Equal(input, decompressedData.ToArray());
+                }
+            });
+        }
 
         public static IEnumerable<object[]> DecompressFailsWithWrapperStream_MemberData()
         {

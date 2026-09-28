@@ -14,7 +14,14 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Deflater : IDisposable
     {
+        private const int MaxPooledDeflaters = 16;
+        private static readonly object s_poolLock = new();
+        private static readonly Deflater?[] s_pool = new Deflater?[MaxPooledDeflaters];
         private readonly ZLibNative.ZLibStreamHandle _zlibStream;
+        private readonly ZLibNative.CompressionLevel _compressionLevel;
+        private readonly ZLibNative.CompressionStrategy _strategy;
+        private readonly int _windowBits;
+        private readonly int _memLevel;
         private MemoryHandle _inputBufferHandle;
         private bool _isDisposed;
         private const int minWindowBits = -15;  // WindowBits must be between -8..-15 to write no header, 8..15 for a
@@ -27,9 +34,13 @@ namespace System.IO.Compression
         // on the stream explicitly.
         private object SyncLock => this;
 
-        private Deflater(ZLibNative.ZLibStreamHandle zlibStream)
+        private Deflater(ZLibNative.ZLibStreamHandle zlibStream, ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
         {
             _zlibStream = zlibStream;
+            _compressionLevel = compressionLevel;
+            _strategy = strategy;
+            _windowBits = windowBits;
+            _memLevel = memLevel;
         }
 
         ~Deflater()
@@ -39,8 +50,8 @@ namespace System.IO.Compression
 
         public void Dispose()
         {
-            Dispose(true);
             GC.SuppressFinalize(this);
+            Dispose(true);
         }
 
         private void Dispose(bool disposing)
@@ -49,12 +60,25 @@ namespace System.IO.Compression
             {
                 if (disposing)
                 {
-                    _zlibStream.Dispose();
-                }
+                    lock (SyncLock)
+                    {
+                        DeallocateInputBufferHandleCore(resetStreamHandle: true);
+                        _zlibStream.NextOut = ZLibNative.ZNullPtr;
+                        _zlibStream.AvailOut = 0;
+                        _isDisposed = true;
+                    }
 
-                // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
-                DeallocateInputBufferHandle(resetStreamHandle: false);
-                _isDisposed = true;
+                    if (!TryReturnToPool(this))
+                    {
+                        _zlibStream.Dispose();
+                    }
+                }
+                else
+                {
+                    // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
+                    DeallocateInputBufferHandle(resetStreamHandle: false);
+                    _isDisposed = true;
+                }
             }
         }
 
@@ -191,6 +215,7 @@ namespace System.IO.Compression
             }
 
             _inputBufferHandle.Dispose();
+            _inputBufferHandle = default;
         }
 
         private ZErrorCode Deflate(ZFlushCode flushCode)
@@ -226,9 +251,87 @@ namespace System.IO.Compression
         {
             Debug.Assert(windowBits >= minWindowBits && windowBits <= maxWindowBits);
 
+            Deflater? deflater = RentDeflater(compressionLevel, strategy, windowBits, memLevel);
+            if (deflater is not null)
+            {
+                if (deflater.Reset())
+                {
+                    return deflater;
+                }
+
+                deflater._zlibStream.Dispose();
+            }
+
             ZLibNative.ZLibStreamHandle zlibStream = ZLibNative.ZLibStreamHandle.CreateForDeflate(compressionLevel, windowBits, memLevel, strategy);
 
-            return new Deflater(zlibStream);
+            return new Deflater(zlibStream, compressionLevel, strategy, windowBits, memLevel);
+        }
+
+        private bool Reset()
+        {
+            lock (SyncLock)
+            {
+                Debug.Assert(_isDisposed);
+
+                DeallocateInputBufferHandleCore(resetStreamHandle: true);
+                _zlibStream.NextOut = ZLibNative.ZNullPtr;
+                _zlibStream.AvailOut = 0;
+
+                if (_zlibStream.DeflateReset() != ZErrorCode.Ok)
+                {
+                    return false;
+                }
+
+                _isDisposed = false;
+                GC.ReRegisterForFinalize(this);
+                return true;
+            }
+        }
+
+        private bool Matches(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel) =>
+            _compressionLevel == compressionLevel &&
+            _strategy == strategy &&
+            _windowBits == windowBits &&
+            _memLevel == memLevel;
+
+        private static Deflater? RentDeflater(ZLibNative.CompressionLevel compressionLevel, ZLibNative.CompressionStrategy strategy, int windowBits, int memLevel)
+        {
+            lock (s_poolLock)
+            {
+                for (int i = 0; i < s_pool.Length; i++)
+                {
+                    Deflater? deflater = s_pool[i];
+                    if (deflater is not null && deflater.Matches(compressionLevel, strategy, windowBits, memLevel))
+                    {
+                        s_pool[i] = null;
+                        return deflater;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TryReturnToPool(Deflater deflater)
+        {
+            Deflater? evictedDeflater = null;
+            lock (s_poolLock)
+            {
+                for (int i = 0; i < s_pool.Length; i++)
+                {
+                    if (s_pool[i] is null)
+                    {
+                        s_pool[i] = deflater;
+                        return true;
+                    }
+                }
+
+                evictedDeflater = s_pool[^1];
+                s_pool[^1] = deflater;
+            }
+
+            evictedDeflater!._zlibStream.Dispose();
+            return true;
         }
     }
 }
