@@ -280,7 +280,9 @@ The tail should subtract the 2 it read from `range` (or set `range` from `byteOf
 - `OrdinalIgnoreCase` doesn't treat `ſ`, `ı` or the Kelvin sign as equal to ASCII letters, so the ASCII-only frozen collection strategies stay correct in Release builds.
 - `UnmanagedMemoryAccessor.ReadArray`/`WriteArray` throw when `position == Capacity`. That's intentional (`PositionLessThanCapacityRequired`), although the docs only mention `position > Capacity`.
 - `Ascii.ToUpper` and `Convert.FromHexString` return `DestinationTooSmall` rather than `InvalidData` when the destination fills up before the bad input is reached. Either answer is reasonable.
+- A failed `TryFormat` (destination too small) may leave partial data in the destination buffer for DateTime and the other formatters. `charsWritten` is 0 and the return is false, which is all the contract promises; the buffer contents are undefined on failure.
 - `IPAddress.TryParse` accepts forms `IPNetwork` callers might not expect (a bare `10` as `0.0.0.10`, IPv4 with fewer than four parts), so `10/8` parses as the network `0.0.0.0/8`. That is `IPAddress`'s long-standing inet_aton-style behavior, not an `IPNetwork` bug.
+- The SIMD `Vector`/`Matrix4x4`/`Quaternion` dot products and matrix multiply reassociate their sums, so they differ from a left-to-right scalar sum by a rounding step, and with infinities of opposite sign one path gives `Inf` where the other gives `NaN`. That's allowed floating-point non-associativity, so the vector fuzzer compares those within a conditioning-aware tolerance.
 - `BigInteger`: about 290K executions over the new kernels (repeated limbs, factors of 3/5/7, `B^k - 1` divisors, Toom-sized operands) turned up nothing.
 
 ## Coverage
@@ -311,6 +313,12 @@ Clean runs, with the known issues above tolerated so the fuzzers could get past 
 | `PEReader`/`MetadataReader` over guard-paged images, PDBs included | `MetadataReaderFuzzer` | 0.1M (Debug build, then Release) |
 | BitArray, Ascii, hex, UnmanagedMemoryAccessor, MemoryMarshal, OrdinalIgnoreCase, Latin-1 | `UnsafeBuffersFuzzer` | 2.8M |
 | MemoryExtensions search and comparison (SpanHelpers), eight element types | `SpanHelpersFuzzer` | 0.3M |
+| Date/time formatting and parsing, 8 cultures incl. non-Gregorian calendars | `DateTimeFuzzer` | 41M |
+| Utf8Parser/Utf8Formatter round-trips over guard-paged input | `Utf8ParserFormatterFuzzer` | 72M |
+| Number parsing from UTF-8 vs UTF-16, custom NumberFormatInfo symbols | `NumberParsingUtf8Fuzzer` | 4.4M (finding 44) |
+| Vector2/3/4, Matrix4x4, Quaternion, Plane vs scalar references | `NumericsVectorsFuzzer` | 2.4M (SIMD mostly inlined, low coverage) |
+| IPNetwork and IPEndPoint parsing, string/span/UTF-8 | `IPNetworkEndPointFuzzer` | 0.7M (finding 45) |
+| HTTP header value parsers (MediaType, CacheControl, ...), round-trip | `HttpHeaderValuesFuzzer` | 0.9M |
 
 A planted tie-breaking bug in `argmin-blocks` was caught by the saved corpus in under a second, so the clean result on those branches means something.
 
