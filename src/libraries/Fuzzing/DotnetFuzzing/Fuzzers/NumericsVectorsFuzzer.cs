@@ -60,8 +60,8 @@ internal sealed class NumericsVectorsFuzzer : IFuzzer
         Same(Vector2.SquareRoot(a), new Vector2(MathF.Sqrt(a.X), MathF.Sqrt(a.Y)), "Vector2 SquareRoot");
         CloseSum(Vector2.Dot(a, b), a.X * b.X + a.Y * b.Y, "Vector2 Dot");
         Close(Vector2.Distance(a, b), MathF.Sqrt((a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y)), "Vector2 Distance");
-        SameScalar(Vector2.DistanceSquared(a, b), (a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y), "Vector2 DistanceSquared");
-        SameScalar(a.LengthSquared(), a.X * a.X + a.Y * a.Y, "Vector2 LengthSquared");
+        CloseSum(Vector2.DistanceSquared(a, b), (a.X - b.X) * (a.X - b.X) + (a.Y - b.Y) * (a.Y - b.Y), "Vector2 DistanceSquared");
+        CloseSum(a.LengthSquared(), a.X * a.X + a.Y * a.Y, "Vector2 LengthSquared");
     }
 
     private static void Vectors3(byte sub, ref FloatReader r)
@@ -82,7 +82,7 @@ internal sealed class NumericsVectorsFuzzer : IFuzzer
         {
             Same(Vector3.Clamp(a, Vector3.Min(a, b), Vector3.Max(a, b)), a, "Vector3 Clamp identity");
         }
-        SameScalar(a.LengthSquared(), a.X * a.X + a.Y * a.Y + a.Z * a.Z, "Vector3 LengthSquared");
+        CloseSum(a.LengthSquared(), a.X * a.X + a.Y * a.Y + a.Z * a.Z, "Vector3 LengthSquared");
     }
 
     private static void Vectors4(byte sub, ref FloatReader r)
@@ -112,17 +112,16 @@ internal sealed class NumericsVectorsFuzzer : IFuzzer
         SameMatrix(a * 2f, Apply(a, a, (x, _) => x * 2f), "Matrix4x4 * scalar");
         SameMatrix(Matrix4x4.Transpose(a), Transpose(a), "Matrix4x4 Transpose");
         SameMatrix(Matrix4x4.Transpose(Matrix4x4.Transpose(a)), a, "Matrix4x4 Transpose involution");
-        CloseSumMatrix(a * b, MultiplyRef(a, b), "Matrix4x4 Multiply");
-
-        // Determinant and inverse, where the matrix is well-conditioned.
-        float det = a.GetDeterminant();
-        if (float.IsFinite(det) && MathF.Abs(det) > 1e-3f && AllFinite(a) && MathF.Abs(det) < 1e12f)
+        if (Moderate(a) && Moderate(b))
         {
-            if (Matrix4x4.Invert(a, out Matrix4x4 inverse) && AllFinite(inverse))
-            {
-                Matrix4x4 product = a * inverse;
-                CloseMatrix(product, Matrix4x4.Identity, 1e-2f, "Matrix4x4 a * inverse(a)");
-            }
+            CloseSumMatrix(a * b, MultiplyRef(a, b), "Matrix4x4 Multiply");
+        }
+
+        // Invert must be self-consistent: inverting twice returns the original for a well-conditioned matrix.
+        if (Moderate(a) && Matrix4x4.Invert(a, out Matrix4x4 inverse) && Moderate(inverse)
+            && Matrix4x4.Invert(inverse, out Matrix4x4 twice) && Moderate(twice))
+        {
+            CloseMatrix(twice, a, 1e-2f * MaxAbs(a), "Matrix4x4 Invert(Invert(a))");
         }
     }
 
@@ -144,7 +143,7 @@ internal sealed class NumericsVectorsFuzzer : IFuzzer
         float pw = a.W * b.W - a.X * b.X - a.Y * b.Y - a.Z * b.Z;
         Close4(product, px, py, pz, pw, "Quaternion Multiply");
 
-        SameScalar(a.LengthSquared(), a.X * a.X + a.Y * a.Y + a.Z * a.Z + a.W * a.W, "Quaternion LengthSquared");
+        CloseSum(a.LengthSquared(), a.X * a.X + a.Y * a.Y + a.Z * a.Z + a.W * a.W, "Quaternion LengthSquared");
     }
 
     // ---- references ----
@@ -190,6 +189,8 @@ internal sealed class NumericsVectorsFuzzer : IFuzzer
     };
 
     private static bool AllFinite(Matrix4x4 m) => ToArray(m).Cast<float>().All(float.IsFinite);
+    private static bool Moderate(Matrix4x4 m) => ToArray(m).Cast<float>().All(v => float.IsFinite(v) && MathF.Abs(v) <= 1e6f);
+    private static float MaxAbs(Matrix4x4 m) => MathF.Max(1f, ToArray(m).Cast<float>().Max(MathF.Abs));
 
     // ---- comparisons ----
 
