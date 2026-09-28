@@ -187,12 +187,14 @@ void PalGetPDBInfo(HANDLE hOsHandle, GUID * pGuidSignature, _Out_ uint32_t * pdw
 
 static void UnmaskActivationSignal()
 {
+#ifndef HOST_WASM
     sigset_t signal_set;
     sigemptyset(&signal_set);
     sigaddset(&signal_set, INJECT_ACTIVATION_SIGNAL);
 
     int sigmaskRet = pthread_sigmask(SIG_UNBLOCK, &signal_set, NULL);
     _ASSERTE(sigmaskRet == 0);
+#endif // !HOST_WASM
 }
 
 // This functions configures behavior of the signals that are not
@@ -703,7 +705,7 @@ void PalFlushInstructionCache(_In_ void* pAddress, size_t size)
     }
 #elif (defined(HOST_MACCATALYST) || defined(HOST_IOS) || defined(HOST_TVOS)) && defined(HOST_ARM64)
     sys_icache_invalidate (pAddress, size);
-#else
+#elif !defined(HOST_WASM)
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
 }
