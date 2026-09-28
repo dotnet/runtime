@@ -13,9 +13,19 @@ namespace AssemblyChecker
         {
             using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             using PEReader peReader = new(stream);
-            MetadataReader reader = peReader.GetMetadataReader();
-            AssemblyDefinition assembly = reader.GetAssemblyDefinition();
 
+            if (!peReader.HasMetadata)
+            {
+                return false;
+            }
+
+            MetadataReader reader = peReader.GetMetadataReader();
+            if (!reader.IsAssembly)
+            {
+                return false;
+            }
+
+            AssemblyDefinition assembly = reader.GetAssemblyDefinition();
             foreach (CustomAttributeHandle attributeHandle in assembly.GetCustomAttributes())
             {
                 CustomAttribute attribute = reader.GetCustomAttribute(attributeHandle);
