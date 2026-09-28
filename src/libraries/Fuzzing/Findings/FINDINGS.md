@@ -59,6 +59,7 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 42 | Reflection.Metadata | `PEReader.ReadDebugDirectory()` throws `NullReferenceException` for COFF-only images (Debug builds assert) | Low | Yes | [42](repros/42-PEReader-CoffDebugDirectory.cs) |
 | 43 | Complex | `Sqrt(0 + εi)` with `ε = T.Epsilon` is `(0, ∞)` for double, float and Half | Low | Yes | [43](repros/43-Complex-SqrtSubnormal.cs) |
 | 44 | Number parsing | UTF-8 `TryParse`/`Parse` reads past the end of the span when matching a 3-byte NaN/Infinity symbol or sign: `AccessViolationException` at a page boundary, and a UTF-8/UTF-16 mismatch | High (memory safety) | Yes | [44](repros/44-NumberParsing-Utf8-OutOfBoundsRead.cs) |
+| 45 | IPNetwork | `IPNetwork` silently masks host bits after the prefix although the constructor, `Parse` and `TryParse` all document that they reject them | Low | Yes | [45](repros/45-IPNetwork-SilentHostBitMasking.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -263,6 +264,10 @@ Two symptoms:
 
 The tail should subtract the 2 it read from `range` (or set `range` from `byteOffset`) before the non-ASCII fallback, in both `EqualsIgnoreCaseUtf8_Scalar` and `StartsWithIgnoreCaseUtf8_Scalar`. Found by `NumberParsingUtf8Fuzzer`.
 
+### 45. IPNetwork silently masks host bits
+
+[Repro](repros/45-IPNetwork-SilentHostBitMasking.cs). The `IPNetwork` class summary says "The constructor and the parsing methods will throw in case there are non-zero bits after the prefix", the `IPNetwork(IPAddress, int)` constructor documents `ArgumentException` for "non-zero bits after the network prefix", and `Parse`/`TryParse` document `FormatException` for the same. The implementation does the opposite: `ClearNonZeroBitsAfterNetworkPrefix` silently zeroes those bits. `new IPNetwork(192.168.1.5, 24)` and `IPNetwork.Parse("192.168.1.5/24")` both return `192.168.1.0/24`, and `TryParse` returns true. Code that trusts the documented rejection to catch a malformed CIDR (an ACL or allowlist entry, say) instead accepts it as a broader network than intended. Either the masking or the docs should change; masking is the more surprising choice for a type used in access control. Found by `IPNetworkEndPointFuzzer`.
+
 ## Things that looked like bugs but aren't
 
 - `NrbfDecoderFuzzer` OOM on the repo's own seed `largeArrayOfNulls.nrbf`: the input asks for an `Array.MaxLength` array, and the `ArrayRecord.GetArray` docs tell callers to check `Lengths` first. It only fails on machines that can't allocate 16 GB.
@@ -275,6 +280,7 @@ The tail should subtract the 2 it read from `range` (or set `range` from `byteOf
 - `OrdinalIgnoreCase` doesn't treat `ſ`, `ı` or the Kelvin sign as equal to ASCII letters, so the ASCII-only frozen collection strategies stay correct in Release builds.
 - `UnmanagedMemoryAccessor.ReadArray`/`WriteArray` throw when `position == Capacity`. That's intentional (`PositionLessThanCapacityRequired`), although the docs only mention `position > Capacity`.
 - `Ascii.ToUpper` and `Convert.FromHexString` return `DestinationTooSmall` rather than `InvalidData` when the destination fills up before the bad input is reached. Either answer is reasonable.
+- `IPAddress.TryParse` accepts forms `IPNetwork` callers might not expect (a bare `10` as `0.0.0.10`, IPv4 with fewer than four parts), so `10/8` parses as the network `0.0.0.0/8`. That is `IPAddress`'s long-standing inet_aton-style behavior, not an `IPNetwork` bug.
 - `BigInteger`: about 290K executions over the new kernels (repeated limbs, factors of 3/5/7, `B^k - 1` divisors, Toom-sized operands) turned up nothing.
 
 ## Coverage
