@@ -34,6 +34,11 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 17 | ServerSentEvents | Event type (and per-item id/retry) leaks across a blank line without data | Medium | Yes | [17](repros/17-Sse-EventTypeLeak.cs) |
 | 18 | ServerSentEvents | `retry` with trailing NULs is accepted | Low | Yes | [18](repros/18-Sse-RetryTrailingNul.cs) |
 | 19 | HttpClient | Conflicting `Content-Length` headers are accepted (first wins); Debug builds assert | Low | Yes | [19](repros/19-HttpClient-ConflictingContentLength.cs) |
+| 20 | Brotli | `BrotliStream` throws `InvalidOperationException` for corrupt data instead of the documented `InvalidDataException` | Low | Yes | [20](repros/20-BrotliStream-InvalidDataException.cs) |
+| 21 | Brotli | Wrong `Debug.Assert` in `BrotliDecoder.TryDecompress` aborts Debug/Checked builds on invalid input | Low | Yes | [21](repros/21-BrotliDecoder-TryDecompress-Assert.cs) |
+| 22 | Mail | `MailAddress` display names with backslashes change on every round trip or stop parsing | Low | Yes | [22](repros/22-MailAddress-DisplayNameRoundTrip.cs) |
+| 23 | MIME | `ContentDisposition`/`ContentType` throw `IndexOutOfRangeException`/`ArgumentException` instead of `FormatException` | Low | Yes | [23](repros/23-ContentDisposition-ParseExceptions.cs) |
+| 24 | MIME | Non-ASCII `ContentDisposition` parameters don't round-trip (encoded-words aren't decoded) | Observation | Yes | [24](repros/24-ContentDisposition-EncodedWordRoundTrip.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -125,6 +130,26 @@ A `[3,1]` column against a `[1,4]` row only visits 4 of the 12 pairs, so `Equals
 
 [Repro](repros/19-HttpClient-ConflictingContentLength.cs). A response with `Content-Length: 3` and `Content-Length: 10` is accepted and framed with 3. RFC 9112 section 6.3 says to treat that as an unrecoverable error. The handler does refuse to reuse a connection with leftover buffered bytes, so I couldn't get the leftover bytes parsed as a second response (no desync). In Debug/Checked builds of System.Net.Http, the handler's own `ContentLength` read trips `Debug.Assert("Only a single parsed value should be stored for this parser")`. Duplicate `Content-Type` or `Cache-Control` headers hit the same assert from the typed header properties.
 
+### 20. BrotliStream throws InvalidOperationException for corrupt data
+
+[Repro](repros/20-BrotliStream-InvalidDataException.cs). `BrotliStream.Read` documents `InvalidDataException` for data in an invalid format, and the end-of-stream checks do throw that. Corrupt data in the middle of the stream goes through `BrotliStream.TryDecompress`, which throws `InvalidOperationException("Decoder ran into invalid data")`. `DeflateStream` and `GZipStream` use `InvalidDataException`, so code that follows the docs and catches it for untrusted input crashes on Brotli.
+
+### 21. Wrong Debug.Assert in BrotliDecoder.TryDecompress
+
+[Repro](repros/21-BrotliDecoder-TryDecompress-Assert.cs). `TryDecompress` asserts `success ? availableOutput <= destination.Length : availableOutput == 0`, but the native decoder reports partial output when it fails, which the method's own remarks allow. Release builds return `false` with `bytesWritten > 0` as documented. Debug/Checked builds of System.IO.Compression.Brotli abort the process on such input, which is why the Brotli campaign ran against a Release build.
+
+### 22. MailAddress display names don't round-trip
+
+[Repro](repros/22-MailAddress-DisplayNameRoundTrip.cs). The parser keeps quoted-pair backslashes in `DisplayName` (`"\"quoted\""` gives `\"quoted\"`), and `ToString()` escapes them again, so the backslashes double on every parse/format cycle. When the escaped character is a control character (a backslash followed by NUL), doubling the backslash leaves the NUL unescaped, and `MailAddressCollection.ToString()` produces text that no longer parses at all.
+
+### 23. ContentDisposition and ContentType parse exceptions
+
+[Repro](repros/23-ContentDisposition-ParseExceptions.cs). Both constructors document `FormatException` for input they can't parse. `new ContentDisposition("0000000000;Y")`, with a trailing parameter that has no value, throws `IndexOutOfRangeException` from `ContentDisposition.ParseValue`. A repeated parameter (`attachment; size=100; size=100` or `text/html; charset=utf-8; charset=utf-8`) throws `ArgumentException` from the parameter dictionary.
+
+### 24. ContentDisposition encoded-words (observation)
+
+[Repro](repros/24-ContentDisposition-EncodedWordRoundTrip.cs). A non-ASCII `FileName` is written as an RFC 2047 encoded-word (`filename="=?utf-8?B?bmHDr3ZlLnR4dA==?="`), but the parser doesn't decode encoded-words, so parsing the formatted header gives the encoded text back as the file name. `creation-date` style parameters also get normalized when formatted, so they don't round-trip either.
+
 ## Things that looked like bugs but aren't
 
 - `NrbfDecoderFuzzer` OOM on the repo's own seed `largeArrayOfNulls.nrbf`: the input asks for an `Array.MaxLength` array, and the `ArrayRecord.GetArray` docs tell callers to check `Lengths` first. It only fails on machines that can't allocate 16 GB.
@@ -146,7 +171,9 @@ Clean runs, with the known issues above tolerated so the fuzzers could get past 
 | TensorPrimitives math, integer and conversion ops | `TensorPrimitivesMathFuzzer` | 15M |
 | CborReader, all modes plus incremental reading | `CborReaderFuzzer` | 17M |
 | SseParser, sync and async, small buffer limits | `SseParserFuzzer` | 22M |
-| HttpClient response parsing (HTTP/1.1, h2c, decompression) | `HttpClientResponseFuzzer` | 0.3M on a Debug build (only finding 19), Release build run in progress |
+| HttpClient response parsing (HTTP/1.1, h2c, decompression) | `HttpClientResponseFuzzer` | 0.3M on a Debug build (only finding 19), then 3.7M on a Release build with no findings |
+| Brotli decode/encode, three APIs each | `BrotliFuzzer` | 0.23M on a Release build (quality 11 round-trips are slow) |
+| MailAddress, MailAddressCollection, ContentType, ContentDisposition, CookieContainer.SetCookies | `NetHeaderParsersFuzzer` | 1.6M |
 
 A planted tie-breaking bug in `argmin-blocks` was caught by the saved corpus in under a second, so the clean result on those branches means something.
 
