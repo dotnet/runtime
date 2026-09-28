@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,7 +17,9 @@ namespace System.IO.Compression
         private readonly CompressionLevel _compressionLevel;
         private DeflateEncoder? _encoder;
         private byte[]? _buffer;
+        private volatile bool _activeAsyncOperation;
         private bool _disposed;
+        private bool _encoderFaulted;
 
         internal PooledDeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {
@@ -49,15 +52,16 @@ namespace System.IO.Compression
         public override void Flush()
         {
             EnsureNotDisposed();
+            EnsureNoActiveAsyncOperation();
             FlushEncoder();
             _stream.Flush();
         }
 
-        public override async Task FlushAsync(CancellationToken cancellationToken)
+        public override Task FlushAsync(CancellationToken cancellationToken)
         {
             EnsureNotDisposed();
-            await FlushEncoderAsync(cancellationToken).ConfigureAwait(false);
-            await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            EnsureNoActiveAsyncOperation();
+            return FlushAsyncCore(cancellationToken);
         }
 
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.ReadingNotSupported);
@@ -75,6 +79,7 @@ namespace System.IO.Compression
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             EnsureNotDisposed();
+            EnsureNoActiveAsyncOperation();
 
             if (buffer.IsEmpty)
             {
@@ -106,40 +111,61 @@ namespace System.IO.Compression
             DeflateEncoder encoder = _encoder!;
             byte[] buffer = _buffer!;
 
-            while (true)
+            try
             {
-                OperationStatus status = encoder.Compress(source, buffer, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
-                if (bytesWritten > 0)
+                while (true)
                 {
-                    _stream.Write(buffer, 0, bytesWritten);
-                }
+                    OperationStatus status = encoder.Compress(source, buffer, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+                    if (bytesWritten > 0)
+                    {
+                        _stream.Write(buffer, 0, bytesWritten);
+                    }
 
-                source = source[bytesConsumed..];
-                if (source.IsEmpty && status != OperationStatus.DestinationTooSmall)
-                {
-                    return;
+                    source = source[bytesConsumed..];
+                    if (source.IsEmpty && status != OperationStatus.DestinationTooSmall)
+                    {
+                        return;
+                    }
                 }
+            }
+            catch
+            {
+                _encoderFaulted = true;
+                throw;
             }
         }
 
         private async ValueTask WriteEncoderAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            DeflateEncoder encoder = _encoder!;
-            byte[] buffer = _buffer!;
-
-            while (true)
+            AsyncOperationStarting();
+            try
             {
-                OperationStatus status = encoder.Compress(source.Span, buffer, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
-                if (bytesWritten > 0)
-                {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
-                }
+                DeflateEncoder encoder = _encoder!;
+                byte[] buffer = _buffer!;
 
-                source = source[bytesConsumed..];
-                if (source.IsEmpty && status != OperationStatus.DestinationTooSmall)
+                while (true)
                 {
-                    return;
+                    OperationStatus status = encoder.Compress(source.Span, buffer, out int bytesConsumed, out int bytesWritten, isFinalBlock: false);
+                    if (bytesWritten > 0)
+                    {
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                    }
+
+                    source = source[bytesConsumed..];
+                    if (source.IsEmpty && status != OperationStatus.DestinationTooSmall)
+                    {
+                        return;
+                    }
                 }
+            }
+            catch
+            {
+                _encoderFaulted = true;
+                throw;
+            }
+            finally
+            {
+                AsyncOperationCompleting();
             }
         }
 
@@ -148,38 +174,61 @@ namespace System.IO.Compression
             DeflateEncoder encoder = _encoder!;
             byte[] buffer = _buffer!;
 
-            while (true)
+            try
             {
-                OperationStatus status = encoder.Flush(buffer, out int bytesWritten);
-                if (bytesWritten > 0)
+                while (true)
                 {
-                    _stream.Write(buffer, 0, bytesWritten);
-                }
+                    OperationStatus status = encoder.Flush(buffer, out int bytesWritten);
+                    if (bytesWritten > 0)
+                    {
+                        _stream.Write(buffer, 0, bytesWritten);
+                    }
 
-                if (status != OperationStatus.DestinationTooSmall)
-                {
-                    return;
+                    if (status != OperationStatus.DestinationTooSmall)
+                    {
+                        return;
+                    }
                 }
+            }
+            catch
+            {
+                _encoderFaulted = true;
+                throw;
             }
         }
 
-        private async ValueTask FlushEncoderAsync(CancellationToken cancellationToken)
+        private async Task FlushAsyncCore(CancellationToken cancellationToken)
         {
-            DeflateEncoder encoder = _encoder!;
-            byte[] buffer = _buffer!;
-
-            while (true)
+            AsyncOperationStarting();
+            try
             {
-                OperationStatus status = encoder.Flush(buffer, out int bytesWritten);
-                if (bytesWritten > 0)
+                DeflateEncoder encoder = _encoder!;
+                byte[] buffer = _buffer!;
+
+                while (true)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                    OperationStatus status = encoder.Flush(buffer, out int bytesWritten);
+                    if (bytesWritten > 0)
+                    {
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesWritten), cancellationToken).ConfigureAwait(false);
+                    }
+
+                    if (status != OperationStatus.DestinationTooSmall)
+                    {
+                        break;
+                    }
                 }
 
-                if (status != OperationStatus.DestinationTooSmall)
-                {
-                    return;
-                }
+                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                _encoderFaulted = true;
+                throw;
+            }
+            finally
+            {
+                AsyncOperationCompleting();
             }
         }
 
@@ -188,18 +237,26 @@ namespace System.IO.Compression
             DeflateEncoder encoder = _encoder!;
             byte[] buffer = _buffer!;
 
-            while (true)
+            try
             {
-                OperationStatus status = encoder.Compress(ReadOnlySpan<byte>.Empty, buffer, out int _, out int bytesWritten, isFinalBlock: true);
-                if (bytesWritten > 0)
+                while (true)
                 {
-                    _stream.Write(buffer, 0, bytesWritten);
-                }
+                    OperationStatus status = encoder.Compress(ReadOnlySpan<byte>.Empty, buffer, out int _, out int bytesWritten, isFinalBlock: true);
+                    if (bytesWritten > 0)
+                    {
+                        _stream.Write(buffer, 0, bytesWritten);
+                    }
 
-                if (status != OperationStatus.DestinationTooSmall)
-                {
-                    return;
+                    if (status != OperationStatus.DestinationTooSmall)
+                    {
+                        return;
+                    }
                 }
+            }
+            catch
+            {
+                _encoderFaulted = true;
+                throw;
             }
         }
 
@@ -208,18 +265,26 @@ namespace System.IO.Compression
             DeflateEncoder encoder = _encoder!;
             byte[] buffer = _buffer!;
 
-            while (true)
+            try
             {
-                OperationStatus status = encoder.Compress(ReadOnlySpan<byte>.Empty, buffer, out int _, out int bytesWritten, isFinalBlock: true);
-                if (bytesWritten > 0)
+                while (true)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesWritten)).ConfigureAwait(false);
-                }
+                    OperationStatus status = encoder.Compress(ReadOnlySpan<byte>.Empty, buffer, out int _, out int bytesWritten, isFinalBlock: true);
+                    if (bytesWritten > 0)
+                    {
+                        await _stream.WriteAsync(new ReadOnlyMemory<byte>(buffer, 0, bytesWritten)).ConfigureAwait(false);
+                    }
 
-                if (status != OperationStatus.DestinationTooSmall)
-                {
-                    return;
+                    if (status != OperationStatus.DestinationTooSmall)
+                    {
+                        return;
+                    }
                 }
+            }
+            catch
+            {
+                _encoderFaulted = true;
+                throw;
             }
         }
 
@@ -227,16 +292,23 @@ namespace System.IO.Compression
         {
             if (disposing && !_disposed)
             {
+                EnsureNoActiveAsyncOperation();
                 try
                 {
                     FinishEncoder();
                 }
                 finally
                 {
-                    ReturnResources();
-                    if (!_leaveOpen)
+                    try
                     {
-                        _stream.Dispose();
+                        if (!_leaveOpen)
+                        {
+                            _stream.Dispose();
+                        }
+                    }
+                    finally
+                    {
+                        ReturnResources();
                     }
                 }
             }
@@ -248,16 +320,25 @@ namespace System.IO.Compression
         {
             if (!_disposed)
             {
+                EnsureNoActiveAsyncOperation();
+                AsyncOperationStarting();
                 try
                 {
                     await FinishEncoderAsync().ConfigureAwait(false);
                 }
                 finally
                 {
-                    ReturnResources();
-                    if (!_leaveOpen)
+                    try
                     {
-                        await _stream.DisposeAsync().ConfigureAwait(false);
+                        if (!_leaveOpen)
+                        {
+                            await _stream.DisposeAsync().ConfigureAwait(false);
+                        }
+                    }
+                    finally
+                    {
+                        ReturnResources();
+                        AsyncOperationCompleting();
                     }
                 }
             }
@@ -271,7 +352,14 @@ namespace System.IO.Compression
             _encoder = null;
             if (encoder is not null)
             {
-                DeflateEncoderPool.Return(_compressionLevel, encoder);
+                if (_encoderFaulted)
+                {
+                    encoder.Dispose();
+                }
+                else
+                {
+                    DeflateEncoderPool.Return(_compressionLevel, encoder);
+                }
             }
 
             byte[]? buffer = _buffer;
@@ -286,9 +374,31 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
+        private void EnsureNoActiveAsyncOperation()
+        {
+            if (_activeAsyncOperation)
+            {
+                throw new InvalidOperationException(SR.InvalidBeginCall);
+            }
+        }
+
+        private void AsyncOperationStarting()
+        {
+            if (Interlocked.Exchange(ref _activeAsyncOperation, true))
+            {
+                throw new InvalidOperationException(SR.InvalidBeginCall);
+            }
+        }
+
+        private void AsyncOperationCompleting()
+        {
+            Debug.Assert(_activeAsyncOperation);
+            _activeAsyncOperation = false;
+        }
+
         private static class DeflateEncoderPool
         {
-            private const int MaxPoolSize = 8;
+            private const int MaxPoolSize = 1;
             private static readonly EncoderPool s_optimal = new(ZLibNative.DefaultQuality);
             private static readonly EncoderPool s_fastest = new((int)ZLibNative.CompressionLevel.BestSpeed);
             private static readonly EncoderPool s_smallestSize = new((int)ZLibNative.CompressionLevel.BestCompression);
