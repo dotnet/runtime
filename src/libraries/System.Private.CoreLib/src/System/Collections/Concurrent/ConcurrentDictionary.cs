@@ -668,7 +668,7 @@ namespace System.Collections.Concurrent
                         {
                             if (valueComparer.Equals(node._value, comparisonValue))
                             {
-                                if (IsWriteAtomic)
+                                if (IsTValueWriteAtomic)
                                 {
                                     node._value = newValue;
                                 }
@@ -962,7 +962,7 @@ namespace System.Collections.Concurrent
                             // be written atomically, since lock-free reads may be happening concurrently.
                             if (updateIfExists)
                             {
-                                if (IsWriteAtomic)
+                                if (IsTValueWriteAtomic)
                                 {
                                     node._value = value;
                                 }
@@ -2046,7 +2046,7 @@ namespace System.Collections.Concurrent
         private static int DefaultConcurrencyLevel => Environment.ProcessorCount;
 
         /// <summary>Whether TValue can be written atomically (i.e., with no danger of torn reads).</summary>
-        private static bool IsWriteAtomic
+        private static bool IsTValueWriteAtomic
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => !typeof(TValue).IsValueType ||
@@ -2426,7 +2426,7 @@ namespace System.Collections.Concurrent
                                 // be written atomically, since lock-free reads may be happening concurrently.
                                 if (updateIfExists)
                                 {
-                                    if (IsWriteAtomic)
+                                    if (IsTValueWriteAtomic)
                                     {
                                         node._value = value;
                                     }
