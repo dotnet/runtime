@@ -45,6 +45,13 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 28 | NTLM | A server's out-of-range `MsvAvTimestamp` makes the managed NTLM client, and `HttpClient`, throw `ArgumentOutOfRangeException` | Medium | Yes | [28](repros/28-ManagedNtlm-BadTimestamp.cs) |
 | 29 | Complex | `Exp`, `Sinh`, `Cosh`, `Sin`, `Cos` and `Pow` return NaN parts (`Exp(710) = (∞, NaN)`) and spurious infinities once `e^x` overflows | Medium | Yes | [29](repros/29-Complex-OverflowNaN.cs) |
 | 30 | Complex | `Asin`, `Acos` and `Atan` pick the wrong side of their branch cuts for signed-zero inputs | Medium | Yes | [30](repros/30-Complex-BranchCuts.cs) |
+| 31 | Complex | `Tan(π/2)` is `(∞, NaN)` and `Tan(1e308)` is NaN, though `Math.Tan` is finite for both; same for `Tanh` | Medium | Yes | [31](repros/31-Complex-TanPoles.cs) |
+| 32 | Complex | Division by a value near `MaxValue` returns 0 (`(1e308 + i) / (1e308 + 1e308i)` should be `0.5 - 0.5i`) | Medium | Yes | [32](repros/32-Complex-DivisionOverflow.cs) |
+| 33 | Complex | `Complex<float>`/`Complex<Half>` `Log`, `Log10` and `Atan` overflow for `\|z\| > MaxValue`; double is fine | Low | Yes | [33](repros/33-Complex-FloatLogOverflow.cs) |
+| 34 | Frozen collections | `ToFrozenSet()` of up to 10 enum values aborts Debug/Checked builds (`Debug.Assert(default(T) is IComparable<T>)`) | Low | Debug builds only | [34](repros/34-FrozenSet-EnumAssert.cs) |
+| 35 | Reflection.Metadata | `GetAssemblyName()` throws `CultureNotFoundException` for every satellite assembly in invariant globalization mode, and for malformed cultures in any mode | Medium | Yes | [35](repros/35-Metadata-GetAssemblyName-Culture.cs) |
+| 36 | Frozen collections | A non-ASCII lookup in an `OrdinalIgnoreCase` frozen collection of ASCII keys hits `Debug.Assert(Ascii.IsValid(s))` | Low | Debug builds only | [36](repros/36-Frozen-AsciiHashAssert.cs) |
+| 37 | Reflection.Metadata | A metadata stream count of `0x8000` or more makes `MetadataReader` (and `PEReader.GetMetadataReader`) throw `OverflowException` | Low | Yes | [37](repros/37-Metadata-NegativeStreamCount.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -185,6 +192,34 @@ A `[3,1]` column against a `[1,4]` row only visits 4 of the 12 pairs, so `Equals
 - Several results lose the sign of a zero component (`Asin(0 - 0i)`, `Atan(0.5 - 0i)`, `Acos(0.5 + 0i)`).
 
 The expected values match C99 `casin`/`cacos`/`catan` and CPython's `cmath`. `Sqrt` and `Log` get their cuts right. The non-generic `Complex` delegates and has the same bug.
+
+### 31. Complex Tan and Tanh at poles and for huge arguments
+
+[Repro](repros/31-Complex-TanPoles.cs). `Tan` computes `sin(2x) / (cos(2x) + cosh(2y))` and `Tanh` the mirror image. At the double nearest `π/2`, `cos(2x)` rounds to exactly `-1`, the denominator is zero, and `Tan(π/2 + 0i)` is `(∞, NaN)`, while `Math.Tan(π/2)` is `1.633e16`. For `|x|` above `MaxValue/2`, `2x` overflows and `Tan(1e308)` is `(NaN, NaN)`, though `Math.Tan(1e308)` is `-0.509`. `Tanh` has the same problems on the imaginary axis, and `Complex<float>.Tan(-1.5707964f)` is `(∞, NaN)` against `MathF.Tan` = `2.29e7`. Computing from `tan(x)` and `tanh(y)` (as glibc's `ctan` does) avoids both.
+
+### 32. Complex division overflows
+
+[Repro](repros/32-Complex-DivisionOverflow.cs). `operator /` is Smith's formula without scaling. For `(a + bi) / (c + di)` with `|d| >= |c|` it computes `c * (c/d) + d`. With `c = d = 1e308` that is `2e308`, which overflows to infinity, so the quotient becomes `(0, -0)` instead of `0.5 - 0.5i`. `Complex<float>` does the same near `float.MaxValue`, and `Reciprocal` goes through the same code. The commit that added the Annex G handling says division "stays accurate for large-magnitude dividends", but large divisors aren't covered. Scaling by a power of two first (Priest; Baudin and Smith) fixes it.
+
+### 33. Complex<float> and Complex<Half> Log/Atan overflow
+
+[Repro](repros/33-Complex-FloatLogOverflow.cs). `Complex<double>.Log(1e308 + 1e308i)` is `709.54 + 0.785i`, so the double path scales before taking the magnitude. The float and Half instantiations don't. `Complex<float>.Log(2.5e38 + 2.5e38i)` and `Log10(MaxValue + MaxValue·i)` have an infinite real part, `Complex<Half>.Log(60000 + 60000i)` too, and `Complex<float>.Atan(MaxValue + MaxValue·i)` is `(NaN, NaN)` instead of `(π/2, 0)`. The scaling threshold is probably tuned for double.
+
+### 34. Small enum FrozenSets assert in Debug builds
+
+[Repro](repros/34-FrozenSet-EnumAssert.cs). `FrozenSet.ToFrozenSet` sends small sets (10 items or fewer) of value types that `Constants.IsKnownComparable<T>()` accepts to `SmallValueTypeComparableFrozenSet<T>`. That list ends with `typeof(T).IsEnum`, but the class's constructor asserts `default(T) is IComparable<T>`, and enums only implement the non-generic `IComparable`. Lookups go through `Comparer<T>.Default` and are fine, so Release builds work. Debug/Checked builds of System.Collections.Immutable abort on something as ordinary as `new[] { DayOfWeek.Monday }.ToFrozenSet()`. `SmallValueTypeComparableFrozenDictionary` doesn't have the assert, and the tests only freeze enum-keyed dictionaries, which is probably why nobody hit it. Run the repro with `run-on-local-runtime.sh` to see the abort.
+
+### 35. GetAssemblyName and culture strings
+
+[Repro](repros/35-Metadata-GetAssemblyName-Culture.cs). `AssemblyDefinition.GetAssemblyName()` and `AssemblyReference.GetAssemblyName()` build an `AssemblyName` and set `CultureName` from the metadata string, which constructs a `CultureInfo`. With `InvariantGlobalization=true`, which many container images use, that throws `CultureNotFoundException` for every culture except the neutral one, so reading any satellite assembly (`Culture=de`) or any reference to one fails. In any mode, a malformed culture string in a crafted image (`.`, `<Module>`) throws `CultureNotFoundException` rather than `BadImageFormatException`, the exception every other malformed-input path in `MetadataReader` uses. `GetAssemblyNameInfo()` keeps the culture as a string and handles both, so callers have a workaround, but `GetAssemblyName()` is the older and more widely used API. Found by `MetadataReaderFuzzer`.
+
+### 36. Non-ASCII lookups in ASCII-only case-insensitive frozen collections
+
+[Repro](repros/36-Frozen-AsciiHashAssert.cs). The frozen string collections pick `*CaseInsensitiveAscii*` strategies when the hashed part of every key is ASCII, and then use `Hashing.GetHashCodeOrdinalIgnoreCaseAscii` on the lookup key as well. That method starts with `Debug.Assert(Ascii.IsValid(s))`, and the lookup key is whatever the caller passes, so `ContainsKey("é1")` on a dictionary of `"a1"`…`"g1"` aborts Debug/Checked builds. Release builds give the right answer, since no non-ASCII character is `OrdinalIgnoreCase`-equal to an ASCII one. It's the same kind of problem as 34, but reachable from user input in any app that keeps, say, header names in an `OrdinalIgnoreCase` frozen dictionary.
+
+### 37. Negative metadata stream count
+
+[Repro](repros/37-Metadata-NegativeStreamCount.cs). `MetadataReader.ReadStreamHeaders` reads the stream count with `ReadInt16()` and allocates `new StreamHeader[streamCount]` right away. A count of `0x8000` or more is negative, so the constructor throws `OverflowException` instead of `BadImageFormatException`. That's 24 bytes of metadata, or any PE file with that field patched, and it escapes code that opens untrusted assemblies and catches `BadImageFormatException`. Reading the count as `ushort`, or checking it against the remaining bytes, fixes it.
 
 ## Things that looked like bugs but aren't
 

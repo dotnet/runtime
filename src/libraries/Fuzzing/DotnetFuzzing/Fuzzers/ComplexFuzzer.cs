@@ -27,6 +27,10 @@ internal sealed class ComplexFuzzer : IFuzzer
     // * Asin and Acos ignore the sign of a zero imaginary part on the real-axis branch cuts (|x| > 1), and Atan takes the sign
     //   of the real part from y instead of from the zero real part on the imaginary-axis cuts (|y| > 1).
     // * Asin, Acos, Atan and Reciprocal lose the sign of zero result components.
+    // * Tan and Tanh return (INF, NaN) at the representable points nearest their poles (cos 2x + cosh 2y cancels to zero) and
+    //   NaN for huge arguments (2x overflows).
+    // * Division (Smith's formula) overflows in the denominator when the divisor is near MaxValue and returns zero.
+    // * For float and Half, Log, Log10 and Atan overflow when |z| exceeds MaxValue; double scales correctly.
     private static readonly bool s_strict = Environment.GetEnvironmentVariable("TENSOR_FUZZ_STRICT") == "1";
 
     public string[] TargetAssemblies { get; } = ["System.Runtime.Numerics"];
@@ -120,7 +124,9 @@ internal sealed class ComplexFuzzer : IFuzzer
         // Compare with the double computation on the same inputs.
         string Describe() => $"Complex<{typeof(T).Name}>.{name}({Format(z)}{(name.Contains("Multiply") || name.Contains("Divide") || name.StartsWith("Pow") ? ", " + Format(w) : "")}) = {Format(actual)}; Complex<double> gives {Format(reference)}";
         double max = double.CreateTruncating(T.MaxValue) / 4;
-        bool referenceFinite = double.IsFinite(reference.Real) && double.IsFinite(reference.Imaginary);
+        // When one component of the true result overflows T, Annex G allows the other to be NaN (it's still an infinity).
+        bool referenceFinite = double.IsFinite(reference.Real) && double.IsFinite(reference.Imaginary)
+            && Math.Abs(reference.Real) <= double.CreateTruncating(T.MaxValue) && Math.Abs(reference.Imaginary) <= double.CreateTruncating(T.MaxValue);
         if (referenceFinite)
         {
             double re = double.CreateTruncating(actual.Real), im = double.CreateTruncating(actual.Imaginary);
@@ -312,11 +318,18 @@ internal sealed class ComplexFuzzer : IFuzzer
             "Exp" or "Sinh" or "Cosh" => T.Abs(z.Real) > limit,
             "Sin" or "Cos" => T.Abs(z.Imaginary) > limit,
             "Pow" or "PowReal" => true, // Goes through Exp(power * Log(value)) for overflowing inputs.
+            "Tan" or "Tanh" => true,
+            "Divide" or "Reciprocal" or "DivideReal" => IsHuge(w) || IsHuge(z),
+            "Log" or "Log10" or "Atan" => typeof(T) != typeof(double) && IsHuge(z),
             _ => false,
         };
     }
 
-    private static bool IsKnownInaccuracy<T>(string name, Complex<T> z, Complex<T> w) where T : IFloatingPointIeee754<T>, IMinMaxValue<T> => false;
+    private static bool IsKnownInaccuracy<T>(string name, Complex<T> z, Complex<T> w) where T : IFloatingPointIeee754<T>, IMinMaxValue<T> =>
+        name is "Divide" or "Reciprocal" or "DivideReal" && (IsHuge(w) || IsHuge(z));
+
+    private static bool IsHuge<T>(Complex<T> z) where T : IFloatingPointIeee754<T>, IMinMaxValue<T> =>
+        T.Abs(z.Real) > T.MaxValue / T.CreateTruncating(16) || T.Abs(z.Imaginary) > T.MaxValue / T.CreateTruncating(16);
 
     private static bool IsKnownAxisIssue<T>(string name, Complex<T> z) where T : IFloatingPointIeee754<T>, IMinMaxValue<T> => IsKnownOverflow(name, z, z);
 
@@ -324,8 +337,9 @@ internal sealed class ComplexFuzzer : IFuzzer
     {
         bool zeroSignOnly = SameIgnoringZeroSign(x.Real, y.Real) && SameIgnoringZeroSign(x.Imaginary, y.Imaginary);
 
-        // Annex G leaves the sign of zero unspecified for several non-finite inputs (for example cexp(-INF + iINF)).
-        if (zeroSignOnly && !Complex<T>.IsFinite(z))
+        // Annex G leaves the sign of zero, or of an infinity next to a NaN, unspecified for several non-finite inputs (for
+        // example cexp(-INF + iINF) and casin(INF + iNaN)).
+        if (!Complex<T>.IsFinite(z) && SameIgnoringSign(x.Real, y.Real) && SameIgnoringSign(x.Imaginary, y.Imaginary))
         {
             return true;
         }
@@ -343,6 +357,8 @@ internal sealed class ComplexFuzzer : IFuzzer
         // The branch cut sides.
         return name is "Asin" or "Acos" && T.IsZero(z.Imaginary) || name == "Atan" && T.IsZero(z.Real);
     }
+
+    private static bool SameIgnoringSign<T>(T x, T y) where T : IFloatingPointIeee754<T> => (T.IsNaN(x) && T.IsNaN(y)) || T.Abs(x) == T.Abs(y);
 
     private static bool SameIgnoringZeroSign<T>(T x, T y) where T : IFloatingPointIeee754<T> => (T.IsNaN(x) && T.IsNaN(y)) || x == y;
 
