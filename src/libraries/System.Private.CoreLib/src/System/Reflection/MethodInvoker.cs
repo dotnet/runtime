@@ -266,7 +266,8 @@ namespace System.Reflection
                 }
             }
 
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0 ||
+                (_invocationFlags & InvocationFlags.NoConstructorInvoke) != 0 && (_isStatic || obj is null))
             {
                 ThrowForBadInvocationFlags();
             }

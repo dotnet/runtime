@@ -144,7 +144,7 @@ namespace System.Reflection
         {
             Debug.Assert(!method.ContainsGenericParameters);
 
-            bool emitNew = method is RuntimeConstructorInfo;
+            bool emitNew = method is RuntimeConstructorInfo && !method.DeclaringType!.IsAbstract;
             bool hasThis = !(emitNew || method.IsStatic);
 
             // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.

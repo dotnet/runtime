@@ -100,6 +100,47 @@ namespace System.Reflection.Tests
             }
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Constructor_AbstractDeclaringTypeWithExistingInstance()
+        {
+            ConstructorInfo constructor = typeof(AbstractRefConstructorTarget).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new[] { typeof(int).MakeByRefType() },
+                modifiers: null)!;
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            int initialValue = -1;
+            var target = new ConcreteRefConstructorTarget(ref initialValue);
+            object?[] arguments = { 42 };
+
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(42, target.Value);
+            Assert.Equal(43, arguments[0]);
+
+            object?[] constructorArguments = { 84 };
+            Assert.Null(constructor.Invoke(target, constructorArguments));
+            Assert.Equal(84, target.Value);
+            Assert.Equal(85, constructorArguments[0]);
+        }
+
+        public abstract class AbstractRefConstructorTarget
+        {
+            public int Value;
+
+            protected AbstractRefConstructorTarget(ref int value)
+            {
+                Value = value;
+                value++;
+            }
+        }
+
+        public sealed class ConcreteRefConstructorTarget : AbstractRefConstructorTarget
+        {
+            public ConcreteRefConstructorTarget(ref int value) : base(ref value)
+            {
+            }
+        }
+
         [Fact]
         public void NullTypeValidation()
         {
