@@ -40,6 +40,9 @@ static mdcxt_t* allocate_full_context(mdcxt_t* cxt)
     size_t col_mem = align_to(total_col_size, sizeof(void*));
 
     size_t total_mem = cxt_mem + tables_mem + col_mem;
+    // Validate that we don't have an overflow in our size calculations.
+    assert(safe_add_size(cxt_mem, tables_mem, &total_mem) && safe_add_size(total_mem, col_mem, &total_mem));
+
     uint8_t* mem = (uint8_t*)malloc(total_mem);
     if (mem == NULL)
         return NULL;
@@ -221,6 +224,10 @@ bool md_create_handle(void const* data, size_t data_len, mdhandle_t* handle)
     // the stream that contains the metadata tables.
     if ((bool)(cxt.context_flags & mdc_minimal_delta) && !tables_heap_uncompressed)
         return false;
+
+    // Record whether the table heap is uncompressed (#-).
+    if (tables_heap_uncompressed)
+        cxt.context_flags |= mdc_uncompressed_table_heap;
 
     // Header initialization is complete.
     cxt.magic = MDLIB_MAGIC_NUMBER;
@@ -725,6 +732,31 @@ char const* md_get_version_string(mdhandle_t handle)
     return cxt->version;
 }
 
+#ifdef DNMD_PORTABLE_PDB
+bool md_get_pdb_id(mdhandle_t handle, size_t* pdb_id_len, uint8_t* pdb_id)
+{
+    mdcxt_t* cxt = extract_mdcxt(handle);
+    if (cxt == NULL)
+        return false;
+
+    md_pdb_t pdb;
+    if (!try_get_pdb(cxt, &pdb))
+        return false;
+
+    if (!pdb_id_len)
+        return false;
+
+    size_t input_len = *pdb_id_len;
+    *pdb_id_len = ARRAY_SIZE(pdb.pdb_id);
+
+    if (input_len < ARRAY_SIZE(pdb.pdb_id))
+        return false;
+
+    memcpy(pdb_id, pdb.pdb_id, ARRAY_SIZE(pdb.pdb_id));
+    return true;
+}
+#endif
+
 mdcxt_t* extract_mdcxt(mdhandle_t md)
 {
     mdcxt_t* cxt = (mdcxt_t*)md;
@@ -736,7 +768,10 @@ mdcxt_t* extract_mdcxt(mdhandle_t md)
 void* alloc_mdmem(mdcxt_t* cxt, size_t length)
 {
     assert(cxt != NULL);
-    mdmem_t* m = (mdmem_t*)malloc(sizeof(mdmem_t) + length);
+    size_t alloc_size;
+    if (!safe_add_size(sizeof(mdmem_t), length, &alloc_size))
+        return NULL;
+    mdmem_t* m = (mdmem_t*)malloc(alloc_size);
     if (m != NULL)
     {
         m->next = cxt->mem;
@@ -962,13 +997,10 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
     if (cxt->user_string_heap.size != 0)
         stream_count++;
 
-    char const* tables_stream_name = "#~";
+    char const* tables_stream_name = (cxt->context_flags & mdc_uncompressed_table_heap) ? "#-" : "#~";
 
     if (cxt->context_flags & mdc_minimal_delta)
-    {
-        tables_stream_name = "#-";
         stream_count++;
-    }
 
     uint64_t valid_tables = 0;
     uint64_t sorted_tables = 0;
@@ -983,10 +1015,6 @@ bool md_write_to_buffer(mdhandle_t handle, uint8_t* buffer, size_t* len)
             valid_tables |= (1ULL << i);
             if (cxt->tables[i].is_sorted)
                 sorted_tables |= (1ULL << i);
-
-            // Indirect tables only exist in images that use the uncompresed stream.
-            if (table_is_indirect_table((mdtable_id_t)i))
-                tables_stream_name = "#-";
         }
     }
 

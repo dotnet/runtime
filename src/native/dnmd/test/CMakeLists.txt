@@ -2,11 +2,6 @@
 include(../configure.cmake)
 include(FindNetHost.cmake)
 
-if (POLICY CMP0135)
-  cmake_policy(SET CMP0135 NEW) # Set timestamps in downloaded archives to the time of download.
-endif()
-
-include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY
@@ -34,6 +29,11 @@ set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest benchmark)
 
+if (DNMD_ENABLE_FUZZING AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # FuzzTest enables GTest's Abseil integration, which has sign-conversion warnings in v1.14.0.
+    target_compile_options(gtest PRIVATE -Wno-error=sign-conversion)
+endif()
+
 if (WIN32)
     FetchContent_Declare(
         wil
@@ -57,3 +57,6 @@ add_subdirectory(regpal)
 add_subdirectory(regperf)
 add_subdirectory(regtest)
 add_subdirectory(emit)
+if (DNMD_ENABLE_FUZZING)
+    add_subdirectory(regfuzz)
+endif()

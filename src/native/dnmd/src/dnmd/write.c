@@ -81,6 +81,7 @@ static bool set_column_value_as_token_or_cursor(mdcursor_t c, uint32_t col_idx, 
     }
 
 #ifdef DNMD_PORTABLE_PDB
+    if (has_pdb(acxt.table->cxt))
     {
         uint32_t table_row = RidFromToken(token);
         mdtable_id_t table_id = ExtractTokenType(token);
@@ -483,7 +484,7 @@ static bool copy_cursor_column(mdcursor_t dest, mdcursor_t src, col_index_t idx)
             return false;
         break;
     case mdtc_idx_heap:
-        if (set_column_value_as_heap_offset(dest, idx, column_value))
+        if (!set_column_value_as_heap_offset(dest, idx, column_value))
             return false;
         break;
     default:
@@ -939,7 +940,10 @@ bool sort_list_by_column(mdcursor_t parent, col_index_t list_col, col_index_t co
     if (count == 1)
         return true;
 
-    void* cursor_order_buffer = malloc((sizeof(mdcursor_t) + sizeof(int32_t)) * count);
+    size_t alloc_size;
+    if (!safe_mul_size(sizeof(mdcursor_t) + sizeof(int32_t), count, &alloc_size))
+        return false;
+    void* cursor_order_buffer = malloc(alloc_size);
     if (cursor_order_buffer == NULL)
         return false;
 

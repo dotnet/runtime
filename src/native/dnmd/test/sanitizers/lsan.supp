@@ -1,0 +1,5 @@
+# Suppressions for LeakSanitizer.
+# CoreCLR intentionally leaks memory during coreclr_initialize
+# (the runtime is not designed to be fully unloaded). These leaks
+# are not in DNMD code.
+leak:coreclr_initialize

@@ -3,9 +3,20 @@
 
 #include <dnmd.h>
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4200) // nonstandard extension used: zero-sized array in struct/union
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// Get the PDB ID from the #Pdb stream of a Portable PDB.
+// The pdb_id_len parameter is an in/out parameter. The caller should set the initial value to the size of the supplied buffer.
+// Will set *pdb_id_len to the required buffer size if the supplied buffer is too small.
+// Returns false if the handle does not contain a #Pdb stream or if the supplied buffer is too small to hold the PDB ID.
+bool md_get_pdb_id(mdhandle_t handle, size_t* pdb_id_len, uint8_t* pdb_id);
 
 // Methods to parse specialized blob formats defined in the Portable PDB spec.
 // https://github.com/dotnet/runtime/blob/main/docs/design/specs/PortablePdb-Metadata.md
@@ -133,6 +144,10 @@ md_blob_parse_result_t md_parse_imports(mdhandle_t handle, uint8_t const* blob, 
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
 #endif
 
 #endif // _SRC_INC_DNMD_PDB_H

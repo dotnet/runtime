@@ -22,15 +22,41 @@ option(DNMD_BUILD_TESTS "Build tests for dnmd" ON)
 option(DNMD_INSTALL "Install dnmd targets" ON)
 option(DNMD_BUILD_INTERFACES "Build implementations of the metadata interfaces for DNMD" ON)
 option(DNMD_BUILD_TOOLS "Build tools for dnmd" ON)
+option(DNMD_ENABLE_FUZZING "Build with fuzzing support." OFF)
 
-if (DNMD_BUILD_INTERFACES OR DNMD_BUILD_TESTS OR DNMD_BUILD_TOOLS)
+if (DNMD_BUILD_INTERFACES OR DNMD_BUILD_TESTS OR DNMD_BUILD_TOOLS OR DNMD_ENABLE_FUZZING)
     enable_language(CXX)
+endif()
+
+if (DNMD_BUILD_TESTS OR DNMD_ENABLE_FUZZING)
+    include(FetchContent)
+
+    if (POLICY CMP0135)
+        cmake_policy(SET CMP0135 NEW) # Set timestamps in downloaded archives to the time of download.
+    endif()
+
+    if (DNMD_ENABLE_FUZZING)
+        message(STATUS "Enabling fuzzing support.")
+        FetchContent_Declare(
+            fuzztest
+            GIT_REPOSITORY
+            https://github.com/google/fuzztest.git
+            GIT_TAG
+            2025-08-05
+        )
+
+        set(ANTLR_BUILD_CPP_TESTS OFF CACHE BOOL "" FORCE)
+        set(FUZZTEST_FUZZING_MODE ON)
+
+        FetchContent_MakeAvailable(fuzztest)
+
+        fuzztest_setup_fuzzing_flags()
+    endif()
 endif()
 
 add_subdirectory(src/)
 
-
-if (DNMD_BUILD_TESTS)
+if (DNMD_BUILD_TESTS OR DNMD_ENABLE_FUZZING)
     enable_testing()
 
     add_subdirectory(test/)

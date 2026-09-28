@@ -4,8 +4,11 @@
 
 #include <dnmd_interfaces.hpp>
 
+#include <corhdr.h>
+
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <fuzztest/fuzztest.h>
 
 #include <array>
 #include <utility>
@@ -16,6 +19,8 @@
 #define ASSERT_HRESULT_SUCCEEDED(hr) ASSERT_THAT((hr), testing::Ge(S_OK))
 #define ASSERT_HRESULT_FAILED(hr) ASSERT_THAT((hr), testing::Lt(0))
 #endif
+
+using TokenList = std::vector<uint32_t>;
 
 namespace
 {
@@ -294,22 +299,6 @@ namespace
             }
         }
         ValidateAndCloseEnum(import, hcorenum, (ULONG)(tokens.size() / 2));
-        return tokens;
-    }
-
-    std::vector<uint32_t> EnumMethodSemantics(IMetaDataImport2* import, mdMethodDef mb)
-    {
-        std::vector<uint32_t> tokens;
-        static_enum_buffer<uint32_t> tokensBuffer{};
-        HCORENUM hcorenum{};
-        ULONG returned;
-        while (0 == import->EnumMethodSemantics(&hcorenum, mb, tokensBuffer.data(), (ULONG)tokensBuffer.size(), &returned)
-            && returned != 0)
-        {
-            for (ULONG i = 0; i < returned; ++i)
-                tokens.push_back(tokensBuffer[i]);
-        }
-        ValidateAndCloseEnum(import, hcorenum, (ULONG)tokens.size());
         return tokens;
     }
 
@@ -624,19 +613,6 @@ namespace
         values.push_back(hr);
         if (hr == S_OK)
             values.push_back(tk);
-        return values;
-    }
-
-    std::vector<uint32_t> FindTypeDefByName(IMetaDataImport2* import, LPCWSTR name, mdToken scope)
-    {
-        std::vector<uint32_t> values;
-
-        mdTypeDef ptd;
-        HRESULT hr = import->FindTypeDefByName(name, scope, &ptd);
-
-        values.push_back(hr);
-        if (hr == S_OK)
-            values.push_back(ptd);
         return values;
     }
 
@@ -1609,491 +1585,628 @@ namespace
                 EXPECT_HRESULT_SUCCEEDED(import->ResetEnum(hcorenum, 0));
                 ReadInMembers(import, hcorenum, tk, tokens);
             }
-            import->CloseEnum(hcorenum);
         }
         catch (...)
         {
             import->CloseEnum(hcorenum);
             throw;
         }
+        import->CloseEnum(hcorenum);
         return tokens;
     }
-}
 
-TEST(FindTest, FindAPIs)
-{
-    malloc_span<uint8_t> metadata = GetRegressionAssemblyMetadata();
-
-    minipal::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, metadata.data(), (uint32_t)metadata.size(), &baselineImport));
-    // Load metadata
-    minipal::com_ptr<IMetaDataImport2> currentImport;
-
-    minipal::com_ptr<IMetaDataDispenser> dispenser;
-    ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
-
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, metadata.data(), (uint32_t)metadata.size(), &currentImport));
-
-    static auto FindTokenByName = [](IMetaDataImport2* import, LPCWSTR name, mdToken enclosing = mdTokenNil) -> mdToken
+    struct ImportContext
     {
-        mdTypeDef ptd;
-        EXPECT_HRESULT_SUCCEEDED(import->FindTypeDefByName(name, enclosing, &ptd));
-        return ptd;
+        minipal::com_ptr<IMetaDataImport2> baseline;
+        minipal::com_ptr<IMetaDataImport2> current;
     };
 
-    static auto GetTypeDefBaseToken = [](IMetaDataImport2* import, mdTypeDef tk) -> mdToken
+    enum class ContextInitStatus
     {
-        static_char_buffer<WCHAR> name{};
-        ULONG pchTypeDef;
-        DWORD pdwTypeDefFlags;
-        mdToken ptkExtends;
-        EXPECT_HRESULT_SUCCEEDED(import->GetTypeDefProps(tk,
-            name.data(),
-            (ULONG)name.size(),
-            &pchTypeDef,
-            &pdwTypeDefFlags,
-            &ptkExtends));
-        return ptkExtends;
+        Success,
+        Failure,
+        Mismatch,
     };
 
-    static auto FindMethodDef = [](IMetaDataImport2* import, mdTypeDef type, LPCWSTR methodName) -> mdToken
+    bool ImportFailed(ContextInitStatus status)
     {
-        std::vector<uint32_t> methoddefs = EnumMembersWithName(import, type, methodName);
-        EXPECT_TRUE(!methoddefs.empty());
-        return methoddefs[0];
-    };
+        switch (status)
+        {
+        case ContextInitStatus::Success:
+            return false;
+        case ContextInitStatus::Failure:
+            return true;
+        case ContextInitStatus::Mismatch:
+            throw std::runtime_error("Import succeeded in one implementation but failed in the other.");
+        }
 
-    static auto FindMemberRef = [](IMetaDataImport2* import, mdTypeDef type, LPCWSTR methodName) -> mdToken
-    {
-        auto methodDef = FindMethodDef(import, type, methodName);
-        mdMemberRef pmr;
-        EXPECT_HRESULT_SUCCEEDED(import->FindMemberRef(methodDef, methodName, nullptr, 0, &pmr));
-        return pmr;
-    };
-
-    static auto FindMethod = [](IMetaDataImport2* import, mdTypeDef td, LPCWSTR name, void const* pvSigBlob, ULONG cbSigBlob) -> uint32_t
-    {
-        mdMethodDef tkMethod;
-        mdToken tkMember;
-        EXPECT_HRESULT_SUCCEEDED(import->FindMethod(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMethod));
-        EXPECT_HRESULT_SUCCEEDED(import->FindMember(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMember));
-        EXPECT_EQ(tkMethod, tkMember);
-        return tkMethod;
-    };
-
-    static auto FindField = [](IMetaDataImport2* import, mdTypeDef td, LPCWSTR name, void const* pvSigBlob, ULONG cbSigBlob) -> uint32_t
-    {
-        mdFieldDef tkField;
-        mdToken tkMember;
-        EXPECT_HRESULT_SUCCEEDED(import->FindField(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkField));
-        EXPECT_HRESULT_SUCCEEDED(import->FindMember(td, name, (PCCOR_SIGNATURE)pvSigBlob, cbSigBlob, &tkMember));
-        EXPECT_EQ(tkField, tkMember);
-        return tkField;
-    };
-
-    auto tgt = W("C");
-
-    auto baseTypeDef = W("B1");
-    auto tkB1 = EXPECT_THAT_AND_RETURN(FindTokenByName(baselineImport, baseTypeDef), testing::Eq(FindTokenByName(currentImport, baseTypeDef)));
-    auto tkB1Base = EXPECT_THAT_AND_RETURN(GetTypeDefBaseToken(baselineImport, tkB1), testing::Eq(GetTypeDefBaseToken(currentImport, tkB1)));
-    ASSERT_EQ(FindTypeDefByName(baselineImport, tgt, tkB1Base), FindTypeDefByName(currentImport, tgt, tkB1Base));
-
-    auto baseTypeRef = W("B2");
-    auto tkB2 = EXPECT_THAT_AND_RETURN(FindTokenByName(baselineImport, baseTypeRef), testing::Eq(FindTokenByName(currentImport, baseTypeRef)));
-    auto tkB2Base = EXPECT_THAT_AND_RETURN(GetTypeDefBaseToken(baselineImport, tkB2), testing::Eq(GetTypeDefBaseToken(currentImport, tkB2)));
-    ASSERT_THAT(FindTypeDefByName(baselineImport, tgt, tkB2Base), testing::Eq(FindTypeDefByName(currentImport, tgt, tkB2Base)));
-
-    auto methodDefName = W("MethodDef");
-    auto tkMethodDef = EXPECT_THAT_AND_RETURN(FindMethodDef(baselineImport, tkB1Base, methodDefName), testing::Eq(FindMethodDef(currentImport, tkB1Base, methodDefName)));
-
-    void const* defSigBlob;
-    ULONG defSigBlobLength;
-    ASSERT_EQ(
-        GetMethodProps(baselineImport, tkMethodDef),
-        GetMethodProps(currentImport, tkMethodDef, &defSigBlob, &defSigBlobLength));
-    ASSERT_EQ(
-        FindMethod(baselineImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength),
-        FindMethod(currentImport, tkB1Base, methodDefName, defSigBlob, defSigBlobLength));
-
-    auto methodRef1Name = W("MethodRef1");
-    auto tkMemberRefNoVarArgsBase = EXPECT_THAT_AND_RETURN(
-        FindMemberRef(baselineImport, tkB1Base, methodRef1Name),
-        testing::Eq(FindMemberRef(currentImport, tkB1Base, methodRef1Name)));
-
-    PCCOR_SIGNATURE ref1Blob;
-    ULONG ref1BlobLength;
-    ASSERT_EQ(
-        GetMemberRefProps(baselineImport, tkMemberRefNoVarArgsBase),
-        GetMemberRefProps(currentImport, tkMemberRefNoVarArgsBase, &ref1Blob, &ref1BlobLength));
-    ASSERT_EQ(
-        FindMethod(baselineImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength),
-        FindMethod(currentImport, tkB1Base, methodRef1Name, ref1Blob, ref1BlobLength));
-
-    auto methodRef2Name = W("MethodRef2");
-    auto tkMemberRefVarArgsBase = EXPECT_THAT_AND_RETURN(
-        FindMemberRef(baselineImport, tkB1Base, methodRef2Name),
-        testing::Eq(FindMemberRef(currentImport, tkB1Base, methodRef2Name)));
-
-    PCCOR_SIGNATURE ref2Blob;
-    ULONG ref2BlobLength;
-    ASSERT_EQ(
-        GetMemberRefProps(baselineImport, tkMemberRefVarArgsBase),
-        GetMemberRefProps(currentImport, tkMemberRefVarArgsBase, &ref2Blob, &ref2BlobLength));
-    EXPECT_EQ(
-        FindMethod(baselineImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength),
-        FindMethod(currentImport, tkB1Base, methodRef2Name, ref2Blob, ref2BlobLength));
-
-    auto fieldName = W("Field1");
-    auto tkFields = EXPECT_THAT_AND_RETURN(
-        EnumFieldsWithName(baselineImport, tkB2, fieldName),
-        testing::ElementsAreArray(EnumFieldsWithName(currentImport, tkB2, fieldName)));
-    ASSERT_FALSE(tkFields.empty());
-    mdToken tkField = tkFields[0];
-
-    void const* sigBlob;
-    ULONG sigBlobLength;
-    ASSERT_EQ(
-        GetFieldProps(baselineImport, tkField),
-        GetFieldProps(currentImport, tkField, &sigBlob, &sigBlobLength));
-    EXPECT_EQ(
-        FindField(baselineImport, tkB2, fieldName, sigBlob, sigBlobLength),
-        FindField(currentImport, tkB2, fieldName, sigBlob, sigBlobLength));
-}
-
-class MetadataImportTest : public RegressionTest
-{
-};
-
-TEST_P(MetadataImportTest, ImportAPIs)
-{
-    auto param = GetParam();
-    span<uint8_t> blob = GetMetadataForFile(param);
-    void const* data = blob.data();
-    uint32_t dataLen = (uint32_t)blob.size();
-
-    // Load metadata
-    minipal::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
-
-    minipal::com_ptr<IMetaDataDispenser> dispenser;
-    ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
-    minipal::com_ptr<IMetaDataImport2> currentImport;
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, data, dataLen, &currentImport));
-
-    // Verify APIs
-    ASSERT_THAT(ResetEnum(currentImport), testing::ElementsAreArray(ResetEnum(baselineImport)));
-    ASSERT_THAT(GetScopeProps(currentImport), testing::ElementsAreArray(GetScopeProps(baselineImport)));
-    ASSERT_THAT(GetVersionString(currentImport), testing::ElementsAreArray(GetVersionString(baselineImport)));
-
-    TokenList sigs;
-    ASSERT_EQUAL_AND_SET(sigs, EnumSignatures(baselineImport), EnumSignatures(currentImport));
-    for (auto sig : sigs)
-    {
-        ASSERT_THAT(GetSigFromToken(currentImport, sig), testing::ElementsAreArray(GetSigFromToken(baselineImport, sig)));
+        return true;
     }
+
+    ContextInitStatus CreateImportContext(std::vector<uint8_t> const& blob, ImportContext& context)
+    {
+        context = {};
+        void const* data = blob.data();
+        uint32_t dataLen = (uint32_t)blob.size();
+
+        HRESULT baselineHR = CreateImport(TestBaseline::GetBaseline(), data, dataLen, &context.baseline);
+
+        HRESULT currentHR = E_FAIL;
+        minipal::com_ptr<IMetaDataDispenser> dispenser;
+        HRESULT dispenserHR = GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser);
+        if (SUCCEEDED(dispenserHR))
+        {
+            currentHR = CreateImport(dispenser, data, dataLen, &context.current);
+        }
+        else
+        {
+            currentHR = dispenserHR;
+        }
+
+        bool baselineSucceeded = SUCCEEDED(baselineHR);
+        bool currentSucceeded = SUCCEEDED(currentHR);
+
+        if (baselineSucceeded && currentSucceeded)
+        {
+            return ContextInitStatus::Success;
+        }
+
+        if (!baselineSucceeded && !currentSucceeded)
+        {
+            return ContextInitStatus::Failure;
+        }
+
+        return ContextInitStatus::Mismatch;
+    }
+
+    struct AssemblyContext
+    {
+        minipal::com_ptr<IMetaDataAssemblyImport> baseline;
+        minipal::com_ptr<IMetaDataAssemblyImport> current;
+    };
+
+    ContextInitStatus CreateAssemblyContext(ImportContext& context, AssemblyContext& assemblies)
+    {
+        assemblies = {};
+
+        HRESULT baselineHR = context.baseline->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&assemblies.baseline);
+
+        HRESULT currentHR = context.current->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&assemblies.current);
+
+        bool baselineSucceeded = SUCCEEDED(baselineHR);
+        bool currentSucceeded = SUCCEEDED(currentHR);
+
+        if (baselineSucceeded && currentSucceeded)
+        {
+            return ContextInitStatus::Success;
+        }
+
+        if (!baselineSucceeded && !currentSucceeded)
+        {
+            return ContextInitStatus::Failure;
+        }
+
+        return ContextInitStatus::Mismatch;
+    }
+
+    std::vector<std::tuple<std::vector<uint8_t>>> MetadataBlobSeeds()
+    {
+        std::vector<std::tuple<std::vector<uint8_t>>> seeds;
+        malloc_span<uint8_t> metadata = TestBaseline::GetSeedMetadata();
+        seeds.emplace_back(std::vector<uint8_t>(metadata.begin(), metadata.end()));
+        return seeds;
+    }
+}
+
+void ImportScopeApis(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    ASSERT_THAT(ResetEnum(imports.current), testing::ElementsAreArray(ResetEnum(imports.baseline)));
+    ASSERT_THAT(GetScopeProps(imports.current), testing::ElementsAreArray(GetScopeProps(imports.baseline)));
+    ASSERT_THAT(GetVersionString(imports.current), testing::ElementsAreArray(GetVersionString(imports.baseline)));
+}
+
+void ImportUserStrings(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
 
     TokenList userStrings;
-    ASSERT_EQUAL_AND_SET(userStrings, EnumUserStrings(baselineImport), EnumUserStrings(currentImport));
+    ASSERT_EQUAL_AND_SET(userStrings, EnumUserStrings(imports.baseline), EnumUserStrings(imports.current));
     for (auto us : userStrings)
     {
-        ASSERT_THAT(GetUserString(currentImport, us), testing::ElementsAreArray(GetUserString(baselineImport, us)));
+        ASSERT_THAT(GetUserString(imports.current, us), testing::ElementsAreArray(GetUserString(imports.baseline, us)));
     }
+}
 
-    TokenList custAttrs;
-    ASSERT_EQUAL_AND_SET(custAttrs, EnumCustomAttributes(baselineImport), EnumCustomAttributes(currentImport));
-    for (auto ca : custAttrs)
+void ImportCustomAttributes(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList customAttributes;
+    ASSERT_EQUAL_AND_SET(customAttributes, EnumCustomAttributes(imports.baseline), EnumCustomAttributes(imports.current));
+    for (auto token : customAttributes)
     {
-        ASSERT_THAT(GetCustomAttributeProps(currentImport, ca), testing::ElementsAreArray(GetCustomAttributeProps(baselineImport, ca)));
+        ASSERT_THAT(GetCustomAttributeProps(imports.current, token), testing::ElementsAreArray(GetCustomAttributeProps(imports.baseline, token)));
     }
+}
+
+void ImportModuleRefs(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
 
     TokenList modulerefs;
-    ASSERT_EQUAL_AND_SET(modulerefs, EnumModuleRefs(baselineImport), EnumModuleRefs(currentImport));
+    ASSERT_EQUAL_AND_SET(modulerefs, EnumModuleRefs(imports.baseline), EnumModuleRefs(imports.current));
     for (auto moduleref : modulerefs)
     {
-        ASSERT_THAT(GetModuleRefProps(currentImport, moduleref), testing::ElementsAreArray(GetModuleRefProps(baselineImport, moduleref)));
-        ASSERT_THAT(GetNameFromToken(currentImport, moduleref), testing::ElementsAreArray(GetNameFromToken(baselineImport, moduleref)));
+        ASSERT_THAT(GetModuleRefProps(imports.current, moduleref), testing::ElementsAreArray(GetModuleRefProps(imports.baseline, moduleref)));
+        ASSERT_THAT(GetNameFromToken(imports.current, moduleref), testing::ElementsAreArray(GetNameFromToken(imports.baseline, moduleref)));
     }
+}
 
-    ASSERT_THAT(FindTypeRef(currentImport), testing::ElementsAreArray(FindTypeRef(baselineImport)));
+void ImportTypeRefs(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    ASSERT_THAT(FindTypeRef(imports.current), testing::ElementsAreArray(FindTypeRef(imports.baseline)));
+
     TokenList typerefs;
-    ASSERT_EQUAL_AND_SET(typerefs, EnumTypeRefs(baselineImport), EnumTypeRefs(currentImport));
+    ASSERT_EQUAL_AND_SET(typerefs, EnumTypeRefs(imports.baseline), EnumTypeRefs(imports.current));
     for (auto typeref : typerefs)
     {
-        ASSERT_THAT(GetTypeRefProps(currentImport, typeref), testing::ElementsAreArray(GetTypeRefProps(baselineImport, typeref)));
-        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, typeref), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, typeref)));
-        ASSERT_THAT(GetNameFromToken(currentImport, typeref), testing::ElementsAreArray(GetNameFromToken(baselineImport, typeref)));
+        ASSERT_THAT(GetTypeRefProps(imports.current, typeref), testing::ElementsAreArray(GetTypeRefProps(imports.baseline, typeref)));
+        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(imports.current, typeref), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(imports.baseline, typeref)));
+        ASSERT_THAT(GetNameFromToken(imports.current, typeref), testing::ElementsAreArray(GetNameFromToken(imports.baseline, typeref)));
     }
+}
+
+void ImportTypeSpecs(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
 
     TokenList typespecs;
-    ASSERT_EQUAL_AND_SET(typespecs, EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
+    ASSERT_EQUAL_AND_SET(typespecs, EnumTypeSpecs(imports.baseline), EnumTypeSpecs(imports.current));
     for (auto typespec : typespecs)
     {
-        ASSERT_THAT(GetTypeSpecFromToken(currentImport, typespec), testing::ElementsAreArray(GetTypeSpecFromToken(baselineImport, typespec)));
-        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, typespec), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, typespec)));
+        ASSERT_THAT(GetTypeSpecFromToken(imports.current, typespec), testing::ElementsAreArray(GetTypeSpecFromToken(imports.baseline, typespec)));
+        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(imports.current, typespec), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(imports.baseline, typespec)));
     }
+}
+
+void ImportTypeDefs(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
 
     TokenList typedefs;
-    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(imports.baseline), EnumTypeDefs(imports.current));
     for (auto typdef : typedefs)
     {
-        ASSERT_THAT(GetTypeDefProps(currentImport, typdef), testing::ElementsAreArray(GetTypeDefProps(baselineImport, typdef)));
-        ASSERT_THAT(GetNameFromToken(currentImport, typdef), testing::ElementsAreArray(GetNameFromToken(baselineImport, typdef)));
-        ASSERT_THAT(IsGlobal(currentImport, typdef), testing::Eq(IsGlobal(baselineImport, typdef)));
-        ASSERT_THAT(EnumInterfaceImpls(currentImport, typdef), testing::ElementsAreArray(EnumInterfaceImpls(baselineImport, typdef)));
-        ASSERT_THAT(EnumPermissionSetsAndGetProps(currentImport, typdef), testing::ElementsAreArray(EnumPermissionSetsAndGetProps(baselineImport, typdef)));
-        ASSERT_THAT(EnumMembers(currentImport, typdef), testing::ElementsAreArray(EnumMembers(baselineImport, typdef)));
-        ASSERT_THAT(EnumMembersWithName(currentImport, typdef), testing::ElementsAreArray(EnumMembersWithName(baselineImport, typdef)));
-        ASSERT_THAT(EnumMethodsWithName(currentImport, typdef), testing::ElementsAreArray(EnumMethodsWithName(baselineImport, typdef)));
-        ASSERT_THAT(EnumMethodImpls(currentImport, typdef), testing::ElementsAreArray(EnumMethodImpls(baselineImport, typdef)));
-        ASSERT_THAT(GetNestedClassProps(currentImport, typdef), testing::ElementsAreArray(GetNestedClassProps(baselineImport, typdef)));
-        ASSERT_THAT(GetClassLayout(currentImport, typdef), testing::ElementsAreArray(GetClassLayout(baselineImport, typdef)));
-        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, typdef), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, typdef)));
+        ASSERT_THAT(GetTypeDefProps(imports.current, typdef), testing::ElementsAreArray(GetTypeDefProps(imports.baseline, typdef)));
+        ASSERT_THAT(GetNameFromToken(imports.current, typdef), testing::ElementsAreArray(GetNameFromToken(imports.baseline, typdef)));
+        ASSERT_THAT(IsGlobal(imports.current, typdef), testing::Eq(IsGlobal(imports.baseline, typdef)));
+        ASSERT_THAT(EnumInterfaceImpls(imports.current, typdef), testing::ElementsAreArray(EnumInterfaceImpls(imports.baseline, typdef)));
+        ASSERT_THAT(EnumPermissionSetsAndGetProps(imports.current, typdef), testing::ElementsAreArray(EnumPermissionSetsAndGetProps(imports.baseline, typdef)));
+        ASSERT_THAT(EnumMembers(imports.current, typdef), testing::ElementsAreArray(EnumMembers(imports.baseline, typdef)));
+        ASSERT_THAT(EnumMembersWithName(imports.current, typdef), testing::ElementsAreArray(EnumMembersWithName(imports.baseline, typdef)));
+        ASSERT_THAT(EnumMethodsWithName(imports.current, typdef), testing::ElementsAreArray(EnumMethodsWithName(imports.baseline, typdef)));
+        ASSERT_THAT(EnumMethodImpls(imports.current, typdef), testing::ElementsAreArray(EnumMethodImpls(imports.baseline, typdef)));
+        ASSERT_THAT(GetNestedClassProps(imports.current, typdef), testing::ElementsAreArray(GetNestedClassProps(imports.baseline, typdef)));
+        ASSERT_THAT(GetClassLayout(imports.current, typdef), testing::ElementsAreArray(GetClassLayout(imports.baseline, typdef)));
+        ASSERT_THAT(GetCustomAttribute_CompilerGenerated(imports.current, typdef), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(imports.baseline, typdef)));
+    }
+}
 
+void ImportMethods(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(imports.baseline), EnumTypeDefs(imports.current));
+    for (auto typdef : typedefs)
+    {
         TokenList methoddefs;
-        ASSERT_EQUAL_AND_SET(methoddefs, EnumMethods(baselineImport, typdef), EnumMethods(currentImport, typdef));
+        ASSERT_EQUAL_AND_SET(methoddefs, EnumMethods(imports.baseline, typdef), EnumMethods(imports.current, typdef));
         for (auto methoddef : methoddefs)
         {
             void const* sig = nullptr;
             ULONG sigLen = 0;
-            ASSERT_THAT(GetMethodProps(currentImport, methoddef, &sig, &sigLen), testing::ElementsAreArray(GetMethodProps(baselineImport, methoddef)));
-            ASSERT_THAT(GetNativeCallConvFromSig(currentImport, sig, sigLen), testing::ElementsAreArray(GetNativeCallConvFromSig(baselineImport, sig, sigLen)));
-            ASSERT_THAT(GetNameFromToken(currentImport, methoddef), testing::ElementsAreArray(GetNameFromToken(baselineImport, methoddef)));
-            ASSERT_THAT(IsGlobal(currentImport, methoddef), testing::Eq(IsGlobal(baselineImport, methoddef)));
-            ASSERT_THAT(GetCustomAttribute_CompilerGenerated(currentImport, methoddef), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(baselineImport, methoddef)));
+            ASSERT_THAT(GetMethodProps(imports.current, methoddef, &sig, &sigLen), testing::ElementsAreArray(GetMethodProps(imports.baseline, methoddef)));
+            ASSERT_THAT(GetNativeCallConvFromSig(imports.current, sig, sigLen), testing::ElementsAreArray(GetNativeCallConvFromSig(imports.baseline, sig, sigLen)));
+            ASSERT_THAT(GetNameFromToken(imports.current, methoddef), testing::ElementsAreArray(GetNameFromToken(imports.baseline, methoddef)));
+            ASSERT_THAT(IsGlobal(imports.current, methoddef), testing::Eq(IsGlobal(imports.baseline, methoddef)));
+            ASSERT_THAT(GetCustomAttribute_CompilerGenerated(imports.current, methoddef), testing::ElementsAreArray(GetCustomAttribute_CompilerGenerated(imports.baseline, methoddef)));
 
             TokenList paramdefs;
-            ASSERT_EQUAL_AND_SET(paramdefs, EnumParams(baselineImport, methoddef), EnumParams(currentImport, methoddef));
+            ASSERT_EQUAL_AND_SET(paramdefs, EnumParams(imports.baseline, methoddef), EnumParams(imports.current, methoddef));
             for (auto paramdef : paramdefs)
             {
-                ASSERT_THAT(GetParamProps(currentImport, paramdef), testing::ElementsAreArray(GetParamProps(baselineImport, paramdef)));
-                ASSERT_THAT(GetFieldMarshal(currentImport, paramdef), testing::ElementsAreArray(GetFieldMarshal(baselineImport, paramdef)));
-                ASSERT_THAT(GetCustomAttribute_Nullable(currentImport, paramdef), testing::ElementsAreArray(GetCustomAttribute_Nullable(baselineImport, paramdef)));
-                ASSERT_THAT(GetNameFromToken(currentImport, paramdef), testing::ElementsAreArray(GetNameFromToken(baselineImport, paramdef)));
+                ASSERT_THAT(GetParamProps(imports.current, paramdef), testing::ElementsAreArray(GetParamProps(imports.baseline, paramdef)));
+                ASSERT_THAT(GetFieldMarshal(imports.current, paramdef), testing::ElementsAreArray(GetFieldMarshal(imports.baseline, paramdef)));
+                ASSERT_THAT(GetCustomAttribute_Nullable(imports.current, paramdef), testing::ElementsAreArray(GetCustomAttribute_Nullable(imports.baseline, paramdef)));
+                ASSERT_THAT(GetNameFromToken(imports.current, paramdef), testing::ElementsAreArray(GetNameFromToken(imports.baseline, paramdef)));
             }
 
-            ASSERT_THAT(GetParamForMethodIndex(currentImport, methoddef), testing::ElementsAreArray(GetParamForMethodIndex(baselineImport, methoddef)));
-            ASSERT_THAT(EnumPermissionSetsAndGetProps(currentImport, methoddef), testing::ElementsAreArray(EnumPermissionSetsAndGetProps(baselineImport, methoddef)));
-            ASSERT_THAT(GetPinvokeMap(currentImport, methoddef), testing::ElementsAreArray(GetPinvokeMap(baselineImport, methoddef)));
-            ASSERT_THAT(GetRVA(currentImport, methoddef), testing::ElementsAreArray(GetRVA(baselineImport, methoddef)));
+            ASSERT_THAT(GetParamForMethodIndex(imports.current, methoddef), testing::ElementsAreArray(GetParamForMethodIndex(imports.baseline, methoddef)));
+            ASSERT_THAT(EnumPermissionSetsAndGetProps(imports.current, methoddef), testing::ElementsAreArray(EnumPermissionSetsAndGetProps(imports.baseline, methoddef)));
+            ASSERT_THAT(GetPinvokeMap(imports.current, methoddef), testing::ElementsAreArray(GetPinvokeMap(imports.baseline, methoddef)));
+            ASSERT_THAT(GetRVA(imports.current, methoddef), testing::ElementsAreArray(GetRVA(imports.baseline, methoddef)));
 
             TokenList methodspecs;
-            ASSERT_EQUAL_AND_SET(methodspecs, EnumMethodSpecs(baselineImport, methoddef), EnumMethodSpecs(currentImport, methoddef));
+            ASSERT_EQUAL_AND_SET(methodspecs, EnumMethodSpecs(imports.baseline, methoddef), EnumMethodSpecs(imports.current, methoddef));
             for (auto methodspec : methodspecs)
             {
-                ASSERT_THAT(GetMethodSpecProps(currentImport, methodspec), testing::ElementsAreArray(GetMethodSpecProps(baselineImport, methodspec)));
+                ASSERT_THAT(GetMethodSpecProps(imports.current, methodspec), testing::ElementsAreArray(GetMethodSpecProps(imports.baseline, methodspec)));
             }
         }
+    }
+}
 
+void ImportEvents(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(imports.baseline), EnumTypeDefs(imports.current));
+    for (auto typdef : typedefs)
+    {
         TokenList eventdefs;
-        ASSERT_EQUAL_AND_SET(eventdefs, EnumEvents(baselineImport, typdef), EnumEvents(currentImport, typdef));
+        ASSERT_EQUAL_AND_SET(eventdefs, EnumEvents(imports.baseline, typdef), EnumEvents(imports.current, typdef));
         for (auto eventdef : eventdefs)
         {
             std::vector<mdMethodDef> mds;
-            ASSERT_THAT(GetEventProps(currentImport, eventdef, &mds), testing::ElementsAreArray(GetEventProps(baselineImport, eventdef)));
+            ASSERT_THAT(GetEventProps(imports.current, eventdef, &mds), testing::ElementsAreArray(GetEventProps(imports.baseline, eventdef)));
             for (auto md : mds)
             {
-                ASSERT_THAT(GetMethodSemantics(currentImport, eventdef, md), testing::ElementsAreArray(GetMethodSemantics(baselineImport, eventdef, md)));
+                ASSERT_THAT(GetMethodSemantics(imports.current, eventdef, md), testing::ElementsAreArray(GetMethodSemantics(imports.baseline, eventdef, md)));
             }
 
-            ASSERT_THAT(GetNameFromToken(currentImport, eventdef), testing::ElementsAreArray(GetNameFromToken(baselineImport, eventdef)));
-            ASSERT_THAT(IsGlobal(currentImport, eventdef), testing::Eq(IsGlobal(baselineImport, eventdef)));
+            ASSERT_THAT(GetNameFromToken(imports.current, eventdef), testing::ElementsAreArray(GetNameFromToken(imports.baseline, eventdef)));
+            ASSERT_THAT(IsGlobal(imports.current, eventdef), testing::Eq(IsGlobal(imports.baseline, eventdef)));
         }
+    }
+}
 
+void ImportProperties(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(imports.baseline), EnumTypeDefs(imports.current));
+    for (auto typdef : typedefs)
+    {
         TokenList properties;
-        ASSERT_EQUAL_AND_SET(properties, EnumProperties(baselineImport, typdef), EnumProperties(currentImport, typdef));
-        for (auto props : properties)
+        ASSERT_EQUAL_AND_SET(properties, EnumProperties(imports.baseline, typdef), EnumProperties(imports.current, typdef));
+        for (auto property : properties)
         {
             std::vector<mdMethodDef> mds;
-            ASSERT_THAT(GetPropertyProps(currentImport, props, &mds), testing::ElementsAreArray(GetPropertyProps(baselineImport, props)));
+            ASSERT_THAT(GetPropertyProps(imports.current, property, &mds), testing::ElementsAreArray(GetPropertyProps(imports.baseline, property)));
             for (auto md : mds)
             {
-                ASSERT_THAT(GetMethodSemantics(currentImport, props, md), testing::ElementsAreArray(GetMethodSemantics(baselineImport, props, md)));
+                ASSERT_THAT(GetMethodSemantics(imports.current, property, md), testing::ElementsAreArray(GetMethodSemantics(imports.baseline, property, md)));
             }
 
-            ASSERT_THAT(GetNameFromToken(currentImport, props), testing::ElementsAreArray(GetNameFromToken(baselineImport, props)));
-            ASSERT_THAT(IsGlobal(currentImport, props), testing::Eq(IsGlobal(baselineImport, props)));
+            ASSERT_THAT(GetNameFromToken(imports.current, property), testing::ElementsAreArray(GetNameFromToken(imports.baseline, property)));
+            ASSERT_THAT(IsGlobal(imports.current, property), testing::Eq(IsGlobal(imports.baseline, property)));
         }
+    }
+}
 
-        ASSERT_THAT(EnumFieldsWithName(baselineImport, typdef), EnumFieldsWithName(currentImport, typdef));
+void ImportFields(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(imports.baseline), EnumTypeDefs(imports.current));
+    for (auto typdef : typedefs)
+    {
+        ASSERT_THAT(EnumFieldsWithName(imports.baseline, typdef), EnumFieldsWithName(imports.current, typdef));
+
         TokenList fielddefs;
-        ASSERT_EQUAL_AND_SET(fielddefs, EnumFields(baselineImport, typdef), EnumFields(currentImport, typdef));
+        ASSERT_EQUAL_AND_SET(fielddefs, EnumFields(imports.baseline, typdef), EnumFields(imports.current, typdef));
         for (auto fielddef : fielddefs)
         {
-            ASSERT_THAT(GetFieldProps(currentImport, fielddef), testing::ElementsAreArray(GetFieldProps(baselineImport, fielddef)));
-            ASSERT_THAT(GetNameFromToken(currentImport, fielddef), testing::ElementsAreArray(GetNameFromToken(baselineImport, fielddef)));
-            ASSERT_THAT(IsGlobal(currentImport, fielddef), testing::Eq(IsGlobal(baselineImport, fielddef)));
-            ASSERT_THAT(GetPinvokeMap(currentImport, fielddef), testing::ElementsAreArray(GetPinvokeMap(baselineImport, fielddef)));
-            ASSERT_THAT(GetRVA(currentImport, fielddef), testing::ElementsAreArray(GetRVA(baselineImport, fielddef)));
-            ASSERT_THAT(GetFieldMarshal(currentImport, fielddef), testing::ElementsAreArray(GetFieldMarshal(baselineImport, fielddef)));
-            ASSERT_THAT(GetCustomAttribute_Nullable(currentImport, fielddef), testing::ElementsAreArray(GetCustomAttribute_Nullable(baselineImport, fielddef)));
+            ASSERT_THAT(GetFieldProps(imports.current, fielddef), testing::ElementsAreArray(GetFieldProps(imports.baseline, fielddef)));
+            ASSERT_THAT(GetNameFromToken(imports.current, fielddef), testing::ElementsAreArray(GetNameFromToken(imports.baseline, fielddef)));
+            ASSERT_THAT(IsGlobal(imports.current, fielddef), testing::Eq(IsGlobal(imports.baseline, fielddef)));
+            ASSERT_THAT(GetPinvokeMap(imports.current, fielddef), testing::ElementsAreArray(GetPinvokeMap(imports.baseline, fielddef)));
+            ASSERT_THAT(GetRVA(imports.current, fielddef), testing::ElementsAreArray(GetRVA(imports.baseline, fielddef)));
+            ASSERT_THAT(GetFieldMarshal(imports.current, fielddef), testing::ElementsAreArray(GetFieldMarshal(imports.baseline, fielddef)));
+            ASSERT_THAT(GetCustomAttribute_Nullable(imports.current, fielddef), testing::ElementsAreArray(GetCustomAttribute_Nullable(imports.baseline, fielddef)));
         }
+    }
+}
 
+void Signatures(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList sigs;
+    ASSERT_EQUAL_AND_SET(sigs, EnumSignatures(imports.baseline), EnumSignatures(imports.current));
+    for (auto sig : sigs)
+    {
+        ASSERT_THAT(GetSigFromToken(imports.current, sig), testing::ElementsAreArray(GetSigFromToken(imports.baseline, sig)));
+    }
+}
+
+
+void ImportGenericParams(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto status = CreateImportContext(blob, imports);
+    if (ImportFailed(status))
+        return;
+
+    TokenList typedefs;
+    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(imports.baseline), EnumTypeDefs(imports.current));
+    for (auto typdef : typedefs)
+    {
         TokenList genparams;
-        ASSERT_EQUAL_AND_SET(genparams, EnumGenericParams(baselineImport, typdef), EnumGenericParams(currentImport, typdef));
+        ASSERT_EQUAL_AND_SET(genparams, EnumGenericParams(imports.baseline, typdef), EnumGenericParams(imports.current, typdef));
         for (auto genparam : genparams)
         {
-            ASSERT_THAT(GetGenericParamProps(currentImport, genparam), testing::ElementsAreArray(GetGenericParamProps(baselineImport, genparam)));
+            ASSERT_THAT(GetGenericParamProps(imports.current, genparam), testing::ElementsAreArray(GetGenericParamProps(imports.baseline, genparam)));
+
             TokenList genparamconsts;
-            ASSERT_EQUAL_AND_SET(genparamconsts, EnumGenericParamConstraints(baselineImport, genparam), EnumGenericParamConstraints(currentImport, genparam));
+            ASSERT_EQUAL_AND_SET(genparamconsts, EnumGenericParamConstraints(imports.baseline, genparam), EnumGenericParamConstraints(imports.current, genparam));
             for (auto genparamconst : genparamconsts)
             {
-                ASSERT_THAT(GetGenericParamConstraintProps(currentImport, genparamconst), testing::ElementsAreArray(GetGenericParamConstraintProps(baselineImport, genparamconst)));
+                ASSERT_THAT(GetGenericParamConstraintProps(imports.current, genparamconst), testing::ElementsAreArray(GetGenericParamConstraintProps(imports.baseline, genparamconst)));
             }
         }
     }
+}
 
-    minipal::com_ptr<IMetaDataAssemblyImport> baselineAssembly;
-    ASSERT_THAT(S_OK, baselineImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&baselineAssembly));
-    minipal::com_ptr<IMetaDataAssemblyImport> currentAssembly;
-    ASSERT_THAT(S_OK, currentImport->QueryInterface(IID_IMetaDataAssemblyImport, (void**)&currentAssembly));
+void ImportAssemblies(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto importStatus = CreateImportContext(blob, imports);
+    if (ImportFailed(importStatus))
+        return;
+
+    AssemblyContext assemblies;
+    auto assemblyStatus = CreateAssemblyContext(imports, assemblies);
+    if (ImportFailed(assemblyStatus))
+        return;
 
     TokenList assemblyTokens;
-    ASSERT_EQUAL_AND_SET(assemblyTokens, GetAssemblyFromScope(baselineAssembly), GetAssemblyFromScope(currentAssembly));
+    ASSERT_EQUAL_AND_SET(assemblyTokens, GetAssemblyFromScope(assemblies.baseline), GetAssemblyFromScope(assemblies.current));
     for (auto assembly : assemblyTokens)
     {
-        ASSERT_THAT(GetAssemblyProps(currentAssembly, assembly), testing::ElementsAreArray(GetAssemblyProps(baselineAssembly, assembly)));
+        ASSERT_THAT(GetAssemblyProps(assemblies.current, assembly), testing::ElementsAreArray(GetAssemblyProps(assemblies.baseline, assembly)));
     }
+}
+
+void ImportAssemblyRefs(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto importStatus = CreateImportContext(blob, imports);
+    if (ImportFailed(importStatus))
+        return;
+
+    AssemblyContext assemblies;
+    auto assemblyStatus = CreateAssemblyContext(imports, assemblies);
+    if (ImportFailed(assemblyStatus))
+        return;
 
     TokenList assemblyRefs;
-    ASSERT_EQUAL_AND_SET(assemblyRefs, EnumAssemblyRefs(baselineAssembly), EnumAssemblyRefs(currentAssembly));
+    ASSERT_EQUAL_AND_SET(assemblyRefs, EnumAssemblyRefs(assemblies.baseline), EnumAssemblyRefs(assemblies.current));
     for (auto assemblyRef : assemblyRefs)
     {
-        ASSERT_THAT(GetAssemblyRefProps(currentAssembly, assemblyRef), testing::ElementsAreArray(GetAssemblyRefProps(baselineAssembly, assemblyRef)));
+        ASSERT_THAT(GetAssemblyRefProps(assemblies.current, assemblyRef), testing::ElementsAreArray(GetAssemblyRefProps(assemblies.baseline, assemblyRef)));
     }
+}
+
+void ImportFiles(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto importStatus = CreateImportContext(blob, imports);
+    if (ImportFailed(importStatus))
+        return;
+
+    AssemblyContext assemblies;
+    auto assemblyStatus = CreateAssemblyContext(imports, assemblies);
+    if (ImportFailed(assemblyStatus))
+        return;
 
     TokenList files;
-    ASSERT_EQUAL_AND_SET(files, EnumFiles(baselineAssembly), EnumFiles(currentAssembly));
+    ASSERT_EQUAL_AND_SET(files, EnumFiles(assemblies.baseline), EnumFiles(assemblies.current));
     for (auto file : files)
     {
-        ASSERT_THAT(GetFileProps(currentAssembly, file), testing::ElementsAreArray(GetFileProps(baselineAssembly, file)));
+        ASSERT_THAT(GetFileProps(assemblies.current, file), testing::ElementsAreArray(GetFileProps(assemblies.baseline, file)));
     }
+}
+
+void ImportExportedTypes(std::vector<uint8_t> blob)
+{
+    ImportContext imports;
+    auto importStatus = CreateImportContext(blob, imports);
+    if (ImportFailed(importStatus))
+        return;
+
+    AssemblyContext assemblies;
+    auto assemblyStatus = CreateAssemblyContext(imports, assemblies);
+    if (ImportFailed(assemblyStatus))
+        return;
 
     TokenList exports;
-    ASSERT_EQUAL_AND_SET(exports, EnumExportedTypes(baselineAssembly), EnumExportedTypes(currentAssembly));
+    ASSERT_EQUAL_AND_SET(exports, EnumExportedTypes(assemblies.baseline), EnumExportedTypes(assemblies.current));
     for (auto exportedType : exports)
     {
         std::vector<WCHAR> name;
         uint32_t implementation = mdTokenNil;
-        ASSERT_THAT(GetExportedTypeProps(currentAssembly, exportedType, &name, &implementation), testing::ElementsAreArray(GetExportedTypeProps(baselineAssembly, exportedType)));
+        ASSERT_THAT(GetExportedTypeProps(assemblies.current, exportedType, &name, &implementation), testing::ElementsAreArray(GetExportedTypeProps(assemblies.baseline, exportedType)));
         ASSERT_THAT(
-            FindExportedTypeByName(currentAssembly, name.data(), implementation),
-            testing::ElementsAreArray(FindExportedTypeByName(baselineAssembly, name.data(), implementation)));
-    }
-
-    TokenList resources;
-    ASSERT_EQUAL_AND_SET(resources, EnumManifestResources(baselineAssembly), EnumManifestResources(currentAssembly));
-    for (auto resource : resources)
-    {
-        std::vector<WCHAR> name;
-        ASSERT_THAT(GetManifestResourceProps(currentAssembly, resource, &name), testing::ElementsAreArray(GetManifestResourceProps(baselineAssembly, resource)));
-        ASSERT_THAT(FindManifestResourceByName(currentAssembly, name.data()), testing::ElementsAreArray(FindManifestResourceByName(baselineAssembly, name.data())));
+            FindExportedTypeByName(assemblies.current, name.data(), implementation),
+            testing::ElementsAreArray(FindExportedTypeByName(assemblies.baseline, name.data(), implementation)));
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(MetaDataImportTestCore, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(GetBaselineDirectory())), PrintName);
-
-INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx4_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall(X("v4.0.30319")))), PrintName);
-INSTANTIATE_TEST_SUITE_P(MetaDataImportTestFx2_0, MetadataImportTest, testing::ValuesIn(MetadataFilesInDirectory(FindFrameworkInstall(X("v2.0.50727")))), PrintName);
-
-INSTANTIATE_TEST_SUITE_P(MetaDataImportTest_IndirectionTables, MetadataImportTest, testing::Values(MetadataFile{ MetadataFile::Kind::Generated, IndirectionTablesKey }), PrintName);
-
-class MetaDataLongRunningTest : public RegressionTest
+void ImportManifestResources(std::vector<uint8_t> blob)
 {
-};
+    ImportContext imports;
+    auto importStatus = CreateImportContext(blob, imports);
+    if (ImportFailed(importStatus))
+        return;
 
-TEST_P(MetaDataLongRunningTest, ImportAPIs)
+    AssemblyContext assemblies;
+    auto assemblyStatus = CreateAssemblyContext(imports, assemblies);
+    if (ImportFailed(assemblyStatus))
+        return;
+
+    TokenList resources;
+    ASSERT_EQUAL_AND_SET(resources, EnumManifestResources(assemblies.baseline), EnumManifestResources(assemblies.current));
+    for (auto resource : resources)
+    {
+        std::vector<WCHAR> name;
+        ASSERT_THAT(GetManifestResourceProps(assemblies.current, resource, &name), testing::ElementsAreArray(GetManifestResourceProps(assemblies.baseline, resource)));
+        ASSERT_THAT(FindManifestResourceByName(assemblies.current, name.data()), testing::ElementsAreArray(FindManifestResourceByName(assemblies.baseline, name.data())));
+    }
+}
+
+FUZZ_TEST(regfuzz, ImportScopeApis)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportUserStrings)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportCustomAttributes)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportModuleRefs)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportTypeRefs)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportTypeSpecs)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportTypeDefs)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportMethods)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportEvents)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportProperties)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportFields)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, Signatures)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportGenericParams)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportAssemblies)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportAssemblyRefs)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportFiles)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportExportedTypes)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+FUZZ_TEST(regfuzz, ImportManifestResources)
+    .WithDomains(fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1))
+    .WithSeeds(MetadataBlobSeeds);
+
+void MemberRefs(std::vector<uint8_t> image, mdToken parentToken)
 {
-    auto param = GetParam();
-    span<uint8_t> blob = GetMetadataForFile(param);
-    void const* data = blob.data();
-    uint32_t dataLen = (uint32_t)blob.size();
+    void const* data = image.data();
+    uint32_t dataLen = (uint32_t)image.size();
 
     // Load metadata
     minipal::com_ptr<IMetaDataImport2> baselineImport;
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(TestBaseline::Metadata, data, dataLen, &baselineImport));
+    HRESULT baselineHR = CreateImport(TestBaseline::GetBaseline(), data, dataLen, &baselineImport);
 
     minipal::com_ptr<IMetaDataDispenser> dispenser;
     ASSERT_HRESULT_SUCCEEDED(GetDispenser(IID_IMetaDataDispenser, (void**)&dispenser));
     minipal::com_ptr<IMetaDataImport2> currentImport;
-    ASSERT_HRESULT_SUCCEEDED(CreateImport(dispenser, data, dataLen, &currentImport));
+    HRESULT currentHR = CreateImport(dispenser, data, dataLen, &currentImport);
 
-    static auto VerifyFindMemberRef = [](IMetaDataImport2 * import, mdToken memberRef) -> std::vector<uint32_t>
-        {
-            std::vector<uint32_t> values;
+    ASSERT_EQ(currentHR, baselineHR);
 
-            mdToken ptk;
-            static_char_buffer<WCHAR> name{};
-            ULONG pchMember;
-            PCCOR_SIGNATURE ppvSigBlob;
-            ULONG pcbSigBlob;
-            HRESULT hr = import->GetMemberRefProps(memberRef,
-                & ptk,
-                name.data(),
-                (ULONG)name.size(),
-                & pchMember,
-                & ppvSigBlob,
-                & pcbSigBlob);
-            values.push_back(hr);
-            if (hr == S_OK)
-            {
-                // We were able to get the name, now try looking up a memberRef by name and by sig
-                mdMemberRef lookup = mdTokenNil;
-                hr = import->FindMemberRef(ptk, name.data(), ppvSigBlob, pcbSigBlob, & lookup);
-                values.push_back(hr);
-                values.push_back(lookup);
-                lookup = mdTokenNil;
-                hr = import->FindMemberRef(ptk, name.data(), nullptr, 0, & lookup);
-                values.push_back(hr);
-                values.push_back(lookup);
-                lookup = mdTokenNil;
-                hr = import->FindMemberRef(ptk, nullptr, ppvSigBlob, pcbSigBlob, & lookup);
-                values.push_back(hr);
-                values.push_back(lookup);
-            }
-            return values;
-        };
+    if (currentHR != S_OK)
+        return;
 
-    size_t stride;
-    size_t count;
-
-    TokenList typedefs;
-    ASSERT_EQUAL_AND_SET(typedefs, EnumTypeDefs(baselineImport), EnumTypeDefs(currentImport));
-    count = 0;
-    stride = std::max(typedefs.size() / 128, (size_t)16);
-    for (auto typdef : typedefs)
+    TokenList memberrefs;
+    ASSERT_EQUAL_AND_SET(memberrefs, EnumMemberRefs(currentImport, parentToken), EnumMemberRefs(baselineImport, parentToken));
+    for (auto memberref : memberrefs)
     {
-        if (count++ % stride != 0)
-            continue;
-
-        EXPECT_THAT(EnumMemberRefs(currentImport, typdef), testing::ElementsAreArray(EnumMemberRefs(baselineImport, typdef)));
-
-        TokenList methoddefs;
-        ASSERT_EQUAL_AND_SET(methoddefs, EnumMethods(baselineImport, typdef), EnumMethods(currentImport, typdef));
-        for (auto methoddef : methoddefs)
-        {
-            EXPECT_THAT(EnumMethodSemantics(currentImport, methoddef), testing::ElementsAreArray(EnumMethodSemantics(baselineImport, methoddef)));
-        }
-
-        EXPECT_THAT(EnumCustomAttributes(currentImport, typdef), testing::ElementsAreArray(EnumCustomAttributes(baselineImport, typdef)));
-    }
-
-    TokenList typespecs;
-    ASSERT_EQUAL_AND_SET(typespecs, EnumTypeSpecs(baselineImport), EnumTypeSpecs(currentImport));
-    count = 0;
-    stride = std::max(typespecs.size() / 128, (size_t)16);
-    for (auto typespec : typespecs)
-    {
-        if (count++ % stride != 0)
-            continue;
-
-        TokenList memberrefs;
-        ASSERT_EQUAL_AND_SET(memberrefs, EnumMemberRefs(baselineImport, typespec), EnumMemberRefs(currentImport, typespec));
-        for (auto memberref : memberrefs)
-        {
-            EXPECT_THAT(GetMemberRefProps(currentImport, memberref), testing::ElementsAreArray(GetMemberRefProps(baselineImport, memberref)));
-            EXPECT_THAT(VerifyFindMemberRef(currentImport, memberref), testing::ElementsAreArray(VerifyFindMemberRef(baselineImport, memberref)));
-        }
+        ASSERT_THAT(GetMemberRefProps(currentImport, memberref), testing::ElementsAreArray(GetMemberRefProps(baselineImport, memberref)));
+        ASSERT_THAT(GetNameFromToken(currentImport, memberref), testing::ElementsAreArray(GetNameFromToken(baselineImport, memberref)));
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(MetaDataLongRunningTest_CoreLibs, MetaDataLongRunningTest, testing::ValuesIn(CoreLibFiles()), PrintName);
+FUZZ_TEST(regfuzz, MemberRefs)
+.WithDomains(
+    fuzztest::Arbitrary<std::vector<uint8_t>>().WithMaxSize(4000000).WithMinSize(1),
+    fuzztest::Arbitrary<mdToken>())
+.WithSeeds([]() -> std::vector<std::tuple<std::vector<uint8_t>, mdToken>>
+{
+    std::vector<std::tuple<std::vector<uint8_t>, mdToken>> seeds;
+    malloc_span<uint8_t> metadata = TestBaseline::GetSeedMetadata();
+    seeds.push_back(std::make_tuple(std::vector<uint8_t>(metadata.begin(), metadata.end()), TokenFromRid(1, mdtTypeRef)));
+    return seeds;
+});

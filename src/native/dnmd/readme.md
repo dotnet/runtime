@@ -38,6 +38,10 @@ DNMD should be built first. See the Build section.
 
 Tests can be run using `ctest --test-dir artifacts`.
 
+To build the `regfuzz` target on Linux with Clang, configure with
+`-DDNMD_ENABLE_FUZZING=ON`. This also builds the native tests and fetches
+Google FuzzTest.
+
 Testing correctness defers to the current implementation of the relevant interface
 defined in the newest .NET runtime the test finds via normal runtime discovery mechanisms (for example, `IMetaDataImport`).
 The approach is to pass identical arguments to the current implementation and the

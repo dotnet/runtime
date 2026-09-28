@@ -18,4 +18,10 @@ set(HEADERS emit.hpp)
 add_executable(emit ${SOURCES} ${HEADERS})
 target_link_libraries(emit PRIVATE dnmd::interfaces_static gtest_main gmock)
 
-gtest_discover_tests(emit)
+if (DNMD_ENABLE_SANITIZERS)
+    set(SANITIZER_SUPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../sanitizers")
+    gtest_discover_tests(emit PROPERTIES ENVIRONMENT
+        "ASAN_OPTIONS=detect_odr_violation=0;LSAN_OPTIONS=suppressions=${SANITIZER_SUPP_DIR}/lsan.supp;UBSAN_OPTIONS=suppressions=${SANITIZER_SUPP_DIR}/ubsan.supp")
+else()
+    gtest_discover_tests(emit)
+endif()

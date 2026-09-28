@@ -1,0 +1,6 @@
+{
+    "cmake.buildDirectory": "${workspaceFolder}/artifacts",
+    "cmake.configureArgs": [
+        "-DDNMD_ENABLE_FUZZING=1"
+    ]
+}
