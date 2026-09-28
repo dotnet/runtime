@@ -39,6 +39,10 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 22 | Mail | `MailAddress` display names with backslashes change on every round trip or stop parsing | Low | Yes | [22](repros/22-MailAddress-DisplayNameRoundTrip.cs) |
 | 23 | MIME | `ContentDisposition`/`ContentType` throw `IndexOutOfRangeException`/`ArgumentException` instead of `FormatException` | Low | Yes | [23](repros/23-ContentDisposition-ParseExceptions.cs) |
 | 24 | MIME | Non-ASCII `ContentDisposition` parameters don't round-trip (encoded-words aren't decoded) | Observation | Yes | [24](repros/24-ContentDisposition-EncodedWordRoundTrip.cs) |
+| 25 | Hashing | Reflected `Crc32ParameterSet`/`Crc64ParameterSet` take the initial value in the reflected domain, unlike the Rocksoft/reveng model | Low (API semantics) | Yes | [25](repros/25-Crc32ParameterSet-ReflectedInitialValue.cs) |
+| 26 | HttpListener | Managed `HttpListener` accepts invalid request targets (`#frag`, `?x`) and asserts on them in Debug builds | Low | Yes | [26](repros/26-HttpListener-InvalidRequestTarget.cs) |
+| 27 | NTLM | Managed NTLM client reports `IsAuthenticated` after a rejected challenge; `ComputeIntegrityCheck` then throws `NullReferenceException` | Medium | Yes | [27](repros/27-ManagedNtlm-IsAuthenticatedAfterFailure.cs) |
+| 28 | NTLM | A server's out-of-range `MsvAvTimestamp` makes the managed NTLM client, and `HttpClient`, throw `ArgumentOutOfRangeException` | Medium | Yes | [28](repros/28-ManagedNtlm-BadTimestamp.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -149,6 +153,22 @@ A `[3,1]` column against a `[1,4]` row only visits 4 of the 12 pairs, so `Equals
 ### 24. ContentDisposition encoded-words (observation)
 
 [Repro](repros/24-ContentDisposition-EncodedWordRoundTrip.cs). A non-ASCII `FileName` is written as an RFC 2047 encoded-word (`filename="=?utf-8?B?bmHDr3ZlLnR4dA==?="`), but the parser doesn't decode encoded-words, so parsing the formatted header gives the encoded text back as the file name. `creation-date` style parameters also get normalized when formatted, so they don't round-trip either.
+
+### 25. Reflected CRC parameter sets and the initial value
+
+[Repro](repros/25-Crc32ParameterSet-ReflectedInitialValue.cs). `Crc32ParameterSet.Create(poly, init, xor, reflectValues: true)` (and the CRC-64 version) loads `init` straight into the reflected, LSB-first register. The Rocksoft/reveng parameter model, which the property names follow and which the CRC catalogue, `crcmod` and `reveng` use, defines the initial value in the unreflected domain. The two only agree for bit-palindromic values like 0 and all ones, which is why all the catalogue check values pass. A reflected CRC with any other seed, created from its published parameters, doesn't match other tools. Passing `ReverseBits(init)` gives the standard result. The API is new in 11.0, so now is the time to either reflect the value or document the convention.
+
+### 26. HttpListener accepts invalid request targets
+
+[Repro](repros/26-HttpListener-InvalidRequestTarget.cs). The managed `HttpListener` used on Linux and macOS delivers requests like `GET #frag HTTP/1.1` or `GET ?x=1 HTTP/1.1` to the application, with `RawUrl` `#frag` and a synthesized `Url` of `http://127.0.0.1:port/#frag`. RFC 9112 only allows origin-form, absolute-form, authority-form and `*`. In Debug/Checked builds of System.Net.HttpListener these requests, and a valid absolute-form target without a path (`GET http://host:port HTTP/1.1`), trip `Debug.Assert` in `HttpListenerRequestUriBuilder`, so any client can abort such a server.
+
+### 27. Managed NTLM stays "authenticated" after a rejected challenge
+
+[Repro](repros/27-ManagedNtlm-IsAuthenticatedAfterFailure.cs). `ManagedNtlmNegotiateAuthenticationPal.GetOutgoingBlob` sets `_isAuthenticated = true` before it parses the server's CHALLENGE message and never resets it when parsing fails. After `GetOutgoingBlob` returns `InvalidToken`, `IsAuthenticated` and `IsSigned` are true, `RemoteIdentity` returns the target name, and `ComputeIntegrityCheck` throws `NullReferenceException` because there's no signing key. `Wrap`/`Unwrap` do refuse. HttpClient goes by the status codes, but other users of the public API can be misled. This client is the default on macOS, iOS, Android and OpenBSD. Separately, an empty second server token hits `Debug.Assert(!incomingBlob.IsEmpty)` in Debug builds.
+
+### 28. Managed NTLM throws on a server-controlled timestamp
+
+[Repro](repros/28-ManagedNtlm-BadTimestamp.cs). `ProcessTargetInfo` passes the `MsvAvTimestamp` AV pair from the server's challenge to `DateTime.FromFileTimeUtc` without validating it. An out-of-range value makes `GetOutgoingBlob` throw `ArgumentOutOfRangeException: Not a valid Win32 FileTime` instead of returning `InvalidToken`, on both the NTLM and the SPNEGO path. Through `HttpClient` with credentials, a server that asks for NTLM and sends such a challenge makes `SendAsync` throw that `ArgumentOutOfRangeException`, which callers don't expect from HTTP requests. The repro shows both.
 
 ## Things that looked like bugs but aren't
 

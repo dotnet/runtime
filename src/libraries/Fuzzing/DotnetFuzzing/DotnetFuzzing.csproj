@@ -40,6 +40,7 @@
     <ProjectReference Include="..\..\System.Numerics.Tensors\src\System.Numerics.Tensors.csproj" />
     <ProjectReference Include="..\..\System.Formats.Cbor\src\System.Formats.Cbor.csproj" />
     <ProjectReference Include="..\..\System.Net.ServerSentEvents\src\System.Net.ServerSentEvents.csproj" />
+    <ProjectReference Include="..\..\System.IO.Hashing\src\System.IO.Hashing.csproj" />
   </ItemGroup>
 
 </Project>
