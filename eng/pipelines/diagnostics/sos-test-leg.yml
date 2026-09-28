@@ -157,13 +157,8 @@ jobs:
         displayName: Build
 
     - pwsh: |
-        $targetOS = if ("${{ parameters.osGroup }}" -eq "windows") { "Windows_NT" } else { "${{ parameters.osGroup }}" }
         $sourceDir = "$(Build.SourcesDirectory)/artifacts/private-cdac"
-        $destinationDir = "$(Build.SourcesDirectory)/artifacts/bin/$targetOS.${{ parameters.archType }}.$(_DiagnosticsConfiguration)"
         $overrideDir = "$(Build.SourcesDirectory)/artifacts/cdac-override/$(_DiagnosticsConfiguration)"
-        if (-not (Test-Path -PathType Container $destinationDir)) {
-          throw "Diagnostics native output directory '$destinationDir' was not found."
-        }
         New-Item -ItemType Directory -Force -Path $overrideDir | Out-Null
 
         $fileNames = switch ("${{ parameters.osGroup }}") {
@@ -179,10 +174,9 @@ jobs:
             throw "Private cDAC input '$source' was not found."
           }
 
-          Copy-Item -Path $source -Destination $destinationDir
           Copy-Item -Path $source -Destination $overrideDir
         }
-      displayName: 'Install Private cDAC'
+      displayName: 'Stage Private cDAC'
 
     - template: /eng/pipelines/send-to-helix-step.yml@diagnostics
       parameters:
