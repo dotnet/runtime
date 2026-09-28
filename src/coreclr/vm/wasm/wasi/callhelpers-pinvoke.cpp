@@ -161,7 +161,6 @@ extern "C" {
     int32_t SystemNative_PosixFAdvise (void *, int64_t, int64_t, int32_t);
     int32_t SystemNative_Read (void *, void *, int32_t);
     int32_t SystemNative_ReadDir (void *, void *);
-    int32_t SystemNative_ReadFromNonblocking (void *, void *, int32_t);
     int32_t SystemNative_ReadLink (void *, void *, int32_t);
     int64_t SystemNative_ReadV (void *, void *, int32_t);
     void * SystemNative_Realloc (void *, void *);
@@ -200,7 +199,6 @@ extern "C" {
     int32_t SystemNative_Unlink (void *);
     int32_t SystemNative_WasiSubscribeSocketPollable (int32_t, int32_t);
     int32_t SystemNative_Write (void *, void *, int32_t);
-    int32_t SystemNative_WriteToNonblocking (void *, void *, int32_t);
     int64_t SystemNative_WriteV (void *, void *, int32_t);
     __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[constructor]outgoing-request"))) extern int32_t WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_constructor_5D_outgoing_request (int32_t);
     __attribute__((import_module("wasi:http/types@0.2.8"),import_name("[method]fields.entries"))) extern void WasiHttpWorld_wit_Imports_wasi_http_v0_2_8_23_wasi_3A_http_2F_types_40_0_2_8_23__5B_method_5D_fields_entries (int32_t, void *);
@@ -409,7 +407,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_PosixFAdvise) // System.Private.CoreLib
     DllImportEntry(SystemNative_Read) // System.Console, System.Net.Sockets, System.Private.CoreLib
     DllImportEntry(SystemNative_ReadDir) // System.Private.CoreLib
-    DllImportEntry(SystemNative_ReadFromNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadLink) // System.Private.CoreLib
     DllImportEntry(SystemNative_ReadV) // System.Private.CoreLib
     DllImportEntry(SystemNative_Realloc) // System.Private.CoreLib
@@ -448,7 +445,6 @@ static const Entry s_libSystem_Native [] = {
     DllImportEntry(SystemNative_Unlink) // System.IO.MemoryMappedFiles, System.Private.CoreLib
     DllImportEntry(SystemNative_WasiSubscribeSocketPollable) // System.Net.Sockets
     DllImportEntry(SystemNative_Write) // System.Console, System.Net.Sockets, System.Private.CoreLib
-    DllImportEntry(SystemNative_WriteToNonblocking) // System.Private.CoreLib
     DllImportEntry(SystemNative_WriteV) // System.Private.CoreLib
 };
 
