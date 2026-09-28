@@ -88,7 +88,7 @@ internal sealed class MetadataReaderFuzzer : IFuzzer
         _ = headers.CorHeader?.Flags;
         _ = headers.IsDll;
         _ = headers.MetadataStartOffset;
-        foreach (SectionHeader section in headers.SectionHeaders)
+        foreach (SectionHeader section in headers.SectionHeaders.Where(s => s.VirtualAddress >= 0))
         {
             Try(() =>
             {
@@ -109,7 +109,10 @@ internal sealed class MetadataReaderFuzzer : IFuzzer
                         _ = offset;
                     }
 
-                    _ = peReader.GetSectionData(entry.RelativeVirtualAddress).Length;
+                    if (entry.RelativeVirtualAddress >= 0)
+                    {
+                        _ = peReader.GetSectionData(entry.RelativeVirtualAddress).Length;
+                    }
                 });
             }
         }

@@ -52,6 +52,10 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 35 | Reflection.Metadata | `GetAssemblyName()` throws `CultureNotFoundException` for every satellite assembly in invariant globalization mode, and for malformed cultures in any mode | Medium | Yes | [35](repros/35-Metadata-GetAssemblyName-Culture.cs) |
 | 36 | Frozen collections | A non-ASCII lookup in an `OrdinalIgnoreCase` frozen collection of ASCII keys hits `Debug.Assert(Ascii.IsValid(s))` | Low | Debug builds only | [36](repros/36-Frozen-AsciiHashAssert.cs) |
 | 37 | Reflection.Metadata | A metadata stream count of `0x8000` or more makes `MetadataReader` (and `PEReader.GetMetadataReader`) throw `OverflowException` | Low | Yes | [37](repros/37-Metadata-NegativeStreamCount.cs) |
+| 38 | Complex | Annex G violations: huge finite / infinite gives `(0, NaN)` instead of zero; `Sqrt(-9.27e307 - 5e-324i)` lands on the wrong side of the cut | Low | Yes | [38](repros/38-Complex-AnnexG-Violations.cs) |
+| 39 | Reflection.Metadata | `BlobReader.ReadTypeHandle` lets big row numbers spill into the table byte: rows alias (`0x02000005` → TypeDef 5), and `SignatureDecoder` hits an impossible `Debug.Assert` | Low | Yes (aliasing); Debug builds (assert) | [39](repros/39-Metadata-ReadTypeHandle-RowOverflow.cs) |
+| 40 | BitArray | Growing `Length` past the storage brings back bits cut off by an earlier shrink (778 of 1000 set instead of 10) | Medium | Yes | [40](repros/40-BitArray-StaleBitsOnGrow.cs) |
+| 41 | Convert | `FromHexString` OperationStatus overloads: `charsConsumed` can be odd or point past an invalid char, and a trailing non-hex char gives `NeedMoreData` | Observation | Yes | [41](repros/41-Convert-FromHexString-Consumed.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -220,6 +224,22 @@ The expected values match C99 `casin`/`cacos`/`catan` and CPython's `cmath`. `Sq
 ### 37. Negative metadata stream count
 
 [Repro](repros/37-Metadata-NegativeStreamCount.cs). `MetadataReader.ReadStreamHeaders` reads the stream count with `ReadInt16()` and allocates `new StreamHeader[streamCount]` right away. A count of `0x8000` or more is negative, so the constructor throws `OverflowException` instead of `BadImageFormatException`. That's 24 bytes of metadata, or any PE file with that field patched, and it escapes code that opens untrusted assemblies and catches `BadImageFormatException`. Reading the count as `ushort`, or checking it against the remaining bytes, fixes it.
+
+### 38. Two more Annex G violations in Complex
+
+[Repro](repros/38-Complex-AnnexG-Violations.cs). G.5.2 requires a finite value divided by an infinity to be zero. `operator /` only applies the recovery step when both parts of the Smith's-formula result are NaN, and for a large finite dividend only one is: `(MaxValue + MaxValue·i) / (∞ - ∞i)` is `(0, NaN)` for both double and float, while `(1 + i) / (∞ - ∞i)` is correctly `(0, 0)`. Separately, `Sqrt(-9.27e307 - 5e-324i)` returns `(-0, +9.63e153)`: the imaginary part should take the sign of `y` (`-9.63e153`, as C99 `csqrt` and CPython give), so the result is on the wrong side of the branch cut. It only happens when a huge negative real part meets a subnormal imaginary part, so it's probably lost in the scaling step.
+
+### 39. ReadTypeHandle row overflow
+
+[Repro](repros/39-Metadata-ReadTypeHandle-RowOverflow.cs). `BlobReader.ReadTypeHandle` turns a TypeDefOrRefOrSpec coded index into `tokenType | (value >> 2)`. Compressed integers go up to `0x1FFFFFFF`, so `value >> 2` can be 27 bits wide and overwrite the table byte. An encoded TypeDef row `0x02000005` comes back as TypeDef row 5, so a malformed signature silently points at another type. A row like `0x01000005` produces a handle of kind 3, which `SignatureDecoder.DecodeTypeHandle` doesn't expect. Release builds throw `BadImageFormatException` there, but the `default` branch starts with `Debug.Assert(handle.IsNil)` inside `if (!handle.IsNil)`, so Debug/Checked builds abort. The MetadataReader campaign was switched to a Release build of System.Reflection.Metadata after this.
+
+### 40. BitArray keeps stale bits when it grows
+
+[Repro](repros/40-BitArray-StaleBitsOnGrow.cs). The `Length` setter documents that new elements are `false`. When the new length still fits in the current `byte[]` storage it clears the bytes past the old length, but when it doesn't, it only calls `Array.Resize`, which copies every old byte, including the ones past the current `Length` that a previous shrink left behind (shrinking by less than 1024 bytes keeps the storage). So `new BitArray(100 × 0xFF) { Length = 10 }` followed by `Length = 1000` has 778 bits set instead of 10, while growing to 500 (still within the storage) correctly has 10. Bits a caller truncated away come back. Clearing `_array.AsSpan(currentByteLength)` before the resize fixes it. Found by `UnsafeBuffersFuzzer`.
+
+### 41. FromHexString and charsConsumed (observation)
+
+[Repro](repros/41-Convert-FromHexString-Consumed.cs). For the `OperationStatus` overloads of `Convert.FromHexString`, `charsConsumed` on `InvalidData` is the index of the first invalid char, so `"0A1g"` reports 3 chars consumed with 1 byte written, and a caller resuming at `charsConsumed` loses the `1`. When both chars of a pair are invalid non-ASCII chars (`"\uFF10\uFF10"`) it reports 1 even though char 0 is the invalid one. A trailing single char is `NeedMoreData` even when it isn't a hex digit (`"0Ag"`), although the `OperationStatus` contract reserves `NeedMoreData` for input that more data could complete. None of this is covered by the tests, which only check the status.
 
 ## Things that looked like bugs but aren't
 
