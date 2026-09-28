@@ -991,7 +991,7 @@ namespace System.IO.Compression
 
         private CheckSumAndSizeWriteStream GetDataCompressor(Stream backingStream, bool leaveBackingStreamOpen, EventHandler? onClose, Stream? streamForPosition = null)
         {
-            // stream stack: backingStream -> DeflateStream -> CheckSumWriteStream
+            // stream stack: backingStream -> PooledDeflateStream -> CheckSumWriteStream
 
             // By default we compress with deflate, except if compression level
             // is set to NoCompression then stored is used.
@@ -1020,7 +1020,7 @@ namespace System.IO.Compression
                 case ZipCompressionMethod.Deflate:
                 case ZipCompressionMethod.Deflate64:
                 default:
-                    compressorStreamFactory = () => new DeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
+                    compressorStreamFactory = () => new PooledDeflateStream(backingStream, _compressionLevel, leaveBackingStreamOpen);
                     break;
             }
             bool leaveCompressorStreamOpenOnClose = leaveBackingStreamOpen && !isIntermediateStream;

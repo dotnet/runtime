@@ -329,6 +329,103 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        public static void CreateArchiveManyEntries_CompressedDataMatchesDeflateStream()
+        {
+            byte[] content = new byte[32768];
+            for (int i = 0; i < content.Length; i++)
+            {
+                content[i] = (byte)(i % 251);
+            }
+
+            byte[] zipData;
+            using (var stream = new MemoryStream())
+            {
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+                {
+                    for (int i = 0; i < 32; i++)
+                    {
+                        ZipArchiveEntry entry = archive.CreateEntry($"entry-{i}", CompressionLevel.Optimal);
+                        using Stream entryStream = entry.Open();
+                        entryStream.Write(content.AsSpan(0, 4096));
+                        entryStream.Write(content.AsSpan(4096));
+                    }
+                }
+
+                zipData = stream.ToArray();
+            }
+
+            byte[] expectedCompressedData;
+            using (var stream = new MemoryStream())
+            {
+                using (var deflateStream = new DeflateStream(stream, CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    deflateStream.Write(content.AsSpan(0, 4096));
+                    deflateStream.Write(content.AsSpan(4096));
+                }
+
+                expectedCompressedData = stream.ToArray();
+            }
+
+            using (var stream = new MemoryStream(zipData))
+            using (var archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                Assert.Equal(32, archive.Entries.Count);
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    using Stream entryStream = entry.Open();
+                    using var actualContent = new MemoryStream();
+                    entryStream.CopyTo(actualContent);
+                    Assert.Equal(content, actualContent.ToArray());
+                }
+
+                ZipArchiveEntry firstEntry = archive.Entries[0];
+                int fileNameLength = BinaryPrimitives.ReadUInt16LittleEndian(zipData.AsSpan(26));
+                int extraFieldLength = BinaryPrimitives.ReadUInt16LittleEndian(zipData.AsSpan(28));
+                int compressedDataOffset = 30 + fileNameLength + extraFieldLength;
+                Assert.Equal(expectedCompressedData, zipData.AsSpan(compressedDataOffset, (int)firstEntry.CompressedLength));
+            }
+        }
+
+        [Fact]
+        public static async Task CreateArchivesConcurrently_ManyEntriesRoundTrip()
+        {
+            const int ArchiveCount = 8;
+            const int EntryCount = 32;
+            byte[] content = "The quick brown fox jumps over the lazy dog."u8.ToArray();
+
+            byte[][] archives = await Task.WhenAll(Enumerable.Range(0, ArchiveCount).Select(_ => Task.Run(() =>
+            {
+                using var stream = new MemoryStream();
+                using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+                {
+                    for (int i = 0; i < EntryCount; i++)
+                    {
+                        ZipArchiveEntry entry = archive.CreateEntry($"entry-{i}", CompressionLevel.Fastest);
+                        using Stream entryStream = entry.Open();
+                        entryStream.Write(content);
+                    }
+                }
+
+                return stream.ToArray();
+            })));
+
+            foreach (byte[] archiveData in archives)
+            {
+                using var stream = new MemoryStream(archiveData);
+                using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+                Assert.Equal(EntryCount, archive.Entries.Count);
+
+                foreach (ZipArchiveEntry entry in archive.Entries)
+                {
+                    using Stream entryStream = entry.Open();
+                    using var actualContent = new MemoryStream();
+                    entryStream.CopyTo(actualContent);
+                    Assert.Equal(content, actualContent.ToArray());
+                }
+            }
+        }
+
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public static async Task CreateNormal_VerifyDataDescriptor(bool async)
