@@ -191,10 +191,10 @@ class ReadyToRunInfo
     Crst                            m_Crst;
     PtrHashMap                      m_entryPointToMethodDescMap;
 
-#ifdef FEATURE_INLINE_TRACKING_ENABLED
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R m_pPersistentInlineTrackingMap;
     PTR_PersistentInlineTrackingMapR2R m_pCrossModulePersistentInlineTrackingMap;
-#endif // FEATURE_INLINE_TRACKING_ENABLED
+#endif // FEATURE_INLINE_TRACKING
 
     NativeFormat::NativeHashtable   m_externalTypeMaps;
     NativeFormat::NativeHashtable   m_proxyTypeMaps;
@@ -391,7 +391,7 @@ public:
 
     static DWORD GetFieldBaseOffset(MethodTable * pMT);
 
-#ifdef FEATURE_INLINE_TRACKING_ENABLED
+#ifdef FEATURE_INLINE_TRACKING
     PTR_PersistentInlineTrackingMapR2R GetInlineTrackingMap()
     {
         return m_pPersistentInlineTrackingMap;
@@ -429,7 +429,7 @@ public:
 
         return inlinersCount;
     }
-#endif // FEATURE_INLINE_TRACKING_ENABLED
+#endif // FEATURE_INLINE_TRACKING
 
     bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
     void DisableCustomAttributeFilter();

@@ -30,7 +30,7 @@
 #include "daccess.h"
 #include "crossloaderallocatorhash.h"
 
-#ifdef FEATURE_INLINE_TRACKING_ENABLED
+#ifdef FEATURE_INLINE_TRACKING
 
 
 // ---------------------------------- Compile time support ----------------------------------------------
@@ -296,6 +296,6 @@ typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 #endif // !defined(DACCESS_COMPILE)
 
-#endif // FEATURE_INLINE_TRACKING_ENABLED
+#endif // FEATURE_INLINE_TRACKING
 
 #endif // INLINETRACKING_H_

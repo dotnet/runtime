@@ -120,7 +120,7 @@
 #endif // _DEBUG
 
 #if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA) || defined(FEATURE_REJIT) || defined(FEATURE_CODE_VERSIONING)
-#define FEATURE_INLINE_TRACKING_ENABLED
+#define FEATURE_INLINE_TRACKING
 #endif
 
 // This controls whether a compilation-timing feature that relies on Windows APIs, if available, else direct

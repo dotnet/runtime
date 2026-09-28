@@ -803,9 +803,9 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
     m_pNativeImage(pModule != NULL ? pNativeImage: NULL), // m_pNativeImage is only set for composite image components, not the composite R2R info itself
     m_readyToRunCodeDisabled(FALSE),
     m_Crst(CrstReadyToRunEntryPointToMethodDescMap),
-#ifdef FEATURE_INLINE_TRACKING_ENABLED
+#ifdef FEATURE_INLINE_TRACKING
     m_pPersistentInlineTrackingMap(NULL),
-#endif // FEATURE_INLINE_TRACKING_ENABLED
+#endif // FEATURE_INLINE_TRACKING
     m_pNextR2RForUnrelatedCode(NULL)
 {
     STANDARD_VM_CONTRACT;
@@ -1008,7 +1008,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-#ifdef FEATURE_INLINE_TRACKING_ENABLED
+#ifdef FEATURE_INLINE_TRACKING
     IMAGE_DATA_DIRECTORY* pCrossModuleInlineTrackingInfoDir = m_pComposite->FindSection(ReadyToRunSectionType::CrossModuleInlineInfo);
     if (pCrossModuleInlineTrackingInfoDir != NULL)
     {
@@ -1024,7 +1024,7 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, LoaderAllocator* pLoaderAllocat
         PersistentInlineTrackingMapR2R2::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
             pamTracker, (PersistentInlineTrackingMapR2R2**)&m_pPersistentInlineTrackingMap);
     }
-#endif // FEATURE_INLINE_TRACKING_ENABLED
+#endif // FEATURE_INLINE_TRACKING
 
     // For format version 3.1 and later, there is an optional attributes section
     IMAGE_DATA_DIRECTORY *attributesPresenceDataInfoDir = m_component.FindSection(ReadyToRunSectionType::AttributePresence);

@@ -14,7 +14,7 @@
 
 using namespace NativeFormat;
 
-#ifdef FEATURE_INLINE_TRACKING_ENABLED
+#ifdef FEATURE_INLINE_TRACKING
 
 #ifndef DACCESS_COMPILE
 
@@ -700,4 +700,4 @@ void JITInlineTrackingMap::AddInliningDontTakeLock(MethodDesc *inliner, MethodDe
 
 #endif // !defined(DACCESS_COMPILE)
 
-#endif // FEATURE_INLINE_TRACKING_ENABLED
+#endif // FEATURE_INLINE_TRACKING
