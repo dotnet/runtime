@@ -257,6 +257,12 @@ internal static class CreatedumpValidation
                 return Pass;
             }
 
+            // Uncomment when linked createdump support is added.
+            // if (automaticUsedExternal)
+            // {
+            //     throw new InvalidDataException("The automatic scenario did not use linked createdump.");
+            // }
+
             bool forcedUsedExternal = RunScenario(
                 processPath,
                 testDirectory,
@@ -269,7 +275,6 @@ internal static class CreatedumpValidation
                 throw new InvalidDataException("The forced-external scenario did not invoke the external createdump helper.");
             }
 
-            Console.WriteLine($"Automatic implementation: {(automaticUsedExternal ? "external" : "linked")}");
             Console.WriteLine("PASS: automatic and forced-external dumps contain the expected process, signal, memory, and managed exception data.");
             return Pass;
         }
@@ -738,8 +743,8 @@ internal static class CreatedumpValidation
         uint threadCount = BinaryPrimitives.ReadUInt32LittleEndian(header.AsSpan(20));
         ulong expectedSize = checked((ulong)SpecialThreadInfoHeaderSize + (ulong)threadCount * SpecialThreadInfoEntrySize);
         if (pid != (uint)expectedPid || threadCount == 0 || threadCount != (uint)expectedThreadCount ||
-            threadCount > int.MaxValue || specialThreadInfoSegment is not LoadSegment segment ||
-            segment.Flags != VmProtRead || segment.FileSize != expectedSize || segment.MemorySize != expectedSize)
+            threadCount > int.MaxValue || specialThreadInfoSegment is not LoadSegment threadInfoSegment ||
+            threadInfoSegment.Flags != VmProtRead || threadInfoSegment.FileSize != expectedSize || threadInfoSegment.MemorySize != expectedSize)
         {
             throw new InvalidDataException(
                 $"Invalid special thread info: pid={pid}, threads={threadCount}, expectedSize={expectedSize}.");
