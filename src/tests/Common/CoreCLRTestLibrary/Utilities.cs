@@ -100,7 +100,6 @@ namespace TestLibrary
         public static bool IsNativeAot => IsNotMonoRuntime && !IsReflectionEmitSupported;
         public static bool IsNotNativeAot => !IsNativeAot;
 
-        // No JIT, or the interpreter is configured: some code may be interpreted even when ReadyToRun-compiled.
         public static bool IsCoreClrInterpreter
         {
             get
