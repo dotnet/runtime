@@ -66,6 +66,7 @@ jobs:
       - group: AzureDevOps-Artifact-Feeds-Pats
     - _PhaseName: ${{ parameters.nameSuffix }}_${{ parameters.archType }}_${{ parameters.buildConfig }}
     - _Pipeline_StreamDumpDir: $(Build.SourcesDirectory)/artifacts/tmp/${{ parameters.buildConfig }}/streams
+    - _DiagnosticsConfiguration: ${{ replace(parameters.buildConfig, 'release', 'Release') }}
     - _DiagnosticsCrossBuildArg: ''
     - ${{ if or(eq(parameters.osGroup, 'linux'), and(eq(parameters.osGroup, 'osx'), eq(parameters.archType, 'arm64'))) }}:
       - _DiagnosticsCrossBuildArg: '-cross'
@@ -134,7 +135,7 @@ jobs:
       - powershell: |
           & "$(Build.SourcesDirectory)\Build.cmd" `
             -ci `
-            -configuration ${{ parameters.buildConfig }} `
+            -configuration $(_DiagnosticsConfiguration) `
             -architecture ${{ parameters.archType }} `
             -privatebuild `
             $(_DiagnosticsCrossBuildArg) `
@@ -147,7 +148,7 @@ jobs:
       - script: >
           $(Build.SourcesDirectory)/build.sh
           -ci
-          -configuration ${{ parameters.buildConfig }}
+          -configuration $(_DiagnosticsConfiguration)
           -architecture ${{ parameters.archType }}
           -privatebuild
           $(_DiagnosticsCrossBuildArg)
@@ -158,8 +159,8 @@ jobs:
     - pwsh: |
         $targetOS = if ("${{ parameters.osGroup }}" -eq "windows") { "Windows_NT" } else { "${{ parameters.osGroup }}" }
         $sourceDir = "$(Build.SourcesDirectory)/artifacts/private-cdac"
-        $destinationDir = "$(Build.SourcesDirectory)/artifacts/bin/$targetOS.${{ parameters.archType }}.$(_BuildConfig)"
-        $overrideDir = "$(Build.SourcesDirectory)/artifacts/cdac-override/$(_BuildConfig)"
+        $destinationDir = "$(Build.SourcesDirectory)/artifacts/bin/$targetOS.${{ parameters.archType }}.$(_DiagnosticsConfiguration)"
+        $overrideDir = "$(Build.SourcesDirectory)/artifacts/cdac-override/$(_DiagnosticsConfiguration)"
         if (-not (Test-Path -PathType Container $destinationDir)) {
           throw "Diagnostics native output directory '$destinationDir' was not found."
         }
@@ -192,7 +193,7 @@ jobs:
           /restore
           /p:TreatWarningsAsErrors=false
           /t:Test
-          /p:Configuration=${{ parameters.buildConfig }}
+          /p:Configuration=$(_DiagnosticsConfiguration)
           /p:TargetArch=${{ parameters.archType }}
           /p:TargetOS=${{ replace(parameters.osGroup, 'windows', 'Windows_NT') }}
           /p:TargetRid=${{ parameters.targetRid }}
@@ -201,7 +202,7 @@ jobs:
           /p:LiveRuntimeDir=$(sosRuntimeDir)
           /p:HelixTestProject=$(Build.SourcesDirectory)/src/tests/SOS.Tests/SOS.Tests.csproj
           /p:OfficialBuildId=$(BUILD.BUILDNUMBER)
-          /bl:$(Build.SourcesDirectory)/artifacts/log/${{ parameters.buildConfig }}/SendTestsToHelix.binlog
+          /bl:$(Build.SourcesDirectory)/artifacts/log/$(_DiagnosticsConfiguration)/SendTestsToHelix.binlog
         env:
           HelixSource: pr/dotnet/runtime/diagnostics
           HelixType: tests/sos/
