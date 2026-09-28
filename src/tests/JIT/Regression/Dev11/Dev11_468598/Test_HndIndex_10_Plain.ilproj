@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="Test_HndIndex_10_Plain.il" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

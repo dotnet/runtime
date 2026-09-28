@@ -110,6 +110,8 @@ namespace TestLibrary
             }
         }
 
+        public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
+
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;
 

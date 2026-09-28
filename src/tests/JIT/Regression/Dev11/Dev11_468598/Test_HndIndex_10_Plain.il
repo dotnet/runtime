@@ -11,6 +11,8 @@
   .ver 4:0:0:0
 }
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 .assembly Test_HndIndex_10_Plain
 {
@@ -32,9 +34,10 @@
 .class nested public auto ansi Test_Test_HndIndex_10_Plain extends [mscorlib] System.Object {
     .method public hidebysig static int32 Main() cil managed
     {
-        .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-            01 00 00 00
-        )
+        .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+            type([TestLibrary]TestLibrary.Utilities)
+            string[1] ('IsNotCoreClrInterpreter')
+        }
         .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.TestRuntimes) = {
             string('Needs triage')
             int32(0x2) // Mono
