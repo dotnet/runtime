@@ -41,6 +41,7 @@
     <ProjectReference Include="..\..\System.Formats.Cbor\src\System.Formats.Cbor.csproj" />
     <ProjectReference Include="..\..\System.Net.ServerSentEvents\src\System.Net.ServerSentEvents.csproj" />
     <ProjectReference Include="..\..\System.IO.Hashing\src\System.IO.Hashing.csproj" />
+    <ProjectReference Include="..\..\Microsoft.Extensions.FileSystemGlobbing\src\Microsoft.Extensions.FileSystemGlobbing.csproj" />
   </ItemGroup>
 
 </Project>

@@ -43,6 +43,8 @@ Each repro prints what it observed next to what was expected and ends with `REPR
 | 26 | HttpListener | Managed `HttpListener` accepts invalid request targets (`#frag`, `?x`) and asserts on them in Debug builds | Low | Yes | [26](repros/26-HttpListener-InvalidRequestTarget.cs) |
 | 27 | NTLM | Managed NTLM client reports `IsAuthenticated` after a rejected challenge; `ComputeIntegrityCheck` then throws `NullReferenceException` | Medium | Yes | [27](repros/27-ManagedNtlm-IsAuthenticatedAfterFailure.cs) |
 | 28 | NTLM | A server's out-of-range `MsvAvTimestamp` makes the managed NTLM client, and `HttpClient`, throw `ArgumentOutOfRangeException` | Medium | Yes | [28](repros/28-ManagedNtlm-BadTimestamp.cs) |
+| 29 | Complex | `Exp`, `Sinh`, `Cosh`, `Sin`, `Cos` and `Pow` return NaN parts (`Exp(710) = (∞, NaN)`) and spurious infinities once `e^x` overflows | Medium | Yes | [29](repros/29-Complex-OverflowNaN.cs) |
+| 30 | Complex | `Asin`, `Acos` and `Atan` pick the wrong side of their branch cuts for signed-zero inputs | Medium | Yes | [30](repros/30-Complex-BranchCuts.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -169,6 +171,20 @@ A `[3,1]` column against a `[1,4]` row only visits 4 of the 12 pairs, so `Equals
 ### 28. Managed NTLM throws on a server-controlled timestamp
 
 [Repro](repros/28-ManagedNtlm-BadTimestamp.cs). `ProcessTargetInfo` passes the `MsvAvTimestamp` AV pair from the server's challenge to `DateTime.FromFileTimeUtc` without validating it. An out-of-range value makes `GetOutgoingBlob` throw `ArgumentOutOfRangeException: Not a valid Win32 FileTime` instead of returning `InvalidToken`, on both the NTLM and the SPNEGO path. Through `HttpClient` with credentials, a server that asks for NTLM and sends such a challenge makes `SendAsync` throw that `ArgumentOutOfRangeException`, which callers don't expect from HTTP requests. The repro shows both.
+
+### 29. Complex overflow turns zeros into NaN
+
+[Repro](repros/29-Complex-OverflowNaN.cs). `Complex<T>.Exp` is `FromPolarCoordinates(T.Exp(x), y)` for finite input, and `Sinh`, `Cosh`, `Sin` and `Cos` are built the same way from `e^x` (or `cosh`/`sinh` of one part) times the trig functions of the other. Once that factor overflows, infinity times zero makes a zero component NaN: `Exp(710 + 0i)` is `(∞, NaN)` instead of `(∞, 0)`, and likewise `Sinh(711)`, `Cosh(711)`, `Sin(711i)`, `Cos(711i)`. `Pow` hands overflowing inputs to `Exp(power * Log(value))`, so `Pow(1e200, 2)` is `(∞, NaN)` too. The same split also overflows early: `Exp(710 + 1.5707963267948966i)` has a real part of about `1.4e292`, but it comes back as `∞`, and scaling `e^(x/2)` twice would avoid that. `Complex<float>` and `Complex<Half>` hit this at `Exp(89)` and `Exp(12)`. The non-generic `Complex` delegates to `Complex<double>`, so it has the same results. The Annex G change (#131132) handled infinite and NaN inputs but left this finite overflow case alone.
+
+### 30. Complex inverse trig on the branch cuts
+
+[Repro](repros/30-Complex-BranchCuts.cs). Annex G (G.6.2) wants `casin`, `cacos` and `catan` to be continuous onto their cuts from the side the sign of zero picks, with `casin(conj z) = conj(casin z)` and so on. `Complex<T>` gets this wrong on every cut:
+
+- `Asin(x - 0i)` and `Acos(x + 0i)` with `|x| > 1` ignore the zero's sign, so the imaginary part has the wrong sign (`Asin(1.5 - 0i)` gives `+0.962i`, it should be `-0.962i`).
+- `Atan(±0 + iy)` with `|y| > 1` takes the real part's sign from `y` instead of from the zero, so `Atan(-0 + 1.5i)` is `+π/2 + 0.805i` instead of `-π/2 + 0.805i`.
+- Several results lose the sign of a zero component (`Asin(0 - 0i)`, `Atan(0.5 - 0i)`, `Acos(0.5 + 0i)`).
+
+The expected values match C99 `casin`/`cacos`/`catan` and CPython's `cmath`. `Sqrt` and `Log` get their cuts right. The non-generic `Complex` delegates and has the same bug.
 
 ## Things that looked like bugs but aren't
 
