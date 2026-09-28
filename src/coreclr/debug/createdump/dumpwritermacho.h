@@ -6,17 +6,23 @@ struct ThreadCommand
     thread_command command;
     uint32_t gpflavor;
     uint32_t gpcount;
+    // LC_THREAD state data is a tightly packed array of uint32_t values. Typed
+    // state structures can add architecture-dependent padding to the command.
 #if defined(__x86_64__)
-    x86_thread_state64_t gpregisters;
+    uint32_t gpregisters[x86_THREAD_STATE64_COUNT];
 #elif defined(__aarch64__)
-    arm_thread_state64_t gpregisters;
+    uint32_t gpregisters[ARM_THREAD_STATE64_COUNT];
 #endif
     uint32_t fpflavor;
     uint32_t fpcount;
 #if defined(__x86_64__)
-    x86_float_state64_t fpregisters;
+    uint32_t fpregisters[x86_FLOAT_STATE64_COUNT];
 #elif defined(__aarch64__)
-    arm_neon_state64_t fpregisters;
+    uint32_t fpregisters[ARM_NEON_STATE64_COUNT];
+#endif
+#if defined(__x86_64__)
+    // 64-bit Mach-O load commands must have a size that is a multiple of 8.
+    uint32_t padding;
 #endif
 };
 

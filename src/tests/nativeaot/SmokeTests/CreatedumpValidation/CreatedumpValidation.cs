@@ -706,9 +706,17 @@ internal static class CreatedumpValidation
             }
         }
 
-        if (offset != command.Length)
+        int paddingSize = command.Length - offset;
+        if (paddingSize >= 8)
         {
             throw new InvalidDataException("LC_THREAD has trailing or missing state data.");
+        }
+        for (; offset < command.Length; offset++)
+        {
+            if (command[offset] != 0)
+            {
+                throw new InvalidDataException("LC_THREAD has nonzero padding data.");
+            }
         }
     }
 
