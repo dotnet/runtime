@@ -20,7 +20,9 @@
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #endif
+#ifndef HOST_WASM
 #include <sys/wait.h>
+#endif
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -207,6 +209,9 @@ CreateCrashDump(
     char* errorMessageBuffer,
     int cbErrorMessageBuffer)
 {
+#ifdef HOST_WASM
+    return false;
+#else
     int pipe_descs[4];
     if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
     {
@@ -343,6 +348,7 @@ CreateCrashDump(
         }
     }
     return true;
+#endif // HOST_WASM
 }
 
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
@@ -374,6 +380,7 @@ Parameters:
 
 (no return value)
 --*/
+#ifndef HOST_WASM
 void
 PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void* exceptionRecord)
 {
@@ -468,17 +475,22 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, void*
     }
 #endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
 }
+#endif // !HOST_WASM
 
 void
 PalCreateCrashDumpIfEnabled()
 {
+#ifndef HOST_WASM
     PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, nullptr);
+#endif
 }
 
 void
 PalCreateCrashDumpIfEnabled(void* pExceptionRecord)
 {
+#ifndef HOST_WASM
     PalCreateCrashDumpIfEnabled(SIGABRT, nullptr, nullptr, pExceptionRecord);
+#endif
 }
 
 /*++
@@ -547,7 +559,7 @@ Return
 bool
 PalCreateDumpInitialize()
 {
-#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#if !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
     bool enabled = false;
     RhConfig::Environment::TryGetBooleanValue("DbgEnableMiniDump", &enabled);
     if (enabled)
@@ -657,7 +669,7 @@ PalCreateDumpInitialize()
             return false;
         }
     }
-#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS)
+#endif // !defined(HOST_MACCATALYST) && !defined(HOST_IOS) && !defined(HOST_TVOS) && !defined(HOST_WASM)
 
     return true;
 }

@@ -217,13 +217,11 @@ else()
 
   if(CLR_CMAKE_TARGET_ARCH_WASM)
     list(REMOVE_ITEM COMMON_RUNTIME_SOURCES
-      unix/PalCreateDump.cpp
       ${GC_DIR}/unix/gcenv.unix.cpp
       ${GC_DIR}/unix/numasupport.cpp
       ${GC_DIR}/unix/cgroup.cpp
     )
     list(APPEND COMMON_RUNTIME_SOURCES
-      wasm/PalCreateDump.cpp
       ${GC_DIR}/wasm/gcenv.cpp
     )
     include_directories(${GC_DIR}/unix)

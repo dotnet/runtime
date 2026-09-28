@@ -312,10 +312,12 @@ bool PalInit()
 
     ConfigureSignals();
 
+#ifndef HOST_WASM
     if (!PalCreateDumpInitialize())
     {
         return false;
     }
+#endif // !HOST_WASM
 
     GCConfig::Initialize();
 
