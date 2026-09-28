@@ -80,7 +80,6 @@
 // R2R Version 30 requires implicit byref arguments to always be outside of the GC heap
 // R2R Version 31 adds READYTORUN_FIXUP_MethodEntry_ReadyToRun for initializing a
 // method's ReadyToRun entry point and fixups.
-//     R2R 31 is not backward compatible with 30.x or earlier.
 
 struct READYTORUN_CORE_HEADER
 {
