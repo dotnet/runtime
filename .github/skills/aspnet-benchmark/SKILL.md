@@ -1,13 +1,20 @@
 ---
 name: aspnet-benchmark
-description: Run the TechEmpower ASP.NET Core benchmarks (PlatformBenchmarks) against a locally-built dotnet/runtime, either locally with an SDK overlay or on external infrastructure using Crank, to validate the end-to-end impact of a runtime change (e.g. sockets, io_uring, GC, JIT) under realistic HTTP load. Use this when asked to benchmark, load-test, or profile an ASP.NET Core / Kestrel scenario, or to compare an env-var-gated feature (e.g. `DOTNET_USE_IO_URING`) end-to-end.
+description: Run the TechEmpower ASP.NET Core benchmarks against a locally-built dotnet/runtime, either locally with an SDK overlay or on external infrastructure using Crank, to validate the end-to-end impact of a runtime change (e.g. sockets, io_uring, GC, JIT) under realistic HTTP load. Use this when asked to benchmark, load-test, or profile an ASP.NET Core / Kestrel scenario, or to compare an env-var-gated feature (e.g. `DOTNET_USE_IO_URING`) end-to-end.
 ---
 
-# Running the TechEmpower (PlatformBenchmarks) Benchmarks
+# Running ASP.NET Core Benchmarks
 
-Use the TechEmpower `PlatformBenchmarks` app from the [`aspnet/Benchmarks`](https://github.com/aspnet/Benchmarks) repository to validate runtime changes under realistic HTTP server load. Microbenchmarks can isolate an operation's cost, but end-to-end ASP.NET benchmarks show how a change affects throughput, latency, and CPU usage under concurrent request/response processing.
+Use the benchmark apps from the [`aspnet/Benchmarks`](https://github.com/aspnet/Benchmarks) repository to validate runtime changes under realistic HTTP server load. Microbenchmarks can isolate an operation's cost, but end-to-end ASP.NET benchmarks show how a change affects throughput, latency, and CPU usage under concurrent request/response processing.
 
 These benchmarks are useful for changes to the socket/IO stack, GC, JIT, and other components whose impact depends on application behavior. Both workflows below run the benchmark against a locally-built runtime: start with local measurements to validate ideas, then use external infrastructure for final validation when access is available.
+
+Use both of these implementations when assessing a runtime change:
+
+- `PlatformBenchmarks` exercises a highly optimized raw Kestrel `HttpApplication`.
+- `BasicMinimalApi` exercises the ASP.NET Core Minimal APIs stack.
+
+A final comparison must show that neither implementation regresses. An improvement in one does not compensate for a regression in the other.
 
 ## Common Prerequisites
 
@@ -199,8 +206,10 @@ Use [Crank](https://github.com/dotnet/crank) to deploy `PlatformBenchmarks` with
 References:
 
 - [Crank documentation](https://github.com/dotnet/crank/blob/main/docs/README.md) and [getting started](https://github.com/dotnet/crank/blob/main/docs/getting_started.md): controller installation, agents, scenarios, and profiles.
+- [Crank controller command-line arguments](https://github.com/dotnet/crank/blob/main/src/Microsoft.Crank.Controller/README.md): complete controller and per-job option reference.
 - [Selecting .NET versions](https://github.com/dotnet/crank/blob/main/docs/dotnet_versions.md): framework, SDK, runtime, and ASP.NET version overrides.
 - [PlatformBenchmarks configuration](https://github.com/aspnet/Benchmarks/blob/main/scenarios/platform.benchmarks.yml): `json` scenario, `application` and `load` jobs, and load variables.
+- [Minimal APIs configuration](https://github.com/aspnet/Benchmarks/blob/main/scenarios/goldilocks.benchmarks.yml): `basicminimalapivanilla` and deployment-oriented Minimal APIs scenarios.
 - [Linux performance tracing](../../../docs/project/linux-performance-tracing.md): native and managed symbol resolution.
 
 ### 1. Establish the Inputs
@@ -262,7 +271,7 @@ Create the parent directory first if necessary. Extend the explicit copy list ac
 - A PDB or `.dbg` from another build is not interchangeable, even if the assembly version or filename is identical. Preserve hashes and native build IDs for later analysis.
 - ReadyToRun framework frames can require additional matching symbol-generation tooling. Follow the Linux tracing guide when frames remain unresolved; do not upload all build tools speculatively or assume managed PDBs alone resolve all native code.
 
-### 3. Upload the Overlay and Run JSON
+### 3. Upload the Overlay and Run the Scenarios
 
 Crank's `--application.options.outputFiles` uploads local files into the application's published output (the `published/` folder produced by `dotnet publish` on the agent) *after* that build completes. It is different from uploading source files or build inputs. Leave the controller's SDK/shared frameworks untouched; no in-place SDK replacement is needed.
 
@@ -271,7 +280,7 @@ Crank's `--application.options.outputFiles` uploads local files into the applica
 To make the overlay actually take effect, publish the job **self-contained** instead, so the local runtime bits become part of `published/` itself and the later `outputFiles` copy overwrites them in place:
 
 ```bash
-CONFIG=/absolute/path/to/platform.benchmarks.yml
+CONFIG=https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml
 PROFILE='<configured-machine-profile>'
 TFM='<benchmark-tfm>'
 SDK_VERSION='<exact-sdk-version>'
@@ -293,17 +302,18 @@ crank \
   --application.options.downloadOutputOutput "$RUN-output" \
   --application.options.downloadBuildLog true \
   --application.options.downloadBuildLogOutput "$RUN-build" \
-  --load.variables.connections 512 \
-  --load.variables.warmup 90 \
-  --load.variables.duration 60 \
   --json "$RUN.json"
 ```
 
-Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded output with the local manifest.
+Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded output with the local manifest. Keep the scenario's configured connection count, warmup, and duration unless the experiment specifically requires changing them; the scenario owners tune these defaults and may update them over time.
 
 `--application.selfContained true` still needs `--application.runtimeVersion`/`--application.aspNetCoreVersion` pinned to the versions matching your overlay's ABI, since the self-contained publish step is what brings those shared-framework files into `published/` in the first place — `outputFiles` only replaces specific files afterward, it doesn't provision the rest of the runtime. Confirm the `beforeScript`'s `sha256sum` output in the build log matches the overlay's own manifest to prove the substitution actually landed, and check the downloaded build log for the `--self-contained` publish flag.
 
 The example's `published/` paths and `/bin/sh` command are for the standard Linux PlatformBenchmarks job; adapt them if the job uses a different layout or OS. Confirm the build logs show the intended framework versions and that the application uses the deployed replacements, not an incompatible or separately located shared framework. File presence alone is not proof that a module was loaded; use module paths/build IDs from a diagnostic trace when investigating binding.
+
+Repeat the comparison with the Minimal APIs scenario. Reuse the same command and options, but set `CONFIG` to `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/goldilocks.benchmarks.yml`, select `--scenario basicminimalapivanilla`, and use a distinct `RUN` name.
+
+Do not accept the runtime change based on only one implementation. Compare baseline and candidate results for both `json` and `basicminimalapivanilla`, investigating any regression before concluding that the change is beneficial.
 
 #### Windows controller with Linux binaries in WSL
 
