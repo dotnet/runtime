@@ -536,9 +536,9 @@
                            ComponentPath="$(_WasiRelinkOutput)"
                            OutputDirectory="$(_WasiR2RComposeOutputDir)"
                            OutputPath="$(_WasiPublishedHost)"
-                           WasmToolsPath="$(WasmToolsCacheDir)wasm-tools"
-                           WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge"
-                           WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt"
+                           WasmToolsPath="$(WasmToolsCacheDir)wasm-tools$(_ExeExt)"
+                           WasmMergePath="$(BinaryenCacheDir)bin/wasm-merge$(_ExeExt)"
+                           WasmOptPath="$(BinaryenCacheDir)bin/wasm-opt$(_ExeExt)"
                            ComponentStubs="@(_WasiR2RComponentStub)"
                            StubOutputDirectory="$(_WasiR2RStubDir)">
       <Output TaskParameter="FileWrites" ItemName="_WasiR2RCompositionWrites" />
