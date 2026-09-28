@@ -753,6 +753,7 @@ public unsafe class ArrayPinningTests
 
     [Theory]
     [MemberData(nameof(ArrayCases))]
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     public static void DecimalArrayPassesManagedContentsDirectly(int length, bool useDelegate)
     {
         nint target = useDelegate ? GetArrayElementReverser() : 0;
