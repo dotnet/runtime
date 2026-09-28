@@ -4,10 +4,6 @@
 
     <!-- Wasm-specific intrinsics are only supported when targeting the Wasm architecture. -->
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'wasm'">true</CLRTestTargetUnsupported>
-
-    <!-- The CoreCLR interpreter does not implement Wasm SIMD, so these tests only run in the ReadyToRun
-         hardware-intrinsics-wasm pipeline, which sets EnableWasmHWIntrinsicsTests=true. -->
-    <CLRTestTargetUnsupported Condition="'$(EnableWasmHWIntrinsicsTests)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,9 +5,6 @@
 
   <PropertyGroup>
     <HWITestsWasmOnly>true</HWITestsWasmOnly>
-    <!-- The CoreCLR interpreter does not implement Wasm SIMD, so these tests only run in the ReadyToRun
-         hardware-intrinsics-wasm pipeline, which sets EnableWasmHWIntrinsicsTests=true. -->
-    <CLRTestTargetUnsupported Condition="'$(EnableWasmHWIntrinsicsTests)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
 </Project>
