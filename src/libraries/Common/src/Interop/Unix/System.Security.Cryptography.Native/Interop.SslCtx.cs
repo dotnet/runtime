@@ -223,11 +223,8 @@ namespace Microsoft.Win32.SafeHandles
 
             lock (_sslSessions)
             {
-                if (!_sslSessions.TryGetValue(targetName, out List<CachedSession>? sessions))
-                {
-                    sessions = new List<CachedSession>();
-                    _sslSessions[targetName] = sessions;
-                }
+                ref List<CachedSession>? sessions = ref CollectionsMarshal.GetValueRefOrAddDefault(_sslSessions, targetName, out _);
+                sessions ??= new List<CachedSession>();
 
                 // Pooled tickets are only usable by the protocol version that produced them,
                 // so a change of negotiated version drops the pool rather than leaving a
