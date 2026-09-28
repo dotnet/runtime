@@ -4,7 +4,7 @@
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class EarlyBlockCompaction
+public class Runtime_134798
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Select(bool condition)
@@ -17,7 +17,7 @@ public class EarlyBlockCompaction
         return 101;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
+    [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
     private static int Compact(bool condition)
     {
         // Inlining Select introduces blocks that are compacted before the first
