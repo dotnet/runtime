@@ -111,3 +111,7 @@ if (CLR_CMAKE_HOST_APPLE)
 endif()
 
 install_clr(TARGETS createdump DESTINATIONS . sharedFramework COMPONENT runtime)
+
+if(CLR_CMAKE_TARGET_LINUX OR CLR_CMAKE_TARGET_OSX)
+    install_clr(TARGETS createdump DESTINATIONS . COMPONENT nativeaot)
+endif()

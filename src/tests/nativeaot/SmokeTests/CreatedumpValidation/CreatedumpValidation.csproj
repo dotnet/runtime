@@ -15,6 +15,6 @@
     <Compile Include="CreatedumpValidation.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot' and ('$(TargetOS)' == 'linux' or '$(TargetOS)' == 'osx')">
-    <Content Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)createdump" Link="native/createdump" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="$(CoreCLRArtifactsPath)createdump" Link="native/createdump" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
