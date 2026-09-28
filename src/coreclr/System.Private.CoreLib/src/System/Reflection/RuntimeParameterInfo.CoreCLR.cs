@@ -8,13 +8,10 @@ namespace System.Reflection
 {
     internal sealed partial class RuntimeParameterInfo : ParameterInfo
     {
-        #region Private Data Members
-        private readonly int m_tkParamDef;
-        private readonly MetadataImport m_scope;
-        private readonly Signature? m_signature;
-        #endregion
+        private readonly int _tkParamDef;
+        private readonly MetadataImport _scope;
+        private readonly Signature? _signature;
 
-        #region Static Members
         internal static ParameterInfo[] GetParameters(IRuntimeMethodInfo method, MemberInfo member, Signature sig)
         {
             Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
@@ -65,7 +62,6 @@ namespace System.Reflection
 
                 for (int i = 0; i < cParamDefs; i++)
                 {
-                    #region Populate ParameterInfos
                     int tkParamDef = tkParamDefs[i];
 
                     scope.GetParamDefProps(tkParamDef, out int position, out ParameterAttributes attr);
@@ -88,7 +84,6 @@ namespace System.Reflection
 
                         args[position] = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
                     }
-                    #endregion
                 }
             }
 
@@ -113,9 +108,7 @@ namespace System.Reflection
 
             return args;
         }
-        #endregion
 
-        #region Constructor
         private RuntimeParameterInfo(
             Signature signature, MetadataImport scope, int tkParamDef,
             int position, ParameterAttributes attributes, MemberInfo member)
@@ -126,9 +119,9 @@ namespace System.Reflection
 
             PositionImpl = position;
             MemberImpl = member;
-            m_signature = signature;
-            m_tkParamDef = MdToken.IsNullToken(tkParamDef) ? (int)MetadataTokenType.ParamDef : tkParamDef;
-            m_scope = scope;
+            _signature = signature;
+            _tkParamDef = MdToken.IsNullToken(tkParamDef) ? (int)MetadataTokenType.ParamDef : tkParamDef;
+            _scope = scope;
             AttrsImpl = attributes;
 
             ClassImpl = null;
@@ -140,47 +133,40 @@ namespace System.Reflection
         {
             MemberImpl = owner;
             NameImpl = name;
-            m_nameIsCached = true;
-            m_noMetadata = true;
+            _nameIsCached = true;
+            _noMetadata = true;
             ClassImpl = parameterType;
             PositionImpl = position;
             AttrsImpl = ParameterAttributes.None;
-            m_tkParamDef = (int)MetadataTokenType.ParamDef;
-            m_scope = default;
+            _tkParamDef = (int)MetadataTokenType.ParamDef;
+            _scope = default;
         }
-        #endregion
 
-        #region Public Methods
         internal RuntimeModule? GetRuntimeModule()
         {
-            RuntimeMethodInfo? method = Member as RuntimeMethodInfo;
-            RuntimeConstructorInfo? constructor = Member as RuntimeConstructorInfo;
-            RuntimePropertyInfo? property = Member as RuntimePropertyInfo;
-
-            if (method != null)
+            if (Member is RuntimeMethodInfo method)
                 return method.GetRuntimeModule();
-            else if (constructor != null)
+            else if (Member is RuntimeConstructorInfo constructor)
                 return constructor.GetRuntimeModule();
-            else if (property != null)
+            else if (Member is RuntimePropertyInfo property)
                 return property.GetRuntimeModule();
             else
                 return null;
         }
 
-        public override int MetadataToken => m_tkParamDef;
+        public override int MetadataToken => _tkParamDef;
 
         public override Type[] GetRequiredCustomModifiers()
         {
-            return m_signature is null ? [] : m_signature.GetCustomModifiers(PositionImpl + 1, true);
+            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, true);
         }
 
         public override Type[] GetOptionalCustomModifiers()
         {
-            return m_signature is null ? [] : m_signature.GetCustomModifiers(PositionImpl + 1, false);
+            return _signature is null ? [] : _signature.GetCustomModifiers(PositionImpl + 1, false);
         }
 
         public override Type GetModifiedParameterType() =>
-            ModifiedType.Create(unmodifiedType: ParameterType, m_signature, parameterIndex: PositionImpl + 1);
-        #endregion
+            ModifiedType.Create(unmodifiedType: ParameterType, _signature, parameterIndex: PositionImpl + 1);
     }
 }
