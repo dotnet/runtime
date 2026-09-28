@@ -2348,7 +2348,13 @@ namespace System
             if (IsGenericCOMObjectImpl())
                 return RuntimeHelpers.GetHashCode(this);
 
-            return m_handle.GetHashCode();
+            // Fibonacci hashing moves the entropy in aligned handles into the high bits.
+#if TARGET_64BIT
+            uint hash = (uint)(((ulong)(nuint)m_handle * 0x9E3779B97F4A7C15UL) >> 32);
+#else
+            uint hash = (uint)(nuint)m_handle * 0x9E3779B9U;
+#endif
+            return (int)(hash ^ (hash >> 16));
         }
 
         #region Private\Internal Members
