@@ -158,7 +158,7 @@ namespace System.Reflection.Tests
             {
                 correct = assembly.IndexOf("WasmTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
             }
-            else if (PlatformDetection.IsNativeAot || PlatformDetection.IsReadyToRunCompiled)
+            else if (PlatformDetection.IsNativeAot || (PlatformDetection.IsReadyToRunCompiled && !PlatformDetection.IsAppleMobile))
             {
                 // The single file test runner is not 'xunit.console'.
                 correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
