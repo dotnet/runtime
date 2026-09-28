@@ -1,0 +1,3 @@
+<Project>
+  <!-- Isolates the file-based repro apps from the runtime repo's build infrastructure. -->
+</Project>
