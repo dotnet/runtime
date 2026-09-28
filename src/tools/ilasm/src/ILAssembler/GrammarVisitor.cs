@@ -218,7 +218,13 @@ namespace ILAssembler
                 ApplyDebuggableAttribute();
             }
 
-            Machine machine = VTableFixupSupport.GetEffectiveMachine(_options.Machine ?? Machine.I386);
+            Machine requestedMachine = _options.Machine ?? Machine.I386;
+            Machine machine = requestedMachine == Machine.Unknown ? Machine.I386 : requestedMachine;
+            if (!(machine is Machine.I386 or Machine.Amd64 or Machine.Arm64))
+            {
+                throw new NotSupportedException($"Target machine '{machine}' is not supported.");
+            }
+
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups =
                 ValidateVTableFixups(machine);
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations =
@@ -257,11 +263,6 @@ namespace ILAssembler
             ushort majorSubsystemVersion = _options.SubsystemVersion?.Major ?? 4;
             ushort minorSubsystemVersion = _options.SubsystemVersion?.Minor ?? 0;
 
-            if (machine == Machine.ArmThumb2)
-            {
-                throw new PlatformNotSupportedException("ARM32 target images are not supported.");
-            }
-
             // Build DllCharacteristics from options
             DllCharacteristics dllCharacteristics = DllCharacteristics.DynamicBase | DllCharacteristics.NxCompatible | DllCharacteristics.NoSeh | DllCharacteristics.TerminalServerAware;
             if (_options.AppContainer)
@@ -286,7 +287,7 @@ namespace ILAssembler
             {
                 imageCharacteristics |= Characteristics.Bit32Machine;
             }
-            else if (machine is Machine.Amd64 or Machine.IA64 or Machine.Arm64 or Machine.LoongArch64 or Machine.RiscV64)
+            else if (machine is Machine.Amd64 or Machine.Arm64)
             {
                 imageCharacteristics |= Characteristics.LargeAddressAware;
             }

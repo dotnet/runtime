@@ -29,22 +29,12 @@ internal static class VTableFixupSupport
     public static int GetSlotSize(ushort flags) =>
         (flags & COR_VTABLE_64BIT) != 0 ? sizeof(long) : sizeof(int);
 
-    public static Machine GetEffectiveMachine(Machine machine) =>
+    public static int GetPointerSize(Machine machine) =>
         machine switch
         {
-            Machine.Unknown => Machine.I386,
-            _ => machine,
-        };
-
-    public static int GetPointerSize(Machine machine) =>
-        GetEffectiveMachine(machine) switch
-        {
-            Machine.I386 => sizeof(int),
+            Machine.Unknown or Machine.I386 => sizeof(int),
             Machine.Amd64 or
-            Machine.IA64 or
-            Machine.Arm64 or
-            Machine.LoongArch64 or
-            Machine.RiscV64 => sizeof(long),
+            Machine.Arm64 => sizeof(long),
             _ => throw new UnreachableException($"VTable fixups are not supported for architecture {machine}"),
         };
 }

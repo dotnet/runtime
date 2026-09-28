@@ -111,7 +111,7 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
     }
 
     internal static bool IsExportMachineSupported(Machine machine) =>
-        VTableFixupSupport.GetEffectiveMachine(machine) is
+        machine is
             Machine.I386 or
             Machine.Amd64 or
             Machine.Arm64;
@@ -206,7 +206,7 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
 
     private void SerializeExportStubs(BlobBuilder builder, int textSectionRva)
     {
-        Machine machine = VTableFixupSupport.GetEffectiveMachine(Header.Machine);
+        Machine machine = Header.Machine;
 
         foreach (ExportInfo _ in _exports)
         {
@@ -507,7 +507,7 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
 
     private BlobBuilder SerializeRelocationSection(SectionLocation location)
     {
-        Machine machine = VTableFixupSupport.GetEffectiveMachine(Header.Machine);
+        Machine machine = Header.Machine;
         ushort exportRelocationType = machine is Machine.Amd64 or Machine.Arm64
             ? ImageRelBasedDir64
             : ImageRelBasedHighLow;
@@ -597,7 +597,7 @@ internal sealed class VTableExportPEBuilder : ManagedPEBuilder
         // ManagedTextSection places SizeOfImportAddressTable bytes before the COR header.
         // Keep this machine check synchronized with ManagedTextSection.RequiresStartupStub
         // and ManagedTextSection.SizeOfImportAddressTable in System.Reflection.Metadata.
-        return VTableFixupSupport.GetEffectiveMachine(Header.Machine) == Machine.I386
+        return Header.Machine == Machine.I386
             ? 2 * sizeof(int)
             : 0;
     }
