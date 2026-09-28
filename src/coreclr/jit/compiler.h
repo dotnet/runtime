@@ -1146,7 +1146,7 @@ public:
     ClassLayout* GetLayout() const
     {
 #if FEATURE_IMPLICIT_BYREFS
-        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_BYREF)));
+        assert(varTypeIsStruct(TypeGet()) || (lvIsImplicitByRef && TypeIs(TYP_I_IMPL, TYP_BYREF)));
 #else
         assert(varTypeIsStruct(TypeGet()));
 #endif
@@ -4905,7 +4905,8 @@ public:
 
     bool lvaIsArgAccessedViaVarArgsCookie(unsigned lclNum);
 
-    bool lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    bool      lvaIsImplicitByRefLocal(unsigned lclNum) const;
+    var_types lvaGetImplicitByRefParamType();
     bool lvaIsLocalImplicitlyAccessedByRef(unsigned lclNum) const;
 
     // If the local is a TYP_STRUCT, get/set a class handle describing it

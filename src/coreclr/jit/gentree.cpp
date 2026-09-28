@@ -10331,7 +10331,7 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
     if (varTypeIsStruct(type))
     {
         // Make an exception for implicit by-ref parameters during global morph, since
-        // their lvType has been updated to byref but their appearances have not yet all
+        // their lvType has been updated to a pointer but their appearances have not yet all
         // been rewritten and so may have struct type still.
         LclVarDsc* varDsc = lvaGetDesc(lnum);
 
@@ -10341,7 +10341,7 @@ GenTreeLclVar* Compiler::gtNewLclvNode(unsigned lnum, var_types type DEBUGARG(IL
         simd12ToSimd16Widening = (type == TYP_SIMD16) && (varDsc->lvType == TYP_SIMD12);
 #endif // FEATURE_SIMD
         assert((type == varDsc->lvType) || simd12ToSimd16Widening ||
-               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == TYP_BYREF)));
+               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (varDsc->lvType == lvaGetImplicitByRefParamType())));
     }
     GenTreeLclVar* node = new (this, GT_LCL_VAR) GenTreeLclVar(GT_LCL_VAR, type, lnum DEBUGARG(offs));
 
@@ -10377,10 +10377,10 @@ GenTreeLclVar* Compiler::gtNewLclLNode(unsigned lnum, var_types type DEBUGARG(IL
     if (varTypeIsStruct(type))
     {
         // Make an exception for implicit by-ref parameters during global morph, since
-        // their lvType has been updated to byref but their appearances have not yet all
+        // their lvType has been updated to a pointer but their appearances have not yet all
         // been rewritten and so may have struct type still.
-        assert(type == lvaTable[lnum].lvType ||
-               (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph && (lvaTable[lnum].lvType == TYP_BYREF)));
+        assert(type == lvaTable[lnum].lvType || (lvaIsImplicitByRefLocal(lnum) && fgGlobalMorph &&
+                                                 (lvaTable[lnum].lvType == lvaGetImplicitByRefParamType())));
     }
     // This local variable node may later get transformed into a large node
     assert(GenTree::s_gtNodeSizes[LargeOpOpcode()] > GenTree::s_gtNodeSizes[GT_LCL_VAR]);
@@ -26046,15 +26046,12 @@ GenTree* Compiler::gtNewSimdIsIntegerNode(var_types type, GenTree* op1, var_type
 
     if (varTypeIsFloating(simdBaseType))
     {
-        GenTree* op1Dup1 = fgMakeMultiUse(&op1);
-        GenTree* op1Dup2 = gtCloneExpr(op1Dup1);
+        GenTree* op1Dup = fgMakeMultiUse(&op1);
+        GenTree* op2    = gtNewSimdTruncNode(type, op1Dup, simdBaseType, simdSize);
 
-        op1 = gtNewSimdIsFiniteNode(type, op1, simdBaseType, simdSize);
-
-        op1Dup1      = gtNewSimdTruncNode(type, op1Dup1, simdBaseType, simdSize);
-        GenTree* op2 = gtNewSimdCmpOpNode(GT_EQ, type, op1Dup1, op1Dup2, simdBaseType, simdSize);
-
-        return gtNewSimdBinOpNode(GT_AND, type, op1, op2, simdBaseType, simdSize);
+        // Nonfinite values produce a NaN residual and compare unequal to zero.
+        op1 = gtNewSimdBinOpNode(GT_SUB, type, op1, op2, simdBaseType, simdSize);
+        return gtNewSimdIsZeroNode(type, op1, simdBaseType, simdSize);
     }
 
     assert(varTypeIsIntegral(simdBaseType));

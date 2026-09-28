@@ -122,6 +122,8 @@ public class WasmInterpreterTransitions
                     delegate* unmanaged<IntPtr, IntPtr, int> fp = &StreamLengthProxy;
                     Assert.Equal(C, fp(IntPtr.Zero, ctx));
                 }
+
+                Assert.Equal(42, R2RCallsNestingUco());
             }
             finally
             {
@@ -509,6 +511,26 @@ public class WasmInterpreterTransitions
         handle = GCHandle.FromIntPtr(ptr);
         return (T)handle.Target!;
     }
+
+    // R2R caller -> UCO -> UCO. Each calli is an inlined PInvoke; the inner one lowers the
+    // __stack_pointer global, and the outer one's epilog asserts that the global is back at the
+    // caller's SP, so this fails unless the UCO epilog restores the global before returning.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe int R2RCallsNestingUco()
+    {
+        delegate* unmanaged<int> fp = &UcoWithInlinedPInvoke;
+        return fp();
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe int UcoWithInlinedPInvoke()
+    {
+        delegate* unmanaged<int> fp = &UcoLeaf;
+        return fp() + 1;
+    }
+
+    [UnmanagedCallersOnly]
+    private static int UcoLeaf() => 41;
 
     [UnmanagedCallersOnly]
     private static int StreamLengthProxy(IntPtr s, IntPtr context)

@@ -109,6 +109,7 @@ public enum DataType
     InterpByteCodeStart,
     InterpMethod,
     InterpMethodContextFrame,
+    VirtualIPRangeSection,
     FunctionTableIndexRangeSection,
     Array,
     Delegate,
