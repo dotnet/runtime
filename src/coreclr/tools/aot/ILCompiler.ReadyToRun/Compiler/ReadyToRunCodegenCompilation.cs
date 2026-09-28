@@ -305,6 +305,7 @@ namespace ILCompiler
         private readonly string _perfMapPath;
         private readonly int _perfMapFormatVersion;
         private readonly bool _generateProfileFile;
+        private readonly WasmDebugInfo _wasmDebugInfo;
         private readonly Func<MethodDesc, string> _printReproInstructions;
 
         private readonly ProfileDataManager _profileData;
@@ -356,7 +357,8 @@ namespace ILCompiler
             FileLayoutAlgorithm fileLayoutAlgorithm,
             int customPESectionAlignment,
             bool verifyTypeAndFieldLayout,
-            ReadyToRunContainerFormat format)
+            ReadyToRunContainerFormat format,
+            WasmDebugInfo wasmDebugInfo)
             : base(
                   dependencyGraph,
                   nodeFactory,
@@ -380,6 +382,7 @@ namespace ILCompiler
             _generateProfileFile = generateProfileFile;
             _customPESectionAlignment = customPESectionAlignment;
             _format = format;
+            _wasmDebugInfo = wasmDebugInfo;
             SymbolNodeFactory = new ReadyToRunSymbolNodeFactory(nodeFactory, verifyTypeAndFieldLayout);
             _tokenManager = new ExternalReferenceTokenManager(_nodeFactory.ManifestMetadataTable._mutableModule, _nodeFactory.Resolver);
             if (nodeFactory.InstrumentationDataTable != null)
@@ -440,6 +443,7 @@ namespace ILCompiler
                     callChainProfile: _profileData.CallChainProfile,
                     _format,
                     _customPESectionAlignment,
+                    _wasmDebugInfo,
                     _logger);
                 CompilationModuleGroup moduleGroup = _nodeFactory.CompilationModuleGroup;
 
@@ -596,7 +600,8 @@ namespace ILCompiler
                 _profileData.CallChainProfile,
                 componentFormat,
                 customPESectionAlignment: 0,
-                _logger);
+                wasmDebugInfo: _wasmDebugInfo,
+                logger: _logger);
         }
 
         public override void WriteDependencyLog(string outputFileName)

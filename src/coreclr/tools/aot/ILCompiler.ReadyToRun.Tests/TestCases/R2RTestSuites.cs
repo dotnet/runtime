@@ -110,15 +110,34 @@ public class R2RTestSuites
                 new(nameof(WasmWebcilModule), [new CrossgenAssembly(wasmWebcilModule)])
                 {
                     OutputFileExtension = ".wasm",
-                    Validate = Validate,
+                    Validate = ValidateDefault,
+                },
+                new("WasmWebcilModuleNoDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=none"],
+                    Validate = ValidateNone,
+                },
+                new("WasmWebcilModuleSymbolMap", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=symbol-map"],
+                    Validate = ValidateSymbolMap,
+                },
+                new("WasmWebcilModuleAllDebugInfo", [new CrossgenAssembly(wasmWebcilModule)])
+                {
+                    OutputFileExtension = ".wasm",
+                    AdditionalArgs = ["--wasm-debug-info=name,symbol-map"],
+                    Validate = ValidateAll,
                 },
             ]));
 
-        static void Validate(ReadyToRunReader reader)
+        static void ValidateDefault(ReadyToRunReader reader)
         {
             var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
             Assert.True(webcilReader.IsWasmWrapped);
             Assert.Equal(WasmMachine.Wasm32, reader.Machine);
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
 
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
@@ -151,6 +170,31 @@ public class R2RTestSuites
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
+        }
+
+        static void ValidateNone(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.False(File.Exists(Path.ChangeExtension(reader.Filename, ".symbols")));
+        }
+
+        static void ValidateSymbolMap(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.False(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
+        }
+
+        static void ValidateAll(ReadyToRunReader reader)
+        {
+            var webcilReader = Assert.IsType<WebcilImageReader>(reader.CompositeReader);
+            Assert.True(WasmR2RAssert.WasmImageHasFunctionNameSection(webcilReader));
+            Assert.True(
+                WasmR2RAssert.WasmSymbolMapHasExpectedFunctionNames(reader, out string diagnostic),
+                diagnostic);
         }
     }
 
