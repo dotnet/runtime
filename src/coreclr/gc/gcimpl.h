@@ -184,6 +184,10 @@ public:
 
     int64_t GetTotalPauseDuration();
 
+    bool ConfigureGCPauseReporting(bool enabled);
+    uint32_t DrainGCPauseRecords(GCPauseRecord* records, uint32_t capacity, uint64_t* dropped, uint32_t* remaining);
+    uint32_t WaitForGCPauseRecords(uint32_t millisecondsTimeout);
+
     void EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc);
 
     uint32_t GetMemoryLoad();

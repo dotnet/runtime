@@ -1207,6 +1207,80 @@ uint64_t GCInterface::GetGenerationBudget(int generation)
     return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
 }
 
+extern VersionInfo g_gc_version_info;
+
+static bool IsGCPauseReportingSupported()
+{
+    LIMITED_METHOD_CONTRACT;
+    return (g_gc_version_info.MajorVersion > GC_INTERFACE_MAJOR_VERSION) ||
+        ((g_gc_version_info.MajorVersion == GC_INTERFACE_MAJOR_VERSION) &&
+         (g_gc_version_info.MinorVersion >= GC_PAUSE_REPORTING_INTERFACE_MINOR_VERSION));
+}
+
+extern "C" BOOL QCALLTYPE GCInterface_IsGCPauseReportingSupported(QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BOOL result = FALSE;
+    BEGIN_QCALL;
+    result = IsGCPauseReportingSupported();
+    END_QCALL;
+    return result;
+}
+
+extern "C" void QCALLTYPE GCInterface_ConfigureGCPauseReporting(BOOL enabled, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+    if (!IsGCPauseReportingSupported())
+    {
+        COMPlusThrow(kPlatformNotSupportedException);
+    }
+    GCX_COOP();
+    if (!GCHeapUtilities::GetGCHeap()->ConfigureGCPauseReporting(enabled != FALSE))
+    {
+        COMPlusThrowOM();
+    }
+    END_QCALL;
+}
+
+extern "C" int QCALLTYPE GCInterface_DrainGCPauseRecords(GCPauseRecord* records, int capacity, uint64_t* dropped, uint32_t* remaining, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    int result = 0;
+    BEGIN_QCALL;
+    _ASSERTE(capacity >= 0);
+    _ASSERTE((records != nullptr) || (capacity == 0));
+    _ASSERTE(dropped != nullptr);
+    _ASSERTE(remaining != nullptr);
+    if (!IsGCPauseReportingSupported())
+    {
+        COMPlusThrow(kPlatformNotSupportedException);
+    }
+    result = static_cast<int>(GCHeapUtilities::GetGCHeap()->DrainGCPauseRecords(records, static_cast<uint32_t>(capacity), dropped, remaining));
+    END_QCALL;
+    return result;
+}
+
+extern "C" BOOL QCALLTYPE GCInterface_WaitForGCPauseRecords(int millisecondsTimeout, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+    BOOL result = FALSE;
+    BEGIN_QCALL;
+    _ASSERTE(millisecondsTimeout >= -1);
+    if (!IsGCPauseReportingSupported())
+    {
+        COMPlusThrow(kPlatformNotSupportedException);
+    }
+    uint32_t waitResult = GCHeapUtilities::GetGCHeap()->WaitForGCPauseRecords(static_cast<uint32_t>(millisecondsTimeout));
+    if ((waitResult != WAIT_OBJECT_0) && (waitResult != WAIT_TIMEOUT))
+    {
+        COMPlusThrowHR(E_FAIL);
+    }
+    result = (waitResult == WAIT_OBJECT_0);
+    END_QCALL;
+    return result;
+}
+
 #ifdef HOST_64BIT
 const unsigned MIN_MEMORYPRESSURE_BUDGET = 4 * 1024 * 1024;        // 4 MB
 #else // HOST_64BIT

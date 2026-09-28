@@ -55,6 +55,18 @@ namespace WKS {
 #include "gcimpl.h"
 #include "gcpriv.h"
 
+inline void gc_heap::record_gc_pause(uint64_t duration_microseconds)
+{
+#ifndef FEATURE_NATIVEAOT
+    if (gc_pause_reporting_enabled)
+    {
+        publish_gc_pause(duration_microseconds);
+    }
+#else // !FEATURE_NATIVEAOT
+    UNREFERENCED_PARAMETER(duration_microseconds);
+#endif // !FEATURE_NATIVEAOT
+}
+
 #ifdef DACCESS_COMPILE
 #error this source file should not be compiled with DACCESS_COMPILE!
 #endif //DACCESS_COMPILE

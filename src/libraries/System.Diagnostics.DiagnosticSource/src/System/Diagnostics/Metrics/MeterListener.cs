@@ -83,6 +83,9 @@ namespace System.Diagnostics.Metrics
 
             if (enabled)
             {
+#if NET11_0_OR_GREATER
+                instrument!.NotifyMeasurementStateChanged();
+#endif
                 if (oldStateStored && MeasurementsCompleted is not null)
                 {
                     MeasurementsCompleted?.Invoke(instrument!, oldState);
@@ -119,6 +122,9 @@ namespace System.Diagnostics.Metrics
                 state = instrument.DisableMeasurements(this);
             }
 
+#if NET11_0_OR_GREATER
+            instrument.NotifyMeasurementStateChanged();
+#endif
             MeasurementsCompleted?.Invoke(instrument, state);
             return state;
         }
@@ -253,6 +259,9 @@ namespace System.Diagnostics.Metrics
 
             Dictionary<Instrument, object?>? callbacksArguments = null;
             Action<Instrument, object?>? measurementsCompleted = MeasurementsCompleted;
+#if NET11_0_OR_GREATER
+            DiagNode<Instrument>? changedInstruments = null;
+#endif
 
             lock (Instrument.SyncObject)
             {
@@ -264,6 +273,9 @@ namespace System.Diagnostics.Metrics
                 s_allStartedListeners.Remove(this);
 
                 DiagNode<Instrument>? current = _enabledMeasurementInstruments.First;
+#if NET11_0_OR_GREATER
+                changedInstruments = current;
+#endif
                 if (current is not null)
                 {
                     if (measurementsCompleted is not null)
@@ -281,6 +293,14 @@ namespace System.Diagnostics.Metrics
                     _enabledMeasurementInstruments.Clear();
                 }
             }
+
+#if NET11_0_OR_GREATER
+            while (changedInstruments is not null)
+            {
+                changedInstruments.Value.NotifyMeasurementStateChanged();
+                changedInstruments = changedInstruments.Next;
+            }
+#endif
 
             if (callbacksArguments is not null)
             {

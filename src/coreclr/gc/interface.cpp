@@ -2301,6 +2301,86 @@ int64_t GCHeap::GetTotalPauseDuration()
     return (int64_t)(gc_heap::total_suspended_time * 10);
 }
 
+bool GCHeap::ConfigureGCPauseReporting(bool enabled)
+{
+#ifndef FEATURE_NATIVEAOT
+    if (enabled &&
+        !gc_heap::gc_pause_event.IsValid() &&
+        !gc_heap::gc_pause_event.CreateAutoEventNoThrow(false))
+    {
+        return false;
+    }
+
+    // The caller is cooperative so waiting for gc_lock can yield to a pending collection.
+    enter_spin_lock(&gc_heap::gc_lock);
+    gc_heap::gc_pause_reporting_enabled = enabled;
+    gc_heap::gc_pause_read_index = 0;
+    gc_heap::gc_pause_write_index = 0;
+    Interlocked::Exchange(&gc_heap::gc_pause_notification_pending, int32_t{0});
+    leave_spin_lock(&gc_heap::gc_lock);
+
+    // Events have process lifetime; a disabled consumer may still be returning from Wait.
+    if (gc_heap::gc_pause_event.IsValid())
+    {
+        gc_heap::gc_pause_event.Set();
+    }
+    return true;
+#else // !FEATURE_NATIVEAOT
+    UNREFERENCED_PARAMETER(enabled);
+    return false;
+#endif // !FEATURE_NATIVEAOT
+}
+
+uint32_t GCHeap::DrainGCPauseRecords(GCPauseRecord* records, uint32_t capacity, uint64_t* dropped, uint32_t* remaining)
+{
+#ifndef FEATURE_NATIVEAOT
+    assert((records != nullptr) || (capacity == 0));
+    uint32_t read_index = VolatileLoadWithoutBarrier(&gc_heap::gc_pause_read_index);
+    uint32_t write_index = gc_heap::gc_pause_write_index;
+    uint32_t available = write_index - read_index;
+    assert(available <= gc_heap::gc_pause_record_capacity);
+    uint32_t count = min(capacity, available);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        records[i] = gc_heap::gc_pause_records[(read_index + i) % gc_heap::gc_pause_record_capacity];
+    }
+    gc_heap::gc_pause_read_index = read_index + count;
+    *dropped = Interlocked::ExchangeAdd64(&gc_heap::gc_pause_dropped, uint64_t{0});
+    *remaining = available - count;
+    return count;
+#else // !FEATURE_NATIVEAOT
+    UNREFERENCED_PARAMETER(records);
+    UNREFERENCED_PARAMETER(capacity);
+    *dropped = 0;
+    *remaining = 0;
+    return 0;
+#endif // !FEATURE_NATIVEAOT
+}
+
+uint32_t GCHeap::WaitForGCPauseRecords(uint32_t millisecondsTimeout)
+{
+#ifndef FEATURE_NATIVEAOT
+    if (!gc_heap::gc_pause_reporting_enabled)
+    {
+        return WAIT_TIMEOUT;
+    }
+
+    Interlocked::Exchange(&gc_heap::gc_pause_notification_pending, int32_t{0});
+    if (gc_heap::gc_pause_write_index != gc_heap::gc_pause_read_index)
+    {
+        return WAIT_OBJECT_0;
+    }
+    if (!gc_heap::gc_pause_reporting_enabled)
+    {
+        return WAIT_TIMEOUT;
+    }
+    return gc_heap::gc_pause_event.Wait(millisecondsTimeout, false);
+#else // !FEATURE_NATIVEAOT
+    UNREFERENCED_PARAMETER(millisecondsTimeout);
+    return WAIT_TIMEOUT;
+#endif // !FEATURE_NATIVEAOT
+}
+
 void GCHeap::EnumerateConfigurationValues(void* context, ConfigurationValueFunc configurationValueFunc)
 {
     GCConfig::EnumerateConfigurationValues(context, configurationValueFunc);

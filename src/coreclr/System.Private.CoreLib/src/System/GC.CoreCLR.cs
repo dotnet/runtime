@@ -61,6 +61,30 @@ namespace System
 
     public static partial class GC
     {
+        /// <safety>Returns a scalar capability result without accessing caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_IsGCPauseReportingSupported")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static safe partial bool IsGCPauseReportingSupported();
+
+        /// <safety>Changes the reporting state without accessing caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_ConfigureGCPauseReporting")]
+        internal static safe partial void ConfigureGCPauseReporting([MarshalAs(UnmanagedType.Bool)] bool enabled);
+
+        /// <safety>The caller supplies a writable buffer containing at least <paramref name="capacity"/> records,
+        /// or a null buffer with zero capacity to query reporting counters.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_DrainGCPauseRecords")]
+        internal static unsafe partial int DrainGCPauseRecords(
+            GCPauseReporting.GCPauseRecord* records, int capacity, out ulong dropped, out int remaining);
+
+        /// <safety>Waits with a scalar timeout and returns a status without accessing caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForGCPauseRecords")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static safe partial bool WaitForGCPauseRecords(int millisecondsTimeout);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void GetMemoryInfo(GCMemoryInfoData data, int kind);
 

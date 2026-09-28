@@ -791,6 +791,15 @@ bool        gc_heap::spin_count_unit_config_p = false;
 uint64_t    gc_heap::suspended_start_time = 0;
 uint64_t    gc_heap::end_gc_time = 0;
 uint64_t    gc_heap::total_suspended_time = 0;
+#ifndef FEATURE_NATIVEAOT
+GCPauseRecord gc_heap::gc_pause_records[gc_heap::gc_pause_record_capacity] = {};
+VOLATILE(bool) gc_heap::gc_pause_reporting_enabled = false;
+VOLATILE(uint32_t) gc_heap::gc_pause_write_index = 0;
+VOLATILE(uint32_t) gc_heap::gc_pause_read_index = 0;
+uint64_t gc_heap::gc_pause_dropped = 0;
+VOLATILE(int32_t) gc_heap::gc_pause_notification_pending = 0;
+GCEvent gc_heap::gc_pause_event;
+#endif // !FEATURE_NATIVEAOT
 uint64_t    gc_heap::process_start_time = 0;
 last_recorded_gc_info gc_heap::last_ephemeral_gc_info;
 last_recorded_gc_info gc_heap::last_full_blocking_gc_info;
