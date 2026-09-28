@@ -5,7 +5,6 @@
 using System;
 using System.Globalization;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -24,17 +23,16 @@ public static class CoreClrConfigurationDetection
     public static bool IsTieredCompilation => string.Equals(GetEnvironmentVariableValue("TieredCompilation", "1"), "1", StringComparison.InvariantCulture);
     public static bool IsHeapVerify => string.Equals(GetEnvironmentVariableValue("HeapVerify"), "1", StringComparison.InvariantCulture);
 
-    // An interpreter test mode (RuntimeTestModes.InterpreterActive): the interpreter is configured, or there is no JIT and the test is not ReadyToRun-compiled.
-    public static bool IsInterpreterMode
+    public static bool IsCoreClrInterpreter
     {
         get
         {
+            // WASM-TODO: update when codegen is in place
+            if (PlatformDetection.IsWasm)
+                return true;
             if (!string.IsNullOrWhiteSpace(GetEnvironmentVariableValue("Interpreter", "")))
                 return true;
             if (int.TryParse(GetEnvironmentVariableValue("InterpMode", "0"), out int mode) && (mode > 0))
-                return true;
-            // Without a JIT (WebAssembly, Apple mobile), code that isn't ReadyToRun-compiled runs in the interpreter.
-            if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled && !PlatformDetection.IsReadyToRunCompiled)
                 return true;
             return false;
         }

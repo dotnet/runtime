@@ -106,11 +106,9 @@ namespace TestLibrary
             {
                 if (RuntimeFeature.IsDynamicCodeSupported && !RuntimeFeature.IsDynamicCodeCompiled)
                     return true;
-                return CoreClrConfigurationDetection.IsInterpreterMode;
+                return CoreClrConfigurationDetection.IsCoreClrInterpreter;
             }
         }
-
-        public static bool IsNotCoreClrInterpreter => !IsCoreClrInterpreter;
 
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(Utilities).Assembly.Location);
         public static bool IsSingleFile => !HasAssemblyFiles;

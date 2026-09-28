@@ -23,8 +23,6 @@
 }
 .assembly extern xunit.core {}
 .assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
-.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
-.assembly extern TestLibrary { .ver 0:0:0:0 }
 
 // MVID: {68AEE7ED-2AC8-4330-9EC7-4EBFD6BD74E0}
 .imagebase 0x00400000
@@ -43,10 +41,9 @@
   .method public hidebysig static int32
           Main() cil managed
   {
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
-        type([TestLibrary]TestLibrary.Utilities)
-        string[1] ('IsNotCoreClrInterpreter')
-    }
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.SkipOnCoreClrAttribute::.ctor(string, valuetype [Microsoft.DotNet.XUnitExtensions]Xunit.RuntimeTestModes) = {
         string('Test checks for an issue that cannot occur with the interpreter')
         int32(0x400) // InterpreterActive

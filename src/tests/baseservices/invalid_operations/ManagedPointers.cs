@@ -35,8 +35,7 @@ public unsafe class ManagedPointers
     [ActiveIssue("Function mismatch", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
     [ActiveIssue("Function mismatch", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoRuntime))]
     [ActiveIssue("Doesn't compile with LLVM AOT.", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoAnyAOT))]
-    // Without a JIT the marshalled calli still reaches the interpreter in ReadyToRun mode (InvalidProgramException on wasm R2R).
-    [ConditionalFact(typeof(Utilities), nameof(Utilities.IsNotCoreClrInterpreter))]
+    [Fact]
     [Xunit.SkipOnCoreClrAttribute("Depends on marshalled calli", RuntimeTestModes.InterpreterActive)]
     public static void Validate_GeneratedILStubs_NullByRef()
     {
