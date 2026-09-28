@@ -39,7 +39,7 @@ MONO_API_FUNCTION(mono_bool, mono_jit_aot_compiling, (void))
 
 MONO_API_FUNCTION(void, mono_set_break_policy, (MonoBreakPolicyFunc policy_callback))
 
-MONO_API_FUNCTION(void, mono_jit_parse_options, (int argc, char * argv[]))
+MONO_API_FUNCTION(int, mono_jit_parse_options, (int argc, char * argv[]))
 
 MONO_API_FUNCTION(char*, mono_get_runtime_build_info, (void))
 

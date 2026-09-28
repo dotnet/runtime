@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
@@ -54,10 +54,7 @@ namespace System.Text.Json
         /// </remarks>
         public JsonTypeInfo GetTypeInfo(Type type)
         {
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -82,10 +79,7 @@ namespace System.Text.Json
         /// </remarks>
         public bool TryGetTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (type is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             if (JsonTypeInfo.IsInvalidForSerialization(type))
             {
@@ -93,6 +87,36 @@ namespace System.Text.Json
             }
 
             typeInfo = GetTypeInfoInternal(type, ensureNotNull: null, resolveIfMutable: true);
+            return typeInfo is not null;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="JsonTypeInfo{T}"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <typeparam name="T">The type to resolve contract metadata for.</typeparam>
+        /// <returns>The contract metadata resolved for <typeparamref name="T"/>.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="T"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public JsonTypeInfo<T> GetTypeInfo<T>()
+        {
+            return (JsonTypeInfo<T>)GetTypeInfoInternal(typeof(T), resolveIfMutable: true);
+        }
+
+        /// <summary>
+        /// Tries to get the <see cref="JsonTypeInfo{T}"/> contract metadata resolved by the current <see cref="JsonSerializerOptions"/> instance.
+        /// </summary>
+        /// <typeparam name="T">The type to resolve contract metadata for.</typeparam>
+        /// <param name="typeInfo">The resolved contract metadata, or <see langword="null" /> if no contract could be resolved.</param>
+        /// <returns><see langword="true"/> if a contract for <typeparamref name="T"/> was found, or <see langword="false"/> otherwise.</returns>
+        /// <exception cref="ArgumentException"><typeparamref name="T"/> is not valid for serialization.</exception>
+        /// <remarks>
+        /// If the <see cref="JsonSerializerOptions"/> instance is locked for modification, the method will return a cached instance for the metadata.
+        /// </remarks>
+        public bool TryGetTypeInfo<T>([NotNullWhen(true)] out JsonTypeInfo<T>? typeInfo)
+        {
+            typeInfo = (JsonTypeInfo<T>?)GetTypeInfoInternal(typeof(T), ensureNotNull: null, resolveIfMutable: true);
             return typeInfo is not null;
         }
 
@@ -127,7 +151,7 @@ namespace System.Text.Json
                 typeInfo = GetTypeInfoNoCaching(type);
             }
 
-            if (typeInfo is null && ensureNotNull == true)
+            if (typeInfo is null && ensureNotNull is true)
             {
                 ThrowHelper.ThrowNotSupportedException_NoMetadataForType(type, TypeInfoResolver);
             }
@@ -137,7 +161,7 @@ namespace System.Text.Json
 
         internal bool TryGetTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (_cachingContext == null)
+            if (_cachingContext is null)
             {
                 typeInfo = null;
                 return false;
@@ -164,7 +188,7 @@ namespace System.Text.Json
 
         internal bool TryGetPolymorphicTypeInfoForRootType(object rootValue, [NotNullWhen(true)] out JsonTypeInfo? polymorphicTypeInfo)
         {
-            Debug.Assert(rootValue != null);
+            Debug.Assert(rootValue is not null);
 
             Type runtimeType = rootValue.GetType();
             if (runtimeType != JsonTypeInfo.ObjectType)
@@ -405,7 +429,7 @@ namespace System.Text.Json
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
                 Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
-                Debug.Assert(options._typeInfoResolver != null);
+                Debug.Assert(options._typeInfoResolver is not null);
 
                 int hashCode = s_optionsComparer.GetHashCode(options);
 
@@ -439,7 +463,7 @@ namespace System.Text.Json
                         }
                         else
                         {
-                            Debug.Assert(weakRef.TryGetTarget(out _) is false);
+                            Debug.Assert(!weakRef.TryGetTarget(out _));
                             weakRef.SetTarget(ctx);
                         }
                     }
@@ -489,7 +513,7 @@ namespace System.Text.Json
         {
             public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
-                Debug.Assert(left != null && right != null);
+                Debug.Assert(left is not null && right is not null);
 
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
@@ -518,7 +542,10 @@ namespace System.Text.Json
                     left._indentCharacter == right._indentCharacter &&
                     left._indentSize == right._indentSize &&
                     left._typeInfoResolver == right._typeInfoResolver &&
-                    CompareLists(left._converters, right._converters);
+                    left._allowDuplicateProperties == right._allowDuplicateProperties &&
+                    left._inferClosedTypePolymorphism == right._inferClosedTypePolymorphism &&
+                    CompareLists(left._converters, right._converters) &&
+                    CompareLists(left._typeClassifiers, right._typeClassifiers);
 
                 static bool CompareLists<TValue>(ConfigurationList<TValue>? left, ConfigurationList<TValue>? right)
                     where TValue : class?
@@ -578,7 +605,10 @@ namespace System.Text.Json
                 AddHashCode(ref hc, options._indentCharacter);
                 AddHashCode(ref hc, options._indentSize);
                 AddHashCode(ref hc, options._typeInfoResolver);
+                AddHashCode(ref hc, options._allowDuplicateProperties);
+                AddHashCode(ref hc, options._inferClosedTypePolymorphism);
                 AddListHashCode(ref hc, options._converters);
+                AddListHashCode(ref hc, options._typeClassifiers);
 
                 return hc.ToHashCode();
 

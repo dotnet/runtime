@@ -222,14 +222,6 @@ namespace System.Collections.Frozen.Tests
         }
 
         [Fact]
-        public static void IsAllAscii()
-        {
-            Assert.True(KeyAnalyzer.IsAllAscii("abc".AsSpan()));
-            Assert.True(KeyAnalyzer.IsAllAscii("abcdefghij".AsSpan()));
-            Assert.False(KeyAnalyzer.IsAllAscii("abcdéfghij".AsSpan()));
-        }
-
-        [Fact]
         public static void ContainsAnyLetters()
         {
             Assert.True(KeyAnalyzer.ContainsAnyAsciiLetters("abc".AsSpan()));

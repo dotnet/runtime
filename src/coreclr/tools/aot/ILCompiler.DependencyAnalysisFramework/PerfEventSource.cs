@@ -10,10 +10,8 @@ using System.Diagnostics.Tracing;
 namespace ILCompiler.DependencyAnalysisFramework
 {
     [EventSource(Name = "Microsoft-ILCompiler-Graph-Perf")]
-    public class PerfEventSource : EventSource
+    public partial class PerfEventSource : EventSource
     {
-        private PerfEventSource() { }
-
         public static PerfEventSource Log = new PerfEventSource();
 
         public struct StartStopEvents : IDisposable

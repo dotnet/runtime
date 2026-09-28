@@ -23,13 +23,14 @@ class PEAssembly;
 enum StackTraceElementFlags
 {
     // Set if this element represents the last frame of the foreign exception stack trace
-    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001,
+    STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
-    STEF_IP_ADJUSTED = 0x0002,
+    STEF_IP_ADJUSTED = 0x0002, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the element references a method that needs a keep alive object
     STEF_KEEPALIVE = 0x0004,
+    STEF_CONTINUATION = 0x0008, // [cDAC] [Exception]: Contract depends on this value.
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -56,11 +57,21 @@ struct StackTraceElement
 
 class StackTraceInfo
 {
+    struct StackTraceArrayProtect
+    {
+        // Stores the current stack trace array. This array may be accessed by multiple threads
+        // during exception handling, and needs to be protected from concurrent modifications.
+        StackTraceArray m_pStackTraceArray;
+
+        // Used as a temporary buffer when resizing the stack trace array.
+        // This allows atomic replacement of the original array with the newly sized array.
+        StackTraceArray m_pStackTraceArrayNew;
+    };
     static OBJECTREF GetKeepAliveObject(MethodDesc* pMethod);
-    static void EnsureStackTraceArray(StackTraceArray *pStackTrace, size_t neededSize);
+    static void EnsureStackTraceArray(StackTraceArrayProtect *pStackTraceArrayProtected, size_t neededSize);
     static void EnsureKeepAliveArray(PTRARRAYREF *ppKeepAliveArray, size_t neededSize);
 public:
-    static void AppendElement(OBJECTHANDLE hThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
+    static void AppendElement(OBJECTREF pThrowable, UINT_PTR currentIP, UINT_PTR currentSP, MethodDesc* pFunc, CrawlFrame* pCf);
 };
 
 
@@ -172,7 +183,6 @@ public:
 #ifdef LOGGING // Use parent implementation that inlines into nothing in retail build
         void SucceedCatch();
 #endif
-        void SetupFinally();
     };
 };
 
@@ -291,7 +301,7 @@ class EEMessageException : public EEException
 
     static BOOL IsEEMessageException(Exception *pException)
     {
-        return (*(PVOID*)pException == GetEEMessageExceptionVPtr());
+        return *(PVOID*)pException == GetEEMessageExceptionVPtr();
     }
 
  protected:
@@ -308,17 +318,16 @@ class EEMessageException : public EEException
 
     static PVOID GetEEMessageExceptionVPtr()
     {
-        CONTRACT (PVOID)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        RETURN (PVOID&)boilerplate;
+        return (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
@@ -653,11 +662,19 @@ class EEFileLoadException : public EEException
   private:
     SString m_name;
     HRESULT m_hr;
+    SString m_diagnosticInfo;
+    SString m_requestingAssemblyChain;
 
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
-    ~EEFileLoadException();
+    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo);
+
+    void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
+    {
+        WRAPPER_NO_CONTRACT;
+        m_requestingAssemblyChain = requestingAssemblyChain;
+    }
 
     // virtual overrides
     HRESULT GetHR()
@@ -671,6 +688,7 @@ class EEFileLoadException : public EEException
 
     static RuntimeExceptionKind GetFileLoadKind(HRESULT hr);
     static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, Exception *pInnerException = NULL);
+    static void DECLSPEC_NORETURN Throw(AssemblySpec *pSpec, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *pPEAssembly, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(LPCWSTR path, HRESULT hr, Exception *pInnerException = NULL);
     static void DECLSPEC_NORETURN Throw(PEAssembly *parent, const void *memory, COUNT_T size, HRESULT hr, Exception *pInnerException = NULL);
@@ -680,7 +698,9 @@ class EEFileLoadException : public EEException
     virtual Exception *CloneHelper()
     {
         WRAPPER_NO_CONTRACT;
-        return new EEFileLoadException(m_name, m_hr);
+        EEFileLoadException *pClone = new EEFileLoadException(m_name, m_hr, m_diagnosticInfo);
+        pClone->SetRequestingAssemblyChain(m_requestingAssemblyChain);
+        return pClone;
     }
 
  private:
@@ -707,8 +727,9 @@ class EEFileLoadException : public EEException
 // EX_CATCH
 // {
 //      EX_RETHROW()
+//      RethrowTerminalExceptions();
 // }
-// EX_END_CATCH(RethrowTerminalExceptions)
+// EX_END_CATCH
 // --------------------------------------------------------------------------------------------------------
 
 // In DAC builds, we don't want to override the normal utilcode exception handling.
@@ -734,7 +755,7 @@ class EEFileLoadException : public EEException
 #if defined(_DEBUG)
   // Redefine GET_EXCEPTION to validate CLRLastThrownObjectException as much as possible.
   #undef GET_EXCEPTION
-  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : __pException.GetValue())
+  #define GET_EXCEPTION() (__pException == NULL ? __defaultException.Validate() : static_cast<Exception*>(__pException))
 #endif // _DEBUG
 
 LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
@@ -791,8 +812,8 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
             /* a findstr /n will allow you to locate it in a pinch */                   \
             STRESS_LOG1(LF_EH, LL_INFO100,                                              \
                 "EX_RETHROW " INDEBUG(__FILE__) " line %d\n", __LINE__);                \
-            __pException.SuppressRelease();                                             \
-            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                      \
+            __pException.Detach();                                                      \
+            if ((!__state.DidCatchCxx()) && (GetThreadNULLOk() != NULL))                \
             {                                                                           \
                 if (GetThread()->PreemptiveGCDisabled())                                \
                 {                                                                       \
@@ -821,18 +842,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 #define EX_ENDTRY                                           \
     PAL_CPP_ENDTRY
 
-
-// CLRException::GetErrorInfo below invokes GetComIPFromObjectRef
-// that invokes ObjHeader::GetSyncBlock which has the INJECT_FAULT contract.
-//
-// This EX_CATCH_HRESULT implementation can be used in functions
-// that have FORBID_FAULT contracts.
-//
-// However, failure due to OOM (or any other potential exception) in GetErrorInfo
-// implies that we couldnt get the interface pointer from the objectRef and would be
-// returned NULL.
-//
-// Thus, the scoped use of FAULT_NOT_FATAL macro.
 #undef EX_CATCH_HRESULT
 #ifdef FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
@@ -840,7 +849,6 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         {                                                                       \
-            FAULT_NOT_FATAL();                                                  \
             HRESULT hrErrorInfo = GET_EXCEPTION()->SetErrorInfo();              \
             if (FAILED(hrErrorInfo))                                            \
             {                                                                   \
@@ -849,7 +857,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         }                                                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 #else // FEATURE_COMINTEROP
 #define EX_CATCH_HRESULT(_hr)                                                   \
     EX_CATCH                                                                    \
@@ -857,7 +865,7 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
         (_hr) = GET_EXCEPTION()->GetHR();                                       \
         _ASSERTE(FAILED(_hr));                                                  \
     }                                                                           \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 #endif // FEATURE_COMINTEROP
 
 #endif // !DACCESS_COMPILE
@@ -868,8 +876,9 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
     {                                                                           \
     /* Swallow the exception and keep going unless COR_E_OPERATIONCANCELED */   \
     /* was thrown. Used generating dumps, where rethrow will cancel dump. */    \
+    RethrowCancelExceptions();                                                    \
     }                                                                           \
-    EX_END_CATCH(RethrowCancelExceptions)
+    EX_END_CATCH
 
 // Only use this version to wrap single source lines, or it makes debugging painful.
 #define CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED(sourceCode)           \
@@ -943,7 +952,7 @@ inline CLRException::CLRException()
 
 inline void CLRException::SetThrowableHandle(OBJECTHANDLE throwable)
 {
-    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %x\n", throwable);
+    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %p\n", (void*)throwable);
     m_throwableHandle = throwable;
 }
 
@@ -1163,4 +1172,3 @@ class CLRLastThrownObjectException : public CLRException
 bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind);
 
 #endif // _CLREX_H_
-

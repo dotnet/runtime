@@ -3,6 +3,8 @@
 
 // Test register struct returns and local vars retyping cases.
 
+namespace JitTest_Directed_StructABI_structreturn;
+
 using System;
 using System.Numerics;
 using System.Diagnostics;
@@ -1411,13 +1413,13 @@ class TestHFAandHVA
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector64<int> ReturnVector64Int()
     {
-        return System.Runtime.Intrinsics.Vector64.Create(1);
+        return System.Runtime.Intrinsics.Vector64<int>.One;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector64<double> ReturnVector64Double()
     {
-        return System.Runtime.Intrinsics.Vector64.Create(1.0);
+        return System.Runtime.Intrinsics.Vector64<double>.One;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1426,9 +1428,9 @@ class TestHFAandHVA
         switch (v)
         {
             case 0:
-                return System.Runtime.Intrinsics.Vector64.Create(0);
+                return System.Runtime.Intrinsics.Vector64<int>.Zero;
             case 1:
-                return System.Runtime.Intrinsics.Vector64.Create(1);
+                return System.Runtime.Intrinsics.Vector64<int>.One;
             case 2:
                 return System.Runtime.Intrinsics.Vector64.Create(2);
             case 3:
@@ -1458,13 +1460,13 @@ class TestHFAandHVA
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<int> ReturnVector128Int()
     {
-        return System.Runtime.Intrinsics.Vector128.Create(1);
+        return System.Runtime.Intrinsics.Vector128<int>.One;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector128<double> ReturnVector128Double()
     {
-        return System.Runtime.Intrinsics.Vector128.Create(1.0);
+        return System.Runtime.Intrinsics.Vector128<double>.One;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1473,9 +1475,9 @@ class TestHFAandHVA
         switch (v)
         {
             case 0:
-                return System.Runtime.Intrinsics.Vector128.Create(0);
+                return System.Runtime.Intrinsics.Vector128<int>.Zero;
             case 1:
-                return System.Runtime.Intrinsics.Vector128.Create(1);
+                return System.Runtime.Intrinsics.Vector128<int>.One;
             case 2:
                 return System.Runtime.Intrinsics.Vector128.Create(2);
             case 3:
@@ -1505,13 +1507,13 @@ class TestHFAandHVA
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector256<int> ReturnVector256Int()
     {
-        return System.Runtime.Intrinsics.Vector256.Create(1);
+        return System.Runtime.Intrinsics.Vector256<int>.One;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static Vector256<double> ReturnVector256Double()
     {
-        return System.Runtime.Intrinsics.Vector256.Create(1.0);
+        return System.Runtime.Intrinsics.Vector256<double>.One;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1520,9 +1522,9 @@ class TestHFAandHVA
         switch (v)
         {
             case 0:
-                return System.Runtime.Intrinsics.Vector256.Create(0);
+                return System.Runtime.Intrinsics.Vector256<int>.Zero;
             case 1:
-                return System.Runtime.Intrinsics.Vector256.Create(1);
+                return System.Runtime.Intrinsics.Vector256<int>.One;
             case 2:
                 return System.Runtime.Intrinsics.Vector256.Create(2);
             case 3:

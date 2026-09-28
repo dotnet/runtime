@@ -53,4 +53,4 @@ DEFINE_MISSING_FIELD(freeable_uoh_segment)
 DEFINE_ARRAY_FIELD (free_regions,                        dac_region_free_list, FREE_REGION_KINDS)
 #else
 DEFINE_MISSING_FIELD(free_regions)
-#endif // ALL_FIELDS
+#endif // defined(ALL_FIELDS) || defined(USE_REGIONS)

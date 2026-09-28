@@ -340,7 +340,7 @@ namespace System.Xml.Schema
         /// Return the string representation according to xsd:duration rules, xdt:dayTimeDuration rules, or
         /// xdt:yearMonthDuration rules.
         /// </summary>
-        internal string ToString(DurationType durationType)
+        internal unsafe string ToString(DurationType durationType)
         {
             Span<char> destination = stackalloc char[CharStackBufferSize];
             bool success = TryFormat(destination, out int charsWritten, durationType);
@@ -349,7 +349,7 @@ namespace System.Xml.Schema
             return destination.Slice(0, charsWritten).ToString();
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
         {
             var vsb = new ValueStringBuilder(destination);
             int nanoseconds, digit, zeroIdx, len;

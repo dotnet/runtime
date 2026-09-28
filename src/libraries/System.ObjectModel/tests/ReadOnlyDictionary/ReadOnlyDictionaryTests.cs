@@ -391,6 +391,7 @@ namespace System.Collections.ObjectModel.Tests
         protected override bool IsGenericCompatibility { get { return false; } }
         protected override bool ItemsMustBeUnique { get { return true; } }
         protected override bool ItemsMustBeNonNull { get { return true; } }
+        protected override bool CurrentAfterFullEnumerationThrows { get { return false; } }
         protected override object GenerateItem()
         {
             return new KeyValuePair<string, int>(m_next_item.ToString(), m_next_item++);
@@ -429,6 +430,7 @@ namespace System.Collections.ObjectModel.Tests
         protected override bool IsGenericCompatibility { get { return false; } }
         protected override bool ItemsMustBeUnique { get { return true; } }
         protected override bool ItemsMustBeNonNull { get { return true; } }
+        protected override bool CurrentAfterFullEnumerationThrows { get { return false; } }
         protected override object GenerateItem()
         {
             return new KeyValuePair<string, int>(m_next_item.ToString(), m_next_item++);

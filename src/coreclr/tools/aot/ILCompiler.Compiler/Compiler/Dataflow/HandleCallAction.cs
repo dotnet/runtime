@@ -28,7 +28,7 @@ namespace ILLink.Shared.TrimAnalysis
         private readonly ReflectionMarker _reflectionMarker;
         private ILOpcode _operation;
         private readonly MethodDesc _callingMethod;
-        private readonly string _reason;
+        private readonly MethodDesc _reason;
 
         public HandleCallAction(
             FlowAnnotations annotations,
@@ -36,7 +36,7 @@ namespace ILLink.Shared.TrimAnalysis
             ReflectionMarker reflectionMarker,
             in DiagnosticContext diagnosticContext,
             MethodDesc callingMethod,
-            string reason)
+            MethodDesc reason)
         {
             _reflectionMarker = reflectionMarker;
             _operation = operation;
@@ -48,7 +48,7 @@ namespace ILLink.Shared.TrimAnalysis
             _requireDynamicallyAccessedMembersAction = new(reflectionMarker, diagnosticContext, reason);
         }
 
-        private partial bool TryHandleIntrinsic (
+        private partial bool TryHandleIntrinsic(
             MethodProxy calledMethod,
             MultiValue instanceValue,
             IReadOnlyList<MultiValue> argumentValues,
@@ -76,29 +76,42 @@ namespace ILLink.Shared.TrimAnalysis
                                     }
                                     else if (TryGetMakeGenericInstantiation(_callingMethod, argumentValues[0], out Instantiation inst, out bool isExact))
                                     {
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, typeInstantiated.Instantiation);
+
                                         if (inst.Length == typeInstantiated.Instantiation.Length)
                                         {
                                             typeInstantiated = ((MetadataType)typeInstantiated).MakeInstantiatedType(inst);
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                                if (typeInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericTypeSite(typeInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericTypeSite(typeInstantiated)));
                                             }
                                         }
                                     }
-                                    else if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
-                                    {
-                                        // This will always succeed thanks to the runtime type loader
-                                    }
                                     else
                                     {
-                                        triggersWarning = true;
-                                    }
+                                        if (typeInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
+                                        {
+                                            // This will always succeed thanks to the runtime type loader
+                                        }
+                                        else
+                                        {
+                                            triggersWarning = true;
+                                        }
 
+                                        // This should technically be in the IsConstrainedToBeReferenceTypes branch above
+                                        // but we have trim warning suppressions in dotnet/runtime and elsewhere that rely on the implementation
+                                        // detail that reference type instantiations will work, even if the generic is not
+                                        // constrained to be a reference type.
+                                        // MarkType will try to come up with a reference type type loader template.
+                                        _reflectionMarker.MarkType(_diagnosticContext.Origin, typeInstantiated, "MakeGenericType");
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, typeInstantiated.Instantiation);
+                                    }
                                 }
                                 else if (value == NullValue.Instance)
                                 {
@@ -139,23 +152,27 @@ namespace ILLink.Shared.TrimAnalysis
                                     else if (!methodInstantiated.OwningType.IsGenericDefinition
                                         && TryGetMakeGenericInstantiation(_callingMethod, argumentValues[0], out Instantiation inst, out bool isExact))
                                     {
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, methodInstantiated.Instantiation);
+
                                         if (inst.Length == methodInstantiated.Instantiation.Length)
                                         {
                                             methodInstantiated = methodInstantiated.MakeInstantiatedMethod(inst);
 
                                             if (isExact)
                                             {
-                                                _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
+                                                if (methodInstantiated.CheckConstraints())
+                                                    _reflectionMarker.MarkMethod(_diagnosticContext.Origin, methodInstantiated, "MakeGenericMethod");
                                             }
                                             else
                                             {
-                                                _reflectionMarker.RuntimeDeterminedDependencies.Add(new MakeGenericMethodSite(methodInstantiated));
+                                                _reflectionMarker.RuntimeDeterminedDependencies.Add((_callingMethod, new MakeGenericMethodSite(methodInstantiated)));
                                             }
                                         }
                                     }
                                     else if (methodInstantiated.Instantiation.IsConstrainedToBeReferenceTypes())
                                     {
                                         // This will always succeed thanks to the runtime type loader
+                                        AddDependenciesFromConstraintUse(_reflectionMarker, methodInstantiated.Instantiation);
                                     }
                                     else
                                     {
@@ -221,20 +238,22 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Array
                 //
-                // CreateInstance (Type, Int32)
+                // CreateInstance(Type, Int32)
                 //
                 case IntrinsicId.Array_CreateInstance:
                     {
+#if !ILTRIM
                         // We could try to analyze if the type is known, but for now making sure this works for canonical arrays is enough.
                         TypeDesc canonArrayType = _reflectionMarker.Factory.TypeSystemContext.CanonType.MakeArrayType();
                         _reflectionMarker.MarkType(_diagnosticContext.Origin, canonArrayType, "Array.CreateInstance was called");
+#endif
                     }
                     break;
 
                 //
                 // System.Enum
                 //
-                // static GetValues (Type)
+                // static GetValues(Type)
                 //
                 case IntrinsicId.Enum_GetValues:
                     {
@@ -243,7 +262,7 @@ namespace ILLink.Shared.TrimAnalysis
                         // type instead).
                         //
                         // At least until we have shared enum code, this needs extra handling to get it right.
-                        foreach (var value in argumentValues[0].AsEnumerable ())
+                        foreach (var value in argumentValues[0].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -263,22 +282,23 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 // System.Runtime.InteropServices.Marshal
                 //
-                // static SizeOf (Type)
-                // static PtrToStructure (IntPtr, Type)
-                // static DestroyStructure (IntPtr, Type)
-                // static OffsetOf (Type, string)
+                // static SizeOf(Type)
+                // static PtrToStructure(IntPtr, Type)
+                // static DestroyStructure(IntPtr, Type)
+                // static OffsetOf(Type, string)
                 //
                 case IntrinsicId.Marshal_SizeOf:
                 case IntrinsicId.Marshal_PtrToStructure:
                 case IntrinsicId.Marshal_DestroyStructure:
                 case IntrinsicId.Marshal_OffsetOf:
+#if !ILTRIM
                     {
                         int paramIndex = intrinsicId == IntrinsicId.Marshal_SizeOf
                             || intrinsicId == IntrinsicId.Marshal_OffsetOf
                             ? 0 : 1;
 
                         // We need the data to do struct marshalling.
-                        foreach (var value in argumentValues[paramIndex].AsEnumerable ())
+                        foreach (var value in argumentValues[paramIndex].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -299,17 +319,19 @@ namespace ILLink.Shared.TrimAnalysis
                                 ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresDynamicCodeAttribute);
                         }
                     }
+#endif
                     break;
 
                 //
                 // System.Runtime.InteropServices.Marshal
                 //
-                // static GetDelegateForFunctionPointer (IntPtr, Type)
+                // static GetDelegateForFunctionPointer(IntPtr, Type)
                 //
                 case IntrinsicId.Marshal_GetDelegateForFunctionPointer:
+#if !ILTRIM
                     {
                         // We need the data to do delegate marshalling.
-                        foreach (var value in argumentValues[1].AsEnumerable ())
+                        foreach (var value in argumentValues[1].AsEnumerable())
                         {
                             if (value is SystemTypeValue systemTypeValue
                                 && !systemTypeValue.RepresentedType.Type.IsGenericDefinition
@@ -324,19 +346,21 @@ namespace ILLink.Shared.TrimAnalysis
                                 ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresDynamicCodeAttribute);
                         }
                     }
+#endif
                     break;
 
                 //
                 // System.Delegate
                 //
-                // get_Method ()
+                // get_Method()
                 //
                 // System.Reflection.RuntimeReflectionExtensions
                 //
-                // GetMethodInfo (System.Delegate)
+                // GetMethodInfo(System.Delegate)
                 //
                 case IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo:
                 case IntrinsicId.Delegate_get_Method:
+#if !ILTRIM
                     {
                         // Find the parameter: first is an instance method, second is an extension method.
                         MultiValue param = intrinsicId == IntrinsicId.RuntimeReflectionExtensions_GetMethodInfo
@@ -364,6 +388,7 @@ namespace ILLink.Shared.TrimAnalysis
                             }
                         }
                     }
+#endif
                     break;
 
                 //
@@ -373,12 +398,12 @@ namespace ILLink.Shared.TrimAnalysis
                 //
                 case IntrinsicId.Object_GetType:
                     {
-                        if (instanceValue.IsEmpty ()) {
-                            AddReturnValue (MultiValueLattice.Top);
+                        if (instanceValue.IsEmpty()) {
+                            AddReturnValue(MultiValueLattice.Top);
                             break;
                         }
 
-                        foreach (var valueNode in instanceValue.AsEnumerable ())
+                        foreach (var valueNode in instanceValue.AsEnumerable())
                         {
                             // Note that valueNode can be statically typed in IL as some generic argument type.
                             // For example:
@@ -455,7 +480,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                                 if (annotation != default)
                                 {
-                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
+                                    _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ObjectGetTypeCalled(closestMetadataType), "GetType called on this type");
                                 }
 
                                 // Return a value which is "unknown type" with annotation. For now we'll use the return value node
@@ -488,6 +513,42 @@ namespace ILLink.Shared.TrimAnalysis
                     _diagnosticContext.AddDiagnostic(DiagnosticId.AvoidAssemblyGetFilesInSingleFile, calledMethod.GetDisplayName());
                     break;
 
+                case IntrinsicId.TypeMapping_GetOrCreateExternalTypeMapping:
+                {
+                    // TODO-ILTRIM: type maps
+#if !ILTRIM
+                    if (calledMethod.Method.Instantiation[0].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                    {
+                        // We only support GetOrCreateExternalTypeMapping for a fully specified type.
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
+                            calledMethod.Method.Instantiation[0].GetDisplayName());
+                    }
+                    else
+                    {
+                        TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
+                        _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ExternalTypeMapRequest(typeMapGroup), "TypeMapping.GetOrCreateExternalTypeMapping called on type");
+                    }
+#endif
+                    break;
+                }
+                case IntrinsicId.TypeMapping_GetOrCreateProxyTypeMapping:
+                {
+                    // TODO-ILTRIM: type maps
+#if !ILTRIM
+                    if (calledMethod.Method.Instantiation[0].ContainsSignatureVariables(treatGenericParameterLikeSignatureVariable: true))
+                    {
+                        // We only support GetOrCreateProxyTypeMapping for a fully specified type.
+                        _diagnosticContext.AddDiagnostic(DiagnosticId.TypeMapGroupTypeCannotBeStaticallyDetermined,
+                            calledMethod.Method.Instantiation[0].GetDisplayName());
+                    }
+                    else
+                    {
+                        TypeDesc typeMapGroup = calledMethod.Method.Instantiation[0];
+                        _reflectionMarker.Dependencies.Add(_reflectionMarker.Factory.ProxyTypeMapRequest(typeMapGroup), "TypeMapping.GetOrCreateProxyTypeMapping called on type");
+                    }
+#endif
+                    break;
+                }
                 default:
                     return false;
             }
@@ -499,6 +560,23 @@ namespace ILLink.Shared.TrimAnalysis
             {
                 maybeMethodReturnValue = (maybeMethodReturnValue is null) ? value : MultiValueLattice.Meet((MultiValue)maybeMethodReturnValue, value);
             }
+        }
+
+        private static void AddDependenciesFromConstraintUse(ReflectionMarker marker, Instantiation inst)
+        {
+#if !ILTRIM
+            // Operations like MakeGeneric make use of constraints on the generic type parameter. Make sure
+            // the compiler considers all of the interfaces in constraints used.
+            // We only need to do this with interface constraints since base types are not removed (class constraints are safe).
+            foreach (GenericParameterDesc p in inst)
+            {
+                foreach (TypeDesc constraint in p.TypeConstraints)
+                {
+                    if (constraint.IsInterface)
+                        marker.Dependencies.Add(marker.Factory.ReflectedType(constraint.GetTypeDefinition()), "MakeGeneric used with a constrained type");
+                }
+            }
+#endif
         }
 
         private static bool TryGetMakeGenericInstantiation(
@@ -616,13 +694,13 @@ namespace ILLink.Shared.TrimAnalysis
 
         private partial IEnumerable<SystemReflectionMethodBaseValue> GetMethodsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name == name, bindingFlags))
+            foreach (var method in type.Type.GetMethodsOnTypeHierarchy(m => m.Name.StringEquals(name), bindingFlags))
                 yield return new SystemReflectionMethodBaseValue(new MethodProxy(method));
         }
 
         private partial IEnumerable<SystemTypeValue> GetNestedTypesOnType(TypeProxy type, string name, BindingFlags? bindingFlags)
         {
-            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name == name, bindingFlags))
+            foreach (var nestedType in type.Type.GetNestedTypesOnType(t => t.Name.StringEquals(name), bindingFlags))
                 yield return new SystemTypeValue(new TypeProxy(nestedType));
         }
 
@@ -638,26 +716,72 @@ namespace ILLink.Shared.TrimAnalysis
             return false;
         }
 
-#pragma warning disable IDE0060
         private partial bool TryResolveTypeNameForCreateInstanceAndMark(in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
         {
-            // TODO: niche APIs that we probably shouldn't even have added
-            // We have to issue a warning, otherwise we could break the app without a warning.
-            // This is not the ideal warning, but it's good enough for now.
-            _diagnosticContext.AddDiagnostic(DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.GetParameter((ParameterIndex)(1 + (calledMethod.HasImplicitThis() ? 1 : 0))).GetDisplayName(), calledMethod.GetDisplayName());
-            resolvedType = default;
-            return false;
+            if (!System.Reflection.Metadata.AssemblyNameInfo.TryParse(assemblyName, out var an)
+                || _callingMethod.Context.ResolveAssembly(an) is not ModuleDesc resolvedAssembly)
+            {
+                _diagnosticContext.AddDiagnostic(DiagnosticId.UnresolvedAssemblyInCreateInstance,
+                    assemblyName,
+                    calledMethod.GetDisplayName());
+                resolvedType = default;
+                return false;
+            }
+
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", fallbackToCoreLib: true, out TypeDesc? foundType))
+            {
+                // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
+                // Note that we did find the assembly, so it's not a ILLink config problem, it's either intentional, or wrong versions of assemblies
+                // but ILLink can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
+                // might expect an exception to be thrown.
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType);
+            return true;
         }
-#pragma warning restore IDE0060
+
+        private partial string? GetAssemblyName(TypeProxy type)
+            // Only named types are supported. Reject array/pointer/byref (ParameterizedType),
+            // function pointer, signature variables, and System.Array itself. Rejecting System.Array
+            // covers the case where Cecil's IL scanner lowers typeof(SomeType[]) to System.Array,
+            // which would otherwise produce wrong analysis (System.Array.Assembly is CoreLib at
+            // runtime, but typeof(SomeType[]).Assembly is SomeType's assembly).
+            => type.Type is MetadataType metadataType && !metadataType.IsWellKnownType(Internal.TypeSystem.WellKnownType.Array)
+                ? metadataType.Module.Assembly.GetName().Name
+                : null;
+
+        private partial bool TryResolveTypeNameInAssemblyAndMark(string assemblyName, string typeName, out TypeProxy resolvedType)
+        {
+            if (!System.Reflection.Metadata.AssemblyNameInfo.TryParse(assemblyName, out var an)
+                || _callingMethod.Context.ResolveAssembly(an) is not ModuleDesc resolvedAssembly)
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            if (!_reflectionMarker.TryResolveTypeNameAndMark(resolvedAssembly, typeName, _diagnosticContext, "Reflection", fallbackToCoreLib: false, out TypeDesc? foundType))
+            {
+                resolvedType = default;
+                return false;
+            }
+
+            resolvedType = new TypeProxy(foundType);
+            return true;
+        }
 
         private partial void MarkStaticConstructor(TypeProxy type)
             => _reflectionMarker.MarkStaticConstructor(_diagnosticContext.Origin, type.Type, _reason);
+
+        private partial void ReportRequiresUnreferencedCode(MethodProxy calledMethod)
+            => ReflectionMethodBodyScanner.CheckAndReportRequires(_diagnosticContext, calledMethod.Method, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
 
         private partial void MarkEventsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkEventsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, e => e.Name == name, _reason, bindingFlags);
 
         private partial void MarkFieldsOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
-            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name == name, _reason, bindingFlags);
+            => _reflectionMarker.MarkFieldsOnTypeHierarchy(_diagnosticContext.Origin, type.Type, f => f.Name.StringEquals(name), _reason, bindingFlags);
 
         private partial void MarkPropertiesOnTypeHierarchy(TypeProxy type, string name, BindingFlags? bindingFlags)
             => _reflectionMarker.MarkPropertiesOnTypeHierarchy(_diagnosticContext.Origin, type.Type, p => p.Name == name, _reason, bindingFlags);
@@ -694,10 +818,12 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericMethodSite(MethodDesc method) => _method = method;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, _method.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericMethod");
+                MethodDesc instantiatedMethod = _method.InstantiateSignature(typeInstantiation, methodInstantiation);
+                if (instantiatedMethod.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedMethod(ref list, factory, instantiatedMethod, "MakeGenericMethod");
                 return list;
             }
         }
@@ -708,10 +834,16 @@ namespace ILLink.Shared.TrimAnalysis
 
             public MakeGenericTypeSite(TypeDesc type) => _type = type;
 
-            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation)
+            public IEnumerable<DependencyNodeCore<NodeFactory>.DependencyListEntry> InstantiateDependencies(NodeFactory factory, Instantiation typeInstantiation, Instantiation methodInstantiation, bool isConcreteInstantiation)
             {
                 var list = new DependencyList();
-                RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, _type.InstantiateSignature(typeInstantiation, methodInstantiation), "MakeGenericType");
+                TypeDesc instantiatedType = _type.InstantiateSignature(typeInstantiation, methodInstantiation);
+
+                // InstantiateSignature could end up with a denormalized shape (Foo<object, __Canon>) so normalize.
+                instantiatedType = instantiatedType.NormalizeInstantiation();
+
+                if (instantiatedType.CheckConstraints(new InstantiationContext(typeInstantiation, methodInstantiation)))
+                    RootingHelpers.TryGetDependenciesForReflectedType(ref list, factory, instantiatedType, "MakeGenericType");
                 return list;
             }
         }

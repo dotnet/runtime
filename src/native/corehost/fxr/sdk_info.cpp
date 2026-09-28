@@ -4,6 +4,7 @@
 #include <cassert>
 #include "pal.h"
 #include "sdk_info.h"
+#include "sdk_resolver.h"
 #include "trace.h"
 #include "utils.h"
 
@@ -14,24 +15,14 @@ bool compare_by_version_ascending_then_hive_depth_descending(const sdk_info &a, 
         return true;
     }
 
-    // With multi-level lookup enabled, it is possible to find two SDKs with
-    // the same version. For that edge case, we make the ordering put SDKs
-    // from farther away (global location) hives earlier than closer ones
-    // (current dotnet exe location). Without this tie-breaker, the ordering
-    // would be non-deterministic.
+    // When global.json specifies custom SDK paths, it is possible to find two
+    // SDKs with the same version in different search locations. Without a
+    // tie-breaker, the ordering would be non-deterministic.
     //
-    // Furthermore,  nearer earlier than farther is so that the MSBuild resolver
-    // can do a linear search from the end of the list to the front to find the
-    // best compatible SDK.
-    //
-    // Example:
-    //    * dotnet dir has version 4.0, 5.0, 6.0
-    //    * global dir has 5.0
-    //    * 6.0 is incompatible with calling msbuild
-    //    * 5.0 is compatible with calling msbuild
-    //
-    // MSBuild should select 5.0 from dotnet dir (matching probe order) in muxer
-    // and not 5.0 from global dir.
+    // Consumers of this list (the MSBuild resolver via hostfxr_get_available_sdks)
+    // scan backwards from the end to find the best compatible SDK, so the entry
+    // that should win has to come last. Search locations are in priority order -
+    // the first match wins - so the lowest hive depth sorts last.
     if (a.version == b.version)
     {
         return a.hive_depth > b.hive_depth;
@@ -51,7 +42,7 @@ void sdk_info::enumerate_sdk_paths(
     {
         // Make sure we filter out any non-version folders.
         fx_ver_t version;
-        if (!fx_ver_t::parse(version_str, &version, false))
+        if (!fx_ver_t::parse(version_str, &version))
         {
             trace::verbose(_X("Ignoring invalid version [%s]"), version_str.c_str());
             continue;
@@ -74,14 +65,13 @@ void sdk_info::enumerate_sdk_paths(
 }
 
 void sdk_info::get_all_sdk_infos(
-    const pal::string_t& own_dir,
+    const pal::string_t& dotnet_dir,
     std::vector<sdk_info>* sdk_infos)
 {
-    std::vector<pal::string_t> hive_dir;
-    get_framework_and_sdk_locations(own_dir, /*disable_multilevel_lookup*/ true, &hive_dir);
+    sdk_resolver resolver = sdk_resolver::from_nearest_global_file();
+    std::vector<pal::string_t> hive_dir = resolver.get_search_paths(dotnet_dir);
 
     int32_t hive_depth = 0;
-
     for (pal::string_t dir : hive_dir)
     {
         trace::verbose(_X("Gathering SDK locations in [%s]"), dir.c_str());
@@ -103,13 +93,15 @@ void sdk_info::get_all_sdk_infos(
     std::sort(sdk_infos->begin(), sdk_infos->end(), compare_by_version_ascending_then_hive_depth_descending);
 }
 
-/*static*/ bool sdk_info::print_all_sdks(const pal::string_t& own_dir, const pal::string_t& leading_whitespace)
+/*static*/ bool sdk_info::print_all_sdks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace)
 {
+    assert(leading_whitespace != nullptr);
+
     std::vector<sdk_info> sdk_infos;
-    get_all_sdk_infos(own_dir, &sdk_infos);
+    get_all_sdk_infos(dotnet_dir, &sdk_infos);
     for (sdk_info info : sdk_infos)
     {
-        trace::println(_X("%s%s [%s]"), leading_whitespace.c_str(), info.version.as_str().c_str(), info.base_path.c_str());
+        trace::println(_X("%s%s [%s]"), leading_whitespace, info.version.as_str().c_str(), info.base_path.c_str());
     }
 
     return sdk_infos.size() > 0;

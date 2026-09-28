@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /* Regression Test for Dev11 bug #95728: LINQ/CLR :: Accessing a static generic field <String> causes CLR to crash with FatalExecutionEngineError
+using TestLibrary;
 * 
 * Comments from bug: FatalExecutionEngineError: The runtime has encountered a fatal error. The address of the error was at 0x71ff5dcd, 
 * on thread 0x7f4. The error code is 0xc0000005. This error may be a bug in the CLR or in the unsafe or non-verifiable portions of user 
@@ -11,6 +12,7 @@
 using System;
 using System.Linq.Expressions;
 using Xunit;
+using TestLibrary;
 
 namespace StaticFieldBug
 {
@@ -29,6 +31,7 @@ namespace StaticFieldBug
         
     public class Program
     {
+        [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
         [Fact]
         public static void TestEntryPoint()
         {

@@ -253,7 +253,7 @@ namespace System.IO.Pipes
             // nop
         }
 
-        private unsafe int ReadCore(Span<byte> buffer)
+        private int ReadCore(Span<byte> buffer)
         {
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);
@@ -277,7 +277,7 @@ namespace System.IO.Pipes
             }
         }
 
-        private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
+        private void WriteCore(ReadOnlySpan<byte> buffer)
         {
             Debug.Assert(_handle != null);
             DebugAssertHandleValid(_handle);

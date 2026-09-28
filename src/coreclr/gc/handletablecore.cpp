@@ -685,7 +685,7 @@ void SegmentRemoveFreeBlocks(TableSegment *pSegment, uint32_t uType, BOOL *pfSca
 
 #ifdef HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS
         // determine whether this block is empty
-        if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == UI64(0xFFFFFFFFFFFFFFFF))
+        if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == 0xFFFFFFFFFFFFFFFFULL)
 #else
         // assume this block is empty until we know otherwise
         BOOL fEmpty = TRUE;
@@ -1039,7 +1039,7 @@ void SegmentResortChains(TableSegment *pSegment)
             {
 #ifdef HANDLE_OPTIMIZE_FOR_64_HANDLE_BLOCKS
                 // determine whether this block is empty
-                if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == UI64(0xFFFFFFFFFFFFFFFF))
+                if (((uint64_t*)pSegment->rgFreeMask)[uBlock] == 0xFFFFFFFFFFFFFFFFULL)
 #else
                 // assume this block is empty until we know otherwise
                 BOOL fEmpty = TRUE;
@@ -1842,11 +1842,6 @@ uint32_t BlockFreeHandlesInMask(TableSegment *pSegment, uint32_t uBlock, uint32_
     // keep track of how many handles we have left to free
     uint32_t uRemain = uCount;
 
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:6305) // "This code deals with a bit vector mapped piece of code, so there is no mismatch between sizeof and countof"
-#endif
-
     // if this block has user data, convert the pointer to be mask-relative
     if (pUserData)
         pUserData += (uMask * HANDLE_HANDLES_PER_MASK);
@@ -1857,10 +1852,6 @@ uint32_t BlockFreeHandlesInMask(TableSegment *pSegment, uint32_t uBlock, uint32_
     // compute the handle bounds for our mask
     OBJECTHANDLE firstHandle = (OBJECTHANDLE)(pSegment->rgValue + (uMask * HANDLE_HANDLES_PER_MASK));
     OBJECTHANDLE lastHandle  = (OBJECTHANDLE)((_UNCHECKED_OBJECTREF *)firstHandle + HANDLE_HANDLES_PER_MASK);
-
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
     // keep a local copy of the free mask to update as we free handles
     uint32_t dwFreeMask = pSegment->rgFreeMask[uMask];

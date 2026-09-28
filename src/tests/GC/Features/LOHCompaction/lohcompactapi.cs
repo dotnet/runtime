@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 
 namespace LOHCompactAPI
@@ -16,6 +17,8 @@ namespace LOHCompactAPI
         static List<byte[]> shortLivedList = new List<byte[]>(ListSize);
         static List<byte[]> LongLivedList = new List<byte[]>(ListSize);
 
+        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {

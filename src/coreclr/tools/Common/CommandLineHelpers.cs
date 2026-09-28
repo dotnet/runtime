@@ -1,8 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.CommandLine.Help;
 using System.Collections.Generic;
+using System.CommandLine.Help;
+using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.IO;
 using System.IO.Compression;
@@ -24,11 +25,14 @@ namespace System.CommandLine
     {
         public const string DefaultSystemModule = "System.Private.CoreLib";
 
-        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<CliToken> tokens, bool strict)
+        public static string[] ValidOS { get; } = ["windows", "linux", "freebsd", "openbsd", "osx", "maccatalyst", "ios", "iossimulator", "tvos", "tvossimulator", "android", "browser", "wasi"];
+        public static string[] ValidArchitectures { get; } = ["arm", "armel", "arm64", "x86", "x64", "riscv64", "loongarch64", "wasm"];
+
+        public static Dictionary<string, string> BuildPathDictionary(IReadOnlyList<Token> tokens, bool strict)
         {
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
 
-            foreach (CliToken token in tokens)
+            foreach (Token token in tokens)
             {
                 AppendExpandedPaths(dictionary, token.Value, strict);
             }
@@ -36,11 +40,11 @@ namespace System.CommandLine
             return dictionary;
         }
 
-        public static List<string> BuildPathList(IReadOnlyList<CliToken> tokens)
+        public static List<string> BuildPathList(IReadOnlyList<Token> tokens)
         {
             List<string> paths = new();
             Dictionary<string, string> dictionary = new(StringComparer.OrdinalIgnoreCase);
-            foreach (CliToken token in tokens)
+            foreach (Token token in tokens)
             {
                 AppendExpandedPaths(dictionary, token.Value, false);
                 foreach (string file in dictionary.Values)
@@ -56,7 +60,7 @@ namespace System.CommandLine
 
         public static TargetOS GetTargetOS(string token)
         {
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     return TargetOS.Windows;
@@ -66,28 +70,32 @@ namespace System.CommandLine
                     return TargetOS.OSX;
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD))
                     return TargetOS.FreeBSD;
-
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD")))
+                    return TargetOS.OpenBSD;
                 throw new NotImplementedException();
             }
 
             return token.ToLowerInvariant() switch
             {
-                "linux" => TargetOS.Linux,
+                "linux" or "android" => TargetOS.Linux,
                 "win" or "windows" => TargetOS.Windows,
                 "osx" => TargetOS.OSX,
                 "freebsd" => TargetOS.FreeBSD,
+                "openbsd" => TargetOS.OpenBSD,
                 "maccatalyst" => TargetOS.MacCatalyst,
                 "iossimulator" => TargetOS.iOSSimulator,
                 "ios" => TargetOS.iOS,
                 "tvossimulator" => TargetOS.tvOSSimulator,
                 "tvos" => TargetOS.tvOS,
+                "browser" => TargetOS.Browser,
+                "wasi" => TargetOS.Wasi,
                 _ => throw new CommandLineException($"Target OS '{token}' is not supported")
             };
         }
 
         public static TargetArchitecture GetTargetArchitecture(string token)
         {
-            if(string.IsNullOrEmpty(token))
+            if (string.IsNullOrEmpty(token))
             {
                 return RuntimeInformation.ProcessArchitecture switch
                 {
@@ -95,6 +103,7 @@ namespace System.CommandLine
                     Architecture.X64 => TargetArchitecture.X64,
                     Architecture.Arm => TargetArchitecture.ARM,
                     Architecture.Arm64 => TargetArchitecture.ARM64,
+                    Architecture.Wasm => TargetArchitecture.Wasm32,
                     Architecture.LoongArch64 => TargetArchitecture.LoongArch64,
                     Architecture.RiscV64 => TargetArchitecture.RiscV64,
                     _ => throw new NotImplementedException()
@@ -108,6 +117,7 @@ namespace System.CommandLine
                     "x64" => TargetArchitecture.X64,
                     "arm" or "armel" => TargetArchitecture.ARM,
                     "arm64" => TargetArchitecture.ARM64,
+                    "wasm" => TargetArchitecture.Wasm32,
                     "loongarch64" => TargetArchitecture.LoongArch64,
                     "riscv64" => TargetArchitecture.RiscV64,
                     _ => throw new CommandLineException($"Target architecture '{token}' is not supported")
@@ -115,7 +125,24 @@ namespace System.CommandLine
             }
         }
 
-        public static CliRootCommand UseVersion(this CliRootCommand command)
+        public static (TargetArchitecture, TargetOS, TargetAbi) GetTargetSpec(string targetArchitectureToken, string targetOSToken)
+        {
+            targetArchitectureToken = targetArchitectureToken?.ToLowerInvariant();
+            targetOSToken = targetOSToken?.ToLowerInvariant();
+
+            TargetArchitecture targetArchitecture = GetTargetArchitecture(targetArchitectureToken);
+            TargetOS targetOS = GetTargetOS(targetOSToken);
+            TargetAbi targetAbi = (targetOSToken, targetArchitectureToken) switch
+            {
+                (_, "armel") => TargetAbi.NativeAotArmel,
+                ("android", "arm") => TargetAbi.NativeAotArmel,
+                _ => TargetAbi.NativeAot,
+            };
+
+            return (targetArchitecture, targetOS, targetAbi);
+        }
+
+        public static RootCommand UseVersion(this RootCommand command)
         {
             for (int i = 0; i < command.Options.Count; i++)
             {
@@ -129,15 +156,13 @@ namespace System.CommandLine
             return command;
         }
 
-        public static CliRootCommand UseExtendedHelp(this CliRootCommand command, Func<HelpContext, IEnumerable<Func<HelpContext, bool>>> customizer)
+        public static RootCommand UseExtendedHelp(this RootCommand command, Action<ParseResult> customizer)
         {
-            foreach (CliOption option in command.Options)
+            foreach (Option option in command.Options)
             {
                 if (option is HelpOption helpOption)
                 {
-                    HelpBuilder builder = new();
-                    builder.CustomizeLayout(customizer);
-                    helpOption.Action = new HelpAction { Builder = builder };
+                    helpOption.Action = new CustomizedHelpAction(helpOption, customizer);
                     break;
                 }
             }
@@ -209,7 +234,7 @@ namespace System.CommandLine
                 Dictionary<string, string> outputToReproPackageFileName = new();
 
                 List<string> rspFile = new List<string>();
-                foreach (CliOption option in res.CommandResult.Command.Options)
+                foreach (Option option in res.CommandResult.Command.Options)
                 {
                     OptionResult optionResult = res.GetResult(option);
                     if (optionResult is null || option.Name == "--make-repro-path")
@@ -266,7 +291,7 @@ namespace System.CommandLine
                     }
                 }
 
-                foreach (CliArgument argument in res.CommandResult.Command.Arguments)
+                foreach (Argument argument in res.CommandResult.Command.Arguments)
                 {
                     ArgumentResult argumentResult = res.GetResult(argument);
                     if (argumentResult is null)
@@ -312,9 +337,22 @@ namespace System.CommandLine
                         string reproFileDir = prefix + originalToReproPackageFileName.Count.ToString() + Path.DirectorySeparatorChar;
                         reproPackagePath = Path.Combine(reproFileDir, Path.GetFileName(originalPath));
                         if (!input)
+                        {
                             archive.CreateEntry(reproFileDir); // for outputs just create output directory
+                        }
                         else
+                        {
                             archive.CreateEntryFromFile(originalPath, reproPackagePath);
+
+                            // The compiler probes for .pdb files next to input assemblies. For simplicity, just try to look
+                            // for PDB next to any file we package.
+                            string originalPdbPath = Path.ChangeExtension(originalPath, "pdb");
+                            if (!string.Equals(originalPath, originalPdbPath, StringComparison.InvariantCultureIgnoreCase)
+                                && File.Exists(originalPdbPath))
+                            {
+                                archive.CreateEntryFromFile(originalPdbPath, Path.ChangeExtension(reproPackagePath, "pdb"));
+                            }
+                        }
                         originalToReproPackageFileName.Add(originalPath, reproPackagePath);
 
                         return reproPackagePath;
@@ -426,6 +464,27 @@ namespace System.CommandLine
 
             newTokens = null;
             return false;
+        }
+
+        private sealed class CustomizedHelpAction : SynchronousCommandLineAction
+        {
+            private readonly HelpAction _helpAction;
+            private readonly Action<ParseResult> _customizer;
+
+            public CustomizedHelpAction(HelpOption helpOption, Action<ParseResult> customizer)
+            {
+                _helpAction = (HelpAction)helpOption.Action;
+                _customizer = customizer;
+            }
+
+            public override int Invoke(ParseResult parseResult)
+            {
+                int result = _helpAction.Invoke(parseResult);
+
+                _customizer(parseResult);
+
+                return result;
+            }
         }
     }
 }

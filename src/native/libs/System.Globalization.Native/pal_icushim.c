@@ -29,7 +29,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define SYMBOL_NAME_SIZE (128 + SYMBOL_CUSTOM_SUFFIX_SIZE)
 #define MaxICUVersionStringWithSuffixLength (MaxICUVersionStringLength + SYMBOL_CUSTOM_SUFFIX_SIZE)
 
-#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID)
+#if defined(TARGET_WINDOWS) || defined(TARGET_OSX) || defined(TARGET_ANDROID) || defined(TARGET_OPENBSD)
 
 #define MaxICUVersionStringLength 33
 
@@ -45,7 +45,6 @@ FOR_ALL_ICU_FUNCTIONS
 
 static void* libicuuc = NULL;
 static void* libicui18n = NULL;
-ucol_setVariableTop_func ucol_setVariableTop_ptr = NULL;
 ucol_safeClone_func ucol_safeClone_ptr = NULL;
 
 #if defined (TARGET_UNIX)
@@ -112,7 +111,7 @@ static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbo
 #define PER_FUNCTION_BLOCK(fn, lib, required) \
     sprintf_s(symbolName, SYMBOL_NAME_SIZE, #fn "%s", symbolVersion); \
     fn##_ptr = (TYPEOF(fn)*)GetProcAddress((HMODULE)lib, symbolName); \
-    if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %u\n", symbolName, GetLastError()); abort(); }
+    if (fn##_ptr == NULL && required) { fprintf(stderr, "Cannot get symbol %s from " #lib "\nError: %lu\n", symbolName, GetLastError()); abort(); }
 
 static int FindICULibs(void)
 {
@@ -231,7 +230,35 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
     return false;
 }
 
-#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID
+#elif defined(TARGET_OPENBSD)
+
+// OpenBSD uses ABI versioning in SONAME, not ICU version. Use unversioned dlopen.
+static int FindICULibs(char* symbolName, char* symbolVersion)
+{
+    libicuuc = dlopen("libicuuc.so", RTLD_LAZY);
+    if (libicuuc == NULL)
+        return false;
+
+    libicui18n = dlopen("libicui18n.so", RTLD_LAZY);
+    if (libicui18n == NULL)
+    {
+        dlclose(libicuuc);
+        libicuuc = NULL;
+        return false;
+    }
+
+    char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
+    if (FindSymbolVersion(-1, -1, -1, symbolName, symbolVersion, MaxICUVersionStringLength, symbolSuffix))
+        return true;
+
+    dlclose(libicuuc);
+    dlclose(libicui18n);
+    libicuuc = NULL;
+    libicui18n = NULL;
+    return false;
+}
+
+#else // !TARGET_WINDOWS && !TARGET_OSX && !TARGET_ANDROID && !TARGET_OPENBSD
 
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
@@ -240,7 +267,7 @@ static int FindICULibs(char* symbolName, char* symbolVersion)
 // a year.
 // On some platforms (mainly Alpine Linux) we want to make our minimum version
 // an earlier version than what we build that we know we support.
-#define MinICUVersion  50
+#define MinICUVersion  60
 #define MaxICUVersion  (U_ICU_VERSION_MAJOR_NUM + 30)
 #define MinMinorICUVersion  1
 #define MaxMinorICUVersion  5
@@ -302,13 +329,13 @@ static int OpenICULibraries(int majorVer, int minorVer, int subVer, const char* 
     return libicuuc != NULL;
 }
 
-// Select libraries using the version override specified by the CLR_ICU_VERSION_OVERRIDE
+// Select libraries using the version override specified by the DOTNET_ICU_VERSION_OVERRIDE
 // environment variable.
 // The format of the string in this variable is majorVer[.minorVer[.subVer]] (the brackets
 // indicate optional parts).
 static int FindLibUsingOverride(const char* versionPrefix, char* symbolName, char* symbolVersion)
 {
-    char* versionOverride = getenv("CLR_ICU_VERSION_OVERRIDE");
+    char* versionOverride = getenv("DOTNET_ICU_VERSION_OVERRIDE");
     if (versionOverride != NULL)
     {
         if (strcmp(versionOverride, "build") == 0)
@@ -443,35 +470,6 @@ static void InitializeUColClonePointers(char* symbolVersion)
     }
 }
 
-static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
-{
-    if (ucol_setMaxVariable_ptr != NULL)
-    {
-        return;
-    }
-
-#if defined(TARGET_OSX) || defined(TARGET_ANDROID)
-    // OSX and Android always run against ICU version which has ucol_setMaxVariable.
-    // We shouldn't come here.
-    (void)symbolVersion;
-    assert(false);
-#elif defined(TARGET_WINDOWS)
-    char symbolName[SYMBOL_NAME_SIZE];
-    sprintf_s(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
-    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)GetProcAddress((HMODULE)libicui18n, symbolName);
-#else
-    char symbolName[SYMBOL_NAME_SIZE];
-    snprintf(symbolName, SYMBOL_NAME_SIZE, "ucol_setVariableTop%s", symbolVersion);
-    ucol_setVariableTop_ptr = (ucol_setVariableTop_func)dlsym(libicui18n, symbolName);
-#endif // defined(TARGET_OSX) || defined(TARGET_ANDROID)
-
-    if (ucol_setVariableTop_ptr == NULL)
-    {
-        fprintf(stderr, "Cannot get the symbols of ICU APIs ucol_setMaxVariable or ucol_setVariableTop.\n");
-        abort();
-    }
-}
-
 // GlobalizationNative_LoadICU
 // This method get called from the managed side during the globalization initialization.
 // This method shouldn't get called at all if we are running in globalization invariant mode
@@ -488,7 +486,7 @@ int32_t GlobalizationNative_LoadICU(void)
         return false;
     }
 
-#elif defined(TARGET_ANDROID)
+#elif defined(TARGET_ANDROID) || defined(TARGET_OPENBSD)
     if (!FindICULibs(symbolName, symbolVersion))
     {
         return false;
@@ -509,7 +507,6 @@ int32_t GlobalizationNative_LoadICU(void)
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
-    InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 
     return true;
@@ -566,7 +563,6 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
 
-    InitializeVariableMaxAndTopPointers(symbolVersion);
     InitializeUColClonePointers(symbolVersion);
 }
 

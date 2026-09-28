@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -26,7 +28,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
+        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             InvalidOperationException ioe = await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
             ValidateInvalidOperationException();
@@ -42,107 +44,6 @@ namespace System.Text.Json.SourceGeneration.Tests
                 Assert.Contains(type.ToString(), exAsStr);
                 Assert.Contains("JsonIgnoreCondition.WhenWritingDefault", exAsStr);
             }
-        }
-
-        [Fact]
-        public override async Task Honor_JsonSerializablePropertyAttribute_OnProperties()
-        {
-            string json = @"{
-                ""MyInt"":1,
-                ""MyString"":""Hello"",
-                ""MyFloat"":2,
-                ""MyUri"":""https://microsoft.com""
-            }";
-
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<MyClass_WithNonPublicAccessors_WithPropertyAttributes>(json));
-
-            var obj = new MyClass_WithNonPublicAccessors_WithPropertyAttributes();
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
-        }
-
-        [Theory]
-        [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter_WithAttribute))]
-        [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute))]
-        [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
-        public override async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
-        {
-            bool isDeserializationSupported = type == typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute);
-
-            PropertyInfo property = type.GetProperty("MyInt");
-
-            // Init-only properties can be serialized.
-            object obj = Activator.CreateInstance(type);
-            property.SetValue(obj, 1);
-            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj, type));
-
-            // Deserializing JsonInclude is only supported for internal properties
-            if (isDeserializationSupported)
-            {
-                obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
-                Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
-            }
-            else
-            {
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type));
-            }
-        }
-
-        [Fact]
-        public override async Task HonorCustomConverter_UsingPrivateSetter()
-        {
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter());
-
-            string json = @"{""MyEnum"":""AnotherValue"",""MyInt"":2}";
-
-            // Deserialization baseline, without enum converter, we get JsonException. NB order of members in deserialized type is significant for this assertion to succeed.
-            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json));
-
-            // JsonInclude not supported in source gen.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithConverter>(json, options));
-
-            // JsonInclude on private getters not supported.
-            var obj = new StructWithPropertiesWithConverter();
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj, options));
-        }
-
-        [Fact]
-        public override async Task Public_And_NonPublicPropertyAccessors_PropertyAttributes()
-        {
-            string json = @"{""W"":1,""X"":2,""Y"":3,""Z"":4}";
-
-            var obj = await Serializer.DeserializeWrapper<ClassWithMixedPropertyAccessors_PropertyAttributes>(json);
-            Assert.Equal(1, obj.W);
-            Assert.Equal(2, obj.X);
-            Assert.Equal(3, obj.Y);
-            Assert.Equal(4, obj.GetZ);
-
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(obj));
-        }
-
-        [Fact]
-        public override async Task HonorJsonPropertyName_PrivateGetter()
-        {
-            string json = @"{""prop1"":1}";
-
-            var obj = await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateGetter>(json);
-            Assert.Equal(MySmallEnum.AnotherValue, obj.GetProxy());
-
-            // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async() => await Serializer.SerializeWrapper(obj));
-        }
-
-        [Fact]
-        public override async Task HonorJsonPropertyName_PrivateSetter()
-        {
-            string json = @"{""prop2"":2}";
-
-            // JsonInclude for private members not supported in source gen
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<StructWithPropertiesWithJsonPropertyName_PrivateSetter>(json));
-
-            var obj = new StructWithPropertiesWithJsonPropertyName_PrivateSetter();
-            obj.SetProxy(2);
-            Assert.Equal(json, await Serializer.SerializeWrapper(obj));
         }
 
         [Fact]
@@ -182,6 +83,63 @@ namespace System.Text.Json.SourceGeneration.Tests
             await base.ClassWithIgnoredAndPrivateMembers_DoesNotIncludeIgnoredMetadata();
         }
 
+        [Fact]
+        public override async Task JsonIgnoreCondition_TypeLevel_Always_ThrowsInvalidOperation()
+        {
+            // In the source generator path, 'JsonIgnoreCondition.Always' on a type emits a diagnostic warning
+            // and the attribute is ignored, so all properties are serialized normally.
+            var obj = new ClassWithTypeLevelIgnore_Always
+            {
+                MyString = "value",
+                MyInt = 42
+            };
+
+            string json = await Serializer.SerializeWrapper(obj);
+            Assert.Contains(@"""MyString"":""value""", json);
+            Assert.Contains(@"""MyInt"":42", json);
+        }
+
+        [Theory]
+        [InlineData(JsonSourceGenerationMode.Metadata, false)]
+        [InlineData(JsonSourceGenerationMode.Metadata, true)]
+        [InlineData(JsonSourceGenerationMode.Default, false)]
+        [InlineData(JsonSourceGenerationMode.Default, true)]
+        public static void GenericContexts_InaccessibleGenericMembers_CanRoundtrip(JsonSourceGenerationMode mode, bool nested)
+        {
+            JsonSerializerContext context = (mode, nested) switch
+            {
+                (JsonSourceGenerationMode.Metadata, false) => GenericAccessorContext_Metadata<string>.Default,
+                (JsonSourceGenerationMode.Metadata, true) => GenericAccessorContextContainer<string>.NestedGenericAccessorContext_Metadata.Default,
+                (JsonSourceGenerationMode.Default, false) => GenericAccessorContext_Default<string>.Default,
+                _ => GenericAccessorContextContainer<string>.NestedGenericAccessorContext_Default.Default,
+            };
+
+            const string Json = """{"Value":42,"Label":"test"}""";
+            var result = (GenericClassWithPrivateJsonIncludeProperties<int>)JsonSerializer.Deserialize(
+                Json, typeof(GenericClassWithPrivateJsonIncludeProperties<int>), context);
+            Assert.Equal(42, result.GetValue());
+            Assert.Equal("test", result.GetLabel());
+            JsonTestHelper.AssertJsonEqual(Json, JsonSerializer.Serialize(
+                result, typeof(GenericClassWithPrivateJsonIncludeProperties<int>), context));
+        }
+
+        [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        private partial class GenericAccessorContext_Metadata<TContext> : JsonSerializerContext { }
+
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        private partial class GenericAccessorContext_Default<TContext> : JsonSerializerContext { }
+
+        private partial class GenericAccessorContextContainer<TContext>
+        {
+            [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
+            [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+            public partial class NestedGenericAccessorContext_Metadata : JsonSerializerContext { }
+
+            [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+            public partial class NestedGenericAccessorContext_Default : JsonSerializerContext { }
+        }
+
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata)]
         [JsonSerializable(typeof(ClassWithNewSlotField))]
         [JsonSerializable(typeof(int))]
@@ -198,6 +156,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithStructProperty_IgnoreConditionWhenWritingDefault))]
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
+        [JsonSerializable(typeof(Class_WithIgnoredInitOnlyProperty))]
+        [JsonSerializable(typeof(Record_WithIgnoredPropertyInCtor))]
+        [JsonSerializable(typeof(Class_WithIgnoredRequiredProperty))]
+        [JsonSerializable(typeof(RecordWithIgnoredNestedInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty?))]
         [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
@@ -331,21 +293,64 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflict.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictIJoinInterface")]
         [JsonSerializable(typeof(IDiamondInterfaceHierarchyWithNamingConflictUsingAttribute.IJoinInterface), TypeInfoPropertyName = "IDiamondInterfaceHierarchyWithNamingConflictUsingAttributeIJoinInterface")]
         [JsonSerializable(typeof(CollectionWithPrivateElementType))]
-        [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))][JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
+        [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassWithPrivateJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithProtectedJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithMixedAccessibilityJsonIncludeProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateInitOnlyProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateGetterProperties))]
+        [JsonSerializable(typeof(StructWithJsonIncludePrivateProperties))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<string>))]
+        [JsonSerializable(typeof(GenericClassWithReadOnlyJsonIncludeMembers<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(StructWithPrivateConstructorAndMembers))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int>))]
+        [JsonSerializable(typeof(NonGenericAccessorDerived))]
+        [JsonSerializable(typeof(NonGenericAccessorLeaf))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithPublicProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithIgnoredProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int, string>))]
+        [JsonSerializable(typeof(GenericMembersWithKeywordParameter<int>))]
+        [JsonSerializable(typeof(ConstrainedGenericAccessor<int, List<int>>))]
+        [JsonSerializable(typeof(ConstrainedGenericClassWithInitOnlyProperties<ConstraintDerived>))]
+        [JsonSerializable(typeof(ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>))]
+        [JsonSerializable(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [JsonSerializable(typeof(StructWithInitOnlyPropertyDefaults))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
         [JsonSerializable(typeof(ClassUsingIgnoreNeverAttribute))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
         [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(JsonIgnoreCondition_WhenReadingWritingTestModel))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingDefault))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_Always))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_PropertyOverride))]
+        [JsonSerializable(typeof(StructWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(BaseClassWithProperties))]
+        [JsonSerializable(typeof(DerivedClassWithTypeLevelIgnore))]
         [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]
         [JsonSerializable(typeof(Class2))]
         [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
         [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
+#if NET
+        [JsonSerializable(typeof(System.Numerics.Colors.Argb<float>))]
+#endif
         internal sealed partial class PropertyVisibilityTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -361,7 +366,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)
+        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
@@ -370,7 +375,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
-        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson(Type type)
+        public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail_EmptyJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             // Since this code goes down fast-path, there's no warm up and we hit the reader exception about having no tokens.
             await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("", type));
@@ -393,15 +398,15 @@ namespace System.Text.Json.SourceGeneration.Tests
                 PublicField = new(),
             };
 
-            string json = JsonSerializer.Serialize(obj, options);
+            string json = JsonSerializer.Serialize(obj, options.GetTypeInfo<PublicClassWithDifferentAccessibilitiesProperties>());
             Assert.Equal("""{"PublicProperty":{},"PublicField":{}}""", json);
 
-            var deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            var deserialized = JsonSerializer.Deserialize(json, options.GetTypeInfo<PublicClassWithDifferentAccessibilitiesProperties>());
             Assert.NotNull(deserialized.PublicProperty);
             Assert.NotNull(deserialized.PublicField);
 
             json = "{}";
-            deserialized = JsonSerializer.Deserialize<PublicClassWithDifferentAccessibilitiesProperties>(json, options);
+            deserialized = JsonSerializer.Deserialize(json, options.GetTypeInfo<PublicClassWithDifferentAccessibilitiesProperties>());
             Assert.Null(deserialized.PublicProperty);
             Assert.Null(deserialized.PublicField);
         }
@@ -411,8 +416,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
             JsonConverter obj = JsonMetadataServices.BooleanConverter;
 
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, PublicContext.Default.Options));
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<JsonConverter>("{}", PublicContext.Default.Options));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj, PublicContext.Default.Options.GetTypeInfo<JsonConverter>()));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("{}", PublicContext.Default.Options.GetTypeInfo<JsonConverter>()));
         }
 
         [Fact]
@@ -425,9 +430,9 @@ namespace System.Text.Json.SourceGeneration.Tests
                 IncludeFields = true,
             };
 
-            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options);
+            string json = JsonSerializer.Serialize(obj, PublicContext.Default.Options.GetTypeInfo<JsonSerializerOptions>());
 
-            JsonSerializerOptions deserialized = JsonSerializer.Deserialize<JsonSerializerOptions>(json, PublicContext.Default.Options);
+            JsonSerializerOptions deserialized = JsonSerializer.Deserialize(json, PublicContext.Default.Options.GetTypeInfo<JsonSerializerOptions>());
             Assert.Equal(obj.DefaultBufferSize, deserialized.DefaultBufferSize);
             Assert.Equal(obj.DefaultIgnoreCondition, deserialized.DefaultIgnoreCondition);
             Assert.Equal(obj.IncludeFields, deserialized.IncludeFields);
@@ -471,6 +476,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(ClassWithStructProperty_IgnoreConditionWhenWritingDefault))]
         [JsonSerializable(typeof(ClassWithMissingObjectProperty))]
         [JsonSerializable(typeof(ClassWithInitOnlyProperty))]
+        [JsonSerializable(typeof(Class_WithIgnoredInitOnlyProperty))]
+        [JsonSerializable(typeof(Record_WithIgnoredPropertyInCtor))]
+        [JsonSerializable(typeof(Class_WithIgnoredRequiredProperty))]
+        [JsonSerializable(typeof(RecordWithIgnoredNestedInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty))]
         [JsonSerializable(typeof(StructWithInitOnlyProperty?))]
         [JsonSerializable(typeof(ClassWithCustomNamedInitOnlyProperty))]
@@ -607,18 +616,60 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(DictionaryWithPrivateKeyAndValueType))]
         [JsonSerializable(typeof(ClassWithInternalJsonIncludeProperties))]
         [JsonSerializable(typeof(ClassWithIgnoredAndPrivateMembers))]
+        [JsonSerializable(typeof(ClassWithPrivateJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithProtectedJsonIncludeProperties_Roundtrip))]
+        [JsonSerializable(typeof(ClassWithMixedAccessibilityJsonIncludeProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateInitOnlyProperties))]
+        [JsonSerializable(typeof(ClassWithJsonIncludePrivateGetterProperties))]
+        [JsonSerializable(typeof(StructWithJsonIncludePrivateProperties))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeProperties<string>))]
+        [JsonSerializable(typeof(GenericClassWithReadOnlyJsonIncludeMembers<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericClassWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateJsonIncludeFields<string>))]
+        [JsonSerializable(typeof(StructWithPrivateConstructorAndMembers))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<int>))]
+        [JsonSerializable(typeof(GenericStructWithPrivateInitOnlyMembers<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested<string>))]
+        [JsonSerializable(typeof(GenericMemberOuter<int>.Nested))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int>))]
+        [JsonSerializable(typeof(NonGenericAccessorDerived))]
+        [JsonSerializable(typeof(NonGenericAccessorLeaf))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithPublicProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerivedWithIgnoredProperty<int>))]
+        [JsonSerializable(typeof(GenericAccessorDerived<int, string>))]
+        [JsonSerializable(typeof(GenericMembersWithKeywordParameter<int>))]
+        [JsonSerializable(typeof(ConstrainedGenericAccessor<int, List<int>>))]
+        [JsonSerializable(typeof(ConstrainedGenericClassWithInitOnlyProperties<ConstraintDerived>))]
+        [JsonSerializable(typeof(ConstrainedGenericClassWithOptionalInitOnlyProperties<ConstraintDerived>))]
+        [JsonSerializable(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [JsonSerializable(typeof(StructWithInitOnlyPropertyDefaults))]
         [JsonSerializable(typeof(ClassUsingIgnoreWhenWritingDefaultAttribute))]
         [JsonSerializable(typeof(ClassUsingIgnoreNeverAttribute))]
         [JsonSerializable(typeof(ClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(ClassWithProperty_IgnoreConditionAlways_Ctor))]
         [JsonSerializable(typeof(ClassWithClassProperty_IgnoreConditionWhenWritingDefault_Ctor))]
         [JsonSerializable(typeof(StructWithStructProperty_IgnoreConditionWhenWritingDefault_Ctor))]
+        [JsonSerializable(typeof(JsonIgnoreCondition_WhenReadingWritingTestModel))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_WhenWritingDefault))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_Always))]
+        [JsonSerializable(typeof(ClassWithTypeLevelIgnore_PropertyOverride))]
+        [JsonSerializable(typeof(StructWithTypeLevelIgnore_WhenWritingNull))]
+        [JsonSerializable(typeof(BaseClassWithProperties))]
+        [JsonSerializable(typeof(DerivedClassWithTypeLevelIgnore))]
         [JsonSerializable(typeof(SmallStructWithValueAndReferenceTypes))]
         [JsonSerializable(typeof(WrapperForClassWithIgnoredUnsupportedDictionary))]
         [JsonSerializable(typeof(Class1))]
         [JsonSerializable(typeof(Class2))]
         [JsonSerializable(typeof(NamespaceBase.Class1), TypeInfoPropertyName = "Class1FromNamespaceBase")]
         [JsonSerializable(typeof(NamespaceBase.Class2), TypeInfoPropertyName = "Class2FromNamespaceBase")]
+#if NET
+        [JsonSerializable(typeof(System.Numerics.Colors.Argb<float>))]
+#endif
         internal sealed partial class PropertyVisibilityTestsContext_Default : JsonSerializerContext
         {
         }

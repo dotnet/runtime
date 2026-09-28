@@ -60,7 +60,7 @@ public:
      * IsEnabled queries whether or not the given level and keyword are
      * enabled on the given provider, returning true if they are.
      */
-    __forceinline static bool IsEnabled(GCEventProvider provider, GCEventKeyword keyword, GCEventLevel level)
+    FORCEINLINE static bool IsEnabled(GCEventProvider provider, GCEventKeyword keyword, GCEventLevel level)
     {
         assert(level >= GCEventLevel_None && level < GCEventLevel_Max);
 

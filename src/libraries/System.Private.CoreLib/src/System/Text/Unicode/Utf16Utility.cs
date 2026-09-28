@@ -3,7 +3,11 @@
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
+#if NET
 using System.Runtime.Intrinsics;
+#endif
 
 namespace System.Text.Unicode
 {
@@ -277,6 +281,7 @@ namespace System.Text.Unicode
             return (differentBits & indicator) == 0;
         }
 
+#if SYSTEM_PRIVATE_CORELIB
         /// <summary>
         /// Returns true iff the TVector represents ASCII UTF-16 characters in machine endianness.
         /// </summary>
@@ -284,7 +289,26 @@ namespace System.Text.Unicode
         internal static bool AllCharsInVectorAreAscii<TVector>(TVector vec)
             where TVector : struct, ISimdVector<TVector, ushort>
         {
-            return (vec & TVector.Create(unchecked((ushort)~0x007F))).Equals(TVector.Zero);
+            return (vec & TVector.Create(unchecked((ushort)~0x007F))) == TVector.Zero;
         }
+#endif
+
+#if NET
+        /// <summary>
+        /// Returns the char index in <paramref name="utf16Data"/> where the first invalid UTF-16 sequence begins,
+        /// or -1 if the buffer contains no invalid sequences.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe int GetIndexOfFirstInvalidUtf16Sequence(ReadOnlySpan<char> utf16Data)
+        {
+            fixed (char* pValue = &MemoryMarshal.GetReference(utf16Data))
+            {
+                char* pFirstInvalidChar = GetPointerToFirstInvalidChar(pValue, utf16Data.Length, out _, out _);
+                int index = (int)(pFirstInvalidChar - pValue);
+
+                return (index < utf16Data.Length) ? index : -1;
+            }
+        }
+#endif
     }
 }

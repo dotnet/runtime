@@ -36,7 +36,7 @@ internal static class DsesSamplerBuilder
         };
     }
 
-    public static ActivitySamplingResult ParentRatioSampler(long idUpperBound, in ActivityContext parentContext, ActivityTraceId traceId)
+    public static unsafe ActivitySamplingResult ParentRatioSampler(long idUpperBound, in ActivityContext parentContext, ActivityTraceId traceId)
     {
         if (parentContext.TraceId != default)
         {
@@ -65,5 +65,26 @@ internal static class DsesSamplerBuilder
 
             return result;
         }
+    }
+
+    public static DsesSampleActivityFunc CreateParentRateLimitingSampler(int maximumRatePerSecond)
+    {
+        Debug.Assert(maximumRatePerSecond > 0, "maximumRatePerSecond must be greater than 0");
+
+        RateLimiter rateLimiter = new RateLimiter(maximumRatePerSecond);
+
+        return (bool hasActivityContext, ref ActivityCreationOptions<ActivityContext> options) =>
+        {
+            if (hasActivityContext && options.TraceId != default)
+            {
+                ActivityContext parentContext = options.Parent;
+
+                return parentContext == default || parentContext.IsRemote ? // root or remote activity
+                        (rateLimiter.TryAcquire() ? ActivitySamplingResult.AllDataAndRecorded : ActivitySamplingResult.None) :
+                        parentContext.TraceFlags.HasFlag(ActivityTraceFlags.Recorded) ? ActivitySamplingResult.AllDataAndRecorded : ActivitySamplingResult.None;
+            }
+
+            return ActivitySamplingResult.None;
+        };
     }
 }

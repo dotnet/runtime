@@ -13,4 +13,7 @@
     <Compile Include="Program.Sse2.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -30,7 +30,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (!_hashCode.HasValue)
                 {
-                    _hashCode = TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_genericTypeDefinitionHandle.GetHashCode(), _genericTypeArgumentHandles);
+                    _hashCode = VersionResilientHashCode.GenericInstanceHashCode(_genericTypeDefinitionHandle.GetHashCode(), _genericTypeArgumentHandles);
                 }
                 return _hashCode.Value;
             }
@@ -114,7 +114,7 @@ namespace Internal.Runtime.TypeLoader
 
             internal int LookupHashCode()
             {
-                return _typeToLookup != null ? _typeToLookup.GetHashCode() : TypeHashingAlgorithms.ComputeGenericInstanceHashCode(_genericTypeDefinitionHandle.GetHashCode(), _genericTypeArgumentHandles);
+                return _typeToLookup != null ? _typeToLookup.GetHashCode() : VersionResilientHashCode.GenericInstanceHashCode(_genericTypeDefinitionHandle.GetHashCode(), _genericTypeArgumentHandles);
             }
 
             internal bool MatchParsedEntry(RuntimeTypeHandle tentativeType)

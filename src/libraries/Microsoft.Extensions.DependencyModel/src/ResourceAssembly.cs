@@ -8,6 +8,10 @@ namespace Microsoft.Extensions.DependencyModel
     public class ResourceAssembly
     {
         public ResourceAssembly(string path, string locale)
+            : this(path, locale, null)
+        { }
+
+        public ResourceAssembly(string path, string locale, string? localPath)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -19,11 +23,16 @@ namespace Microsoft.Extensions.DependencyModel
             }
             Locale = locale;
             Path = path;
+            LocalPath = localPath;
         }
 
         public string Locale { get; set; }
 
+        // Depending on the source of the resource assembly, this path may be relative to the
+        // a referenced NuGet package's root or to the app/component root.
         public string Path { get; set; }
 
+        // Path relative to the app/component represented by the dependency context
+        public string? LocalPath { get; }
     }
 }

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Text;
@@ -333,7 +334,7 @@ namespace System.Xml
         private sealed class NodeData : IComparable
         {
             // static instance with no data - is used when XmlTextReader is closed
-            private static volatile NodeData? s_None;
+            private static NodeData? s_None;
 
             // NOTE: Do not use this property for reference comparison. It may not be unique.
             internal static NodeData None =>
@@ -703,6 +704,30 @@ namespace System.Xml
                     Debug.Fail("We should never get to this point.");
                     // 'other' is null, 'this' is not null. Always return 1, like "".CompareTo(null).
                     return 1;
+                }
+            }
+
+            internal sealed class AtomizedNameEqualityComparer : IEqualityComparer<NodeData>
+            {
+                internal static readonly AtomizedNameEqualityComparer Instance = new AtomizedNameEqualityComparer();
+
+                public bool Equals(NodeData? x, NodeData? y)
+                {
+                    if (x is null)
+                    {
+                        return y is null;
+                    }
+
+                    return y is not null
+                        && Ref.Equal(x.localName, y.localName)
+                        && Ref.Equal(x.ns, y.ns);
+                }
+
+                public int GetHashCode(NodeData node)
+                {
+                    return HashCode.Combine(
+                        RuntimeHelpers.GetHashCode(node.localName),
+                        RuntimeHelpers.GetHashCode(node.ns));
                 }
             }
         }

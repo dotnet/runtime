@@ -145,7 +145,7 @@ namespace System
 
                 // Casting the above object to T is technically invalid because
                 // T can be ByRefLike (that is, ref struct). Roslyn blocks the
-                // cast this in function with a "CS0030: Cannot convert type 'object' to 'T'",
+                // cast in this function with a "CS0030: Cannot convert type 'object' to 'T'",
                 // which is correct. However, since we are doing the IsValueType
                 // check above, we know this code path will only be taken with
                 // reference types and therefore the below Unsafe.As<> is safe.

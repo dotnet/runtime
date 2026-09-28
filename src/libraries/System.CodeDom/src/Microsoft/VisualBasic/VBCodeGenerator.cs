@@ -577,9 +577,6 @@ namespace Microsoft.VisualBasic
                 case MemberAttributes.Override:
                     Output.Write("Overrides ");
                     break;
-                case MemberAttributes.Private:
-                    Output.Write("Private ");
-                    break;
                 default:
                     switch (attributes & MemberAttributes.AccessMask)
                     {
@@ -865,11 +862,7 @@ namespace Microsoft.VisualBasic
                 string typeName = GetTypeOutput(e.CreateType);
                 Output.Write(typeName);
 
-#if NET
                 if (!typeName.Contains('('))
-#else
-                if (typeName.IndexOf('(') == -1)
-#endif
                 {
                     Output.Write("()");
                 }

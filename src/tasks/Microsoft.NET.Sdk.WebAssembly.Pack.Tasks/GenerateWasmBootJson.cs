@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -43,14 +44,9 @@ public class GenerateWasmBootJson : Task
     public string DebugLevel { get; set; }
 
     [Required]
-    public bool LinkerEnabled { get; set; }
-
-    [Required]
     public bool CacheBootResources { get; set; }
 
     public bool LoadFullICUData { get; set; }
-
-    public bool IsHybridGlobalization { get; set; }
 
     public bool LoadCustomIcuData { get; set; }
 
@@ -58,9 +54,15 @@ public class GenerateWasmBootJson : Task
 
     public ITaskItem[] ConfigurationFiles { get; set; }
 
+    public ITaskItem[] EnvVariables { get; set; }
+
     public ITaskItem[] Extensions { get; set; }
 
-    public string StartupMemoryCache { get; set; }
+    public string[]? Profilers { get; set; }
+
+    public string? RuntimeConfigJsonPath { get; set; }
+
+    public string? RuntimeConfigDevJsonPath { get; set; }
 
     public string Jiterpreter { get; set; }
 
@@ -84,16 +86,31 @@ public class GenerateWasmBootJson : Task
 
     public bool IsMultiThreaded { get; set; }
 
+    public string? UseMonoRuntime { get; set; }
+
     public bool FingerprintAssets { get; set; }
+
+    public string ApplicationEnvironment { get; set; }
+
+    public string MergeWith { get; set; }
+
+    public bool BundlerFriendly { get; set; }
+
+    public bool ExitOnUnhandledError { get; set; }
+
+    public bool AppendElementOnExit { get; set; }
+
+    public bool LogExitCode { get; set; }
+
+    public bool AsyncFlushOnExit { get; set; }
 
     public override bool Execute()
     {
-        using var fileStream = File.Create(OutputPath);
         var entryAssemblyName = AssemblyName.GetAssemblyName(AssemblyPath).Name;
 
         try
         {
-            WriteBootJson(fileStream, entryAssemblyName);
+            WriteBootConfig(entryAssemblyName);
         }
         catch (Exception ex)
         {
@@ -103,32 +120,49 @@ public class GenerateWasmBootJson : Task
         return !Log.HasLoggedErrors;
     }
 
-    // Internal for tests
-    public void WriteBootJson(Stream output, string entryAssemblyName)
+    private void WriteBootConfig(string entryAssemblyName)
     {
-        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish);
+        bool isMonoRuntime = string.IsNullOrEmpty(UseMonoRuntime) || string.Equals(UseMonoRuntime, "true", StringComparison.OrdinalIgnoreCase);
+        var helper = new BootJsonBuilderHelper(Log, DebugLevel, IsMultiThreaded, IsPublish, ParsedTargetFrameworkVersion, isMonoRuntime);
+
+        // ReadyToRun webcil-in-wasm images carry payload/table sizes that the loader needs before
+        // instantiation. Record them (keyed by fingerprinted route) so they can be emitted into the
+        // boot config, letting the loader stream-instantiate instead of buffering and parsing. The
+        // AttachWebcilSizes task attaches these as PayloadSize/TableSize metadata on the resources.
+        var webcilSizes = new Dictionary<string, (int tableSize, int payloadSize)>();
 
         var result = new BootJsonData
         {
             resources = new ResourcesData(),
-            startupMemoryCache = helper.ParseOptionalBool(StartupMemoryCache),
         };
+
+        if (IsTargeting100OrLater())
+        {
+            result.applicationEnvironment = ApplicationEnvironment;
+        }
+
+        if (IsTargeting110OrLater())
+        {
+            if (ExitOnUnhandledError) result.exitOnUnhandledError = true;
+            if (AppendElementOnExit) result.appendElementOnExit = true;
+            if (LogExitCode) result.logExitCode = true;
+            if (AsyncFlushOnExit) result.asyncFlushOnExit = true;
+        }
 
         if (IsTargeting80OrLater())
         {
             result.mainAssemblyName = entryAssemblyName;
             result.globalizationMode = GetGlobalizationMode().ToString().ToLowerInvariant();
 
-            if (CacheBootResources)
-                result.cacheBootResources = CacheBootResources;
-
-            if (LinkerEnabled)
-                result.linkerEnabled = LinkerEnabled;
+            if (!IsTargeting100OrLater())
+            {
+                if (CacheBootResources)
+                    result.cacheBootResources = CacheBootResources;
+            }
         }
         else
         {
             result.cacheBootResources = CacheBootResources;
-            result.linkerEnabled = LinkerEnabled;
             result.config = new();
             result.debugBuild = DebugBuild;
             result.entryAssembly = entryAssemblyName;
@@ -172,6 +206,7 @@ public class GenerateWasmBootJson : Task
         // - runtime:
         //   - UriPath (e.g., "dotnet.js")
         //     - ContentHash (e.g., "3448f339acf512448")
+        ResourcesData resourceData = (ResourcesData)result.resources;
         if (Resources != null)
         {
             var endpointByAsset = Endpoints.ToDictionary(e => e.GetMetadata("AssetFile"));
@@ -186,7 +221,6 @@ public class GenerateWasmBootJson : Task
             });
 
             var remainingLazyLoadAssemblies = new List<ITaskItem>(LazyLoadedAssemblies ?? Array.Empty<ITaskItem>());
-            var resourceData = result.resources;
 
             if (FingerprintAssets)
                 resourceData.fingerprinting = new();
@@ -201,7 +235,14 @@ public class GenerateWasmBootJson : Task
                 var assetTraitName = resource.GetMetadata("AssetTraitName");
                 var assetTraitValue = resource.GetMetadata("AssetTraitValue");
                 var resourceName = Path.GetFileName(resource.GetMetadata("OriginalItemSpec"));
-                var resourceRoute = Path.GetFileName(endpointByAsset[resource.ItemSpec].ItemSpec);
+                var resourceEndpoint = endpointByAsset[resource.ItemSpec].ItemSpec;
+                var resourceRoute = Path.GetFileName(resourceEndpoint);
+
+                // Store key for the webcil payload/table sizes: satellites share a file name across
+                // cultures, so qualify by culture to avoid collisions. It matches how
+                // BootJsonBuilderHelper resolves webcilSizes per (culture subfolder, route).
+                string webcilCulture = string.Equals("Culture", assetTraitName, StringComparison.OrdinalIgnoreCase) ? assetTraitValue : null;
+                string r2rSizeStoreKey = webcilCulture != null ? webcilCulture + "/" + resourceRoute : resourceRoute;
 
                 if (TryGetLazyLoadedAssembly(lazyLoadAssembliesWithoutExtension, resourceName, out var lazyLoad))
                 {
@@ -319,7 +360,7 @@ public class GenerateWasmBootJson : Task
                             resourceList = resourceData.modulesAfterConfigLoaded ??= new();
                         }
 
-                        string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                        string newTargetPath = "../" + targetPath;
                         AddResourceToList(resource, resourceList, newTargetPath);
                     }
 
@@ -341,6 +382,16 @@ public class GenerateWasmBootJson : Task
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
+                else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) && assetTraitValue.StartsWith("vfs:", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as VFS resource '{1}'.", resource.ItemSpec, assetTraitValue);
+
+                    var targetPath = assetTraitValue.Substring("vfs:".Length).Replace("\\", "/");
+
+                    resourceData.vfs ??= [];
+                    resourceData.vfs[targetPath] = [];
+                    AddResourceToList(resource, resourceData.vfs[targetPath], resourceEndpoint.Replace("\\", "/"));
+                }
                 else
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping resource '{0}' since it doesn't belong to a defined category.", resource.ItemSpec);
@@ -351,6 +402,29 @@ public class GenerateWasmBootJson : Task
                 if (resourceList != null)
                 {
                     AddResourceToList(resource, resourceList, resourceRoute);
+
+                    // Webcil-in-wasm assemblies (startup, lazy, satellite) carry payload/table sizes
+                    // so the runtime loader can instantiate without parsing the wasm. payloadSize is
+                    // emitted for every webcil; tableSize only for R2R. Identify them by the produced
+                    // ".wasm" extension, excluding native wasm (dotnet.native.wasm) which is handled
+                    // separately and is not a webcil module. The AttachWebcilSizes task has already
+                    // read the sizes off disk and attached them as PayloadSize/TableSize metadata.
+                    bool isWebcilInWasmAssembly = IsTargeting110OrLater()
+                        && string.Equals(fileExtension, ".wasm", StringComparison.OrdinalIgnoreCase)
+                        && !(string.Equals(assetTraitName, "WasmResource", StringComparison.OrdinalIgnoreCase)
+                             && string.Equals(assetTraitValue, "native", StringComparison.OrdinalIgnoreCase));
+
+                    if (isWebcilInWasmAssembly)
+                    {
+                        if (!int.TryParse(resource.GetMetadata("PayloadSize"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int ps) || ps <= 0)
+                        {
+                            Log.LogError($"Webcil asset '{resourceName}' is missing the PayloadSize metadata produced by AttachWebcilSizes; the runtime loader requires payloadSize for every webcil-in-wasm assembly.");
+                            continue;
+                        }
+
+                        int.TryParse(resource.GetMetadata("TableSize"), NumberStyles.Integer, CultureInfo.InvariantCulture, out int ts);
+                        webcilSizes[r2rSizeStoreKey] = (ts, ps);
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(behavior))
@@ -375,7 +449,7 @@ public class GenerateWasmBootJson : Task
                     endLineNumber: 0,
                     endColumnNumber: 0,
                     message: message,
-                    string.Join(";", LazyLoadedAssemblies.Select(a => a.ItemSpec)));
+                    string.Join(";", remainingLazyLoadAssemblies.Select(a => a.ItemSpec)));
 
                 return;
             }
@@ -383,7 +457,7 @@ public class GenerateWasmBootJson : Task
 
         if (IsTargeting80OrLater())
         {
-            result.debugLevel = helper.GetDebugLevel(result.resources?.pdb?.Count > 0);
+            result.debugLevel = helper.GetDebugLevel(resourceData.pdb?.Count > 0);
         }
 
         if (ConfigurationFiles != null)
@@ -395,7 +469,7 @@ public class GenerateWasmBootJson : Task
                 {
                     result.appsettings ??= new();
 
-                    configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                    configUrl = "../" + configUrl;
                     result.appsettings.Add(configUrl);
                 }
                 else
@@ -405,12 +479,15 @@ public class GenerateWasmBootJson : Task
             }
         }
 
-        var jsonOptions = new JsonSerializerOptions()
+        if (EnvVariables != null && EnvVariables.Length > 0)
         {
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-            WriteIndented = true
-        };
+            result.environmentVariables = new Dictionary<string, string>();
+            foreach (var env in EnvVariables)
+            {
+                string name = env.ItemSpec;
+                result.environmentVariables[name] = env.GetMetadata("Value");
+            }
+        }
 
         if (Extensions != null && Extensions.Length > 0)
         {
@@ -419,13 +496,28 @@ public class GenerateWasmBootJson : Task
             {
                 var key = configExtension.GetMetadata("key");
                 using var fs = File.OpenRead(configExtension.ItemSpec);
-                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, jsonOptions);
+                var config = JsonSerializer.Deserialize<Dictionary<string, object>>(fs, BootJsonBuilderHelper.JsonOptions);
                 result.extensions[key] = config;
             }
         }
 
+        result.runtimeConfig = ReadRuntimeConfigFiles(RuntimeConfigJsonPath, IsPublish ? null : RuntimeConfigDevJsonPath);
+
+        Profilers ??= Array.Empty<string>();
+        var browserProfiler = Profilers.FirstOrDefault(p => p.StartsWith("browser:"));
+        if (browserProfiler != null)
+        {
+            result.environmentVariables ??= new();
+            result.environmentVariables["DOTNET_WasmPerformanceInstrumentation"] = browserProfiler.Substring("browser:".Length);
+        }
+
         helper.ComputeResourcesHash(result);
-        JsonSerializer.Serialize(output, result, jsonOptions);
+
+        string? imports = null;
+        if (IsTargeting100OrLater())
+            imports = helper.TransformResourcesToAssets(result, BundlerFriendly, webcilSizes);
+
+        helper.WriteConfigToFile(result, OutputPath, mergeWith: MergeWith, imports: imports);
 
         void AddResourceToList(ITaskItem resource, ResourceHashesByNameDictionary resourceList, string resourceKey)
         {
@@ -449,8 +541,6 @@ public class GenerateWasmBootJson : Task
     {
         if (string.Equals(InvariantGlobalization, "true", StringComparison.OrdinalIgnoreCase))
             return GlobalizationMode.Invariant;
-        else if (IsHybridGlobalization)
-            return GlobalizationMode.Hybrid;
         else if (LoadFullICUData)
             return GlobalizationMode.All;
         else if (LoadCustomIcuData)
@@ -481,27 +571,67 @@ public class GenerateWasmBootJson : Task
         return lazyLoadAssembliesNoExtension.TryGetValue(fileName, out lazyLoadedAssembly);
     }
 
-    private Version? parsedTargetFrameworkVersion;
     private static readonly Version version80 = new Version(8, 0);
     private static readonly Version version90 = new Version(9, 0);
+    private static readonly Version version100 = new Version(10, 0);
+    private static readonly Version version110 = new Version(11, 0);
 
-    private bool IsTargeting80OrLater()
-        => IsTargetingVersionOrLater(version80);
-
-    private bool IsTargeting90OrLater()
-        => IsTargetingVersionOrLater(version90);
-
-    private bool IsTargetingVersionOrLater(Version version)
+    private Version? parsedTargetFrameworkVersion;
+    private Version ParsedTargetFrameworkVersion
     {
-        if (parsedTargetFrameworkVersion == null)
+        get
         {
-            string tfv = TargetFrameworkVersion;
-            if (tfv.StartsWith("v"))
-                tfv = tfv.Substring(1);
+            if (parsedTargetFrameworkVersion == null)
+            {
+                string tfv = TargetFrameworkVersion;
+#if NET
+                if (tfv.StartsWith('v'))
+#else
+                if (tfv.StartsWith("v", StringComparison.Ordinal))
+#endif
+                    tfv = tfv.Substring(1);
 
-            parsedTargetFrameworkVersion = Version.Parse(tfv);
+                parsedTargetFrameworkVersion = Version.Parse(tfv);
+            }
+
+            return parsedTargetFrameworkVersion;
+        }
+    }
+
+    private bool IsTargeting80OrLater() => ParsedTargetFrameworkVersion >= version80;
+    private bool IsTargeting90OrLater() => ParsedTargetFrameworkVersion >= version90;
+    private bool IsTargeting100OrLater() => ParsedTargetFrameworkVersion >= version100;
+    private bool IsTargeting110OrLater() => ParsedTargetFrameworkVersion >= version110;
+
+    /// <summary>
+    /// Reads the main runtimeconfig.json and merges <c>configProperties</c> from the companion
+    /// runtimeconfig.dev.json (when it exists) into the result. Dev config values take precedence.
+    /// </summary>
+    internal static RuntimeConfigData? ReadRuntimeConfigFiles(string? mainConfigPath, string? devConfigPath)
+    {
+        if (!File.Exists(mainConfigPath))
+            return null;
+
+        using var fs = File.OpenRead(mainConfigPath);
+        var runtimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(fs, BootJsonBuilderHelper.JsonOptions);
+
+        if (File.Exists(devConfigPath))
+        {
+            // Merge overrides from runtimeconfig.dev.json (e.g. Hot Reload switches set by the SDK in debug builds).
+            using var devFs = File.OpenRead(devConfigPath);
+            var devRuntimeConfig = JsonSerializer.Deserialize<RuntimeConfigData>(devFs, BootJsonBuilderHelper.JsonOptions);
+            if (devRuntimeConfig?.runtimeOptions?.configProperties is { } devProps && devProps.Count > 0)
+            {
+                runtimeConfig ??= new RuntimeConfigData();
+                runtimeConfig.runtimeOptions ??= new RuntimeOptionsData();
+                runtimeConfig.runtimeOptions.configProperties ??= new Dictionary<string, object>();
+                foreach (var kvp in devProps)
+                {
+                    runtimeConfig.runtimeOptions.configProperties[kvp.Key] = kvp.Value;
+                }
+            }
         }
 
-        return parsedTargetFrameworkVersion >= version;
+        return runtimeConfig;
     }
 }

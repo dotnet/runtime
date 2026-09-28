@@ -6,9 +6,11 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using Xunit;
+using TestLibrary;
 
 public class Test 
 {
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Wrapping non-exception throws", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static int TestEntryPoint()
     {

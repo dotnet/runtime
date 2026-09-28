@@ -10,12 +10,12 @@ namespace System.ComponentModel.Tests
     {
         public static bool IDesignerHostIsSupported => AppContext.TryGetSwitch("System.ComponentModel.Design.IDesignerHost.IsSupported", out bool isSupported) ? isSupported : true;
 
-        [ConditionalTheory(nameof(IDesignerHostIsSupported))]
+        [ConditionalTheory(typeof(AmbientValueAttributeTests), nameof(IDesignerHostIsSupported))]
         [InlineData(null, null, null)]
         [InlineData(typeof(int*), "1", null)]
         [InlineData(typeof(string), "1", "1")]
         [InlineData(typeof(int), "1", 1)]
-        public void Ctor_Type_Value(Type type, string value, object expectedValue)
+        public void Ctor_Type_Value(Type? type, string? value, object? expectedValue)
         {
             var attribute = new AmbientValueAttribute(type, value);
             Assert.Equal(expectedValue, attribute.Value);
@@ -88,7 +88,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Value")]
-        public void Ctor_String(string value)
+        public void Ctor_String(string? value)
         {
             var args = new AmbientValueAttribute(value);
             Assert.Same(value, args.Value);
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Tests
         [Theory]
         [InlineData(null)]
         [InlineData("Value")]
-        public void Ctor_Object(object value)
+        public void Ctor_Object(object? value)
         {
             var args = new AmbientValueAttribute(value);
             Assert.Same(value, args.Value);

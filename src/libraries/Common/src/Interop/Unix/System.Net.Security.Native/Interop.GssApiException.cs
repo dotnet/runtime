@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -69,7 +70,7 @@ internal static partial class Interop
                 return errorMessage;
             }
 
-            private static string? GetGssApiDisplayStatus(Status status, bool isMinor)
+            private static unsafe string? GetGssApiDisplayStatus(Status status, bool isMinor)
             {
                 if (!System.Net.NegotiateAuthenticationPal.HasSystemNetSecurityNative)
                 {
@@ -85,7 +86,7 @@ internal static partial class Interop
                     Interop.NetSecurityNative.Status displayCallStatus = isMinor ?
                         DisplayMinorStatus(out minStat, status, ref displayBuffer) :
                         DisplayMajorStatus(out minStat, status, ref displayBuffer);
-                    return (Status.GSS_S_COMPLETE != displayCallStatus) ? null : Marshal.PtrToStringUTF8(displayBuffer._data);
+                    return (Status.GSS_S_COMPLETE != displayCallStatus) ? null : Utf8StringMarshaller.ConvertToManaged(displayBuffer._data);
                 }
                 finally
                 {

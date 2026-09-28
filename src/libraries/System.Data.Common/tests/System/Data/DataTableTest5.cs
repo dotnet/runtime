@@ -472,7 +472,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row["DepartmentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest1()
         {
             //Make a table without any relations
@@ -490,7 +490,7 @@ namespace System.Data.Tests
             VerifyTableSchema(table, _parentTable1.TableName, null);//parentTable1.DataSet);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest2()
         {
             MakeParentTable1();
@@ -509,7 +509,7 @@ namespace System.Data.Tests
             VerifyTableSchema(table, _parentTable1.TableName, ds);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest3()
         {
             //Create a parent table and create child tables
@@ -529,7 +529,7 @@ namespace System.Data.Tests
             VerifyTableSchema(table, _parentTable1.TableName, null);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest4()
         {
             //Create a parent table and create child tables
@@ -653,7 +653,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row["ParentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest5()
         {
             MakeParentTable1();
@@ -691,7 +691,7 @@ namespace System.Data.Tests
             Assert.Equal("3", row[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest6()
         {
             MakeParentTable1();
@@ -723,7 +723,7 @@ namespace System.Data.Tests
             Assert.NotNull(table.DataSet);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest7()
         {
             MakeParentTable1();
@@ -784,7 +784,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row["DepartmentID"]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest8()
         {
             MakeParentTable1();
@@ -826,7 +826,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row[1]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest9()
         {
             MakeParentTable1();
@@ -864,7 +864,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row[0]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest10()
         {
             MakeParentTable1();
@@ -906,7 +906,7 @@ namespace System.Data.Tests
             Assert.Equal("3", row[1]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest11()
         {
             MakeDummyTable();
@@ -945,7 +945,7 @@ namespace System.Data.Tests
             Assert.Equal(DataRowState.Unchanged, row.RowState);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest14()
         {
             MakeParentTable1();
@@ -991,7 +991,7 @@ namespace System.Data.Tests
             Assert.Equal(3, row[2]);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest15()
         {
             MakeDummyTable();
@@ -1030,7 +1030,7 @@ namespace System.Data.Tests
             Assert.Equal(DataRowState.Unchanged, row.RowState);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.DataSetXmlSerializationIsSupported))]
         public void XmlTest16()
         {
             DataSet ds = new DataSet();

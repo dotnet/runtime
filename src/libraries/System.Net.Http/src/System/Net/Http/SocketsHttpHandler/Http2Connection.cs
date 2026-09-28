@@ -9,6 +9,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -74,10 +75,11 @@ namespace System.Net.Http
 
         private Http2ProtocolErrorCode? _goAwayErrorCode;
 
-        private const int MaxStreamId = int.MaxValue;
+        // Cap number of untransmitted PING and SETTING ACKs and PING requests
+        private const int MaxQueuedFireAndForgetFrames = 1000;
+        private int _queuedFireAndForgetFrames;
 
-        // Temporary workaround for request burst handling on connection start.
-        private const int InitialMaxConcurrentStreams = 100;
+        private const int MaxStreamId = int.MaxValue;
 
         private static ReadOnlySpan<byte> Http2ConnectionPreface => "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"u8;
 
@@ -129,9 +131,11 @@ namespace System.Net.Http
         private long _nextPingRequestTimestamp;
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
+        /// <summary>Set once <see cref="SetupAsync"/> completes. Until then, no keep alive PINGs are sent.</summary>
+        private bool _setupComplete;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint)
-            : base(pool, connectionSetupActivity, remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Activity? connectionSetupActivity, IPEndPoint? remoteEndPoint, long connectionId)
+            : base(pool, connectionId, connectionSetupActivity, remoteEndPoint)
         {
             _stream = stream;
 
@@ -151,7 +155,7 @@ namespace System.Net.Http
             _nextStream = 1;
             _initialServerStreamWindowSize = DefaultInitialWindowSize;
 
-            _maxConcurrentStreams = InitialMaxConcurrentStreams;
+            _maxConcurrentStreams = pool._lastSeenHttp2MaxConcurrentStreams;
             _streamsInUse = 0;
 
             _pendingWindowUpdate = 0;
@@ -170,6 +174,10 @@ namespace System.Net.Http
             }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
+
+            // Register with the pool before doing anything that may tear the connection down,
+            // so that the pool can run keep alive ping logic for the whole lifetime of the connection.
+            pool.AddHttp2ConnectionForHeartBeat(this);
 
             static long TimeSpanToMs(TimeSpan value)
             {
@@ -193,9 +201,11 @@ namespace System.Net.Http
         {
             try
             {
-                _outgoingBuffer.EnsureAvailableSpace(Http2ConnectionPreface.Length +
-                    FrameHeader.Size + FrameHeader.SettingLength +
-                    FrameHeader.Size + FrameHeader.WindowUpdateLength);
+                int requiredSpace = Http2ConnectionPreface.Length +
+                    FrameHeader.Size + (2 * FrameHeader.SettingLength) +
+                    FrameHeader.Size + FrameHeader.WindowUpdateLength;
+
+                _outgoingBuffer.EnsureAvailableSpace(requiredSpace);
 
                 // Send connection preface
                 Http2ConnectionPreface.CopyTo(_outgoingBuffer.AvailableSpan);
@@ -223,9 +233,16 @@ namespace System.Net.Http
                 BinaryPrimitives.WriteUInt32BigEndian(_outgoingBuffer.AvailableSpan, windowUpdateAmount);
                 _outgoingBuffer.Commit(4);
 
+                Debug.Assert(requiredSpace == _outgoingBuffer.ActiveLength);
+
                 // Processing the incoming frames before sending the client preface and SETTINGS is necessary when using a NamedPipe as a transport.
                 // If the preface and SETTINGS coming from the server are not read first the below WriteAsync and the ProcessIncomingFramesAsync fall into a deadlock.
-                _ = ProcessIncomingFramesAsync();
+                // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+                using (ExecutionContext.SuppressFlow())
+                {
+                    _ = ProcessIncomingFramesAsync();
+                }
+
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory, cancellationToken).ConfigureAwait(false);
                 _rttEstimator.OnInitialSettingsSent();
                 _outgoingBuffer.ClearAndReturnBuffer();
@@ -245,11 +262,20 @@ namespace System.Net.Http
                     throw;
                 }
 
-                // TODO: Review this case!
-                throw new IOException(SR.net_http_http2_connection_not_established, e);
+                // Use _abortException if available, as it contains the real reason for the connection failure.
+                // For example, when ProcessIncomingFramesAsync detects a server-initiated disconnect and calls Abort(),
+                // _abortException will have the original IOException, while 'e' here may be an uninformative ObjectDisposedException.
+                throw new IOException(SR.net_http_http2_connection_not_established, _abortException ?? e);
             }
 
-            _ = ProcessOutgoingFramesAsync();
+            // Avoid capturing the initial request's ExecutionContext for the entire lifetime of the new connection.
+            using (ExecutionContext.SuppressFlow())
+            {
+                _ = ProcessOutgoingFramesAsync();
+            }
+
+            // The connection is now able to write frames, so it may start sending keep alive PINGs.
+            _setupComplete = true;
         }
 
         private void Shutdown()
@@ -383,7 +409,7 @@ namespace System.Net.Http
                 }
 
                 _lastPendingWriterShouldFlush = false;
-                _outgoingBuffer.Discard(_outgoingBuffer.ActiveLength);
+                _outgoingBuffer.DiscardAll();
             }
         }
 
@@ -841,6 +867,14 @@ namespace System.Net.Http
                     switch ((SettingId)settingId)
                     {
                         case SettingId.MaxConcurrentStreams:
+                            // Only memorize the value for future connections if it's lower than what we're
+                            // configured to start with. SocketsHttpHandler.InitialHttp2MaxConcurrentStreams
+                            // acts as the upper bound for what every new connection starts with.
+                            if (settingValue < _pool.Settings._initialHttp2MaxConcurrentStreams)
+                            {
+                                _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
+                            }
+
                             ChangeMaxConcurrentStreams(settingValue);
                             maxConcurrentStreamsReceived = true;
                             break;
@@ -909,7 +943,7 @@ namespace System.Net.Http
 
                 // Send acknowledgement
                 // Don't wait for completion, which could happen asynchronously.
-                LogExceptions(SendSettingsAckAsync());
+                QueueSettingsAck();
             }
         }
 
@@ -990,7 +1024,7 @@ namespace System.Net.Http
             }
             else
             {
-                LogExceptions(SendPingAsync(pingContentLong, isAck: true));
+                QueuePing(pingContentLong, isAck: true);
             }
             _incomingBuffer.Discard(frameHeader.PayloadLength);
         }
@@ -1184,7 +1218,7 @@ namespace System.Net.Http
                 // As such, it should not matter that we were not able to actually send the frame.
                 // But just in case, throw ObjectDisposedException. Asynchronous callers will ignore the failure.
                 Debug.Assert(_shutdown && _streamsInUse == 0);
-                return Task.FromException(new ObjectDisposedException(nameof(Http2Connection)));
+                return Task.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2Connection))));
             }
 
             return writeEntry.Task;
@@ -1271,20 +1305,35 @@ namespace System.Net.Http
             }
         }
 
-        private Task SendSettingsAckAsync() =>
-            PerformWriteAsync(FrameHeader.Size, this, static (thisRef, writeBuffer) =>
+        private void QueueSettingsAck()
+        {
+            if (!TryIncrementQueuedFireAndForgetFrames())
+            {
+                return;
+            }
+
+            LogExceptions(PerformWriteAsync(FrameHeader.Size, this, static (thisRef, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) thisRef.Trace("Started writing.");
 
                 FrameHeader.WriteTo(writeBuffer.Span, 0, FrameType.Settings, FrameFlags.Ack, streamId: 0);
 
+                thisRef.DecrementQueuedFireAndForgetFrames();
+
                 return true;
-            });
+            }));
+        }
 
         /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
         /// <param name="isAck">Determine whether the frame is ping or ping ack.</param>
-        private Task SendPingAsync(long pingContent, bool isAck = false) =>
-            PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
+        private void QueuePing(long pingContent, bool isAck = false)
+        {
+            if (!TryIncrementQueuedFireAndForgetFrames())
+            {
+                return;
+            }
+
+            LogExceptions(PerformWriteAsync(FrameHeader.Size + FrameHeader.PingLength, (thisRef: this, pingContent, isAck), static (state, writeBuffer) =>
             {
                 if (NetEventSource.Log.IsEnabled()) state.thisRef.Trace($"Started writing. {nameof(pingContent)}={state.pingContent}");
 
@@ -1294,8 +1343,11 @@ namespace System.Net.Http
                 FrameHeader.WriteTo(span, FrameHeader.PingLength, FrameType.Ping, state.isAck ? FrameFlags.Ack : FrameFlags.None, streamId: 0);
                 BinaryPrimitives.WriteInt64BigEndian(span.Slice(FrameHeader.Size), state.pingContent);
 
+                state.thisRef.DecrementQueuedFireAndForgetFrames();
+
                 return true;
-            });
+            }));
+        }
 
         private Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode) =>
             PerformWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength, (thisRef: this, streamId, errorCode), static (s, writeBuffer) =>
@@ -1314,8 +1366,27 @@ namespace System.Net.Http
         {
             Debug.Assert(!_pool.HasSyncObjLock);
 
-            if (_shutdown)
+            if (!_setupComplete)
+            {
+                // The connection is still being established. It can't send PINGs yet, and a server that
+                // never completes the handshake is the connect timeout's responsibility, not ours.
                 return;
+            }
+
+            if (_shutdown)
+            {
+                // The connection is shutting down (e.g. we received a GOAWAY frame), but it may still be
+                // processing existing requests. Keep sending PINGs while it does, as that's the only way
+                // to detect that the server became unresponsive. Once the last stream completes, the
+                // connection is torn down and unregistered from the pool, so we'll stop being called.
+                lock (SyncObject)
+                {
+                    if (_streamsInUse == 0)
+                    {
+                        return;
+                    }
+                }
+            }
 
             try
             {
@@ -1362,7 +1433,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeader(string name, ReadOnlySpan<string> values, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(name)}={name}, {nameof(values)}={string.Join(", ", values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparatorBytes, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1375,7 +1446,7 @@ namespace System.Net.Http
 
         private void WriteLiteralHeaderValues(ReadOnlySpan<string> values, byte[]? separator, Encoding? valueEncoding, ref ArrayBuffer headerBuffer)
         {
-            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values.ToArray())}");
+            if (NetEventSource.Log.IsEnabled()) Trace($"{nameof(values)}={string.Join(Encoding.ASCII.GetString(separator ?? []), values)}");
 
             int bytesWritten;
             while (!HPackEncoder.EncodeStringLiterals(values, separator, valueEncoding, headerBuffer.AvailableSpan, out bytesWritten))
@@ -1798,6 +1869,28 @@ namespace System.Net.Http
             return true;
         }
 
+        private bool TryIncrementQueuedFireAndForgetFrames()
+        {
+            if (Interlocked.Increment(ref _queuedFireAndForgetFrames) > MaxQueuedFireAndForgetFrames)
+            {
+                if (NetEventSource.Log.IsEnabled()) this.Trace("Number of untransmitted PING and SETTING frames exceeded limit.");
+
+                // Close connection when there is too much outstanding frames
+                var ex = new HttpIOException(HttpRequestError.Unknown, SR.net_http_http2_frame_limit_exceeded);
+                Abort(ex);
+
+                return false;
+            }
+
+            return true;
+        }
+
+        private void DecrementQueuedFireAndForgetFrames()
+        {
+            int pending = Interlocked.Decrement(ref _queuedFireAndForgetFrames);
+            Debug.Assert(pending >= 0);
+        }
+
         /// <summary>Abort all streams and cause further processing to fail.</summary>
         /// <param name="abortException">Exception causing Abort to be called.</param>
         private void Abort(Exception abortException)
@@ -1851,6 +1944,8 @@ namespace System.Net.Http
             // We're not disposing the _incomingBuffer and _outgoingBuffer here as they may still be in use by
             // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
             // responsible for returning the buffers.
+
+            _pool.RemoveHttp2ConnectionFromHeartBeat(this);
 
             MarkConnectionAsClosed();
         }
@@ -1982,6 +2077,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             Debug.Assert(async);
             Debug.Assert(!_pool.HasSyncObjLock);
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -2015,7 +2112,7 @@ namespace System.Net.Http
                 // our built-in content types do), then we can just proceed to wait for the request body content to
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
-                    duplex == false ||
+                    !duplex ||
                     await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) == requestBodyTask ||
                     requestBodyTask.IsCompleted ||
                     http2Stream.SendRequestFinished)
@@ -2047,7 +2144,35 @@ namespace System.Net.Http
                 // Wait for the response headers to complete if they haven't already, propagating any exceptions.
                 await responseHeadersTask.ConfigureAwait(false);
 
-                return http2Stream.GetAndClearResponse();
+                HttpResponseMessage response = http2Stream.GetAndClearResponse();
+
+                // Check if this is a session-based authentication challenge (Negotiate/NTLM) on HTTP/2.
+                // These authentication schemes require a persistent connection and don't work properly over HTTP/2.
+                if (AuthenticationHelper.IsSessionAuthenticationChallenge(response))
+                {
+                    // Mark the pool so future requests that can use HTTP/1.1 go directly to HTTP/1.1.
+                    // This is set regardless of whether we can retry this particular request,
+                    // so that subsequent requests benefit from the downgrade.
+                    _pool.OnSessionAuthenticationChallengeSeen();
+
+                    // We can only safely retry if there's no request content, as we cannot guarantee
+                    // that we can rewind arbitrary content streams.
+                    // Additionally, we only retry if the version negotiation allows the request to fall back to HTTP/1.1.
+                    if (request.Content is null &&
+                        HttpConnectionPool.CanFallBackToHttp11(request) &&
+                        !request.IsAuthDisabled())
+                    {
+                        if (NetEventSource.Log.IsEnabled())
+                        {
+                            Trace($"Received session-based authentication challenge on HTTP/2, request will be retried on HTTP/1.1.");
+                        }
+
+                        response.Dispose();
+                        throw new HttpRequestException(HttpRequestError.UserAuthenticationError, SR.net_http_authconnectionfailure, null, RequestRetryType.RetryOnSessionAuthenticationChallenge);
+                    }
+                }
+
+                return response;
             }
             catch (HttpIOException e)
             {
@@ -2128,7 +2253,7 @@ namespace System.Net.Http
                         _keepAlivePingTimeoutTimestamp = now + _keepAlivePingTimeout;
 
                         long pingPayload = Interlocked.Increment(ref _keepAlivePingPayload);
-                        LogExceptions(SendPingAsync(pingPayload));
+                        QueuePing(pingPayload);
                         return;
                     }
                     break;
@@ -2160,7 +2285,7 @@ namespace System.Net.Http
             throw new HttpRequestException((innerException as HttpIOException)?.HttpRequestError ?? HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpIOException ?? ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.net_http_request_aborted, innerException));
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>

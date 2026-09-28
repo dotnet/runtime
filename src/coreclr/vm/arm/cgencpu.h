@@ -16,10 +16,7 @@
 #define DATA_ALIGNMENT 4
 
 #define DISPATCH_STUB_FIRST_WORD 0xf8d0
-#define DISPATCH_STUB_THIRD_WORD 0xb420
 #define RESOLVE_STUB_FIRST_WORD 0xf8d0
-#define RESOLVE_STUB_THIRD_WORD 0xb460
-#define LOOKUP_STUB_FIRST_WORD 0xf8df
 
 #define ENUM_CALLEE_SAVED_REGISTERS() \
     CALLEE_SAVED_REGISTER(R4) \
@@ -52,9 +49,6 @@ struct ArgLocDesc;
 
 extern PCODE GetPreStubEntryPoint();
 
-// CPU-dependent functions
-Stub * GenerateInitPInvokeFrameHelper();
-
 EXTERN_C void checkStack(void);
 
 #define THUMB_CODE      1
@@ -63,17 +57,13 @@ EXTERN_C void checkStack(void);
 
 //**********************************************************************
 
-#define COMMETHOD_PREPAD                        12   // # extra bytes to allocate in addition to sizeof(ComCallMethodDesc)
-
 #define STACK_ALIGN_SIZE                        4
+#define CALL_STACK_ALIGN_SIZE                   8
 
 #define JUMP_ALLOCATE_SIZE                      8   // # bytes to allocate for a jump instruction
 #define BACK_TO_BACK_JUMP_ALLOCATE_SIZE         8   // # bytes to allocate for a back to back jump instruction
 
-#define HAS_NDIRECT_IMPORT_PRECODE              1
-
-EXTERN_C void getFPReturn(int fpSize, INT64 *pRetVal);
-EXTERN_C void setFPReturn(int fpSize, INT64 retVal);
+#define HAS_PINVOKE_IMPORT_PRECODE              1
 
 #define HAS_FIXUP_PRECODE                       1
 
@@ -240,7 +230,7 @@ inline PCODE GetLR(const T_CONTEXT * context) {
     return PCODE(context->Lr);
 }
 
-extern "C" LPVOID __stdcall GetCurrentSP();
+extern "C" void* GetCurrentSP();
 
 inline void SetSP(T_CONTEXT *context, TADDR esp) {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -256,6 +246,30 @@ inline TADDR GetFP(const T_CONTEXT * context)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return (TADDR)(context->R11);
+}
+
+inline void SetFirstArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->R0 = DWORD(value);
+}
+
+inline TADDR GetFirstArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->R0);
+}
+
+inline void SetSecondArgReg(T_CONTEXT *context, TADDR value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    context->R1 = DWORD(value);
+}
+
+inline TADDR GetSecondArgReg(T_CONTEXT *context)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return (TADDR)(context->R1);
 }
 
 inline void ClearITState(T_CONTEXT *context) {
@@ -311,7 +325,7 @@ inline int16_t decodeUnconditionalBranchThumb(LPBYTE pBuffer)
 }
 
 //------------------------------------------------------------------------
-inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
+inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -326,36 +340,15 @@ inline void emitJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
 }
 
 //------------------------------------------------------------------------
-//  Given the same pBuffer that was used by emitJump this method
+//  Given the same pBuffer that was used by emitBackToBackJump this method
 //  decodes the instructions and returns the jump target
-inline PCODE decodeJump(PCODE pCode)
+inline PCODE decodeBackToBackJump(PCODE pCode)
 {
     LIMITED_METHOD_CONTRACT;
 
     TADDR pInstr = PCODEToPINSTR(pCode);
 
     return *dac_cast<PTR_PCODE>(pInstr + sizeof(DWORD));
-}
-
-//
-// On IA64 back to back jumps should be separated by a nop bundle to get
-// the best performance from the hardware's branch prediction logic.
-// For all other platforms back to back jumps don't require anything special
-// That is why we have these two wrapper functions that call emitJump and decodeJump
-//
-
-//------------------------------------------------------------------------
-inline void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target)
-{
-    WRAPPER_NO_CONTRACT;
-    emitJump(pBufferRX, pBufferRW, target);
-}
-
-//------------------------------------------------------------------------
-inline PCODE decodeBackToBackJump(PCODE pBuffer)
-{
-    WRAPPER_NO_CONTRACT;
-    return decodeJump(pBuffer);
 }
 
 //----------------------------------------------------------------------
@@ -490,92 +483,6 @@ class StubLinkerCPU : public StubLinker
 public:
     static void Init();
 
-    void ThumbEmitProlog(UINT cCalleeSavedRegs, UINT cbStackFrame, BOOL fPushArgRegs)
-    {
-        _ASSERTE(!m_fProlog);
-
-        // Record the parameters of this prolog so that we can generate a matching epilog and unwind info.
-        DescribeProlog(cCalleeSavedRegs, cbStackFrame, fPushArgRegs);
-
-        // Trivial prologs (which is all that we support initially) consist of between one and three
-        // instructions.
-
-        // 1) Push argument registers. This is all or nothing (if we push, we push R0-R3).
-        if (fPushArgRegs)
-        {
-            // push {r0-r3}
-            ThumbEmitPush(ThumbReg(0).Mask() | ThumbReg(1).Mask() | ThumbReg(2).Mask() | ThumbReg(3).Mask());
-        }
-
-        // 2) Push callee saved registers. We always start pushing at R4, and only saved consecutive registers
-        //    from there (max is R11). Additionally we always assume LR is saved for these types of prolog.
-        // push {r4-rX,lr}
-        WORD wRegisters = thumbRegLr.Mask();
-        for (unsigned int i = 4; i < (4 + cCalleeSavedRegs); i++)
-            wRegisters |= ThumbReg(i).Mask();
-        ThumbEmitPush(wRegisters);
-
-        // 3) Reserve space on the stack for the rest of the frame.
-        if (cbStackFrame)
-        {
-            // sub sp, #cbStackFrame
-            ThumbEmitSubSp(cbStackFrame);
-        }
-    }
-
-    void ThumbEmitEpilog()
-    {
-        // Generate an epilog matching a prolog generated by ThumbEmitProlog.
-        _ASSERTE(m_fProlog);
-
-        // If additional stack space for a frame was allocated remove it now.
-        if (m_cbStackFrame)
-        {
-            // add sp, #m_cbStackFrame
-            ThumbEmitAddSp(m_cbStackFrame);
-        }
-
-        // Pop callee saved registers (we always have at least LR). If no argument registers were saved then
-        // we can restore LR back into PC and we're done. Otherwise LR needs to be restored into LR.
-        // pop {r4-rX,lr|pc}
-        WORD wRegisters = m_fPushArgRegs ? thumbRegLr.Mask() : thumbRegPc.Mask();
-        for (unsigned int i = 4; i < (4 + m_cCalleeSavedRegs); i++)
-            wRegisters |= ThumbReg(i).Mask();
-        ThumbEmitPop(wRegisters);
-
-        if (!m_fPushArgRegs)
-            return;
-
-        // We pushed the argument registers. These aren't restored, but we need to reclaim the stack space.
-        // add sp, #16
-        ThumbEmitAddSp(16);
-
-        // Return. The return address has been restored into LR at this point.
-        // bx lr
-        ThumbEmitJumpRegister(thumbRegLr);
-    }
-
-    void ThumbEmitGetThread(ThumbReg dest);
-
-    void ThumbEmitNop()
-    {
-        // nop
-        Emit16(0xbf00);
-    }
-
-    void ThumbEmitBreakpoint()
-    {
-        // Permanently undefined instruction #0xfe (see ARMv7-A A6.2.6). The debugger seems to accept this as
-        // a reasonable breakpoint substitute (it's what DebugBreak uses). Bkpt #0, on the other hand, always
-        // seems to flow directly to the kernel debugger (even if we ignore it there it doesn't seem to be
-        // picked up by the user mode debugger).
-#ifdef __linux__
-        Emit16(0xde01);
-#else
-        Emit16(0xdefe);
-#endif
-    }
-
     void ThumbEmitMovConstant(ThumbReg dest, int constant)
     {
         _ASSERT(dest != thumbRegPc);
@@ -663,14 +570,6 @@ public:
         Emit16((WORD)(0x0b00 | (source << 12) | offset));
     }
 
-    void ThumbEmitLoadOffsetScaledReg(ThumbReg dest, ThumbReg base, ThumbReg offset, int shift)
-    {
-        _ASSERTE(shift >=0 && shift <=3);
-
-        Emit16((WORD)(0xf850 | base));
-        Emit16((WORD)((dest << 12) | (shift << 4) | offset));
-    }
-
     void ThumbEmitCallRegister(ThumbReg target)
     {
         // blx regTarget
@@ -752,14 +651,12 @@ public:
 
     void ThumbEmitAddReg(ThumbReg dest, ThumbReg source)
     {
-
         _ASSERTE(dest != source);
         Emit16((WORD)(0x4400 | ((dest & 0x8)<<4) | (source<<3) | (dest & 0x7)));
     }
 
     void ThumbEmitAdd(ThumbReg dest, ThumbReg source, unsigned int value)
     {
-
         if(value<4096)
         {
             // addw dest, source, #value
@@ -778,18 +675,6 @@ public:
             ThumbEmitMovConstant(dest, value);
             ThumbEmitAddReg(dest, source);
         }
-    }
-
-    void ThumbEmitSub(ThumbReg dest, ThumbReg source, unsigned int value)
-    {
-        _ASSERTE(value < 4096);
-
-        // subw dest, source, #value
-        unsigned int i = (value & 0x800) >> 11;
-        unsigned int imm3 = (value & 0x700) >> 8;
-        unsigned int imm8 = value & 0xff;
-        Emit16((WORD)(0xf2a0 | (i << 10) | source));
-        Emit16((WORD)((imm3 << 12) | (dest << 8) | imm8));
     }
 
     void ThumbEmitIncrement(ThumbReg dest, unsigned int value)
@@ -847,18 +732,6 @@ public:
         }
     }
 
-    void ThumbEmitLoadStoreMultiple(ThumbReg base, bool load, WORD registers)
-    {
-        _ASSERTE(CountBits(registers) > 1);
-        _ASSERTE((registers & 0xFF00) == 0); // This only supports the small encoding
-        _ASSERTE(base < 8); // This only supports the small encoding
-        _ASSERTE((base.Mask() & registers) == 0); // This only supports the small encoding
-
-        // (LDM|STM) base, {registers}
-        WORD flag = load ? 0x0800 : 0;
-        Emit16(0xc000 | flag | ((base & 7) << 8) | (registers & 0xFF));
-    }
-
     void ThumbEmitPop(WORD registers)
     {
         _ASSERTE(registers != 0);
@@ -889,86 +762,12 @@ public:
         }
     }
 
-    void ThumbEmitLoadVFPSingleRegIndirect(ThumbVFPSingleReg dest, ThumbReg source, int offset)
-    {
-        _ASSERTE((offset >= -1020) && (offset <= 1020));
-        _ASSERTE(offset%4==0);
-
-        Emit16((WORD) (0xed10 | ((offset > 0 ? 0x1: 0x0) << 7) | ((dest & 0x1) << 6) | source));
-        Emit16((WORD) (0x0a00 | ((dest & 0x1e) << 11) | (abs(offset)>>2)));
-    }
-
-    void ThumbEmitLoadVFPDoubleRegIndirect(ThumbVFPDoubleReg dest, ThumbReg source, int offset)
-    {
-        _ASSERTE((offset >= -1020) && (offset <= 1020));
-        _ASSERTE(offset%4==0);
-
-        Emit16((WORD) (0xed10 | ((offset > 0 ? 0x1: 0x0) << 7) | ((dest & 0x10) << 6) | source));
-        Emit16((WORD) (0x0b00 | ((dest & 0xf) << 12) | (abs(offset)>>2)));
-    }
-
-#ifdef FEATURE_INTERPRETER
-    void ThumbEmitStoreMultipleVFPDoubleReg(ThumbVFPDoubleReg source, ThumbReg dest, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + source) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec80 | 0x80 | dest));
-        Emit16((WORD) (((source & 0xf) << 12) | 0xb00 | numRegs));
-    }
-
-    void ThumbEmitLoadMultipleVFPDoubleReg(ThumbVFPDoubleReg dest, ThumbReg source, unsigned numRegs)
-    {
-        _ASSERTE((numRegs + dest) <= 16);
-
-        // The third nibble is 0x8; the 0x4 bit (D) is zero because the source reg number must be less
-        // than 16 for double registers.
-        Emit16((WORD) (0xec90 | 0x80 | source));
-        Emit16((WORD) (((dest & 0xf) << 12) | 0xb00 | numRegs));
-    }
-#endif // FEATURE_INTERPRETER
-
     // Scratches r12.
     void ThumbEmitTailCallManagedMethod(MethodDesc *pMD);
 
     void EmitShuffleThunk(struct ShuffleEntry *pShuffleEntryArray);
     VOID EmitComputedInstantiatingMethodStub(MethodDesc* pSharedMD, struct ShuffleEntry *pShuffleEntryArray, void* extraArg);
 };
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4359) // Prevent "warning C4359: 'UMEntryThunkCode': Alignment specifier is less than actual alignment (8), and will be ignored." in crossbitness scenario
-#endif // _MSC_VER
-
-struct DECLSPEC_ALIGN(4) UMEntryThunkCode
-{
-    WORD        m_code[4];
-
-    TADDR       m_pTargetCode;
-    TADDR       m_pvSecretParam;
-
-    void Encode(UMEntryThunkCode *pEntryThunkCodeRX, BYTE* pTargetCode, void* pvSecretParam);
-    void Poison();
-
-    LPCBYTE GetEntryPoint() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return (LPCBYTE)((TADDR)this | THUMB_CODE);
-    }
-
-    static int GetEntryPointOffset()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-};
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif // _MSC_VER
 
 struct HijackArgs
 {
@@ -978,6 +777,16 @@ struct HijackArgs
         size_t ReturnValue[1]; // this may not be the return value when return is >32bits
                                // or return value is in VFP reg but it works for us as
                                // this is only used by functions OnHijackWorker()
+    };
+
+    // saving r1 as well, as it can have partial return value when return is > 32 bits
+    // also keeps the struct size 8-byte aligned.
+    DWORD R1;
+
+    union
+    {
+        DWORD R2;
+        size_t AsyncRet;
     };
 
     //
@@ -1017,63 +826,6 @@ inline BOOL ClrFlushInstructionCache(LPCVOID pCodeAddr, size_t sizeOfCode, bool 
 //
 // Create alias for optimized implementations of helpers provided on this platform
 //
-
-//------------------------------------------------------------------------
-//
-// Precode definitions
-//
-//------------------------------------------------------------------------
-//
-// Note: If you introduce new precode implementation below, then please
-//       update PrecodeStubManager::CheckIsStub_Internal to account for it.
-
-// Precode to shuffle this and retbuf for closed delegates over static methods with return buffer
-struct ThisPtrRetBufPrecode {
-
-    static const int Type = 0x01;
-
-    // mov r12, r0
-    // mov r0, r1
-    // mov r1, r12
-    // ldr pc, [pc, #0]     ; =m_pTarget
-    // dcd pTarget
-    // dcd pMethodDesc
-    WORD    m_rgCode[6];
-    TADDR   m_pTarget;
-    TADDR   m_pMethodDesc;
-
-    void Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator);
-
-    TADDR GetMethodDesc()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return m_pMethodDesc;
-    }
-
-    PCODE GetTarget()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_pTarget;
-    }
-
-#ifndef DACCESS_COMPILE
-    BOOL SetTargetInterlocked(TADDR target, TADDR expected)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_TRIGGERS;
-        }
-        CONTRACTL_END;
-
-        ExecutableWriterHolder<ThisPtrRetBufPrecode> precodeWriterHolder(this, sizeof(ThisPtrRetBufPrecode));
-        return InterlockedCompareExchange((LONG*)&precodeWriterHolder.GetRW()->m_pTarget, (LONG)target, (LONG)expected) == (LONG)expected;
-    }
-#endif // !DACCESS_COMPILE
-};
-typedef DPTR(ThisPtrRetBufPrecode) PTR_ThisPtrRetBufPrecode;
-
 
 //**********************************************************************
 // Miscellaneous

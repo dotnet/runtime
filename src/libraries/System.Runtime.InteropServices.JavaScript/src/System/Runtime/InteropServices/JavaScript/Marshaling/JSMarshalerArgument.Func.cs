@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 JSObject = holder;
             }
 
-            public void InvokeJS()
+            public unsafe void InvokeJS()
             {
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
                 // and would also allow the JS function to be collected
@@ -48,7 +48,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg1Marshaler = arg1Marshaler;
             }
 
-            public void InvokeJS(T arg1)
+            public unsafe void InvokeJS(T arg1)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[3];
@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg2Marshaler = arg2Marshaler;
             }
 
-            public void InvokeJS(T1 arg1, T2 arg2)
+            public unsafe void InvokeJS(T1 arg1, T2 arg2)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -127,7 +127,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 Arg3Marshaler = arg3Marshaler;
             }
 
-            public void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
+            public unsafe void InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
@@ -162,7 +162,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// It's used by JSImport code generator and should not be used by developers in source code.
         /// </summary>
         /// <param name="value">The value to be marshaled.</param>
-        public unsafe void ToManaged(out Action? value)
+        public void ToManaged(out Action? value)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="T">The type of the marshaled argument of the Action.</typeparam>
         /// <param name="value">The value to be marshaled.</param>
         /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
-        public unsafe void ToManaged<T>(out Action<T>? value, ArgumentToJSCallback<T> arg1Marshaler)
+        public void ToManaged<T>(out Action<T>? value, ArgumentToJSCallback<T> arg1Marshaler)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -204,7 +204,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="value">The value to be marshaled.</param>
         /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
         /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Action.</param>
-        public unsafe void ToManaged<T1, T2>(out Action<T1, T2>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler)
+        public void ToManaged<T1, T2>(out Action<T1, T2>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Action.</param>
         /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Action.</param>
         /// <param name="arg3Marshaler">The generated callback which marshals the argument of the Action.</param>
-        public unsafe void ToManaged<T1, T2, T3>(out Action<T1, T2, T3>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler)
+        public void ToManaged<T1, T2, T3>(out Action<T1, T2, T3>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -252,7 +252,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS()
+            public unsafe TResult InvokeJS()
             {
 
                 // JSObject (held by this lambda) would be collected by GC after the lambda is collected
@@ -292,7 +292,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS(T arg1)
+            public unsafe TResult InvokeJS(T arg1)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[3];
@@ -333,7 +333,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS(T1 arg1, T2 arg2)
+            public unsafe TResult InvokeJS(T1 arg1, T2 arg2)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[4];
@@ -379,7 +379,7 @@ namespace System.Runtime.InteropServices.JavaScript
                 ResMarshaler = resMarshaler;
             }
 
-            public TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
+            public unsafe TResult InvokeJS(T1 arg1, T2 arg2, T3 arg3)
             {
 
                 Span<JSMarshalerArgument> arguments = stackalloc JSMarshalerArgument[5];
@@ -418,7 +418,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <typeparam name="TResult">Type of marshaled result of the Func.</typeparam>
         /// <param name="value">The value to be marshaled.</param>
         /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
-        public unsafe void ToManaged<TResult>(out Func<TResult>? value, ArgumentToManagedCallback<TResult> resMarshaler)
+        public void ToManaged<TResult>(out Func<TResult>? value, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -440,7 +440,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="value">The value to be marshaled.</param>
         /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
         /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
-        public unsafe void ToManaged<T, TResult>(out Func<T, TResult>? value, ArgumentToJSCallback<T> arg1Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
+        public void ToManaged<T, TResult>(out Func<T, TResult>? value, ArgumentToJSCallback<T> arg1Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -465,7 +465,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="arg1Marshaler">The generated callback which marshals the argument of the Func.</param>
         /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Func.</param>
         /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
-        public unsafe void ToManaged<T1, T2, TResult>(out Func<T1, T2, TResult>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
+        public void ToManaged<T1, T2, TResult>(out Func<T1, T2, TResult>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
             {
@@ -491,7 +491,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="arg2Marshaler">The generated callback which marshals the argument of the Func.</param>
         /// <param name="arg3Marshaler">The generated callback which marshals the argument of the Func.</param>
         /// <param name="resMarshaler">The generated callback which marshals the result of the Func.</param>
-        public unsafe void ToManaged<T1, T2, T3, TResult>(out Func<T1, T2, T3, TResult>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
+        public void ToManaged<T1, T2, T3, TResult>(out Func<T1, T2, T3, TResult>? value, ArgumentToJSCallback<T1> arg1Marshaler, ArgumentToJSCallback<T2> arg2Marshaler, ArgumentToJSCallback<T3> arg3Marshaler, ArgumentToManagedCallback<TResult> resMarshaler)
         {
             if (slot.Type == MarshalerType.None)
             {

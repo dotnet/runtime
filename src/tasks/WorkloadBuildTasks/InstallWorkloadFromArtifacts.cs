@@ -73,6 +73,12 @@ namespace Microsoft.Workload.Build.Tasks
 
             try
             {
+                // Create an empty global.json so the SDK resolver doesn't walk up to a
+                // parent global.json that may contain relative "paths" entries (e.g. ".dotnet").
+                // Without this, the workload install invokes dotnet from a different SDK directory
+                // but the resolver picks up the wrong SDK from the repo-local .dotnet directory.
+                File.WriteAllText(Path.Combine(_tempDir, "global.json"), "{}");
+
                 if (!Directory.Exists(SdkWithNoWorkloadInstalledPath))
                     throw new LogAsErrorException($"Cannot find {nameof(SdkWithNoWorkloadInstalledPath)}={SdkWithNoWorkloadInstalledPath}");
 
@@ -232,7 +238,7 @@ namespace Microsoft.Workload.Build.Tasks
                                                     Path.Combine(req.TargetPath, "dotnet"),
                                                     $"workload install --skip-manifest-update --skip-sign-check --configfile \"{nugetConfigPath}\" --temp-dir \"{_tempDir}/workload-install-temp\" {ExtraWorkloadInstallCommandArguments} {req.WorkloadId}",
                                                     workingDir: _tempDir,
-                                                    envVars: new Dictionary<string, string> () {
+                                                    envVars: new Dictionary<string, string>() {
                                                         ["NUGET_PACKAGES"] = _nugetCachePath
                                                     },
                                                     logStdErrAsMessage: req.IgnoreErrors,

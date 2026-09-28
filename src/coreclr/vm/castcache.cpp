@@ -34,13 +34,9 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
     // if we get an OOM here, we try a smaller size
     EX_TRY
     {
-        FAULT_NOT_FATAL();
         table = (BASEARRAYREF)AllocatePrimitiveArray(CorElementType::ELEMENT_TYPE_I4, (size + 1) * sizeof(CastCacheEntry) / sizeof(INT32));
     }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions)
+        EX_SWALLOW_NONTERMINAL
 
     if (!table)
     {
@@ -48,13 +44,9 @@ BASEARRAYREF CastCache::CreateCastCache(DWORD size)
         // if we get an OOM again we return NULL
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             table = (BASEARRAYREF)AllocatePrimitiveArray(CorElementType::ELEMENT_TYPE_I4, (size + 1) * sizeof(CastCacheEntry) / sizeof(INT32));
         }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(RethrowTerminalExceptions)
+        EX_SWALLOW_NONTERMINAL
 
         if (!table)
         {

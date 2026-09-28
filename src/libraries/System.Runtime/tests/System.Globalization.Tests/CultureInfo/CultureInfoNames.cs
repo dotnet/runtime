@@ -33,7 +33,7 @@ namespace System.Globalization.Tests
             yield return new object[] { "", "", "Invariant Language (Invariant Country)", "Invariant Language (Invariant Country)" };
         }
 
-        [ConditionalTheory(nameof(SupportFullIcuResources))]
+        [ConditionalTheory(typeof(CultureInfoNames), nameof(SupportFullIcuResources))]
         [MemberData(nameof(SupportedCultures_TestData))]
         public void TestDisplayName(string cultureName, string uiCultureName, string nativeName, string displayName)
         {
@@ -45,7 +45,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportFullIcuResources))]
+        [ConditionalFact(typeof(CultureInfoNames), nameof(SupportFullIcuResources))]
         public void TestDisplayNameWithSettingUICultureMultipleTime()
         {
             using (new ThreadCultureChange(null, CultureInfo.GetCultureInfo("en-US")))

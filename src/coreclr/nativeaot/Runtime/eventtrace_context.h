@@ -31,11 +31,21 @@ typedef struct _DOTNET_TRACE_CONTEXT
 #endif // DOTNET_TRACE_CONTEXT_DEF
 
 extern "C" DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context;
+extern "C" DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context;
 extern "C" DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context;
 
 struct _EventFilterDescriptor;
 typedef struct _EventFilterDescriptor EventFilterDescriptor;
 void EventPipeEtwCallbackDotNETRuntime(
+    _In_ GUID * SourceId,
+    _In_ ULONG ControlCode,
+    _In_ unsigned char Level,
+    _In_ ULONGLONG MatchAnyKeyword,
+    _In_ ULONGLONG MatchAllKeyword,
+    _In_opt_ EventFilterDescriptor* FilterData,
+    _Inout_opt_ PVOID CallbackContext);
+
+void EventPipeEtwCallbackDotNETRuntimeRundown(
     _In_ GUID * SourceId,
     _In_ ULONG ControlCode,
     _In_ unsigned char Level,

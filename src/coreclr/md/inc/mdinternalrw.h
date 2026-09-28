@@ -15,11 +15,8 @@
 
 #include "../inc/mdlog.h"
 
-class UTSemReadWrite;
-
 class MDInternalRW : public IMDInternalImportENC, public IMDCommon
 {
-    friend class VerifyLayoutsMD;
 public:
 
 
@@ -71,16 +68,6 @@ public:
         }
 
         return static_cast<IMetaModelCommonRO*>(&m_pStgdb->m_MiniMd);
-    }
-
-    __checkReturn
-    STDMETHODIMP SetOptimizeAccessForSpeed(// return hresult
-        BOOL    fOptSpeed)
-    {
-        // If there is any optional work we can avoid (for example, because we have
-        // traded space for speed) this is the place to turn it off or on.
-
-        return S_OK;
     }
 
     //*****************************************************************************
@@ -203,7 +190,7 @@ public:
     STDMETHODIMP FindMethodDef(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmd);                  // [OUT] matching memberdef
 
@@ -245,7 +232,7 @@ public:
     __checkReturn
     STDMETHODIMP GetNameAndSigOfMethodDef(
         mdMethodDef      methoddef,     // [IN] given memberdef
-        PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
 
@@ -440,7 +427,7 @@ public:
     __checkReturn
     STDMETHODIMP GetNameAndSigOfMemberRef(  // return name here
         mdMemberRef      memberref,         // given memberref
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
 
@@ -595,7 +582,6 @@ public:
     STDMETHODIMP GetUserString(
         mdString stk,                   // [IN] the string token.
         ULONG   *pchString,             // [OUT] count of characters in the string.
-        BOOL    *pbIs80Plus,            // [OUT] specifies where there are extended characters >= 0x80.
         LPCWSTR *pwszUserString);
 
     //*****************************************************************************
@@ -700,7 +686,7 @@ public:
     STDMETHODIMP ConvertTextSigToComSig(    // Return hresult.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found
         LPCSTR      pSignature,             // [IN] class file format signature
-        CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
+        CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
         ULONG       *pcbCount);             // [OUT] the result size of signature
 
     __checkReturn
@@ -713,13 +699,13 @@ public:
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock);       // return the cached public interface
     __checkReturn
     STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk);      // return hresult
-    STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock();       // return the reader writer lock
+    STDMETHODIMP_(minipal_rwlock*) GetReaderWriterLock();       // return the reader writer lock
     __checkReturn
-    STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem)
+    STDMETHODIMP SetReaderWriterLock(minipal_rwlock *pLock)
     {
-        _ASSERTE(m_pSemReadWrite == NULL);
-        m_pSemReadWrite = pSem;
-        INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
+        _ASSERTE(m_pReadWriteLock == NULL);
+        m_pReadWriteLock = pLock;
+        INDEBUG(if (pLock != NULL) { m_pStgdb->m_MiniMd.Debug_EnableLockCheck(); })
         return NOERROR;
     }
 
@@ -739,7 +725,7 @@ public:
     STDMETHODIMP FindMethodDefUsingCompare(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         PSIGCOMPARE pSignatureCompare,      // [IN] Routine to compare signatures
         void*       pSignatureArgs,         // [IN] Additional info to supply the compare function
@@ -762,7 +748,7 @@ public:
 
 
     FORCEINLINE CLiteWeightStgdbRW* GetMiniStgdb() { return m_pStgdb; }
-    FORCEINLINE UTSemReadWrite *getReaderWriterLock() { return m_pSemReadWrite; }
+    FORCEINLINE minipal_rwlock *getReaderWriterLock() { return m_pReadWriteLock; }
 
 
     CLiteWeightStgdbRW  *m_pStgdb;
@@ -774,40 +760,16 @@ private:
     IUnknown            *m_pUnk;
     IUnknown            *m_pUserUnk;        // Release at shutdown.
     IMetaDataHelper     *m_pIMetaDataHelper;// pointer to cached public interface
-    UTSemReadWrite      *m_pSemReadWrite;   // read write lock for multi-threading.
-    bool                m_fOwnSem;          // Does MDInternalRW own this read write lock object?
+    minipal_rwlock      *m_pReadWriteLock;  // read write lock for multi-threading.
+    bool                m_fOwnLock;         // Does MDInternalRW own this read write lock object?
 
 public:
     STDMETHODIMP_(DWORD) GetMetadataStreamVersion()
     {
         return (DWORD)m_pStgdb->m_MiniMd.m_Schema.m_minor |
                ((DWORD)m_pStgdb->m_MiniMd.m_Schema.m_major << 16);
-    };
-
-    __checkReturn
-    STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
-        BOOL    fVerified)
-    {
-        m_pStgdb->m_MiniMd.SetVerifiedByTrustedSource(fVerified);
-        return S_OK;
     }
 
-    STDMETHODIMP GetRvaOffsetData(// S_OK or error
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount)            // [OUT] Number of records in FieldRVA table.
-    {
-        return m_pStgdb->m_MiniMd.GetRvaOffsetData(
-            pFirstMethodRvaOffset,
-            pMethodDefRecordSize,
-            pMethodDefCount,
-            pFirstFieldRvaOffset,
-            pFieldRvaRecordSize,
-            pFieldRvaCount);
-    }
 };  // class MDInternalRW
 
 #endif //FEATURE_METADATA_INTERNAL_APIS

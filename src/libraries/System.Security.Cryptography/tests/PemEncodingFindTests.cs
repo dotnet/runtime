@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    public abstract class PemEncodingFindTests
+    public abstract class PemEncodingFindTests<TChar> where TChar : IEquatable<TChar>
     {
         [Fact]
         public void Find_Success_Simple()
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_LabelCharacterBoundaries()
         {
             string content = $"-----BEGIN !PANIC~~~-----\nAHHH\n-----END !PANIC~~~-----";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 0..54,
                 expectedBase64: 26..30,
                 expectedLabel: 11..20);
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_WhiteSpaceBeforePreebSeparatesFromPriorContent(string whiteSpace)
         {
             string content = $"blah{whiteSpace}-----BEGIN TEST-----\nZn9v\n-----END TEST-----";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 5..49,
                 expectedBase64: 26..30,
                 expectedLabel: 16..20);
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_WhiteSpaceAfterPpostebSeparatesFromSubsequentContent(string whiteSpace)
         {
             string content = $"-----BEGIN TEST-----\nZn9v\n-----END TEST-----{whiteSpace}blah";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 0..44,
                 expectedBase64: 21..25,
                 expectedLabel: 11..15);
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography.Tests
         public void Find_Success_Base64SurroundingWhiteSpaceStripped()
         {
             string content = $"-----BEGIN A-----\r\n Zm9v\n\r \t-----END A-----";
-            PemFields fields = AssertPemFound(content,
+            AssertPemFound(content,
                 expectedLocation: 0..43,
                 expectedBase64: 20..24,
                 expectedLabel: 11..12);
@@ -418,14 +418,82 @@ MII
         [InlineData("c G V u b n k h", 6)]
         public void Find_Success_DecodeSize(string base64, int expectedSize)
         {
-            string content = $"-----BEGIN TEST-----\n{base64}\n-----END TEST-----";
+            ReadOnlySpan<TChar> content = Create($"-----BEGIN TEST-----\n{base64}\n-----END TEST-----");
             PemFields fields = FindPem(content);
             Assert.Equal(expectedSize, fields.DecodedDataLength);
-            Assert.Equal(base64, content[fields.Base64Data]);
+            AssertExtensions.SequenceEqual(Create(base64), content[fields.Base64Data]);
+        }
+
+        [Fact]
+        public void Find_ManyBegins_OneEnd()
+        {
+            const int ContentLength = 4 * 1024 * 1024;
+            const string GoodPrefix = "-----BEGIN Y-----\n";
+            const string MinPayload = "base64AAAA==\n";
+
+            int div4 = 0;
+            int mod4 = 0;
+            int goodStart = 0;
+
+            // Build a string that looks like
+            // -----BEGIN X-----
+            // -----BEGIN X-----
+            // ...
+            // -----BEGIN X-----
+            // -----BEGIN Y-----
+            // [mod4 whitespace][content]
+            // -----END Y-----
+            string content = string.Create(
+                ContentLength,
+                0,
+                (span, _) =>
+                {
+                    string suffix = "-----END Y-----\n";
+                    ReadOnlySpan<char> badPrefix = "-----BEGIN X-----\n";
+                    ReadOnlySpan<char> goodPrefix = GoodPrefix;
+                    ReadOnlySpan<char> minPayload = MinPayload;
+
+                    int tailLength = suffix.Length + minPayload.Length;
+                    int reserved = goodPrefix.Length + tailLength;
+                    int badPrefixCount = (span.Length - reserved) / badPrefix.Length;
+
+                    for (int i = 0; i < badPrefixCount; i++)
+                    {
+                        badPrefix.CopyTo(span);
+                        span = span.Slice(badPrefix.Length);
+                    }
+
+                    goodStart = ContentLength - span.Length;
+                    goodPrefix.CopyTo(span);
+                    span = span.Slice(goodPrefix.Length);
+
+                    int remain = span.Length - tailLength;
+                    (div4, mod4) = int.DivRem(remain, 4);
+
+                    span.Slice(0, mod4).Fill('\n');
+                    span = span.Slice(mod4);
+
+                    span.Slice(0, 4 * div4).Fill('A');
+                    span = span.Slice(4 * div4);
+
+                    minPayload.CopyTo(span);
+                    span = span.Slice(minPayload.Length);
+
+                    suffix.CopyTo(span);
+                });
+
+            int expectedBase64Start = goodStart + GoodPrefix.Length + mod4;
+            int expectedBase64Len = 4 * div4 + MinPayload.Length - 1;
+
+            AssertPemFound(
+                content,
+                expectedLocation: goodStart .. (ContentLength - 1),
+                expectedBase64: expectedBase64Start .. (expectedBase64Start + expectedBase64Len),
+                expectedLabel: (goodStart + 11) .. (goodStart + 12));
         }
 
         private PemFields AssertPemFound(
-            ReadOnlySpan<char> input,
+            string input,
             Range expectedLocation,
             Range expectedBase64,
             Range expectedLabel)
@@ -438,12 +506,16 @@ MII
             return fields;
         }
 
-        protected abstract void AssertNoPemFound(ReadOnlySpan<char> input);
+        private void AssertNoPemFound(string input) => AssertNoPemFound(Create(input));
+        protected abstract void AssertNoPemFound(ReadOnlySpan<TChar> input);
 
-        protected abstract PemFields FindPem(ReadOnlySpan<char> input);
+        protected abstract PemFields FindPem(ReadOnlySpan<TChar> input);
+        private PemFields FindPem(string input) => FindPem(Create(input));
+
+        protected abstract ReadOnlySpan<TChar> Create(string pem);
     }
 
-    public class PemEncodingFindThrowingTests : PemEncodingFindTests
+    public class PemEncodingFindThrowingTests : PemEncodingFindTests<char>
     {
         protected override PemFields FindPem(ReadOnlySpan<char> input) => PemEncoding.Find(input);
 
@@ -451,9 +523,11 @@ MII
         {
             AssertExtensions.Throws<ArgumentException, char>("pemData", input, x => PemEncoding.Find(x));
         }
+
+        protected override ReadOnlySpan<char> Create(string pem) => pem;
     }
 
-    public class PemEncodingFindTryTests : PemEncodingFindTests
+    public class PemEncodingFindTryTests : PemEncodingFindTests<char>
     {
         protected override PemFields FindPem(ReadOnlySpan<char> input)
         {
@@ -467,5 +541,57 @@ MII
             bool found = PemEncoding.TryFind(input, out _);
             Assert.False(found, "Found PEM when not expected");
         }
+
+        protected override ReadOnlySpan<char> Create(string pem) => pem;
+    }
+
+    public class PemEncodingFindUtf8ThrowingTests : PemEncodingFindTests<byte>
+    {
+        [Fact]
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_Ignored()
+        {
+            ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
+            PemFields fields = PemEncoding.FindUtf8(content);
+            Assert.Equal(14..18, fields.Label);
+            Assert.Equal(24..28, fields.Base64Data);
+            Assert.Equal(3..47, fields.Location);
+        }
+
+        protected override PemFields FindPem(ReadOnlySpan<byte> input) => PemEncoding.FindUtf8(input);
+
+        protected override void AssertNoPemFound(ReadOnlySpan<byte> input)
+        {
+            AssertExtensions.Throws<ArgumentException, byte>("pemData", input, x => PemEncoding.FindUtf8(x));
+        }
+
+        protected override ReadOnlySpan<byte> Create(string pem) => Encoding.UTF8.GetBytes(pem);
+    }
+
+    public class PemEncodingFindUtf8TryTests : PemEncodingFindTests<byte>
+    {
+        [Fact]
+        public void FindUtf8_InvalidUtf8_OutsideOfEncapBoundary_Ignored()
+        {
+            ReadOnlySpan<byte> content = [0xFF, 0xFF, .."\n-----BEGIN TEST-----\nZm9v\n-----END TEST-----"u8];
+            Assert.True(PemEncoding.TryFindUtf8(content, out PemFields fields), nameof(PemEncoding.TryFindUtf8));
+            Assert.Equal(14..18, fields.Label);
+            Assert.Equal(24..28, fields.Base64Data);
+            Assert.Equal(3..47, fields.Location);
+        }
+
+        protected override PemFields FindPem(ReadOnlySpan<byte> input)
+        {
+            bool found = PemEncoding.TryFindUtf8(input, out PemFields fields);
+            Assert.True(found, "Did not find PEM.");
+            return fields;
+        }
+
+        protected override void AssertNoPemFound(ReadOnlySpan<byte> input)
+        {
+            bool found = PemEncoding.TryFindUtf8(input, out _);
+            Assert.False(found, "Found PEM when not expected");
+        }
+
+        protected override ReadOnlySpan<byte> Create(string pem) => Encoding.UTF8.GetBytes(pem);
     }
 }

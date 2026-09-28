@@ -504,9 +504,9 @@ inline RSLock::RSLock()
 
 inline RSLock::~RSLock()
 {
-    // If this lock is still ininitialized, then no body ever deleted the critical section
-    // for it and we're leaking.
-    CONSISTENCY_CHECK_MSGF(!IsInit(), ("Leaking Critical section for RS Lock '%s'", m_szTag));
+    // If this lock is still initialized, then nobody ever deleted the critical section
+    // for it and we're leaking. cLockAllowLeak opts out of this assert.
+    CONSISTENCY_CHECK_MSGF(!IsInit() || (m_eAttr & cLockAllowLeak), ("Leaking Critical section for RS Lock '%s'", m_szTag));
 }
 #endif
 
@@ -528,14 +528,15 @@ inline void RSLock::Init(const char * szTag, int eAttr, ERSLockLevel level)
 
     _ASSERTE(IsInit());
 
-    InitializeCriticalSection(&m_lock);
+    bool init = minipal_mutex_init(&m_lock);
+    _ASSERTE(init);
 }
 
 // Cleanup a lock.
 inline void RSLock::Destroy()
 {
     CONSISTENCY_CHECK_MSGF(IsInit(), ("RSLock '%s' not inited", m_szTag));
-    DeleteCriticalSection(&m_lock);
+    minipal_mutex_destroy(&m_lock);
 
 #ifdef _DEBUG
     m_eAttr = cLockUninit; // No longer initialized.
@@ -549,10 +550,11 @@ inline void RSLock::Lock()
 
 #ifdef RSCONTRACTS
     DbgRSThread * pThread = DbgRSThread::GetThread();
+
     pThread->NotifyTakeLock(this);
 #endif
 
-    EnterCriticalSection(&m_lock);
+    minipal_mutex_enter(&m_lock);
 #ifdef _DEBUG
     m_tidOwner = ::GetCurrentThreadId();
     m_count++;
@@ -583,7 +585,7 @@ inline void RSLock::Unlock()
     pThread->NotifyReleaseLock(this);
 #endif
 
-    LeaveCriticalSection(&m_lock);
+    minipal_mutex_leave(&m_lock);
 }
 
 template <class T>

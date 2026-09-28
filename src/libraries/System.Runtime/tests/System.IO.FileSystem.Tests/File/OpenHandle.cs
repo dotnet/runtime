@@ -66,19 +66,46 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(FileOptions.None)]
         [InlineData(FileOptions.Asynchronous)]
-        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation(FileOptions options)
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForRegularFiles(FileOptions options)
         {
             using (var handle = File.OpenHandle(GetTestFilePath(), FileMode.Create, FileAccess.Write, options: options))
             {
-                Assert.Equal((options & FileOptions.Asynchronous) != 0, handle.IsAsync);
+                Assert.Equal((options & FileOptions.Asynchronous) != 0 && IsAsyncIoSupportedForRegularFiles, handle.IsAsync);
 
                 // the following code exercises the code path where we don't know FileOptions used for opening the handle
                 // and instead we ask the OS about it
-                if (OperatingSystem.IsWindows()) // async file handles are a Windows concept
+                if (IsAsyncIoSupportedForRegularFiles)
                 {
                     SafeFileHandle createdFromIntPtr = new SafeFileHandle(handle.DangerousGetHandle(), ownsHandle: false);
                     Assert.Equal((options & FileOptions.Asynchronous) != 0, createdFromIntPtr.IsAsync);
                 }
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser, "Pipes are not supported on browser")]
+        public void SafeFileHandle_IsAsync_ReturnsCorrectInformation_ForPipes(bool useAsync)
+        {
+            SafeFileHandle.CreateAnonymousPipe(out SafeFileHandle readHandle, out SafeFileHandle writeHandle, asyncRead: useAsync, asyncWrite: useAsync);
+
+            using (readHandle)
+            using (writeHandle)
+            {
+                Verify(readHandle, useAsync);
+                Verify(writeHandle, useAsync);
+            }
+
+            static void Verify(SafeFileHandle fileHandle, bool useAsyncIO)
+            {
+                Assert.Equal(useAsyncIO, fileHandle.IsAsync);
+                Assert.Equal(FileHandleType.Pipe, fileHandle.Type);
+
+                // The following code exercises the code path where the information is fetched from OS.
+                using SafeFileHandle createdFromIntPtr = new(fileHandle.DangerousGetHandle(), ownsHandle: false);
+                Assert.Equal(useAsyncIO, createdFromIntPtr.IsAsync);
+                Assert.Equal(FileHandleType.Pipe, createdFromIntPtr.Type);
             }
         }
 
@@ -94,6 +121,44 @@ namespace System.IO.Tests
                 Assert.True(File.Exists(path));
             }
             Assert.False(File.Exists(path));
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void PreallocationSizeVeryLargeThrowsCorrectHResult()
+        {
+            const long VeryLargeFileSize = (long)128 * 1024 * 1024 * 1024 * 1024; // 128TB
+
+            // The largest file size depends on cluster size.
+            // See https://learn.microsoft.com/en-us/windows-server/storage/file-server/ntfs-overview#support-for-large-volumes
+
+
+            const int ERROR_INVALID_PARAMETER = unchecked((int)0x80070057);
+            const int ERROR_DISK_FULL = unchecked((int)0x80070070);
+
+            string path = GetTestFilePath();
+            if (!IOServices.IsDriveNTFS(Path.GetPathRoot(path)))
+            {
+                // Skip the test for non-NTFS filesystems
+                return;
+            }
+
+            if (new DriveInfo(path).TotalFreeSpace >= VeryLargeFileSize)
+            {
+                // Skip the test if somehow the drive is really big.
+                return;
+            }
+
+            try
+            {
+                using (File.OpenHandle(path, mode: FileMode.Create, access: FileAccess.ReadWrite, preallocationSize: VeryLargeFileSize)) { }
+                Assert.Fail("File.OpenHandle should throw due to failure to preallocate a very large file.");
+            }
+            catch (IOException ex)
+            {
+                // Accept both results since we cannot assume the cluster size of testing volume
+                Assert.True(ex.HResult is ERROR_INVALID_PARAMETER or ERROR_DISK_FULL);
+            }
         }
     }
 }

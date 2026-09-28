@@ -24,7 +24,7 @@ namespace System.DirectoryServices.Protocols.Tests
         [Theory]
         [InlineData(null, null, null)]
         [InlineData("DistinguishedName", "NewParentDistinguishedName", "NewName")]
-        public void Ctor_DistinguishedName_NewParentDistinguishedName_NewName(string distinguishedName, string newParentDistinguishedName, string newName)
+        public void Ctor_DistinguishedName_NewParentDistinguishedName_NewName(string? distinguishedName, string? newParentDistinguishedName, string? newName)
         {
             var request = new ModifyDNRequest(distinguishedName, newParentDistinguishedName, newName);
             Assert.Empty(request.Controls);

@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Buffers;
 
 namespace System.Net.Mime
 {
@@ -38,7 +39,6 @@ namespace System.Net.Mime
              255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, // F
         ];
 
-        private ReadStateInfo? _readState;
         private readonly WriteStateInfoBase _writeState;
         private readonly QEncoder _encoder;
 
@@ -48,12 +48,12 @@ namespace System.Net.Mime
             _encoder = new QEncoder(_writeState);
         }
 
-        private ReadStateInfo ReadState => _readState ??= new ReadStateInfo();
+        private ReadStateInfo ReadState => field ??= new ReadStateInfo();
 
         internal WriteStateInfoBase WriteState => _writeState;
 
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state) =>
-            TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+        public override bool CanRead => BaseStream.CanRead;
+        public override bool CanWrite => BaseStream.CanWrite;
 
         public override void Close()
         {
@@ -61,132 +61,129 @@ namespace System.Net.Mime
             base.Close();
         }
 
-        public unsafe int DecodeBytes(byte[] buffer, int offset, int count)
+        public int DecodeBytes(Span<byte> buffer)
         {
-            fixed (byte* pBuffer = buffer)
+            if (buffer.IsEmpty)
             {
-                byte* start = pBuffer + offset;
-                byte* source = start;
-                byte* dest = start;
-                byte* end = start + count;
+                return 0;
+            }
 
-                // if the last read ended in a partially decoded
-                // sequence, pick up where we left off.
-                if (ReadState.IsEscaped)
+            int source = 0;
+            int destination = 0;
+
+            // if the last read ended in a partially decoded
+            // sequence, pick up where we left off.
+            if (ReadState.IsEscaped)
+            {
+                // this will be -1 if the previous read ended
+                // with an escape character.
+                if (ReadState.Byte == -1)
                 {
-                    // this will be -1 if the previous read ended
-                    // with an escape character.
-                    if (ReadState.Byte == -1)
+                    // if we only read one byte from the underlying
+                    // stream, we'll need to save the byte and
+                    // ask for more.
+                    if (buffer.Length == 1)
                     {
-                        // if we only read one byte from the underlying
-                        // stream, we'll need to save the byte and
-                        // ask for more.
-                        if (count == 1)
-                        {
-                            ReadState.Byte = *source;
-                            return 0;
-                        }
-
-                        // '=\r\n' means a soft (aka. invisible) CRLF sequence...
-                        if (source[0] != '\r' || source[1] != '\n')
-                        {
-                            byte b1 = HexDecodeMap[source[0]];
-                            byte b2 = HexDecodeMap[source[1]];
-                            if (b1 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
-                            if (b2 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
-
-                            *dest++ = (byte)((b1 << 4) + b2);
-                        }
-
-                        source += 2;
+                        ReadState.Byte = buffer[source];
+                        return 0;
                     }
-                    else
+
+                    // '=\r\n' means a soft (aka. invisible) CRLF sequence...
+                    if (buffer[source] != '\r' || buffer[source + 1] != '\n')
                     {
-                        // '=\r\n' means a soft (aka. invisible) CRLF sequence...
-                        if (ReadState.Byte != '\r' || *source != '\n')
-                        {
-                            byte b1 = HexDecodeMap[ReadState.Byte];
-                            byte b2 = HexDecodeMap[*source];
-                            if (b1 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
-                            if (b2 == 255)
-                                throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
-                            *dest++ = (byte)((b1 << 4) + b2);
-                        }
+                        byte b1 = HexDecodeMap[buffer[source]];
+                        byte b2 = HexDecodeMap[buffer[source + 1]];
+                        if (b1 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
+                        if (b2 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
+
+                        buffer[destination++] = (byte)((b1 << 4) + b2);
+                    }
+
+                    source += 2;
+                }
+                else
+                {
+                    // '=\r\n' means a soft (aka. invisible) CRLF sequence...
+                    if (ReadState.Byte != '\r' || buffer[source] != '\n')
+                    {
+                        byte b1 = HexDecodeMap[ReadState.Byte];
+                        byte b2 = HexDecodeMap[buffer[source]];
+                        if (b1 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)ReadState.Byte));
+                        if (b2 == 255)
+                            throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source]));
+                        buffer[destination++] = (byte)((b1 << 4) + b2);
+                    }
+                    source++;
+                }
+                // reset state for next read.
+                ReadState.IsEscaped = false;
+                ReadState.Byte = -1;
+            }
+
+            // Here's where most of the decoding takes place.
+            // We'll loop around until we've inspected all the
+            // bytes read.
+            while (source < buffer.Length)
+            {
+                // if the source is not an escape character, then
+                // just copy as-is.
+                if (buffer[source] != '=')
+                {
+                    if (buffer[source] == '_')
+                    {
+                        buffer[destination++] = (byte)' ';
                         source++;
                     }
-                    // reset state for next read.
-                    ReadState.IsEscaped = false;
-                    ReadState.Byte = -1;
-                }
-
-                // Here's where most of the decoding takes place.
-                // We'll loop around until we've inspected all the
-                // bytes read.
-                while (source < end)
-                {
-                    // if the source is not an escape character, then
-                    // just copy as-is.
-                    if (*source != '=')
-                    {
-                        if (*source == '_')
-                        {
-                            *dest++ = (byte)' ';
-                            source++;
-                        }
-                        else
-                        {
-                            *dest++ = *source++;
-                        }
-                    }
                     else
                     {
-                        // determine where we are relative to the end
-                        // of the data.  If we don't have enough data to
-                        // decode the escape sequence, save off what we
-                        // have and continue the decoding in the next
-                        // read.  Otherwise, decode the data and copy
-                        // into dest.
-                        switch (end - source)
-                        {
-                            case 2:
-                                ReadState.Byte = source[1];
-                                goto case 1;
-                            case 1:
-                                ReadState.IsEscaped = true;
-                                goto EndWhile;
-                            default:
-                                if (source[1] != '\r' || source[2] != '\n')
-                                {
-                                    byte b1 = HexDecodeMap[source[1]];
-                                    byte b2 = HexDecodeMap[source[2]];
-                                    if (b1 == 255)
-                                        throw new FormatException(SR.Format(SR.InvalidHexDigit, b1));
-                                    if (b2 == 255)
-                                        throw new FormatException(SR.Format(SR.InvalidHexDigit, b2));
-
-                                    *dest++ = (byte)((b1 << 4) + b2);
-                                }
-                                source += 3;
-                                break;
-                        }
+                        buffer[destination++] = buffer[source++];
                     }
                 }
-            EndWhile:
-                return (int)(dest - start);
+                else
+                {
+                    // determine where we are relative to the end
+                    // of the data.  If we don't have enough data to
+                    // decode the escape sequence, save off what we
+                    // have and continue the decoding in the next
+                    // read.  Otherwise, decode the data and copy
+                    // into dest.
+                    switch (buffer.Length - source)
+                    {
+                        case 2:
+                            ReadState.Byte = buffer[source + 1];
+                            goto case 1;
+                        case 1:
+                            ReadState.IsEscaped = true;
+                            goto EndWhile;
+                        default:
+                            if (buffer[source + 1] != '\r' || buffer[source + 2] != '\n')
+                            {
+                                byte b1 = HexDecodeMap[buffer[source + 1]];
+                                byte b2 = HexDecodeMap[buffer[source + 2]];
+                                if (b1 == 255)
+                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 1]));
+                                if (b2 == 255)
+                                    throw new FormatException(SR.Format(SR.InvalidHexDigit, (char)buffer[source + 2]));
+
+                                buffer[destination++] = (byte)((b1 << 4) + b2);
+                            }
+                            source += 3;
+                            break;
+                    }
+                }
             }
+        EndWhile:
+            return destination;
         }
 
-        public int EncodeBytes(byte[] buffer, int offset, int count) => _encoder.EncodeBytes(buffer, offset, count, true, true);
+        public int EncodeBytes(ReadOnlySpan<byte> buffer) => _encoder.EncodeBytes(buffer, true, true);
 
         public int EncodeString(string value, Encoding encoding) => _encoder.EncodeString(value, encoding);
 
         public string GetEncodedString() => _encoder.GetEncodedString();
-
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToAsyncResult.End(asyncResult);
 
         public override void Flush()
         {
@@ -196,12 +193,7 @@ namespace System.Net.Mime
 
         public override async Task FlushAsync(CancellationToken cancellationToken)
         {
-            if (_writeState != null && _writeState.Length > 0)
-            {
-                await base.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
-                WriteState.Reset();
-            }
-
+            await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
             await base.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -209,20 +201,37 @@ namespace System.Net.Mime
         {
             if (_writeState != null && _writeState.Length > 0)
             {
-                base.Write(WriteState.Buffer, 0, WriteState.Length);
+                BaseStream.Write(WriteState.Buffer.AsSpan(0, WriteState.Length));
                 WriteState.Reset();
             }
         }
 
-        public override void Write(byte[] buffer, int offset, int count)
+        private async ValueTask FlushInternalAsync(CancellationToken cancellationToken)
         {
-            ValidateBufferArguments(buffer, offset, count);
+            if (_writeState != null && _writeState.Length > 0)
+            {
+                await BaseStream.WriteAsync(WriteState.Buffer.AsMemory(0, WriteState.Length), cancellationToken).ConfigureAwait(false);
+                WriteState.Reset();
+            }
+        }
 
+        protected override int ReadInternal(Span<byte> buffer)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override ValueTask<int> ReadAsyncInternal(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void WriteInternal(ReadOnlySpan<byte> buffer)
+        {
             int written = 0;
             while (true)
             {
-                written += EncodeBytes(buffer, offset + written, count - written);
-                if (written < count)
+                written += EncodeBytes(buffer.Slice(written));
+                if (written < buffer.Length)
                 {
                     FlushInternal();
                 }
@@ -233,30 +242,22 @@ namespace System.Net.Mime
             }
         }
 
-        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        protected override async ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            ValidateBufferArguments(buffer, offset, count);
-            return WriteAsyncCore(buffer, offset, count, cancellationToken);
-
-            async Task WriteAsyncCore(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            int written = 0;
+            while (true)
             {
-                int written = 0;
-                while (true)
+                written += EncodeBytes(buffer.Span.Slice(written));
+                if (written < buffer.Length)
                 {
-                    written += EncodeBytes(buffer, offset + written, count - written);
-                    if (written < count)
-                    {
-                        await FlushAsync(cancellationToken).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        break;
-                    }
+                    await FlushInternalAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    break;
                 }
             }
         }
-
-
 
         private sealed class ReadStateInfo
         {

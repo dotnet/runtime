@@ -19,7 +19,7 @@
 .class public explicit ansi beforefieldinit BigClass
 {
   .field [0] public int32 firstField
-  .field [0x7FFFFF9] public int32 lastField
+  .field [0x7FFFFF8] public int32 lastField // Offset should match FIELD_OFFSET_LAST_REAL_OFFSET in runtime.
 
   .method public hidebysig specialname rtspecialname
           instance void  .ctor() cil managed

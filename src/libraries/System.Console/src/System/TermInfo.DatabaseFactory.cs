@@ -100,7 +100,7 @@ internal static partial class TermInfo
         /// <param name="term">The identifier for the terminal.</param>
         /// <param name="directoryPath">The path to the directory containing terminfo database files.</param>
         /// <returns>The database, or null if it could not be found.</returns>
-        internal static Database? ReadDatabase(string? term, string? directoryPath)
+        internal static unsafe Database? ReadDatabase(string? term, string? directoryPath)
         {
             if (string.IsNullOrEmpty(term) || string.IsNullOrEmpty(directoryPath))
             {

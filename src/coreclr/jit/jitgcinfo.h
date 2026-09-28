@@ -8,13 +8,13 @@
 #ifndef _JITGCINFO_H_
 #define _JITGCINFO_H_
 
+// TODO-WASM-Factoring: don't include this header in the WASM build by factoring out write barrier selection.
+#if EMIT_GENERATE_GCINFO
 #include "gcinfotypes.h"
 
 #ifndef JIT32_GCENCODER
 #include "gcinfoencoder.h"
 #endif
-
-/*****************************************************************************/
 
 #ifndef JIT32_GCENCODER
 // Shash typedefs
@@ -79,13 +79,14 @@ typedef JitHashTable<StackSlotIdKey, StackSlotIdKey, GcSlotId> StackSlotMap;
 #endif
 
 typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, VARSET_TP*> NodeToVarsetPtrMap;
+#endif // EMIT_GENERATE_GCINFO
 
 class GCInfo
 {
     friend class CodeGen;
 
 private:
-    Compiler* compiler;
+    Compiler* m_compiler;
     RegSet*   regSet;
 
 public:
@@ -162,7 +163,13 @@ public:
                 regMaskSmall rpdDel; // regptr bitset being removed
             } rpdCompiler;
 
-            unsigned short rpdPtrArg; // arg offset or popped arg count
+            struct
+            {
+                // Registers after call containing GC/byref (index 0 = REG_INT_FIRST)
+                unsigned int   rpdCallGCrefRegs;
+                unsigned int   rpdCallByrefRegs;
+                unsigned short rpdPtrArg; // arg offset or popped arg count
+            };
         };
 
 #ifndef JIT32_GCENCODER
@@ -182,11 +189,8 @@ public:
             return (GCtype)rpdGCtype;
         }
 
-        unsigned short rpdIsThis : 1;                       // is it the 'this' pointer
-        unsigned short rpdCall   : 1;                       // is this a true call site?
-        unsigned short           : 1;                       // Padding bit, so next two start on a byte boundary
-        unsigned short rpdCallGCrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing GC pointers.
-        unsigned short rpdCallByrefRegs : CNT_CALL_GC_REGS; // Callee-saved and return registers containing byrefs.
+        unsigned short rpdIsThis : 1; // is it the 'this' pointer
+        unsigned short rpdCall   : 1; // is this a true call site?
 
 #ifndef JIT32_GCENCODER
         bool rpdIsCallInstr()
@@ -200,6 +204,7 @@ public:
     regPtrDsc* gcRegPtrLast;
     unsigned   gcPtrArgCnt;
 
+#if EMIT_GENERATE_GCINFO
 #ifndef JIT32_GCENCODER
     enum MakeRegPtrMode
     {
@@ -236,8 +241,8 @@ public:
                                      unsigned       instrOffset,
                                      regPtrDsc*     genStackPtrFirst,
                                      regPtrDsc*     genStackPtrLast);
-
 #endif
+#endif // EMIT_GENERATE_GCINFO
 
 #if MEASURE_PTRTAB_SIZE
     static size_t s_gcRegPtrDscSize;
@@ -283,12 +288,13 @@ public:
     CallDsc* gcCallDescList;
     CallDsc* gcCallDescLast;
 
-    //-------------------------------------------------------------------------
-
+#if EMIT_GENERATE_GCINFO
 #ifdef JIT32_GCENCODER
-    void gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount, UNALIGNED unsigned int* pVarPtrTableSize);
+    void gcCountForHeader(UNALIGNED unsigned int* pUntrackedCount,
+                          UNALIGNED unsigned int* pVarPtrTableSize,
+                          UNALIGNED unsigned int* pNoGCRegionCount);
 
-    bool gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum, bool* pThisKeptAliveIsInUntracked = nullptr);
+    bool gcIsUntrackedLocalOrNonEnregisteredArg(unsigned varNum);
 
     size_t gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
 #else
@@ -305,27 +311,22 @@ public:
                            MakeRegPtrMode mode,
                            unsigned*      callCntRef);
 #endif
+#endif // EMIT_GENERATE_GCINFO
 
 #ifdef JIT32_GCENCODER
     size_t gcPtrTableSize(const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
     BYTE*  gcPtrTableSave(BYTE* destPtr, const InfoHdr& header, unsigned codeSize, size_t* pArgTabOffset);
 #endif
     void gcRegPtrSetInit();
-    /*****************************************************************************/
 
     // This enumeration yields the result of the analysis below, whether a store
     // requires a write barrier:
     enum WriteBarrierForm
     {
-        WBF_NoBarrier,                     // No barrier is required
-        WBF_BarrierUnknown,                // A barrier is required, no information on checked/unchecked.
-        WBF_BarrierChecked,                // A checked barrier is required.
-        WBF_BarrierUnchecked,              // An unchecked barrier is required.
-        WBF_NoBarrier_CheckNotHeapInDebug, // We believe that no barrier is required because the
-                                           // target is not in the heap -- but in debug build use a
-                                           // barrier call that verifies this property.  (Because the
-                                           // target not being in the heap relies on a convention that
-                                           // might accidentally be violated in the future.)
+        WBF_NoBarrier,        // No barrier is required
+        WBF_BarrierUnknown,   // A barrier is required, no information on checked/unchecked.
+        WBF_BarrierChecked,   // A checked barrier is required.
+        WBF_BarrierUnchecked, // An unchecked barrier is required.
     };
 
     WriteBarrierForm gcIsWriteBarrierCandidate(GenTreeStoreInd* store);
@@ -341,6 +342,7 @@ public:
     //  These record the info about the procedure in the info-block
     //
 
+#if EMIT_GENERATE_GCINFO
 #ifdef JIT32_GCENCODER
 private:
     BYTE* gcEpilogTable;
@@ -360,10 +362,12 @@ public:
 
 private:
     static size_t gcRecordEpilog(void* pCallBackData, unsigned offset);
-#else // JIT32_GCENCODER
-    void gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize);
 
-#endif // JIT32_GCENCODER
+    ReturnKind getReturnKind();
+#else  // !JIT32_GCENCODER
+    void gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSize, unsigned prologSize);
+#endif // !JIT32_GCENCODER
+#endif // EMIT_GENERATE_GCINFO
 
     // This method expands the tracked stack variables lifetimes so that any lifetimes within filters
     // are reported as pinned.
@@ -389,13 +393,6 @@ private:
 
 #endif // JIT32_GCENCODER
 #endif // DUMP_GC_TABLES
-
-public:
-    // This method updates the appropriate reg masks when a variable is moved.
-    void gcUpdateForRegVarMove(regMaskTP srcMask, regMaskTP dstMask, LclVarDsc* varDsc);
-
-private:
-    ReturnKind getReturnKind();
 };
 
 inline unsigned char encodeUnsigned(BYTE* dest, unsigned value)

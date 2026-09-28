@@ -8,8 +8,35 @@ using Xunit;
 
 namespace System.Formats.Asn1.Tests.Reader
 {
-    public static class ReadBitString
+    public sealed class ReadBitStringAsnReaderTests : ReadBitStringBase
     {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateClassReader(data, ruleSet, options);
+        }
+    }
+
+    public sealed class ReadBitStringValueAsnReaderTests : ReadBitStringBase
+    {
+        internal override AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default)
+        {
+            return AsnReaderWrapper.CreateValueReader(data, ruleSet, options);
+        }
+    }
+
+    public abstract class ReadBitStringBase
+    {
+        internal abstract AsnReaderWrapper CreateWrapper(
+            ReadOnlyMemory<byte> data,
+            AsnEncodingRules ruleSet,
+            AsnReaderOptions options = default);
+
         [Theory]
         [InlineData("Uncleared unused bit", AsnEncodingRules.BER, "030201FF")]
         [InlineData("Constructed Payload", AsnEncodingRules.BER, "2302030100")]
@@ -17,20 +44,20 @@ namespace System.Formats.Asn1.Tests.Reader
         // This value is actually invalid CER, but it returns false since it's not primitive and
         // it isn't worth preempting the descent to find out it was invalid.
         [InlineData("Constructed Payload-Indefinite", AsnEncodingRules.CER, "238003010000")]
-        public static void TryReadPrimitiveBitStringValue_Fails(
+        public void TryReadPrimitiveBitStringValue_Fails(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             bool didRead = reader.TryReadPrimitiveBitString(
                 out int unusedBitCount,
-                out ReadOnlyMemory<byte> contents);
+                out ReadOnlySpan<byte> contents);
 
-            Assert.False(didRead, "reader.TryReadBitStringBytes");
+            Assert.False(didRead, "reader.TryReadPrimitiveBitString");
             Assert.Equal(0, unusedBitCount);
             Assert.Equal(0, contents.Length);
         }
@@ -41,20 +68,20 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.CER, 2, 4, "030502FEEFF00C")]
         [InlineData(AsnEncodingRules.DER, 7, 1, "03020780")]
         [InlineData(AsnEncodingRules.DER, 0, 4, "030500FEEFF00D" + "0500")]
-        public static void TryReadPrimitiveBitStringValue_Success(
+        public void TryReadPrimitiveBitStringValue_Success(
             AsnEncodingRules ruleSet,
             int expectedUnusedBitCount,
             int expectedLength,
             string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             bool didRead = reader.TryReadPrimitiveBitString(
                 out int unusedBitCount,
-                out ReadOnlyMemory<byte> contents);
+                out ReadOnlySpan<byte> contents);
 
-            Assert.True(didRead, "reader.TryReadBitStringBytes");
+            Assert.True(didRead, "reader.TryReadPrimitiveBitString");
             Assert.Equal(expectedUnusedBitCount, unusedBitCount);
             Assert.Equal(expectedLength, contents.Length);
         }
@@ -70,38 +97,30 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("Bad Length", AsnEncodingRules.CER, "030200")]
         [InlineData("Bad Length", AsnEncodingRules.DER, "030200")]
         [InlineData("Constructed Form", AsnEncodingRules.DER, "2303030100")]
-        public static void TryReadPrimitiveBitStringValue_Throws(
+        public void TryReadPrimitiveBitStringValue_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
         {
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                () =>
-                {
-                    reader.TryReadPrimitiveBitString(
-                        out int unusedBitCount,
-                        out ReadOnlyMemory<byte> contents);
-                });
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveBitString(out _, out _));
 
             Assert.Throws<AsnContentException>(
-                () =>
-                {
-                    reader.TryReadBitString(
-                        new byte[inputData.Length],
-                        out int unusedBitCount,
-                        out int written);
-                });
+                ref reader,
+                (ref reader) => reader.TryReadBitString(new byte[inputData.Length], out _, out _));
 
             Assert.Throws<AsnContentException>(
-                () => reader.ReadBitString(out int unusedBitCount));
+                ref reader,
+                static (ref reader) => reader.ReadBitString(out _));
         }
 
         [Fact]
-        public static void TryReadPrimitiveBitStringValue_Throws_CER_TooLong()
+        public void TryReadPrimitiveBitStringValue_Throws_CER_TooLong()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -115,31 +134,22 @@ namespace System.Formats.Asn1.Tests.Reader
             input[2] = 0x03;
             input[3] = 0xE9;
 
-            AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
+            AsnReaderWrapper reader = CreateWrapper(input, AsnEncodingRules.CER);
 
             Assert.Throws<AsnContentException>(
-                () =>
-                {
-                    reader.TryReadPrimitiveBitString(
-                        out int unusedBitCount,
-                        out ReadOnlyMemory<byte> contents);
-                });
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveBitString(out _, out _));
 
             Assert.Throws<AsnContentException>(
-                () =>
-                {
-                    reader.TryReadBitString(
-                        new byte[input.Length],
-                        out int unusedBitCount,
-                        out int written);
-                });
-
+                ref reader,
+                (ref reader) => reader.TryReadBitString(new byte[input.Length], out _, out _));
             Assert.Throws<AsnContentException>(
-                () => reader.ReadBitString(out int unusedBitCount));
+                ref reader,
+                static (ref reader) => reader.ReadBitString(out _));
         }
 
         [Fact]
-        public static void TryReadPrimitiveBitStringValue_Success_CER_MaxLength()
+        public void TryReadPrimitiveBitStringValue_Success_CER_MaxLength()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -161,20 +171,20 @@ namespace System.Formats.Asn1.Tests.Reader
             input[1002] = 0xA5;
             input[1003] = 0xFC;
 
-            AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
+            AsnReaderWrapper reader = CreateWrapper(input, AsnEncodingRules.CER);
 
             bool success = reader.TryReadPrimitiveBitString(
                 out int unusedBitCount,
-                out ReadOnlyMemory<byte> contents);
+                out ReadOnlySpan<byte> contents);
 
-            Assert.True(success, "reader.TryReadBitStringBytes");
+            Assert.True(success, "reader.TryReadPrimitiveBitString");
             Assert.Equal(input[4], unusedBitCount);
             Assert.Equal(999, contents.Length);
 
             // Check that it is, in fact, the same memory. No copies with this API.
             Assert.True(
                 Unsafe.AreSame(
-                    ref MemoryMarshal.GetReference(contents.Span),
+                    ref MemoryMarshal.GetReference(contents),
                     ref input[5]));
         }
 
@@ -190,10 +200,10 @@ namespace System.Formats.Asn1.Tests.Reader
                 "0000" +
               "03020000" +
               "0000")]
-        public static void TryCopyBitStringBytes_Fails(AsnEncodingRules ruleSet, string inputHex)
+        public void TryCopyBitStringBytes_Fails(AsnEncodingRules ruleSet, string inputHex)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             bool didRead = reader.TryReadBitString(
                 Span<byte>.Empty,
@@ -254,7 +264,7 @@ namespace System.Formats.Asn1.Tests.Reader
               "0000",
             "FACEF00D010203F8",
             3)]
-        public static void TryCopyBitStringBytes_Success(
+        public void TryCopyBitStringBytes_Success(
             AsnEncodingRules ruleSet,
             string inputHex,
             string expectedHex,
@@ -262,7 +272,7 @@ namespace System.Formats.Asn1.Tests.Reader
         {
             byte[] inputData = inputHex.HexToByteArray();
             byte[] output = new byte[expectedHex.Length / 2];
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             bool didRead = reader.TryReadBitString(
                 output,
@@ -274,14 +284,15 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.Equal(expectedHex, output.AsSpan(0, bytesWritten).ByteArrayToHex());
         }
 
-        private static void TryReadBitString_Throws_Helper(
+        private void TryReadBitString_Throws_Helper(
             AsnEncodingRules ruleSet,
             byte[] input)
         {
-            AsnReader reader = new AsnReader(input, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(input, ruleSet);
 
             Assert.Throws<AsnContentException>(
-                () =>
+                ref reader,
+                static (ref reader) =>
                 {
                     reader.TryReadBitString(
                         Span<byte>.Empty,
@@ -290,12 +301,14 @@ namespace System.Formats.Asn1.Tests.Reader
                 });
         }
 
-        private static void ReadBitString_Throws(
+        private void ReadBitString_Throws_Helper(
             AsnEncodingRules ruleSet,
             byte[] input)
         {
-            AsnReader reader = new AsnReader(input, ruleSet);
-            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out int unusedBitCount));
+            AsnReaderWrapper reader = CreateWrapper(input, ruleSet);
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadBitString(out _));
         }
 
         [Theory]
@@ -353,7 +366,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("NonEmpty Null", AsnEncodingRules.CER, "2380000100")]
         [InlineData("LongLength Null", AsnEncodingRules.BER, "2380008100")]
         [InlineData("Constructed Payload-TooShort", AsnEncodingRules.CER, "23800301000000")]
-        public static void TryCopyBitStringBytes_Throws(
+        public void TryCopyBitStringBytes_Throws(
             string description,
             AsnEncodingRules ruleSet,
             string inputHex)
@@ -361,11 +374,11 @@ namespace System.Formats.Asn1.Tests.Reader
             _ = description;
             byte[] inputData = inputHex.HexToByteArray();
             TryReadBitString_Throws_Helper(ruleSet, inputData);
-            ReadBitString_Throws(ruleSet, inputData);
+            ReadBitString_Throws_Helper(ruleSet, inputData);
         }
 
         [Fact]
-        public static void TryCopyBitStringBytes_Throws_CER_TooLong()
+        public void TryCopyBitStringBytes_Throws_CER_TooLong()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -380,11 +393,11 @@ namespace System.Formats.Asn1.Tests.Reader
             input[3] = 0xE9;
 
             TryReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
-            ReadBitString_Throws(AsnEncodingRules.CER, input);
+            ReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
         }
 
         [Fact]
-        public static void TryCopyBitStringBytes_Throws_CER_NestedTooLong()
+        public void TryCopyBitStringBytes_Throws_CER_NestedTooLong()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -410,11 +423,11 @@ namespace System.Formats.Asn1.Tests.Reader
             // EOC implicit since the byte[] initializes to zeros
 
             TryReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
-            ReadBitString_Throws(AsnEncodingRules.CER, input);
+            ReadBitString_Throws_Helper(AsnEncodingRules.CER, input);
         }
 
         [Fact]
-        public static void TryCopyBitStringBytes_Throws_CER_NestedTooShortIntermediate()
+        public void TryCopyBitStringBytes_Throws_CER_NestedTooShortIntermediate()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte), and in the constructed
@@ -453,7 +466,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void TryCopyBitStringBytes_Success_CER_MaxPrimitiveLength()
+        public void TryCopyBitStringBytes_Success_CER_MaxPrimitiveLength()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte).
@@ -477,7 +490,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
             byte[] output = new byte[999];
 
-            AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
+            AsnReaderWrapper reader = CreateWrapper(input, AsnEncodingRules.CER);
 
             bool success = reader.TryReadBitString(
                 output,
@@ -492,14 +505,14 @@ namespace System.Formats.Asn1.Tests.Reader
                 input.AsSpan(5).ByteArrayToHex(),
                 output.ByteArrayToHex());
 
-            reader = new AsnReader(input, AsnEncodingRules.CER);
+            reader = CreateWrapper(input, AsnEncodingRules.CER);
             byte[] output2 = reader.ReadBitString(out int ubc2);
             Assert.Equal(unusedBitCount, ubc2);
             Assert.Equal(output, output2);
         }
 
         [Fact]
-        public static void TryCopyBitStringBytes_Success_CER_MinConstructedLength()
+        public void TryCopyBitStringBytes_Success_CER_MinConstructedLength()
         {
             // CER says that the maximum encoding length for a BitString primitive is
             // 1000 (999 value bytes and 1 unused bit count byte), and that a constructed
@@ -557,7 +570,7 @@ namespace System.Formats.Asn1.Tests.Reader
 
             byte[] output = new byte[1000];
 
-            AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
+            AsnReaderWrapper reader = CreateWrapper(input, AsnEncodingRules.CER);
 
             bool success = reader.TryReadBitString(
                 output,
@@ -572,7 +585,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 expected.ByteArrayToHex(),
                 output.ByteArrayToHex());
 
-            reader = new AsnReader(input, AsnEncodingRules.CER);
+            reader = CreateWrapper(input, AsnEncodingRules.CER);
             byte[] output2 = reader.ReadBitString(out int ubc2);
             Assert.Equal(unusedBitCount, ubc2);
             Assert.Equal(output, output2);
@@ -582,23 +595,25 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Universal(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 3, 2, 1, 0x7E };
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.TryReadPrimitiveBitString(out _, out _, Asn1Tag.Null));
+                static (ref reader) => reader.TryReadPrimitiveBitString(out _, out _, Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<AsnContentException>(
-                () => reader.TryReadPrimitiveBitString(out _, out _, new Asn1Tag(TagClass.ContextSpecific, 0)));
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveBitString(out _, out _, new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            Assert.True(reader.TryReadPrimitiveBitString(out int unusedBitCount, out ReadOnlyMemory<byte> contents));
+            Assert.True(reader.TryReadPrimitiveBitString(out int unusedBitCount, out ReadOnlySpan<byte> contents));
             Assert.Equal("7E", contents.ByteArrayToHex());
             Assert.Equal(1, unusedBitCount);
             Assert.False(reader.HasData, "HasData after read");
@@ -608,54 +623,75 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER)]
         [InlineData(AsnEncodingRules.CER)]
         [InlineData(AsnEncodingRules.DER)]
-        public static void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
+        public void TagMustBeCorrect_Custom(AsnEncodingRules ruleSet)
         {
             byte[] inputData = { 0x87, 2, 0, 0x80 };
             byte[] output = new byte[inputData.Length];
-            AsnReader reader = new AsnReader(inputData, ruleSet);
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
             Asn1Tag wrongTag1 = new Asn1Tag(TagClass.Application, 0);
             Asn1Tag wrongTag2 = new Asn1Tag(TagClass.ContextSpecific, 1);
             Asn1Tag correctTag = new Asn1Tag(TagClass.ContextSpecific, 7);
 
-            AssertExtensions.Throws<ArgumentException>(
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.TryReadPrimitiveBitString(out _, out _, Asn1Tag.Null));
-            AssertExtensions.Throws<ArgumentException>(
+                static (ref reader) => reader.TryReadPrimitiveBitString(out _, out _, Asn1Tag.Null));
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.TryReadBitString(output, out _, out _, Asn1Tag.Null));
-            AssertExtensions.Throws<ArgumentException>(
+                (ref reader) => reader.TryReadBitString(output, out _, out _, Asn1Tag.Null));
+            Assert.Throws<ArgumentException>(
+                ref reader,
                 "expectedTag",
-                () => reader.ReadBitString(out _, Asn1Tag.Null));
+                static (ref reader) => reader.ReadBitString(out _, Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<AsnContentException>(() => reader.TryReadPrimitiveBitString(out _, out _));
-            Assert.Throws<AsnContentException>(() => reader.TryReadBitString(output, out _, out _));
-            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out _));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.TryReadPrimitiveBitString(out _, out _));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.TryReadBitString(output, out _, out _));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                static (ref reader) => reader.ReadBitString(out _));
             Assert.True(reader.HasData, "HasData after default tag");
 
-            Assert.Throws<AsnContentException>(() => reader.TryReadPrimitiveBitString(out _, out _, wrongTag1));
-            Assert.Throws<AsnContentException>(() => reader.TryReadBitString(output, out _, out _, wrongTag1));
-            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out _, wrongTag1));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.TryReadPrimitiveBitString(out _, out _, wrongTag1));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.TryReadBitString(output, out _, out _, wrongTag1));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.ReadBitString(out _, wrongTag1));
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
-            Assert.Throws<AsnContentException>(() => reader.TryReadPrimitiveBitString(out _, out _, wrongTag2));
-            Assert.Throws<AsnContentException>(() => reader.TryReadBitString(output, out _, out _, wrongTag2));
-            Assert.Throws<AsnContentException>(() => reader.ReadBitString(out _, wrongTag2));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.TryReadPrimitiveBitString(out _, out _, wrongTag2));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.TryReadBitString(output, out _, out _, wrongTag2));
+            Assert.Throws<AsnContentException>(
+                ref reader,
+                (ref reader) => reader.ReadBitString(out _, wrongTag2));
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.True(
                 reader.TryReadPrimitiveBitString(
                     out int unusedBitCount,
-                    out ReadOnlyMemory<byte> contents,
+                    out ReadOnlySpan<byte> contents,
                     correctTag));
 
             Assert.Equal("80", contents.ByteArrayToHex());
             Assert.Equal(0, unusedBitCount);
             Assert.False(reader.HasData, "HasData after reading value");
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             Assert.True(
                 reader.TryReadBitString(
@@ -668,7 +704,7 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.Equal(0, unusedBitCount);
             Assert.False(reader.HasData, "HasData after reading value");
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             byte[] output2 = reader.ReadBitString(out unusedBitCount, correctTag);
 
             Assert.Equal("80", output2.ByteArrayToHex());
@@ -683,40 +719,31 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData(AsnEncodingRules.BER, "800200FF", TagClass.ContextSpecific, 0)]
         [InlineData(AsnEncodingRules.CER, "4C0200FF", TagClass.Application, 12)]
         [InlineData(AsnEncodingRules.DER, "DF8A460200FF", TagClass.Private, 1350)]
-        public static void ExpectedTag_IgnoresConstructed(
+        public void ExpectedTag_IgnoresConstructed(
             AsnEncodingRules ruleSet,
             string inputHex,
             TagClass tagClass,
             int tagValue)
         {
             byte[] inputData = inputHex.HexToByteArray();
-            AsnReader reader = new AsnReader(inputData, ruleSet);
             Asn1Tag correctConstructed = new Asn1Tag(tagClass, tagValue, true);
             Asn1Tag correctPrimitive = new Asn1Tag(tagClass, tagValue, false);
 
-            Assert.True(
-                reader.TryReadPrimitiveBitString(
-                    out int ubc1,
-                    out ReadOnlyMemory<byte> val1,
-                    correctConstructed));
+            AsnReaderWrapper reader = CreateWrapper(inputData, ruleSet);
 
+            Assert.True(reader.TryReadPrimitiveBitString(out int ubc1, out ReadOnlySpan<byte> val1, correctConstructed));
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
-            Assert.True(
-                reader.TryReadPrimitiveBitString(
-                    out int ubc2,
-                    out ReadOnlyMemory<byte> val2,
-                    correctPrimitive));
-
+            Assert.True(reader.TryReadPrimitiveBitString(out int ubc2, out ReadOnlySpan<byte> val2, correctPrimitive));
             Assert.False(reader.HasData);
 
             string val1Hex = val1.ByteArrayToHex();
             Assert.Equal(val1Hex, val2.ByteArrayToHex());
             Assert.Equal(ubc1, ubc2);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             byte[] output1 = new byte[inputData.Length];
 
             Assert.True(reader.TryReadBitString(output1.AsSpan(1), out ubc1, out int written, correctConstructed));
@@ -724,21 +751,21 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.Equal(val1Hex, output1.AsSpan(1, written).ByteArrayToHex());
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
 
             Assert.True(reader.TryReadBitString(output1.AsSpan(2), out ubc1, out written, correctPrimitive));
             Assert.Equal(ubc2, ubc1);
             Assert.Equal(val1Hex, output1.AsSpan(2, written).ByteArrayToHex());
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             byte[] output2 = reader.ReadBitString(out ubc1, correctConstructed);
 
             Assert.Equal(ubc2, ubc1);
             Assert.Equal(val1Hex, output2.ByteArrayToHex());
             Assert.False(reader.HasData);
 
-            reader = new AsnReader(inputData, ruleSet);
+            reader = CreateWrapper(inputData, ruleSet);
             byte[] output3 = reader.ReadBitString(out ubc1, correctPrimitive);
 
             Assert.Equal(ubc2, ubc1);
@@ -747,7 +774,7 @@ namespace System.Formats.Asn1.Tests.Reader
         }
 
         [Fact]
-        public static void TryCopyBitStringBytes_ExtremelyNested()
+        public void TryCopyBitStringBytes_ExtremelyNested()
         {
             byte[] dataBytes = new byte[4 * 16384];
 
@@ -767,7 +794,7 @@ namespace System.Formats.Asn1.Tests.Reader
                 dataBytes[i + 1] = 0x80;
             }
 
-            AsnReader reader = new AsnReader(dataBytes, AsnEncodingRules.BER);
+            AsnReaderWrapper reader = CreateWrapper(dataBytes, AsnEncodingRules.BER);
 
             int bytesWritten;
             int unusedBitCount;
@@ -778,7 +805,7 @@ namespace System.Formats.Asn1.Tests.Reader
             Assert.Equal(0, bytesWritten);
             Assert.Equal(0, unusedBitCount);
 
-            reader = new AsnReader(dataBytes, AsnEncodingRules.BER);
+            reader = CreateWrapper(dataBytes, AsnEncodingRules.BER);
             byte[] output = reader.ReadBitString(out unusedBitCount);
             Assert.Equal(0, unusedBitCount);
 

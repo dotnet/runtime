@@ -32,6 +32,7 @@ namespace System.Data.ProviderBase
         private const string _sqlCommand = "SQLCommand";
         private const string _prepareCollection = "PrepareCollection";
 
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Members from serialized types may use dynamic code generation.")]
         public DbMetaDataFactory(Stream xmlStream, string serverVersion, string normalizedServerVersion)
         {
             ADP.CheckArgumentNull(xmlStream, "xmlStream");
@@ -280,7 +281,7 @@ namespace System.Data.ProviderBase
 
                 if (ADP.CompareInsensitiveInvariant(candidateCollectionName, collectionName))
                 {
-                    if (SupportedByCurrentVersion(row) == false)
+                    if (!SupportedByCurrentVersion(row))
                     {
                         versionFailure = true;
                     }
@@ -313,7 +314,7 @@ namespace System.Data.ProviderBase
 
             if (requestedCollectionRow == null)
             {
-                if (versionFailure == false)
+                if (!versionFailure)
                 {
                     throw ADP.UndefinedCollection(collectionName);
                 }
@@ -416,7 +417,7 @@ namespace System.Data.ProviderBase
             DataRow? requestedCollectionRow = FindMetaDataCollectionRow(collectionName);
             string exactCollectionName = (requestedCollectionRow[collectionNameColumn, DataRowVersion.Current] as string)!;
 
-            if (ADP.IsEmptyArray(restrictions) == false)
+            if (!ADP.IsEmptyArray(restrictions))
             {
                 for (int i = 0; i < restrictions!.Length; i++)
                 {
@@ -444,7 +445,7 @@ namespace System.Data.ProviderBase
                         hiddenColumns = null;
                     }
                     // none of the datatable collections support restrictions
-                    if (ADP.IsEmptyArray(restrictions) == false)
+                    if (!ADP.IsEmptyArray(restrictions))
                     {
                         throw ADP.TooManyRestrictions(exactCollectionName);
                     }

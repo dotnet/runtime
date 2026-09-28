@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO.Enumeration;
 using System.Linq;
 using Xunit;
 
@@ -470,34 +469,6 @@ namespace System.IO.Tests
             Assert.Equal(Path.GetDirectoryName(linkInfo.FullName), Path.GetDirectoryName(targetInfo.FullName));
 
             Directory.SetCurrentDirectory(Path.GetTempPath());
-        }
-
-        protected static string? GetAppExecLinkPath()
-        {
-            string localAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA");
-            if (localAppDataPath is null)
-            {
-                return null;
-            }
-
-            string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
-
-            if (!Directory.Exists(windowsAppsDir))
-            {
-                return null;
-            }
-
-            var opts = new EnumerationOptions { RecurseSubdirectories = true };
-
-            return new FileSystemEnumerable<string?>(
-                windowsAppsDir,
-                (ref FileSystemEntry entry) => entry.ToFullPath(),
-                opts)
-            {
-                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
-                    (entry.Attributes & FileAttributes.ReparsePoint) != 0
-            }.FirstOrDefault();
         }
     }
 }

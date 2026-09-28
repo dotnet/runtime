@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Interop
 {
@@ -35,6 +35,8 @@ namespace Microsoft.Interop
     {
         protected MarshallingInfo()
         { }
+
+        public virtual IEnumerable<TypePositionInfo> ElementDependencies => [];
     }
 
     /// <summary>
@@ -108,16 +110,56 @@ namespace Microsoft.Interop
         ManagedTypeInfo EntryPointType,
         CustomTypeMarshallers Marshallers) : MarshallingInfo;
 
+    public sealed record IidParameterIndexNativeMarshallingInfo(
+        ManagedTypeInfo EntryPointType,
+        CustomTypeMarshallers Marshallers,
+        TypePositionInfo IidParameterIndexInfo) : NativeMarshallingAttributeInfo(EntryPointType, Marshallers)
+    {
+        public override IEnumerable<TypePositionInfo> ElementDependencies => [IidParameterIndexInfo];
+    }
+
     /// <summary>
     /// Custom type marshalling via MarshalUsingAttribute or NativeMarshallingAttribute for a linear collection
     /// </summary>
     public sealed record NativeLinearCollectionMarshallingInfo(
         ManagedTypeInfo EntryPointType,
         CustomTypeMarshallers Marshallers,
-        CountInfo ElementCountInfo,
-        ManagedTypeInfo PlaceholderTypeParameter) : NativeMarshallingAttributeInfo(
+        CountInfo ElementCountInfo) : NativeMarshallingAttributeInfo(
             EntryPointType,
-            Marshallers);
+            Marshallers)
+    {
+        public override IEnumerable<TypePositionInfo> ElementDependencies
+        {
+            get
+            {
+                return field ??= GetElementDependencies().ToImmutableArray();
+
+                IEnumerable<TypePositionInfo> GetElementDependencies()
+                {
+                    if (ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
+                    {
+                        // Do not include dependent elements with no managed or native index.
+                        // These values are dummy values that are inserted earlier to avoid emitting extra diagnostics.
+                        if (nestedCountElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedCountElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                        {
+                            yield return nestedCountElement;
+                        }
+                    }
+
+                    foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Marshallers.Modes)
+                    {
+                        foreach (TypePositionInfo nestedElement in mode.Value.CollectionElementMarshallingInfo.ElementDependencies)
+                        {
+                            if (nestedElement.ManagedIndex != TypePositionInfo.UnsetIndex || nestedElement.NativeIndex != TypePositionInfo.UnsetIndex)
+                            {
+                                yield return nestedElement;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     /// <summary>
     /// Marshal an exception based on the same rules as the built-in COM system based on the unmanaged type of the native return marshaller.
@@ -133,7 +175,7 @@ namespace Microsoft.Interop
                 SpecialType.System_UInt32 => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsHResultMarshaller}<uint>", unmanagedReturnType),
                 SpecialType.System_Single => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<float>", unmanagedReturnType),
                 SpecialType.System_Double => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsNaNMarshaller}<double>", unmanagedReturnType),
-                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameterSyntax(SyntaxFactory.ParseTypeName(unmanagedReturnType.FullTypeName))}>", unmanagedReturnType),
+                _ => CreateWellKnownComExceptionMarshallingData($"{TypeNames.ExceptionAsDefaultMarshaller}<{MarshallerHelpers.GetCompatibleGenericTypeParameter(unmanagedReturnType)}>", unmanagedReturnType),
             };
 
             static NativeMarshallingAttributeInfo CreateWellKnownComExceptionMarshallingData(string marshallerName, ManagedTypeInfo unmanagedType)

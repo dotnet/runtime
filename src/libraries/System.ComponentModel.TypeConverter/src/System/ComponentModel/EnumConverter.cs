@@ -87,10 +87,9 @@ namespace System.ComponentModel
                     {
                         bool isUnderlyingTypeUInt64 = Enum.GetUnderlyingType(EnumType) == typeof(ulong);
                         long convertedValue = 0;
-                        string[] values = strValue.Split(',');
-                        foreach (string v in values)
+                        foreach (Range v in strValue.AsSpan().Split(','))
                         {
-                            convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, Enum.Parse(EnumType, v, true), culture);
+                            convertedValue |= GetEnumValue(isUnderlyingTypeUInt64, Enum.Parse(EnumType, strValue.AsSpan(v), true), culture);
                         }
                         return Enum.ToObject(EnumType, convertedValue);
                     }

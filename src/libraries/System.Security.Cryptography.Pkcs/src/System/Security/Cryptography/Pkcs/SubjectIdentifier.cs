@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Security.Cryptography.Asn1.Pkcs7;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
 
@@ -97,7 +98,12 @@ namespace System.Security.Cryptography.Pkcs
         public SubjectIdentifierType Type { get; }
         public object? Value { get; }
 
-        public bool MatchesCertificate(X509Certificate2 certificate)
+#if NET || NETSTANDARD2_1
+        public
+#else
+        internal
+#endif
+        bool MatchesCertificate(X509Certificate2 certificate)
         {
             switch (Type)
             {

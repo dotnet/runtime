@@ -95,7 +95,7 @@ namespace System.Diagnostics.Metrics
                 unit: "{contention}",
                 description: "The number of times there was contention when trying to acquire a monitor lock since the process has started.");
 
-            s_meter.CreateObservableCounter(
+            s_meter.CreateObservableUpDownCounter(
                 "dotnet.thread_pool.thread.count",
                 () => (long)ThreadPool.ThreadCount,
                 unit: "{thread}",
@@ -107,7 +107,7 @@ namespace System.Diagnostics.Metrics
                 unit: "{work_item}",
                 description: "The number of work items that the thread pool has completed since the process has started.");
 
-            s_meter.CreateObservableCounter(
+            s_meter.CreateObservableUpDownCounter(
                 "dotnet.thread_pool.queue.length",
                 () => ThreadPool.PendingWorkItemCount,
                 unit: "{work_item}",

@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System.Web.Util
 {
@@ -299,7 +300,7 @@ namespace System.Web.Util
                 helper.AddByte(b);
             }
 
-            return Utf16StringValidator.ValidateString(helper.GetString());
+            return helper.GetString();
         }
 
         [return: NotNullIfNotNull(nameof(value))]
@@ -383,7 +384,7 @@ namespace System.Web.Util
                 }
             }
 
-            return Utf16StringValidator.ValidateString(helper.GetString());
+            return helper.GetString();
         }
 
         [return: NotNullIfNotNull(nameof(bytes))]
@@ -456,7 +457,7 @@ namespace System.Web.Util
             return true;
         }
 
-        internal static byte[] UrlEncode(string str, Encoding e)
+        internal static unsafe byte[] UrlEncode(string str, Encoding e)
         {
             if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
             {
@@ -674,7 +675,32 @@ namespace System.Web.Util
                     FlushBytes();
                 }
 
-                return _charBuffer.Slice(0, _numChars).ToString();
+                Span<char> chars = _charBuffer.Slice(0, _numChars);
+
+                // Replace any invalid surrogate chars.
+                int idxOfFirstInvalidSurrogate = Utf16.IndexOfInvalidSubsequence(chars);
+                for (int i = idxOfFirstInvalidSurrogate; (uint)i < (uint)chars.Length; i++)
+                {
+                    if (char.IsHighSurrogate(chars[i]))
+                    {
+                        if ((uint)(i + 1) >= (uint)chars.Length || !char.IsLowSurrogate(chars[i + 1]))
+                        {
+                            // High surrogate not followed by a low surrogate.
+                            chars[i] = (char)Rune.ReplacementChar.Value;
+                        }
+                        else
+                        {
+                            i++;
+                        }
+                    }
+                    else if (char.IsLowSurrogate(chars[i]))
+                    {
+                        // Low surrogate not preceded by a high surrogate.
+                        chars[i] = (char)Rune.ReplacementChar.Value;
+                    }
+                }
+
+                return chars.ToString();
             }
         }
     }

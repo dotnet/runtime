@@ -16,93 +16,111 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// Bridges all ILogger-based logging to EventSource/EventListener logging.
     /// </summary>
     /// <remarks>
-    /// You turn this logging on by enabling the EventSource called
-    ///
-    ///      Microsoft-Extensions-Logging
-    ///
-    /// When you enabled the EventSource, the EventLevel you set is translated in the obvious way to the level
-    /// associated with the ILogger (thus Debug = verbose, Informational = Informational ... Critical == Critical)
-    ///
-    /// This allows you to filter by event level in a straightforward way.
-    ///
-    /// For finer control you can specify a EventSource Argument called
-    ///
-    /// FilterSpecs
-    ///
-    /// The FilterSpecs argument is a semicolon separated list of specifications.   Where each specification is
-    ///
-    /// SPEC =                          // empty spec, same as *
-    ///      | NAME                     // Just a name the level is the default level
-    ///      | NAME : LEVEL             // specifies level for a particular logger (can have a * suffix).
-    ///
-    /// When "UseAppFilters" is specified in the FilterSpecs, it avoids disabling all categories which happens by default otherwise.
-    ///
-    /// Where Name is the name of a ILoggger (case matters), Name can have a * which acts as a wildcard
-    /// AS A SUFFIX.   Thus Net* will match any loggers that start with the 'Net'.
-    ///
-    /// The LEVEL is a number or a LogLevel string. 0=Trace, 1=Debug, 2=Information, 3=Warning,  4=Error, Critical=5
-    /// This specifies the level for the associated pattern.  If the number is not specified, (first form
-    /// of the specification) it is the default level for the EventSource.
-    ///
-    /// First match is used if a particular name matches more than one pattern.
-    ///
-    /// In addition the level and FilterSpec argument, you can also set EventSource Keywords.  See the Keywords
-    /// definition below, but basically you get to decide if you wish to have
-    ///
-    ///   * Keywords.Message - You get the event with the data in parsed form.
-    ///   * Keywords.JsonMessage - you get an event with the data in parse form but as a JSON blob (not broken up by argument ...)
-    ///   * Keywords.FormattedMessage - you get an event with the data formatted as a string
-    ///
-    /// It is expected that you will turn only one of these keywords on at a time, but you can turn them all on (and get
-    /// the same data logged three different ways.
-    ///
-    /// Example Usage
-    ///
-    /// This example shows how to use an EventListener to get ILogging information
-    ///
+    /// <para>
+    /// To turn this logging on, you enable the EventSource called <c>Microsoft-Extensions-Logging</c>. When you enable the EventSource, the EventLevel you set is translated in to the level associated with the ILogger (thus <c>Debug</c> = <c>verbose</c>, <c>Informational</c> = <c>Informational</c>, <c>Critical</c> == <c>Critical</c>). This allows you to filter by event level in a straightforward way.
+    /// </para>
+    /// <para>
+    /// For finer control, you can specify an EventSource argument called <c>FilterSpecs</c>. The <c>FilterSpecs</c> argument is a semicolon-separated list of specifications. Where each specification is:
+    /// </para>
+    /// <para>
+    /// SPEC =                          // Empty spec, same as *.
+    /// </para>
+    /// <para>
+    ///      | NAME                     // Named spec. Uses the default level.
+    /// </para>
+    /// <para>
+    ///      | NAME : LEVEL             // Specifies level for a particular logger (can have a * suffix).
+    /// </para>
+    /// <para>
+    /// When "UseAppFilters" is specified in the <c>FilterSpecs</c>, it avoids disabling all categories, which happens by default otherwise.
+    /// </para>
+    /// <para>
+    /// <c>Name</c> is the name of an <see cref="ILogger"/> (case matters), and can end with *, which acts as a wildcard. For example, <c>Net*</c> will match any loggers that start with 'Net'.
+    /// </para>
+    /// <para>
+    /// <c>LEVEL</c> is a number or a <see cref="LogLevel"/> string (0=Trace, 1=Debug, 2=Information, 3=Warning,  4=Error, Critical=5). This specifies the level for the associated pattern. If the number isn't specified (first form of the specification), it's the default level for the EventSource.
+    /// </para>
+    /// <para>
+    /// The first match is used if a particular name matches more than one pattern.
+    /// </para>
+    /// <para>
+    /// In addition to the level and <c>FilterSpecs</c> argument, you can also set EventSource keywords:
+    /// </para>
+    /// <para>
+    ///   * Keywords.Message - Event contains data in parsed form.
+    /// </para>
+    /// <para>
+    ///   * Keywords.JsonMessage - Event contains data in parsed form but as a JSON blob (not broken up by argument).
+    /// </para>
+    /// <para>
+    ///   * Keywords.FormattedMessage - Event contains data formatted as a string.
+    /// </para>
+    /// <para>
+    /// It's expected that only one of these keywords is turned on at a time, but you can turn them all on (and get
+    /// the same data logged three different ways).
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// This example shows how to use an EventListener to get ILogging information.
+    /// <code language="csharp">
     /// class MyEventListener : EventListener {
     ///     protected override void OnEventSourceCreated(EventSource eventSource) {
     ///         if (eventSource.Name == "Microsoft-Extensions-Logging") {
-    ///             // initialize a string, string dictionary of arguments to pass to the EventSource.
-    ///             // Turn on loggers matching App* to Information, everything else (*) is the default level (which is EventLevel.Error)
+    ///             // Initialize a dictionary of arguments to pass to the EventSource.
+    ///             // Turn on loggers matching App* to Information; everything else (*) is the default level (which is EventLevel.Error).
     ///             var args = new Dictionary&lt;string, string&gt;() { { "FilterSpecs", "App*:Information;*" } };
     ///             // Set the default level (verbosity) to Error, and only ask for the formatted messages in this case.
     ///             EnableEvents(eventSource, EventLevel.Error, LoggingEventSource.Keywords.FormattedMessage, args);
     ///         }
     ///     }
     ///     protected override void OnEventWritten(EventWrittenEventArgs eventData) {
-    ///         // Look for the formatted message event, which has the following argument layout (as defined in the LoggingEventSource.
+    ///         // Look for the formatted message event, which has the following argument layout (as defined in the LoggingEventSource):
     ///         // FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, string EventId, string FormattedMessage);
     ///         if (eventData.EventName == "FormattedMessage")
-    ///             Console.WriteLine("Logger {0}: {1}", eventData.Payload[2], eventData.Payload[4]);
+    ///             Console.WriteLine($"Logger {eventData.Payload[2]}: {eventData.Payload[4]}");
     ///     }
     /// }
-    /// </remarks>
+    /// </code>
+    /// </example>
+#pragma warning disable ESGEN001 // EventSource class is not partial. It's blocked by https://github.com/dotnet/runtime/issues/121205
     [EventSource(Name = "Microsoft-Extensions-Logging")]
     public sealed class LoggingEventSource : System.Diagnostics.Tracing.EventSource
+#pragma warning restore ESGEN001
     {
         /// <summary>
-        /// This is public from an EventSource consumer point of view, but since these definitions
-        /// are not needed outside this class
+        /// Defines the different ways data can be formatted in an event.
         /// </summary>
+        // This is public from an EventSource consumer point of view,
+        // but these definitions aren't needed outside this class.
         public static class Keywords
         {
             /// <summary>
-            /// Meta events are events about the LoggingEventSource itself (that is they did not come from ILogger
+            /// Events about the LoggingEventSource itself (that is, they did not come from ILogger).
             /// </summary>
             public const EventKeywords Meta = (EventKeywords)1;
             /// <summary>
-            /// Turns on the 'Message' event when ILogger.Log() is called.   It gives the information in a programmatic (not formatted) way
+            /// Turns on the 'Message' event when ILogger.Log() is called. Provides information in a programmatic (unformatted) way.
             /// </summary>
             public const EventKeywords Message = (EventKeywords)2;
             /// <summary>
-            /// Turns on the 'FormatMessage' event when ILogger.Log() is called.  It gives the formatted string version of the information.
+            /// Turns on the 'FormatMessage' event when ILogger.Log() is called. Provides the formatted string version of the information.
             /// </summary>
             public const EventKeywords FormattedMessage = (EventKeywords)4;
             /// <summary>
-            /// Turns on the 'MessageJson' event when ILogger.Log() is called.   It gives  JSON representation of the Arguments.
+            /// Turns on the 'MessageJson' event when ILogger.Log() is called. Provides a JSON representation of the Arguments.
             /// </summary>
             public const EventKeywords JsonMessage = (EventKeywords)8;
+        }
+
+        // Separators are in a nested class so their initialization is guaranteed to complete
+        // before first use, regardless of declaration order in the outer class.  The Instance
+        // constructor can trigger OnEventCommand re-entrantly (via EventPipe enable during
+        // the base EventSource constructor), which calls ParseFilterSpec and needs these arrays.
+        // See: https://github.com/dotnet/roslyn/issues/77005
+        private static class Separators
+        {
+            internal static readonly char[] Semicolon = new[] { ';' };
+            internal static readonly char[] Colon = new[] { ':' };
         }
 
         /// <summary>
@@ -118,9 +136,8 @@ namespace Microsoft.Extensions.Logging.EventSource
         private const string UseAppFilters = "UseAppFilters";
         private const string WriteEventCoreSuppressionJustification = "WriteEventCore is safe when eventData object is a primitive type which is in this case.";
         private const string WriteEventDynamicDependencySuppressionJustification = "DynamicDependency attribute will ensure that the required properties are not trimmed.";
-        private static readonly char[] s_semicolon = new[] { ';' };
-        private static readonly char[] s_colon = new[] { ':' };
 
+        // This event source uses IEnumerable<T> as an event parameter type which is only supported by EtwSelfDescribingEventFormat.
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
         }
@@ -181,6 +198,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         [Event(2, Keywords = Keywords.Message, Level = EventLevel.LogAlways, Version = 2)]
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(KeyValuePair<string, string>))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicProperties, typeof(ExceptionInfo))]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = WriteEventDynamicDependencySuppressionJustification)]
         internal void Message(
@@ -418,7 +436,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
             var rules = new List<LoggerFilterRule>();
             int ruleStringsStartIndex = 0;
-            string[] ruleStrings = filterSpec.Split(s_semicolon, StringSplitOptions.RemoveEmptyEntries);
+            string[] ruleStrings = filterSpec.Split(Separators.Semicolon, StringSplitOptions.RemoveEmptyEntries);
             if (ruleStrings.Length > 0 && ruleStrings[0].Equals(UseAppFilters, StringComparison.OrdinalIgnoreCase))
             {
                 // Avoid adding default rule to disable event source loggers
@@ -433,7 +451,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 string rule = ruleStrings[i];
                 LogLevel level = defaultLevel;
-                string[] parts = rule.Split(s_colon, 2);
+                string[] parts = rule.Split(Separators.Colon, 2);
                 string loggerName = parts[0];
                 if (loggerName.Length == 0)
                 {

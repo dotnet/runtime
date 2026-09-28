@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 
 namespace System.Net.NetworkInformation
@@ -25,7 +26,7 @@ namespace System.Net.NetworkInformation
             internal string[]? IPv4Routes;
             internal string[]? IPv6Routes;
             internal string? DnsSuffix;
-            internal IPAddressCollection? DnsAddresses;
+            internal IPAddressCollection DnsAddresses;
 
             internal LinuxNetworkInterfaceSystemProperties()
             {
@@ -59,6 +60,7 @@ namespace System.Net.NetworkInformation
                 }
                 catch (Exception e) when (e is FileNotFoundException || e is UnauthorizedAccessException)
                 {
+                    DnsAddresses = new InternalIPAddressCollection();
                 }
             }
         }
@@ -93,7 +95,7 @@ namespace System.Net.NetworkInformation
 
                 for (int i = 0; i < interfaceCount; i++)
                 {
-                    var lni = new LinuxNetworkInterface(Marshal.PtrToStringUTF8((IntPtr)nii->Name)!, nii->InterfaceIndex, systemProperties);
+                    var lni = new LinuxNetworkInterface(Utf8StringMarshaller.ConvertToManaged((byte*)&nii->Name)!, nii->InterfaceIndex, systemProperties);
                     lni._interfaceType = (NetworkInterfaceType)nii->HardwareType;
                     lni._speed = nii->Speed;
                     lni._operationalStatus = (OperationalStatus)nii->OperationalState;
@@ -102,7 +104,7 @@ namespace System.Net.NetworkInformation
 
                     if (nii->NumAddressBytes > 0)
                     {
-                        lni._physicalAddress = new PhysicalAddress(new ReadOnlySpan<byte>(nii->AddressBytes, nii->NumAddressBytes).ToArray());
+                        lni._physicalAddress = new PhysicalAddress(((ReadOnlySpan<byte>)nii->AddressBytes)[..nii->NumAddressBytes].ToArray());
                     }
 
                     interfaces[i] = lni;
@@ -112,7 +114,7 @@ namespace System.Net.NetworkInformation
 
                 while (addressCount != 0)
                 {
-                    var address = new IPAddress(new ReadOnlySpan<byte>(ai->AddressBytes, ai->NumAddressBytes));
+                    var address = new IPAddress(((ReadOnlySpan<byte>)ai->AddressBytes)[..ai->NumAddressBytes]);
                     if (address.IsIPv6LinkLocal)
                     {
                         address.ScopeId = ai->InterfaceIndex;

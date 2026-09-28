@@ -142,7 +142,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         [InlineData(null)]
-        public void ValidMapNames_Windows(string name)
+        public void ValidMapNames_Windows(string? name)
         {
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(name, 4096))
             {
@@ -261,7 +261,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         [InlineData(null)]
-        public void DataNotPersistedBetweenMaps_Windows(string name)
+        public void DataNotPersistedBetweenMaps_Windows(string? name)
         {
             // Write some data to a map newly created with the specified name
             using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(name, 4096))

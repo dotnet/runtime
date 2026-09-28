@@ -2,19 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*++
-
-
-
 Module Name:
-
     include/pal/context.h
 
 Abstract:
-
     Header file for thread context utility functions.
-
-
-
 --*/
 
 #ifndef _PAL_CONTEXT_H_
@@ -33,12 +25,36 @@ extern "C"
 /* A type to wrap the native context type, which is ucontext_t on some
  * platforms and another type elsewhere. */
 #if HAVE_UCONTEXT_T
+#if HAVE_UCONTEXT_H
 #include <ucontext.h>
+#endif // HAVE_UCONTEXT_H
 
 typedef ucontext_t native_context_t;
+#elif defined(TARGET_WASI)
+// WASI (wasm32-wasip2 in wasi-sdk 33) has no signal/ucontext support: <ucontext.h>
+// is absent and <signal.h> hides siginfo_t/FPE_*/ILL_* behind
+// __wasilibc_unmodified_upstream. PAL declarations still reference these types
+// at the header level even though the call sites are excluded from compilation
+// on WASI (exception/signal.cpp, exception/seh-unwind.cpp). Provide opaque
+// native_context_t here; siginfo_t lives in pal/wasi/pal_wasi_missing.h
+// which is pulled in below.
+//
+// TODO: delete when wasi-libc exposes siginfo_t and a ucontext_t (no upstream
+// plan as of WASI 0.2.8).
+typedef struct { int _placeholder; } native_context_t;
+#include "pal/wasi/pal_wasi_missing.h"
 #else   // HAVE_UCONTEXT_T
 #error Native context type is not known on this platform!
 #endif  // HAVE_UCONTEXT_T
+
+// Helper to obtain the machine-register container from a native_context_t pointer.
+// On most platforms the registers live in the uc_mcontext sub-structure. On OpenBSD
+// native_context_t is an alias for struct sigcontext and holds the registers directly.
+#ifdef TARGET_OPENBSD
+#define MCONTEXT_FROM_NATIVE(ucontextPtr)  (*(ucontextPtr))
+#else
+#define MCONTEXT_FROM_NATIVE(ucontextPtr)  ((ucontextPtr)->uc_mcontext)
+#endif
 
 #if !HAVE_MACH_EXCEPTIONS
 
@@ -58,9 +74,10 @@ using asm_sigcontext::_xstate;
 
 #if defined(XSTATE_SUPPORTED) || (defined(HOST_AMD64) && defined(HAVE_MACH_EXCEPTIONS))
 bool Xstate_IsAvx512Supported();
+bool Xstate_IsApxSupported();
 #endif // XSTATE_SUPPORTED || (HOST_AMD64 && HAVE_MACH_EXCEPTIONS)
 
-#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(TARGET_OSX)
+#if defined(HOST_64BIT) && defined(HOST_ARM64) && !defined(TARGET_FREEBSD) && !defined(__APPLE__)
 #if !defined(SVE_MAGIC)
 
 // Add the missing SVE defines
@@ -142,7 +159,7 @@ struct sve_context {
         (SVE_SIG_REGS_OFFSET + SVE_SIG_REGS_SIZE(vq))
 
 #endif // SVE_MAGIC
-#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !TARGET_OSX
+#endif // HOST_64BIT && HOST_ARM64 && !TARGET_FREEBSD && !__APPLE__
 
 #ifdef HOST_S390X
 
@@ -166,6 +183,48 @@ struct sve_context {
 #define MCREG_R15(mc)       ((mc).gregs[15])
 
 #elif HOST_POWERPC64
+
+#if defined(TARGET_FREEBSD)
+#define MCREG_R0(mc)        ((mc).mc_gpr[0])
+#define MCREG_R1(mc)        ((mc).mc_gpr[1])
+#define MCREG_R2(mc)        ((mc).mc_gpr[2])
+#define MCREG_R3(mc)        ((mc).mc_gpr[3])
+#define MCREG_R4(mc)        ((mc).mc_gpr[4])
+#define MCREG_R5(mc)        ((mc).mc_gpr[5])
+#define MCREG_R6(mc)        ((mc).mc_gpr[6])
+#define MCREG_R7(mc)        ((mc).mc_gpr[7])
+#define MCREG_R8(mc)        ((mc).mc_gpr[8])
+#define MCREG_R9(mc)        ((mc).mc_gpr[9])
+#define MCREG_R10(mc)       ((mc).mc_gpr[10])
+#define MCREG_R11(mc)       ((mc).mc_gpr[11])
+#define MCREG_R12(mc)       ((mc).mc_gpr[12])
+#define MCREG_R13(mc)       ((mc).mc_gpr[13])
+#define MCREG_R14(mc)       ((mc).mc_gpr[14])
+#define MCREG_R15(mc)       ((mc).mc_gpr[15])
+#define MCREG_R16(mc)       ((mc).mc_gpr[16])
+#define MCREG_R17(mc)       ((mc).mc_gpr[17])
+#define MCREG_R18(mc)       ((mc).mc_gpr[18])
+#define MCREG_R19(mc)       ((mc).mc_gpr[19])
+#define MCREG_R20(mc)       ((mc).mc_gpr[20])
+#define MCREG_R21(mc)       ((mc).mc_gpr[21])
+#define MCREG_R22(mc)       ((mc).mc_gpr[22])
+#define MCREG_R23(mc)       ((mc).mc_gpr[23])
+#define MCREG_R24(mc)       ((mc).mc_gpr[24])
+#define MCREG_R25(mc)       ((mc).mc_gpr[25])
+#define MCREG_R26(mc)       ((mc).mc_gpr[26])
+#define MCREG_R27(mc)       ((mc).mc_gpr[27])
+#define MCREG_R28(mc)       ((mc).mc_gpr[28])
+#define MCREG_R29(mc)       ((mc).mc_gpr[29])
+#define MCREG_R30(mc)       ((mc).mc_gpr[30])
+#define MCREG_R31(mc)       ((mc).mc_gpr[31])
+#define MCREG_Nip(mc)       ((mc).mc_srr0)
+#define MCREG_Msr(mc)       ((mc).mc_srr1)
+#define MCREG_Ctr(mc)       ((mc).mc_ctr)
+#define MCREG_Link(mc)      ((mc).mc_lr)
+#define MCREG_Xer(mc)       ((mc).mc_xer)
+#define MCREG_Ccr(mc)       ((mc).mc_cr)
+
+#else // !TARGET_FREEBSD
 
 #define MCREG_R0(mc)        ((mc).gp_regs[0])
 #define MCREG_R1(mc)        ((mc).gp_regs[1])
@@ -205,6 +264,13 @@ struct sve_context {
 #define MCREG_Link(mc)      ((mc).gp_regs[36])
 #define MCREG_Xer(mc)       ((mc).gp_regs[37])
 #define MCREG_Ccr(mc)       ((mc).gp_regs[38])
+
+#endif // TARGET_FREEBSD
+
+#elif defined(HOST_WASM)
+
+#define MCREG_Sp(mc)      0
+#define MCREG_Pc(mc)      0
 
 #elif HAVE___GREGSET_T
 
@@ -467,6 +533,14 @@ struct sve_context {
 #define XFEATURE_MASK_AVX512 (XFEATURE_MASK_OPMASK | XFEATURE_MASK_ZMM_Hi256 | XFEATURE_MASK_Hi16_ZMM)
 #endif // XFEATURE_MASK_AVX512
 
+#ifndef XSTATE_APX
+#define XSTATE_APX 19
+#endif // XSTATE_APX
+
+#ifndef XFEATURE_MASK_APX
+#define XFEATURE_MASK_APX (1 << XSTATE_APX)
+#endif  // XFEATURE_MASK_APX
+
 #if HAVE__FPX_SW_BYTES_WITH_XSTATE_BV
 #define FPREG_FpxSwBytes_xfeatures(uc) FPREG_FpxSwBytes(uc)->xstate_bv
 #else
@@ -489,7 +563,7 @@ struct Xstate_ExtendedFeature
     uint32_t size;
 };
 
-#define Xstate_ExtendedFeatures_Count (XSTATE_AVX512_ZMM + 1)
+#define Xstate_ExtendedFeatures_Count (XSTATE_APX + 1)
 extern Xstate_ExtendedFeature Xstate_ExtendedFeatures[Xstate_ExtendedFeatures_Count];
 
 inline _fpx_sw_bytes *FPREG_FpxSwBytes(const ucontext_t *uc)
@@ -512,7 +586,7 @@ inline UINT32 FPREG_ExtendedSize(const ucontext_t *uc)
 inline bool FPREG_HasExtendedState(const ucontext_t *uc)
 {
     // See comments in /usr/include/x86_64-linux-gnu/asm/sigcontext.h for info on how to detect if extended state is present
-    static_assert_no_msg(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
+    static_assert(FP_XSTATE_MAGIC2_SIZE == sizeof(UINT32));
 
     if (FPREG_FpxSwBytes(uc)->magic1 != FP_XSTATE_MAGIC1)
     {
@@ -626,6 +700,27 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
     _ASSERTE(FPREG_HasAvx512Registers(uc));
     return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_AVX512_ZMM);
 }
+
+inline bool FPREG_HasApxRegisters(const ucontext_t *uc)
+{
+    if (!FPREG_HasExtendedState(uc))
+    {
+        return false;
+    }
+
+    if ((FPREG_FpxSwBytes_xfeatures(uc) & XFEATURE_MASK_APX) != XFEATURE_MASK_APX)
+    {
+        return false;
+    }
+
+    return Xstate_IsApxSupported();
+}
+
+inline void *FPREG_Xstate_Egpr(const ucontext_t *uc, uint32_t *featureSize)
+{
+    _ASSERTE(FPREG_HasApxRegisters(uc));
+    return FPREG_Xstate_ExtendedFeature(uc, featureSize, XSTATE_APX);
+}
 #endif // XSTATE_SUPPORTED && HOST_AMD64
 
 /////////////////////
@@ -708,7 +803,7 @@ const struct fpregs* GetConstNativeSigSimdContext(const native_context_t *mc)
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#elif !defined(TARGET_OSX) // TARGET_FREEBSD
+#elif !defined(__APPLE__) // TARGET_FREEBSD
 
 #define MCREG_X0(mc)      ((mc).regs[0])
 #define MCREG_X1(mc)      ((mc).regs[1])
@@ -760,7 +855,7 @@ void GetConstNativeSigSimdContext(const native_context_t *mc, fpsimd_context con
     GetNativeSigSimdContext(const_cast<native_context_t*>(mc), const_cast<fpsimd_context **>(fp_ptr), const_cast<sve_context **>(sve_ptr));
 }
 
-#else // TARGET_OSX
+#else // __APPLE__
 
 #define MCREG_X0(mc)      ((mc)->__ss.__x[0])
 #define MCREG_X1(mc)      ((mc)->__ss.__x[1])
@@ -810,7 +905,7 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
     return GetNativeSigSimdContext(const_cast<native_context_t*>(mc));
 }
 
-#endif // TARGET_OSX
+#endif // __APPLE__
 
 #elif defined(HOST_LOONGARCH64)
 
@@ -850,7 +945,7 @@ const _STRUCT_ARM_NEON_STATE64* GetConstNativeSigSimdContext(const native_contex
 
 #else // HOST_ARM64
 
-#ifdef TARGET_OSX
+#ifdef __APPLE__
 
 #define MCREG_Rbp(mc)      ((mc)->__ss.__rbp)
 #define MCREG_Rip(mc)      ((mc)->__ss.__rip)
@@ -892,7 +987,7 @@ inline bool FPREG_HasYmmRegisters(const ucontext_t *uc)
     return (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX64)) || (uc->uc_mcsize == sizeof(_STRUCT_MCONTEXT_AVX512_64));
 }
 
-static_assert_no_msg(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
+static_assert(offsetof(_STRUCT_X86_AVX_STATE64, __fpu_ymmh0) == offsetof(_STRUCT_X86_AVX512_STATE64, __fpu_ymmh0));
 
 inline void *FPREG_Xstate_Ymmh(const ucontext_t *uc, uint32_t *featureSize)
 {
@@ -935,7 +1030,80 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
     *featureSize = sizeof(_STRUCT_ZMM_REG) * 16;
     return reinterpret_cast<void *>(&((_STRUCT_X86_AVX512_STATE64&)FPSTATE(uc)).__fpu_zmm16);
 }
-#else //TARGET_OSX
+#elif defined(TARGET_HAIKU)
+
+#define MCREG_Rbp(mc)	    ((mc).rbp)
+#define MCREG_Rip(mc)	    ((mc).rip)
+#define MCREG_Rsp(mc)	    ((mc).rsp)
+#define MCREG_Rsi(mc)       ((mc).rsi)
+#define MCREG_Rdi(mc)	    ((mc).rdi)
+#define MCREG_Rbx(mc)	    ((mc).rbx)
+#define MCREG_Rdx(mc)	    ((mc).rdx)
+#define MCREG_Rcx(mc)	    ((mc).rcx)
+#define MCREG_Rax(mc)	    ((mc).rax)
+#define MCREG_R8(mc)	    ((mc).r8)
+#define MCREG_R9(mc)	    ((mc).r9)
+#define MCREG_R10(mc)	    ((mc).r10)
+#define MCREG_R11(mc)	    ((mc).r11)
+#define MCREG_R12(mc)	    ((mc).r12)
+#define MCREG_R13(mc)	    ((mc).r13)
+#define MCREG_R14(mc)	    ((mc).r14)
+#define MCREG_R15(mc)	    ((mc).r15)
+#define MCREG_EFlags(mc)    ((mc).rflags)
+// Haiku: missing SegCs
+
+#define FPSTATE(uc)             ((uc)->uc_mcontext.fpu)
+#define FPREG_ControlWord(uc)   FPSTATE(uc).fp_fxsave.control
+#define FPREG_StatusWord(uc)    FPSTATE(uc).fp_fxsave.status
+#define FPREG_TagWord(uc)       FPSTATE(uc).fp_fxsave.tag
+#define FPREG_MxCsr(uc)         FPSTATE(uc).fp_fxsave.mxcsr
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc).fp_fxsave.mxcsr_mask
+#define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc).fp_fxsave.rip)
+#define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc).fp_fxsave.rip) + 2)
+#define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc).fp_fxsave.rdp)
+#define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc).fp_fxsave.rdp) + 2)
+
+#define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc).fp_fxsave.xmm[index])
+#define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc).fp_fxsave.fp[index].value)
+#elif defined(TARGET_OPENBSD)
+
+    // On OpenBSD, ucontext_t is an alias for struct sigcontext and the registers
+    // are stored directly in it (accessed here via MCONTEXT_FROM_NATIVE).
+#define MCREG_Rbp(mc)       ((mc).sc_rbp)
+#define MCREG_Rip(mc)       ((mc).sc_rip)
+#define MCREG_Rsp(mc)       ((mc).sc_rsp)
+#define MCREG_Rsi(mc)       ((mc).sc_rsi)
+#define MCREG_Rdi(mc)       ((mc).sc_rdi)
+#define MCREG_Rbx(mc)       ((mc).sc_rbx)
+#define MCREG_Rdx(mc)       ((mc).sc_rdx)
+#define MCREG_Rcx(mc)       ((mc).sc_rcx)
+#define MCREG_Rax(mc)       ((mc).sc_rax)
+#define MCREG_R8(mc)        ((mc).sc_r8)
+#define MCREG_R9(mc)        ((mc).sc_r9)
+#define MCREG_R10(mc)       ((mc).sc_r10)
+#define MCREG_R11(mc)       ((mc).sc_r11)
+#define MCREG_R12(mc)       ((mc).sc_r12)
+#define MCREG_R13(mc)       ((mc).sc_r13)
+#define MCREG_R14(mc)       ((mc).sc_r14)
+#define MCREG_R15(mc)       ((mc).sc_r15)
+#define MCREG_EFlags(mc)    ((mc).sc_rflags)
+#define MCREG_SegCs(mc)     ((mc).sc_cs)
+
+  // from machine/fpu.h: struct fxsave64, referenced via sigcontext::sc_fpstate
+#define FPSTATE(uc)             ((struct fxsave64*)((uc)->sc_fpstate))
+#define FPREG_ControlWord(uc)   FPSTATE(uc)->fx_fcw
+#define FPREG_StatusWord(uc)    FPSTATE(uc)->fx_fsw
+#define FPREG_TagWord(uc)       FPSTATE(uc)->fx_ftw
+#define FPREG_MxCsr(uc)         FPSTATE(uc)->fx_mxcsr
+#define FPREG_MxCsr_Mask(uc)    FPSTATE(uc)->fx_mxcsr_mask
+#define FPREG_ErrorOffset(uc)   *(DWORD*) &(FPSTATE(uc)->fx_rip)
+#define FPREG_ErrorSelector(uc) *((WORD*) &(FPSTATE(uc)->fx_rip) + 2)
+#define FPREG_DataOffset(uc)    *(DWORD*) &(FPSTATE(uc)->fx_rdp)
+#define FPREG_DataSelector(uc)  *((WORD*) &(FPSTATE(uc)->fx_rdp) + 2)
+
+#define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->fx_xmm[index])
+#define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->fx_st[index])
+#else //__APPLE__
 
     // For FreeBSD, as found in x86/ucontext.h
 #define MCREG_Rbp(mc)	    ((mc).mc_rbp)
@@ -972,7 +1140,7 @@ inline void *FPREG_Xstate_Hi16Zmm(const ucontext_t *uc, uint32_t *featureSize)
 
 #define FPREG_Xmm(uc, index)    *(M128A*) &(FPSTATE(uc)->sv_xmm[index])
 #define FPREG_St(uc, index)     *(M128A*) &(FPSTATE(uc)->sv_fp[index].fp_acc)
-#endif // TARGET_OSX
+#endif // __APPLE__
 #endif // HOST_ARM64
 
 #else // HOST_64BIT
@@ -1291,6 +1459,56 @@ const VfpSigFrame* GetConstNativeSigSimdContext(const native_context_t *mc)
 #define BSDREG_Lr(reg) BSD_REGS_STYLE(reg,Lr,lr)
 #define BSDREG_Cpsr(reg) BSD_REGS_STYLE(reg,Spsr,spsr)
 
+#elif defined(HOST_POWERPC64)
+
+#define BSDREG_R0(reg)      ((reg).fixreg[0])
+#define BSDREG_R1(reg)      ((reg).fixreg[1])
+#define BSDREG_R2(reg)      ((reg).fixreg[2])
+#define BSDREG_R3(reg)      ((reg).fixreg[3])
+#define BSDREG_R4(reg)      ((reg).fixreg[4])
+#define BSDREG_R5(reg)      ((reg).fixreg[5])
+#define BSDREG_R6(reg)      ((reg).fixreg[6])
+#define BSDREG_R7(reg)      ((reg).fixreg[7])
+#define BSDREG_R8(reg)      ((reg).fixreg[8])
+#define BSDREG_R9(reg)      ((reg).fixreg[9])
+#define BSDREG_R10(reg)     ((reg).fixreg[10])
+#define BSDREG_R11(reg)     ((reg).fixreg[11])
+#define BSDREG_R12(reg)     ((reg).fixreg[12])
+#define BSDREG_R13(reg)     ((reg).fixreg[13])
+#define BSDREG_R14(reg)     ((reg).fixreg[14])
+#define BSDREG_R15(reg)     ((reg).fixreg[15])
+#define BSDREG_R16(reg)     ((reg).fixreg[16])
+#define BSDREG_R17(reg)     ((reg).fixreg[17])
+#define BSDREG_R18(reg)     ((reg).fixreg[18])
+#define BSDREG_R19(reg)     ((reg).fixreg[19])
+#define BSDREG_R20(reg)     ((reg).fixreg[20])
+#define BSDREG_R21(reg)     ((reg).fixreg[21])
+#define BSDREG_R22(reg)     ((reg).fixreg[22])
+#define BSDREG_R23(reg)     ((reg).fixreg[23])
+#define BSDREG_R24(reg)     ((reg).fixreg[24])
+#define BSDREG_R25(reg)     ((reg).fixreg[25])
+#define BSDREG_R26(reg)     ((reg).fixreg[26])
+#define BSDREG_R27(reg)     ((reg).fixreg[27])
+#define BSDREG_R28(reg)     ((reg).fixreg[28])
+#define BSDREG_R29(reg)     ((reg).fixreg[29])
+#define BSDREG_R30(reg)     ((reg).fixreg[30])
+#define BSDREG_R31(reg)     ((reg).fixreg[31])
+#define BSDREG_Nip(reg)     ((reg).pc)
+/* FreeBSD's ptrace `struct reg` has no MSR slot, and MSR can be neither read
+   nor set through ptrace. ASSIGN_CONTROL_REGS copies Msr in both directions,
+   so route it through a sink that discards writes and reads back 0: MSR is not
+   consumed on this path, and this keeps no per-TU storage or stale state. */
+struct PAL_BSDppcMsrSink
+{
+    void operator=(unsigned long) const { }
+    operator unsigned long() const { return 0; }
+};
+#define BSDREG_Msr(reg)     (PAL_BSDppcMsrSink{})
+#define BSDREG_Ctr(reg)     ((reg).ctr)
+#define BSDREG_Link(reg)    ((reg).lr)
+#define BSDREG_Xer(reg)     ((reg).xer)
+#define BSDREG_Ccr(reg)     ((reg).cr)
+
 #endif // HOST_ARM64
 
 #else // HOST_64BIT
@@ -1322,6 +1540,8 @@ inline static DWORD64 CONTEXTGetPC(LPCONTEXT pContext)
     return pContext->PSWAddr;
 #elif defined(HOST_POWERPC64)
     return pContext->Nip;
+#elif defined(HOST_WASM)
+    return pContext->InterpreterIP;
 #else
     return pContext->Pc;
 #endif
@@ -1337,6 +1557,8 @@ inline static void CONTEXTSetPC(LPCONTEXT pContext, DWORD64 pc)
     pContext->PSWAddr = pc;
 #elif defined(HOST_POWERPC64)
     pContext->Nip = pc;
+#elif defined(HOST_WASM)
+    pContext->InterpreterIP = pc;
 #else
     pContext->Pc = pc;
 #endif
@@ -1354,6 +1576,8 @@ inline static DWORD64 CONTEXTGetFP(LPCONTEXT pContext)
     return pContext->R11;
 #elif defined(HOST_POWERPC64)
     return pContext->R31;
+#elif defined(HOST_WASM)
+    return pContext->InterpreterFP;
 #else
     return pContext->Fp;
 #endif
@@ -1544,21 +1768,6 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
 
 #endif  // HAVE_MACH_EXCEPTIONS else
 
-#if defined(HOST_ARM64)
-/*++
-Function :
-    CONTEXT_GetSveLengthFromOS
-
-    Gets the SVE vector length
-Parameters :
-    None
-Return value :
-    The SVE vector length in bytes
---*/
-DWORD64
-CONTEXT_GetSveLengthFromOS(
-    );
-#endif // HOST_ARM64
 
 #ifdef __cplusplus
 }

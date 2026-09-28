@@ -3,13 +3,13 @@
 
 namespace Mono.Linker
 {
-	public enum MessageCategory
-	{
-		Error = 0,
-		Warning,
-		Info,
-		Diagnostic,
+    public enum MessageCategory
+    {
+        Error = 0,
+        Warning,
+        Info,
+        Diagnostic,
 
-		WarningAsError = 0xFF
-	}
+        WarningAsError = 0xFF
+    }
 }

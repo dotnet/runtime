@@ -30,14 +30,14 @@ namespace System.Linq.Tests
 
         public static IEnumerable<object[]> TestData()
         {
-            yield return new object[] { new int[0], 0, new int[] { 0 } };
-            yield return new object[] { new int[] { 3 }, 0, new int[] { 3 } };
-            yield return new object[] { new int[] { 3, -1, 0, 10, 15 }, 0, new int[] { 3, -1, 0, 10, 15 } };
+            yield return [new int[0], 0, new int[] { 0 }];
+            yield return [new int[] { 3 }, 0, new int[] { 3 }];
+            yield return [new int[] { 3, -1, 0, 10, 15 }, 0, new int[] { 3, -1, 0, 10, 15 }];
 
-            yield return new object[] { new int[0], -10, new int[] { -10 } };
-            yield return new object[] { new int[] { 3 }, 9, new int[] { 3 } };
-            yield return new object[] { new int[] { 3, -1, 0, 10, 15 }, 9, new int[] { 3, -1, 0, 10, 15 } };
-            yield return new object[] { Enumerable.Empty<int>(), 0, new int[] { 0 } };
+            yield return [new int[0], -10, new int[] { -10 }];
+            yield return [new int[] { 3 }, 9, new int[] { 3 }];
+            yield return [new int[] { 3, -1, 0, 10, 15 }, 9, new int[] { 3, -1, 0, 10, 15 }];
+            yield return [Enumerable.Empty<int>(), 0, new int[] { 0 }];
         }
 
         [Theory]
@@ -76,16 +76,16 @@ namespace System.Linq.Tests
         [Fact]
         public void NullableArray_Empty_WithoutDefaultValue()
         {
-            int?[] source = new int?[0];
-            Assert.Equal(new int?[] { null }, source.DefaultIfEmpty());
+            int?[] source = [];
+            Assert.Equal([null], source.DefaultIfEmpty());
         }
 
         [Fact]
         public void NullableArray_Empty_WithDefaultValue()
         {
-            int?[] source = new int?[0];
+            int?[] source = [];
             int? defaultValue = 9;
-            Assert.Equal(new int?[] { defaultValue }, source.DefaultIfEmpty(defaultValue));
+            Assert.Equal([defaultValue], source.DefaultIfEmpty(defaultValue));
         }
 
         [Fact]
@@ -118,11 +118,42 @@ namespace System.Linq.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => nonEmpty.ElementAt(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => nonEmpty.ElementAt(4));
 
-            IEnumerable<int> empty = Enumerable.Empty<int>();
+            IEnumerable<int> empty = [];
             Assert.Equal(42, empty.DefaultIfEmpty(42).First());
             Assert.Equal(42, empty.DefaultIfEmpty(42).Last());
             Assert.Equal(42, empty.DefaultIfEmpty(42).ElementAt(0));
             Assert.Throws<ArgumentOutOfRangeException>(() => empty.DefaultIfEmpty(42).ElementAt(1));
+        }
+
+        [Fact]
+        public void ElementAtOrDefault_OutOfBounds_ReturnsTypeDefault()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/119834
+            // ElementAtOrDefault should return default(T) for out-of-bounds indices,
+            // not the DefaultIfEmpty default value
+
+            // Test with empty source
+            int[] empty = [];
+            var defaultIfEmpty = empty.DefaultIfEmpty(999);
+            
+            // Index 0 should return the DefaultIfEmpty value (999)
+            Assert.Equal(999, defaultIfEmpty.ElementAtOrDefault(0));
+            
+            // Out-of-bounds indices should return default(int) which is 0, not 999
+            Assert.Equal(0, defaultIfEmpty.ElementAtOrDefault(1));
+            Assert.Equal(0, defaultIfEmpty.ElementAtOrDefault(2));
+            Assert.Equal(0, defaultIfEmpty.ElementAtOrDefault(-1));
+            
+            // Test with different type (string)
+            string[] emptyStrings = [];
+            var defaultIfEmptyString = emptyStrings.DefaultIfEmpty("default");
+            
+            // Index 0 should return the DefaultIfEmpty value
+            Assert.Equal("default", defaultIfEmptyString.ElementAtOrDefault(0));
+            
+            // Out-of-bounds indices should return default(string) which is null
+            Assert.Null(defaultIfEmptyString.ElementAtOrDefault(1));
+            Assert.Null(defaultIfEmptyString.ElementAtOrDefault(2));
         }
     }
 }

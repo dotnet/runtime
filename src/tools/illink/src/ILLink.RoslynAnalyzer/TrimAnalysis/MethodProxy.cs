@@ -7,61 +7,62 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	internal readonly partial struct MethodProxy
-	{
-		public MethodProxy (IMethodSymbol method) => Method = method;
+    internal readonly partial struct MethodProxy
+    {
+        public MethodProxy(IMethodSymbol method) => Method = method;
 
-		public readonly IMethodSymbol Method;
+        public readonly IMethodSymbol Method;
 
-		public string Name { get => Method.Name; }
+        public string Name { get => Method.Name; }
 
-		public string GetDisplayName () => Method.GetDisplayName ();
+        public string GetDisplayName() => Method.GetDisplayName();
 
-		internal partial bool IsDeclaredOnType (string fullTypeName) => IsTypeOf (Method.ContainingType, fullTypeName);
+        internal partial bool IsDeclaredOnType(string fullTypeName) => IsTypeOf(Method.ContainingType, fullTypeName);
 
-		internal partial bool HasMetadataParameters () => Method.Parameters.Length > 0;
+        internal partial bool HasMetadataParameters() => Method.Parameters.Length > 0;
 
-		internal partial int GetMetadataParametersCount () => Method.GetMetadataParametersCount ();
+        internal partial int GetMetadataParametersCount() => Method.GetMetadataParametersCount();
 
-		internal partial int GetParametersCount () => Method.GetParametersCount ();
+        internal partial int GetParametersCount() => Method.GetParametersCount();
 
-		internal partial ParameterProxyEnumerable GetParameters () => Method.GetParameters ();
+        internal partial ParameterProxyEnumerable GetParameters() => Method.GetParameters();
 
-		internal partial ParameterProxy GetParameter (ParameterIndex index) => Method.GetParameter (index);
+        internal partial ParameterProxy GetParameter(ParameterIndex index) => Method.GetParameter(index);
 
-		internal partial bool HasGenericParameters () => Method.IsGenericMethod;
+        internal partial bool HasGenericParameters() => Method.IsGenericMethod;
 
-		internal partial bool HasGenericParametersCount (int genericParameterCount) => Method.TypeParameters.Length == genericParameterCount;
+        internal partial bool HasGenericArgumentsCount(int genericArgumentCount) => Method.TypeArguments.Length == genericArgumentCount;
 
-		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
-		{
-			if (Method.TypeParameters.IsEmpty)
-				return ImmutableArray<GenericParameterProxy>.Empty;
+        internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters()
+        {
+            if (Method.TypeParameters.IsEmpty)
+                return ImmutableArray<GenericParameterProxy>.Empty;
 
-			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (Method.TypeParameters.Length);
-			foreach (var typeParameter in Method.TypeParameters) {
-				builder.Add (new GenericParameterProxy (typeParameter));
-			}
+            var builder = ImmutableArray.CreateBuilder<GenericParameterProxy>(Method.TypeParameters.Length);
+            foreach (var typeParameter in Method.TypeParameters)
+            {
+                builder.Add(new GenericParameterProxy(typeParameter));
+            }
 
-			return builder.ToImmutableArray ();
-		}
+            return builder.ToImmutableArray();
+        }
 
-		internal partial bool IsConstructor () => Method.IsConstructor ();
+        internal partial bool IsConstructor() => Method.IsConstructor();
 
-		internal partial bool IsStatic () => Method.IsStatic;
+        internal partial bool IsStatic() => Method.IsStatic;
 
-		internal partial bool HasImplicitThis () => Method.HasImplicitThis ();
+        internal partial bool HasImplicitThis() => Method.HasImplicitThis();
 
-		internal partial bool ReturnsVoid () => Method.ReturnType.SpecialType == SpecialType.System_Void;
+        internal partial bool ReturnsVoid() => Method.ReturnType.SpecialType == SpecialType.System_Void;
 
-		static bool IsTypeOf (ITypeSymbol type, string fullTypeName)
-		{
-			if (type is not INamedTypeSymbol namedType)
-				return false;
+        private static bool IsTypeOf(ITypeSymbol type, string fullTypeName)
+        {
+            if (type is not INamedTypeSymbol namedType)
+                return false;
 
-			return namedType.HasName (fullTypeName);
-		}
+            return namedType.HasName(fullTypeName);
+        }
 
-		public override string ToString () => Method.ToString ();
-	}
+        public override string ToString() => Method.ToString();
+    }
 }

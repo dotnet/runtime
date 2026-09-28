@@ -90,7 +90,7 @@ namespace System.Net.Http.Headers
         public bool Contains(T item) =>
             _size <= 0 ? false :
             _items is T o ? o.Equals(item) :
-            _items is T[] items && Array.IndexOf(items, item, 0, _size) != -1;
+            _items is T[] items && Array.IndexOf(items, item, 0, _size) >= 0;
 
         public void CopyTo(T[] array, int arrayIndex)
         {
@@ -127,7 +127,7 @@ namespace System.Net.Http.Headers
             else if (_items is T[] items)
             {
                 int index = Array.IndexOf(items, item, 0, _size);
-                if (index != -1)
+                if (index >= 0)
                 {
                     _size--;
                     if (index < _size)

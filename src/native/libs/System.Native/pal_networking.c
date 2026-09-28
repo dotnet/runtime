@@ -17,12 +17,7 @@
 #include <arpa/inet.h>
 #include <assert.h>
 #include <sys/time.h>
-#if HAVE_EPOLL
-#include <sys/epoll.h>
-#elif HAVE_KQUEUE
-#include <sys/types.h>
-#include <sys/event.h>
-#elif HAVE_SYS_POLL_H
+#if HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #include <sys/select.h>
 #endif
@@ -52,6 +47,10 @@
 #include <stdio.h>
 #endif
 #include <unistd.h>
+#if defined(TARGET_SUNOS) && HAVE_GETDOMAINNAME
+// SunOS has getdomainname in libnsl but no header declaration
+extern int getdomainname(char *name, int namelen);
+#endif
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -74,54 +73,9 @@
 #include <linux/icmp.h>
 #endif
 
-
-#if HAVE_KQUEUE
-#if KEVENT_HAS_VOID_UDATA
-static void* GetKeventUdata(uintptr_t udata)
-{
-    return (void*)udata;
-}
-static uintptr_t GetSocketEventData(void* udata)
-{
-    return (uintptr_t)udata;
-}
-#else
-static intptr_t GetKeventUdata(uintptr_t udata)
-{
-    return (intptr_t)udata;
-}
-static uintptr_t GetSocketEventData(intptr_t udata)
-{
-    return (uintptr_t)udata;
-}
-#endif
-#if KEVENT_REQUIRES_INT_PARAMS
-static int GetKeventNchanges(int nchanges)
-{
-    return nchanges;
-}
-static int16_t GetKeventFilter(int16_t filter)
-{
-    return filter;
-}
-static uint16_t GetKeventFlags(uint16_t flags)
-{
-    return flags;
-}
-#else
-static size_t GetKeventNchanges(int nchanges)
-{
-    return (size_t)nchanges;
-}
-static int16_t GetKeventFilter(uint32_t filter)
-{
-    return (int16_t)filter;
-}
-static uint16_t GetKeventFlags(uint32_t flags)
-{
-    return (uint16_t)flags;
-}
-#endif
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wjump-misses-init"
 #endif
 
 #if !HAVE_IN_PKTINFO
@@ -204,6 +158,11 @@ static bool TryConvertAddressFamilyPlatformToPal(sa_family_t platformAddressFami
             *palAddressFamily = AddressFamily_AF_PACKET;
             return true;
 #endif
+#ifdef AF_LINK
+        case AF_LINK:
+            *palAddressFamily = AddressFamily_AF_LINK;
+            return true;
+#endif
 #ifdef AF_CAN
         case AF_CAN:
             *palAddressFamily = AddressFamily_AF_CAN;
@@ -239,6 +198,11 @@ static bool TryConvertAddressFamilyPalToPlatform(int32_t palAddressFamily, sa_fa
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             *platformAddressFamily = AF_PACKET;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformAddressFamily = AF_LINK;
             return true;
 #endif
 #ifdef AF_CAN
@@ -407,8 +371,10 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
     char name[_POSIX_HOST_NAME_MAX];
     result = gethostname((char*)name, _POSIX_HOST_NAME_MAX);
 
-    bool includeIPv4Loopback = true;
-    bool includeIPv6Loopback = true;
+    bool includeIPv4Loopback;
+    bool includeIPv6Loopback;
+    includeIPv4Loopback = true;
+    includeIPv6Loopback = true;
 
     if (result == 0 && strcasecmp((const char*)address, name) == 0)
     {
@@ -432,7 +398,13 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                     continue;
                 }
 
-                if (ifa->ifa_addr->sa_family == AF_INET)
+                sa_family_t interfaceFamily = ifa->ifa_addr->sa_family;
+                if (platformFamily != AF_UNSPEC && interfaceFamily != platformFamily)
+                {
+                    continue;
+                }
+
+                if (interfaceFamily == AF_INET)
                 {
                     // Remember if there's at least one non-loopback address for IPv4, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
@@ -442,7 +414,7 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
 
                     entry->IPAddressCount++;
                 }
-                else if (ifa->ifa_addr->sa_family == AF_INET6)
+                else if (interfaceFamily == AF_INET6)
                 {
                     // Remember if there's at least one non-loopback address for IPv6, so that they will be skipped.
                     if ((ifa->ifa_flags & IFF_LOOPBACK) == 0)
@@ -492,15 +464,21 @@ int32_t SystemNative_GetHostEntryForName(const uint8_t* address, int32_t address
                     continue;
                 }
 
+                sa_family_t interfaceFamily = ifa->ifa_addr->sa_family;
+                if (platformFamily != AF_UNSPEC && interfaceFamily != platformFamily)
+                {
+                    continue;
+                }
+
                 // Skip loopback addresses if at least one interface has non-loopback one.
-                if ((!includeIPv4Loopback && ifa->ifa_addr->sa_family == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
-                    (!includeIPv6Loopback && ifa->ifa_addr->sa_family == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
+                if ((!includeIPv4Loopback && interfaceFamily == AF_INET && (ifa->ifa_flags & IFF_LOOPBACK) != 0) ||
+                    (!includeIPv6Loopback && interfaceFamily == AF_INET6 && (ifa->ifa_flags & IFF_LOOPBACK) != 0))
                 {
                     entry->IPAddressCount--;
                     continue;
                 }
 
-                if (CopySockAddrToIPAddress(ifa->ifa_addr, ifa->ifa_addr->sa_family, ipAddressList) == 0)
+                if (CopySockAddrToIPAddress(ifa->ifa_addr, interfaceFamily, ipAddressList) == 0)
                 {
                     ++ipAddressList;
                 }
@@ -661,6 +639,11 @@ int32_t SystemNative_GetDomainName(uint8_t* name, int32_t nameLength)
 
     // Copy the domain name
     SafeStringCopy((char*)name, namelen, uts.domainname);
+    return 0;
+#elif defined(__HAIKU__)
+    // Haiku does not support NIS domains.
+    (void)nameLength;
+    *name = '\0';
     return 0;
 #else
     // GetDomainName is not supported on this platform.
@@ -1181,6 +1164,7 @@ int32_t SystemNative_GetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     return Error_SUCCESS;
 }
 
+
 int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOption, IPv4MulticastOption* option)
 {
     if (option == NULL)
@@ -1195,6 +1179,16 @@ int32_t SystemNative_SetIPv4MulticastOption(intptr_t socket, int32_t multicastOp
     {
         return Error_EINVAL;
     }
+
+#if HAVE_IP_MULTICAST_IFINDEX
+    // Use IP_MULTICAST_IFINDEX when available for interface index specification
+    if (optionName == SocketOptionName_SO_IP_MULTICAST_IF)
+    {
+        uint32_t ifindex = (uint32_t)option->InterfaceIndex;
+        int err = setsockopt(fd, IPPROTO_IP, IP_MULTICAST_IFINDEX, &ifindex, sizeof(ifindex));
+        return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+#endif
 
 #if HAVE_IP_MREQN
     struct ip_mreqn opt;
@@ -1510,7 +1504,7 @@ int32_t SystemNative_ReceiveSocketError(intptr_t socket, MessageHeader* messageH
 #if HAVE_LINUX_ERRQUEUE_H
     char buffer[sizeof(struct sock_extended_err) + sizeof(struct sockaddr_storage)];
     messageHeader->ControlBufferLen = sizeof(buffer);
-    messageHeader->ControlBuffer = (void*)buffer;
+    messageHeader->ControlBuffer = (uint8_t*)buffer;
 
     struct msghdr header;
     struct icmphdr icmph;
@@ -1780,6 +1774,11 @@ int32_t SystemNative_Connect(intptr_t socket, uint8_t* socketAddress, int32_t so
     return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
+#if defined(__linux__) && !defined(TCP_FASTOPEN_CONNECT)
+// fixup if compiled against old Kernel headers.
+// Can be removed once we have at least 4.11
+#define TCP_FASTOPEN_CONNECT 30
+#endif
 int32_t SystemNative_Connectx(intptr_t socket, uint8_t* socketAddress, int32_t socketAddressLen, uint8_t* data, int32_t dataLen, int32_t tfo, int* sent)
 {
     if (socketAddress == NULL || socketAddressLen < 0 || sent == NULL)
@@ -2135,10 +2134,13 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
 
                 // case SocketOptionName_SO_TCP_BSDURGENT:
 
+#ifdef TCP_KEEPCNT
                 case SocketOptionName_SO_TCP_KEEPALIVE_RETRYCOUNT:
                     *optName = TCP_KEEPCNT;
                     return true;
+#endif
 
+#if defined(TCP_KEEPALIVE) || defined(TCP_KEEPIDLE)
                 case SocketOptionName_SO_TCP_KEEPALIVE_TIME:
                     *optName =
                     #if HAVE_TCP_H_TCP_KEEPALIVE
@@ -2147,10 +2149,13 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionLevel, int32_t socket
                         TCP_KEEPIDLE;
                     #endif
                     return true;
+#endif
 
+#ifdef TCP_KEEPINTVL
                 case SocketOptionName_SO_TCP_KEEPALIVE_INTERVAL:
                     *optName = TCP_KEEPINTVL;
                     return true;
+#endif
 
 #ifdef TCP_FASTOPEN
                 case SocketOptionName_SO_TCP_FASTOPEN:
@@ -2517,6 +2522,11 @@ static bool TryConvertProtocolTypePalToPlatform(int32_t palAddressFamily, int32_
             *platformProtocolType = palProtocolType;
             return true;
 #endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
+            *platformProtocolType = palProtocolType;
+            return true;
+#endif
 #if HAVE_LINUX_CAN_H
         case AddressFamily_AF_CAN:
             switch (palProtocolType)
@@ -2653,6 +2663,11 @@ static bool TryConvertProtocolTypePlatformToPal(int32_t palAddressFamily, int pl
 #ifdef AF_PACKET
         case AddressFamily_AF_PACKET:
             // protocol is the IEEE 802.3 protocol number in network order.
+            *palProtocolType = platformProtocolType;
+            return true;
+#endif
+#ifdef AF_LINK
+        case AddressFamily_AF_LINK:
             *palProtocolType = platformProtocolType;
             return true;
 #endif
@@ -2980,11 +2995,27 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
     }
     else
     {
-       readSetPtr = readFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       writeSetPtr = writeFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-       errorSetPtr = errorFdsCount == 0 ? NULL : calloc( __DARWIN_howmany(maxFd, __DARWIN_NFDBITS),  sizeof(int32_t));
-    }
+        // Since this code later calls select(maxFd + 1, ...) and sets bits for file descriptor values up to maxFd,
+        // the allocation needs to cover maxFd + 1 bits.
+        if (maxFd > INT_MAX - 1)
+            return Error_EINVAL;
 
+        size_t fdSetCount = __DARWIN_howmany(maxFd + 1, __DARWIN_NFDBITS);
+        size_t fdSetSize = sizeof(((fd_set*)0)->fds_bits[0]);
+        readSetPtr = readFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        writeSetPtr = writeFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+        errorSetPtr = errorFdsCount == 0 ? NULL : (fd_set*)calloc(fdSetCount, fdSetSize);
+
+        if ((readFdsCount != 0 && readSetPtr == NULL)
+            || (writeFdsCount != 0 && writeSetPtr == NULL)
+            || (errorFdsCount != 0 && errorSetPtr == NULL))
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+            return Error_ENOMEM;
+        }
+    }
 
     struct timeval timeout;
     timeout.tv_sec = microseconds / 1000000;
@@ -3011,6 +3042,12 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 
     if (*triggered < 0)
     {
+        if (maxFd >= FD_SETSIZE)
+        {
+            free(readSetPtr);
+            free(writeSetPtr);
+            free(errorSetPtr);
+        }
         return SystemNative_ConvertErrorPlatformToPal(errno);
     }
 
@@ -3053,426 +3090,114 @@ int32_t SystemNative_Select(int* readFds, int readFdsCount, int* writeFds, int w
 #endif
 }
 
-#if HAVE_EPOLL
-
-static const size_t SocketEventBufferElementSize = sizeof(struct epoll_event) > sizeof(SocketEvent) ? sizeof(struct epoll_event) : sizeof(SocketEvent);
-
-static int GetSocketEvents(uint32_t events)
-{
-    int asyncEvents = (((events & EPOLLIN) != 0) ? SocketEvents_SA_READ : 0) | (((events & EPOLLOUT) != 0) ? SocketEvents_SA_WRITE : 0) |
-                      (((events & EPOLLRDHUP) != 0) ? SocketEvents_SA_READCLOSE : 0) |
-                      (((events & EPOLLHUP) != 0) ? SocketEvents_SA_CLOSE : 0) | (((events & EPOLLERR) != 0) ? SocketEvents_SA_ERROR : 0);
-
-    return asyncEvents;
-}
-
-static uint32_t GetEPollEvents(SocketEvents events)
-{
-    return (((events & SocketEvents_SA_READ) != 0) ? EPOLLIN : 0) | (((events & SocketEvents_SA_WRITE) != 0) ? EPOLLOUT : 0) |
-           (((events & SocketEvents_SA_READCLOSE) != 0) ? EPOLLRDHUP : 0) | (((events & SocketEvents_SA_CLOSE) != 0) ? EPOLLHUP : 0) |
-           (((events & SocketEvents_SA_ERROR) != 0) ? EPOLLERR : 0);
-}
-
-static int32_t CreateSocketEventPortInner(int32_t* port)
-{
-    assert(port != NULL);
-
-    int epollFd = epoll_create1(EPOLL_CLOEXEC);
-    if (epollFd == -1)
-    {
-        *port = -1;
-        return SystemNative_ConvertErrorPlatformToPal(errno);
-    }
-
-    *port = epollFd;
-    return Error_SUCCESS;
-}
-
-static int32_t CloseSocketEventPortInner(int32_t port)
-{
-    int err = close(port);
-    return err == 0 || (err < 0 && errno == EINTR) ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-}
-
-static int32_t TryChangeSocketEventRegistrationInner(
-    int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
-{
-    assert(currentEvents != newEvents);
-
-    int op = EPOLL_CTL_MOD;
-    if (currentEvents == SocketEvents_SA_NONE)
-    {
-        op = EPOLL_CTL_ADD;
-    }
-    else if (newEvents == SocketEvents_SA_NONE)
-    {
-        op = EPOLL_CTL_DEL;
-    }
-
-    struct epoll_event evt;
-    memset(&evt, 0, sizeof(struct epoll_event));
-    evt.events = GetEPollEvents(newEvents) | (unsigned int)EPOLLET;
-    evt.data.ptr = (void*)data;
-    int err = epoll_ctl(port, op, socket, &evt);
-    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-}
-
-static void ConvertEventEPollToSocketAsync(SocketEvent* sae, struct epoll_event* epoll)
-{
-    assert(sae != NULL);
-    assert(epoll != NULL);
-
-    // epoll does not play well with disconnected connection-oriented sockets, frequently
-    // reporting spurious EPOLLHUP events. Fortunately, EPOLLHUP may be handled as an
-    // EPOLLIN | EPOLLOUT event: the usual processing for these events will recognize and
-    // handle the HUP condition.
-    uint32_t events = epoll->events;
-    if ((events & EPOLLHUP) != 0)
-    {
-        events = (events & ((uint32_t)~EPOLLHUP)) | EPOLLIN | EPOLLOUT;
-    }
-
-    memset(sae, 0, sizeof(SocketEvent));
-    sae->Data = (uintptr_t)epoll->data.ptr;
-    sae->Events = GetSocketEvents(events);
-}
-
-static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
-{
-    assert(buffer != NULL);
-    assert(count != NULL);
-    assert(*count >= 0);
-
-    struct epoll_event* events = (struct epoll_event*)buffer;
-    int numEvents;
-    while ((numEvents = epoll_wait(port, events, *count, -1)) < 0 && errno == EINTR);
-    if (numEvents == -1)
-    {
-        *count = 0;
-        return SystemNative_ConvertErrorPlatformToPal(errno);
-    }
-
-    // We should never see 0 events. Given an infinite timeout, epoll_wait will never return
-    // 0 events even if there are no file descriptors registered with the epoll fd. In
-    // that case, the wait will block until a file descriptor is added and an event occurs
-    // on the added file descriptor.
-    assert(numEvents != 0);
-    assert(numEvents <= *count);
-
-    if (sizeof(struct epoll_event) < sizeof(SocketEvent))
-    {
-        // Copy backwards to avoid overwriting earlier data.
-        for (int i = numEvents - 1; i >= 0; i--)
-        {
-            // This copy is made deliberately to avoid overwriting data.
-            struct epoll_event evt = events[i];
-            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
-        }
-    }
-    else
-    {
-        // Copy forwards for better cache behavior
-        for (int i = 0; i < numEvents; i++)
-        {
-            // This copy is made deliberately to avoid overwriting data.
-            struct epoll_event evt = events[i];
-            ConvertEventEPollToSocketAsync(&buffer[i], &evt);
-        }
-    }
-
-    *count = numEvents;
-    return Error_SUCCESS;
-}
-
-#elif HAVE_KQUEUE
-
-c_static_assert(sizeof(SocketEvent) <= sizeof(struct kevent));
-static const size_t SocketEventBufferElementSize = sizeof(struct kevent);
-
-static SocketEvents GetSocketEvents(int16_t filter, uint16_t flags)
-{
-    int32_t events;
-    switch (filter)
-    {
-        case EVFILT_READ:
-            events = SocketEvents_SA_READ;
-            if ((flags & EV_EOF) != 0)
-            {
-                events |= SocketEvents_SA_READCLOSE;
-            }
-            break;
-
-        case EVFILT_WRITE:
-            events = SocketEvents_SA_WRITE;
-
-            // kqueue does not play well with disconnected connection-oriented sockets, frequently
-            // reporting spurious EOF events. Fortunately, EOF may be handled as an EVFILT_READ |
-            // EVFILT_WRITE event: the usual processing for these events will recognize and
-            // handle the EOF condition.
-            if ((flags & EV_EOF) != 0)
-            {
-                events |= SocketEvents_SA_READ;
-            }
-            break;
-
-        default:
-            assert_msg(0, "unexpected kqueue filter type", (int)filter);
-            return SocketEvents_SA_NONE;
-    }
-
-    if ((flags & EV_ERROR) != 0)
-    {
-        events |= SocketEvents_SA_ERROR;
-    }
-
-    return (SocketEvents)events;
-}
-
-static int32_t CreateSocketEventPortInner(int32_t* port)
-{
-    assert(port != NULL);
-
-    int kqueueFd = kqueue();
-    if (kqueueFd == -1)
-    {
-        *port = -1;
-        return SystemNative_ConvertErrorPlatformToPal(errno);
-    }
-
-    *port = kqueueFd;
-    return Error_SUCCESS;
-}
-
-static int32_t CloseSocketEventPortInner(int32_t port)
-{
-    int err = close(port);
-    return err == 0 || (err < 0 && errno == EINTR) ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-}
-
-static int32_t TryChangeSocketEventRegistrationInner(
-    int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents, uintptr_t data)
-{
-#ifdef EV_RECEIPT
-    const uint16_t AddFlags = EV_ADD | EV_CLEAR | EV_RECEIPT;
-    const uint16_t RemoveFlags = EV_DELETE | EV_RECEIPT;
-#else
-    const uint16_t AddFlags = EV_ADD | EV_CLEAR;
-    const uint16_t RemoveFlags = EV_DELETE;
-#endif
-
-    assert(currentEvents != newEvents);
-
-    int32_t changes = currentEvents ^ newEvents;
-    int8_t readChanged = (changes & SocketEvents_SA_READ) != 0;
-    int8_t writeChanged = (changes & SocketEvents_SA_WRITE) != 0;
-
-    struct kevent events[2];
-    int err;
-
-    int i = 0;
-    if (readChanged)
-    {
-        EV_SET(&events[i++],
-               (uint64_t)socket,
-               EVFILT_READ,
-               (newEvents & SocketEvents_SA_READ) == 0 ? RemoveFlags : AddFlags,
-               0,
-               0,
-               GetKeventUdata(data));
-#if defined(__FreeBSD__)
-        // Issue: #30698
-        // FreeBSD seems to have some issue when setting read/write events together.
-        // As a workaround use separate kevent() calls.
-        if (writeChanged)
-        {
-            while ((err = kevent(port, events, GetKeventNchanges(i), NULL, 0, NULL)) < 0 && errno == EINTR);
-            if (err != 0)
-            {
-                return SystemNative_ConvertErrorPlatformToPal(errno);
-            }
-            i = 0;
-        }
-#endif
-    }
-
-    if (writeChanged)
-    {
-        EV_SET(&events[i++],
-               (uint64_t)socket,
-               EVFILT_WRITE,
-               (newEvents & SocketEvents_SA_WRITE) == 0 ? RemoveFlags : AddFlags,
-               0,
-               0,
-               GetKeventUdata(data));
-    }
-
-    while ((err = kevent(port, events, GetKeventNchanges(i), NULL, 0, NULL)) < 0 && errno == EINTR);
-    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
-}
-
-static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
-{
-    assert(buffer != NULL);
-    assert(count != NULL);
-    assert(*count >= 0);
-
-    struct kevent* events = (struct kevent*)buffer;
-    int numEvents;
-    while ((numEvents = kevent(port, NULL, 0, events, GetKeventNchanges(*count), NULL)) < 0 && errno == EINTR);
-    if (numEvents == -1)
-    {
-        *count = -1;
-        return SystemNative_ConvertErrorPlatformToPal(errno);
-    }
-
-    // We should never see 0 events. Given an infinite timeout, kevent will never return
-    // 0 events even if there are no file descriptors registered with the kqueue fd. In
-    // that case, the wait will block until a file descriptor is added and an event occurs
-    // on the added file descriptor.
-    assert(numEvents != 0);
-    assert(numEvents <= *count);
-
-    for (int i = 0; i < numEvents; i++)
-    {
-        // This copy is made deliberately to avoid overwriting data.
-        struct kevent evt = events[i];
-        memset(&buffer[i], 0, sizeof(SocketEvent));
-        buffer[i].Data = GetSocketEventData(evt.udata);
-        buffer[i].Events = GetSocketEvents(GetKeventFilter(evt.filter), GetKeventFlags(evt.flags));
-    }
-
-    *count = numEvents;
-    return Error_SUCCESS;
-}
-
-#else // !HAVE_KQUEUE !HAVE_EPOLL
-
-static const size_t SocketEventBufferElementSize = 0;
-
-static int32_t CloseSocketEventPortInner(int32_t port)
-{
-    return Error_ENOSYS;
-}
-static int32_t CreateSocketEventPortInner(int32_t* port)
-{
-    return Error_ENOSYS;
-}
-static int32_t TryChangeSocketEventRegistrationInner(
-    int32_t port, int32_t socket, SocketEvents currentEvents, SocketEvents newEvents,
-uintptr_t data)
-{
-    return Error_ENOSYS;
-}
-static int32_t WaitForSocketEventsInner(int32_t port, SocketEvent* buffer, int32_t* count)
-{
-    return Error_ENOSYS;
-}
-#endif  // !HAVE_KQUEUE !HAVE_EPOLL
-
 #if defined(TARGET_WASI)
-// from https://github.com/WebAssembly/wasi-libc/blob/230d4be6c54bec93181050f9e25c87150506bdd0/libc-bottom-half/headers/private/wasi/descriptor_table.h
-bool descriptor_table_get_ref(int fd, void **entry);
+// from https://github.com/WebAssembly/wasi-libc/blob/161b3195fc25/libc-bottom-half/headers/private/wasi/descriptor_table.h
+// The descriptor table entry is a "fat pointer":
+//   typedef struct { void* data; descriptor_vtable_t* vtable; } descriptor_table_entry_t;
+// where `data` points to the descriptor-specific state (a tcp_socket_t* or udp_socket_t*).
+void* descriptor_table_get_ref(int fd);
 
 // this method is invading private implementation details of wasi-libc
 // we could get rid of it when https://github.com/WebAssembly/wasi-libc/issues/542 is resolved
 // or after WASIp3 promises are implemented, whatever comes first
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+//
+// Returns the descriptor-specific `data` pointer in *entry and the kind of socket in
+// *socketType (1 = TCP/stream, 2 = UDP/datagram, 0 = unknown). The vtable that identifies
+// the socket kind is a private static symbol in wasi-libc, so we discriminate via SO_TYPE.
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
-    if (entry == NULL)
+    if (entry == NULL || socketType == NULL)
     {
         return Error_EFAULT;
     }
 
     int fd = ToFileDescriptor(socket);
-    if(!descriptor_table_get_ref(fd, entry))
+    // The returned pointer is a descriptor_table_entry_t*; its first word is the `data` pointer.
+    void** ref = (void**)descriptor_table_get_ref(fd);
+    if (ref == NULL)
     {
-        return Error_EFAULT;
+        // The fd is not present in the descriptor table (e.g. closed or not a socket).
+        return Error_EBADF;
     }
+    *entry = ref[0];
+
+    int type = 0;
+    socklen_t length = sizeof(type);
+    if (getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &length) != 0)
+    {
+        return SystemNative_ConvertErrorPlatformToPal(errno);
+    }
+
+    if (type == SOCK_STREAM)
+    {
+        *socketType = 1;
+    }
+    else if (type == SOCK_DGRAM)
+    {
+        *socketType = 2;
+    }
+    else
+    {
+        *socketType = 0;
+    }
+
     return Error_SUCCESS;
 }
+
+// In the new wasi-libc descriptor-table design, the pollables embedded in the socket state
+// (socket_pollable / input_pollable / output_pollable / incoming_pollable / outgoing_pollable)
+// are created lazily: their handle is 0 until the corresponding `subscribe` import is called.
+// The managed event loop needs the actual pollable handle to merge it into wasi:io/poll.poll,
+// so it asks us to lazily subscribe when it observes a 0 handle.
+//
+// All of the wasi component-model handle types are ABI-identical: a struct wrapping a single
+// int32_t handle, passed and returned directly. We mirror that with WasiPollHandle_t so we can
+// call the (private) wasi-libc subscribe imports without pulling in the generated headers.
+typedef struct { int32_t __handle; } WasiPollHandle_t;
+extern WasiPollHandle_t streams_method_input_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t streams_method_output_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t tcp_method_tcp_socket_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_udp_socket_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_incoming_datagram_stream_subscribe(WasiPollHandle_t self);
+extern WasiPollHandle_t udp_method_outgoing_datagram_stream_subscribe(WasiPollHandle_t self);
+
+// kind: 0 = input-stream, 1 = output-stream, 2 = tcp-socket, 3 = udp-socket,
+//       4 = incoming-datagram-stream, 5 = outgoing-datagram-stream
+// `handle` is the borrowed stream/socket handle read from the socket state. Returns the newly
+// created pollable handle (the caller stores it back into the socket state so wasi-libc owns
+// and eventually drops it), or 0 for an unknown kind.
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    WasiPollHandle_t self = { handle };
+    WasiPollHandle_t pollable;
+    switch (kind)
+    {
+        case 0: pollable = streams_method_input_stream_subscribe(self); break;
+        case 1: pollable = streams_method_output_stream_subscribe(self); break;
+        case 2: pollable = tcp_method_tcp_socket_subscribe(self); break;
+        case 3: pollable = udp_method_udp_socket_subscribe(self); break;
+        case 4: pollable = udp_method_incoming_datagram_stream_subscribe(self); break;
+        case 5: pollable = udp_method_outgoing_datagram_stream_subscribe(self); break;
+        default: return 0;
+    }
+    return pollable.__handle;
+}
 #else
-int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry)
+int32_t SystemNative_GetWasiSocketDescriptor(intptr_t socket, void** entry, int32_t* socketType)
 {
     (void)socket;
     (void)entry;
+    (void)socketType;
     return Error_ENOSYS;
 }
+
+int32_t SystemNative_WasiSubscribeSocketPollable(int32_t kind, int32_t handle)
+{
+    (void)kind;
+    (void)handle;
+    return 0;
+}
 #endif  // TARGET_WASI
-
-int32_t SystemNative_CreateSocketEventPort(intptr_t* port)
-{
-    if (port == NULL)
-    {
-        return Error_EFAULT;
-    }
-
-    int fd;
-    int32_t error = CreateSocketEventPortInner(&fd);
-    *port = fd;
-    return error;
-}
-
-int32_t SystemNative_CloseSocketEventPort(intptr_t port)
-{
-    return CloseSocketEventPortInner(ToFileDescriptor(port));
-}
-
-int32_t SystemNative_CreateSocketEventBuffer(int32_t count, SocketEvent** buffer)
-{
-    if (buffer == NULL || count < 0)
-    {
-        return Error_EFAULT;
-    }
-
-    size_t bufferSize;
-    if (!multiply_s(SocketEventBufferElementSize, (size_t)count, &bufferSize) ||
-        (*buffer = (SocketEvent*)malloc(bufferSize)) == NULL)
-    {
-        return Error_ENOMEM;
-    }
-
-    return Error_SUCCESS;
-}
-
-int32_t SystemNative_FreeSocketEventBuffer(SocketEvent* buffer)
-{
-    free(buffer);
-    return Error_SUCCESS;
-}
-
-int32_t
-SystemNative_TryChangeSocketEventRegistration(intptr_t port, intptr_t socket, int32_t currentEvents, int32_t newEvents, uintptr_t data)
-{
-    int portFd = ToFileDescriptor(port);
-    int socketFd = ToFileDescriptor(socket);
-
-    const int32_t SupportedEvents = SocketEvents_SA_READ | SocketEvents_SA_WRITE | SocketEvents_SA_READCLOSE | SocketEvents_SA_CLOSE | SocketEvents_SA_ERROR;
-
-    if ((currentEvents & ~SupportedEvents) != 0 || (newEvents & ~SupportedEvents) != 0)
-    {
-        return Error_EINVAL;
-    }
-
-    if (currentEvents == newEvents)
-    {
-        return Error_SUCCESS;
-    }
-
-    return TryChangeSocketEventRegistrationInner(
-        portFd, socketFd, (SocketEvents)currentEvents, (SocketEvents)newEvents, data);
-}
-
-int32_t SystemNative_WaitForSocketEvents(intptr_t port, SocketEvent* buffer, int32_t* count)
-{
-    if (buffer == NULL || count == NULL || *count < 0)
-    {
-        return Error_EFAULT;
-    }
-
-    int fd = ToFileDescriptor(port);
-
-    return WaitForSocketEventsInner(fd, buffer, count);
-}
 
 int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
 {
@@ -3606,6 +3331,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     // Emulate sendfile using a simple read/send loop.
     *sent = 0;
     char* buffer = NULL;
+    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
 
     // Save the original input file position and seek to the offset position
     off_t inputFileOrigOffset = lseek(infd, 0, SEEK_CUR);
@@ -3615,7 +3341,6 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Allocate a buffer
-    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
     buffer = (char*)malloc(bufferLength);
     if (buffer == NULL)
     {

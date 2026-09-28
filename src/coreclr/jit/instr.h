@@ -20,12 +20,12 @@
 enum instruction : uint32_t
 {
 #if defined(TARGET_XARCH)
-    #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST1(id, nm, um, mr,                 tt, flags) INS_##id,
-    #define INST2(id, nm, um, mr, mi,             tt, flags) INS_##id,
-    #define INST3(id, nm, um, mr, mi, rm,         tt, flags) INS_##id,
-    #define INST4(id, nm, um, mr, mi, rm, a4,     tt, flags) INS_##id,
-    #define INST5(id, nm, um, mr, mi, rm, a4, rr, tt, flags) INS_##id,
+    #define INST0(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST1(id, nm, um, mr,                 lat, tp, tt, flags) INS_##id,
+    #define INST2(id, nm, um, mr, mi,             lat, tp, tt, flags) INS_##id,
+    #define INST3(id, nm, um, mr, mi, rm,         lat, tp, tt, flags) INS_##id,
+    #define INST4(id, nm, um, mr, mi, rm, a4,     lat, tp, tt, flags) INS_##id,
+    #define INST5(id, nm, um, mr, mi, rm, a4, rr, lat, tp, tt, flags) INS_##id,
     #include "instrs.h"
 
 #elif defined(TARGET_ARM)
@@ -76,6 +76,11 @@ enum instruction : uint32_t
     #include "instrs.h"
 
     INS_lea,   // Not a real instruction. It is used for load the address of stack locals
+#elif defined(TARGET_WASM)
+    #define INST(id, nm, info, fmt, opcode         ) INS_##id,
+    #define INST2(id, nm, info, fmt, prefix, opcode) INS_##id,
+    #include "instrs.h"
+
 #else
 #error Unsupported target architecture
 #endif
@@ -85,7 +90,7 @@ enum instruction : uint32_t
 };
 
 //------------------------------------------------------------------------
-// IsAvx512OrPriorInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
+// IsSimdInstruction: Is this an Avx512 or Avx or Sse or K (opmask) instruction.
 // Technically, K instructions would be considered under the VEX encoding umbrella, but due to
 // the instruction table encoding had to be pulled out with the rest of the `INST5` definitions.
 //
@@ -95,10 +100,10 @@ enum instruction : uint32_t
 // Returns:
 //    `true` if it is a sse or avx or avx512 instruction.
 //
-inline bool IsAvx512OrPriorInstruction(instruction ins)
+inline bool IsSimdInstruction(instruction ins)
 {
 #if defined(TARGET_XARCH)
-    return (ins >= INS_FIRST_SSE_INSTRUCTION) && (ins <= INS_LAST_AVX512_INSTRUCTION);
+    return (ins >= FIRST_SSE_INSTRUCTION) && (ins <= LAST_AVX512_INSTRUCTION);
 #else
     return false;
 #endif // TARGET_XARCH
@@ -176,19 +181,25 @@ enum insFlags : uint64_t
     Restore_SF_ZF_AF_PF_CF = 1ULL << 24,
 
     // x87 instruction
-    INS_FLAGS_x87Instr = 1ULL << 25,
+    INS_FLAGS_X87Instr = 1ULL << 25,
 
     // Avx
-    INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 26,
-    INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
-    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
+    INS_FLAGS_IsDstDstSrcAVXInstruction = 1ULL << 26,
+    INS_FLAGS_IsDstSrcSrcAVXInstruction = 1ULL << 27,
+    INS_FLAGS_Is3OperandInstructionMask =
+        (INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsDstSrcSrcAVXInstruction),
+
+    // The instruction is commutative for op1/op2 and so can have
+    // these operands swapped if it will result in a smaller encoding.
+    INS_FLAGS_IsAvxCommutative = 1ULL << 28,
 
     // w and s bits
-    INS_FLAGS_Has_Wbit = 1ULL << 29,
-    INS_FLAGS_Has_Sbit = 1ULL << 30,
+    INS_FLAGS_HasWBit = 1ULL << 29,
+    INS_FLAGS_HasSBit = 1ULL << 30,
 
-    // instruction input size
-    // if not input size is set, instruction defaults to using
+    // instruction input size which is used to determine
+    // the scalar or broadcast load amount for SIMD instructions
+    // if this flag is not present, we default to using
     // the emitAttr for size
     Input_8Bit  = 1ULL << 31,
     Input_16Bit = 1ULL << 32,
@@ -215,10 +226,41 @@ enum insFlags : uint64_t
     KInstruction = 1ULL << 41,
     KInstructionWithLBit = 1ULL << 42,
 
-    // EVEX feature: embedded broadcast
-    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 43,
+    // APX: extended EVEX encoding for instruction IDs that only exist in the APX EVEX space
+    // (including *_apx variants such as crc32_apx/movbe_apx). Do not use this for existing instruction IDs
+    // that merely gain an APX encoding through NDD/NF; use INS_FLAGS_HasNDD and/or INS_FLAGS_HasNF instead.
+    Encoding_EVEX_APX_ONLY = 1ULL << 43,
 
-    //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
+    // APX: REX2 prefix:
+    Encoding_REX2  = 1ULL << 44,
+
+    // APX: EVEX.ND:
+    INS_FLAGS_HasNDD  = 1ULL << 45,
+
+    // APX: EVEX.NF:
+    INS_FLAGS_HasNF  = 1ULL << 46,
+
+    // Mask of all APX-EVEX related flags. An instruction matches this mask if it either only exists in the
+    // APX EVEX space (Encoding_EVEX_APX_ONLY, e.g. crc32_apx/movbe_apx) or gains an APX encoding through the
+    // NDD (INS_FLAGS_HasNDD) or NF (INS_FLAGS_HasNF) features. Use it to quickly test whether an instruction
+    // has any APX-EVEX capability.
+    INS_FLAGS_ApxEvexMask = (Encoding_EVEX_APX_ONLY | INS_FLAGS_HasNDD | INS_FLAGS_HasNF),
+
+    // base kmask size used for a 128-bit vector
+    // used to determine if we can use embedded masking
+    KMask_Base1    = 1ULL << 47,
+    KMask_Base2    = 1ULL << 48,
+    KMask_Base4    = 1ULL << 49,
+    KMask_Base8    = 1ULL << 50,
+    KMask_Base16   = 1ULL << 51,
+    KMask_BaseMask = (0x1FULL) << 47,
+
+    // The instruction has a pseudo name that should be used for disasm display
+    INS_FLAGS_HasPseudoName = 1ULL << 52,
+
+    // Keep the legacy spelling because shared code and the non-xarch insFlags enum also use
+    // INS_FLAGS_DONT_CARE. Renaming it would extend this xarch-only cleanup into other targets.
+    // TODO-Cleanup: Remove this flag and its usage from TARGET_XARCH.
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
@@ -227,13 +269,17 @@ enum insOpts: unsigned
     INS_OPTS_NONE = 0,
 
     // Two-bits: 0b0000_0011
-    INS_OPTS_EVEX_b_MASK = 0x03,         // mask for EVEX.b related features.
+    INS_OPTS_EVEX_b_MASK = 0x03,    // mask for EVEX.b related features.
 
-    INS_OPTS_EVEX_eb_er_rd = 1,     // Embedded Broadcast or Round down
+    INS_OPTS_EVEX_eb = 1,           // Embedded broadcast
 
-    INS_OPTS_EVEX_er_ru = 2,        // Round up
+    INS_OPTS_EVEX_cd = 2,           // Compressed displacement
 
-    INS_OPTS_EVEX_er_rz = 3,        // Round towards zero
+    INS_OPTS_EVEX_er_rd = 1,        // Embedded round down
+
+    INS_OPTS_EVEX_er_ru = 2,        // Embedded round up
+
+    INS_OPTS_EVEX_er_rz = 3,        // Embedded round towards zero
 
     // Three-bits: 0b0001_1100
     INS_OPTS_EVEX_aaa_MASK = 0x1C,  // mask for EVEX.aaa related features
@@ -256,9 +302,38 @@ enum insOpts: unsigned
     INS_OPTS_EVEX_z_MASK = 0x20,    // mask for EVEX.z related features
 
     INS_OPTS_EVEX_em_zero = 1 << 5, // Embedded mask merges with zero
+
+    // One-bit:  0b0100_0000
+    INS_OPTS_EVEX_nd_MASK = 0x40,   // mask for APX-EVEX.nd related features
+
+    INS_OPTS_EVEX_nd = 1 << 6,      // NDD form for legacy instructions
+
+    // One-bit:  0b1000_0000
+    INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
+
+    INS_OPTS_EVEX_nf = 1 << 7,      // No-Flag for legacy instructions
+    INS_OPTS_EVEX_dfv_shift = 8, // bit shift for the first dfv flag position
+
+    INS_OPTS_EVEX_dfv_cf = 1 << 8,
+    INS_OPTS_EVEX_dfv_zf = 1 << 9,
+    INS_OPTS_EVEX_dfv_sf = 1 << 10,
+    INS_OPTS_EVEX_dfv_of = 1 << 11,
+
+    INS_OPTS_EVEX_dfv_MASK = 0xF00,
+
+    INS_OPTS_EVEX_NoApxPromotion = 1 << 12,    // Do not promote to APX-EVEX
+
+    INS_OPTS_APX_ppx = 1 << 13,      // PPX hint for APX-EVEX
+    // One-bit:  0b10_0000_0000_0000
+    INS_OPTS_APX_ppx_MASK = 0x2000,   // mask for APX-EVEX.ppx feature.
+
+    INS_OPTS_EVEX_zu = 1 << 14,      // Zero Upper for APX-EVEX
+    // One-bit:  0b100_0000_0000_0000
+    INS_OPTS_EVEX_zu_MASK = 0x4000,   // mask for APX-EVEX.zu feature.
+
 };
 
-#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
 // TODO-Cleanup: Move 'insFlags' under TARGET_ARM
 enum insFlags: unsigned
 {
@@ -339,11 +414,17 @@ enum insOpts : unsigned
     INS_OPTS_S_TO_8BYTE,  // Single to INT64
     INS_OPTS_D_TO_8BYTE,  // Double to INT64
 
+    INS_OPTS_H_TO_4BYTE,  // Half to INT32
+    INS_OPTS_H_TO_8BYTE,  // Half to INT64
+
     INS_OPTS_4BYTE_TO_S,  // INT32 to Single
     INS_OPTS_4BYTE_TO_D,  // INT32 to Double
 
     INS_OPTS_8BYTE_TO_S,  // INT64 to Single
     INS_OPTS_8BYTE_TO_D,  // INT64 to Double
+
+    INS_OPTS_4BYTE_TO_H,  // INT32 to Half
+    INS_OPTS_8BYTE_TO_H,  // INT64 to Half
 
     INS_OPTS_S_TO_D,      // Single to Double
     INS_OPTS_D_TO_S,      // Double to Single
@@ -382,6 +463,15 @@ enum insScalableOpts : unsigned
     INS_SCALABLE_OPTS_IMM_FIRST,           // Variants with an immediate and a register, where the immediate comes first
 };
 
+// Some SVE RMW instructions require a mov/movprfx instruction to setup the destination
+// register, using this option to specify which variant of mov/movprfx to use.
+enum insSveMovOpts : unsigned
+{
+    INS_SVE_MOV_OPTS_UNPRED,  // <Zd>, <Zn>
+    INS_SVE_MOV_OPTS_ZEROING, // <Zd>.<T>, <Pg>/Z, <Zn>.<T>
+    INS_SVE_MOV_OPTS_MERGING, // <Zd>.<T>, <Pg>/M, <Zn>.<T>
+};
+
 // Maps directly to the pattern used in SVE instructions such as cntb.
 enum insSvePattern : unsigned
 {
@@ -408,16 +498,16 @@ enum insSvePattern : unsigned
 enum insSvePrfop : unsigned
 {
     SVE_PRFOP_PLDL1KEEP = 0b0000,
-    SVE_PRFOP_PLDL1STRM = 0b0001, 
-    SVE_PRFOP_PLDL2KEEP = 0b0010, 
-    SVE_PRFOP_PLDL2STRM = 0b0011, 
-    SVE_PRFOP_PLDL3KEEP = 0b0100, 
-    SVE_PRFOP_PLDL3STRM = 0b0101, 
-    SVE_PRFOP_PSTL1KEEP = 0b1000, 
-    SVE_PRFOP_PSTL1STRM = 0b1001, 
-    SVE_PRFOP_PSTL2KEEP = 0b1010, 
-    SVE_PRFOP_PSTL2STRM = 0b1011, 
-    SVE_PRFOP_PSTL3KEEP = 0b1100, 
+    SVE_PRFOP_PLDL1STRM = 0b0001,
+    SVE_PRFOP_PLDL2KEEP = 0b0010,
+    SVE_PRFOP_PLDL2STRM = 0b0011,
+    SVE_PRFOP_PLDL3KEEP = 0b0100,
+    SVE_PRFOP_PLDL3STRM = 0b0101,
+    SVE_PRFOP_PSTL1KEEP = 0b1000,
+    SVE_PRFOP_PSTL1STRM = 0b1001,
+    SVE_PRFOP_PSTL2KEEP = 0b1010,
+    SVE_PRFOP_PSTL2STRM = 0b1011,
+    SVE_PRFOP_PSTL3KEEP = 0b1100,
     SVE_PRFOP_PSTL3STRM = 0b1101,
 
     SVE_PRFOP_CONST6    = 0b0110,
@@ -499,9 +589,7 @@ enum insOpts : unsigned
 
     INS_OPTS_RC,     // see ::emitIns_R_C().
     INS_OPTS_RL,     // see ::emitIns_R_L().
-    INS_OPTS_JALR,   // see ::emitIns_J_R().
-    INS_OPTS_J,      // see ::emitIns_J().
-    INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
+    INS_OPTS_JUMP,   // see ::emitIns_J and ::emitIns_J_cond_la().
     INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
@@ -509,9 +597,15 @@ enum insOpts : unsigned
 
 enum insBarrier : unsigned
 {
-    INS_BARRIER_FULL  =  0x33,
+    INS_BARRIER_FULL       = 0x33, // fence rw, rw
+    INS_BARRIER_LOAD_ONLY  = 0x23, // fence r, rw
+    INS_BARRIER_STORE_ONLY = 0x31, // fence rw, w
 };
-
+#elif defined(TARGET_WASM)
+enum insOpts : unsigned
+{
+    INS_OPTS_NONE,
+};
 #endif
 
 #if defined(TARGET_XARCH)

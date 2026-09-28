@@ -162,7 +162,7 @@ MONO_JIT_ICALL (mono_break) \
 MONO_JIT_ICALL (mono_byvalarray_to_byte_array) \
 MONO_JIT_ICALL (mono_chkstk_win64) \
 MONO_JIT_ICALL (mono_ckfinite) \
-MONO_JIT_ICALL (mono_class_interface_match) \
+MONO_JIT_ICALL (mono_class_interface_match_compressed) \
 MONO_JIT_ICALL (mono_class_static_field_address) \
 MONO_JIT_ICALL (mono_compile_method_icall) \
 MONO_JIT_ICALL (mono_context_get_icall) \
@@ -203,6 +203,7 @@ MONO_JIT_ICALL (mono_get_native_calli_wrapper) \
 MONO_JIT_ICALL (mono_get_special_static_data) \
 MONO_JIT_ICALL (mono_gsharedvt_constrained_call) \
 MONO_JIT_ICALL (mono_gsharedvt_value_copy) \
+MONO_JIT_ICALL (mono_helper_box_nullable) \
 MONO_JIT_ICALL (mono_helper_compile_generic_method) \
 MONO_JIT_ICALL (mono_helper_ldstr) \
 MONO_JIT_ICALL (mono_helper_ldstr_mscorlib) \
@@ -250,6 +251,7 @@ MONO_JIT_ICALL (mono_ppc_throw_exception)	\
 MONO_JIT_ICALL (mono_profiler_raise_exception_clause) \
 MONO_JIT_ICALL (mono_profiler_raise_gc_allocation) \
 MONO_JIT_ICALL (mono_profiler_raise_method_enter) \
+MONO_JIT_ICALL (mono_profiler_raise_method_samplepoint) \
 MONO_JIT_ICALL (mono_profiler_raise_method_leave) \
 MONO_JIT_ICALL (mono_profiler_raise_method_tail_call) \
 MONO_JIT_ICALL (mono_resolve_generic_virtual_call) \

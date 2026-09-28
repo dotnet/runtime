@@ -1,4 +1,4 @@
-﻿<root>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -124,6 +124,9 @@
   </data>
   <data name="FSW_BufferOverflow" xml:space="preserve">
     <value>Too many changes at once in directory:{0}.</value>
+  </data>
+  <data name="FSW_WatchedDirectoryDeletedOrMoved" xml:space="preserve">
+    <value>The directory being watched '{0}' was deleted or moved.</value>
   </data>
   <data name="InvalidDirName" xml:space="preserve">
     <value>The directory name {0} is invalid.</value>

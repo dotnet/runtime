@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="caninline.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -139,4 +139,52 @@ public class CSwitchRecognitionTest
     [InlineData(6, 4)]
     [InlineData(10, 1)]
     public static void TestRecSwitchSkipBitTest(int arg1, int expected) => Assert.Equal(expected, RecSwitchSkipBitTest(arg1));
+
+    // Test that consecutive equality comparisons (comparison chain) produce the same result
+    // as pattern matching. The switch recognition should convert the chain to a switch, and
+    // then fgOptimizeSwitchBranches should simplify it to an unsigned LE comparison.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsLetterCategoryCompare(int uc)
+    {
+        return uc == 0
+             || uc == 1
+             || uc == 2
+             || uc == 3
+             || uc == 4;
+    }
+
+    [Theory]
+    [InlineData(-1, false)]
+    [InlineData(0, true)]
+    [InlineData(1, true)]
+    [InlineData(2, true)]
+    [InlineData(3, true)]
+    [InlineData(4, true)]
+    [InlineData(5, false)]
+    [InlineData(100, false)]
+    [InlineData(int.MinValue, false)]
+    [InlineData(int.MaxValue, false)]
+    public static void TestSwitchToRangeCheck(int arg1, bool expected) => Assert.Equal(expected, IsLetterCategoryCompare(arg1));
+
+    // Test with non-zero-based consecutive values
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool IsInRange10To14(int val)
+    {
+        return val == 10
+             || val == 11
+             || val == 12
+             || val == 13
+             || val == 14;
+    }
+
+    [Theory]
+    [InlineData(9, false)]
+    [InlineData(10, true)]
+    [InlineData(11, true)]
+    [InlineData(12, true)]
+    [InlineData(13, true)]
+    [InlineData(14, true)]
+    [InlineData(15, false)]
+    [InlineData(-1, false)]
+    public static void TestSwitchToRangeCheckNonZeroBased(int arg1, bool expected) => Assert.Equal(expected, IsInRange10To14(arg1));
 }

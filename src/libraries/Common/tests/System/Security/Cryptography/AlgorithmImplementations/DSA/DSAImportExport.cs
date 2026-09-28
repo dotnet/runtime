@@ -1,18 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Not supported on Browser/iOS/tvOS/MacCatalyst")]
-    public partial class DSAImportExport
+    [ConditionalClass(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
+    public abstract class DSAImportExport
     {
-        public static bool SupportsFips186_3 => DSAFactory.SupportsFips186_3;
-        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
+        protected abstract DSAProvider DSAFactory { get; }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
-        public static void ExportAutoKey()
+        [Fact]
+        public void ExportAutoKey()
         {
             DSAParameters privateParams;
             DSAParameters publicParams;
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void Import_512()
+        public void Import_512()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void Import_576()
+        public void Import_576()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void Import_1024()
+        public void Import_1024()
         {
             using (DSA dsa = DSAFactory.Create())
             {
@@ -73,9 +73,11 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Import_2048()
+        [ConditionalFact]
+        public void Import_2048()
         {
+            DSAFactory.SkipUnlessSupportsFips186_3();
+
             using (DSA dsa = DSAFactory.Create())
             {
                 dsa.ImportParameters(DSATestData.GetDSA2048Params());
@@ -85,7 +87,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [Fact]
-        public static void MultiExport()
+        public void MultiExport()
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
 
@@ -115,7 +117,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void ImportRoundTrip(bool includePrivate)
+        public void ImportRoundTrip(bool includePrivate)
         {
             DSAParameters imported = DSATestData.GetDSA1024Params();
 
@@ -135,7 +137,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void ExportAfterDispose(bool importKey)
+        public void ExportAfterDispose(bool importKey)
         {
             DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(1024);
             byte[] hash = new byte[20];
@@ -143,13 +145,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             // Ensure that the key got created, and then Dispose it.
             using (key)
             {
-                try
-                {
-                    key.CreateSignature(hash);
-                }
-                catch (PlatformNotSupportedException) when (!SupportsKeyGeneration)
-                {
-                }
+                key.CreateSignature(hash); // Assert.NoThrow
             }
 
             Assert.Throws<ObjectDisposedException>(() => key.ExportParameters(false));

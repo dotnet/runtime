@@ -48,7 +48,7 @@ else(CLR_CMAKE_HOST_WIN32)
     if(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
         # This option is necessary to ensure that the overloaded new/delete operators defined inside
         # of the utilcode will be used instead of the standard library delete operator.
-        set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Xlinker -Bsymbolic")
+        add_link_options(LINKER:-Bsymbolic)
     endif(CLR_CMAKE_HOST_LINUX OR CLR_CMAKE_HOST_FREEBSD OR CLR_CMAKE_HOST_NETBSD OR CLR_CMAKE_HOST_SUNOS OR CLR_CMAKE_HOST_HAIKU)
 
     set_exports_linker_option(${EXPORTS_FILE})
@@ -69,12 +69,13 @@ endif(CLR_CMAKE_HOST_UNIX)
 set(COREDBI_LIBRARIES
     debug-pal
     cordbdi
+    dbgutil
     utilcodestaticnohost
     mdcompiler-dbi
     mdruntime-dbi
     mdruntimerw-dbi
-    mddatasource_dbi
     corguids
+    minipal
 )
 
 if(CLR_CMAKE_HOST_WIN32)
@@ -129,6 +130,8 @@ elseif(CLR_CMAKE_HOST_UNIX)
     endif(CLR_CMAKE_HOST_LINUX)
 
 endif(CLR_CMAKE_HOST_WIN32)
+
+esrp_sign(mscordbi)
 
 # add the install targets
 install_clr(TARGETS mscordbi DESTINATIONS . sharedFramework COMPONENT debug)

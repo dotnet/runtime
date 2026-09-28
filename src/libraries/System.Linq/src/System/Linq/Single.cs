@@ -83,20 +83,18 @@ namespace System.Linq
             }
             else
             {
-                using (IEnumerator<TSource> e = source.GetEnumerator())
+                using IEnumerator<TSource> e = source.GetEnumerator();
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        found = false;
-                        return default;
-                    }
+                    found = false;
+                    return default;
+                }
 
-                    TSource result = e.Current;
-                    if (!e.MoveNext())
-                    {
-                        found = true;
-                        return result;
-                    }
+                TSource result = e.Current;
+                if (!e.MoveNext())
+                {
+                    found = true;
+                    return result;
                 }
             }
 

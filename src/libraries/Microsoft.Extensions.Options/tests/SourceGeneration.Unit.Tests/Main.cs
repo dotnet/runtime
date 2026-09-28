@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
+#if NET
+using System.Diagnostics.CodeAnalysis;
+#endif
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -24,7 +27,7 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test;
 
 public class EmitterTests
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task TestEmitterWithCustomValidator()
     {
         string source = """
@@ -64,7 +67,7 @@ public class EmitterTests
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task PotentiallyMissingAttributes()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -94,7 +97,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.PotentiallyMissingEnumerableValidation.Id, diagnostics[1].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task IgnoredStaticMembers()
     {
         var (d, _) = await RunGenerator(@"
@@ -129,7 +132,7 @@ public class EmitterTests
         Assert.Empty(d);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ValidationAttributeOnStaticMember()
     {
         var (d, _) = await RunGenerator(@"
@@ -168,7 +171,7 @@ public class EmitterTests
         Assert.All(d, x => Assert.Equal(DiagnosticSeverity.Warning, x.DefaultSeverity));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CircularTypeReferences()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -189,7 +192,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CircularTypeReferences.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task InvalidValidatorInterface()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -220,7 +223,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NotValidator()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -250,7 +253,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ValidatorAlreadyImplementValidateFunction()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -288,7 +291,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NullValidator()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -319,7 +322,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NullValidatorType.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoSimpleValidatorConstructor()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -356,7 +359,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.ValidatorsNeedSimpleConstructor.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoStaticValidator()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -376,7 +379,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CantBeStaticClass.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task BogusModelType()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -390,7 +393,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CantValidateOpenGenericMembers()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -421,7 +424,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CantUseWithGenericTypes.Id, diagnostics[2].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ClosedGenerics()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -457,7 +460,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, diagnostics[3].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoEligibleMembers()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -489,7 +492,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMembersFromValidator.Id, diagnostics[1].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task AlreadyImplemented()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -512,7 +515,554 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task ExplicitValidateInterfaceImplementationReportsDiagnostic()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IValidateOptions<FirstModel>
+            {
+                ValidateOptionsResult IValidateOptions<FirstModel>.Validate(string? name, FirstModel options)
+                    => ValidateOptionsResult.Success;
+            }
+        ");
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id);
+        Assert.DoesNotContain(
+            "public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.FirstModel options)",
+            Assert.Single(generatedSources).SourceText.ToString());
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task HandWrittenValidateDoesNotPreventAsyncMethodEmission()
+    {
+        string source = """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class FirstModel
+                {
+                    [Required]
+                    public string One { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                    public ValidateOptionsResult Validate(string? name, FirstModel options)
+                        => ValidateOptionsResult.Success;
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id);
+
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("ValidateAsync(string? name, global::Test.FirstModel options,", generatedSource);
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(
+            Path.GetRandomFileName(),
+            source + Environment.NewLine + generatedSource);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task ExplicitHandWrittenValidateDoesNotPreventAsyncMethodEmission()
+    {
+        string source = """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class FirstModel
+                {
+                    [Required]
+                    public string One { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                    ValidateOptionsResult IValidateOptions<FirstModel>.Validate(string? name, FirstModel options)
+                        => ValidateOptionsResult.Success;
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id);
+
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.DoesNotContain(
+            "Validate(string? name, global::Test.FirstModel options)",
+            generatedSource);
+        Assert.Contains(
+            "ValidateAsync(string? name, global::Test.FirstModel options,",
+            generatedSource);
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(
+            Path.GetRandomFileName(),
+            source + Environment.NewLine + generatedSource);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task HandWrittenValidateAndValidateAsyncSuppressGeneration()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator("""
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                public ValidateOptionsResult Validate(string? name, FirstModel options)
+                    => ValidateOptionsResult.Success;
+
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(
+                    string? name,
+                    FirstModel options,
+                    System.Threading.CancellationToken cancellationToken = default)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+            """);
+
+        Assert.Collection(
+            diagnostics,
+            diagnostic => Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id),
+            diagnostic => Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostic.Id));
+
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.DoesNotContain(
+            "Validate(string? name, global::Test.FirstModel options)",
+            generatedSource);
+        Assert.DoesNotContain(
+            "ValidateAsync(string? name, global::Test.FirstModel options,",
+            generatedSource);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AlreadyImplementedAsync()
+    {
+        var (diagnostics, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken = default)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+        ");
+
+        _ = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AlreadyImplementedAsyncExplicitInterface()
+    {
+        var (diagnostics, _) = await RunGenerator(@"
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                System.Threading.Tasks.Task<ValidateOptionsResult> IAsyncValidateOptions<FirstModel>.ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+        ");
+
+        _ = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task ValidateAsyncOverloadWithWrongThirdParameterDoesNotSuppressGeneration()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator("""
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(
+                    string? name,
+                    FirstModel options,
+                    object state)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+            """);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains(
+            "global::System.Threading.CancellationToken cancellationToken = default",
+            generatedSource);
+    }
+
+#if NET
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConcurrentMemberEmissionRequiresGenuinelyAsyncWork(bool useAsyncValidationAttribute)
+    {
+        string attributeDefinition = useAsyncValidationAttribute
+            ? """
+                public sealed class TestAsyncAttribute : AsyncValidationAttribute
+                {
+                    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                        => ValidationResult.Success;
+
+                    protected override async Task<ValidationResult?> IsValidAsync(
+                        object? value,
+                        ValidationContext validationContext,
+                        CancellationToken cancellationToken)
+                    {
+                        await Task.Yield();
+                        return ValidationResult.Success;
+                    }
+                }
+
+                """
+            : string.Empty;
+        string attributeName = useAsyncValidationAttribute ? "TestAsync" : "Required";
+        string source = $$"""
+            using System.ComponentModel.DataAnnotations;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                {{attributeDefinition}}public class FirstModel
+                {
+                    [{{attributeName}}]
+                    public string First { get; set; } = string.Empty;
+
+                    [{{attributeName}}]
+                    public string Second { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("TryValidateValueAsync", generatedSource);
+        if (useAsyncValidationAttribute)
+        {
+            Assert.Contains("global::Test.TestAsyncAttribute", generatedSource);
+            Assert.Contains("Task.WhenAll(", generatedSource);
+        }
+        else
+        {
+            Assert.DoesNotContain("Task.WhenAll(", generatedSource);
+        }
+    }
+#endif // NET
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task MultiModelValidatorEmitsAsyncOnlyForOptedInModel()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator("""
+            public class AsyncModel
+            {
+                [Required]
+                public string? Value { get; set; }
+            }
+
+            public class SyncModel
+            {
+                [Required]
+                public string? Value { get; set; }
+            }
+
+            [OptionsValidator]
+            public partial class MultiValidator :
+                IAsyncValidateOptions<AsyncModel>,
+                IValidateOptions<SyncModel>
+            {
+            }
+            """);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("Validate(string? name, global::Test.AsyncModel options)", generatedSource);
+        Assert.Contains("ValidateAsync(string? name, global::Test.AsyncModel options,", generatedSource);
+        Assert.Contains("Validate(string? name, global::Test.SyncModel options)", generatedSource);
+        Assert.DoesNotContain("ValidateAsync(string? name, global::Test.SyncModel options,", generatedSource);
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [InlineData(false)]
+#if NET
+    [InlineData(true)]
+#endif
+    public async Task GenericValidateOverloadDoesNotSuppressGeneration(bool isAsync)
+    {
+        string validatorInterface = isAsync
+            ? "IAsyncValidateOptions<FirstModel>"
+            : "IValidateOptions<FirstModel>";
+        string genericMethod = isAsync
+            ? """
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync<T>(
+                    string? name,
+                    FirstModel options,
+                    System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+                """
+            : "public void Validate<T>(string name, FirstModel options) { }";
+
+        var (diagnostics, generatedSources) = await RunGenerator($$"""
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : {{validatorInterface}}
+            {
+                {{genericMethod}}
+            }
+            """);
+
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+
+        string expectedMethod = isAsync
+            ? "ValidateAsync(string? name, global::Test.FirstModel options,"
+            : "Validate(string? name, global::Test.FirstModel options)";
+        Assert.Contains(expectedMethod, generatedSources[0].SourceText.ToString());
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task UnrelatedExplicitInterfaceImplementationDoesNotSuppressGeneration()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator(@"
+            public interface IUnrelatedValidator
+            {
+                void Validate(string name, FirstModel fm);
+            }
+
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IValidateOptions<FirstModel>, IUnrelatedValidator
+            {
+                void IUnrelatedValidator.Validate(string name, FirstModel fm)
+                {
+                }
+            }
+        ");
+
+        // The explicit implementation satisfies IUnrelatedValidator.Validate, not IValidateOptions<FirstModel>.Validate
+        // (same name/signature, unrelated interface), so it must not suppress generation of the real method.
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+        Assert.Contains(
+            "public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.FirstModel options)",
+            generatedSources[0].SourceText.ToString());
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [InlineData("ref")]
+    [InlineData("in")]
+    [InlineData("out")]
+    public async Task RefKindMismatchDoesNotCountAsExistingImplementation(string refKind)
+    {
+        string body = refKind == "out" ? "fm = null;" : string.Empty;
+        var (diagnostics, generatedSources) = await RunGenerator($@"
+            public class FirstModel
+            {{
+                [Required]
+                public string One {{ get; set; }} = string.Empty;
+            }}
+
+            [OptionsValidator]
+            public partial class FirstValidator : IValidateOptions<FirstModel>
+            {{
+                public void Validate(string name, {refKind} FirstModel fm)
+                {{
+                    {body}
+                }}
+            }}
+        ");
+
+        // A "Validate" overload whose model parameter has a ref/in/out modifier cannot implicitly implement
+        // IValidateOptions<FirstModel>.Validate(string, FirstModel) - parameter modifiers must match exactly for
+        // implicit interface implementation - so it is an unrelated overload and must not suppress generation.
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+        Assert.Contains(
+            "public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.FirstModel options)",
+            generatedSources[0].SourceText.ToString());
+    }
+
+#if NET
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AsyncValidateMethodWithNoAwaitedWorkRemainsAsync()
+    {
+        // The model validates only synchronously (IValidatableObject, no attributes, no async children) but is validated
+        // by an IAsyncValidateOptions<T> validator, so the generated ValidateAsync body contains no await. The method is
+        // still emitted as `async Task<ValidateOptionsResult>` (with the resulting CS1998 warning suppressed) so that
+        // cancellationToken.ThrowIfCancellationRequested() at the top of the method surfaces as a canceled/faulted Task
+        // instead of throwing synchronously to the caller, keeping the TAP contract intact even on the no-await path.
+        var (diagnostics, generatedSources) = await RunGenerator(@"
+            using System.Collections.Generic;
+
+            public class SyncSelfModel : IValidatableObject
+            {
+                public string? Name { get; set; }
+                public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+                {
+                    yield break;
+                }
+            }
+
+            [OptionsValidator]
+            public partial class SyncSelfModelValidator : IAsyncValidateOptions<SyncSelfModel>
+            {
+            }
+        ");
+
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+        string emitted = generatedSources[0].SourceText.ToString();
+
+        // The method is always declared async and never falls back to Task.FromResult(...).
+        Assert.Contains("public async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync", emitted);
+        Assert.DoesNotContain("global::System.Threading.Tasks.Task.FromResult", emitted);
+        // No await occurs on this path, so the CS1998 warning is explicitly suppressed rather than avoided by dropping async.
+        Assert.Contains("#pragma warning disable CS1998", emitted);
+        Assert.Contains("#pragma warning restore CS1998", emitted);
+        Assert.DoesNotContain("await ", emitted);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task UnrelatedExplicitInterfaceImplementationDoesNotSuppressAsyncGeneration()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator(@"
+            public interface IUnrelatedAsyncValidator
+            {
+                System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken);
+            }
+
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>, IUnrelatedAsyncValidator
+            {
+                System.Threading.Tasks.Task<ValidateOptionsResult> IUnrelatedAsyncValidator.ValidateAsync(string? name, FirstModel options, System.Threading.CancellationToken cancellationToken)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+        ");
+
+        // The explicit implementation satisfies IUnrelatedAsyncValidator.ValidateAsync, not
+        // IAsyncValidateOptions<FirstModel>.ValidateAsync (same name/signature, unrelated interface), so it must not
+        // suppress generation of the real method.
+        Assert.DoesNotContain(diagnostics, d => d.Id == DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id);
+        _ = Assert.Single(generatedSources);
+        Assert.Contains("ValidateAsync(string? name, global::Test.FirstModel options,", generatedSources[0].SourceText.ToString());
+    }
+#endif // NET
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task AsyncValidationUsesAvailableDataAnnotationsApis()
+    {
+        string source = """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class FirstModel
+                {
+                    [Required]
+                    public string One { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("ValidateAsync(string? name, global::Test.FirstModel options,", generatedSource);
+
+#if NET
+        Assert.Contains("Validator.TryValidateValueAsync(", generatedSource);
+#else
+        Assert.DoesNotContain("Validator.TryValidateValueAsync(", generatedSource);
+        Assert.Contains("Validator.TryValidateValue(", generatedSource);
+#endif // NET
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(
+            Path.GetRandomFileName(),
+            source + Environment.NewLine + generatedSource);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceInfoWhenTheClassHasABaseClass()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -537,7 +1087,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceInfoWhenTransitiveClassHasABaseClass()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -568,7 +1118,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData("bool")]
     [InlineData("int")]
     [InlineData("double")]
@@ -603,7 +1153,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldProduceWarningWhenTheClassHasNoEligibleMembers()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -623,7 +1173,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMembersFromValidator.Id, diagnostics[0].Id);
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData("private")]
     [InlineData("protected")]
     public async Task ShouldProduceWarningWhenTheClassMembersAreInaccessible(string accessModifier)
@@ -648,7 +1198,7 @@ public class EmitterTests
         Assert.Equal("SYSLIB1206", diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenMultipleValidationAnnotationsExist()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -668,7 +1218,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenDataTypeAttributesAreUsed()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -702,7 +1252,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenConstVariableIsUsedAsAttributeArgument()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -723,7 +1273,7 @@ public class EmitterTests
     }
 
     // Testing on all existing & eligible annotations extending ValidationAttribute that aren't used above
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceAnyMessagesWhenExistingValidationsArePlaced()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -763,7 +1313,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldNotProduceErrorWhenPropertiesAreUsedAsAttributeArgument()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -783,7 +1333,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldSkipWhenOptionsValidatorAttributeDoesNotExist()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -803,7 +1353,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolCannotBeFound()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -825,7 +1375,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldSkipAtrributeWhenAttributeSymbolIsNotBasedOnValidationAttribute()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -847,7 +1397,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldAcceptAtrributeWhenAttributeIsInDifferentNamespace()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -873,7 +1423,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldHandleAtrributePropertiesOtherThanString()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -907,7 +1457,7 @@ public class EmitterTests
         Assert.Empty(diagnostics);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ShouldStoreFloatValuesCorrectly()
     {
         var backupCulture = CultureInfo.CurrentCulture;
@@ -938,7 +1488,7 @@ public class EmitterTests
         }
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task MultiModelValidatorGeneratesOnlyOnePartialTypeBlock()
     {
         var (diagnostics, sources) = await RunGenerator(@"
@@ -987,7 +1537,7 @@ public class EmitterTests
         Assert.Equal(3, validateMethodDeclarations.Length);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CircularTypeReferencesInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1008,7 +1558,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CircularTypeReferences.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NotValidatorInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1038,7 +1588,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.DoesntImplementIValidateOptions.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NullValidatorInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1069,7 +1619,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NullValidatorType.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NoSimpleValidatorConstructorInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1108,7 +1658,7 @@ public class EmitterTests
 
     private static bool SupportRemoteExecutionAndNotInBrowser => RemoteExecutor.IsSupported && !PlatformDetection.IsBrowser;
 
-    [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ConditionalFact(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
     public void ProduceDiagnosticFromOtherAssemblyTest()
     {
         string source = """
@@ -1174,7 +1724,7 @@ public class EmitterTests
         File.Delete(assemblyPath); // cleanup
     }
 
-    [ConditionalTheory(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ConditionalTheory(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
     [InlineData(LanguageVersion.CSharp10)]
     [InlineData(LanguageVersion.CSharp11)]
     public async Task InternalsVisibleToAssembliesTest(LanguageVersion languageVersion)
@@ -1252,7 +1802,7 @@ public class EmitterTests
         File.Delete(assemblyPath); // cleanup
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData(LanguageVersion.Preview)]
     [InlineData(LanguageVersion.CSharp11)]
     [InlineData(LanguageVersion.CSharp10)]
@@ -1306,7 +1856,7 @@ public class EmitterTests
         }
     }
 
-    [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [ConditionalFact(typeof(EmitterTests), nameof(SupportRemoteExecutionAndNotInBrowser))]
     public async Task InaccessibleValidationAttributesTest()
     {
         string source = """
@@ -1436,7 +1986,7 @@ public class EmitterTests
         Assert.DoesNotContain("Timeout", generatedSource);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task CantValidateOpenGenericMembersInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1467,7 +2017,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.CantUseWithGenericTypes.Id, diagnostics[2].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task ClosedGenericsInEnumeration()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1498,7 +2048,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NoEligibleMember.Id, diagnostics[2].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task NotEnumerable()
     {
         var (diagnostics, _) = await RunGenerator(@"
@@ -1519,7 +2069,7 @@ public class EmitterTests
         Assert.Equal(DiagDescriptors.NotEnumerableType.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task LanguageVersionTest()
     {
         string source = """
@@ -1576,7 +2126,7 @@ public class EmitterTests
         Assert.Equal(0, diags.Length);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNetCore))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles), nameof(PlatformDetection.IsNetCore))]
     public async Task DataAnnotationAttributesWithParams()
     {
         var (diagnostics, generatedSources) = await RunGenerator(@"""
@@ -1709,7 +2259,7 @@ public class EmitterTests
         return result;
     }
 
-    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     [InlineData(LanguageVersion.CSharp10)]
     [InlineData(LanguageVersion.CSharp11)]
     public async Task GeneratedAttributesTest(LanguageVersion languageVersion)
@@ -1811,17 +2361,81 @@ string lengthAttribute = "";
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netcore.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netcore.lang11.g.cs");
 #else
         string generatedSource = File.ReadAllText(languageVersion == LanguageVersion.CSharp10  ? @"Baselines/GeneratedAttributesTest.netfx.lang10.g.cs" : @"Baselines/GeneratedAttributesTest.netfx.lang11.g.cs");
-#endif // NET8_0_OR_GREATER
+#endif // NET
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), emittedSource.Replace("\r\n", "\n"));
 
         CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName(), source + emittedSource, refAssemblyPath: null, languageVersion);
-        var emitResult = compilation.Emit(new MemoryStream());
+        using MemoryStream assemblyStream = new();
+        var emitResult = compilation.Emit(assemblyStream);
 
         Assert.True(emitResult.Success);
+#if NET
+        Assembly generatedAssembly = Assembly.Load(assemblyStream.ToArray());
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "CompareAttribute",
+            new object[] { "P5" },
+            "external {0}:{1}",
+            "external name:P5");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "LengthAttribute",
+            new object[] { 1, 3 },
+            "external {0}:{1:D2}:{2:D2}",
+            "external name:01:03");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "MaxLengthAttribute",
+            new object[] { 5 },
+            "external {0}:{1:D2}",
+            "external name:05");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "MinLengthAttribute",
+            new object[] { 5 },
+            "external {0}:{1:D2}",
+            "external name:05");
+        AssertGeneratedFormatMessage(
+            generatedAssembly,
+            "RangeAttribute",
+            new object[] { typeof(int), "1", "3" },
+            "external {0}:{1:D2}:{2:D2}",
+            "external name:01:03");
+#endif
         // Console.WriteLine(emittedSource);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+#if NET
+    private static void AssertGeneratedFormatMessage(
+        Assembly generatedAssembly,
+        string attributeName,
+        object[] constructorArguments,
+        string format,
+        string expected)
+    {
+        Type generatedType = Assert.Single(
+            generatedAssembly.GetTypes(),
+            type => type.Name.EndsWith($"_{attributeName}", StringComparison.Ordinal));
+        ValidationAttribute attribute = Assert.IsAssignableFrom<ValidationAttribute>(
+            Activator.CreateInstance(generatedType, constructorArguments));
+
+        Assert.Equal(expected, attribute.FormatMessage(format, "name"));
+        ArgumentNullException nullException = Assert.Throws<ArgumentNullException>(
+            () => attribute.FormatMessage(null!, "name"));
+        Assert.Equal("format", nullException.ParamName);
+        Assert.Throws<FormatException>(() => attribute.FormatMessage("{3}", "name"));
+
+        MethodInfo? formatMessage = generatedType.GetMethod(nameof(ValidationAttribute.FormatMessage));
+        Assert.NotNull(formatMessage);
+        Assert.Equal(generatedType, formatMessage.DeclaringType);
+
+        StringSyntaxAttribute syntax = Assert.Single(
+            formatMessage.GetParameters()[0].GetCustomAttributes<StringSyntaxAttribute>());
+        Assert.Equal(StringSyntaxAttribute.CompositeFormat, syntax.Syntax);
+    }
+#endif
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task UsingInterfaceAsPropertyTypeForLengthAttributesTests()
     {
         var (diagnostics, generatedSources) = await RunGenerator(@"""
@@ -1865,7 +2479,7 @@ string lengthAttribute = "";
         Assert.Equal(generatedSource.Replace("\r\n", "\n"), generatedSources[0].SourceText.ToString().Replace("\r\n", "\n"));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task OptionsExtendingSystemClassTest()
     {
         string source = """

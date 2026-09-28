@@ -72,7 +72,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     using System.Collections.Generic;
                     using Microsoft.Extensions.Configuration;
                     using Microsoft.Extensions.DependencyInjection;
-                    
+
                     public class Program
                     {
                         public static void Main()
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                             {{row}}
                         }
-                    
+
                         public class MyClass
                         {
                             public string MyString { get; set; }
@@ -109,7 +109,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                     using Microsoft.Extensions.Configuration;
                     using Microsoft.Extensions.DependencyInjection;
                     using Microsoft.Extensions.Options;
-                    
+
                     public class Program
                     {
                         public static void Main()
@@ -121,7 +121,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                             {{row}}
                         }
-                    
+
                         public class MyClass
                         {
                             public string MyString { get; set; }

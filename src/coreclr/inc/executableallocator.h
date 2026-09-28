@@ -182,6 +182,9 @@ private:
     // Return true if double mapping is enabled.
     static bool IsDoubleMappingEnabled();
 
+    // Release memory allocated via DoubleMapping for either templates or normal double mapped data
+    void ReleaseWorker(void* pRX, bool releaseTemplate);
+
     // Initialize the allocator instance
     bool Initialize();
 
@@ -262,6 +265,18 @@ public:
 
     // Unmap the RW mapping at the specified address
     void UnmapRW(void* pRW);
+
+    // Allocate thunks from a template. pTemplate is the return value from CreateTemplate
+    void* AllocateThunksFromTemplate(void *pTemplate, size_t templateSize, void (*dataPageGenerator)(uint8_t* pageBase, size_t size));
+
+    // Free a set of thunks allocated from templates. pThunks must have been returned from AllocateThunksFromTemplate
+    void FreeThunksFromTemplate(void *pThunks, size_t templateSize);
+
+    // Create a template
+    // If templateInImage is not null, it will attempt to use it as the template, otherwise it will create an temporary in memory file to serve as the template
+    // Some OS/Architectures may/may not be able to work with this, so this api is permitted to return NULL, and callers should have an alternate approach using
+    // the codePageGenerator directly.
+    void* CreateTemplate(void* templateInImage, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size));
 };
 
 #define ExecutableWriterHolder ExecutableWriterHolderNoLog
@@ -285,7 +300,7 @@ class ExecutableWriterHolder
 
     void Unmap()
     {
-#if defined(HOST_OSX) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
+#if defined(HOST_APPLE) && defined(HOST_ARM64) && !defined(DACCESS_COMPILE)
         if (m_addressRX != NULL)
         {
             PAL_JitWriteProtect(false);
@@ -321,7 +336,7 @@ public:
     ExecutableWriterHolder(T* addressRX, size_t size, ExecutableAllocator::CacheableMapping cacheMapping = ExecutableAllocator::AddToCache)
     {
         m_addressRX = addressRX;
-#if defined(HOST_OSX) && defined(HOST_ARM64)
+#if defined(HOST_APPLE) && defined(HOST_ARM64)
         m_addressRW = addressRX;
         PAL_JitWriteProtect(true);
 #else

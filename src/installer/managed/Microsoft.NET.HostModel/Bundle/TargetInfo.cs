@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.NET.HostModel.MachO;
 using Microsoft.NET.HostModel.AppHost;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -29,10 +29,10 @@ namespace Microsoft.NET.HostModel.Bundle
         public readonly BundleOptions DefaultOptions;
         public readonly int AssemblyAlignment;
 
-        public TargetInfo(OSPlatform? os, Architecture? arch, Version targetFrameworkVersion)
+        public TargetInfo(OSPlatform os, Architecture arch, Version targetFrameworkVersion)
         {
-            OS = os ?? HostOS;
-            Arch = arch ?? RuntimeInformation.OSArchitecture;
+            OS = os;
+            Arch = arch;
             FrameworkVersion = targetFrameworkVersion ?? Environment.Version;
 
             if (FrameworkVersion.Major >= 6)
@@ -61,6 +61,12 @@ namespace Microsoft.NET.HostModel.Bundle
                 // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
                 AssemblyAlignment = 4096;
             }
+            else if (Arch == Architecture.LoongArch64)
+            {
+                // We align assemblies in the bundle at 16K so that we can use mmap on Unix without changing the page alignment of LOONGARCH64 R2R code.
+                // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
+                AssemblyAlignment = 16384;
+            }
             else if (Arch == Architecture.Arm64)
             {
                 // We align assemblies in the bundle at 4K so that we can use mmap on Unix without changing the page alignment of ARM64 R2R code.
@@ -77,7 +83,7 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public bool IsNativeBinary(string filePath)
         {
-            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachOUtils.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
+            return IsWindows ? PEUtils.IsPEImage(filePath) : IsOSX ? MachObjectFile.IsMachOImage(filePath) : ElfUtils.IsElfImage(filePath);
         }
 
         public string GetAssemblyName(string hostName)
@@ -93,11 +99,6 @@ namespace Microsoft.NET.HostModel.Bundle
             string arch = Arch.ToString().ToLowerInvariant();
             return $"OS: {os} Arch: {arch} FrameworkVersion: {FrameworkVersion}";
         }
-
-        private static readonly OSPlatform s_freebsdOSPlatform = OSPlatform.Create("FREEBSD");
-
-        private static OSPlatform HostOS => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? OSPlatform.Linux :
-                                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? OSPlatform.OSX : RuntimeInformation.IsOSPlatform(s_freebsdOSPlatform) ? s_freebsdOSPlatform : OSPlatform.Windows;
 
         public bool IsOSX => OS.Equals(OSPlatform.OSX);
         public bool IsWindows => OS.Equals(OSPlatform.Windows);
@@ -117,5 +118,15 @@ namespace Microsoft.NET.HostModel.Bundle
 
         private string HostFxr => IsWindows ? "hostfxr.dll" : IsOSX ? "libhostfxr.dylib" : "libhostfxr.so";
         private string HostPolicy => IsWindows ? "hostpolicy.dll" : IsOSX ? "libhostpolicy.dylib" : "libhostpolicy.so";
+    }
+
+    file static class PlatformExtensions
+    {
+#if NETFRAMEWORK
+        extension(Architecture)
+        {
+            public static Architecture LoongArch64 => (Architecture)6;
+        }
+#endif
     }
 }

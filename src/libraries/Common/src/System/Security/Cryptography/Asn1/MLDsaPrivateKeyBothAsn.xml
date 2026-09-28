@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<asn:Sequence
+  xmlns:asn="http://schemas.dot.net/asnxml/201808/"
+  name="MLDsaPrivateKeyBothAsn"
+  namespace="System.Security.Cryptography.Asn1"
+  emitType="ref">
+
+  <!--
+    https://datatracker.ietf.org/doc/rfc9881/ Appendix A.
+
+  both SEQUENCE {
+      seed OCTET STRING (SIZE (32)),
+      expandedKey OCTET STRING (SIZE (2560 / 4032 / 4896))
+      }
+  -->
+  <asn:OctetString name="Seed" />
+  <asn:OctetString name="ExpandedKey" />
+</asn:Sequence>

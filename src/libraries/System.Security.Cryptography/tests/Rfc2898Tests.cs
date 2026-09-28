@@ -7,6 +7,8 @@ using System.Text;
 using Test.Cryptography;
 using Xunit;
 
+#pragma warning disable SYSLIB0060 // Rfc2898DeriveBytes constructors are obsolete.
+
 namespace System.Security.Cryptography
 {
     public class Rfc2898Tests
@@ -119,9 +121,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_DefaultIterations()
         {
-#pragma warning disable SYSLIB0041 // Rfc2898DeriveBytes insecure constructor defaults
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
-#pragma warning restore SYSLIB0041
             {
                 Assert.Equal(DefaultIterationCount, deriveBytes.IterationCount);
             }
@@ -373,13 +373,11 @@ namespace System.Security.Cryptography
         [Fact]
         public static void CryptDeriveKey_NotSupported()
         {
-#pragma warning disable SYSLIB0041 // Rfc2898DeriveBytes insecure constructor defaults
-#pragma warning disable SYSLIB0033 // Rfc2898DeriveBytes.CryptDeriveKey is obsolete
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
             {
+#pragma warning disable SYSLIB0033 // Rfc2898DeriveBytes.CryptDeriveKey is obsolete
                 Assert.Throws<PlatformNotSupportedException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[8]));
 #pragma warning restore SYSLIB0033
-#pragma warning restore SYSLIB0041
             }
         }
 

@@ -11,7 +11,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(null, null, null, null)]
         [InlineData("", "", "", "")]
         [InlineData("typeToCollect", "createInstanceMethodName", "disposeInstanceMethodName", "defaultInstanceAlias")]
-        public void Ctor_String_String_String(string typeToCollect, string createInstanceMethodName, string disposeInstanceMethodName, string defaultInstanceAlias)
+        public void Ctor_String_String_String(string? typeToCollect, string? createInstanceMethodName, string? disposeInstanceMethodName, string? defaultInstanceAlias)
         {
             var attribute = new MyGroupCollectionAttribute(typeToCollect, createInstanceMethodName, disposeInstanceMethodName, defaultInstanceAlias);
             Assert.Equal(typeToCollect, attribute.MyGroupName);

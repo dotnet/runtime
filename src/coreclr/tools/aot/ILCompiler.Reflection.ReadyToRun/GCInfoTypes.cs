@@ -19,7 +19,9 @@ namespace ILCompiler.Reflection.ReadyToRun
         SET_EPILOGSIZE_MAX = 10,
         SET_EPILOGCNT_MAX = 4,
         SET_UNTRACKED_MAX = 3,
-        SET_RET_KIND_MAX = 4,
+        SET_RET_KIND_MAX_V4 = 3,
+        SET_RET_KIND_MAX_V5 = 7,
+        SET_NOGCREGIONS_MAX = 4,
         ADJ_ENCODING_MAX = 0x7f,
         MORE_BYTES_TO_FOLLOW = 0x80
     };
@@ -68,11 +70,24 @@ namespace ILCompiler.Reflection.ReadyToRun
     };
 
     /// <summary>
+    /// Second set of opcodes, when first code is 0x4F
+    /// </summary>
+    enum InfoHdrAdjust2
+    {
+        SET_RETURNKIND = 0,  // 0x00-SET_RET_KIND_MAX Set ReturnKind to value
+        SET_NOGCREGIONS_CNT_V4 = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX_V4 + 1,        // 0x04
+        FFFF_NOGCREGION_CNT_V4 = SET_NOGCREGIONS_CNT_V4 + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1, // 0x09 There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+        SET_NOGCREGIONS_CNT_V5 = SET_RETURNKIND + InfoHdrAdjustConstants.SET_RET_KIND_MAX_V5 + 1,        // 0x08
+        FFFF_NOGCREGION_CNT_V5 = SET_NOGCREGIONS_CNT_V5 + InfoHdrAdjustConstants.SET_NOGCREGIONS_MAX + 1 // 0x0D There is a count (>SET_NOGCREGIONS_MAX) after the header encoding
+    };
+
+    /// <summary>
     /// based on macros defined in <a href="https://github.com/dotnet/runtime/blob/main/src/coreclr/inc/gcinfotypes.h">src\inc\gcinfotypes.h</a>
     /// </summary>
     public class GcInfoTypes
     {
         private Machine _target;
+        private bool _denormalizeCodeOffsets;
 
         internal int SIZE_OF_RETURN_KIND_SLIM { get; } = 2;
         internal int SIZE_OF_RETURN_KIND_FAT { get; } = 2;
@@ -104,10 +119,12 @@ namespace ILCompiler.Reflection.ReadyToRun
         internal int LIVESTATE_RLE_RUN_ENCBASE { get; } = 2;
         internal int LIVESTATE_RLE_SKIP_ENCBASE { get; } = 4;
         internal int NUM_NORM_CODE_OFFSETS_PER_CHUNK_LOG2 { get; } = 6;
+        internal bool HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA { get; } = true;
 
-        internal GcInfoTypes(Machine machine)
+        internal GcInfoTypes(Machine machine, bool denormalizeCodeOffsets)
         {
             _target = machine;
+            _denormalizeCodeOffsets = denormalizeCodeOffsets;
 
             switch (machine)
             {
@@ -136,6 +153,35 @@ namespace ILCompiler.Reflection.ReadyToRun
                     STACK_BASE_REGISTER_ENCBASE = 2;
                     NUM_REGISTERS_ENCBASE = 3;
                     break;
+                case WasmMachine.Wasm32:
+                    PSP_SYM_STACK_SLOT_ENCBASE = 6;
+                    GENERICS_INST_CONTEXT_STACK_SLOT_ENCBASE = 6;
+                    SECURITY_OBJECT_STACK_SLOT_ENCBASE = 6;
+                    GS_COOKIE_STACK_SLOT_ENCBASE = 6;
+                    CODE_LENGTH_ENCBASE = 6;
+                    STACK_BASE_REGISTER_ENCBASE = 3;
+                    SIZE_OF_STACK_AREA_ENCBASE = 6;
+                    SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE = 3;
+                    REVERSE_PINVOKE_FRAME_ENCBASE = 6;
+                    NUM_REGISTERS_ENCBASE = 3;
+                    NUM_STACK_SLOTS_ENCBASE = 5;
+                    NUM_UNTRACKED_SLOTS_ENCBASE = 5;
+                    NORM_PROLOG_SIZE_ENCBASE = 4;
+                    NORM_EPILOG_SIZE_ENCBASE = 3;
+                    INTERRUPTIBLE_RANGE_DELTA1_ENCBASE = 5;
+                    INTERRUPTIBLE_RANGE_DELTA2_ENCBASE = 5;
+                    REGISTER_ENCBASE = 3;
+                    REGISTER_DELTA_ENCBASE = REGISTER_ENCBASE;
+                    STACK_SLOT_ENCBASE = 6;
+                    STACK_SLOT_DELTA_ENCBASE = 4;
+                    NUM_SAFE_POINTS_ENCBASE = 4;
+                    NUM_INTERRUPTIBLE_RANGES_ENCBASE = 1;
+                    POINTER_SIZE_ENCBASE = 3;
+                    LIVESTATE_RLE_RUN_ENCBASE = 2;
+                    LIVESTATE_RLE_SKIP_ENCBASE = 4;
+                    HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA = false;
+                    break;
+
                 case Machine.I386:
                     CODE_LENGTH_ENCBASE = 6;
                     NORM_PROLOG_SIZE_ENCBASE = 4;
@@ -167,13 +213,41 @@ namespace ILCompiler.Reflection.ReadyToRun
             switch (_target)
             {
                 case Machine.ArmThumb2:
+                case Machine.RiscV64:
                     return (x << 1);
                 case Machine.Arm64:
                 case Machine.LoongArch64:
-                case Machine.RiscV64:
                     return (x << 2);
             }
             return x;
+        }
+
+        internal int NormalizeCodeLength(int x)
+        {
+            switch (_target)
+            {
+                case Machine.ArmThumb2:
+                case Machine.RiscV64:
+                    return (x >> 1);
+                case Machine.Arm64:
+                case Machine.LoongArch64:
+                    return (x >> 2);
+            }
+            return x;
+        }
+
+        internal uint DenormalizeCodeOffset(uint x)
+        {
+            return _denormalizeCodeOffsets ?
+                (uint)DenormalizeCodeLength((int)x) :
+                x;
+        }
+
+        internal uint NormalizeCodeOffset(uint x)
+        {
+            return _denormalizeCodeOffsets ?
+                (uint)NormalizeCodeLength((int)x) :
+                x;
         }
 
         internal int DenormalizeStackSlot(int x)

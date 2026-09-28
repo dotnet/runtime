@@ -57,11 +57,8 @@ void    Assembler::ClearImplList(void)
 {
     while(m_nImplList) m_crImplList[--m_nImplList] = mdTypeRefNil;
 }
+
 /**************************************************************************/
-#ifdef _PREFAST_
-#pragma warning(push)
-#pragma warning(disable:22008) // "Suppress PREfast warnings about integer overflow"
-#endif
 void    Assembler::AddToImplList(mdToken tk)
 {
     if(m_nImplList+1 >= m_nImplListSize)
@@ -82,9 +79,6 @@ void    Assembler::AddToImplList(mdToken tk)
     m_crImplList[m_nImplList++] = tk;
     m_crImplList[m_nImplList] = mdTypeRefNil;
 }
-#ifdef _PREFAST_
-#pragma warning(pop)
-#endif
 
 void    Assembler::ClearBoundList(void)
 {
@@ -392,9 +386,7 @@ DWORD Assembler::CheckClassFlagsIfNested(Class* pEncloser, DWORD attr)
     DWORD wasAttr = attr;
     if(pEncloser && (!IsTdNested(attr)))
     {
-        if(OnErrGo)
-            report->error("Nested class has non-nested visibility (0x%08X)\n",attr);
-        else
+        if(!OnErrGo)
         {
             attr &= ~tdVisibilityMask;
             attr |= (IsTdPublic(wasAttr) ? tdNestedPublic : tdNestedPrivate);
@@ -403,9 +395,7 @@ DWORD Assembler::CheckClassFlagsIfNested(Class* pEncloser, DWORD attr)
     }
     else if((pEncloser==NULL) && IsTdNested(attr))
     {
-        if(OnErrGo)
-            report->error("Non-nested class has nested visibility (0x%08X)\n",attr);
-        else
+        if(!OnErrGo)
         {
             attr &= ~tdVisibilityMask;
             attr |= (IsTdNestedPublic(wasAttr) ? tdPublic : tdNotPublic);
@@ -539,8 +529,7 @@ void Assembler::AddClass()
         {
             if(!IsTdSealed(attr))
             {
-                if(OnErrGo) report->error("Non-sealed value class\n");
-                else
+                if(!OnErrGo)
                 {
                     report->warn("Non-sealed value class, made sealed\n");
                     m_pCurClass->m_Attr |= tdSealed;
@@ -632,8 +621,7 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
         *(sig->ptr()) |= IMAGE_CEE_CS_CALLCONV_HASTHIS;
     else if(*(sig->ptr()) & (IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS))
     {
-        if(OnErrGo) report->error("Method '%s' -- both static and instance\n", name);
-        else
+        if(!OnErrGo)
         {
             report->warn("Method '%s' -- both static and instance, set to static\n", name);
             *(sig->ptr()) &= ~(IMAGE_CEE_CS_CALLCONV_HASTHIS | IMAGE_CEE_CS_CALLCONV_EXPLICITTHIS);
@@ -719,8 +707,7 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
         {
             if(IsMdAbstract(flags))
             {
-                if(OnErrGo) report->error("Global method '%s' can't be abstract\n",name);
-                else
+                if(!OnErrGo)
                 {
                     report->warn("Global method '%s' can't be abstract, flag removed\n",name);
                     flags = (CorMethodAttr)(((int) flags) &~mdAbstract);
@@ -728,8 +715,7 @@ void Assembler::StartMethod(_In_ __nullterminated char* name, BinStr* sig, CorMe
             }
             if(!IsMdStatic(flags))
             {
-                if(OnErrGo) report->error("Non-static global method '%s'\n",name);
-                else
+                if(!OnErrGo)
                 {
                     report->warn("Non-static global method '%s', made static\n",name);
                     flags = (CorMethodAttr)(flags | mdStatic);
@@ -848,8 +834,7 @@ void Assembler::AddField(__inout_z __inout char* name, BinStr* sig, CorFieldAttr
         }
         if(!IsFdStatic(flags))
         {
-            if(OnErrGo) report->error("Non-static global field\n");
-            else
+            if(!OnErrGo)
             {
                 report->warn("Non-static global field, made static\n");
                 flags = (CorFieldAttr)(flags | fdStatic);
@@ -1129,7 +1114,7 @@ void Assembler::AddException(DWORD pcStart, DWORD pcEnd, DWORD pcHandler, DWORD 
     clause->SetHandlerLength(pcHandlerTo - pcHandler);
     clause->SetClassToken(crException);
 
-    int flags = COR_ILEXCEPTION_CLAUSE_OFFSETLEN;
+    int flags = 0;
     if (isFilter) {
         flags |= COR_ILEXCEPTION_CLAUSE_FILTER;
     }
@@ -1428,7 +1413,7 @@ void Assembler::EmitOpcode(Instr* instr)
                 {
                     m_pCurMethod->m_HasMultipleDocuments = TRUE;
                 }
-                
+
                 if (0xfeefee == instr->linenum &&
                     0xfeefee == instr->linenum_end &&
                     0 == instr->column &&
@@ -2434,12 +2419,9 @@ void Assembler::SetPdbFileName(_In_ __nullterminated char* szName)
 HRESULT Assembler::SavePdbFile()
 {
     HRESULT hr = S_OK;
-    mdMethodDef entryPoint;
 
     if (FAILED(hr = (m_pPortablePdbWriter == NULL ? E_FAIL : S_OK))) goto exit;
     if (FAILED(hr = (m_pPortablePdbWriter->GetEmitter() == NULL ? E_FAIL : S_OK))) goto exit;
-    if (FAILED(hr = m_pCeeFileGen->GetEntryPoint(m_pCeeFile, &entryPoint))) goto exit;
-    if (FAILED(hr = m_pPortablePdbWriter->BuildPdbStream(m_pEmitter, entryPoint))) goto exit;
     if (FAILED(hr = m_pPortablePdbWriter->GetEmitter()->Save(m_wzPdbFileName, 0))) goto exit;
 
 exit:
@@ -2547,6 +2529,22 @@ void Assembler::CheckAddGenericParamConstraint(GenericParamConstraintList* pGPCL
             {
                 match = true;
                 break;
+            }
+            else if (isParamDirective && TypeFromToken(curTypeConstraint) == mdtTypeSpec && TypeFromToken(tkTypeConstraint) == mdtTypeSpec)
+            {
+                // When isParamDirective is true, typespecs created without the cache due to TyParFixups
+                // may not be unique, so we need to compare the signature bytes as well
+                PCCOR_SIGNATURE pSig1, pSig2;
+                ULONG cSig1, cSig2;
+                if (SUCCEEDED(m_pImporter->GetTypeSpecFromToken(curTypeConstraint, &pSig1, &cSig1)) &&
+                    SUCCEEDED(m_pImporter->GetTypeSpecFromToken(tkTypeConstraint, &pSig2, &cSig2)))
+                {
+                    if (cSig1 == cSig2 && memcmp(pSig1, pSig2, cSig1) == 0)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -2749,6 +2747,12 @@ void Assembler::EmitGenericParamConstraints(int numTyPars, TyParDescr* pTyPars, 
         EmitCustomAttributes(tkOwnerOfCA, pGPC->CAList());
     }
 
+    for (paramIndex = 0; paramIndex < numTyPars; paramIndex++)
+    {
+        delete[] pConstraintsArr[paramIndex];
+        delete[] pGPConstraintsArr[paramIndex];
+    }
+    
     delete[] nConstraintsArr;
     delete[] nConstraintIndexArr;
     delete[] pConstraintsArr;

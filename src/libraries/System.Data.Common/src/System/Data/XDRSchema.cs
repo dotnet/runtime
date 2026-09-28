@@ -294,7 +294,7 @@ namespace System.Data
         private static readonly NameType s_enumerationNameType = FindNameType("enumeration");
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
-        private static Type ParseDataType(string dt, string dtValues)
+        private static unsafe Type ParseDataType(string dt, string dtValues)
         {
             string strType = dt;
 

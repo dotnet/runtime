@@ -69,6 +69,8 @@ namespace System.Reflection
             return GetDeclaringTypeInternal().GetRuntimeModule();
         }
 
+        public override bool IsCollectible => false;
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern override object UnsafeGetValue(object obj);
 
@@ -177,17 +179,17 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            return CustomAttribute.IsDefined(this, attributeType, inherit);
+            return RuntimeCustomAttribute.IsDefined(this, attributeType, inherit);
         }
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, attributeType, inherit);
+            return RuntimeCustomAttribute.GetCustomAttributes(this, attributeType, inherit);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

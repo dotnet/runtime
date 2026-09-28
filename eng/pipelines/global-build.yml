@@ -7,8 +7,7 @@ trigger: none
 pr:
   branches:
     include:
-    - main
-    - release/*.*
+    - '*'
   paths:
     include:
     - '*'
@@ -82,22 +81,43 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Libraries AllConfigurations. This exercises the code path where we build libraries for all
-      # configurations on a non Windows operating system.
+      # Build CoreLib and Libraries with all configurations including analyzers and linker
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
+          buildConfig: release
           platforms:
           - linux_x64_dev_innerloop
+          - windows_x64
+          - osx_arm64
           jobParameters:
-            nameSuffix: Libraries_AllConfigurations
-            buildArgs: -subset libs -allconfigurations
+            nameSuffix: CoreLib_Libraries_AnalyzersLinker
+            buildArgs: -subset clr.corelib+libs -restore -build -pack -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
             timeoutInMinutes: 120
             condition:
               or(
-                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
+      # Build tools with analyzers and linker
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: release
+          platforms:
+          - linux_x64_dev_innerloop
+          jobParameters:
+            nameSuffix: Tools_AnalyzersLinker
+            buildArgs: -subset tools -c $(_BuildConfig) /p:RunAnalyzersInBuild=true /p:RunILLinkInBuild=true
+            timeoutInMinutes: 120
+            condition:
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_cdac.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -114,13 +134,17 @@ extends:
             nameSuffix: Musl_Validation
             buildArgs: -subset clr.native+libs.native+host.native -c $(_BuildConfig)
             timeoutInMinutes: 120
+            preBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/setup-sccache.yml
+            postBuildSteps:
+              - template: /eng/pipelines/coreclr/templates/sccache-stats.yml
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_non_mono_and_wasm.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build Portable SourceBuild
+      # Build Repo SourceBuild
       #
       - template: /eng/common/templates/jobs/source-build.yml
         parameters:

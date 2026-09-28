@@ -30,7 +30,7 @@
 
 static FILE *logFile = NULL;
 static void *logUserData = NULL;
-static const wchar_t *logFileName = L".//mono.log"; // FIXME double slash
+static const char *logFileName = "mono.log";
 
 /**
  * mapSyslogLevel:
@@ -66,10 +66,9 @@ mapLogFileLevel (GLogLevelFlags level)
 void
 mono_log_open_syslog(const char *ident, void *userData)
 {
-	logFile = _wfopen(logFileName, L"w");
+	logFile = fopen(logFileName, "w");
 	if (logFile == NULL) {
-		g_warning("opening of log file %s failed with %s",
-			  strerror(errno));
+		g_warning("opening of log file %s failed with %s", logFileName, strerror(errno));
 		logFile = stdout;
 	}
 	logUserData = userData;

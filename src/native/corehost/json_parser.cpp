@@ -17,33 +17,9 @@
 
 namespace {
 
-// Try to match 0xEF 0xBB 0xBF byte sequence (no endianness here.)
-std::streampos get_utf8_bom_length(pal::istream_t& stream)
+void get_line_column_from_offset(const char* data, size_t size, size_t offset, int *line, int *column)
 {
-    if (stream.eof())
-    {
-        return 0;
-    }
-
-    auto peeked = stream.peek();
-    if (peeked == EOF || ((peeked & 0xFF) != 0xEF))
-    {
-        return 0;
-    }
-
-    unsigned char bytes[3];
-    stream.read(reinterpret_cast<char*>(bytes), 3);
-    if ((stream.gcount() < 3) || (bytes[1] != 0xBB) || (bytes[2] != 0xBF))
-    {
-        return 0;
-    }
-
-    return 3;
-}
-
-void get_line_column_from_offset(const char* data, uint64_t size, size_t offset, int *line, int *column)
-{
-    assert(offset < size);
+    assert(offset <= size);
 
     *line = *column = 1;
 
@@ -56,7 +32,7 @@ void get_line_column_from_offset(const char* data, uint64_t size, size_t offset,
             (*line)++;
             *column = 1;
         }
-        else if (data[i] == '\r' && data[i + 1] == '\n')
+        else if (data[i] == '\r' && (i + 1) < offset && data[i + 1] == '\n')
         {
             (*line)++;
             *column = 1;
@@ -68,26 +44,20 @@ void get_line_column_from_offset(const char* data, uint64_t size, size_t offset,
 
 } // empty namespace
 
-void json_parser_t::realloc_buffer(size_t size)
+bool json_parser_t::parse_fully_trusted_raw_data(char* data, size_t size, const pal::string_t& context)
 {
-    m_json.resize(size + 1);
-    m_json[size] = '\0';
-}
+    // This code assumes that the provided data is fully trusted; that is, that no portion
+    // of it has been provided by a hostile agent.
 
-bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t& context)
-{
     assert(data != nullptr);
 
     constexpr auto flags = rapidjson::ParseFlag::kParseStopWhenDoneFlag | rapidjson::ParseFlag::kParseCommentsFlag;
-#ifdef _WIN32
-    // Can't use in-situ parsing on Windows, as JSON data is encoded in
-    // UTF-8 and the host expects wide strings.  m_document will store
-    // data in UTF-16 (with pal::char_t as the character type), but it
-    // has to know that data is encoded in UTF-8 to convert during parsing.
-    m_document.Parse<flags, rapidjson::UTF8<>>(data);
-#else // _WIN32
-    m_document.ParseInsitu<flags>(data);
-#endif // _WIN32
+
+    // Can't use in-situ parsing, as RapidJson requires a null-terminated string,
+    // and the provided data may not be null-terminated. The input data is always
+    // expected to be UTF-8 encoded; m_document is initialized with the appropriate
+    // encoding type for the underlying OS (UTF-16 on Windows; UTF-8 elsewhere).
+    m_document.Parse<flags, rapidjson::UTF8<>>(data, size);
 
     if (m_document.HasParseError())
     {
@@ -96,70 +66,78 @@ bool json_parser_t::parse_raw_data(char* data, int64_t size, const pal::string_t
 
         get_line_column_from_offset(data, size, offset, &line, &column);
 
-        trace::error(_X("A JSON parsing exception occurred in [%s], offset %zu (line %d, column %d): %s"),
-            context.c_str(), offset, line, column,
-            rapidjson::GetParseError_En(m_document.GetParseError()));
+        m_parse_error = utils::format_string(_X("JSON parsing exception: %s [offset %zu: line %d, column %d]"),
+            rapidjson::GetParseError_En(m_document.GetParseError()),
+            offset, line, column
+        );
         return false;
     }
 
     if (!m_document.IsObject())
     {
-        trace::error(_X("Expected a JSON object in [%s]"), context.c_str());
+        m_parse_error = _X("Expected a JSON object");
         return false;
     }
 
     return true;
 }
 
-bool json_parser_t::parse_file(const pal::string_t& path)
+bool json_parser_t::parse_fully_trusted_file(const pal::string_t& path)
 {
     // This code assumes that the caller has checked that the file `path` exists
-    // either within the bundle, or as a real file on disk.
-    assert(m_bundle_data == nullptr);
+    // either within the bundle, or as a real file on disk. It also assumes
+    // that the contents of the target file are fully trusted; that is, that no
+    // portion of its contents has been provided by a hostile agent.
+
+    assert(m_data == nullptr);
     assert(m_bundle_location == nullptr);
 
     if (bundle::info_t::is_single_file_bundle())
     {
-        // Due to in-situ parsing on Linux,
-        //  * The json file is mapped as copy-on-write.
-        //  * The mapping cannot be immediately released, and will be unmapped by the json_parser destructor.
-        m_bundle_data = bundle::info_t::config_t::map(path, m_bundle_location);
+        // The mapping cannot be immediately released; it will be unmapped by the json_parser destructor.
+        m_data = bundle::info_t::config_t::map(path, m_bundle_location);
 
-        if (m_bundle_data != nullptr)
+        if (m_data != nullptr)
         {
-            bool result = parse_raw_data(m_bundle_data, m_bundle_location->size, path);
-            return result;
+            m_size = (size_t)m_bundle_location->size;
         }
     }
 
-    pal::ifstream_t file{ path };
-    if (!file.good())
+    if (m_data == nullptr)
     {
-        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
-        return false;
+        m_data = (char*)pal::mmap_read(path, &m_size);
+
+        if (m_data == nullptr)
+        {
+            trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
+            return false;
+        }
     }
 
-    auto current_pos = ::get_utf8_bom_length(file);
-    file.seekg(0, file.end);
-    auto stream_size = file.tellg();
-    if (stream_size == -1)
+    char *data = m_data;
+    size_t size = m_size;
+
+    // Skip over UTF-8 BOM, if present
+    if (size >= 3 && static_cast<unsigned char>(data[0]) == 0xEF && static_cast<unsigned char>(data[1]) == 0xBB && static_cast<unsigned char>(data[2]) == 0xBF)
     {
-        trace::error(_X("Failed to get size of file [%s]"), path.c_str());
-        return false;
+        size -= 3;
+        data += 3;
     }
 
-    file.seekg(current_pos, file.beg);
-
-    realloc_buffer(static_cast<size_t>(stream_size - current_pos));
-    file.read(m_json.data(), stream_size - current_pos);
-
-    return parse_raw_data(m_json.data(), m_json.size(), path);
+    return parse_fully_trusted_raw_data(data, size, path);
 }
 
 json_parser_t::~json_parser_t()
 {
-    if (m_bundle_data != nullptr)
+    if (m_data != nullptr)
     {
-        bundle::info_t::config_t::unmap(m_bundle_data, m_bundle_location);
+        if (m_bundle_location != nullptr)
+        {
+            bundle::info_t::config_t::unmap(m_data, m_bundle_location);
+        }
+        else
+        {
+            pal::munmap((void*)m_data, m_size);
+        }
     }
 }

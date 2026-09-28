@@ -81,9 +81,13 @@ namespace
             if (!md_token_to_cursor(md_ptr.get(), TokenFromRid(1, mdtModule), &moduleCursor))
                 return E_FAIL;
 
-            mdguid_t mvid;
-            if (!minipal_guid_v4_create(&mvid))
+            GUID guid;
+            if (!minipal_guid_v4_create(&guid))
                 return E_FAIL;
+
+            static_assert(sizeof(mdguid_t) == sizeof(GUID), "DNMD and minipal GUID sizes must match");
+            mdguid_t mvid;
+            std::memcpy(&mvid, &guid, sizeof(mvid));
 
             if (!md_set_column_value_as_guid(moduleCursor, mdtModule_Mvid, mvid))
                 return E_OUTOFMEMORY;

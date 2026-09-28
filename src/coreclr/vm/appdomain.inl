@@ -14,25 +14,7 @@
 #ifndef _APPDOMAIN_I
 #define _APPDOMAIN_I
 
-#ifndef DACCESS_COMPILE
-
 #include "appdomain.hpp"
-
-inline void AppDomain::AddMemoryPressure()
-{
-    STANDARD_VM_CONTRACT;
-    m_MemoryPressure=EstimateSize();
-    GCInterface::AddMemoryPressure(m_MemoryPressure);
-}
-
-inline void AppDomain::RemoveMemoryPressure()
-{
-    WRAPPER_NO_CONTRACT;
-
-    GCInterface::RemoveMemoryPressure(m_MemoryPressure);
-}
-
-#endif // DACCESS_COMPILE
 
 inline AppDomain::PathIterator AppDomain::IterateNativeDllSearchDirectories()
 {
@@ -72,11 +54,4 @@ inline PTR_LoaderHeap AppDomain::GetLowFrequencyHeap()
     return GetLoaderAllocator()->GetLowFrequencyHeap();
 }
 
-inline PTR_LoaderHeap AppDomain::GetStubHeap()
-{
-    WRAPPER_NO_CONTRACT;
-    return GetLoaderAllocator()->GetStubHeap();
-}
-
 #endif  // _APPDOMAIN_I
-

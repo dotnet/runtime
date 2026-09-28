@@ -8,6 +8,8 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Runtime.Versioning;
 
 namespace System
@@ -85,7 +87,7 @@ namespace System
         internal const ulong BiasedExponentMask = 0x7FF0_0000_0000_0000;
         internal const int BiasedExponentShift = 52;
         internal const int BiasedExponentLength = 11;
-        internal const ushort ShiftedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
+        internal const ushort ShiftedBiasedExponentMask = (ushort)(BiasedExponentMask >> BiasedExponentShift);
 
         internal const ulong TrailingSignificandMask = 0x000F_FFFF_FFFF_FFFF;
 
@@ -154,13 +156,15 @@ namespace System
 
         internal static ushort ExtractBiasedExponentFromBits(ulong bits)
         {
-            return (ushort)((bits >> BiasedExponentShift) & ShiftedExponentMask);
+            return (ushort)((bits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
         }
 
         internal static ulong ExtractTrailingSignificandFromBits(ulong bits)
         {
             return bits & TrailingSignificandMask;
         }
+
+        internal static double CreateDouble(bool sign, ushort exp, ulong sig) => BitConverter.UInt64BitsToDouble((sign ? SignMask : 0UL) + ((ulong)exp << BiasedExponentShift) + sig);
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         /// <remarks>This effectively checks the value is not NaN and not infinite.</remarks>
@@ -177,8 +181,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInfinity(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return (bits & ~SignMask) == PositiveInfinityBits;
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return bits == PositiveInfinityBits;
         }
 
         /// <summary>Determines whether the specified value is NaN.</summary>
@@ -224,8 +228,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNormal(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return ((bits & ~SignMask) - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return (bits - SmallestNormalBits) < (PositiveInfinityBits - SmallestNormalBits);
         }
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
@@ -242,8 +246,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsSubnormal(double d)
         {
-            ulong bits = BitConverter.DoubleToUInt64Bits(d);
-            return ((bits & ~SignMask) - 1) < MaxTrailingSignificand;
+            ulong bits = BitConverter.DoubleToUInt64Bits(Abs(d));
+            return (bits - 1) < MaxTrailingSignificand;
         }
 
         [NonVersionable]
@@ -425,19 +429,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out double result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         //
@@ -665,15 +663,12 @@ namespace System
         public static TInteger ConvertToIntegerNative<TInteger>(double value)
             where TInteger : IBinaryInteger<TInteger>
         {
-#if !MONO
             if (typeof(TInteger).IsPrimitive)
             {
                 // We need this to be recursive so indirect calls (delegates
                 // for example) produce the same result as direct invocation
                 return ConvertToIntegerNative<TInteger>(value);
             }
-#endif
-
             return TInteger.CreateSaturating(value);
         }
 
@@ -722,100 +717,76 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
         int IFloatingPoint<double>.GetSignificandBitLength() => 53;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
-        bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        internal bool TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(short))
+            if (BinaryPrimitives.TryWriteInt16BigEndian(destination, Exponent))
             {
-                short exponent = Exponent;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
                 bytesWritten = sizeof(short);
                 return true;
             }
-            else
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<double>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            return TryWriteExponentBigEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteInt16LittleEndian(destination, Exponent))
             {
-                bytesWritten = 0;
-                return false;
+                bytesWritten = sizeof(short);
+                return true;
             }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(short))
+            return TryWriteExponentLittleEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64BigEndian(destination, Significand))
             {
-                short exponent = Exponent;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
-
-                bytesWritten = sizeof(short);
+                bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
+            return TryWriteSignificandBigEndian(destination, out bytesWritten);
+        }
+
+        internal bool TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (BinaryPrimitives.TryWriteUInt64LittleEndian(destination, Significand))
             {
-                ulong significand = Significand;
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
                 bytesWritten = sizeof(ulong);
                 return true;
             }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<double>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(ulong))
-            {
-                ulong significand = Significand;
-
-                if (!BitConverter.IsLittleEndian)
-                {
-                    significand = BinaryPrimitives.ReverseEndianness(significand);
-                }
-
-                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
-
-                bytesWritten = sizeof(ulong);
-                return true;
-            }
-            else
-            {
-                bytesWritten = 0;
-                return false;
-            }
+            return TryWriteSignificandLittleEndian(destination, out bytesWritten);
         }
 
         //
@@ -985,7 +956,24 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static double Clamp(double value, double min, double max) => Math.Clamp(value, min, max);
+        public static double Clamp(double value, double min, double max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return Min(Max(value, min), max);
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.ClampNative(TSelf, TSelf, TSelf)" />
+        public static double ClampNative(double value, double min, double max)
+        {
+            if (min > max)
+            {
+                Math.ThrowMinMaxException(min, max);
+            }
+            return MinNative(MaxNative(value, min), max);
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static double CopySign(double value, double sign) => Math.CopySign(value, sign);
@@ -993,6 +981,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         [Intrinsic]
         public static double Max(double x, double y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MaxNative(double x, double y)
+        {
+#if MONO
+            return (x > y) ? x : y;
+#else
+            return MaxNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1020,6 +1019,17 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         [Intrinsic]
         public static double Min(double x, double y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNative(TSelf, TSelf)" />
+        [Intrinsic]
+        public static double MinNative(double x, double y)
+        {
+#if MONO
+            return (x < y) ? x : y;
+#else
+            return MinNative(x, y);
+#endif
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
         [Intrinsic]
@@ -1128,16 +1138,30 @@ namespace System
         static bool INumberBase<double>.IsComplexNumber(double value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
-        public static bool IsEvenInteger(double value) => IsInteger(value) && (Abs(value % 2) == 0);
+        public static bool IsEvenInteger(double value)
+        {
+            // Subtract from the original value so halving a subnormal cannot make it appear even.
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - (Truncate(value * 0.5) * 2.0)) == 0.0;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
         static bool INumberBase<double>.IsImaginaryNumber(double value) => false;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
-        public static bool IsInteger(double value) => IsFinite(value) && (value == Truncate(value));
+        public static bool IsInteger(double value)
+        {
+            // Nonfinite values produce a NaN residual and compare unequal to zero.
+            return (value - Truncate(value)) == 0.0;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
-        public static bool IsOddInteger(double value) => IsInteger(value) && (Abs(value % 2) == 1);
+        public static bool IsOddInteger(double value)
+        {
+            // Half an odd integer has a fractional magnitude of 0.5; nonfinite values produce NaN.
+            double half = value * 0.5;
+            return Abs(half - Truncate(half)) == 0.5;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
         public static bool IsPositive(double value) => BitConverter.DoubleToInt64Bits(value) >= 0;
@@ -1248,6 +1272,7 @@ namespace System
             return TryConvertFrom(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertFrom<TOther>(TOther value, out double result)
             where TOther : INumberBase<TOther>
         {
@@ -1397,6 +1422,7 @@ namespace System
             return TryConvertTo(value, out result);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool TryConvertTo<TOther>(double value, [MaybeNullWhen(false)] out TOther result)
             where TOther : INumberBase<TOther>
         {
@@ -1411,15 +1437,23 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
+#if MONO
                 byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
                                     (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#else
+                byte actualResult = (byte)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
+#if MONO
                 char actualResult = (value >= char.MaxValue) ? char.MaxValue :
                                     (value <= char.MinValue) ? char.MinValue : (char)value;
+#else
+                char actualResult = (char)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1433,52 +1467,81 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ushort))
             {
+#if MONO
                 ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
                                       (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+#else
+                ushort actualResult = (ushort)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(uint))
             {
+#if MONO
                 uint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
                                     (value <= uint.MinValue) ? uint.MinValue : (uint)value;
+#else
+                uint actualResult = (uint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(ulong))
             {
+#if MONO
                 ulong actualResult = (value >= ulong.MaxValue) ? ulong.MaxValue :
                                      (value <= ulong.MinValue) ? ulong.MinValue :
                                      IsNaN(value) ? 0 : (ulong)value;
+#else
+                ulong actualResult = (ulong)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(UInt128))
             {
-                UInt128 actualResult = (value >= 340282366920938463463374607431768211455.0) ? UInt128.MaxValue :
-                                       (value <= 0.0) ? UInt128.MinValue : (UInt128)value;
+                UInt128 actualResult = (UInt128)value;
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
-#if TARGET_64BIT
-                nuint actualResult = (value >= ulong.MaxValue) ? unchecked((nuint)ulong.MaxValue) :
-                                     (value <= ulong.MinValue) ? unchecked((nuint)ulong.MinValue) : (nuint)value;
-                result = (TOther)(object)actualResult;
-                return true;
+#if MONO
+                nuint actualResult = (value >= nuint.MaxValue) ? nuint.MaxValue :
+                                     (value <= nuint.MinValue) ? nuint.MinValue : (nuint)value;
 #else
-                nuint actualResult = (value >= uint.MaxValue) ? uint.MaxValue :
-                                     (value <= uint.MinValue) ? uint.MinValue : (nuint)value;
+                nuint actualResult = (nuint)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
-#endif
             }
             else
             {
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out double result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out double result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out double result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
         }
 
         //
@@ -1533,8 +1596,8 @@ namespace System
                     ulong xBits = BitConverter.DoubleToUInt64Bits(ax);
                     ulong yBits = BitConverter.DoubleToUInt64Bits(ay);
 
-                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedExponentMask);
-                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedExponentMask);
+                    uint xExp = (uint)((xBits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
+                    uint yExp = (uint)((yBits >> BiasedExponentShift) & ShiftedBiasedExponentMask);
 
                     int expDiff = (int)(xExp - yExp);
                     double expFix = 1.0;
@@ -1701,7 +1764,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1711,7 +1774,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = 0.0;
                     }
@@ -1746,7 +1809,7 @@ namespace System
                 {
                     if (x != 0)
                     {
-                        if ((x > 0) || IsOddInteger(n))
+                        if ((x > 0) || int.IsOddInteger(n))
                         {
                             result = Pow(Abs(x), 1.0 / n);
                             result = CopySign(result, x);
@@ -1756,7 +1819,7 @@ namespace System
                             result = NaN;
                         }
                     }
-                    else if (IsEvenInteger(n))
+                    else if (int.IsEvenInteger(n))
                     {
                         result = PositiveInfinity;
                     }
@@ -1939,22 +2002,242 @@ namespace System
             return result;
         }
 
+        // `pi / 180` and `180 / pi` are not exactly representable, so each is carried as a
+        // `head + mid + tail` triple giving about 159 significant bits, where each term is the
+        // correctly rounded remainder left by the ones above it.
+        //
+        // Two limbs are not always enough. Their accumulated error is about `2^-53` ulp of the
+        // result, while enumerating every significand whose exact product lands nearest a rounding
+        // midpoint gives worst cases only `2^-55.58` ulp away for degrees-to-radians and `2^-55.99`
+        // ulp for the reverse. Those sit well inside that error, so two limbs cannot decide them.
+        // The third limb takes the error to about `2^-106` ulp, which clears the worst case by 50
+        // bits.
+        internal const double DegreesToRadiansHead = 0.017453292519943295;     // 0x1.1DF46A2529D39p-6
+        internal const double DegreesToRadiansMid = 2.9486522708701687E-19;    // 0x1.5C1D8BECDD291p-62
+        internal const double DegreesToRadiansTail = -1.3427726813345382E-35;   // -0x1.1D937FA428858p-116
+        internal const double RadiansToDegreesHead = 57.29577951308232;        // 0x1.CA5DC1A63C1F8p+5
+        internal const double RadiansToDegreesMid = -1.9878495670576283E-15;   // -0x1.1E7AB456405F9p-49
+        internal const double RadiansToDegreesTail = -1.6833394980391744E-31;   // -0x1.B505196FABB41p-103
+
+        // Recovering the roundoff of `value * mid` is what both the two limb and the three limb form
+        // rest on, and below these that roundoff falls onto the subnormal grid, losing up to one
+        // smallest subnormal. That loss has to stay under the closest an input brings the exact
+        // product to a rounding boundary, which is the `2^-55.58` and `2^-55.99` ulp above. Writing
+        // the smallest subnormal as `2^(emin - p + 1)` and an ulp of the result as
+        // `2^(e + e_head - p + 1)`, the `p` cancels and the floor on the input exponent `e` is just
+        // `emin - e_head + w`, giving `-960.42` and `-971.01`.
+        internal const double DegreesToRadiansMin = 1.0261342003245941E-289;   // 0x1p-960
+        internal const double RadiansToDegreesMin = 5.010420900022432E-293;    // 0x1p-971
+
+        // At or above these `value * head` overflows, which the triple cannot recover from since the
+        // roundoff of an infinite product is `inf - inf`. Paired with the minimums above they bound
+        // the domain MultiplyWide covers, which is what the vector paths range test on. `pi / 180`
+        // is under one, so nothing finite overflows there and the bound only excludes the non-finite;
+        // the single unsigned range test covers that the same as any other value.
+        internal const double DegreesToRadiansMax = PositiveInfinity;
+        internal const double RadiansToDegreesMax = 3.137566414384587E+306;    // 0x1.1DF46A2529D39p+1018
+
+        // The cold path lifts `value` by `ConversionScaleUp` so the whole computation runs as it
+        // would in the normal range. Scaling by a power of two is exact in both directions, so any
+        // exponent in the valid window gives bit-identical results; only the window itself matters.
+        //
+        // The floor is the larger of two conditions, evaluated for the smallest input `2^(emin-p+1)`
+        // and taken over both directions, where `k` is the scale exponent being solved for,
+        // `p` is the precision in bits including the implicit leading bit, `emin` is the minimum
+        // normal exponent, and `e_head`/`e_mid` are the constants' own exponents. The `p - 1` term
+        // is the gap from the smallest subnormal to the smallest normal, so it is the lift needed to
+        // bring any input into the normal range:
+        //
+        //   k >= (p - 1) - e_mid           so `scaled * mid` stays normal
+        //   k >= 2 * (p - 1) - e_head      so the smallest Veltkamp sub-product in the no-FMA
+        //                                  MultiplyRoundoff stays normal, since it is `2^-(p-1)`
+        //                                  relative to `scaled * head`
+        //
+        // For `double` those give 114 and 110 for degrees-to-radians, 101 and 99 for the reverse,
+        // so the floor is `2^114`. The ceiling is `2^1022`, keeping `ConversionScaleDown` normal.
+        //
+        // `tail` gets no condition. Losing it outright costs `2^-110` relative, and since a result
+        // is under `2^p` ulp that is under `2^-57` ulp, which the worst case above already clears.
+        //
+        // Both conditions are sufficient rather than tight, since an input small enough to violate
+        // either produces a result with too few significand bits for what is lost to reach the
+        // rounding position.
+        private const double ConversionScaleUp = 2.076918743413931E+34;        // 0x1p+114
+        private const double ConversionScaleDown = 4.81482486096809E-35;       // 0x1p-114
+
+        // Keeps the top 26 significand bits, which is the Veltkamp split MultiplyRoundoff uses.
+        internal const ulong ConversionSplitMask = 0xFFFF_FFFF_F800_0000;
+
+        // Bounds the error of the two limb form relative to `value * head`, which is what lets that
+        // form tell whether it resolved the rounding. Three things are dropped or rounded away
+        // there, none of them reaching `2^-105`:
+        //
+        //   `value * (C - head - mid)`, which `tail` puts under `2^-108`
+        //   the roundoff of `value * mid`, so `2^-53` of a term already under `2^-54`
+        //   the roundoff of their sum, so `2^-53` of a sum already under `2^-52`
+        //
+        // `2^-100` clears the total by more than 16x, leaving room for rounding the ends of the
+        // interval it forms as well. A wider bound stays correct and only sends more inputs to the
+        // three limb form; at this width that is about one in `2^46`.
+        internal const double ConversionErrorScale = 7.888609052210118E-31;     // 0x1p-100
+
+        // The roundoff of `value * head` is itself exactly representable, and recovering it is
+        // what lets each limb be spent without losing what fell off the end. A fused multiply-add
+        // gives it directly; otherwise splitting both operands into 26 and 27 bit halves makes
+        // every sub-product exact, which recovers the same value using only multiplies and adds.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double MultiplyRoundoff(double value, double head, double product)
+        {
+            if (Fma.IsSupported || AdvSimd.Arm64.IsSupported)
+            {
+                return FusedMultiplyAdd(value, head, -product);
+            }
+
+            double headHi = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(head) & ConversionSplitMask);
+            double headLo = head - headHi;
+
+            double valueHi = BitConverter.UInt64BitsToDouble(BitConverter.DoubleToUInt64Bits(value) & ConversionSplitMask);
+            double valueLo = value - valueHi;
+
+            return (((((valueHi * headHi) - product) + (valueHi * headLo)) + (valueLo * headHi)) + (valueLo * headLo));
+        }
+
+        // Computes `value * (head + mid + tail)` as the unevaluated pair `result + residual`, where
+        // `result` is the correctly rounded product. `value * head` must be known finite and
+        // non-zero, which is what lets `head` be the nearest representable value rather than being
+        // biased to keep a sign.
+        //
+        // The three limb products are accumulated exactly apart from the two terms already below
+        // `2^-106` relative, then folded back onto `product` in decreasing order of magnitude. The
+        // final fold rounds twice, so the correction is first rounded to odd, which is the standard
+        // way of making the second rounding agree with rounding the exact value once: the odd
+        // neighbour is never a midpoint, so nothing that decides the outcome can be discarded.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static double MultiplyWide(double value, double head, double mid, double tail, out double residual)
+        {
+            double product = value * head;
+            double productError = MultiplyRoundoff(value, head, product);   // exact
+            double middle = value * mid;
+            double middleError = MultiplyRoundoff(value, mid, middle);      // exact but for the
+                                                                            // subnormal loss the
+                                                                            // minimums bound
+            double bottom = middleError + (value * tail);
+
+            // The magnitudes of `productError` and `middle` are not ordered, so the sum needs the
+            // form that does not assume it
+            double sum = productError + middle;
+            double bias = sum - productError;
+            double sumError = (productError - (sum - bias)) + (middle - bias);
+            double lower = sumError + bottom;
+
+            double upper = product + sum;
+            double upperError = sum - (upper - product);                    // exact, |product| >= |sum|
+
+            double correction = upperError + lower;
+            double lost = (upperError - correction) + lower;                 // exact
+
+            if ((lost != 0) && ((BitConverter.DoubleToUInt64Bits(correction) & 1) == 0))
+            {
+                // Consecutive values alternate in significand parity, so exactly one of the two
+                // bracketing values is odd and it lies in the direction of what was lost
+                correction = (lost > 0) ? BitIncrement(correction) : BitDecrement(correction);
+            }
+
+            double result = upper + correction;
+            residual = (upper - result) + correction;                       // exact
+            return result;
+        }
+
+        // Computes `value * (head + mid + tail)` as a single rounding, over the domain the minimums
+        // and maximums above bound. Two limbs are enough for all but the rare input, and whether
+        // they were is itself decidable: their sum is known to within `bound`, so if both ends of
+        // that interval round to the same value then so does the exact product.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static double MultiplyWide(double value, double head, double mid, double tail)
+        {
+            double product = value * head;
+
+            if (!IsFinite(product) || (product == 0))
+            {
+                // The roundoff of an infinite product is `inf - inf`, and a zero product would
+                // come back from the sum having lost its sign
+                return product;
+            }
+
+            double sum = MultiplyRoundoff(value, head, product) + (value * mid);
+            double bound = Abs(product) * ConversionErrorScale;
+            double result = product + (sum - bound);
+
+            if (result == (product + (sum + bound)))
+            {
+                return result;
+            }
+
+            return MultiplyWide(value, head, mid, tail, out _);
+        }
+
+        // Computes `value * (head + mid + tail)` for the inputs too small for MultiplyWide, namely
+        // those below the minimums above. Scaling up moves the product back into the range where
+        // the triple is resolved exactly; scaling back down then rounds a second time, with
+        // `residual` breaking any tie that rounding would otherwise resolve to even.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static double ScaleAndMultiplyWide(double value, double head, double mid, double tail)
+        {
+            double scaled = value * ConversionScaleUp;
+
+            if (scaled == 0)
+            {
+                // Multiplying keeps the sign of zero, which the sum would lose
+                return scaled * head;
+            }
+
+            double sum = MultiplyWide(scaled, head, mid, tail, out double residual);
+            double result = sum * ConversionScaleDown;
+
+            if (residual == 0)
+            {
+                return result;
+            }
+
+            double dropped = sum - (result * ConversionScaleUp);            // exact
+
+            if (dropped == 0)
+            {
+                // Scaling back down lost nothing, so it was already the single rounding
+                return result;
+            }
+
+            double next = (dropped > 0) ? BitIncrement(result) : BitDecrement(result);
+
+            if ((Abs(next - result) * ConversionScaleUp) != (2.0 * Abs(dropped)))
+            {
+                return result;
+            }
+
+            // `sum` sat exactly between `result` and `next`, so the true value did not
+            return ((residual > 0) == (dropped > 0)) ? next : result;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
         public static double DegreesToRadians(double degrees)
         {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+            if (Abs(degrees) < DegreesToRadiansMin)
+            {
+                return ScaleAndMultiplyWide(degrees, DegreesToRadiansHead, DegreesToRadiansMid, DegreesToRadiansTail);
+            }
 
-            return (degrees * Pi) / 180.0;
+            return MultiplyWide(degrees, DegreesToRadiansHead, DegreesToRadiansMid, DegreesToRadiansTail);
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
         public static double RadiansToDegrees(double radians)
         {
-            // NOTE: Don't change the algorithm without consulting the DIM
-            // which elaborates on why this implementation was chosen
+            if (Abs(radians) < RadiansToDegreesMin)
+            {
+                return ScaleAndMultiplyWide(radians, RadiansToDegreesHead, RadiansToDegreesMid, RadiansToDegreesTail);
+            }
 
-            return (radians * 180.0) / Pi;
+            return MultiplyWide(radians, RadiansToDegreesHead, RadiansToDegreesMid, RadiansToDegreesTail);
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
@@ -1964,7 +2247,7 @@ namespace System
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
         public static (double Sin, double Cos) SinCos(double x) => Math.SinCos(x);
 
-        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCosPi(TSelf)" />
         public static (double SinPi, double CosPi) SinCosPi(double x)
         {
             // This code is based on `cospi` and `sinpi` from amd/aocl-libm-ose
@@ -2278,15 +2561,15 @@ namespace System
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
         public static double Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseFloat<byte, double>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out double result)
         {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

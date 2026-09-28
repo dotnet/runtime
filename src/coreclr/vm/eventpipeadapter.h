@@ -40,12 +40,16 @@ public:
 		m_providerConfigsLen = providerConfigsLen;
 		if (m_providerConfigs) {
 			for (uint32_t i = 0; i < providerConfigsLen; ++i) {
+				ep_char8_t *providerName = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].providerName));
+				ep_char8_t *filterData = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].filterData));
 				ep_provider_config_init (
 					&m_providerConfigs[i],
-					ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].providerName)),
+					providerName,
 					providerConfigs[i].keywords,
 					static_cast<EventPipeEventLevel>(providerConfigs[i].loggingLevel),
-					ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(providerConfigs[i].filterData)));
+					filterData);
+				ep_rt_utf8_string_free (providerName);
+				ep_rt_utf8_string_free (filterData);
 			}
 		}
 	}
@@ -54,10 +58,8 @@ public:
 	{
 		STATIC_CONTRACT_NOTHROW;
 		if (m_providerConfigs) {
-			for (uint32_t i = 0; i < m_providerConfigsLen; ++i) {
-				ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_provider_name (&m_providerConfigs[i]));
-				ep_rt_utf8_string_free ((ep_char8_t *)ep_provider_config_get_filter_data (&m_providerConfigs[i]));
-			}
+			for (uint32_t i = 0; i < m_providerConfigsLen; ++i)
+				ep_provider_config_fini(&m_providerConfigs[i]);
 			delete [] m_providerConfigs;
 		}
 	}
@@ -214,7 +216,7 @@ public:
 		ep_char8_t *outputPathUTF8 = NULL;
 		if (outputPath)
 			outputPathUTF8 = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(outputPath));
-		EventPipeSessionID result = ep_enable (
+		EventPipeSessionID result = ep_init_session (
 			outputPathUTF8,
 			circularBufferSizeInMB,
 			providerConfigs.GetProviderConfigs(),
@@ -252,7 +254,7 @@ public:
 		}
 		CONTRACTL_END;
 
-		ep_start_streaming(id);
+		ep_start_session(id);
 	}
 
 	static inline EventPipeSession * GetSession(EventPipeSessionID id)
@@ -385,7 +387,9 @@ public:
 			ep_provider_config_get_provider_name (&config[0]),
 			ep_provider_config_get_keywords (&config[0]),
 			(EventPipeEventLevel)ep_provider_config_get_logging_level (&config[0]),
-			ep_provider_config_get_filter_data (&config[0]));
+			ep_provider_config_get_filter_data (&config[0]),
+			NULL,
+			NULL);
 	}
 
 	static HRESULT GetProviderName(const EventPipeProvider *provider, ULONG numNameChars, ULONG *numNameCharsOut, LPWSTR name)

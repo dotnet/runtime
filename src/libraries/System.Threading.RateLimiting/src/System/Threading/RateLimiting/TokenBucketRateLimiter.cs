@@ -32,10 +32,9 @@ namespace System.Threading.RateLimiting
 
         private static readonly RateLimitLease SuccessfulLease = new TokenBucketLease(true, null);
         private static readonly RateLimitLease FailedLease = new TokenBucketLease(false, null);
-        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
+        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
@@ -49,10 +48,7 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="TokenBucketRateLimiter"/>.</param>
         public TokenBucketRateLimiter(TokenBucketRateLimiterOptions options)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
             if (options.TokenLimit <= 0)
             {
                 throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.TokenLimit)), nameof(options));
@@ -116,7 +112,7 @@ namespace System.Threading.RateLimiting
             // Return SuccessfulLease or FailedLease depending to indicate limiter state
             if (tokenCount == 0 && !_disposed)
             {
-                if (_tokenCount > 0)
+                if (_tokenCount >= 1)
                 {
                     Interlocked.Increment(ref _successfulLeasesCount);
                     return SuccessfulLease;
@@ -150,7 +146,7 @@ namespace System.Threading.RateLimiting
             ThrowIfDisposed();
 
             // Return SuccessfulAcquisition if requestedCount is 0 and resources are available
-            if (tokenCount == 0 && _tokenCount > 0)
+            if (tokenCount == 0 && _tokenCount >= 1)
             {
                 Interlocked.Increment(ref _successfulLeasesCount);
                 return new ValueTask<RateLimitLease>(SuccessfulLease);
@@ -231,7 +227,7 @@ namespace System.Threading.RateLimiting
             ThrowIfDisposed();
 
             // if permitCount is 0 we want to queue it if there are no available permits
-            if (_tokenCount >= tokenCount && _tokenCount != 0)
+            if (_tokenCount >= tokenCount && _tokenCount >= 1)
             {
                 if (tokenCount == 0)
                 {
@@ -312,7 +308,7 @@ namespace System.Threading.RateLimiting
                 }
                 else
                 {
-                    add = _fillRate * (nowTicks - _lastReplenishmentTick) * TickFrequency;
+                    add = _fillRate * RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks).Ticks;
                 }
 
                 _tokenCount = Math.Min(_options.TokenLimit, _tokenCount + add);

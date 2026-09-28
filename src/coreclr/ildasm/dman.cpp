@@ -16,8 +16,6 @@
 #include "dynamicarray.h"
 #include "resource.h"
 
-#include "clrinternal.h"
-
 #ifndef MAX_LOCALE_NAME
 #define MAX_LOCALE_NAME (32)
 #endif
@@ -120,7 +118,7 @@ void DumpScope(void* GUICookie)
     mdModule mdm;
     GUID mvid;
     WCHAR scopeName[1024];
-    CHAR guidString[GUID_STR_BUFFER_LEN];
+    CHAR guidString[MINIPAL_GUID_BUFFER_LEN];
     memset(scopeName,0,1024*sizeof(WCHAR));
     if(SUCCEEDED(g_pPubImport->GetScopeProps( scopeName, 1024, NULL, &mvid))&& scopeName[0])
     {
@@ -133,7 +131,7 @@ void DumpScope(void* GUICookie)
             VDELETE(sz);
         }
         printLine(GUICookie,szString);
-        GuidToLPSTR(mvid, guidString);
+        minipal_guid_as_string(mvid, guidString, MINIPAL_GUID_BUFFER_LEN);
         sprintf_s(szString,SZSTRING_SIZE,COMMENT("%s// MVID: %s"),g_szAsmCodeIndent,guidString);
 
         printLine(GUICookie,szString);
@@ -718,8 +716,7 @@ static void DumpResourceFile(void *GUICookie, BYTE *pRes, DWORD dwOffset, LPCWST
         if (g_pFile != NULL) // embedded resource -- dump as .resources file
         {
             FILE *pF = NULL;
-            _wfopen_s(&pF, pParam->wzFileName, W("wb"));
-            if (pF)
+            if (fopen_lp(&pF, pParam->wzFileName, W("wb")) == 0)
             {
                 struct Param
                 {
@@ -987,14 +984,14 @@ IMetaDataAssemblyImport* GetAssemblyImport(void* GUICookie)
             if(pdwSize && *pdwSize)
             {
                 pbManifest += sizeof(DWORD);
-                if (SUCCEEDED(hr = GetMetaDataInternalInterface(
+                if (SUCCEEDED(hr = GetMDInternalInterface(
                     pbManifest,
                     VAL32(*pdwSize),
                     ofRead,
                     IID_IMDInternalImport,
                     (LPVOID *)&pParam->pImport)))
                 {
-                    if (FAILED(hr = GetMetaDataPublicInterfaceFromInternal(
+                    if (FAILED(hr = GetMDPublicInterfaceFromInternal(
                         pParam->pImport,
                         IID_IMetaDataAssemblyImport,
                         (LPVOID *)&pParam->pAssemblyImport)))

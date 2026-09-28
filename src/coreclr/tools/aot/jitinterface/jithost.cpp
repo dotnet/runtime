@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include <stdlib.h>
+#include <stddef.h>
 
 #include "dllexport.h"
 
@@ -9,13 +9,13 @@ class JitConfigProvider
 {
 public:
     virtual int STDMETHODCALLTYPE getIntConfigValue(
-        const wchar_t* name, 
+        const char* name,
         int defaultValue
         ) = 0;
 
     virtual int STDMETHODCALLTYPE getStringConfigValue(
-        const wchar_t* name,
-        wchar_t* retBuffer,
+        const char* name,
+        char* retBuffer,
         int retBufferLength
         ) = 0;
 };
@@ -37,43 +37,45 @@ public:
 
     virtual void* allocateMemory(size_t size)
     {
-        return malloc(size);
+        return new char[size];
     }
 
     virtual void freeMemory(void* block)
     {
-        free(block);
+        delete[] (char*)block;
     }
 
     virtual int getIntConfigValue(
-        const wchar_t* name, 
+        const char* name,
         int defaultValue
         )
     {
         return pConfigProvider->getIntConfigValue(name, defaultValue);
     }
 
-    virtual const wchar_t* getStringConfigValue(
-        const wchar_t* name
+    virtual const char* getStringConfigValue(
+        const char* name
         )
     {
         // Find out the required length of the buffer
-        int numCharacters = pConfigProvider->getStringConfigValue(name, nullptr, 0);
-        if (numCharacters == 0)
+        int numRequired = pConfigProvider->getStringConfigValue(name, nullptr, 0);
+        if (numRequired == 0)
+        {
             return nullptr;
+        }
 
-        // Allocate extra char for the null terminator
-        wchar_t* retBuffer = (wchar_t*)calloc(numCharacters + 1, sizeof(wchar_t));
-        pConfigProvider->getStringConfigValue(name, retBuffer, numCharacters);
+        // getStringConfigValue returns required buffer size
+        char* retBuffer = new char[numRequired]();
+        pConfigProvider->getStringConfigValue(name, retBuffer, numRequired);
 
         return retBuffer;
     }
 
     virtual void freeStringConfigValue(
-        wchar_t* value
+        char* value
         )
     {
-        free(value);
+        delete[] value;
     }
 
     virtual void* allocateSlab(size_t size, size_t* pActualSize)

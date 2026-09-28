@@ -31,7 +31,7 @@ public class MightyExceptor
 		try
 		{
 			Console.WriteLine("Throwing ArgumentOutOfRangeException..");
-			throw new ArgumentOutOfRangeException("Arguement Name", 1, "Arguement Shame");
+			throw new ArgumentOutOfRangeException("Argument Name", 1, "Argument Shame");
 			
 		}
 		catch(ArgumentOutOfRangeException e)

@@ -470,7 +470,7 @@ class Tests
 	public static int test_0_bug_71454 () {
 		int[,] a = new int[4,4];
 		int[,] b = new int[4,4];
-		for(int i = 0; i < 4; ++i) {
+		for (int i = 0; i < 4; ++i) {
 			b[0,0] = a[0,i % 4];
 		}
 		return 0;
@@ -551,7 +551,7 @@ class Tests
 	public static int test_0_multidym_array_with_negative_lower_bound () {
 		int[,] x = (int[,]) Array.CreateInstance(typeof (int), new int[] { 2, 2 }, new int[] { -2, -3 });
 
-		if(x.GetLowerBound (0) != -2)
+		if (x.GetLowerBound (0) != -2)
 			return 1;
 		if (x.GetLowerBound (1) != -3)
 			return 2;
@@ -762,7 +762,7 @@ class Tests
 	public static int test_0_ldelema_2_64bit () {
         bool[,] test = new bool[201,201];
         int x,y;
-        for(x=-100;x<100;x++) for(y=-100;y<100;y++){
+        for (x=-100;x<100;x++) for (y=-100;y<100;y++){
             test[x+100,y+100] = true;
         }
 		return 0;

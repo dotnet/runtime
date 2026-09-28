@@ -3,9 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security;
 
 namespace System.IO.Compression
 {
@@ -14,32 +12,30 @@ namespace System.IO.Compression
     /// </summary>
     internal sealed class Inflater : IDisposable
     {
-        private const int MinWindowBits = -15;              // WindowBits must be between -8..-15 to ignore the header, 8..15 for
-        private const int MaxWindowBits = 47;               // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
+        private const int MinWindowBits = -15;                      // WindowBits must be between -8..-15 to ignore the header, 8..15 for
+        private const int MaxWindowBits = 47;                       // zlib headers, 24..31 for GZip headers, or 40..47 for either Zlib or GZip
 
-        private bool _nonEmptyInput;                        // Whether there is any non empty input
-        private bool _finished;                             // Whether the end of the stream has been reached
-        private bool _isDisposed;                           // Prevents multiple disposals
-        private readonly int _windowBits;                   // The WindowBits parameter passed to Inflater construction
-        private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
-        private MemoryHandle _inputBufferHandle;            // The handle to the buffer that provides input to _zlibStream
+        private bool _nonEmptyInput;                                // Whether there is any non empty input
+        private bool _finished;                                     // Whether the end of the stream has been reached
+        private bool _isDisposed;                                   // Prevents multiple disposals
+        private readonly int _windowBits;                           // The WindowBits parameter passed to Inflater construction
+        private readonly ZLibNative.ZLibStreamHandle _zlibStream;   // The handle to the primary underlying zlib stream
+        private MemoryHandle _inputBufferHandle;                    // The handle to the buffer that provides input to _zlibStream
         private readonly long _uncompressedSize;
         private long _currentInflatedCount;
+        private int _gzipConcatProbeBytes;                          // Count of leftover bytes speculatively consumed as a possible concatenated GZip member that hasn't been confirmed (only ever 0 or 1, the lone GZip ID1 byte)
+        private bool _endOfStream;                                  // Set once an unconfirmed GZip concatenation probe has been resolved as trailing data at the end of the stream
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
-        /// <summary>
-        /// Initialized the Inflater with the given windowBits size
-        /// </summary>
-        internal Inflater(int windowBits, long uncompressedSize = -1)
+        private Inflater(int windowBits, long uncompressedSize, ZLibNative.ZLibStreamHandle zlibStream)
         {
-            Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _finished = false;
             _nonEmptyInput = false;
             _isDisposed = false;
             _windowBits = windowBits;
-            InflateInit(windowBits);
             _uncompressedSize = uncompressedSize;
+            _zlibStream = zlibStream;
         }
 
         public int AvailableOutput => (int)_zlibStream.AvailOut;
@@ -86,6 +82,14 @@ namespace System.IO.Compression
 
         public unsafe int InflateVerified(byte* bufPtr, int length)
         {
+            // Once a lone GZip ID1 (0x1F) probe has been confirmed as trailing data at the end of the
+            // stream, the inflater is terminally finished. Returning 0 here prevents DeflateStream from
+            // re-reading (and re-consuming) the byte that was already rewound in the base stream.
+            if (_endOfStream)
+            {
+                return 0;
+            }
+
             // State is valid; attempt inflation
             try
             {
@@ -115,7 +119,7 @@ namespace System.IO.Compression
                 // Before returning, make sure to release input buffer if necessary:
                 if (0 == _zlibStream.AvailIn && IsInputBufferHandleAllocated)
                 {
-                    DeallocateInputBufferHandle();
+                    DeallocateInputBufferHandle(resetStreamHandle: true);
                 }
             }
         }
@@ -149,25 +153,28 @@ namespace System.IO.Compression
 
             lock (SyncLock)
             {
-                IntPtr nextInPtr = _zlibStream.NextIn;
-                byte* nextInPointer = (byte*)nextInPtr.ToPointer();
+                // Re-evaluating the leftover input supersedes any previously recorded probe.
+                _gzipConcatProbeBytes = 0;
+
+                byte* nextInPointer = (byte*)_zlibStream.NextIn;
                 uint nextAvailIn = _zlibStream.AvailIn;
 
-                // Check the leftover bytes to see if they start with he gzip header ID bytes
+                // Check the leftover bytes to see if they start with the gzip header ID bytes
                 if (*nextInPointer != ZLibNative.GZip_Header_ID1 || (nextAvailIn > 1 && *(nextInPointer + 1) != ZLibNative.GZip_Header_ID2))
                 {
                     return true;
                 }
 
-                // Trash our existing zstream.
-                _zlibStream.Dispose();
+                // A single leftover 0x1F (GZip ID1) is ambiguous: it may be the first byte of a
+                // concatenated member whose ID2 byte hasn't been read yet, or it may be trailing content
+                // after the member. We optimistically treat it as the start of a concatenated member
+                // (resetting below), but remember it as an unconfirmed probe so that DeflateStream can
+                // rewind it if the base stream turns out to have no further data.
+                _gzipConcatProbeBytes = nextAvailIn == 1 ? 1 : 0;
 
-                // Create a new zstream
-                InflateInit(_windowBits);
+                // Reset our existing zstream.
+                _zlibStream.InflateReset2_(_windowBits);
 
-                // SetInput on the new stream to the bits remaining from the last stream
-                _zlibStream.NextIn = nextInPtr;
-                _zlibStream.AvailIn = nextAvailIn;
                 _finished = false;
             }
 
@@ -179,6 +186,32 @@ namespace System.IO.Compression
         public bool NeedsInput() => _zlibStream.AvailIn == 0;
 
         public bool NonEmptyInput() => _nonEmptyInput;
+
+        internal int GetAvailableInput() => (int)_zlibStream.AvailIn;
+
+        /// <summary>
+        /// Number of bytes that were speculatively consumed as a possible concatenated GZip member
+        /// header but haven't been confirmed as such (either 0, or 1 for a lone trailing GZip ID1 byte).
+        /// </summary>
+        internal int UnconfirmedGZipProbeBytes => _gzipConcatProbeBytes;
+
+        /// <summary>
+        /// Whether the inflater consumed a lone GZip ID1 (0x1F) byte as an unconfirmed concatenated
+        /// member probe. If the base stream has no further data, that byte was actually trailing
+        /// content and should be rewound.
+        /// </summary>
+        internal bool HasUnconfirmedGZipProbe => _gzipConcatProbeBytes > 0;
+
+        /// <summary>
+        /// Whether an unconfirmed GZip concatenation probe has been resolved as trailing data at the end of the stream.
+        /// </summary>
+        internal bool EndOfStreamReached => _endOfStream;
+
+        /// <summary>
+        /// Marks the inflater as terminally finished after an unconfirmed GZip concatenation probe has
+        /// been rewound, so that subsequent reads don't re-consume the rewound byte from the base stream.
+        /// </summary>
+        internal void MarkEndOfStream() => _endOfStream = true;
 
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
@@ -205,6 +238,9 @@ namespace System.IO.Compression
                 _zlibStream.AvailIn = (uint)inputBuffer.Length;
                 _finished = false;
                 _nonEmptyInput = true;
+
+                // Feeding new input resolves any pending lone-0x1F probe: the byte wasn't trailing data.
+                _gzipConcatProbeBytes = 0;
             }
         }
 
@@ -213,10 +249,15 @@ namespace System.IO.Compression
             if (!_isDisposed)
             {
                 if (disposing)
+                {
                     _zlibStream.Dispose();
+                }
 
                 if (IsInputBufferHandleAllocated)
-                    DeallocateInputBufferHandle();
+                {
+                    // Unpin the input buffer, but avoid modifying the ZLibStreamHandle (which may have been disposed of).
+                    DeallocateInputBufferHandle(resetStreamHandle: false);
+                }
 
                 _isDisposed = true;
             }
@@ -231,41 +272,6 @@ namespace System.IO.Compression
         ~Inflater()
         {
             Dispose(false);
-        }
-
-        /// <summary>
-        /// Creates the ZStream that will handle inflation.
-        /// </summary>
-        [MemberNotNull(nameof(_zlibStream))]
-        private void InflateInit(int windowBits)
-        {
-            ZLibNative.ErrorCode error;
-            try
-            {
-                error = ZLibNative.CreateZLibStreamForInflate(out _zlibStream, windowBits);
-            }
-            catch (Exception exception) // could not load the ZLib dll
-            {
-                throw new ZLibException(SR.ZLibErrorDLLLoadError, exception);
-            }
-
-            switch (error)
-            {
-                case ZLibNative.ErrorCode.Ok:           // Successful initialization
-                    return;
-
-                case ZLibNative.ErrorCode.MemError:     // Not enough memory
-                    throw new ZLibException(SR.ZLibErrorNotEnoughMemory, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                case ZLibNative.ErrorCode.VersionError: //zlib library is incompatible with the version assumed
-                    throw new ZLibException(SR.ZLibErrorVersionMismatch, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                case ZLibNative.ErrorCode.StreamError:  // Parameters are invalid
-                    throw new ZLibException(SR.ZLibErrorIncorrectInitParameters, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-
-                default:
-                    throw new ZLibException(SR.ZLibErrorUnexpected, "inflateInit2_", (int)error, _zlibStream.GetErrorMessage());
-            }
         }
 
         /// <summary>
@@ -323,18 +329,41 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
+        /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
+        /// the inflater doesn't retain a dangling reference to a buffer the caller may have since reused or freed.
+        /// </summary>
+        internal void UnsetInput() => DeallocateInputBufferHandle(resetStreamHandle: true);
+
+        /// <summary>
         /// Frees the GCHandle being used to store the input buffer
         /// </summary>
-        private void DeallocateInputBufferHandle()
+        private void DeallocateInputBufferHandle(bool resetStreamHandle)
         {
-            Debug.Assert(IsInputBufferHandleAllocated);
-
             lock (SyncLock)
             {
-                _zlibStream.AvailIn = 0;
-                _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                if (!IsInputBufferHandleAllocated)
+                {
+                    return;
+                }
+
+                if (resetStreamHandle)
+                {
+                    _zlibStream.AvailIn = 0;
+                    _zlibStream.NextIn = ZLibNative.ZNullPtr;
+                }
+
                 _inputBufferHandle.Dispose();
             }
+        }
+
+        public static Inflater CreateInflater(int windowBits, long uncompressedSize = -1)
+        {
+            Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
+
+            ZLibNative.ZLibStreamHandle zlibStream = ZLibNative.ZLibStreamHandle.CreateForInflate(windowBits);
+
+            return new Inflater(windowBits, uncompressedSize, zlibStream);
         }
 
         private unsafe bool IsInputBufferHandleAllocated => _inputBufferHandle.Pointer != default;

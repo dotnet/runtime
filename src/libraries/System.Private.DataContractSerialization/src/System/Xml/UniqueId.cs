@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
@@ -62,7 +63,7 @@ namespace System.Xml
         {
         }
 
-        public unsafe UniqueId(byte[] guid, int offset)
+        public UniqueId(byte[] guid, int offset)
         {
             ArgumentNullException.ThrowIfNull(guid);
 
@@ -71,11 +72,10 @@ namespace System.Xml
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, guid.Length));
             if (guidLength > guid.Length - offset)
                 throw new ArgumentException(SR.Format(SR.XmlArrayTooSmallInput, guidLength), nameof(guid));
-            fixed (byte* pb = &guid[offset])
-            {
-                _idLow = UnsafeGetInt64(pb);
-                _idHigh = UnsafeGetInt64(&pb[8]);
-            }
+
+            ReadOnlySpan<byte> source = guid.AsSpan(offset, guidLength);
+            _idLow = BinaryPrimitives.ReadInt64LittleEndian(source);
+            _idHigh = BinaryPrimitives.ReadInt64LittleEndian(source.Slice(8));
         }
 
         public unsafe UniqueId(string value)
@@ -274,7 +274,7 @@ namespace System.Xml
             return true;
         }
 
-        public unsafe bool TryGetGuid(byte[] buffer, int offset)
+        public bool TryGetGuid(byte[] buffer, int offset)
         {
             if (!IsGuid)
                 return false;
@@ -288,11 +288,9 @@ namespace System.Xml
             if (guidLength > buffer.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(buffer), SR.Format(SR.XmlArrayTooSmallOutput, guidLength));
 
-            fixed (byte* pb = &buffer[offset])
-            {
-                UnsafeSetInt64(_idLow, pb);
-                UnsafeSetInt64(_idHigh, &pb[8]);
-            }
+            Span<byte> destination = buffer.AsSpan(offset, guidLength);
+            BinaryPrimitives.WriteInt64LittleEndian(destination, _idLow);
+            BinaryPrimitives.WriteInt64LittleEndian(destination.Slice(8), _idHigh);
 
             return true;
         }

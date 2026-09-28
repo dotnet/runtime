@@ -242,7 +242,7 @@ namespace System.Xml.XmlSchemaValidatorApiTests
         [Theory]
         [InlineData(null)]
         [InlineData("false")]
-        public void CallWith_Null_False_XsiNil(string xsiNil)
+        public void CallWith_Null_False_XsiNil(string? xsiNil)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();

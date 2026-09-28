@@ -366,10 +366,7 @@ namespace Microsoft.Extensions.Primitives
 
             if (value != null)
             {
-                if (array == null)
-                {
-                    ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-                }
+                ArgumentNullException.ThrowIfNull(array);
                 if (arrayIndex < 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex));
@@ -742,7 +739,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 if (Count == 1)
                 {
-                    return Unsafe.As<string>(this[0])?.GetHashCode() ?? Count.GetHashCode();
+                    return this[0]?.GetHashCode() ?? Count.GetHashCode();
                 }
                 int hashCode = 0;
                 for (int i = 0; i < values.Length; i++)

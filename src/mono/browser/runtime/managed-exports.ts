@@ -8,7 +8,7 @@ import cwraps, { threads_c_functions as twraps } from "./cwraps";
 import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { JavaScriptMarshalerArgSize, alloc_stack_frame, get_arg, get_arg_gc_handle, is_args_exception, set_arg_i32, set_arg_intptr, set_arg_type, set_gc_handle, set_receiver_should_free } from "./marshal";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_bool_to_cs, marshal_exception_to_cs, marshal_intptr_to_cs, marshal_string_to_cs } from "./marshal-to-cs";
-import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js } from "./marshal-to-js";
+import { marshal_int32_to_js, end_marshal_task_to_js, marshal_string_to_js, begin_marshal_task_to_js, marshal_exception_to_js, release_eager_task_holder } from "./marshal-to-js";
 import { do_not_force_dispose, is_gcv_handle } from "./gc-handles";
 import { assert_c_interop, assert_js_interop } from "./invoke-js";
 import { monoThreadInfo, mono_wasm_main_thread_ptr } from "./pthreads";
@@ -62,7 +62,13 @@ export function call_entry_point (main_assembly_name: string, program_args: stri
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated, marshal_int32_to_js);
 
-        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.CallEntrypoint, args, size);
+        try {
+            invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.CallEntrypoint, args, size);
+        } catch (ex) {
+            // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt the promise
+            release_eager_task_holder(promise);
+            throw ex;
+        }
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -74,7 +80,8 @@ export function call_entry_point (main_assembly_name: string, program_args: stri
 
         return promise;
     } finally {
-        Module.stackRestore(sp); // synchronously
+        // synchronously
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
 }
 
@@ -90,7 +97,8 @@ export function load_satellite_assembly (dll: Uint8Array): void {
         marshal_array_to_cs(arg1, dll, MarshalerType.Byte);
         invoke_sync_jsexport(managedExports.LoadSatelliteAssembly, args);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -109,7 +117,8 @@ export function load_lazy_assembly (dll: Uint8Array, pdb: Uint8Array | null): vo
         marshal_array_to_cs(arg2, pdb, MarshalerType.Byte);
         invoke_sync_jsexport(managedExports.LoadLazyAssembly, args);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -132,7 +141,8 @@ export function release_js_owned_object_by_gc_handle (gc_handle: GCHandle) {
             invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.ReleaseJSOwnedObjectByGCHandle, args, size);
         }
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -147,17 +157,23 @@ export function complete_task (holder_gc_handle: GCHandle, error?: any, data?: a
         set_arg_type(arg1, MarshalerType.Object);
         set_gc_handle(arg1, holder_gc_handle);
         const arg2 = get_arg(args, 3);
-        if (error) {
-            marshal_exception_to_cs(arg2, error);
-        } else {
+        if (!error) {
             set_arg_type(arg2, MarshalerType.None);
             const arg3 = get_arg(args, 4);
             mono_assert(res_converter, "res_converter missing");
-            res_converter(arg3, data);
+            try {
+                res_converter(arg3, data);
+            } catch (ex) {
+                error = ex;
+            }
+        }
+        if (error) {
+            marshal_exception_to_cs(arg2, error);
         }
         invoke_async_jsexport(runtimeHelpers.ioThreadTID, managedExports.CompleteTask, args, size);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -203,7 +219,8 @@ export function call_delegate (callback_gc_handle: GCHandle, arg1_js: any, arg2_
             return res_converter(res);
         }
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -223,7 +240,8 @@ export function get_managed_stack_trace (exception_gc_handle: GCHandle) {
         const res = get_arg(args, 1);
         return marshal_string_to_js(res);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 
@@ -331,7 +349,13 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         // because this is async, we could pre-allocate the promise
         let promise = begin_marshal_task_to_js(res, MarshalerType.TaskPreCreated);
 
-        invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.BindAssemblyExports, args, size);
+        try {
+            invoke_async_jsexport(runtimeHelpers.managedThreadTID, managedExports.BindAssemblyExports, args, size);
+        } catch (ex) {
+            // the throw unwinds past end_marshal_task_to_js, which would otherwise adopt the promise
+            release_eager_task_holder(promise);
+            throw ex;
+        }
 
         // in case the C# side returned synchronously
         promise = end_marshal_task_to_js(args, marshal_int32_to_js, promise);
@@ -341,7 +365,8 @@ export function bind_assembly_exports (assemblyName: string): Promise<void> {
         }
         return promise;
     } finally {
-        Module.stackRestore(sp); // synchronously
+        // synchronously
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
     }
 }
 

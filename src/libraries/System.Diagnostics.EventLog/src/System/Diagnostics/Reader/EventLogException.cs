@@ -49,8 +49,8 @@ namespace System.Diagnostics.Eventing.Reader
         }
 
         public EventLogException() { }
-        public EventLogException(string message) : base(message) { }
-        public EventLogException(string message, Exception innerException) : base(message, innerException) { }
+        public EventLogException(string? message) : base(message) { }
+        public EventLogException(string? message, Exception? innerException) : base(message, innerException) { }
         protected EventLogException(int errorCode)
         {
             _errorCode = errorCode;
@@ -68,7 +68,7 @@ namespace System.Diagnostics.Eventing.Reader
 
         private readonly int _errorCode;
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -78,7 +78,7 @@ namespace System.Diagnostics.Eventing.Reader
             _errorCode = serializationInfo.GetInt32("errorCode");
         }
 
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -96,10 +96,10 @@ namespace System.Diagnostics.Eventing.Reader
     public class EventLogNotFoundException : EventLogException
     {
         public EventLogNotFoundException() { }
-        public EventLogNotFoundException(string message) : base(message) { }
-        public EventLogNotFoundException(string message, Exception innerException) : base(message, innerException) { }
+        public EventLogNotFoundException(string? message) : base(message) { }
+        public EventLogNotFoundException(string? message, Exception? innerException) : base(message, innerException) { }
         internal EventLogNotFoundException(int errorCode) : base(errorCode) { }
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -115,10 +115,10 @@ namespace System.Diagnostics.Eventing.Reader
     public class EventLogReadingException : EventLogException
     {
         public EventLogReadingException() { }
-        public EventLogReadingException(string message) : base(message) { }
-        public EventLogReadingException(string message, Exception innerException) : base(message, innerException) { }
+        public EventLogReadingException(string? message) : base(message) { }
+        public EventLogReadingException(string? message, Exception? innerException) : base(message, innerException) { }
         internal EventLogReadingException(int errorCode) : base(errorCode) { }
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -134,10 +134,10 @@ namespace System.Diagnostics.Eventing.Reader
     public class EventLogProviderDisabledException : EventLogException
     {
         public EventLogProviderDisabledException() { }
-        public EventLogProviderDisabledException(string message) : base(message) { }
-        public EventLogProviderDisabledException(string message, Exception innerException) : base(message, innerException) { }
+        public EventLogProviderDisabledException(string? message) : base(message) { }
+        public EventLogProviderDisabledException(string? message, Exception? innerException) : base(message, innerException) { }
         internal EventLogProviderDisabledException(int errorCode) : base(errorCode) { }
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif
@@ -151,10 +151,10 @@ namespace System.Diagnostics.Eventing.Reader
     public class EventLogInvalidDataException : EventLogException
     {
         public EventLogInvalidDataException() { }
-        public EventLogInvalidDataException(string message) : base(message) { }
-        public EventLogInvalidDataException(string message, Exception innerException) : base(message, innerException) { }
+        public EventLogInvalidDataException(string? message) : base(message) { }
+        public EventLogInvalidDataException(string? message, Exception? innerException) : base(message, innerException) { }
         internal EventLogInvalidDataException(int errorCode) : base(errorCode) { }
-#if NET8_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
 #endif

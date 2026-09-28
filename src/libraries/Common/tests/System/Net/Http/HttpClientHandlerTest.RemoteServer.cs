@@ -31,6 +31,7 @@ namespace System.Net.Http.Functional.Tests
 
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
         public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
+        public static readonly object[][] Http2NoPushGetUris = Configuration.Http.Http2NoPushGetUris;
 
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
@@ -898,7 +899,7 @@ namespace System.Net.Http.Functional.Tests
                         string responseContent = await response.Content.ReadAsStringAsync();
 
                         Assert.Contains($"\"Content-Length\": \"{request.Content.Headers.ContentLength.Value}\"", responseContent);
-                        string bodyContent = System.Text.Json.JsonDocument.Parse(responseContent).RootElement.GetProperty("BodyContent").GetString();
+                        string bodyContent = System.Text.Json.JsonElement.Parse(responseContent).GetProperty("BodyContent").GetString();
                         Assert.Contains(stringContent.Substring(startingPosition), bodyContent);
                         if (startingPosition != 0)
                         {
@@ -1289,9 +1290,9 @@ namespace System.Net.Http.Functional.Tests
                 try
                 {
                     using HttpResponseMessage response = await client.GetAsync(uri);
-                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway)
+                    if ((int)response.StatusCode >= 500)
                     {
-                        // Ignore the erroneous status code, the test depends on an external server that is out of our control.
+                        // Ignore any 5xx server error, the test depends on an external server that is out of our control.
                         _output.WriteLine(response.ToString());
                         return;
                     }
@@ -1362,7 +1363,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
+        [ConditionalTheory(typeof(HttpClientHandler_RemoteServerTest), nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushGetUris))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)
         {
             // Sync API supported only up to HTTP/1.1

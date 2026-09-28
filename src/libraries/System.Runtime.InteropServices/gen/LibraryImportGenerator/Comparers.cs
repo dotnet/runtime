@@ -10,14 +10,6 @@ using System.Linq;
 
 namespace Microsoft.Interop
 {
-    internal static class Comparers
-    {
-        /// <summary>
-        /// Comparer for an individual generated stub source as a syntax tree and the generated diagnostics for the stub.
-        /// </summary>
-        public static readonly IEqualityComparer<(MemberDeclarationSyntax Syntax, ImmutableArray<DiagnosticInfo> Diagnostics)> GeneratedSyntax = new CustomValueTupleElementComparer<MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>>(SyntaxEquivalentComparer.Instance, new ImmutableArraySequenceEqualComparer<DiagnosticInfo>(EqualityComparer<DiagnosticInfo>.Default));
-        }
-
     /// <summary>
     /// Generic comparer to compare two <see cref="ImmutableArray{T}"/> instances element by element.
     /// </summary>

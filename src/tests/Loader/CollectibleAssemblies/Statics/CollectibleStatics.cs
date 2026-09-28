@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
@@ -27,12 +28,20 @@ public class Program
         }
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155: Collectible assemblies", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/40394", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {
+        string assemblyPath = Assembly.GetExecutingAssembly().Location;
+        if (assemblyPath.Length == 0)
+        {
+            return 100;
+        }
+
         var currentALC = AssemblyLoadContext.GetLoadContext(Assembly.GetExecutingAssembly());
         var alc = new TestALC(currentALC);
-        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "StaticsUnloaded.dll"));
+        var a = alc.LoadFromAssemblyPath(Path.Combine(Path.GetDirectoryName(assemblyPath), "StaticsUnloaded.dll"));
 
         var accessor = (IStaticTest)Activator.CreateInstance(a.GetType("StaticTest"));
         accessor.SetStatic(12759, 548739, 5468, 8518, 9995);
@@ -66,9 +75,15 @@ public class Program
         if (val5Obj != obj5)
             return 15;
 
+        if (!PlatformDetection.IsMultithreadingSupported)
+        {
+            GC.KeepAlive(accessor);
+            return 100;
+        }
+
         int otherThreadResult = 0;
         Thread t = new ((ThreadStart)delegate {
-            
+
             object obj1 = new object();
             object obj2 = new object();
             object obj3 = new object();

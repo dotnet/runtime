@@ -535,6 +535,9 @@ getCGroupMemoryLimit(size_t *val, const char *filename)
 static gboolean 
 getCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFileFieldName)
 {
+	if (s_memory_cgroup_path == NULL)
+		return FALSE;
+
 	/* 
 	 * Use the same way to calculate memory load as popular container tools (Docker, Kubernetes, Containerd etc.)
 	 * For cgroup v1: value of 'memory.usage_in_bytes' minus 'total_inactive_file' value of 'memory.stat'
@@ -560,9 +563,6 @@ getCGroupMemoryUsage(size_t *val, const char *filename, const char *inactiveFile
 
 	if (!result)
 		return result;
-
-	if (s_memory_cgroup_path == NULL)
-		return FALSE;
 
 	char *stat_filename = NULL;
 	if (asprintf (&stat_filename, "%s%s", s_memory_cgroup_path, CGROUP_MEMORY_STAT_FILENAME) < 0)

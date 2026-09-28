@@ -66,13 +66,6 @@ public:
         return static_cast<IMetaModelCommonRO*>(&m_LiteWeightStgdb.m_MiniMd);
     }
 
-    __checkReturn
-    STDMETHODIMP SetOptimizeAccessForSpeed(
-        BOOL fOptSpeed)
-    {
-        return S_OK;
-    }
-
     //*****************************************************************************
     // return the count of entries of a given kind in a scope
     // For example, pass in mdtMethodDef will tell you how many MethodDef
@@ -186,7 +179,7 @@ public:
     STDMETHODIMP FindMethodDef(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         mdMethodDef *pmd);                  // [OUT] matching memberdef
 
@@ -229,7 +222,7 @@ public:
     __checkReturn
     STDMETHODIMP GetNameAndSigOfMethodDef(
         mdMethodDef      methoddef,     // [IN] given memberdef
-        PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE *ppvSigBlob,    // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,    // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
 
@@ -427,7 +420,7 @@ public:
     __checkReturn
     STDMETHODIMP GetNameAndSigOfMemberRef(  // return name here
         mdMemberRef      memberref,         // given memberref
-        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE *ppvSigBlob,        // [OUT] point to a blob value of signature
         ULONG           *pcbSigBlob,        // [OUT] count of bytes in the signature blob
         LPCSTR          *pszName);
 
@@ -583,7 +576,6 @@ public:
     STDMETHODIMP GetUserString(
         mdString stk,                   // [IN] the string token.
         ULONG   *pchString,             // [OUT] count of characters in the string.
-        BOOL    *pbIs80Plus,            // [OUT] specifies where there are extended characters >= 0x80.
         LPCWSTR *pwszUserString);
 
     //*****************************************************************************
@@ -687,7 +679,7 @@ public:
     STDMETHODIMP ConvertTextSigToComSig(    // Return hresult.
         BOOL        fCreateTrIfNotFound,    // [IN] create typeref if not found
         LPCSTR      pSignature,             // [IN] class file format signature
-        CQuickBytes *pqbNewSig,             // [OUT] place holder for COM+ signature
+        CQuickBytes *pqbNewSig,             // [OUT] place holder for signature
         ULONG       *pcbCount);             // [OUT] the result size of signature
 
     __checkReturn
@@ -701,9 +693,9 @@ public:
     STDMETHODIMP_(IUnknown *) GetCachedPublicInterface(BOOL fWithLock) { return NULL;}  // return the cached public interface
     __checkReturn
     STDMETHODIMP SetCachedPublicInterface(IUnknown *pUnk) { return E_FAIL;} ;// return hresult
-    STDMETHODIMP_(UTSemReadWrite*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
+    STDMETHODIMP_(minipal_rwlock*) GetReaderWriterLock() {return NULL;}   // return the reader writer lock
     __checkReturn
-    STDMETHODIMP SetReaderWriterLock(UTSemReadWrite *pSem) { return NOERROR; }
+    STDMETHODIMP SetReaderWriterLock(minipal_rwlock *pLock) { return NOERROR; }
     STDMETHODIMP_(mdModule) GetModuleFromScope(void);
 
     // Find a paticular method and pass in the signature comparison routine. Very
@@ -712,7 +704,7 @@ public:
     STDMETHODIMP FindMethodDefUsingCompare(
         mdTypeDef   classdef,               // [IN] given typedef
         LPCSTR      szName,                 // [IN] member name
-        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of COM+ signature
+        PCCOR_SIGNATURE pvSigBlob,          // [IN] point to a blob value of signature
         ULONG       cbSigBlob,              // [IN] count of bytes in the signature blob
         PSIGCOMPARE pSignatureCompare,      // [IN] Routine to compare signatures
         void*       pSignatureArgs,         // [IN] Additional info to supply the compare function
@@ -733,15 +725,6 @@ public:
         void        *pData,                 // [IN] the delta metadata
         ULONG       cbData,                 // [IN] length of pData
         IMDInternalImport **ppv);           // [OUT] the resulting metadata interface
-
-    STDMETHODIMP GetRvaOffsetData(
-        DWORD   *pFirstMethodRvaOffset,     // [OUT] Offset (from start of metadata) to the first RVA field in MethodDef table.
-        DWORD   *pMethodDefRecordSize,      // [OUT] Size of each record in MethodDef table.
-        DWORD   *pMethodDefCount,           // [OUT] Number of records in MethodDef table.
-        DWORD   *pFirstFieldRvaOffset,      // [OUT] Offset (from start of metadata) to the first RVA field in FieldRVA table.
-        DWORD   *pFieldRvaRecordSize,       // [OUT] Size of each record in FieldRVA table.
-        DWORD   *pFieldRvaCount             // [OUT] Number of records in FieldRVA table.
-        );
 
     CLiteWeightStgdb<CMiniMd>   m_LiteWeightStgdb;
 
@@ -784,12 +767,6 @@ public:
         ((DWORD)m_LiteWeightStgdb.m_MiniMd.m_Schema.m_major << 16);
     };
 
-    STDMETHODIMP SetVerifiedByTrustedSource(// return hresult
-        BOOL    fVerified)
-    {
-        m_LiteWeightStgdb.m_MiniMd.SetVerifiedByTrustedSource(fVerified);
-        return S_OK;
-    }
 };  // class MDInternalRO
 
 #endif //FEATURE_METADATA_INTERNAL_APIS

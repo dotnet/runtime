@@ -89,7 +89,7 @@ namespace Microsoft.Extensions.Configuration
 
         IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             _sources.Add(source);
             return this;
@@ -139,7 +139,7 @@ namespace Microsoft.Extensions.Configuration
 
             _changeTokenRegistrations.Clear();
 
-            var newProvidersList = new List<IConfigurationProvider>();
+            var newProvidersList = new List<IConfigurationProvider>(_sources.Count);
 
             foreach (IConfigurationSource source in _sources)
             {

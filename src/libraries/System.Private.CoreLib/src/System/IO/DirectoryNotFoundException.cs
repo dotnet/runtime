@@ -35,11 +35,52 @@ namespace System.IO
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
+        public DirectoryNotFoundException(string? message, string? directoryPath)
+            : this(message, directoryPath, innerException: null)
+        {
+        }
+
+        public DirectoryNotFoundException(string? message, string? directoryPath, Exception? innerException)
+            : base(message ?? (directoryPath is not null
+                ? SR.Format(SR.IO_DirectoryNotFound_Path, directoryPath)
+                : SR.Arg_DirectoryNotFoundException), innerException)
+        {
+            HResult = HResults.COR_E_DIRECTORYNOTFOUND;
+            DirectoryPath = directoryPath;
+        }
+
+        public string? DirectoryPath { get; }
+
+        public override string ToString()
+        {
+            string s = GetType().ToString() + ": " + Message;
+
+            if (!string.IsNullOrEmpty(DirectoryPath))
+                s += Environment.NewLineConst + SR.Format(SR.IO_DirectoryName_Name, DirectoryPath);
+
+            if (InnerException is not null)
+                s += Environment.NewLineConst + InnerExceptionPrefix + InnerException.ToString();
+
+            if (StackTrace is not null)
+                s += Environment.NewLineConst + StackTrace;
+
+            return s;
+        }
+
         [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         protected DirectoryNotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            DirectoryPath = (string?)info.GetValueNoThrow("DirectoryNotFound_DirectoryPath", typeof(string));
+        }
+
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("DirectoryNotFound_DirectoryPath", DirectoryPath, typeof(string));
         }
     }
 }

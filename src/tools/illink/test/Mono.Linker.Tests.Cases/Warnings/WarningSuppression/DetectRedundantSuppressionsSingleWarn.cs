@@ -8,21 +8,21 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
-	[SkipKeptItemsValidation]
-	[SetupLinkerArgument ("--singlewarn")]
-	[LogContains ("warning IL2104: Assembly 'test' produced trim warnings", ProducedBy = Tool.Trimmer)]
-	[LogDoesNotContain ("IL2121")]
-	class DetectRedundantSuppressionsSingleWarn
-	{
-		public static void Main ()
-		{
-			TrimmerCompatibleMethod ();
-		}
+    [SkipKeptItemsValidation]
+    [SetupLinkerArgument("--singlewarn")]
+    [LogContains("warning IL2104: Assembly 'test' produced trim warnings", ProducedBy = Tool.Trimmer)]
+    [LogDoesNotContain("IL2121")]
+    class DetectRedundantSuppressionsSingleWarn
+    {
+        public static void Main()
+        {
+            TrimmerCompatibleMethod();
+        }
 
-		[UnconditionalSuppressMessage ("test", "IL2072")]
-		public static string TrimmerCompatibleMethod ()
-		{
-			return "test";
-		}
-	}
+        [UnconditionalSuppressMessage("test", "IL2072")]
+        public static string TrimmerCompatibleMethod()
+        {
+            return "test";
+        }
+    }
 }

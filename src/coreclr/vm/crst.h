@@ -87,14 +87,9 @@
 #include "util.hpp"
 #include "debugmacros.h"
 #include "log.h"
+#include <minipal/mutex.h>
 
 #define ShutDown_Start                          0x00000001
-#define ShutDown_Finalize1                      0x00000002
-#define ShutDown_Finalize2                      0x00000004
-#define ShutDown_Profiler                       0x00000008
-#define ShutDown_COM                            0x00000010
-#define ShutDown_SyncBlock                      0x00000020
-#define ShutDown_IUnknown                       0x00000040
 #define ShutDown_Phase2                         0x00000080
 
 // Total count of Crst lock  of the type (Shutdown) that are currently in use
@@ -103,28 +98,28 @@ extern Volatile<LONG> g_ShutdownCrstUsageCount;
 // The CRST.
 class CrstBase
 {
-// The following classes and methods violate the requirement that Crst usage be
-// exception-safe, or they satisfy that requirement using techniques other than
-// Holder objects:
-friend class Thread;
-friend class ThreadStore;
-friend class ThreadSuspend;
-template <typename ELEMENT>
-friend class ListLockBase;
-template <typename ELEMENT>
-friend class ListLockEntryBase;
-friend struct SavedExceptionInfo;
-friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
-friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
-friend class CodeVersionManager;
+    // The following classes and methods violate the requirement that Crst usage be
+    // exception-safe, or they satisfy that requirement using techniques other than
+    // Holder objects:
+    friend class Thread;
+    friend class ThreadStore;
+    friend class ThreadSuspend;
+    template <typename ELEMENT>
+    friend class ListLockBase;
+    template <typename ELEMENT>
+    friend class ListLockEntryBase;
+    friend struct SavedExceptionInfo;
+    friend void ClrEnterCriticalSection(CRITSEC_COOKIE cookie);
+    friend void ClrLeaveCriticalSection(CRITSEC_COOKIE cookie);
+    friend class CodeVersionManager;
 
-friend class Debugger;
-friend class Crst;
+    friend class Debugger;
+    friend class Crst;
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_VM
     // The debugger transport code uses a holder for its Crst, but it needs to share the holder implementation
     // with its right side code as well (which can't see the Crst implementation and actually uses a
-    // CRITICAL_SECTION as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
+    // minipal_mutex as the base lock). So make DbgTransportSession a friend here so we can use Enter() and
     // Leave() in order to build a shared holder class.
     friend class DbgTransportLock;
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
@@ -143,23 +138,6 @@ public:
 #endif
 
 private:
-    // Some Crsts have a "shutdown" mode.
-    // A Crst in shutdown mode can only be taken / released by special
-    // (the helper / finalizer / shutdown) threads. Any other thread that tries to take
-    // the a "shutdown" crst will immediately release the Crst and instead just block forever.
-    //
-    // This prevents random threads from blocking the special threads from doing finalization on shutdown.
-    //
-    // Unfortunately, each Crst needs its own "shutdown" flag because we can't convert all the locks
-    // into shutdown locks at once. For eg, the TSL needs to suspend the runtime before
-    // converting to a shutdown lock. But it can't suspend the runtime while holding
-    // a UNSAFE_ANYMODE lock (such as the debugger-lock). So at least the debugger-lock
-    // and TSL need to be set separately.
-    //
-    // So for such Crsts, it's the caller's responsibility to detect if the crst is in
-    // shutdown mode, and if so, call this function after enter.
-    void ReleaseAndBlockForShutdownIfNotSpecialThread();
-
     // Enter & Leave are deliberately private to force callers to use the
     // Holder class.  If you bypass the Holder class and access these members
     // directly, your lock is not exception-safe.
@@ -170,21 +148,24 @@ private:
     // the only one with a pointer to the crst.)
     //
     // For obvious reasons, this parameter must never be made public.
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    // There is no wait to make GC-safe, no other thread to orphan a shutdown lock,
+    // and no debugger helper thread to exclude. Keep these inline so holders disappear too.
+    void Enter() { LIMITED_METHOD_CONTRACT; }
+    void Leave() { LIMITED_METHOD_CONTRACT; }
+#else
     void Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag = CRST_LEVEL_CHECK));
     void Leave();
-
-    void SpinEnter();
+#endif
 
 #ifndef DACCESS_COMPILE
     DEBUG_NOINLINE static void AcquireLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Enter();
     }
 
     DEBUG_NOINLINE static void ReleaseLock(CrstBase *c) {
         WRAPPER_NO_CONTRACT;
-        ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
         c->Leave();
     }
 
@@ -215,7 +196,11 @@ public:
     // Clean up critical section
     // Safe to call multiple times or on non-initialized critical section
     //-----------------------------------------------------------------
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    void Destroy() { LIMITED_METHOD_CONTRACT; }
+#else
     void Destroy();
+#endif
 
 #ifdef _DEBUG
     //-----------------------------------------------------------------
@@ -274,24 +259,24 @@ public:
     }
 
 protected:
-
-    VOID InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags);
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+    void InitWorker(CrstFlags flags) { LIMITED_METHOD_CONTRACT; }
+#else
+    void InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags);
 
 #ifdef _DEBUG
     void DebugInit(CrstType crstType, CrstFlags flags);
     void DebugDestroy();
 #endif
 
-    T_CRITICAL_SECTION m_criticalsection;
+    tgt_minipal_mutex m_lock;
 
     typedef enum
     {
         // Mask to indicate reserved flags
-        CRST_RESERVED_FLAGS_MASK = 0xC0000000,
+        CRST_RESERVED_FLAGS_MASK = 0x80000000,
         // private flag to indicate initialized Crsts
-        CRST_INITIALIZED = 0x80000000,
-        // private flag to indicate Crst is OS Critical Section
-        CRST_OS_CRIT_SEC = 0x40000000,
+        CRST_INITIALIZED = 0x80000000
         // rest of the flags are CrstFlags
     } CrstReservedFlags;
     DWORD               m_dwFlags;            // Re-entrancy and same level
@@ -314,19 +299,6 @@ protected:
 #endif //_DEBUG
 
 private:
-
-    void SetOSCritSec ()
-    {
-        m_dwFlags |= CRST_OS_CRIT_SEC;
-    }
-    void ResetOSCritSec ()
-    {
-        m_dwFlags &= ~CRST_OS_CRIT_SEC;
-    }
-    BOOL IsOSCritSec ()
-    {
-        return m_dwFlags & CRST_OS_CRIT_SEC;
-    }
     void SetCrstInitialized()
     {
         m_dwFlags |= CRST_INITIALIZED;
@@ -353,6 +325,7 @@ private:
     {
         m_dwFlags = 0;
     }
+#endif // !FEATURE_MULTITHREADING && !_DEBUG
 
     // ------------------------------- Holders ------------------------------
 public:
@@ -366,18 +339,23 @@ public:
         CrstBase * m_pCrst;
 
     public:
-        inline CrstHolder(CrstBase * pCrst)
-            : m_pCrst(pCrst)
+        CrstHolder(CrstBase* pCrst)
+            : m_pCrst{ pCrst }
         {
             WRAPPER_NO_CONTRACT;
             AcquireLock(pCrst);
         }
 
-        inline ~CrstHolder()
+        ~CrstHolder()
         {
             WRAPPER_NO_CONTRACT;
             ReleaseLock(m_pCrst);
         }
+
+        CrstHolder(CrstHolder const&) = delete;
+        CrstHolder &operator=(CrstHolder const&) = delete;
+        CrstHolder(CrstHolder&& other) = delete;
+        CrstHolder& operator=(CrstHolder&& other) = delete;
     };
 
     // Note that the holders for CRSTs are used in extremely low stack conditions. Because of this, they
@@ -472,7 +450,7 @@ typedef DPTR(Crst) PTR_Crst;
 class CrstStatic : public CrstBase
 {
 public:
-    VOID Init(CrstType crstType, CrstFlags flags = CRST_DEFAULT)
+    void Init(CrstType crstType, CrstFlags flags = CRST_DEFAULT)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -481,30 +459,6 @@ public:
         // throw away the debug-only parameter in retail
         InitWorker(INDEBUG_COMMA(crstType) flags);
     }
-
-    bool InitNoThrow(CrstType crstType, CrstFlags flags = CRST_DEFAULT)
-    {
-        CONTRACTL {
-            NOTHROW;
-        } CONTRACTL_END;
-
-        _ASSERTE((flags & CRST_INITIALIZED) == 0);
-
-        bool fSuccess = false;
-
-        EX_TRY
-        {
-            // throw away the debug-only parameter in retail
-            InitWorker(INDEBUG_COMMA(crstType) flags);
-            fSuccess = true;
-        }
-        EX_CATCH
-        {
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-
-        return fSuccess;
-    }
 };
 
 /* to be used as regular variable when a explicit call to Init method is needed */
@@ -512,7 +466,9 @@ class CrstExplicitInit : public CrstStatic
 {
 public:
     CrstExplicitInit() {
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
         m_dwFlags = 0;
+#endif
     }
      ~CrstExplicitInit() {
 #ifndef DACCESS_COMPILE
@@ -534,8 +490,4 @@ __inline BOOL IsOwnerOfCrst(LPVOID lock)
 #endif
 }
 
-#ifdef TEST_DATA_CONSISTENCY
-// used for test purposes. Determines if a crst is held.
-void DebugTryCrst(CrstBase * pLock);
-#endif
 #endif // __crst_h__

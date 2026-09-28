@@ -34,7 +34,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public virtual void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(nameMangler.CompilationUnitPrefix + "__SealedVTable_" + nameMangler.NodeMangler.MethodTable(_type));
+            sb.Append(nameMangler.CompilationUnitPrefix).Append("__SealedVTable_"u8).Append(nameMangler.NodeMangler.MethodTable(_type));
         }
 
         int ISymbolNode.Offset => 0;

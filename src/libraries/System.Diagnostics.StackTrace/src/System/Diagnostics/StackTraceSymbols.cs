@@ -114,7 +114,7 @@ namespace System.Diagnostics
         /// underlying ConditionalWeakTable doesn't keep the assembly alive, so cached types will be
         /// correctly invalidated when the Assembly is unloaded by the GC.
         /// </remarks>
-        private unsafe MetadataReader? TryGetReader(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
+        private MetadataReader? TryGetReader(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, bool isFileLayout, IntPtr inMemoryPdbAddress, int inMemoryPdbSize)
         {
             if (loadedPeAddress == IntPtr.Zero && assemblyPath == null && inMemoryPdbAddress == IntPtr.Zero)
             {

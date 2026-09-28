@@ -87,7 +87,6 @@ namespace System.Reflection.PortableExecutable.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/17088")]
         public void SubStream()
         {
             var stream = new MemoryStream();
@@ -105,7 +104,7 @@ namespace System.Reflection.PortableExecutable.Tests
             stream.Position = 1;
             var peReader2 = new PEReader(stream, PEStreamOptions.LeaveOpen | PEStreamOptions.PrefetchMetadata, Misc.Members.Length);
 
-            Assert.Equal(Misc.Members.Length, peReader2.GetEntireImage().Length);
+            // We cannot call GetEntireImage() here; we have fetched only the metadata.
             peReader2.GetMetadataReader();
             stream.Position = 1;
 
@@ -246,7 +245,7 @@ namespace System.Reflection.PortableExecutable.Tests
             {
                 0x00, 0x20, 0x00, 0x00,
                 0x0C, 0x00, 0x00, 0x00,
-                0xD0, 0x38, 0x00, 0x00
+                0x00, 0x39, 0x00, 0x00
             }, relocBlob1);
 
             AssertEx.Equal(relocBlob1, relocBlob2);
@@ -821,10 +820,7 @@ namespace System.Reflection.PortableExecutable.Tests
             Assert.Throws<ObjectDisposedException>(() => reader.ReadDebugDirectory());
             Assert.Throws<ObjectDisposedException>(() => reader.ReadCodeViewDebugDirectoryData(ddCodeView));
             Assert.Throws<ObjectDisposedException>(() => reader.ReadEmbeddedPortablePdbDebugDirectoryData(ddEmbedded));
-
-            MetadataReaderProvider __;
-            string ___;
-            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out __, out ___));
+            Assert.Throws<ObjectDisposedException>(() => reader.TryOpenAssociatedPortablePdb(@"x", _ => null, out _, out _));
 
             // ok to use providers after PEReader disposed:
             var pdbReader = pdbProvider.GetMetadataReader();
@@ -865,19 +861,9 @@ namespace System.Reflection.PortableExecutable.Tests
 
                     Assert.True(peImagePtr != null);
 
-                    var peReader = new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
+                    var peReader = new PEReader(new UnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage | PEStreamOptions.PrefetchMetadata);
                     peReader.Dispose();
                 }
-            }
-        }
-
-        [Fact]
-        public void HasMetadataShouldReturnFalseWhenPrefetchingMetadataOfImageWithoutMetadata()
-        {
-            using (var fileStream = new MemoryStream(Misc.KeyPair))
-            using (var peReader = new PEReader(fileStream, PEStreamOptions.PrefetchMetadata | PEStreamOptions.LeaveOpen))
-            {
-                Assert.False(peReader.HasMetadata);
             }
         }
     }

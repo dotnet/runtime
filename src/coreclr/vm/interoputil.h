@@ -55,12 +55,12 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject);
 
 //--------------------------------------------------------------------------------
  // Release helper, enables and disables GC during call-outs
-ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW = NULL);
+ULONG SafeRelease(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
 // you already know you're in preemptive mode for other reasons.
-ULONG SafeReleasePreemp(IUnknown* pUnk, RCW* pRCW = NULL);
+ULONG SafeReleasePreemp(IUnknown* pUnk);
 
 //--------------------------------------------------------------------------------
 // Determines if a COM object can be cast to the specified type.
@@ -101,9 +101,21 @@ BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token
 // Returns the index of the LCID parameter if one exists and -1 otherwise.
 int GetLCIDParameterIndex(MethodDesc *pMD);
 
+#ifdef FEATURE_COMINTEROP
+
 //---------------------------------------------------------------------------
 // Transforms an LCID into a CultureInfo.
 void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj);
+
+//---------------------------------------------------------------------------
+// Gets the current culture or UI culture for the current thread.
+OBJECTREF GetCurrentCulture(BOOL bUICulture);
+
+//---------------------------------------------------------------------------
+// Sets the current culture or UI culture for the current thread.
+void SetCurrentCulture(OBJECTREF *CultureObj, BOOL bUICulture);
+
+#endif // FEATURE_COMINTEROP
 
 //---------------------------------------------------------------------------
 // This method determines if a member is visible from COM.
@@ -153,23 +165,15 @@ HRESULT LoadRegTypeLib(_In_ REFGUID guid,
 // Called from EEStartup, to initialize com Interop specific data structures.
 void InitializeComInterop();
 
-#endif // FEATURE_COMINTEROP
-
 //--------------------------------------------------------------------------------
 // Clean up Helpers
 //--------------------------------------------------------------------------------
-
-#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
 // called by syncblock, on the finalizer thread to do major cleanup
 void CleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
 
 // called by syncblock, during GC, do only minimal work
 void MinorCleanupSyncBlockComData(InteropSyncBlockInfo* pInteropInfo);
-
-#endif // FEATURE_COMINTEROP || FEATURE_COMWRAPPERS)
-
-#ifdef FEATURE_COMINTEROP
 
 // A wrapper that catches all exceptions - used in the OnThreadTerminate case.
 void ReleaseRCWsInCachesNoThrow(LPVOID pCtxCookie);
@@ -238,9 +242,6 @@ BOOL IsStandardTearOff(IUnknown* pUnk);
  //  is the iid represent an IClassX for this class
 BOOL IsIClassX(MethodTable *pMT, REFIID riid, ComMethodTable **ppComMT);
 
-// Returns TRUE if we support IClassX for the given class.
-BOOL ClassSupportsIClassX(MethodTable *pMT);
-
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 //---------------------------------------------------------------------------
  //  Calls COM class factory and instantiates a new RCW.
@@ -305,7 +306,7 @@ BOOL MethodNeedsReverseComStub(MethodDesc *pMD);
 
 //--------------------------------------------------------------------------------
 // InvokeDispMethod will convert a set of managed objects and call IDispatch.  The
-// result will be returned as a COM+ Variant pointed to by pRetVal.
+// result will be returned as a CLR object pointed to by pRetVal.
 void IUInvokeDispMethod(
     REFLECTCLASSBASEREF* pRefClassObj,
     OBJECTREF* pTarget,
@@ -365,8 +366,8 @@ VOID LogRCWDestroy(RCW* pWrap);
 
 //--------------------------------------------------------------------------------
 // Ensure COM is started up.
-HRESULT EnsureComStartedNoThrow(BOOL fCoInitCurrentThread = TRUE);
-VOID EnsureComStarted(BOOL fCoInitCurrentThread = TRUE);
+HRESULT EnsureComStartedNoThrow();
+VOID EnsureComStarted();
 
 IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, MethodTable* pClassMT, DWORD dwFlags);
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);

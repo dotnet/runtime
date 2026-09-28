@@ -85,32 +85,32 @@ namespace System.DirectoryServices.Protocols
         }
 
         public SecurityProtocol Protocol => _securityProtocol;
-#if NET10_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public CipherAlgorithmType AlgorithmIdentifier => _identifier;
 
-#if NET10_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public int CipherStrength => _strength;
 
-#if NET10_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public HashAlgorithmType Hash => _hashAlgorithm;
 
-#if NET10_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public int HashStrength => _hashStrength;
 
-#if NET10_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public int KeyExchangeAlgorithm => _keyExchangeAlgorithm;
 
-#if NET10_0_OR_GREATER
+#if NET
         [Obsolete(Obsoletions.TlsCipherAlgorithmEnumsMessage, DiagnosticId = Obsoletions.TlsCipherAlgorithmEnumsDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
         public int ExchangeStrength => _exchangeStrength;
@@ -522,9 +522,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        // In practice, this apparently rarely if ever contains useful text
-        internal string ServerErrorMessage => GetStringValueHelper(LdapOption.LDAP_OPT_SERVER_ERROR, true);
-
         internal DereferenceAlias DerefAlias
         {
             get => (DereferenceAlias)GetIntValueHelper(LdapOption.LDAP_OPT_DEREF);
@@ -755,6 +752,12 @@ namespace System.DirectoryServices.Protocols
             {
                 throw new TlsOperationException(null, SR.TLSStopFailure);
             }
+        }
+
+        public int ProtocolVersion
+        {
+            get => GetIntValueHelper(LdapOption.LDAP_OPT_VERSION);
+            set => SetIntValueHelper(LdapOption.LDAP_OPT_VERSION, value);
         }
 
         private int GetIntValueHelper(LdapOption option)

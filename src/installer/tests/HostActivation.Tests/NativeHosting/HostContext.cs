@@ -327,10 +327,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.ConfigMultiple)]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.Mixed)]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.NonContextMixedAppHost)]
-        [MemberData(nameof(GetFrameworkCompatibilityTestData), parameters: Scenario.NonContextMixedDotnet)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.ConfigMultiple)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.Mixed)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.NonContextMixedAppHost)]
+        [MemberData(nameof(GetFrameworkCompatibilityTestData), Scenario.NonContextMixedDotnet)]
         public void CompatibilityCheck_Frameworks(string scenario, FrameworkCompatibilityTestData testData)
         {
             if (scenario != Scenario.ConfigMultiple && scenario != Scenario.Mixed && scenario != Scenario.NonContextMixedAppHost && scenario != Scenario.NonContextMixedDotnet)
@@ -433,14 +433,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.ConfigMultiple, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.ConfigMultiple, true })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.Mixed, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.Mixed, true })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedAppHost, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedAppHost, true })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedDotnet, false })]
-        [MemberData(nameof(GetPropertyCompatibilityTestData), parameters: new object[] { Scenario.NonContextMixedDotnet, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.ConfigMultiple, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.ConfigMultiple, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.Mixed, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.Mixed, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedAppHost, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedAppHost, true })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedDotnet, false })]
+        [MemberData(nameof(GetPropertyCompatibilityTestData), arguments: new object[] { Scenario.NonContextMixedDotnet, true })]
         public void CompatibilityCheck_Properties(string scenario, bool hasMultipleProperties, PropertyTestData[] properties)
         {
             if (scenario != Scenario.ConfigMultiple && scenario != Scenario.Mixed && scenario != Scenario.NonContextMixedAppHost && scenario != Scenario.NonContextMixedDotnet)
@@ -683,7 +683,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                var dotNet = new DotNetBuilder(BaseDirectory, TestContext.BuiltDotNet.BinPath, "mockRuntime")
+                var dotNet = new DotNetBuilder(BaseDirectory, HostTestContext.BuiltDotNet.BinPath, "mockRuntime")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr(NetCoreAppVersion)
                     .Build();
                 DotNetRoot = dotNet.BinPath;

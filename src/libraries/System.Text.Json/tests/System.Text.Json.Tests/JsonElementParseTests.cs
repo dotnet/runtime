@@ -17,7 +17,9 @@ namespace System.Text.Json.Tests
                 yield return new object[] { "true", JsonValueKind.True };
                 yield return new object[] { "false", JsonValueKind.False };
                 yield return new object[] { "\"MyString\"", JsonValueKind.String };
-                yield return new object[] { @"""\u0033\u002e\u0031""", JsonValueKind.String }; // "3.12"
+                yield return new object[] { """
+                    "\u0033\u002e\u0031"
+                    """, JsonValueKind.String }; // "3.12"
                 yield return new object[] { "1", JsonValueKind.Number };
                 yield return new object[] { "3.125e7", JsonValueKind.Number };
                 yield return new object[] { "{}", JsonValueKind.Object };
@@ -35,6 +37,51 @@ namespace System.Text.Json.Tests
             Assert.Equal(kind, element.ValueKind);
             Assert.Equal(json.Length, reader.BytesConsumed);
             Assert.False(element.SniffDocument().IsDisposable());
+        }
+
+        [Theory]
+        [MemberData(nameof(ElementParseCases))]
+        public static void Parse_Valid(string json, JsonValueKind kind)
+        {
+            Validate(JsonElement.Parse(json));
+            Validate(JsonElement.Parse(json.AsSpan()));
+            Validate(JsonElement.Parse(Encoding.UTF8.GetBytes(json).AsSpan()));
+
+            void Validate(JsonElement element)
+            {
+                Assert.Equal(kind, element.ValueKind);
+                Assert.False(element.SniffDocument().IsDisposable());
+            }
+        }
+
+        [Fact]
+        public static void Parse_RespectsOptions()
+        {
+            const string Json = """
+                {
+                    /* comment */
+                    "someProp": "value"
+                }
+                """;
+
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Json));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Json.AsSpan()));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Encoding.UTF8.GetBytes(Json).AsSpan()));
+
+            JsonDocumentOptions options = new()
+            {
+                CommentHandling = JsonCommentHandling.Skip,
+            };
+
+            Validate(JsonElement.Parse(Json, options));
+            Validate(JsonElement.Parse(Json.AsSpan(), options));
+            Validate(JsonElement.Parse(Encoding.UTF8.GetBytes(Json).AsSpan(), options));
+
+            void Validate(JsonElement element)
+            {
+                Assert.Equal(JsonValueKind.Object, element.ValueKind);
+                Assert.Equal(JsonValueKind.String, element.GetProperty("someProp").ValueKind);
+            }
         }
 
         [Theory]
@@ -114,6 +161,21 @@ namespace System.Text.Json.Tests
             Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(0, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [MemberData(nameof(ElementParsePartialDataCases))]
+        public static void Parse_Invalid(string json)
+        {
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(json));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(json.AsSpan()));
+            Assert.ThrowsAny<JsonException>(() => JsonElement.Parse(Encoding.UTF8.GetBytes(json).AsSpan()));
+        }
+
+        [Fact]
+        public static void Parse_NullString_Throws()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("json", () => JsonElement.Parse((string)null));
         }
 
         [Theory]

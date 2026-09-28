@@ -68,6 +68,14 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            if (factory.Target.IsWasm && this is INodeWithTypeSignature wasmCodeNode)
+            {
+                dependencies ??= new DependencyList();
+
+                WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmCodeNode);
+                dependencies.Add(wasmTypeNode, "Wasm Code Nodes Require Signature");
+            }
+
             if (dependencies == null)
                 return Array.Empty<DependencyListEntry>();
             else

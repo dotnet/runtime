@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <Compile Include="ResourceResolve.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+    <ProjectReference Include="ManifestResourceAssemblyRef.ilproj" />
+    <ProjectReference Include="ResourceAssembly.csproj" />
+  </ItemGroup>
+</Project>

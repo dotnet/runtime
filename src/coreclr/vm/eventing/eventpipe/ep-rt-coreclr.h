@@ -13,12 +13,26 @@
 #include <eventpipe/ep-provider.h>
 #include <eventpipe/ep-session-provider.h>
 #include <eventpipe/ep-string.h>
-#include "fstream.h"
 #include "typestring.h"
 #include "clrversion.h"
 #include "hostinformation.h"
+#include "CLREventBase.h"
+
+#ifdef HOST_WINDOWS
+#include <windows.h>
+#else // !HOST_WINDOWS
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif // HOST_WINDOWS
+
 #include <minipal/guid.h>
 #include <minipal/strings.h>
+#include <minipal/time.h>
+
+#ifdef TARGET_UNIX
+#include <sys/time.h>
+#endif
 
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT INFINITE
@@ -37,6 +51,10 @@
 
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) ALIGN_UP(val,align)
+
+extern void ep_rt_coreclr_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_coreclr_sample_profiler_session_enabled (void);
+extern void ep_rt_coreclr_sample_profiler_disabled (void);
 
 static
 inline
@@ -230,6 +248,15 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<int64_t>(InterlockedCompareExchangeT<int64_t> (target, value, expected));
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -260,7 +287,7 @@ ep_rt_init (void)
 	extern CrstStatic _ep_rt_coreclr_config_lock;
 
 	_ep_rt_coreclr_config_lock_handle.lock = &_ep_rt_coreclr_config_lock;
-	_ep_rt_coreclr_config_lock_handle.lock->InitNoThrow (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
+	_ep_rt_coreclr_config_lock_handle.lock->Init (CrstEventPipe, (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN));
 
 	if (CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeProcNumbers) != 0) {
 #ifndef TARGET_UNIX
@@ -400,7 +427,7 @@ ep_rt_method_get_full_name (
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -412,19 +439,21 @@ ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+#ifdef FEATURE_EVENT_TRACE
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
 	}
+#endif
 }
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef TARGET_UNIX
 extern "C" void InitProvidersAndEvents ();
-#else
+#else // TARGET_UNIX
 extern void InitProvidersAndEvents ();
-#endif
+#endif // TARGET_UNIX
 
 static
 void
@@ -437,7 +466,7 @@ ep_rt_init_providers_and_events (void)
 		InitProvidersAndEvents ();
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 static
@@ -447,9 +476,13 @@ ep_rt_providers_validate_all_disabled (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
+#ifdef FEATURE_EVENT_TRACE
 	return (!MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled &&
 		!MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled &&
 		!MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled);
+#else
+	return true;
+#endif
 }
 
 static
@@ -487,7 +520,7 @@ ep_rt_provider_invoke_callback (
 			callback_data);
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 /*
@@ -510,7 +543,7 @@ ep_rt_config_value_get_config (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeConfig));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -520,7 +553,7 @@ ep_rt_config_value_get_output_path (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	CLRConfigStringHolder value(CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeOutputPath));
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(value.GetValue ()));
+	return ep_rt_utf16_to_utf8_string (reinterpret_cast<ep_char16_t *>(static_cast<LPWSTR>(value)));
 }
 
 static
@@ -530,6 +563,15 @@ ep_rt_config_value_get_circular_mb (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeCircularMB);
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeBufferingMode);
 }
 
 static
@@ -548,6 +590,15 @@ ep_rt_config_value_get_enable_stackwalk (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeEnableStackwalk) != 0;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeThreadSamplingRate);
 }
 
 /*
@@ -570,16 +621,52 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (
 static
 inline
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+    STATIC_CONTRACT_NOTHROW;
+    ep_rt_coreclr_sample_profiler_enabled (sampling_event);
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_session_enabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    ep_rt_coreclr_sample_profiler_session_enabled ();
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    ep_rt_coreclr_sample_profiler_disabled ();
+}
+
+static
+inline
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && defined(PROFILING_SUPPORTED)
 		// Let the profiler know the provider has been created so it can register if it wants to
 		BEGIN_PROFILER_CALLBACK (CORProfilerTrackEventPipe ());
 		(&g_profControlBlock)->EventPipeProviderCreated (provider);
 		END_PROFILER_CALLBACK ();
-#endif // DACCESS_COMPILE
+#endif // !DACCESS_COMPILE && PROFILING_SUPPORTED
+}
+
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+    extern void ep_rt_coreclr_session_stopping (void);
+    ep_rt_coreclr_session_stopping ();
 }
 
 /*
@@ -610,6 +697,8 @@ ep_rt_byte_array_free (uint8_t *ptr)
  * Event.
  */
 
+#ifndef PERFTRACING_DISABLE_THREADS
+
 static
 void
 ep_rt_wait_event_alloc (
@@ -632,7 +721,7 @@ ep_rt_wait_event_alloc (
 				wait_event->event->CreateAutoEvent (initial);
 		}
 		EX_CATCH {}
-		EX_END_CATCH(SwallowAllExceptions);
+		EX_END_CATCH
 	}
 }
 
@@ -674,13 +763,13 @@ ep_rt_wait_event_wait (
 	int32_t result;
 	EX_TRY
 	{
-		result = wait_event->event->Wait (timeout, alertable);
+		result = wait_event->event->Wait (timeout, alertable, false);
 	}
 	EX_CATCH
 	{
 		result = -1;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 	return result;
 }
 
@@ -692,7 +781,7 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
 
-	return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetHandleUNHOSTED ());
+	return reinterpret_cast<EventPipeWaitHandle>(wait_event->event->GetOSEvent ());
 }
 
 static
@@ -707,6 +796,79 @@ ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 
 	return wait_event->event->IsValid ();
 }
+
+#else // PERFTRACING_DISABLE_THREADS
+
+// In single-threaded mode, wait events are no-ops. INVALID_HANDLE_VALUE is used as
+// the "allocated" sentinel (distinguishing allocated from freed/NULL).
+
+static
+inline
+void
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (wait_event != NULL);
+	wait_event->event = (CLREventStatic *)INVALID_HANDLE_VALUE;
+}
+
+static
+inline
+void
+ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	wait_event->event = NULL;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return true;
+}
+
+static
+inline
+int32_t
+ep_rt_wait_event_wait (
+	ep_rt_wait_event_handle_t *wait_event,
+	uint32_t timeout,
+	bool alertable)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (wait_event != NULL && wait_event->event == (CLREventStatic *)INVALID_HANDLE_VALUE);
+	return (int32_t)0;
+}
+
+static
+inline
+EventPipeWaitHandle
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	EP_ASSERT (wait_event != NULL);
+	return (EventPipeWaitHandle)wait_event->event;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
+	STATIC_CONTRACT_NOTHROW;
+	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != (CLREventStatic *)INVALID_HANDLE_VALUE)
+		return false;
+	return true;
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
+
 
 /*
  * Misc.
@@ -794,6 +956,7 @@ typedef struct _rt_coreclr_thread_params_internal_t {
 #undef EP_RT_DEFINE_THREAD_FUNC
 #define EP_RT_DEFINE_THREAD_FUNC(name) static ep_rt_thread_start_func_return_t WINAPI name (LPVOID data)
 
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_coreclr_start_func)
 {
 	STATIC_CONTRACT_NOTHROW;
@@ -835,7 +998,39 @@ ep_rt_thread_create (
 				result = true;
 			}
 		}
-		else if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING)
+		else if (thread_type == EP_THREAD_TYPE_SESSION)
+		{
+			// Create the session drain thread as a raw native thread (no managed Thread), like the diagnostics
+			// server thread, so it never enters cooperative GC mode and can start during early startup before
+			// the GC / Thread Store are initialized - removing the need to defer session streaming until
+			// ep_finish_init. Unlike the SERVER branch it must carry the session pointer, so it wraps params
+			// and reuses ep_rt_thread_coreclr_start_func (which skips DestroyThread when thread == NULL).
+			rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
+			if (thread_params)
+			{
+				thread_params->thread_params.thread_type = thread_type;
+				thread_params->thread_params.thread = NULL;
+				thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
+				thread_params->thread_params.thread_params = params;
+
+				DWORD native_thread_id = 0;
+				HANDLE native_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(ep_rt_thread_coreclr_start_func), thread_params, 0, &native_thread_id);
+				if (native_thread != NULL)
+				{
+					if (id)
+					{
+						*reinterpret_cast<DWORD *>(id) = native_thread_id;
+					}
+					::CloseHandle (native_thread);
+					result = true;
+				}
+				else
+				{
+					delete thread_params;
+				}
+			}
+		}
+		else if (thread_type == EP_THREAD_TYPE_SAMPLING)
 		{
 			rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
 			if (thread_params)
@@ -866,10 +1061,63 @@ ep_rt_thread_create (
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+	EP_UNREACHABLE ("Not implemented in multi-threaded");
+	return false;
+}
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static
+inline
+bool
+ep_rt_thread_create (
+	void *thread_func,
+	void *params,
+	EventPipeThreadType thread_type,
+	void *id)
+{
+	EP_UNREACHABLE ("Not implemented in single-threaded");
+	return false;
+}
+
+#ifdef HOST_BROWSER
+#include "wasm/entrypoints.h"
+typedef size_t (*ep_rt_job_cb_t)(void *data);
+#endif
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+#ifdef HOST_BROWSER
+	// In single-threaded mode the job runs on the browser event loop. Run the callback inline the
+	// first time so the diagnostic server makes progress synchronously (e.g. it can connect and
+	// resume during startup suspension) and only defer a re-schedule if it isn't done yet. Mirrors
+	// the Mono ep_rt_queue_job in ep-rt-mono.h.
+	ep_rt_job_cb_t cb = (ep_rt_job_cb_t)job_func;
+	if (!cb (params))
+		SystemJS_DiagnosticServerQueueJob (cb, params);
+	return true;
+#else
+	EP_UNREACHABLE ("Not implemented on this platform");
+	return false;
+#endif
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 static
 inline
@@ -884,14 +1132,16 @@ inline
 void
 ep_rt_thread_sleep (uint64_t ns)
 {
+#ifndef PERFTRACING_DISABLE_THREADS
 	STATIC_CONTRACT_NOTHROW;
 
 #ifdef TARGET_UNIX
 	PAL_nanosleep (ns);
 #else  //TARGET_UNIX
 	const uint32_t NUM_NANOSECONDS_IN_1_MS = 1000000;
-	ClrSleepEx (static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS), FALSE);
+	minipal_sleep(static_cast<DWORD>(ns / NUM_NANOSECONDS_IN_1_MS));
 #endif //TARGET_UNIX
+#endif // PERFTRACING_DISABLE_THREADS
 }
 
 static
@@ -954,11 +1204,7 @@ ep_rt_perf_counter_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceCounter (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_ticks();
 }
 
 static
@@ -968,11 +1214,7 @@ ep_rt_perf_frequency_query (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	LARGE_INTEGER value;
-	if (QueryPerformanceFrequency (&value))
-		return static_cast<int64_t>(value.QuadPart);
-	else
-		return 0;
+	return minipal_hires_tick_frequency();
 }
 
 static
@@ -982,20 +1224,62 @@ ep_rt_system_time_get (EventPipeSystemTime *system_time)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	SYSTEMTIME value;
-	GetSystemTime (&value);
+#ifdef HOST_WINDOWS
+    SYSTEMTIME value;
+    GetSystemTime (&value);
 
-	EP_ASSERT(system_time != NULL);
-	ep_system_time_set (
-		system_time,
-		value.wYear,
-		value.wMonth,
-		value.wDayOfWeek,
-		value.wDay,
-		value.wHour,
-		value.wMinute,
-		value.wSecond,
-		value.wMilliseconds);
+    EP_ASSERT(system_time != NULL);
+    ep_system_time_set (
+        system_time,
+        value.wYear,
+        value.wMonth,
+        value.wDayOfWeek,
+        value.wDay,
+        value.wHour,
+        value.wMinute,
+        value.wSecond,
+        value.wMilliseconds);
+#else
+    time_t tt;
+    struct tm *ut_ptr;
+    struct timeval time_val;
+    int timeofday_retval;
+
+    EP_ASSERT (system_time != NULL);
+
+    tt = time (NULL);
+
+    timeofday_retval = gettimeofday (&time_val, NULL);
+
+    ut_ptr = gmtime (&tt);
+
+    uint16_t milliseconds = 0;
+    if (timeofday_retval != -1) {
+        int old_seconds;
+        int new_seconds;
+
+        milliseconds = (uint16_t)(time_val.tv_usec / 1000);
+
+        old_seconds = ut_ptr->tm_sec;
+        new_seconds = time_val.tv_sec % 60;
+
+        /* just in case we reached the next second in the interval between time () and gettimeofday () */
+        if (old_seconds != new_seconds)
+            milliseconds = 999;
+    }
+
+    ep_system_time_set (
+        system_time,
+        (uint16_t)(1900 + ut_ptr->tm_year),
+        (uint16_t)ut_ptr->tm_mon + 1,
+        (uint16_t)ut_ptr->tm_wday,
+        (uint16_t)ut_ptr->tm_mday,
+        (uint16_t)ut_ptr->tm_hour,
+        (uint16_t)ut_ptr->tm_min,
+        (uint16_t)ut_ptr->tm_sec,
+        milliseconds);
+#endif
+
 }
 
 static
@@ -1004,10 +1288,7 @@ int64_t
 ep_rt_system_timestamp_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-
-	FILETIME value;
-	GetSystemTimeAsFileTime (&value);
-	return static_cast<int64_t>(((static_cast<uint64_t>(value.dwHighDateTime)) << 32) | static_cast<uint64_t>(value.dwLowDateTime));
+	return minipal_get_system_time();
 }
 
 static
@@ -1036,17 +1317,25 @@ ep_rt_file_open_write (const ep_char8_t *path)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
-	ep_return_null_if_nok (path_utf16 != NULL);
+    if (!path)
+        return INVALID_HANDLE_VALUE;
 
-	CFileStream *file_stream = new (nothrow) CFileStream ();
-	if (file_stream && FAILED (file_stream->OpenForWrite (reinterpret_cast<LPWSTR>(path_utf16)))) {
-		delete file_stream;
-		file_stream = NULL;
-	}
+#ifdef HOST_WINDOWS
+    ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16le_string (path);
+    if (!path_utf16)
+        return INVALID_HANDLE_VALUE;
 
-	ep_rt_utf16_string_free (path_utf16);
-	return static_cast<ep_rt_file_handle_t>(file_stream);
+    HANDLE res = ::CreateFileW (reinterpret_cast<LPCWSTR>(path_utf16), GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    ep_rt_utf16_string_free (path_utf16);
+    return static_cast<ep_rt_file_handle_t>(res);
+#else // !HOST_WINDOWS
+    mode_t perms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+    int fd = creat (path, perms);
+    if (fd == -1)
+        return INVALID_HANDLE_VALUE;
+
+    return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+#endif // HOST_WINDOWS
 }
 
 static
@@ -1056,10 +1345,13 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	// Closed in destructor.
-	if (file_handle)
-		delete file_handle;
-	return true;
+#ifdef HOST_WINDOWS
+    return ::CloseHandle (file_handle) != FALSE;
+#else // !HOST_WINDOWS
+    int fd = (int)(ptrdiff_t)file_handle;
+    close (fd);
+    return true;
+#endif // HOST_WINDOWS
 }
 
 static
@@ -1076,10 +1368,28 @@ ep_rt_file_write (
 
 	ep_return_false_if_nok (file_handle != NULL);
 
-	ULONG out_count;
-	HRESULT result = reinterpret_cast<CFileStream *>(file_handle)->Write (buffer, bytes_to_write, &out_count);
-	*bytes_written = static_cast<uint32_t>(out_count);
-	return result == S_OK;
+#ifdef HOST_WINDOWS
+    return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
+#else // !HOST_WINDOWS
+    int fd = (int)(ptrdiff_t)file_handle;
+    int ret;
+    do {
+        ret = write (fd, buffer, bytes_to_write);
+    } while (ret == -1 && errno == EINTR);
+
+    if (ret == -1) {
+        if (bytes_written != NULL) {
+            *bytes_written = 0;
+        }
+
+        return false;
+    }
+
+    if (bytes_written != NULL)
+        *bytes_written = ret;
+
+    return true;
+#endif // HOST_WINDOWS
 }
 
 static
@@ -1157,7 +1467,7 @@ ep_rt_lock_acquire (ep_rt_lock_handle_t *lock)
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1180,7 +1490,7 @@ ep_rt_lock_release (ep_rt_lock_handle_t *lock)
 	{
 		result = false;
 	}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 
 	return result;
 }
@@ -1221,7 +1531,7 @@ ep_rt_spin_lock_alloc (ep_rt_spin_lock_handle_t *spin_lock)
 		spin_lock->lock->Init (LOCK_TYPE_DEFAULT);
 	}
 	EX_CATCH {}
-	EX_END_CATCH(SwallowAllExceptions);
+	EX_END_CATCH
 }
 
 static
@@ -1486,7 +1796,9 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
+	// This value is an approximation of the command line for diagnostic purposes, and it may not match
+	// the actual command line used to launch the process.
+	// This value can change over time, specifically before vs after suspension in diagnostics server.
 	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 /**************************************************************************/
-/* asmParse is basically a wrapper around a YACC grammer COM+ assembly  */
+/* asmParse is basically a wrapper around a YACC grammer IL assembly  */
 
 #ifndef asmparse_h
 #define asmparse_h
@@ -223,10 +223,10 @@ typedef unsigned(*PFN_SYM)(char*);
 unsigned SymAU(_In_ __nullterminated char* curPos);
 unsigned SymW(_In_ __nullterminated char* curPos);
 /*--------------------------------------------------------------------------*/
-typedef char*(*PFN_NEWSTRFROMTOKEN)(char*,size_t);
+typedef char*(*PFN_NEWSTRFROMTOKEN)(void*,size_t);
 
-char* NewStrFromTokenAU(_In_reads_(tokLen) char* curTok, size_t tokLen);
-char* NewStrFromTokenW(_In_reads_(tokLen) char* curTok, size_t tokLen);
+char* NewStrFromTokenAU(_In_reads_(tokLen) void* curTok, size_t tokLen);
+char* NewStrFromTokenW(_In_reads_(tokLen) void* curTok, size_t tokLen);
 /*--------------------------------------------------------------------------*/
 typedef char*(*PFN_NEWSTATICSTRFROMTOKEN)(char*,size_t,char*,size_t);
 

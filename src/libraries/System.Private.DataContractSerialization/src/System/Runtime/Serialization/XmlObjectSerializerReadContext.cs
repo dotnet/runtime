@@ -19,17 +19,15 @@ namespace System.Runtime.Serialization
     internal class XmlObjectSerializerReadContext : XmlObjectSerializerContext
     {
         internal Attributes? attributes;
-        private HybridObjectCache? _deserializedObjects;
         private XmlSerializableReader? _xmlSerializableReader;
-        private XmlDocument? _xmlDocument;
         private Attributes? _attributesInXmlData;
         private XmlReaderDelegator? _extensionDataReader;
         private object? _getOnlyCollectionValue;
         private bool _isGetOnlyCollection;
 
-        private HybridObjectCache DeserializedObjects => _deserializedObjects ??= new HybridObjectCache();
+        private HybridObjectCache DeserializedObjects => field ??= new HybridObjectCache();
 
-        private XmlDocument Document => _xmlDocument ??= new XmlDocument();
+        private XmlDocument Document => field ??= new XmlDocument();
 
         internal override bool IsGetOnlyCollection
         {
@@ -724,6 +722,7 @@ namespace System.Runtime.Serialization
             switch (xmlReader.NodeType)
             {
                 case XmlNodeType.Text:
+                case XmlNodeType.CDATA:
                     return ReadPrimitiveExtensionDataValue(xmlReader, dataContractName, dataContractNamespace);
                 case XmlNodeType.Element:
                     if (xmlReader.NamespaceURI.StartsWith(Globals.DataContractXsdBaseNamespace, StringComparison.Ordinal))
@@ -907,7 +906,7 @@ namespace System.Runtime.Serialization
             List<XmlNode>? xmlChildNodes = null;
 
             XmlNodeType nodeType = xmlReader.MoveToContent();
-            if (nodeType != XmlNodeType.Text)
+            if (nodeType != XmlNodeType.Text && nodeType != XmlNodeType.CDATA)
             {
                 while (xmlReader.MoveToNextAttribute())
                 {

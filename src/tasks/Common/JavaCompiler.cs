@@ -17,7 +17,7 @@ internal sealed class JavaCompiler
         string workingDir,
         string javaVersion = "1.8")
     {
-        _javaCompilerArgs = $"-classpath src -bootclasspath {androidSdk.AndroidJarPath} -source {javaVersion} -target {javaVersion}";
+        _javaCompilerArgs = $"-classpath src -bootclasspath \"{androidSdk.AndroidJarPath}\" -source {javaVersion} -target {javaVersion}";
         _workingDir = workingDir;
         _logger = logger;
     }

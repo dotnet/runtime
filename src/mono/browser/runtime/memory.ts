@@ -6,7 +6,7 @@ import WasmEnableThreads from "consts:wasmEnableThreads";
 import { MemOffset, NumberOrPointer } from "./types/internal";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import cwraps, { I52Error } from "./cwraps";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { loaderHelpers, Module, mono_assert, runtimeHelpers } from "./globals";
 import { utf8ToString } from "./strings";
 import { mono_log_warn, mono_log_error } from "./logging";
 
@@ -65,6 +65,7 @@ function assert_int_in_range (value: Number, min: Number, max: Number) {
 }
 
 export function _zero_region (byteOffset: VoidPtr, sizeBytes: number): void {
+    byteOffset = fixupPointer(byteOffset, 0);
     localHeapViewU8().fill(0, <any>byteOffset, <any>byteOffset + sizeBytes);
 }
 
@@ -82,13 +83,13 @@ export function setB8 (offset: MemOffset, value: number | boolean): void {
     if (typeof (value) === "number")
         assert_int_in_range(value, 0, 1);
     receiveWorkerHeapViews();
-    Module.HEAPU8[<any>offset] = boolValue ? 1 : 0;
+    Module.HEAPU8[<any>offset >>> 0] = boolValue ? 1 : 0;
 }
 
 export function setU8 (offset: MemOffset, value: number): void {
     assert_int_in_range(value, 0, 0xFF);
     receiveWorkerHeapViews();
-    Module.HEAPU8[<any>offset] = value;
+    Module.HEAPU8[<any>offset >>> 0] = value;
 }
 
 export function setU16 (offset: MemOffset, value: number): void {
@@ -122,7 +123,7 @@ export function setU32 (offset: MemOffset, value: NumberOrPointer): void {
 export function setI8 (offset: MemOffset, value: number): void {
     assert_int_in_range(value, -0x80, 0x7F);
     receiveWorkerHeapViews();
-    Module.HEAP8[<any>offset] = value;
+    Module.HEAP8[<any>offset >>> 0] = value;
 }
 
 export function setI16 (offset: MemOffset, value: number): void {
@@ -210,12 +211,12 @@ export function getB32 (offset: MemOffset): boolean {
 
 export function getB8 (offset: MemOffset): boolean {
     receiveWorkerHeapViews();
-    return !!(Module.HEAPU8[<any>offset]);
+    return !!(Module.HEAPU8[<any>offset >>> 0]);
 }
 
 export function getU8 (offset: MemOffset): number {
     receiveWorkerHeapViews();
-    return Module.HEAPU8[<any>offset];
+    return Module.HEAPU8[<any>offset >>> 0];
 }
 
 export function getU16 (offset: MemOffset): number {
@@ -256,7 +257,7 @@ export function getF64_unaligned (offset: MemOffset): number {
 
 export function getI8 (offset: MemOffset): number {
     receiveWorkerHeapViews();
-    return Module.HEAP8[<any>offset];
+    return Module.HEAP8[<any>offset >>> 0];
 }
 
 export function getI16 (offset: MemOffset): number {
@@ -327,7 +328,8 @@ export function withStackAlloc<T1, T2, T3, TResult> (bytesWanted: number, f: (pt
     try {
         return f(ptr, ud1, ud2, ud3);
     } finally {
-        Module.stackRestore(sp);
+        if (loaderHelpers.is_runtime_running()) Module.stackRestore(sp);
+
     }
 }
 

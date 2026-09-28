@@ -162,7 +162,7 @@ namespace System.Text.Json.Nodes
         {
             List<JsonNode?> list = new(items.Length);
 
-#if NET8_0_OR_GREATER
+#if NET
             list.AddRange(items);
 #else
             foreach (JsonNode? item in items)
@@ -238,11 +238,11 @@ namespace System.Text.Json.Nodes
             List[index] = value;
         }
 
-        internal override void GetPath(ref ValueStringBuilder path, JsonNode? child)
+        internal override unsafe void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
             Parent?.GetPath(ref path, this);
 
-            if (child != null)
+            if (child is not null)
             {
                 int index = List.IndexOf(child);
                 Debug.Assert(index >= 0);
@@ -263,10 +263,7 @@ namespace System.Text.Json.Nodes
         /// <inheritdoc/>
         public override void WriteTo(Utf8JsonWriter writer, JsonSerializerOptions? options = null)
         {
-            if (writer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement);
 
@@ -383,7 +380,7 @@ namespace System.Text.Json.Nodes
                 {
                     get
                     {
-                        if (Value == null)
+                        if (Value is null)
                         {
                             return $"null";
                         }

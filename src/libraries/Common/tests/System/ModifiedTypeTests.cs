@@ -867,5 +867,36 @@ namespace System.Tests.Types
                 delegate*<sbyte> // ret
             > _fcnPtr_complex;
         }
+        [Fact]
+        public static unsafe void GetNullableUnderlyingType_ModifiedType()
+        {
+            FieldInfo fi = typeof(NullableModifiedTypeHolder).Project().GetField(nameof(NullableModifiedTypeHolder._fcnPtr_NullableReturn), Bindings);
+
+            // The function pointer's return type is Nullable<int>. Pulling the modified return type
+            // produces a ModifiedType wrapping Nullable<int>, which exercises the override.
+            Type modifiedNullable = fi.GetModifiedFieldType().GetFunctionPointerReturnType();
+            Assert.True(IsModifiedType(modifiedNullable));
+            Assert.Equal(typeof(int?).Project(), modifiedNullable.UnderlyingSystemType);
+
+            Type modifiedUnderlying = modifiedNullable.GetNullableUnderlyingType();
+            Assert.NotNull(modifiedUnderlying);
+            Assert.True(IsModifiedType(modifiedUnderlying));
+            Assert.Equal(typeof(int).Project(), modifiedUnderlying.UnderlyingSystemType);
+            Assert.Same(modifiedNullable.GetGenericArguments()[0], modifiedUnderlying);
+        }
+
+        [Fact]
+        public static unsafe void GetNullableUnderlyingType_ModifiedType_NonNullable_ReturnsNull()
+        {
+            FieldInfo fi = typeof(ModifiedTypeHolder).Project().GetField(nameof(ModifiedTypeHolder._volatileInt), Bindings);
+            Type modifiedInt = fi.GetModifiedFieldType();
+            Assert.True(IsModifiedType(modifiedInt));
+            Assert.Null(modifiedInt.GetNullableUnderlyingType());
+        }
+
+        public unsafe class NullableModifiedTypeHolder
+        {
+            public static volatile delegate*<int?> _fcnPtr_NullableReturn;
+        }
     }
 }

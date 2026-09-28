@@ -50,7 +50,7 @@ namespace System.Reflection
         /// </exception>
         public static MethodInvoker Create(MethodBase method)
         {
-            ArgumentNullException.ThrowIfNull(method, nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
 
             if (method is RuntimeMethodInfo rmi)
             {
@@ -449,11 +449,11 @@ namespace System.Reflection
                     {
                         Debug.Assert(copyOfParameters[i] != null);
                         Debug.Assert(((RuntimeType)copyOfParameters[i]!.GetType()).IsNullableOfT);
-                        dest![i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
+                        dest[i] = RuntimeMethodHandle.ReboxFromNullable(copyOfParameters[i]);
                     }
                     else
                     {
-                        dest![i] = copyOfParameters[i];
+                        dest[i] = copyOfParameters[i];
                     }
                 }
             }

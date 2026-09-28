@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 
 using Internal.IL;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Interop;
 
 namespace ILCompiler
 {
@@ -78,26 +79,6 @@ namespace ILCompiler
             }
         }
 
-        private IEnumerable<string> ModuleNameVariations(string name)
-        {
-            yield return name;
-
-            if (_target.IsWindows)
-            {
-                string suffix = ".dll";
-
-                if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                    yield return name.Substring(0, name.Length - suffix.Length);
-            }
-            else
-            {
-                string suffix = _target.IsApplePlatform ? ".dylib" : ".so";
-
-                if (name.EndsWith(suffix, StringComparison.Ordinal))
-                    yield return name.Substring(0, name.Length - suffix.Length);
-            }
-        }
-
         private IEnumerable<string> EntryPointNameVariations(string name, PInvokeFlags flags)
         {
             if (_target.IsWindows && !flags.ExactSpelling)
@@ -136,11 +117,11 @@ namespace ILCompiler
         {
             var pInvokeMetadata = method.GetPInvokeMethodMetadata();
 
-            foreach (var moduleName in ModuleNameVariations(pInvokeMetadata.Module))
+            foreach (var moduleName in MarshalHelpers.GetPInvokeModuleNameVariations(_target, pInvokeMetadata.Module))
             {
                 if (_directPInvokes.TryGetValue(moduleName, out HashSet<string> entrypoints))
                 {
-                    string entryPointMetadataName = pInvokeMetadata.Name ?? method.Name;
+                    string entryPointMetadataName = pInvokeMetadata.Name ?? method.GetName();
 
                     if (entrypoints == null)
                     {

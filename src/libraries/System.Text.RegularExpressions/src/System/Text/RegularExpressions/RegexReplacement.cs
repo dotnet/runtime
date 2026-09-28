@@ -31,7 +31,7 @@ namespace System.Text.RegularExpressions
         /// the constructor takes a RegexNode which is a concatenation
         /// of constant strings and backreferences.
         /// </summary>
-        public RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
+        public unsafe RegexReplacement(string rep, RegexNode concat, Hashtable _caps)
         {
             Debug.Assert(concat.Kind == RegexNodeKind.Concatenate, $"Expected Concatenate, got {concat.Kind}");
 
@@ -97,7 +97,7 @@ namespace System.Text.RegularExpressions
         [InlineArray(4)]
         private struct FourStackStrings // used to do the equivalent of: Span<string> strings = stackalloc string[4];
         {
-            private string _item1;
+            private string? _item1;
         }
 
         /// <summary>

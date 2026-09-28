@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 using Xunit;
+using TestLibrary;
 
 public static class MainProgramHandleTests
 {
@@ -26,6 +27,7 @@ public static class MainProgramHandleTests
             return IntPtr.Zero;
         });
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -10,7 +10,7 @@ output of some tool (e.g. **llc**) contains the expected information (for exampl
 whatever is interesting). This is similar to using **grep**, but it is optimized for matching multiple
 different inputs in one file in a specific order.
 # Converting an existing test to use disassembly checking
-We will use the existing test `JIT\Regression\JitBlue\Runtime_33972` as an example. The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` behaves correctly when a zero vector is passed as the second argument. Below are snippets of its use:
+We will use the existing test `JIT\Regression_2\Runtime_33972` as an example. The test's intent is to verify that on ARM64, the method `AdvSimd.CompareEqual` behaves correctly when a zero vector is passed as the second argument. Below are snippets of its use:
 ```csharp
     static Vector64<byte> AdvSimd_CompareEqual_Vector64_Byte_Zero(Vector64<byte> left)
     {
@@ -84,11 +84,12 @@ Functionality that has been added or moved to SuperFileCheck:
 - `<check-prefix>-FULL-LINE:` - same as using FileCheck's `<check-prefix>:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 - `<check-prefix>-FULL-LINE-NEXT:` - same as using FileCheck's `<check-prefix>-NEXT:`, but checks that the line matches exactly; leading and trailing whitespace is ignored.
 # Test Run Limitations
-1. Disasm checks will not run if these environment variables are set:
+1. Disasm checks will not work if these environment variables are set. The infrastructure need to be updated to skip disasm checks when these environment variables are present.
 - `DOTNET_JitStress`
 - `DOTNET_JitStressRegs`
 - `DOTNET_TailcallStress`
 - `DOTNET_TieredPGO`
+- `DOTNET_EnableHWIntrinsic=0`
 2. Disasm checks will not run under GCStress test modes.
 3. Disasm checks will not run under heap-verify test modes.
 4. Disasm checks will not run under cross-gen2 test modes.

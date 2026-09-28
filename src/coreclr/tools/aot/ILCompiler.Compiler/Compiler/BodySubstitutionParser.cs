@@ -7,11 +7,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection.Metadata;
 using Internal.TypeSystem;
+using Internal.TypeSystem.Ecma;
 using System.Xml;
 using System.Xml.XPath;
 using System.Globalization;
 using System.Linq;
 using ILLink.Shared;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -107,7 +109,7 @@ namespace ILCompiler
             if (string.IsNullOrEmpty(name))
                 return;
 
-            var field = type.GetFields().FirstOrDefault(f => f.Name == name);
+            var field = type.GetFields().FirstOrDefault(f => f.Name.StringEquals(name));
             if (field == null)
             {
 #if !READYTORUN
@@ -144,12 +146,8 @@ namespace ILCompiler
 
             if (string.Equals(GetAttribute(fieldNav, "initialize"), "true", StringComparison.InvariantCultureIgnoreCase))
             {
-                // We would need to also mess with the cctor of the type to set the field to this value:
-                //
-                // * ILLink will remove all stsfld instructions referencing this field from the cctor
-                // * It will place an explicit stsfld in front of the last "ret" instruction in the cctor
-                //
-                // This approach... has issues.
+                // We would need to also mess with the cctor of the type to set the field to this value,
+                // and doing so correctly is difficult.
                 throw new NotSupportedException();
             }
 
@@ -166,6 +164,26 @@ namespace ILCompiler
 
         private static object TryCreateSubstitution(TypeDesc type, string value)
         {
+            if (type.IsEnum && type.UnderlyingType.Category == TypeFlags.Int32)
+            {
+                foreach (FieldDesc field in type.GetFields())
+                {
+                    if (field.IsStatic &&
+                        field.Name.StringEquals(value) &&
+                        field is EcmaField ecmaField)
+                    {
+                        MetadataReader reader = ecmaField.MetadataReader;
+                        ConstantHandle constantHandle = reader.GetFieldDefinition(ecmaField.Handle).GetDefaultValue();
+                        if (!constantHandle.IsNil)
+                        {
+                            Constant constant = reader.GetConstant(constantHandle);
+                            if (constant.TypeCode == ConstantTypeCode.Int32)
+                                return reader.GetBlobReader(constant.Value).ReadInt32();
+                        }
+                    }
+                }
+            }
+
             switch (type.UnderlyingType.Category)
             {
                 case TypeFlags.Int32:

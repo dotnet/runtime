@@ -147,8 +147,6 @@ namespace System.Runtime.Caching
                 if (updatePerfCounters && _perfCounters != null && _countersSupported)
                 {
                     _perfCounters.Increment(CounterName.Hits);
-                    _perfCounters.Increment(CounterName.HitRatio);
-                    _perfCounters.Increment(CounterName.HitRatioBase);
                 }
             }
             else
@@ -156,7 +154,6 @@ namespace System.Runtime.Caching
                 if (updatePerfCounters && _perfCounters != null && _countersSupported)
                 {
                     _perfCounters.Increment(CounterName.Misses);
-                    _perfCounters.Increment(CounterName.HitRatioBase);
                 }
             }
         }
@@ -279,7 +276,7 @@ namespace System.Runtime.Caching
 
                 // MemoryCacheStatistics has been disposed, and therefore nobody should be using
                 // _insertBlock except for potential threads in WaitInsertBlock (which won't care if we call Close).
-                Debug.Assert(_useInsertBlock == false, "_useInsertBlock == false");
+                Debug.Assert(!_useInsertBlock, "_useInsertBlock == false");
                 _insertBlock.Close();
 
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.
@@ -342,10 +339,7 @@ namespace System.Runtime.Caching
                 if (_disposed == 0)
                 {
                     existingEntry = _entries[key] as MemoryCacheEntry;
-                    if (existingEntry != null)
-                    {
-                        existingEntry.State = EntryState.RemovingFromCache;
-                    }
+                    existingEntry?.State = EntryState.RemovingFromCache;
                     entry.State = EntryState.AddingToCache;
                     added = true;
                     _entries[key] = entry;

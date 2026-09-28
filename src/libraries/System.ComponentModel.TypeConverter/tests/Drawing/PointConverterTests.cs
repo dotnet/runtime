@@ -80,18 +80,17 @@ namespace System.ComponentModel.TypeConverterTests
         }
 
         public static IEnumerable<object[]> PointData =>
-            new[]
-            {
-                new object[] {0, 0},
-                new object[] {1, 1},
-                new object[] {-1, 1},
-                new object[] {1, -1},
-                new object[] {-1, -1},
-                new object[] {int.MaxValue, int.MaxValue},
-                new object[] {int.MinValue, int.MaxValue},
-                new object[] {int.MaxValue, int.MinValue},
-                new object[] {int.MinValue, int.MinValue},
-            };
+            [
+                [0, 1],
+                [1, 0],
+                [-1, 1],
+                [1, -1],
+                [-1, -2],
+                [int.MaxValue, int.MaxValue - 1],
+                [int.MinValue, int.MaxValue],
+                [int.MaxValue, int.MinValue],
+                [int.MinValue, int.MinValue + 1],
+            ];
 
         [Theory]
         [MemberData(nameof(PointData))]
@@ -102,7 +101,9 @@ namespace System.ComponentModel.TypeConverterTests
 
         [Theory]
         [InlineData("1")]
+        [InlineData("*1")]
         [InlineData("1, 1, 1")]
+        [InlineData("*1, 1, 1")]
         public void ConvertFrom_ArgumentException(string value)
         {
             ConvertFromThrowsArgumentExceptionForString(value);
@@ -112,6 +113,14 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertFrom_Invalid()
         {
             ConvertFromThrowsFormatInnerExceptionForString("*1, 1");
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" \t ")]
+        public void ConvertFrom_WhiteSpace(string value)
+        {
+            Assert.Null(Converter.ConvertFromString(value));
         }
 
         public static IEnumerable<object[]> ConvertFrom_NotSupportedData =>
@@ -153,7 +162,7 @@ namespace System.ComponentModel.TypeConverterTests
         public void ConvertTo_NullCulture()
         {
             string listSep = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
-            Assert.Equal($"1{listSep} 1", Converter.ConvertTo(null, null, new Point(1, 1), typeof(string)));
+            Assert.Equal($"1{listSep} 2", Converter.ConvertTo(null, null, new Point(1, 2), typeof(string)));
         }
 
         [Fact]
@@ -172,31 +181,31 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void GetProperties()
         {
-            var pt = new Point(1, 1);
-            var props = Converter.GetProperties(new Point(1, 1));
+            var pt = new Point(1, 2);
+            var props = Converter.GetProperties(new Point(3, 4));
             Assert.Equal(2, props.Count);
             Assert.Equal(1, props["X"].GetValue(pt));
-            Assert.Equal(1, props["Y"].GetValue(pt));
+            Assert.Equal(2, props["Y"].GetValue(pt));
 
-            props = Converter.GetProperties(null, new Point(1, 1));
+            props = Converter.GetProperties(null, new Point(3, 4));
             Assert.Equal(2, props.Count);
             Assert.Equal(1, props["X"].GetValue(pt));
-            Assert.Equal(1, props["Y"].GetValue(pt));
+            Assert.Equal(2, props["Y"].GetValue(pt));
 
-            props = Converter.GetProperties(null, new Point(1, 1), null);
+            props = Converter.GetProperties(null, new Point(3, 4), null);
             Assert.Equal(3, props.Count);
             Assert.Equal(1, props["X"].GetValue(pt));
-            Assert.Equal(1, props["Y"].GetValue(pt));
+            Assert.Equal(2, props["Y"].GetValue(pt));
             Assert.Equal((object)false, props["IsEmpty"].GetValue(pt));
 
-            props = Converter.GetProperties(null, new Point(1, 1), new Attribute[0]);
+            props = Converter.GetProperties(null, new Point(3, 4), new Attribute[0]);
             Assert.Equal(3, props.Count);
             Assert.Equal(1, props["X"].GetValue(pt));
-            Assert.Equal(1, props["Y"].GetValue(pt));
+            Assert.Equal(2, props["Y"].GetValue(pt));
             Assert.Equal((object)false, props["IsEmpty"].GetValue(pt));
 
             // Pick an attribute that cannot be applied to properties to make sure everything gets filtered
-            props = Converter.GetProperties(null, new Point(1, 1), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
+            props = Converter.GetProperties(null, new Point(3, 4), new Attribute[] { new System.Reflection.AssemblyCopyrightAttribute("")});
             Assert.Equal(0, props.Count);
         }
 
@@ -218,7 +227,7 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void ConvertFromInvariantString_FormatException()
         {
-            ConvertFromInvariantStringThrowsFormatInnerException("hello");
+            ConvertFromInvariantStringThrowsFormatInnerException("hello, hello");
         }
 
         [Theory]
@@ -241,7 +250,8 @@ namespace System.ComponentModel.TypeConverterTests
         [Fact]
         public void ConvertFromString_FormatException()
         {
-            ConvertFromStringThrowsFormatInnerException("hello");
+            var sep = CultureInfo.CurrentCulture.TextInfo.ListSeparator;
+            ConvertFromStringThrowsFormatInnerException($"hello{sep} hello");
         }
 
         [Theory]

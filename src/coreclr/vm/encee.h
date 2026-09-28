@@ -78,6 +78,8 @@ public:
 
 
 private:
+    friend struct ::cdac_data<EnCFieldDesc>;
+
     // True if Fixup() has been called on this instance
     BOOL m_bNeedsFixup;
 
@@ -175,6 +177,23 @@ private:
 
     // Linked list of EnCFieldDescs for all the added static fields
     PTR_EnCAddedFieldElement m_pAddedStaticFields;
+
+    friend struct ::cdac_data<EnCEEClassData>;
+};
+
+template<>
+struct cdac_data<EnCEEClassData>
+{
+    static constexpr size_t MethodTable = offsetof(EnCEEClassData, m_pMT);
+    static constexpr size_t AddedInstanceFields = offsetof(EnCEEClassData, m_pAddedInstanceFields);
+    static constexpr size_t AddedStaticFields = offsetof(EnCEEClassData, m_pAddedStaticFields);
+};
+
+template<>
+struct cdac_data<EnCFieldDesc>
+{
+    static constexpr size_t NeedsFixup = offsetof(EnCFieldDesc, m_bNeedsFixup);
+    static constexpr size_t StaticFieldData = offsetof(EnCFieldDesc, m_pStaticFieldData);
 };
 
 //---------------------------------------------------------------------------------------
@@ -229,6 +248,7 @@ public:
                             DWORD cbIL,
                             BYTE *pIL);
 
+private:
     // Called when a method has been modified (new IL)
     HRESULT UpdateMethod(MethodDesc *pMethod);
 
@@ -241,6 +261,7 @@ public:
     // JIT the new version of a function for EnC
     PCODE JitUpdatedFunction(MethodDesc *pMD, T_CONTEXT *pContext);
 
+public:
     // Remap execution to the latest version of an edited method
     HRESULT ResumeInUpdatedFunction(MethodDesc *pMD,
                                     void *oldDebuggerFuncHandle,
@@ -360,6 +381,8 @@ public:
     void Cleanup();
 
 private:
+    friend struct ::cdac_data<EnCSyncBlockInfo>;
+
     // Gets the address of an EnC field accounting for its type: valuetype, class or primitive
     PTR_CBYTE GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *    pHelperFieldDesc,
                                                  OBJECTREF      pHelper,
@@ -367,6 +390,12 @@ private:
 
     // Pointer to the head of the list
     PTR_EnCAddedField m_pList;
+};
+
+template<>
+struct cdac_data<EnCSyncBlockInfo>
+{
+    static constexpr size_t List = offsetof(EnCSyncBlockInfo, m_pList);
 };
 
 // The DPTR is actually defined in syncblk.h to make it visible to SyncBlock

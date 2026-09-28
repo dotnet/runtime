@@ -36,57 +36,17 @@ cpp_quote("EXTERN_GUID(IID_ICLRRuntimeHost4, 0x64F6D366, 0xD7C2, 0x4F1F, 0xB4, 0
 
 typedef HRESULT (__stdcall *FExecuteInAppDomainCallback) (void* cookie);
 
-// By default GC is concurrent and only the base system library is loaded into the domain-neutral area.
 typedef enum {
   STARTUP_CONCURRENT_GC         = 0x1,
 
-  STARTUP_LOADER_OPTIMIZATION_MASK = 0x3<<1,                    // loader optimization mask
-  STARTUP_LOADER_OPTIMIZATION_SINGLE_DOMAIN = 0x1<<1,           // no domain neutral loading
-  STARTUP_LOADER_OPTIMIZATION_MULTI_DOMAIN = 0x2<<1,            // all domain neutral loading
-  STARTUP_LOADER_OPTIMIZATION_MULTI_DOMAIN_HOST = 0x3<<1,       // strong name domain neutral loading
-
-
-  STARTUP_LOADER_SAFEMODE = 0x10,                               // Do not apply runtime version policy to the version passed in
-  STARTUP_LOADER_SETPREFERENCE = 0x100,                         // Set preferred runtime. Do not actally start it
-
   STARTUP_SERVER_GC             = 0x1000,                       // Use server GC
   STARTUP_HOARD_GC_VM           = 0x2000,                       // GC keeps virtual address used
-  STARTUP_SINGLE_VERSION_HOSTING_INTERFACE = 0x4000,                    // Disallow mixing hosting interface
-  STARTUP_LEGACY_IMPERSONATION             = 0x10000,                        // Do not flow impersonation across async points by default
-  STARTUP_DISABLE_COMMITTHREADSTACK        = 0x20000,           // Don't eagerly commit thread stack
-  STARTUP_ALWAYSFLOW_IMPERSONATION             = 0x40000,                        // Force flow impersonation across async points
-  																// (impersonations achieved thru p/invoke and managed will flow.
-  																// default is to flow only managed impersonation)
-  STARTUP_TRIM_GC_COMMIT        = 0x80000,                      // GC uses less committed space when system memory low
-  STARTUP_ETW                   = 0x100000,
-  STARTUP_ARM                   = 0x400000,                     // Enable the ARM feature.
-  STARTUP_SINGLE_APPDOMAIN      = 0x800000,                      // application runs in default domain, no more domains are created
-  STARTUP_APPX_APP_MODEL        = 0x1000000,                     // jupiter app
-  STARTUP_DISABLE_RANDOMIZED_STRING_HASHING     = 0x2000000      // Disable the randomized string hashing (not supported)
 } STARTUP_FLAGS;
 
 typedef enum
 {
-    APPDOMAIN_SECURITY_DEFAULT =0x0,
-    APPDOMAIN_SECURITY_SANDBOXED = 0x1,       // appdomain is sandboxed
-    APPDOMAIN_SECURITY_FORBID_CROSSAD_REVERSE_PINVOKE = 0x2,         // no cross ad reverse pinvokes
-    APPDOMAIN_IGNORE_UNHANDLED_EXCEPTIONS = 0x4, //
     APPDOMAIN_FORCE_TRIVIAL_WAIT_OPERATIONS = 0x08, // do not pump messages during wait operations, do not call sync context
-    // When passed by the host, this flag will allow any assembly to perform PInvoke or COMInterop operations.
-    // Otherwise, by default, only platform assemblies can perform those operations.
-    APPDOMAIN_ENABLE_PINVOKE_AND_CLASSIC_COMINTEROP = 0x10,
-
-    APPDOMAIN_ENABLE_PLATFORM_SPECIFIC_APPS = 0x40,
-    APPDOMAIN_ENABLE_ASSEMBLY_LOADFILE = 0x80,
-
-    APPDOMAIN_DISABLE_TRANSPARENCY_ENFORCEMENT = 0x100,
 } APPDOMAIN_SECURITY_FLAGS;
-
-typedef enum {
-    WAIT_MSGPUMP = 0x1,
-    WAIT_ALERTABLE = 0x2,
-    WAIT_NOTINDEADLOCK = 0x4
-}WAIT_OPTION;
 
 typedef enum {
     // Default to minidump

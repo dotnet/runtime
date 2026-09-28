@@ -25,13 +25,20 @@ namespace System.Globalization.Tests
         /// </summary>
         private static Stream GetIdnaTestTxt()
         {
+            // The doc https://unicode-org.github.io/icu/download/#previous-releases list the ICU version for each version of Unicode.
+            // some exception for Windows which released ICU 72.1.0.4 which using Unicode 15.1.
+
             string fileName = null;
-            if (PlatformDetection.ICUVersion >= new Version(74, 0))
+            if (PlatformDetection.ICUVersion >= new Version(78, 0))
+                fileName = "IdnaTest_17.txt";
+            else if (PlatformDetection.ICUVersion >= new Version(76, 0))
+                fileName = "IdnaTest_16.txt";
+            else if (PlatformDetection.ICUVersion >= new Version(72, 1, 0, 4))
                 fileName = "IdnaTest_15_1.txt";
+            else if (PlatformDetection.ICUVersion >= new Version(72, 0))
+                fileName = "IdnaTest_15_0.txt";
             else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 fileName = "IdnaTest_13.txt";
-            else if (PlatformDetection.IsWindows7)
-                fileName = "IdnaTest_Win7.txt";
             else if (PlatformDetection.IsWindows10Version1903OrGreater)
                 fileName = "IdnaTest_11.txt";
             else if (PlatformDetection.IsWindows10Version1703OrGreater)
@@ -63,12 +70,16 @@ namespace System.Globalization.Tests
 
         private static IConformanceIdnaTest GetConformanceIdnaTest(string line, int lineCount)
         {
-            if (PlatformDetection.ICUVersion >= new Version(74, 0))
+            if (PlatformDetection.ICUVersion >= new Version(78, 0))
+                return new Unicode_17_0_IdnaTest(line, lineCount);
+            else if (PlatformDetection.ICUVersion >= new Version(76, 0))
+                return new Unicode_16_0_IdnaTest(line, lineCount);
+            else if (PlatformDetection.ICUVersion >= new Version(72, 1, 0, 4))
                 return new Unicode_15_1_IdnaTest(line, lineCount);
+            else if (PlatformDetection.ICUVersion >= new Version(72, 0))
+                return new Unicode_15_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.ICUVersion >= new Version(66, 0) || PlatformDetection.IsHybridGlobalizationOnApplePlatform)
                 return new Unicode_13_0_IdnaTest(line, lineCount);
-            else if (PlatformDetection.IsWindows7)
-                return new Unicode_Win7_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows10Version1903OrGreater)
                 return new Unicode_11_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows10Version1703OrGreater)

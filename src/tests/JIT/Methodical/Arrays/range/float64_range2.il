@@ -15,21 +15,23 @@
 
 .assembly extern mscorlib
 {
-                           
-  
-           
-  
+
+
+
+
 }
 .assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace JitTest
 {
   .class public auto ansi Float64_Range2
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32 
+    .method private hidebysig static int32
             try_index(float64[10000...10005] arr,
                       int32 idx,
                       int32 expected) il managed
@@ -53,18 +55,18 @@
 			ldarg.1
 			ldelem.r8
 			conv.i4
-			
+
 			ldarg.1
 			ceq
 			brtrue aaa
-			
+
         	ldstr      "READ-WRITE FAILED"
         	call       void [System.Console]System.Console::WriteLine(string)
         	newobj		instance void [mscorlib]System.Exception::.ctor()
         	throw
-        	
+
 		aaa:
-			
+
         	ldstr      ": OK"
         	call       void [System.Console]System.Console::WriteLine(string)
         	ldc.i4.1
@@ -72,12 +74,12 @@
         	leave.s    IL_0029
 
       }  // end .try
-      catch [mscorlib]System.Object 
+      catch [mscorlib]System.Object
       {
         IL_001c:  pop
         IL_001d:  ldstr      ": exception!"
         IL_0022:  call       void [System.Console]System.Console::WriteLine(string)
-        
+
 				  ldc.i4.0
 				  stloc.0
         IL_0027:  leave.s    IL_0029
@@ -90,6 +92,7 @@
       ret
     } // end of method 'Test::try_index'
 
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtimelab/issues/155: Arrays with non-zero lower bounds') type([TestLibrary]TestLibrary.PlatformDetection) string[1] ('IsNonZeroLowerBoundArrayNotSupported') }
     .method public hidebysig static int32 Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -100,10 +103,10 @@
       .locals (float64[10000...10005] V_0,
                int32 V_1,
                int32 V_2)
-               
+
       			ldstr     "Creating array float64[10000...10005]"
       			call       void [System.Console]System.Console::WriteLine(string)
-      			
+
       			ldc.i4	  10000
       			ldc.i4	   6
       			newobj		instance void float64[10000...10005]::.ctor(int32, int32)
@@ -114,7 +117,7 @@
       			ldloc.0
       			ldlen
       			call       void [System.Console]System.Console::WriteLine(int32)
-      
+
       			ldstr     "[mscorlib]System.Array::get_Rank returned "
       			call       void [System.Console]System.Console::Write(string)
       			ldloc.0
@@ -127,66 +130,66 @@
       			ldc.i4.0
       			callvirt   instance int32 [mscorlib]System.Array::GetLowerBound(int32)
       			call       void [System.Console]System.Console::WriteLine(int32)
-      			
+
       			ldstr     "[mscorlib]System.Array::GetUpperBound returned "
       			call       void [System.Console]System.Console::Write(string)
       			ldloc.0
       			ldc.i4.0
       			callvirt   instance int32 [mscorlib]System.Array::GetUpperBound(int32)
       			call       void [System.Console]System.Console::WriteLine(int32)
-      			
+
       			ldloc.0
       			ldc.i4		-10000
       			ldc.i4.0
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4.m1
       			ldc.i4.0
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4.0
       			ldc.i4.1
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4.1
       			ldc.i4.1
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4		5
       			ldc.i4.1
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4		6
       			ldc.i4.0
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4		10005
       			ldc.i4.0
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldloc.0
       			ldc.i4		10006
       			ldc.i4.0
       			call		int32 JitTest.Float64_Range2::try_index(float64[10000...10005], int32, int32)
       			brfalse		Failure
-      			
+
       			ldc.i4    0x64
       			ldstr   "**** PASSED ****"
       			call       void [System.Console]System.Console::WriteLine(string)
-      			br 		Escape	
+      			br 		Escape
       		Failure:
       			ldc.i4.1
       			ldstr   "**** FAILED ****"
@@ -195,7 +198,7 @@
       			ret
     } // end of method 'Test::Main'
 
-    .method public hidebysig specialname rtspecialname 
+    .method public hidebysig specialname rtspecialname
             instance void .ctor() il managed
     {
       .maxstack  8

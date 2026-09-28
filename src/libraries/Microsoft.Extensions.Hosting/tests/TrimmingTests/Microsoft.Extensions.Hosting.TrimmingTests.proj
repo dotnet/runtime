@@ -2,7 +2,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <PropertyGroup>
-    <AdditionalProjectReferences>Microsoft.Extensions.Hosting.Abstractions;Microsoft.Extensions.DependencyInjection</AdditionalProjectReferences>
+    <AdditionalProjectReferences>Microsoft.Extensions.DependencyInjection</AdditionalProjectReferences>
   </PropertyGroup>
   
   <ItemGroup>

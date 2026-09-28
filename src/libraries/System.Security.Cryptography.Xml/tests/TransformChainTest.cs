@@ -8,6 +8,10 @@
 //
 // (C) 2002, 2003 Motus Technologies Inc. (http://www.motus.com)
 
+using System.IO;
+using System.Reflection;
+using System.Text;
+using System.Xml;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -60,5 +64,67 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(xslt, chain[5]);
             Assert.Equal(6, chain.Count);
         }
+
+        [Fact]
+        public void Enumerator()
+        {
+            TransformChain chain = new TransformChain();
+            chain.Add(new XmlDsigBase64Transform());
+            chain.Add(new XmlDsigC14NTransform());
+
+            int count = 0;
+            foreach (Transform transform in chain)
+            {
+                Assert.NotNull(transform);
+                count++;
+            }
+            Assert.Equal(2, count);
+        }
+
+#if NET
+        [Fact]
+        public void SameTransformInstanceCanBeAppliedTwice()
+        {
+            const string Expected = "transform reuse works";
+
+            TransformChain chain = new TransformChain();
+            XmlDsigBase64Transform transform = new XmlDsigBase64Transform();
+            chain.Add(transform);
+            chain.Add(transform);
+
+            string doublyEncoded = Convert.ToBase64String(
+                Encoding.UTF8.GetBytes(
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(Expected))));
+
+            MethodInfo transformToOctetStream = typeof(TransformChain).GetMethod(
+                "TransformToOctetStream",
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { typeof(Stream), typeof(XmlResolver), typeof(string) },
+                modifiers: null);
+
+            if (transformToOctetStream is null)
+            {
+                transformToOctetStream = typeof(TransformChain).GetMethod(
+                    "TransformToOctetStream",
+                    BindingFlags.Instance | BindingFlags.NonPublic,
+                    binder: null,
+                    types: new[] { typeof(object), typeof(XmlResolver), typeof(string) },
+                    modifiers: null);
+            }
+
+            Assert.NotNull(transformToOctetStream);
+
+            using MemoryStream input = new MemoryStream(Encoding.UTF8.GetBytes(doublyEncoded));
+            using Stream output = (Stream)transformToOctetStream.Invoke(chain, new object[] { input, null, null });
+            using StreamReader reader = new StreamReader(output, Encoding.UTF8);
+
+            Assert.Equal(Expected, reader.ReadToEnd());
+
+            FieldInfo cryptoStreamField = typeof(XmlDsigBase64Transform).GetField("_cs", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            Assert.Null(cryptoStreamField.GetValue(transform));
+        }
+#endif
+
     }
 }

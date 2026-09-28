@@ -17,7 +17,7 @@ namespace Microsoft.Gen.OptionsValidation.Test;
 
 public class EmitterTests
 {
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task TestEmitter()
     {
         var sources = new List<string>();

@@ -2,34 +2,34 @@
 
 namespace Mono.Linker.Tests.Cases.Statics
 {
-	public class UnusedStaticFieldInitializer
-	{
-		public static void Main ()
-		{
-			C.Foo ();
+    public class UnusedStaticFieldInitializer
+    {
+        public static void Main()
+        {
+            C.Foo();
 
-			new C2 (123);
-		}
+            new C2(123);
+        }
 
-		static class C
-		{
-			public static object o = new object ();
+        static class C
+        {
+            public static object o = new object();
 
-			[Kept]
-			public static void Foo ()
-			{
-			}
-		}
+            [Kept]
+            public static void Foo()
+            {
+            }
+        }
 
-		class C2
-		{
-			public static object o = new object ();
+        class C2
+        {
+            public static object o = new object();
 
-			[Kept]
-			public int Field;
+            [Kept]
+            public int Field;
 
-			[Kept]
-			public C2 (int val) => Field = val;
-		}
-	}
+            [Kept]
+            public C2(int val) => Field = val;
+        }
+    }
 }

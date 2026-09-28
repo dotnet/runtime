@@ -63,11 +63,6 @@ public:
     //  exception into it.
     static OBJECTREF CreateTargetExcept(OBJECTREF* except);
 
-    // This is a special purpose Exception creation function.  It
-    //  creates the ReflectionClassLoadException placing the passed
-    //  classes array and exception array into it.
-    static OBJECTREF CreateClassLoadExcept(OBJECTREF* classes,OBJECTREF* except);
-
     // Validate that the field can be widened for Set
     static void ValidField(TypeHandle th, OBJECTREF* value);
 

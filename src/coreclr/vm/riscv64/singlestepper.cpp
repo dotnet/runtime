@@ -7,6 +7,7 @@
 //
 
 #include "common.h"
+#include <inttypes.h>
 #include "riscv64singlestepper.h"
 
 //
@@ -79,7 +80,7 @@ void RiscV64SingleStepper::Bypass(uint64_t ip, uint32_t opcode)
         }
     }
 
-    LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Bypass(pc=%lx, opcode=%x)\n", ip, opcode));
+    LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Bypass(pc=%" PRIx64 ", opcode=%x)\n", ip, opcode));
 
     m_fBypass = true;
     m_originalPc = ip;
@@ -108,7 +109,7 @@ void RiscV64SingleStepper::Apply(T_CONTEXT *pCtx)
 
     uint32_t opcode = m_opcodes[0];
 
-    LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Apply(pc=%lx, opcode=%x)\n", (uint64_t)pCtx->Pc, opcode));
+    LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Apply(pc=%" PRIx64 ", opcode=%x)\n", (uint64_t)pCtx->Pc, opcode));
 
 #ifdef _DEBUG
     // Make sure that we aren't trying to step through our own buffer.  If this asserts, something is horribly
@@ -159,6 +160,7 @@ void RiscV64SingleStepper::Apply(T_CONTEXT *pCtx)
     m_originalPc = pCtx->Pc;
 
     // By default assume the next PC is right after the current instruction.
+    // TODO-RISCV64-RVC: change this after "C" Standard Extension support implemented
     m_targetPc = m_originalPc + sizeof(uint32_t);
     m_fEmulate = false;
 
@@ -251,7 +253,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
         {
             if (m_rgCode[0] != kBreakpointOp)
             {
-                LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup executed code, ip = %lx\n", m_targetPc));
+                LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup executed code, ip = %" PRIx64 "\n", m_targetPc));
 
                 pCtx->Pc = m_targetPc;
             }
@@ -263,7 +265,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
                 LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup emulated breakpoint\n"));
                 pCtx->Pc = m_originalPc;
 
-                _ASSERTE((pCtx->Pc & 0x3) == 0); // TODO change this after "C" Standard Extension support implemented
+                _ASSERTE((pCtx->Pc & 0x3) == 0); // TODO-RISCV64-RVC: change this after "C" Standard Extension support implemented
                 return false;
             }
         }
@@ -274,7 +276,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
 
             pCtx->Pc = m_targetPc;
 
-            LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup emulated, ip = %lx\n", pCtx->Pc));
+            LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup emulated, ip = %" PRIx64 "\n", pCtx->Pc));
         }
     }
     else
@@ -284,7 +286,7 @@ bool RiscV64SingleStepper::Fixup(T_CONTEXT *pCtx, DWORD dwExceptionCode)
         _ASSERTE(m_fEmulate == false);
         pCtx->Pc = m_originalPc;
 
-        LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup hit exception pc = %lx ex = %x\n", pCtx->Pc, dwExceptionCode));
+        LOG((LF_CORDB, LL_INFO100000, "RiscV64SingleStepper::Fixup hit exception pc = %" PRIx64 " ex = %x\n", pCtx->Pc, dwExceptionCode));
     }
 
     // Note, 2 bytes alignment assertion here, since during managed stepping we could step/return
@@ -352,7 +354,7 @@ bool RiscV64SingleStepper::TryEmulate(T_CONTEXT *pCtx, uint32_t opcode, bool exe
     // instruction address).
     bool fEmulated = false;
 
-    // TODO after "C" Standard Extension support implemented, add C.J, C.JAL, C.JR, C.JALR, C.BEQZ, C.BNEZ
+    // TODO-RISCV64-RVC: after "C" Standard Extension support implemented, add C.J, C.JAL, C.JR, C.JALR, C.BEQZ, C.BNEZ
 
     if ((opcode & 0x7f) == 0x17) // AUIPC
     {

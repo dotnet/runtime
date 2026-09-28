@@ -33,7 +33,7 @@ internal static class BinaryReaderExtensions
     {
         // To simplify the behavior and security review of the BinaryArrayRecord type, we
         // do not support reading non-zero-offset arrays. If this should change in the
-        // future, the BinaryArrayRecord.Decode method and supporting infrastructure
+        // future, the NrbfDecoder.DecodeBinaryArrayRecord method and supporting infrastructure
         // will need re-review.
 
         byte arrayType = reader.ReadByte();

@@ -6,20 +6,13 @@ using System.Net.Http.WinHttpHandlerUnitTests;
 using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
-namespace System.Net.Http
+namespace System.Net
 {
-    internal static class WinHttpCertificateHelper
+    internal static partial class CertificateValidation
     {
-        public static void BuildChain(
-            X509Certificate2 certificate,
-            X509Certificate2Collection remoteCertificateStore,
-            string hostName,
-            bool checkCertificateRevocationList,
-            out X509Chain chain,
-            out SslPolicyErrors sslPolicyErrors)
+        internal static SslPolicyErrors BuildChainAndVerifyProperties(X509Chain chain, X509Certificate2 remoteCertificate, bool checkCertName, bool isServer, string? hostName)
         {
-            chain = null;
-            sslPolicyErrors = SslPolicyErrors.None;
+            return SslPolicyErrors.None;
         }
     }
 }

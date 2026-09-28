@@ -11,7 +11,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SelectTest
     {
         private readonly ITestOutputHelper _log;
@@ -354,7 +354,7 @@ namespace System.Net.Sockets.Tests
     }
 
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public class SelectTest_NonParallel
     {
         [OuterLoop]
@@ -422,7 +422,7 @@ namespace System.Net.Sockets.Tests
     }
 
     [Collection(nameof(DisableParallelization))]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     // Set of tests to not run  together with any other tests.
     public class NoParallelSelectTests
     {

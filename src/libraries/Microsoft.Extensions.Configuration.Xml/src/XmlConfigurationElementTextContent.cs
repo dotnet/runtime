@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Configuration.Xml
     {
         public XmlConfigurationElementTextContent(string textContent, int? linePosition, int? lineNumber)
         {
-            ThrowHelper.ThrowIfNull(textContent);
+            ArgumentNullException.ThrowIfNull(textContent);
 
             TextContent = textContent;
             LineNumber = lineNumber;

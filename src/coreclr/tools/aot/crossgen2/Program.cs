@@ -39,6 +39,7 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
+        private readonly string _generatePortableCallHelpers;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -47,6 +48,7 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
+            _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
 
             if (Get(command.WaitForDebugger))
             {
@@ -68,7 +70,7 @@ namespace ILCompiler
 
         public int Run()
         {
-            if (_outputFilePath == null && !_outNearInput)
+            if (_outputFilePath == null && !_outNearInput && _generatePortableCallHelpers is null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
             if (_singleFileCompilation && !_outNearInput)
@@ -76,19 +78,44 @@ namespace ILCompiler
 
             var logger = new Logger(Console.Out, Get(_command.IsVerbose));
 
-            // Crossgen2 is partial AOT and its pre-compiled methods can be
-            // thrown away at runtime if they mismatch in required ISAs or
-            // computed layouts of structs. Thus we want to ensure that usage
-            // of Vector<T> is only optimistic and doesn't hard code a dependency
-            // that would cause the entire image to be invalidated.
-            bool isVectorTOptimistic = true;
+            (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
+                Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
 
-            TargetArchitecture targetArchitecture = Get(_command.TargetArchitecture);
-            TargetOS targetOS = Get(_command.TargetOS);
+            // The portable call-helpers generator is currently supported only for Wasm.
+            if (_generatePortableCallHelpers is not null
+                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
+            {
+                throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
+            }
+            bool targetAllowsRuntimeCodeGeneration = Get(_command.TargetAllowsRuntimeCodeGeneration)
+                ?? GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+
+            // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
+            // they mismatch in required ISAs or computed layouts of structs. On targets that allow
+            // runtime code generation we keep Vector<T> usage optimistic so we never hard code a
+            // dependency that could invalidate the entire image. On targets that do not allow
+            // runtime code generation, we do not want an ISA mismatch to invalidate any code
+            // in the image. There we make Vector<T> non-optimistic and hard code the ISA support
+            // to avoid falling back to the interpreter.
+            bool isVectorTOptimistic = targetAllowsRuntimeCodeGeneration;
+            bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
+
+            if (!targetAllowsRuntimeCodeGeneration)
+            {
+                allowOptimistic = false;
+            }
+
             InstructionSetSupport instructionSetSupport = Helpers.ConfigureInstructionSetSupport(Get(_command.InstructionSet), Get(_command.MaxVectorTBitWidth), isVectorTOptimistic, targetArchitecture, targetOS,
-                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger);
+                SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
+                allowOptimistic: allowOptimistic,
+                isReadyToRun: true);
+            if (!targetAllowsRuntimeCodeGeneration)
+            {
+                instructionSetSupport = Helpers.GetFixedInstructionSetSupport(instructionSetSupport);
+            }
+
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
-            var targetDetails = new TargetDetails(targetArchitecture, targetOS, Crossgen2RootCommand.IsArmel ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 
@@ -130,6 +157,7 @@ namespace ILCompiler
             // Initialize type system context
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                targetAllowsRuntimeCodeGeneration,
                 instructionSetSupport,
                 oldTypeSystemContext: null);
 
@@ -159,7 +187,7 @@ namespace ILCompiler
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
                         if ((module.PEReader.PEHeaders.CorHeader.Flags & (CorFlags.ILLibrary | CorFlags.ILOnly)) == (CorFlags)0
-                            && module.PEReader.TryGetReadyToRunHeader(out int _))
+                            && module.PEReader.TryGetCompositeReadyToRunHeader(out int _))
                         {
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;
@@ -257,6 +285,18 @@ namespace ILCompiler
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
 
+            if (_generatePortableCallHelpers is not null)
+            {
+                return PortableCallHelpers.PortableCallHelpersGenerator.Run(typeSystemContext, new PortableCallHelpers.PortableCallHelpersGeneratorOptions
+                {
+                    OutputDirectory = _generatePortableCallHelpers,
+                    PInvokeModules = Get(_command.DirectPInvoke),
+                    // The normalized name, so that platform attributes match regardless of how
+                    // --targetos was spelled on the command line.
+                    TargetOS = targetOS.ToString().ToLowerInvariant(),
+                }, logger);
+            }
+
             if (_singleFileCompilation)
             {
                 var singleCompilationInputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -274,6 +314,7 @@ namespace ILCompiler
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            targetAllowsRuntimeCodeGeneration,
                             _typeSystemContext.InstructionSetSupport,
                             _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
@@ -290,8 +331,8 @@ namespace ILCompiler
                 {
                     foreach (var inputFile in inputFilePaths)
                     {
-                        var tmpOutFile = inputFile.Value.Replace(".dll", ".ni.dll.tmp");
-                        var outFile = inputFile.Value.Replace(".dll", ".ni.dll");
+                        var tmpOutFile = GetNearOutputFilePath(inputFile.Value, temporary: true);
+                        var outFile = GetNearOutputFilePath(inputFile.Value, temporary: false);
                         Console.WriteLine($@"Moving R2R PE file: {tmpOutFile} to {outFile}");
                         System.IO.File.Move(tmpOutFile, outFile);
                     }
@@ -305,6 +346,23 @@ namespace ILCompiler
             return 0;
         }
 
+        private static string GetNearOutputFilePath(string inFilePath, bool temporary)
+        {
+            string inputFileExtension = Path.GetExtension(inFilePath);
+            if (inputFileExtension.Equals(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.ChangeExtension(inFilePath, temporary ? ".ni.dll.tmp" : ".ni.dll");
+            }
+            else if (inputFileExtension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.ChangeExtension(inFilePath, temporary ? ".ni.exe.tmp" : ".ni.exe");
+            }
+            else
+            {
+                throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension));
+            }
+        }
+
         private void RunSingleCompilation(Dictionary<string, string> inFilePaths, InstructionSetSupport instructionSetSupport, string compositeRootPath, Dictionary<string, string> unrootedInputFilePaths, HashSet<ModuleDesc> versionBubbleModulesHash, ReadyToRunCompilerContext typeSystemContext, Logger logger)
         {
             //
@@ -313,26 +371,14 @@ namespace ILCompiler
             var e = inFilePaths.GetEnumerator();
             e.MoveNext();
             string inFilePath = e.Current.Value;
-            string inputFileExtension = Path.GetExtension(inFilePath);
-            string nearOutFilePath = inputFileExtension switch
-            {
-                ".dll" => Path.ChangeExtension(inFilePath,
-                    _singleFileCompilation&& _inputBubble
-                        ? ".ni.dll.tmp"
-                        : ".ni.dll"),
-                ".exe" => Path.ChangeExtension(inFilePath,
-                    _singleFileCompilation && _inputBubble
-                        ? ".ni.exe.tmp"
-                        : ".ni.exe"),
-                _ => throw new CommandLineException(string.Format(SR.UnsupportedInputFileExtension, inputFileExtension))
-            };
+            string nearOutFilePath = GetNearOutputFilePath(inFilePath, temporary: _singleFileCompilation && _inputBubble);
 
             string outFile = _outNearInput ? nearOutFilePath : _outputFilePath;
             string dgmlLogFileName = Get(_command.DgmlLogFileName);
 
             using (PerfEventSource.StartStopEvents.CompilationEvents())
             {
-                ICompilation compilation;
+                ReadyToRunCodegenCompilation compilation;
                 using (PerfEventSource.StartStopEvents.LoadingEvents())
                 {
                     List<EcmaModule> inputModules = new List<EcmaModule>();
@@ -399,6 +445,31 @@ namespace ILCompiler
                         throw new Exception(string.Format(SR.ErrorMultipleInputFilesCompositeModeOnly, string.Join("; ", inputModules)));
                     }
 
+                    string rtrHeaderSymbolName = Get(_command.ReadyToRunHeaderSymbolName);
+
+                    ReadyToRunContainerFormat format = Get(_command.OutputFormat);
+                    if (format == ReadyToRunContainerFormat.PE && typeSystemContext.Target.Architecture == TargetArchitecture.Wasm32)
+                    {
+                        format = ReadyToRunContainerFormat.Wasm;
+                    }
+                    if (!composite && format != ReadyToRunContainerFormat.PE && format != ReadyToRunContainerFormat.Wasm)
+                    {
+                        throw new Exception(string.Format(SR.ErrorContainerFormatRequiresComposite, format));
+                    }
+
+                    if (rtrHeaderSymbolName is not null)
+                    {
+                        if (!composite)
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameRequiresComposite);
+                        }
+
+                        if (string.IsNullOrWhiteSpace(rtrHeaderSymbolName))
+                        {
+                            throw new Exception(SR.ErrorReadyToRunHeaderSymbolNameEmpty);
+                        }
+                    }
+
                     bool compileBubbleGenerics = Get(_command.CompileBubbleGenerics);
                     ReadyToRunCompilationModuleGroupBase compilationGroup;
                     List<ICompilationRootProvider> compilationRoots = new List<ICompilationRootProvider>();
@@ -414,6 +485,7 @@ namespace ILCompiler
                     groupConfig.CrossModuleInlineable = crossModuleInlineableCode;
                     groupConfig.CompileAllPossibleCrossModuleCode = false;
                     groupConfig.InstructionSetSupport = instructionSetSupport;
+                    groupConfig.DirectPInvokeModules = Get(_command.DirectPInvoke);
 
                     // Handle non-local generics command line option
                     ModuleDesc nonLocalGenericsHome = compileBubbleGenerics ? inputModules[0] : null;
@@ -554,6 +626,16 @@ namespace ILCompiler
                             }
                         }
                     }
+
+                    if (!typeSystemContext.TargetAllowsRuntimeCodeGeneration && typeSystemContext.BubbleIncludesCoreModule)
+                    {
+                        // For some platforms, we cannot JIT.
+                        // As a result, we need to ensure that we have a fallback implementation for all hardware intrinsics
+                        // that are marked as supported.
+                        // Otherwise, the interpreter won't have an implementation it can call for any non-ReadyToRun code.
+                        compilationRoots.Add(new ReadyToRunHardwareIntrinsicRootProvider(typeSystemContext));
+                    }
+
                     // In single-file compilation mode, use the assembly's DebuggableAttribute to determine whether to optimize
                     // or produce debuggable code if an explicit optimization level was not specified on the command line
                     OptimizationMode optimizationMode = _command.OptimizationMode;
@@ -576,6 +658,11 @@ namespace ILCompiler
                         compositeImageSettings.PublicKey = compositeStrongNameKey.ToImmutableArray();
                     }
 
+                    if (rtrHeaderSymbolName != null)
+                    {
+                        compositeImageSettings.ReadyToRunHeaderSymbolName = rtrHeaderSymbolName;
+                    }
+
                     //
                     // Compile
                     //
@@ -595,6 +682,11 @@ namespace ILCompiler
                     nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
+                    nodeFactoryFlags.EnableCachedInterfaceDispatchSupport = Get(_command.EnableCachedInterfaceDispatchSupport) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.GenerateUnboxingStubs = Get(_command.GenerateUnboxingStubs) ?? !typeSystemContext.TargetAllowsRuntimeCodeGeneration;
+                    nodeFactoryFlags.StripInliningInfo = Get(_command.StripInliningInfo);
+                    nodeFactoryFlags.StripDebugInfo = Get(_command.StripDebugInfo);
+                    nodeFactoryFlags.StripILBodies = Get(_command.StripILBodies);
 
                     builder
                         .UseMapFile(Get(_command.Map))
@@ -611,8 +703,10 @@ namespace ILCompiler
                         .UseCustomPESectionAlignment(Get(_command.CustomPESectionAlignment))
                         .UseVerifyTypeAndFieldLayout(Get(_command.VerifyTypeAndFieldLayout))
                         .UseHotColdSplitting(Get(_command.HotColdSplitting))
+                        .UseVerifyGCModeTransitions(Get(_command.VerifyGCModeTransitions))
                         .GenerateOutputFile(outFile)
                         .UseImageBase(_imageBase)
+                        .UseContainerFormat(format)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(Get(_command.CodegenOptions))
                         .UseLogger(logger)
@@ -622,28 +716,32 @@ namespace ILCompiler
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
 
-                    if (Get(_command.EnableGenericCycleDetection))
-                    {
-                        builder.UseGenericCycleDetection(
-                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
-                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
-                    }
+                    builder.UseGenericCycleDetection(
+                        depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                        breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
-                    compilation = builder.ToCompilation();
+                    compilation = (ReadyToRunCodegenCompilation)builder.ToCompilation();
 
                 }
-                compilation.Compile(outFile);
+                using (compilation)
+                {
+                    compilation.Compile(outFile);
 
-                if (dgmlLogFileName != null)
-                    compilation.WriteDependencyLog(dgmlLogFileName);
+                    if (dgmlLogFileName != null)
+                        compilation.WriteDependencyLog(dgmlLogFileName);
 
-                compilation.Dispose();
-
-                if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
-                    throw new Exception("Determinism Check Failed");
+                    if (compilation.DeterminismCheckFailed)
+                        throw new Exception("Determinism Check Failed");
+                }
             }
+        }
+
+        private static bool GetTargetAllowsRuntimeCodeGeneration(TargetOS operatingSystem, TargetArchitecture architecture)
+        {
+            return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
+                && architecture is not TargetArchitecture.Wasm32;
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)
@@ -690,7 +788,7 @@ namespace ILCompiler
             int curIndex = 0;
             foreach (var searchMethod in owningType.GetMethods())
             {
-                if (searchMethod.Name != singleMethodName)
+                if (searchMethod.GetName() != singleMethodName)
                     continue;
 
                 curIndex++;
@@ -720,7 +818,7 @@ namespace ILCompiler
                 curIndex = 0;
                 foreach (var searchMethod in owningType.GetMethods())
                 {
-                    if (searchMethod.Name != singleMethodName)
+                    if (searchMethod.GetName() != singleMethodName)
                         continue;
 
                     curIndex++;
@@ -756,7 +854,7 @@ namespace ILCompiler
             var formatter = new CustomAttributeTypeNameFormatter((IAssemblyDesc)method.Context.SystemModule);
 
             sb.Append($"--singlemethodtypename \"{formatter.FormatName(method.OwningType, true)}\"");
-            sb.Append($" --singlemethodname \"{method.Name}\"");
+            sb.Append($" --singlemethodname \"{method.GetName()}\"");
             {
                 int curIndex = 0;
                 foreach (var searchMethod in method.OwningType.GetMethods())
@@ -908,14 +1006,19 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CliConfiguration(new Crossgen2RootCommand(args)
+            new Crossgen2RootCommand(args)
                 .UseVersion()
-                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
-            {
-                ResponseFileTokenReplacer = Helpers.TryReadResponseFile
-            }.Invoke(args);
+                .UseExtendedHelp(Crossgen2RootCommand.PrintExtendedHelp)
+                .Parse(args, new()
+                {
+                    ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                })
+                .Invoke(new()
+                {
+                    EnableDefaultExceptionHandler = false
+                });
     }
 }

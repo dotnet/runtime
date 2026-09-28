@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+EXTERN_C
 #ifdef _MSC_VER
 // a workaround to prevent tls_CurrentThread from becoming dynamically checked/initialized.
-EXTERN_C __declspec(selectany) __declspec(thread) RuntimeThreadLocals tls_CurrentThread;
-#else
-EXTERN_C __thread RuntimeThreadLocals tls_CurrentThread;
+__declspec(selectany)
 #endif
+PLATFORM_THREAD_LOCAL RuntimeThreadLocals tls_CurrentThread;
 
 // static
 inline Thread * ThreadStore::RawGetCurrentThread()

@@ -1,10 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __CORECLR_DELEGATES_H__
-#define __CORECLR_DELEGATES_H__
+#ifndef HAVE_CORECLR_DELEGATES_H
+#define HAVE_CORECLR_DELEGATES_H
 
+#include <stddef.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
 #if defined(_WIN32)
     #define CORECLR_DELEGATE_CALLTYPE __stdcall
@@ -57,4 +63,8 @@ typedef int (CORECLR_DELEGATE_CALLTYPE *load_assembly_bytes_fn)(
     void       *load_context        /* Extensibility parameter (currently unused and must be 0) */,
     void       *reserved            /* Extensibility parameter (currently unused and must be 0) */);
 
-#endif // __CORECLR_DELEGATES_H__
+#ifdef __cplusplus
+}
+#endif // __cplusplus
+
+#endif // HAVE_CORECLR_DELEGATES_H

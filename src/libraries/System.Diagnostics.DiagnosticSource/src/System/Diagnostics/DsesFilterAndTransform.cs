@@ -27,6 +27,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
 {
     private const string c_ActivitySourcePrefix = "[AS]";
     private const string c_ParentRatioSamplerPrefix = "ParentRatioSampler(";
+    private const string c_ParentRateLimitingSamplerPrefix = "ParentRateLimitingSampler(";
 
     /// <summary>
     /// Parses filterAndPayloadSpecs which is a list of lines each of which has the from
@@ -249,11 +250,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
                     {
                         int endingLocation = suffixPart.IndexOf(')');
                         if (endingLocation < 0
-#if NETFRAMEWORK || NETSTANDARD
-                            || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length).ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
-#else
                             || !double.TryParse(suffixPart.Slice(c_ParentRatioSamplerPrefix.Length, endingLocation - c_ParentRatioSamplerPrefix.Length), NumberStyles.Float, CultureInfo.InvariantCulture, out double ratio))
-#endif
                         {
                             if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
                                 eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because sampling ratio was invalid");
@@ -261,6 +258,25 @@ internal sealed class DsesFilterAndTransform : IDisposable
                         }
 
                         sampleFunc = DsesSamplerBuilder.CreateParentRatioSampler(ratio);
+                    }
+                    else if (suffixPart.StartsWith(c_ParentRateLimitingSamplerPrefix.AsSpan(), StringComparison.OrdinalIgnoreCase))
+                    {
+                        int endingLocation = suffixPart.IndexOf(')');
+                        if (endingLocation < 0
+                            || !int.TryParse(
+                                    suffixPart.Slice(c_ParentRateLimitingSamplerPrefix.Length, endingLocation - c_ParentRateLimitingSamplerPrefix.Length),
+                                    NumberStyles.None, CultureInfo.InvariantCulture, out int maximumRatePerSecond)
+                            || maximumRatePerSecond <= 0)
+                        {
+                            if (eventSource.IsEnabled(EventLevel.Warning, DiagnosticSourceEventSource.Keywords.Messages))
+                            {
+                                eventSource.Message("DiagnosticSource: Ignoring filterAndPayloadSpec '[AS]" + entry.ToString() + "' because rate limiting sampling was invalid");
+                            }
+
+                            return next;
+                        }
+
+                        sampleFunc = DsesSamplerBuilder.CreateParentRateLimitingSampler(maximumRatePerSecond);
                     }
                     else
                     {
@@ -947,7 +963,7 @@ internal sealed class DsesFilterAndTransform : IDisposable
 
             private readonly DiagnosticSourceEventSource _eventSource;
             private readonly string _propertyName;
-            private volatile PropertyFetch? _fetchForExpectedType;
+            private PropertyFetch? _fetchForExpectedType;
             #endregion
         }
 

@@ -38,7 +38,7 @@ lock_free_mempool_chunk_new (LockFreeMempool *mp, int len)
 	int size;
 
 	size = mono_pagesize ();
-	while (size - sizeof (LockFreeMempoolChunk) < GINT_TO_UINT(len))
+	while (size - ALIGN_TO (sizeof (LockFreeMempoolChunk), 16) < len)
 		size += mono_pagesize ();
 	chunk = (LockFreeMempoolChunk *)mono_valloc (0, size, MONO_MMAP_READ|MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_MEM_MANAGER);
 	g_assert (chunk);
@@ -238,7 +238,7 @@ memory_manager_delete (MonoMemoryManager *memory_manager, gboolean debug_unload)
 	MonoMemoryManager *mm = memory_manager;
 	if (mm->gclass_cache)
 		mono_conc_hashtable_destroy (mm->gclass_cache);
-	free_simdhash (&mm->ginst_cache);
+	free_hash (&mm->ginst_cache);
 	free_simdhash (&mm->gmethod_cache);
 	free_simdhash (&mm->gsignature_cache);
 	free_hash (&mm->szarray_cache);

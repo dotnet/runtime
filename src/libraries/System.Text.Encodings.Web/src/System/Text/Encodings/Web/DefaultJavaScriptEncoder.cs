@@ -114,7 +114,7 @@ namespace System.Text.Encodings.Web
             {
                 if (_preescapedMap.TryLookup(value, out byte preescapedForm))
                 {
-                    if (!SpanUtility.IsValidIndex(destination, 1)) { goto OutOfSpace; }
+                    if ((uint)destination.Length <= 1) { goto OutOfSpace; }
                     destination[0] = (byte)'\\';
                     destination[1] = preescapedForm;
                     return 2;
@@ -132,7 +132,7 @@ namespace System.Text.Encodings.Web
                     if (value.IsBmp)
                     {
                         // Write 6 bytes: "\uXXXX"
-                        if (!SpanUtility.IsValidIndex(destination, 5)) { goto OutOfSpaceInner; }
+                        if ((uint)destination.Length <= 5) { goto OutOfSpaceInner; }
                         destination[0] = (byte)'\\';
                         destination[1] = (byte)'u';
                         HexConverter.ToBytesBuffer((byte)value.Value, destination, 4);
@@ -143,7 +143,7 @@ namespace System.Text.Encodings.Web
                     {
                         // Write 12 bytes: "\uXXXX\uYYYY"
                         UnicodeHelpers.GetUtf16SurrogatePairFromAstralScalarValue((uint)value.Value, out char highSurrogate, out char lowSurrogate);
-                        if (!SpanUtility.IsValidIndex(destination, 11)) { goto OutOfSpaceInner; }
+                        if ((uint)destination.Length <= 11) { goto OutOfSpaceInner; }
                         destination[0] = (byte)'\\';
                         destination[1] = (byte)'u';
                         HexConverter.ToBytesBuffer((byte)highSurrogate, destination, 4);
@@ -165,7 +165,7 @@ namespace System.Text.Encodings.Web
             {
                 if (_preescapedMap.TryLookup(value, out byte preescapedForm))
                 {
-                    if (!SpanUtility.IsValidIndex(destination, 1)) { goto OutOfSpace; }
+                    if ((uint)destination.Length <= 1) { goto OutOfSpace; }
                     destination[0] = '\\';
                     destination[1] = (char)preescapedForm;
                     return 2;
@@ -183,7 +183,7 @@ namespace System.Text.Encodings.Web
                     if (value.IsBmp)
                     {
                         // Write 6 chars: "\uXXXX"
-                        if (!SpanUtility.IsValidIndex(destination, 5)) { goto OutOfSpaceInner; }
+                        if ((uint)destination.Length <= 5) { goto OutOfSpaceInner; }
                         destination[0] = '\\';
                         destination[1] = 'u';
                         HexConverter.ToCharsBuffer((byte)value.Value, destination, 4);
@@ -194,7 +194,7 @@ namespace System.Text.Encodings.Web
                     {
                         // Write 12 chars: "\uXXXX\uYYYY"
                         UnicodeHelpers.GetUtf16SurrogatePairFromAstralScalarValue((uint)value.Value, out char highSurrogate, out char lowSurrogate);
-                        if (!SpanUtility.IsValidIndex(destination, 11)) { goto OutOfSpaceInner; }
+                        if ((uint)destination.Length <= 11) { goto OutOfSpaceInner; }
                         destination[0] = '\\';
                         destination[1] = 'u';
                         HexConverter.ToCharsBuffer((byte)highSurrogate, destination, 4);

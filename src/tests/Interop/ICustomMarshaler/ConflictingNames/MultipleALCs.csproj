@@ -9,6 +9,9 @@
     <Compile Include="RunInALC.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+  <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
     <ProjectReference Include="CustomMarshaler.csproj" />
   </ItemGroup>

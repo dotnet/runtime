@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        [ConditionalTheory(nameof(ManualTestsEnabled))] // requires Smart Card - read instructions
+        [ConditionalTheory(typeof(CspParametersTests), nameof(ManualTestsEnabled))] // requires Smart Card - read instructions
         [InlineData(true)]
         [InlineData(false)]
         public static void KeyPassword_SmartCard_Manual_Test(bool correctPassword)

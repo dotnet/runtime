@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return true;
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void PersistKeySet_OSX()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void AddToStore_NonExportable_OSX()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void AddToStore_Exportable()
         {
             using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void CustomStore_ReadWrite()
         {
             using (var store = new X509Store("CustomKeyChain_CoreFX", StoreLocation.CurrentUser))
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void CustomStore_ReadOnly()
         {
             using (var store = new X509Store("CustomKeyChain_CoreFX", StoreLocation.CurrentUser))
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void CustomStore_OpenExistingOnly()
         {
             using (var store = new X509Store("CustomKeyChain_CoreFX_" + Guid.NewGuid().ToString(), StoreLocation.CurrentUser))
@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void CustomStore_CaseInsensitive()
         {
             using (var store1 = new X509Store("CustomKeyChain_CoreFX", StoreLocation.CurrentUser))
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ConditionalFact(nameof(PermissionsAllowStoreWrite))]
+        [ConditionalFact(typeof(X509StoreMutableTests), nameof(PermissionsAllowStoreWrite))]
         public static void CustomStore_InvalidFileName()
         {
             using (var store = new X509Store("../corefx", StoreLocation.CurrentUser))

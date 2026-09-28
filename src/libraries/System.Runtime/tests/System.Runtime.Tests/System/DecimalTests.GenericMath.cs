@@ -231,31 +231,31 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(decimal.MinValue, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5F }, destination.ToArray()); // +95
+            Assert.Equal<byte>([0x5F], destination); // +95
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(-1.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(-0.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(0.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(1.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(decimal.MaxValue, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5F }, destination.ToArray()); // +95
+            Assert.Equal<byte>([0x5F], destination); // +95
 
             Assert.False(FloatingPointHelper<decimal>.TryWriteExponentBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x5F }, destination.ToArray());
+            Assert.Equal<byte>([0x5F], destination);
         }
 
         [Fact]
@@ -266,31 +266,31 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(decimal.MinValue, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5F }, destination.ToArray()); // +95
+            Assert.Equal<byte>([0x5F], destination); // +95
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(-1.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(-0.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(0.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(1.0m, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5E }, destination.ToArray()); // +94
+            Assert.Equal<byte>([0x5E], destination); // +94
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(decimal.MaxValue, destination, out bytesWritten));
             Assert.Equal(1, bytesWritten);
-            Assert.Equal(new byte[] { 0x5F }, destination.ToArray()); // +95
+            Assert.Equal<byte>([0x5F], destination); // +95
 
             Assert.False(FloatingPointHelper<decimal>.TryWriteExponentLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0x5F }, destination.ToArray());
+            Assert.Equal<byte>([0x5F], destination);
         }
 
         [Fact]
@@ -301,31 +301,31 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(decimal.MinValue, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(-1.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(-0.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(0.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(1.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0A], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(decimal.MaxValue, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.False(FloatingPointHelper<decimal>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
         [Fact]
@@ -336,31 +336,31 @@ namespace System.Tests
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(decimal.MinValue, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(-1.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(-0.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(0.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(1.0m, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+            Assert.Equal<byte>([0x0A, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], destination);
 
             Assert.True(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(decimal.MaxValue, destination, out bytesWritten));
             Assert.Equal(12, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
 
             Assert.False(FloatingPointHelper<decimal>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+            Assert.Equal<byte>([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF], destination);
         }
 
         //
@@ -608,8 +608,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+1.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-1.0));
 
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264333195497439231.0));
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264333195497439231.0));
 
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264337593543950335.0));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264337593543950335.0));
@@ -629,8 +629,8 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.Zero));
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeZero));
 
-            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateChecked<Half>(+Half.Epsilon));
-            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateChecked<Half>(-Half.Epsilon));
+            Assert.Equal(+0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateChecked<Half>(+Half.Epsilon));
+            Assert.Equal(-0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateChecked<Half>(-Half.Epsilon));
 
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.One));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeOne));
@@ -749,8 +749,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+1.0f));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-1.0f));
 
-            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+79228160000000000000000000000.0f));
-            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-79228160000000000000000000000.0f));
+            Assert.Equal(+79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-79228160000000000000000000000.0f));
 
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(+79228162514264337593543950335.0f));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(-79228162514264337593543950335.0f));
@@ -869,8 +869,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(+1.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(-1.0));
 
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(+79228162514264333195497439231.0));
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(-79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(-79228162514264333195497439231.0));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateSaturating<double>(+79228162514264337593543950335.0));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateSaturating<double>(-79228162514264337593543950335.0));
@@ -890,8 +890,8 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.Zero));
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.NegativeZero));
 
-            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateSaturating<Half>(+Half.Epsilon));
-            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateSaturating<Half>(-Half.Epsilon));
+            Assert.Equal(+0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateSaturating<Half>(+Half.Epsilon));
+            Assert.Equal(-0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateSaturating<Half>(-Half.Epsilon));
 
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.One));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.NegativeOne));
@@ -1011,8 +1011,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(+1.0f));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(-1.0f));
 
-            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(+79228160000000000000000000000.0f));
-            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(-79228160000000000000000000000.0f));
+            Assert.Equal(+79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(-79228160000000000000000000000.0f));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateSaturating<float>(+79228162514264337593543950335.0f));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateSaturating<float>(-79228162514264337593543950335.0f));
@@ -1132,8 +1132,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+1.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-1.0));
 
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264333195497439231.0));
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264333195497439231.0));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264337593543950335.0));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264337593543950335.0));
@@ -1153,8 +1153,8 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.Zero));
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeZero));
 
-            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateTruncating<Half>(+Half.Epsilon));
-            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateTruncating<Half>(-Half.Epsilon));
+            Assert.Equal(+0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateTruncating<Half>(+Half.Epsilon));
+            Assert.Equal(-0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateTruncating<Half>(-Half.Epsilon));
 
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.One));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeOne));
@@ -1274,8 +1274,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+1.0f));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-1.0f));
 
-            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228160000000000000000000000.0f));
-            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228160000000000000000000000.0f));
+            Assert.Equal(+79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228160000000000000000000000.0f));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228162514264337593543950335.0f));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228162514264337593543950335.0f));

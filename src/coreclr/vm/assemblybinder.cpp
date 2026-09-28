@@ -9,7 +9,8 @@
 #ifndef DACCESS_COMPILE
 
 HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
-    BINDER_SPACE::Assembly** ppAssembly)
+    BINDER_SPACE::Assembly** ppAssembly,
+    SString* pDiagnosticInfo)
 {
     _ASSERTE(pAssemblyNameData != nullptr && ppAssembly != nullptr);
 
@@ -20,23 +21,21 @@ HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
     SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
     IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
 
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
+    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly, pDiagnosticInfo);
 
 Exit:
     return hr;
 }
 
 
-NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName)
+NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 nativeImageName, bool isPlatformNative)
 {
     STANDARD_VM_CONTRACT;
 
     AppDomain::LoadLockHolder lock(AppDomain::GetCurrentDomain());
-    AssemblyBinder* binder = componentModule->GetPEAssembly()->GetAssemblyBinder();
     PTR_LoaderAllocator moduleLoaderAllocator = componentModule->GetLoaderAllocator();
 
-    bool isNewNativeImage;
-    NativeImage* nativeImage = NativeImage::Open(componentModule, nativeImageName, binder, moduleLoaderAllocator, &isNewNativeImage);
+    NativeImage* nativeImage = NativeImage::Open(componentModule->GetPath(), nativeImageName, this, moduleLoaderAllocator, isPlatformNative);
 
     return nativeImage;
 }
@@ -44,11 +43,11 @@ NativeImage* AssemblyBinder::LoadNativeImage(Module* componentModule, LPCUTF8 na
 #ifdef FEATURE_READYTORUN
 static void MvidMismatchFatalError(GUID mvidActual, GUID mvidExpected, LPCUTF8 simpleName, bool compositeComponent, LPCUTF8 assemblyRequirementName)
 {
-    CHAR assemblyMvidText[GUID_STR_BUFFER_LEN];
-    GuidToLPSTR(mvidActual, assemblyMvidText);
+    CHAR assemblyMvidText[MINIPAL_GUID_BUFFER_LEN];
+    minipal_guid_as_string(mvidActual, assemblyMvidText, MINIPAL_GUID_BUFFER_LEN);
 
-    CHAR componentMvidText[GUID_STR_BUFFER_LEN];
-    GuidToLPSTR(mvidExpected, componentMvidText);
+    CHAR componentMvidText[MINIPAL_GUID_BUFFER_LEN];
+    minipal_guid_as_string(mvidExpected, componentMvidText, MINIPAL_GUID_BUFFER_LEN);
 
     SString message;
     if (compositeComponent)
@@ -168,26 +167,27 @@ void AssemblyBinder::AddLoadedAssembly(Assembly* loadedAssembly)
 
 void AssemblyBinder::GetNameForDiagnosticsFromManagedALC(INT_PTR managedALC, /* out */ SString& alcName)
 {
-    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
+    if (managedALC == GetAppDomain()->GetDefaultBinder()->GetAssemblyLoadContext())
     {
         alcName.Set(W("Default"));
         return;
     }
 
-    OBJECTREF* alc = reinterpret_cast<OBJECTREF*>(managedALC);
+    OVERRIDE_TYPE_LOAD_LEVEL_LIMIT(CLASS_LOADED);
 
     GCX_COOP();
-    struct {
+    struct
+    {
+        OBJECTREF obj;
         STRINGREF alcName;
     } gc;
+    gc.obj = ObjectToOBJECTREF(*(Object**)managedALC);
     gc.alcName = NULL;
 
     GCPROTECT_BEGIN(gc);
 
-    PREPARE_VIRTUAL_CALLSITE(METHOD__OBJECT__TO_STRING, *alc);
-    DECLARE_ARGHOLDER_ARRAY(args, 1);
-    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
-    CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
+    UnmanagedCallersOnlyCaller callToString(METHOD__RUNTIME_HELPERS__CALL_TO_STRING);
+    callToString.InvokeThrowing(&gc.obj, &gc.alcName);
     gc.alcName->GetSString(alcName);
 
     GCPROTECT_END();
@@ -203,7 +203,7 @@ void AssemblyBinder::GetNameForDiagnostics(/*out*/ SString& alcName)
     }
     else
     {
-        GetNameForDiagnosticsFromManagedALC(GetManagedAssemblyLoadContext(), alcName);
+        GetNameForDiagnosticsFromManagedALC(GetAssemblyLoadContext(), alcName);
     }
 }
 
@@ -211,10 +211,9 @@ void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ S
 {
     _ASSERTE(spec != nullptr);
 
-    AppDomain* domain = spec->GetAppDomain();
     AssemblyBinder* binder = spec->GetBinder();
     if (binder == nullptr)
-        binder = spec->GetBinderFromParentAssembly(domain);
+        binder = spec->GetInitialBinder();
 
     binder->GetNameForDiagnostics(alcName);
 }

@@ -58,7 +58,7 @@ namespace System.Data.Tests.SqlTypes
         {
             // SqlDecimal (decimal)
             SqlDecimal test = new SqlDecimal(30.3098m);
-            Assert.Equal((decimal)30.3098, test.Value);
+            Assert.Equal(30.3098m, test.Value);
 
             // SqlDecimal (double)
             test = new SqlDecimal(1E11d);
@@ -312,7 +312,7 @@ namespace System.Data.Tests.SqlTypes
             Assert.Equal(6464, _test1.ToSqlInt64().Value);
 
             // ToSqlMoney ()
-            Assert.Equal((decimal)6464.6464, _test1.ToSqlMoney().Value);
+            Assert.Equal(6464.6464m, _test1.ToSqlMoney().Value);
 
             Assert.Throws<OverflowException>(() => SqlDecimal.MaxValue.ToSqlMoney().Value);
 
@@ -566,8 +566,10 @@ namespace System.Data.Tests.SqlTypes
         //[Category ("MobileNotWorking")]
         public void ReadWriteXmlTest()
         {
-            string xml1 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>4556.89756</decimal>";
-            string xml2 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>-6445.9999</decimal>";
+            // These reflect the exact decimal representation of the double values below. Converting a
+            // double to decimal is correctly rounded, so it preserves the full value rather than truncating.
+            string xml1 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>4556.8975600000003396417014301</decimal>";
+            string xml2 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>-6445.9998999999997977283783257</decimal>";
             string xml3 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>0x455687AB3E4D56F</decimal>";
             decimal test1 = new decimal(4556.89756);
             // This one fails because of a possible conversion bug

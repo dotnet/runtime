@@ -21,11 +21,9 @@ Abstract:
 #include "pal/handleapi.hpp"
 #include "pal/seh.hpp"
 #include "pal/dbgmsg.h"
-#include "pal/critsect.h"
 #include "pal/debug.h"
 #include "pal/init.h"
 #include "pal/process.h"
-#include "pal/malloc.hpp"
 #include "pal/signal.hpp"
 #include "pal/virtual.h"
 
@@ -176,7 +174,7 @@ PAL_ThrowExceptionFromContext(CONTEXT* context, PAL_SEHException* ex)
     // We need to make a copy of the exception off stack, since the "ex" is located in one of the stack
     // frames that will become obsolete by the ThrowExceptionFromContextInternal and the ThrowExceptionHelper
     // could overwrite the "ex" object by stack e.g. when allocating the low level exception object for "throw".
-    static __thread BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
+    static thread_local BYTE threadLocalExceptionStorage[sizeof(PAL_SEHException)];
     ThrowExceptionFromContextInternal(context, new (threadLocalExceptionStorage) PAL_SEHException(std::move(*ex)));
 }
 
@@ -250,7 +248,7 @@ Return value:
 BOOL
 SEHProcessException(PAL_SEHException* exception)
 {
-    g_SEHProcessExceptionReturnAddress = __builtin_return_address(0);
+    g_SEHProcessExceptionReturnAddress = _ReturnAddress();
 
     CONTEXT* contextRecord = exception->GetContextRecord();
     EXCEPTION_RECORD* exceptionRecord = exception->GetExceptionRecord();
@@ -305,10 +303,8 @@ PAL_ERROR SEHEnable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->EnableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun)
+#else // HAVE_MACH_EXCEPTIONS
     return NO_ERROR;
-#else// HAVE_MACH_EXCEPTIONS
-#error not yet implemented
 #endif // HAVE_MACH_EXCEPTIONS
 }
 
@@ -330,10 +326,8 @@ PAL_ERROR SEHDisable(CPalThread *pthrCurrent)
 {
 #if HAVE_MACH_EXCEPTIONS
     return pthrCurrent->DisableMachExceptions();
-#elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__sun)
-    return NO_ERROR;
 #else // HAVE_MACH_EXCEPTIONS
-#error not yet implemented
+    return NO_ERROR;
 #endif // HAVE_MACH_EXCEPTIONS
 }
 
@@ -367,42 +361,9 @@ bool CatchHardwareExceptionHolder::IsEnabled()
     return pThread ? pThread->IsHardwareExceptionsEnabled() : false;
 }
 
-/*++
-
-  NativeExceptionHolderBase implementation
-
---*/
-
-#if defined(__GNUC__)
-static __thread
-#else // __GNUC__
-__declspec(thread) static
-#endif // !__GNUC__
-NativeExceptionHolderBase *t_nativeExceptionHolderHead = nullptr;
-
-extern "C"
-NativeExceptionHolderBase **
-PAL_GetNativeExceptionHolderHead()
-{
-    return &t_nativeExceptionHolderHead;
-}
-
-NativeExceptionHolderBase *
-NativeExceptionHolderBase::FindNextHolder(NativeExceptionHolderBase *currentHolder, PVOID stackLowAddress, PVOID stackHighAddress)
-{
-    NativeExceptionHolderBase *holder = (currentHolder == nullptr) ? t_nativeExceptionHolderHead : currentHolder->m_next;
-
-    while (holder != nullptr)
-    {
-        if (((void *)holder >= stackLowAddress) && ((void *)holder < stackHighAddress))
-        {
-            return holder;
-        }
-        // Get next holder
-        holder = holder->m_next;
-    }
-
-    return nullptr;
-}
-
+#if !defined(TARGET_WASI)
+// seh-unwind.cpp uses libunwind which is unavailable on wasm32-wasip2.
+// The WASI build provides equivalent stubs (PAL_VirtualUnwind, RtlCaptureContext,
+// etc.) in arch/wasm/stubs.cpp directly.
 #include "seh-unwind.cpp"
+#endif

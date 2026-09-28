@@ -19,56 +19,120 @@ if (CLR_CMAKE_TARGET_WIN32)
     # Needed to include AsmOffsets.inc
     include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR})
     preprocess_files(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
-    if (CMAKE_GENERATOR MATCHES "Visual Studio")
-      # Replaces .asm files in RUNTIME_SOURCES_ARCH_ASM with the corresponding .obj files
-      compile_asm(TARGET Runtime.WorkstationGC ASM_FILES ${RUNTIME_SOURCES_ARCH_ASM} OUTPUT_OBJECTS RUNTIME_ARCH_ASM_OBJECTS)
-    endif()
   endif()
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library(Runtime.WorkstationGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${RUNTIME_ARCH_ASM_OBJECTS})
-add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
-target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal)
+if(NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES)
+  add_library(Runtime.PrivateLibunwind OBJECT ${NATIVEAOT_PRIVATE_LIBUNWIND_SOURCES})
 
-add_library(Runtime.ServerGC STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
-add_dependencies(Runtime.ServerGC aot_eventing_headers)
-target_link_libraries(Runtime.ServerGC PRIVATE aotminipal)
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.o")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize")
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED "${CMAKE_CURRENT_BINARY_DIR}/Runtime.PrivateLibunwind.localize.unsorted")
+  # The relocatable object includes runtime-owned objects so their references to
+  # libunwind implementation symbols are resolved before localization. The
+  # localize list is generated only from the bundled libunwind source objects.
+  set(NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS "$<FILTER:$<TARGET_OBJECTS:Runtime.PrivateLibunwind>,EXCLUDE,.*(UnwindHelpers|UnixNativeCodeManager)\\.cpp\\.o$>")
 
-add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
-add_dependencies(standalonegc-disabled aot_eventing_headers)
-add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
-add_dependencies(standalonegc-enabled aot_eventing_headers)
-if(CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(standalonegc-disabled aot_etw_headers)
-  add_dependencies(standalonegc-enabled aot_etw_headers)
+  add_custom_command(
+    OUTPUT "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    # Generate the objcopy symbol list from libunwind-owned object files only.
+    COMMAND sh -c "nm_tool=\"$1\" && shift && \"$nm_tool\" --extern-only --defined-only --format=just-symbols \"$@\" > \"$0\""
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+            "${CMAKE_NM}"
+            ${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOL_OBJECTS}
+    COMMAND sort -u -o
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND "${CMAKE_COMMAND}" -E rm -f
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS_UNSORTED}"
+    COMMAND "${CMAKE_LINKER}" -r $<TARGET_OBJECTS:Runtime.PrivateLibunwind> -o "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    COMMAND "${CMAKE_OBJCOPY}"
+            "--localize-symbols=${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+            "${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}"
+    DEPENDS
+      Runtime.PrivateLibunwind
+      $<TARGET_OBJECTS:Runtime.PrivateLibunwind>
+    BYPRODUCTS "${NATIVEAOT_PRIVATE_LIBUNWIND_SYMBOLS}"
+    COMMENT "Privatizing NativeAOT libunwind symbols"
+    COMMAND_EXPAND_LISTS
+    VERBATIM
+  )
+  set_source_files_properties("${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}" PROPERTIES
+    EXTERNAL_OBJECT TRUE
+    GENERATED TRUE)
 endif()
 
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
-  add_library(Runtime.VxsortEnabled STATIC ${VXSORT_SOURCES})
-  add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+add_library(Runtime.GC.Workstation OBJECT ${GC_WKS_SVR_SOURCES})
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.GC.Workstation aot_eventing_headers)
+endif()
+set_target_properties(Runtime.GC.Workstation PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
-target_compile_definitions(Runtime.ServerGC PRIVATE -DFEATURE_SVR_GC)
+add_library(Runtime.GC.Server OBJECT ${GC_WKS_SVR_SOURCES})
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.GC.Server aot_eventing_headers)
+endif()
+target_compile_definitions(Runtime.GC.Server PRIVATE FEATURE_SVR_GC SERVER_GC)
+set_target_properties(Runtime.GC.Server PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 0)
 
 if (CLR_CMAKE_TARGET_WIN32)
-  add_library(standalonegc-disabled.GuardCF STATIC ${STANDALONEGC_DISABLED_SOURCES})
-  set_target_properties(standalonegc-disabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  add_dependencies(standalonegc-disabled.GuardCF aot_eventing_headers)
-  add_dependencies(standalonegc-disabled.GuardCF aot_etw_headers)
-  add_library(standalonegc-enabled.GuardCF STATIC ${STANDALONEGC_ENABLED_SOURCES})
-  set_target_properties(standalonegc-enabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  add_dependencies(standalonegc-enabled.GuardCF aot_eventing_headers)
-  add_dependencies(standalonegc-enabled.GuardCF aot_etw_headers)
-  add_library(Runtime.ServerGC.GuardCF STATIC ${COMMON_RUNTIME_SOURCES} ${FULL_RUNTIME_SOURCES} ${RUNTIME_SOURCES_ARCH_ASM} ${SERVER_GC_SOURCES} ${RUNTIME_ARCH_ASM_OBJECTS})
-  target_compile_definitions(Runtime.ServerGC.GuardCF PRIVATE -DFEATURE_SVR_GC)
-  set_target_properties(Runtime.ServerGC.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  target_link_libraries(Runtime.ServerGC.GuardCF PRIVATE aotminipal)
+  # Embed debug info in the object files (/Z7) rather than referencing an external
+  # compiler PDB. CMake does not assign a compile PDB to OBJECT libraries, so the
+  # objects archived into Runtime.WorkstationGC/Runtime.ServerGC would otherwise
+  # reference a vc140.pdb that is absent when these static libs are statically
+  # linked by the AOT compiler publish projects, producing LNK4099.
+  set_target_properties(Runtime.GC.Workstation PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+  set_target_properties(Runtime.GC.Server PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+endif (CLR_CMAKE_TARGET_WIN32)
 
-  if (CLR_CMAKE_TARGET_ARCH_AMD64)
-    add_library(Runtime.VxsortEnabled.GuardCF STATIC ${VXSORT_SOURCES})
-    set_target_properties(Runtime.VxsortEnabled.GuardCF PROPERTIES CLR_CONTROL_FLOW_GUARD ON)
-  endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+add_library(Runtime.WorkstationGC STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${FULL_RUNTIME_SOURCES}
+    ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
+    ${RUNTIME_ARCH_ASM_OBJECTS}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.WorkstationGC aot_eventing_headers)
+endif()
+target_link_libraries(Runtime.WorkstationGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor)
 
+add_library(Runtime.ServerGC STATIC
+    ${COMMON_RUNTIME_SOURCES}
+    ${FULL_RUNTIME_SOURCES}
+    ${NATIVEAOT_PRIVATE_LIBUNWIND_OBJECT}
+    ${RUNTIME_ARCH_ASM_OBJECTS}
+    $<TARGET_OBJECTS:Runtime.GC.Workstation>
+    $<TARGET_OBJECTS:Runtime.GC.Server>)
+if(FEATURE_PERFTRACING)
+  add_dependencies(Runtime.ServerGC aot_eventing_headers)
+endif()
+target_link_libraries(Runtime.ServerGC PRIVATE aotminipal nativeaot_cdac_contract_descriptor nativeaot_gc_wks_descriptor nativeaot_gc_svr_descriptor)
+add_library(standalonegc-disabled STATIC ${STANDALONEGC_DISABLED_SOURCES})
+if(FEATURE_PERFTRACING)
+  add_dependencies(standalonegc-disabled aot_eventing_headers)
+endif()
+add_library(standalonegc-enabled STATIC ${STANDALONEGC_ENABLED_SOURCES})
+if(FEATURE_PERFTRACING)
+  add_dependencies(standalonegc-enabled aot_eventing_headers)
+endif()
+if(FEATURE_EVENT_TRACE)
+  if(CLR_CMAKE_TARGET_WIN32)
+    add_dependencies(standalonegc-disabled aot_etw_headers)
+    add_dependencies(standalonegc-enabled aot_etw_headers)
+  endif()
+endif()
+
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+  add_library(Runtime.VxsortEnabled STATIC ${VXSORT_SOURCES})
+  add_library(Runtime.VxsortDisabled STATIC ${DUMMY_VXSORT_SOURCES})
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+target_compile_definitions(Runtime.ServerGC PRIVATE FEATURE_SVR_GC)
+
+if (CLR_CMAKE_TARGET_WIN32)
   set_target_properties(aotminipal PROPERTIES
     COMPILE_PDB_NAME "aotminipal"
     COMPILE_PDB_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
@@ -77,29 +141,30 @@ endif (CLR_CMAKE_TARGET_WIN32)
 # Get the current list of definitions
 get_compile_definitions(DEFINITIONS)
 
-set(ASM_OFFSETS_CSPP ${RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
+set(ASM_OFFSETS_CSPP ${NATIVEAOT_RUNTIME_DIR}/../Runtime.Base/src/AsmOffsets.cspp)
 
 if(WIN32)
     set(COMPILER_LANGUAGE "")
     set(PREPROCESSOR_FLAGS -EP -nologo)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/windows/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/windows/AsmOffsets.cpp)
 else()
     set(COMPILER_LANGUAGE -x c++)
     set(PREPROCESSOR_FLAGS -E -P)
-    set(ASM_OFFSETS_CPP ${RUNTIME_DIR}/unix/AsmOffsets.cpp)
+    set(ASM_OFFSETS_CPP ${NATIVEAOT_RUNTIME_DIR}/unix/AsmOffsets.cpp)
 endif()
 
 add_custom_command(
     # The AsmOffsets.cs is consumed later by the managed build
     TARGET Runtime.WorkstationGC
-    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
-    DEPENDS "${RUNTIME_DIR}/AsmOffsets.cpp" "${RUNTIME_DIR}/AsmOffsets.h"
+    POST_BUILD
+    COMMAND ${CMAKE_CXX_COMPILER} ${COMPILER_LANGUAGE} ${DEFINITIONS} ${PREPROCESSOR_FLAGS}
+            -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CSPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.cs"
 )
 
 add_custom_command(
-    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
+    COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} ${PREPROCESSOR_FLAGS} -I"${NATIVEAOT_RUNTIME_DIR}" -I"${ARCH_SOURCES_DIR}" "${ASM_OFFSETS_CPP}" >"${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
-    DEPENDS "${ASM_OFFSETS_CPP}" "${RUNTIME_DIR}/AsmOffsets.h"
+    DEPENDS "${ASM_OFFSETS_CPP}" "${NATIVEAOT_RUNTIME_DIR}/AsmOffsets.h"
     COMMENT "Generating AsmOffsets.inc"
 )
 
@@ -109,30 +174,21 @@ set_source_files_properties("${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" PROPERT
 # Avoid a race condition by adding this target as a dependency for both libraries.
 add_custom_target(
   RuntimeAsmHelpers
-  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc" "${RUNTIME_ARCH_ASM_OBJECTS}"
+  DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/AsmOffsets.inc"
 )
 
-add_dependencies(Runtime.WorkstationGC RuntimeAsmHelpers)
-add_dependencies(Runtime.ServerGC RuntimeAsmHelpers)
-if (CLR_CMAKE_TARGET_WIN32)
-  add_dependencies(Runtime.ServerGC.GuardCF RuntimeAsmHelpers)
-endif (CLR_CMAKE_TARGET_WIN32)
+add_library(Runtime.AsmHelpers OBJECT ${RUNTIME_SOURCES_ARCH_ASM})
+add_dependencies(Runtime.AsmHelpers RuntimeAsmHelpers)
+
+target_link_libraries(Runtime.WorkstationGC PRIVATE Runtime.AsmHelpers)
+target_link_libraries(Runtime.ServerGC PRIVATE Runtime.AsmHelpers)
 
 install_static_library(Runtime.WorkstationGC aotsdk nativeaot)
 install_static_library(Runtime.ServerGC aotsdk nativeaot)
 install_static_library(standalonegc-disabled aotsdk nativeaot)
 install_static_library(standalonegc-enabled aotsdk nativeaot)
 install_static_library(aotminipal aotsdk nativeaot)
-if (CLR_CMAKE_TARGET_WIN32)
-  install_static_library(Runtime.ServerGC.GuardCF aotsdk nativeaot)
-  add_dependencies(Runtime.ServerGC.GuardCF aot_eventing_headers)
-  install_static_library(standalonegc-disabled.GuardCF aotsdk nativeaot)
-  install_static_library(standalonegc-enabled.GuardCF aotsdk nativeaot)
-endif (CLR_CMAKE_TARGET_WIN32)
-if (CLR_CMAKE_TARGET_ARCH_AMD64)
+if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   install_static_library(Runtime.VxsortEnabled aotsdk nativeaot)
   install_static_library(Runtime.VxsortDisabled aotsdk nativeaot)
-  if (CLR_CMAKE_TARGET_WIN32)
-    install_static_library(Runtime.VxsortEnabled.GuardCF aotsdk nativeaot)
-  endif (CLR_CMAKE_TARGET_WIN32)
-endif (CLR_CMAKE_TARGET_ARCH_AMD64)
+endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)

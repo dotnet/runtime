@@ -1,5 +1,0 @@
-<Project>
-  <Target Name="Build">
-    <Msbuild Targets="Pack" Projects="dotnet-pgo.csproj" />
-  </Target>
-</Project>

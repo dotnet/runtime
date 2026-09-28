@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -8,34 +10,52 @@ namespace System.IO.Compression.Tests
 {
     public class zip_ManualAndCompatibilityTests : ZipFileTestBase
     {
-        public static bool IsUsingNewPathNormalization => !PathFeatures.IsUsingLegacyPathNormalization();
-
-        [Theory]
-        [InlineData("7zip.zip", "normal", true, true)]
-        [InlineData("windows.zip", "normalWithoutEmptyDir", false, true)]
-        [InlineData("dotnetzipstreaming.zip", "normal", false, false)]
-        [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", false, false)]
-        [InlineData("xceedstreaming.zip", "normal", false, false)]
-        public static async Task CompatibilityTests(string zipFile, string zipFolder, bool requireExplicit, bool checkTimes)
+        public static IEnumerable<object[]> Get_CompatibilityTests_Data()
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes);
-        }
-
-        [Fact]
-        public static async Task Deflate64Zip()
-        {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip")), zfolder("normal"), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true);
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "7zip.zip", "normal", true, true, async };
+                yield return new object[] { "windows.zip", "normalWithoutEmptyDir", false, true, async };
+                yield return new object[] { "dotnetzipstreaming.zip", "normal", false, false, async };
+                yield return new object[] { "sharpziplib.zip", "normalWithoutEmptyDir", false, false, async };
+                yield return new object[] { "xceedstreaming.zip", "normal", false, false, async };
+            }
         }
 
         [Theory]
-        [InlineData("excel.xlsx", "excel", false, false)]
-        [InlineData("powerpoint.pptx", "powerpoint", false, false)]
-        [InlineData("word.docx", "word", false, false)]
-        [InlineData("silverlight.xap", "silverlight", false, false)]
-        [InlineData("packaging.package", "packaging", false, false)]
-        public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool requireExplicit, bool checkTimes)
+        [MemberData(nameof(Get_CompatibilityTests_Data))]
+        public static async Task CompatibilityTests(string zipFile, string zipFolder, bool requireExplicit, bool checkTimes, bool async)
         {
-            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(withTrailing)), compat(withoutTrailing), ZipArchiveMode.Update, requireExplicit, checkTimes);
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(compat(zipFile));
+            await IsZipSameAsDir(ms, zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes, async);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task Deflate64Zip(bool async)
+        {
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip"));
+            await IsZipSameAsDir(ms, zfolder("normal"), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true, async);
+        }
+
+        public static IEnumerable<object[]> Get_CompatibilityTestsMsFiles_Data()
+        {
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "excel.xlsx", "excel", false, false, async };
+                yield return new object[] { "powerpoint.pptx", "powerpoint", false, false, async };
+                yield return new object[] { "word.docx", "word", false, false, async };
+                yield return new object[] { "silverlight.xap", "silverlight", false, false, async };
+                yield return new object[] { "packaging.package", "packaging", false, false, async };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_CompatibilityTestsMsFiles_Data))]
+        public static async Task CompatibilityTestsMsFiles(string withTrailing, string withoutTrailing, bool requireExplicit, bool checkTimes, bool async)
+        {
+            MemoryStream ms = await StreamHelpers.CreateTempCopyStream(compat(withTrailing));
+            await IsZipSameAsDir(ms, compat(withoutTrailing), ZipArchiveMode.Update, requireExplicit, checkTimes, async);
         }
 
         /// <summary>
@@ -45,7 +65,7 @@ namespace System.IO.Compression.Tests
         /// For example, the file "aa\bb\cc\dd" in a zip created on Unix should be one file "aa\bb\cc\dd" whereas the same file
         /// in a zip created on Windows should be interpreted as the file "dd" underneath three subdirectories.
         /// </summary>
-        [ConditionalTheory(nameof(IsUsingNewPathNormalization))]
+        [Theory]
         [InlineData("backslashes_FromUnix.zip", "aa\\bb\\cc\\dd")]
         [InlineData("backslashes_FromWindows.zip", "dd")]
         [InlineData("WindowsInvalid_FromUnix.zip", "aa<b>d")]
@@ -60,6 +80,17 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(1, archive.Entries.Count);
                 ZipArchiveEntry entry = archive.Entries[0];
                 Assert.Equal(fileName, entry.Name);
+            }
+        }
+
+        public static IEnumerable<object[]> Get_ZipBinaryCompat_Data()
+        {
+            foreach (bool async in _bools)
+            {
+                yield return new object[] { "net45_unicode.zip", "unicode", async };
+                yield return new object[] { "net46_unicode.zip", "unicode", async };
+                yield return new object[] { "net45_normal.zip", "normal", async };
+                yield return new object[] { "net46_normal.zip", "normal", async };
             }
         }
 
@@ -88,11 +119,8 @@ namespace System.IO.Compression.Tests
         /// extra field(variable size)
         /// </summary>
         [Theory]
-        [InlineData("net45_unicode.zip", "unicode")]
-        [InlineData("net46_unicode.zip", "unicode")]
-        [InlineData("net45_normal.zip", "normal")]
-        [InlineData("net46_normal.zip", "normal")]
-        public static async Task ZipBinaryCompat_LocalFileHeaders(string zipFile, string zipFolder)
+        [MemberData(nameof(Get_ZipBinaryCompat_Data))]
+        public static async Task ZipBinaryCompat_LocalFileHeaders(string zipFile, string zipFolder, bool async)
         {
             using (MemoryStream actualArchiveStream = new MemoryStream())
             using (MemoryStream expectedArchiveStream = await StreamHelpers.CreateTempCopyStream(compat(zipFile)))
@@ -100,7 +128,7 @@ namespace System.IO.Compression.Tests
                 byte[] localFileHeaderSignature = new byte[] { 0x50, 0x4b, 0x03, 0x04 };
 
                 // Produce a ZipFile
-                await CreateFromDir(zfolder(zipFolder), actualArchiveStream, ZipArchiveMode.Create);
+                await CreateFromDir(zfolder(zipFolder), actualArchiveStream, async, ZipArchiveMode.Create);
 
                 // Read the streams to byte arrays
                 byte[] actualBytes = actualArchiveStream.ToArray();
@@ -153,11 +181,8 @@ namespace System.IO.Compression.Tests
         /// file comment (variable size)
         /// </summary>
         [Theory]
-        [InlineData("net45_unicode.zip", "unicode")]
-        [InlineData("net46_unicode.zip", "unicode")]
-        [InlineData("net45_normal.zip", "normal")]
-        [InlineData("net46_normal.zip", "normal")]
-        public static async Task ZipBinaryCompat_CentralDirectoryHeaders(string zipFile, string zipFolder)
+        [MemberData(nameof(Get_ZipBinaryCompat_Data))]
+        public static async Task ZipBinaryCompat_CentralDirectoryHeaders(string zipFile, string zipFolder, bool async)
         {
             using (MemoryStream actualArchiveStream = new MemoryStream())
             using (MemoryStream expectedArchiveStream = await StreamHelpers.CreateTempCopyStream(compat(zipFile)))
@@ -165,7 +190,7 @@ namespace System.IO.Compression.Tests
                 byte[] signature = new byte[] { 0x50, 0x4b, 0x03, 0x04 };
 
                 // Produce a ZipFile
-                await CreateFromDir(zfolder(zipFolder), actualArchiveStream, ZipArchiveMode.Create);
+                await CreateFromDir(zfolder(zipFolder), actualArchiveStream, async, ZipArchiveMode.Create);
 
                 // Read the streams to byte arrays
                 byte[] actualBytes = actualArchiveStream.ToArray();

@@ -69,7 +69,7 @@ typedef enum _MINIDUMP_TYPE {
             EX_RETHROW;                                                             \
         }                                                                           \
     }                                                                               \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 #define EX_TRY_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER EX_TRY
 #define EX_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER                       \
@@ -93,12 +93,12 @@ typedef enum _MINIDUMP_TYPE {
             EX_RETHROW;                                                             \
         }                                                                           \
     }                                                                               \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 
 #define EX_END_CATCH_ALLOW_DATATARGET_MISSING_MEMORY_WITH_HANDLER                  \
     }                                                                               \
-    EX_END_CATCH(SwallowAllExceptions)
+    EX_END_CATCH
 
 // Only use this version for wrapping single source lines, or you'll make debugging
 // painful.

@@ -38,7 +38,10 @@ struct LikelyClassMethodHistogramEntry
 //
 struct LikelyClassMethodHistogram
 {
-    LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount);
+    LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount, bool int32Data = false);
+
+    template <typename ElemType>
+    void LikelyClassMethodHistogramInner(ElemType* histogramEntries, unsigned entryCount);
 
     // Sum of counts from all entries in the histogram. This includes "unknown" entries which are not captured in
     // m_histogram
@@ -61,8 +64,22 @@ struct LikelyClassMethodHistogram
 // Arguments:
 //    histogramEntries - pointer to the table portion of a ClassProfile* object (see corjit.h)
 //    entryCount - number of entries in the table to examine
+//    int32Data - true if table entries are 32 bits
 //
-LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount)
+LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount, bool int32Data)
+{
+    if (int32Data)
+    {
+        LikelyClassMethodHistogramInner<int>((int*)histogramEntries, entryCount);
+    }
+    else
+    {
+        LikelyClassMethodHistogramInner<INT_PTR>(histogramEntries, entryCount);
+    }
+}
+
+template <typename ElemType>
+void LikelyClassMethodHistogram::LikelyClassMethodHistogramInner(ElemType* histogramEntries, unsigned entryCount)
 {
     m_unknownHandles               = 0;
     m_totalCount                   = 0;
@@ -76,8 +93,7 @@ LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries
         }
 
         m_totalCount++;
-
-        INT_PTR currentEntry = histogramEntries[k];
+        INT_PTR currentEntry = (INT_PTR)histogramEntries[k];
 
         bool     found = false;
         unsigned h     = 0;
@@ -271,9 +287,8 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     assert(totalLikelihood <= 100);
 
-                    // Distribute the rounding error and just apply it to the first entry.
-                    // Assume that there is no error If we have unknown handles.
-                    if (!containsUnknownHandles)
+                    // Distribute the rounding error only if the returned entries represent the entire histogram.
+                    if ((numberOfClasses == knownHandles) && !containsUnknownHandles)
                     {
                         assert(numberOfClasses > 0);
                         assert(totalLikelihood > 0);
@@ -310,10 +325,11 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 //    ilOffset - il offset of the callvirt
 //
 // Returns:
-//    Estimated number of classes seen at runtime
+//    Number of likely class records written to pLikelyClasses
 //
 // Notes:
 //    A "monomorphic" call site will return likelihood 100 and number of entries = 1.
+//    Returned likelihoods reflect the observed proportions and are not guaranteed to sum to 100.
 //
 //   This is used by the devirtualization logic below, and by crossgen2 when producing
 //   the R2R image (to reduce the sizecost of carrying the type histogram)
@@ -356,14 +372,17 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
 //                           at least of 'maxLikelyValues' (next argument) length.
 //                           The array consists of pairs "value - likelihood" ordered by likelihood
 //                           (descending) where likelihood can be any value in [0..100] range.
-//    maxLikelyValues      - limit for likely classes to output
+//    maxLikelyValues      - limit for likely values to output
 //    schema               - profile schema
 //    countSchemaItems     - number of items in the schema
 //    pInstrumentationData - associated data
 //    ilOffset             - il offset of the node of interest
 //
 // Returns:
-//    Estimated number of different constants seen at runtime
+//    Number of likely value records written to pLikelyValues
+//
+// Notes:
+//    Returned likelihoods reflect the observed proportions and are not guaranteed to sum to 100.
 //
 extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*                     pLikelyValues,
                                                    UINT32                                 maxLikelyValues,
@@ -385,15 +404,18 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*           
             continue;
 
         // We currently re-use existing infrastructure for type handles for simplicity.
-
-        const bool isHistogramCount =
-            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount) ||
+        //
+        const bool isIntHistogramCount =
+            (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramIntCount);
+        const bool isLongHistogramCount =
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogramLongCount);
+        const bool isHistogramCount = isIntHistogramCount || isLongHistogramCount;
 
         if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::ValueHistogram))
         {
-            LikelyClassMethodHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
+            LikelyClassMethodHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count,
+                                         isIntHistogramCount);
             LikelyClassMethodHistogramEntry sortedEntries[HISTOGRAM_MAX_SIZE_COUNT];
 
             if (h.countHistogramElements == 0)
@@ -427,11 +449,15 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyValues(LikelyValueRecord*           
 
             assert(totalLikelihood <= 100);
 
-            // Distribute the rounding error and just apply it to the first entry.
-            assert(numberOfLikelyConst > 0);
-            assert(totalLikelihood > 0);
-            pLikelyValues[0].likelihood += 100 - totalLikelihood;
-            assert(pLikelyValues[0].likelihood <= 100);
+            // Distribute the rounding error only if the returned entries represent the entire histogram.
+            if (numberOfLikelyConst == h.countHistogramElements)
+            {
+                assert(numberOfLikelyConst > 0);
+                assert(totalLikelihood > 0);
+                pLikelyValues[0].likelihood += 100 - totalLikelihood;
+                assert(pLikelyValues[0].likelihood <= 100);
+            }
+
             return numberOfLikelyConst;
         }
     }

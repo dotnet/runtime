@@ -9,9 +9,11 @@ Because of this two layer architecture just running the managed test executable 
 ```
 #~/bin/bash
 
-export CORECLR_ENABLE_PROFILING=1
-export CORECLR_PROFILER={2726B5B4-3F88-462D-AEC0-4EFDC8D7B921}
-export CORECLR_PROFILER_PATH=<Path to test binaries>/profiler/eventpipe/eventpipe/libProfiler.so
+export DOTNET_ENABLE_PROFILING=1
+export DOTNET_PROFILER={2726B5B4-3F88-462D-AEC0-4EFDC8D7B921}
+export DOTNET_PROFILER_PATH=<Path to test binaries>/profiler/eventpipe/eventpipe/libProfiler.so
 
 <Path to test binaries>/Core_Root/corerun <Path to test binaries>/profiler/eventpipe/eventpipe/eventpipe.dll RunTest
 ```
+
+**Note:** The `CORECLR_` prefix is still supported for backwards compatibility but may be removed in the future. Use the `DOTNET_` prefix for new projects.

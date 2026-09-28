@@ -24,12 +24,29 @@ namespace System.Diagnostics.Tests
                 Assert.Equal(String.Empty, as1.Version);
                 Assert.False(as1.HasListeners());
                 Assert.Null(as1.Tags);
+                Assert.Null(as1.TelemetrySchemaUrl);
+                ActivitySourceOptions options = new ActivitySourceOptions("Source1");
+                using ActivitySource as1_1 = new ActivitySource(options);
+                Assert.Equal("Source1", as1_1.Name);
+                Assert.Equal(String.Empty, as1_1.Version);
+                Assert.False(as1_1.HasListeners());
+                Assert.Null(as1_1.Tags);
+                Assert.Null(as1_1.TelemetrySchemaUrl);
 
                 using ActivitySource as2 =  new ActivitySource("Source2", "1.1.1.2");
                 Assert.Equal("Source2", as2.Name);
                 Assert.Equal("1.1.1.2", as2.Version);
                 Assert.False(as2.HasListeners());
                 Assert.Null(as2.Tags);
+                Assert.Null(as2.TelemetrySchemaUrl);
+                options = new ActivitySourceOptions("Source2");
+                options.Version = "1.1.1.2";
+                using ActivitySource as2_2 =  new ActivitySource(options);
+                Assert.Equal("Source2", as2_2.Name);
+                Assert.Equal("1.1.1.2", as2_2.Version);
+                Assert.False(as2_2.HasListeners());
+                Assert.Null(as2_2.Tags);
+                Assert.Null(as2_2.TelemetrySchemaUrl);
 
                 using ActivitySource as3 =  new ActivitySource("Source3", "1.1.1.3", new TagList { { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } });
                 Assert.Equal("Source3", as3.Name);
@@ -37,6 +54,375 @@ namespace System.Diagnostics.Tests
                 Assert.False(as3.HasListeners());
                 // Ensure the tags are sorted by key.
                 Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" } }, as3.Tags);
+                Assert.Null(as3.TelemetrySchemaUrl);
+                options = new ActivitySourceOptions("Source3");
+                options.Version = "1.1.1.3";
+                options.Tags = new TagList { { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } };
+                using ActivitySource as3_3 =  new ActivitySource(options);
+                Assert.Equal("Source3", as3_3.Name);
+                Assert.Equal("1.1.1.3", as3_3.Version);
+                Assert.False(as3_3.HasListeners());
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" } }, as3_3.Tags);
+                Assert.Null(as3_3.TelemetrySchemaUrl);
+
+                using ActivitySource as4 =  new ActivitySource("Source4", "1.1.1.4", new TagList { { "key4", "value4" }, { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } });
+                Assert.Equal("Source4", as4.Name);
+                Assert.Equal("1.1.1.4", as4.Version);
+                Assert.False(as4.HasListeners());
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" }, { "key4", "value4" } }, as4.Tags);
+                Assert.Null(as4.TelemetrySchemaUrl);
+                options = new ActivitySourceOptions("Source4");
+                options.Version = "1.1.1.4";
+                options.Tags = new TagList { { "key4", "value4" }, { "key3", "value3" }, { "key2", "value2" }, { "key1", "value1" } };
+                options.TelemetrySchemaUrl = "https://example.com/schema";
+                using ActivitySource as4_4 =  new ActivitySource(options);
+                Assert.Equal("Source4", as4_4.Name);
+                Assert.Equal("1.1.1.4", as4_4.Version);
+                Assert.False(as4_4.HasListeners());
+                Assert.Equal(new TagList  { { "key1", "value1" }, { "key2", "value2" }, { "key3", "value3" }, { "key4", "value4" } }, as4_4.Tags);
+                Assert.Equal("https://example.com/schema", as4_4.TelemetrySchemaUrl);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesUpdatesListenerState()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource source = new ActivitySource("ListenerUpdateSource");
+                Assert.False(source.HasListeners());
+
+                int shouldListen = 1;
+                int startedCount = 0;
+                int stoppedCount = 0;
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource => Volatile.Read(ref shouldListen) != 0 && object.ReferenceEquals(source, activitySource),
+                    ActivityStarted = _ => startedCount++,
+                    ActivityStopped = _ => stoppedCount++,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                Parallel.For(0, 16, _ => listener.RefreshSources());
+                Assert.True(source.HasListeners());
+                using (Activity? activity = source.StartActivity("enabled"))
+                {
+                    Assert.NotNull(activity);
+                    Assert.Equal(1, startedCount);
+                    Assert.Equal(0, stoppedCount);
+                }
+
+                Assert.Equal(1, startedCount);
+                Assert.Equal(1, stoppedCount);
+
+                Volatile.Write(ref shouldListen, 0);
+                Parallel.For(0, 16, _ => listener.RefreshSources());
+                Assert.False(source.HasListeners());
+                Assert.Null(source.StartActivity("disabled"));
+                Assert.Equal(1, startedCount);
+                Assert.Equal(1, stoppedCount);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesOnDisposedListenerIsNoOp()
+        {
+            RemoteExecutor.Invoke(() => {
+                using ActivitySource source = new ActivitySource("RefreshAfterDisposeSource");
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource => object.ReferenceEquals(source, activitySource),
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                listener.RefreshSources();
+                Assert.True(source.HasListeners());
+
+                listener.Dispose();
+                Assert.False(source.HasListeners());
+
+                listener.RefreshSources();
+                Assert.False(source.HasListeners());
+                Assert.Null(source.StartActivity("after-dispose"));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestDisposedSourceCannotBeResubscribed()
+        {
+            RemoteExecutor.Invoke(() => {
+                using (ActivitySource source = new ActivitySource("DisposeRaceSource_AddActivityListener"))
+                using (ActivityListener listener = new ActivityListener())
+                {
+                    listener.ShouldListenTo = activitySource =>
+                    {
+                        if (object.ReferenceEquals(source, activitySource))
+                        {
+                            source.Dispose();
+                            return true;
+                        }
+
+                        return false;
+                    };
+                    listener.SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
+                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
+
+                    ActivitySource.AddActivityListener(listener);
+
+                    Assert.False(source.HasListeners());
+                    Assert.Null(source.StartActivity("disposed"));
+                }
+
+                using (ActivitySource source = new ActivitySource("DisposeRaceSource_RefreshSources"))
+                using (ActivityListener listener = new ActivityListener())
+                {
+                    listener.ShouldListenTo = activitySource =>
+                    {
+                        if (object.ReferenceEquals(source, activitySource))
+                        {
+                            source.Dispose();
+                            return true;
+                        }
+
+                        return false;
+                    };
+                    listener.SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded;
+                    listener.Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded;
+
+                    listener.RefreshSources();
+
+                    Assert.False(source.HasListeners());
+                    Assert.Null(source.StartActivity("disposed"));
+                }
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesLosesRaceWithConcurrentDispose()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
+                using ActivitySource source = new ActivitySource("RefreshDisposeRaceSource");
+
+                using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
+                using ManualResetEventSlim disposeFinished = new ManualResetEventSlim();
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource =>
+                    {
+                        if (ReferenceEquals(source, activitySource))
+                        {
+                            insideShouldListenTo.Set();
+                            // Block phase 1 until the main thread has fully disposed the listener.
+                            Assert.True(disposeFinished.Wait(timeout), "Predicate timed out waiting for main thread to dispose the listener.");
+                            return true;
+                        }
+                        return false;
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                Task refresher = Task.Run(() => listener.RefreshSources());
+
+                Assert.True(insideShouldListenTo.Wait(timeout), "Timed out waiting for ShouldListenTo to be entered.");
+                listener.Dispose();
+                disposeFinished.Set();
+
+                Assert.True(refresher.Wait(timeout), "RefreshSources task did not complete within timeout.");
+
+                Assert.False(source.HasListeners());
+                Assert.Null(source.StartActivity("after-dispose-during-refresh"));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestAddActivityListenerLosesRaceWithConcurrentDispose()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
+                using ActivitySource source = new ActivitySource("AddListenerDisposeRaceSource");
+
+                using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
+                using ManualResetEventSlim disposeFinished = new ManualResetEventSlim();
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource =>
+                    {
+                        if (ReferenceEquals(source, activitySource))
+                        {
+                            insideShouldListenTo.Set();
+                            Assert.True(disposeFinished.Wait(timeout), "Predicate timed out waiting for main thread to dispose the listener.");
+                            return true;
+                        }
+                        return false;
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                Task adder = Task.Run(() => ActivitySource.AddActivityListener(listener));
+
+                Assert.True(insideShouldListenTo.Wait(timeout), "Timed out waiting for ShouldListenTo to be entered.");
+                listener.Dispose();
+                disposeFinished.Set();
+
+                Assert.True(adder.Wait(timeout), "AddActivityListener task did not complete within timeout.");
+
+                Assert.False(source.HasListeners());
+                Assert.Null(source.StartActivity("after-dispose-during-add"));
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivitySourceCtorLosesRaceWithConcurrentListenerDispose()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                TimeSpan timeout = TimeSpan.FromSeconds(30);
+                using ManualResetEventSlim insideShouldListenTo = new ManualResetEventSlim();
+                using ManualResetEventSlim disposeFinished = new ManualResetEventSlim();
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = activitySource =>
+                    {
+                        if (activitySource.Name == "CtorDisposeRaceSource")
+                        {
+                            insideShouldListenTo.Set();
+                            Assert.True(disposeFinished.Wait(timeout), "Predicate timed out waiting for main thread to dispose the listener.");
+                            return true;
+                        }
+                        return false;
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                ActivitySource? source = null;
+                Task ctor = Task.Run(() => source = new ActivitySource("CtorDisposeRaceSource"));
+
+                Assert.True(insideShouldListenTo.Wait(timeout), "Timed out waiting for ShouldListenTo to be entered.");
+                listener.Dispose();
+                disposeFinished.Set();
+
+                Assert.True(ctor.Wait(timeout), "ActivitySource constructor task did not complete within timeout.");
+
+                Assert.NotNull(source);
+                Assert.False(source!.HasListeners());
+                Assert.Null(source.StartActivity("after-dispose-during-ctor"));
+
+                source.Dispose();
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesRethrowsSinglePredicateThrowAfterCompletingWalk()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource throwingSource = new ActivitySource("RefreshThrowing.Single.Throwing");
+                using ActivitySource matchedSource = new ActivitySource("RefreshThrowing.Single.Matched");
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = src =>
+                    {
+                        if (src.Name == "RefreshThrowing.Single.Throwing")
+                        {
+                            throw new InvalidOperationException("boom");
+                        }
+                        return src.Name == "RefreshThrowing.Single.Matched";
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => listener.RefreshSources());
+                Assert.Equal("boom", ex.Message);
+
+                // The throw must not abort the iteration: the non-throwing source still got attached.
+                Assert.True(matchedSource.HasListeners());
+                Assert.False(throwingSource.HasListeners());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesAggregatesMultiplePredicateThrows()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource throwingA = new ActivitySource("RefreshThrowing.Aggregate.A");
+                using ActivitySource throwingB = new ActivitySource("RefreshThrowing.Aggregate.B");
+                using ActivitySource matchedSource = new ActivitySource("RefreshThrowing.Aggregate.Matched");
+
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = src => src.Name switch
+                    {
+                        "RefreshThrowing.Aggregate.A" => throw new InvalidOperationException("boom-A"),
+                        "RefreshThrowing.Aggregate.B" => throw new ArgumentException("boom-B"),
+                        "RefreshThrowing.Aggregate.Matched" => true,
+                        _ => false,
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                AggregateException ex = Assert.Throws<AggregateException>(() => listener.RefreshSources());
+                Assert.Equal(2, ex.InnerExceptions.Count);
+                Assert.Contains(ex.InnerExceptions, e => e is InvalidOperationException { Message: "boom-A" });
+                Assert.Contains(ex.InnerExceptions, e => e is ArgumentException { Message: "boom-B" });
+
+                Assert.True(matchedSource.HasListeners());
+                Assert.False(throwingA.HasListeners());
+                Assert.False(throwingB.HasListeners());
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestRefreshSourcesPredicateThrowDoesNotDetachPriorAttachment()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using ActivitySource source = new ActivitySource("RefreshThrowing.NoDetach.Source");
+
+                bool throwOnNextEvaluation = false;
+                using ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = src =>
+                    {
+                        if (src.Name != "RefreshThrowing.NoDetach.Source")
+                        {
+                            return false;
+                        }
+                        if (Volatile.Read(ref throwOnNextEvaluation))
+                        {
+                            throw new InvalidOperationException("boom-after-attach");
+                        }
+                        return true;
+                    },
+                    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+                    SampleUsingParentId = (ref ActivityCreationOptions<string> options) => ActivitySamplingResult.AllDataAndRecorded,
+                };
+
+                listener.RefreshSources();
+                Assert.True(source.HasListeners());
+
+                Volatile.Write(ref throwOnNextEvaluation, true);
+                Assert.Throws<InvalidOperationException>(() => listener.RefreshSources());
+
+                // The throw left the source's attachment state alone, so the listener is still attached.
+                Assert.True(source.HasListeners());
             }).Dispose();
         }
 
@@ -256,7 +642,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void EnsureRecordingTest()
+        public void AllDataAndRecordedSamplingTest()
         {
             RemoteExecutor.Invoke(() => {
                 Activity.ForceDefaultIdFormat = true;
@@ -278,11 +664,73 @@ namespace System.Diagnostics.Tests
 
                 ActivitySource.AddActivityListener(listener);
 
-                Activity a = aSource.StartActivity("RecordedActivity");
+                // Note: Remote parent is set as NOT recorded
+                var parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.None, isRemote: true);
+
+                Activity a = aSource.StartActivity("RecordedActivity", ActivityKind.Internal, parentContext);
                 Assert.NotNull(a);
 
+                Assert.True(a.IsAllDataRequested);
                 Assert.True(a.Recorded);
                 Assert.True((a.Context.TraceFlags & ActivityTraceFlags.Recorded) != 0);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void AllDataSamplingTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity.ForceDefaultIdFormat = true;
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                ActivitySource aSource = new ActivitySource("EnsureRecordingTest");
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => true,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.AllData
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                // Note: Remote parent is set as recorded
+                var parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, isRemote: true);
+
+                Activity a = aSource.StartActivity("RecordedActivity", ActivityKind.Internal, parentContext);
+                Assert.NotNull(a);
+
+                Assert.True(a.IsAllDataRequested);
+                Assert.False(a.Recorded);
+                Assert.False((a.Context.TraceFlags & ActivityTraceFlags.Recorded) != 0);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void PropagationDataSamplingTest()
+        {
+            RemoteExecutor.Invoke(() => {
+                Activity.ForceDefaultIdFormat = true;
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+
+                ActivitySource aSource = new ActivitySource("EnsureRecordingTest");
+
+                ActivityListener listener = new ActivityListener
+                {
+                    ShouldListenTo = (activitySource) => true,
+                    Sample = (ref ActivityCreationOptions<ActivityContext> activityOptions) => ActivitySamplingResult.PropagationData
+                };
+
+                ActivitySource.AddActivityListener(listener);
+
+                // Note: Remote parent is set as recorded
+                var parentContext = new ActivityContext(ActivityTraceId.CreateRandom(), ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded, isRemote: true);
+
+                Activity a = aSource.StartActivity("RecordedActivity", ActivityKind.Internal, parentContext);
+                Assert.NotNull(a);
+
+                Assert.False(a.IsAllDataRequested);
+                Assert.False(a.Recorded);
+                Assert.False((a.Context.TraceFlags & ActivityTraceFlags.Recorded) != 0);
             }).Dispose();
         }
 
@@ -424,7 +872,10 @@ namespace System.Diagnostics.Tests
 
                     Assert.Equal(ctx.TraceId, activity.TraceId);
                     Assert.Equal(ctx.SpanId, activity.ParentSpanId);
-                    Assert.Equal(ctx.TraceFlags, activity.ActivityTraceFlags);
+                    Assert.NotEqual(ctx.TraceFlags, activity.ActivityTraceFlags);
+                    Assert.True(ctx.TraceFlags.HasFlag(ActivityTraceFlags.Recorded));
+                    Assert.False(activity.ActivityTraceFlags.HasFlag(ActivityTraceFlags.Recorded));
+                    Assert.False(activity.Recorded);
                     Assert.Equal(ctx.TraceState, activity.TraceStateString);
                     Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
 
@@ -1482,6 +1933,72 @@ namespace System.Diagnostics.Tests
                 a.Stop();
 
             }, data).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivitySourceFactoryCreate_VersionParameterDefaultsAndExplicitNullArePreserved()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TestActivitySourceFactory factory = new TestActivitySourceFactory();
+
+                using ActivitySource defaultVersion = factory.Create("Versioning.Source");
+                using ActivitySource explicitEmpty = factory.Create("Versioning.Source", version: "");
+                using ActivitySource explicitNull = factory.Create("Versioning.Source", version: null);
+                using ActivitySource explicitValue = factory.Create("Versioning.Source", version: "1.0");
+
+                // The default for the version parameter matches the direct ActivitySource(string) ctor convention: "".
+                Assert.Equal(string.Empty, defaultVersion.Version);
+                Assert.Equal(string.Empty, explicitEmpty.Version);
+
+                // Explicit null must be preserved (not collapsed to ""), so callers can dedup against ActivitySourceOptions { Version = null }.
+                Assert.Null(explicitNull.Version);
+
+                Assert.Equal("1.0", explicitValue.Version);
+
+                using ActivitySource baselineDirect = new ActivitySource("Versioning.Source");
+                Assert.Equal(baselineDirect.Version, defaultVersion.Version);
+            }).Dispose();
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void TestActivitySourceFactoryCreate_DoesNotMutateSharedOptions_UnderConcurrentCalls()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TestActivitySourceFactory factory = new TestActivitySourceFactory();
+                IEnumerable<KeyValuePair<string, object?>> originalTags = new[] { new KeyValuePair<string, object?>("k", "v") };
+                ActivitySourceOptions sharedOptions = new ActivitySourceOptions("Shared.ConcurrentSource")
+                {
+                    Version = "1.0",
+                    Tags = originalTags,
+                    TelemetrySchemaUrl = "https://schema.test/concurrent",
+                };
+
+                Assert.Null(sharedOptions.Scope);
+
+                Parallel.For(0, 2000, _ =>
+                {
+                    using ActivitySource source = factory.Create(sharedOptions);
+                    Assert.Same(factory, source.Scope);
+                });
+
+                Assert.Equal("Shared.ConcurrentSource", sharedOptions.Name);
+                Assert.Equal("1.0", sharedOptions.Version);
+                Assert.Same(originalTags, sharedOptions.Tags);
+                Assert.Equal("https://schema.test/concurrent", sharedOptions.TelemetrySchemaUrl);
+                Assert.Null(sharedOptions.Scope);
+            }).Dispose();
+        }
+
+        private sealed class TestActivitySourceFactory : ActivitySourceFactory
+        {
+            protected override ActivitySource CreateCore(ActivitySourceOptions options)
+            {
+                Assert.NotNull(options);
+                Assert.Same(this, options.Scope);
+                return new ActivitySource(options);
+            }
         }
 
         public void Dispose() => Activity.Current = null;

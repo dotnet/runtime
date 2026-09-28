@@ -7,6 +7,8 @@
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <!-- Test infra issue on apple devices: https://github.com/dotnet/runtime/issues/89917 -->
     <CLRTestTargetUnsupported Condition="'$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- Android emulator doesn't support AVX512 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsAndroid)' == 'true'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);AVX512_INTRINSICS;VECTORT256_INTRINSICS</DefineConstants>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -14,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <IlcArg Include="--instruction-set:avx512f,avx512f_vl,avx512bw,avx512bw_vl,avx512cd,avx512cd_vl,avx512dq,avx512dq_vl" />
+    <IlcArg Include="--instruction-set:avx512" />
   </ItemGroup>
 
   <PropertyGroup>

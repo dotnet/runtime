@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The same <see cref="IConfigurationBuilder"/>.</returns>
         public IConfigurationBuilder Add(IConfigurationSource source)
         {
-            ThrowHelper.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(source);
 
             _sources.Add(source);
             return this;
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>An <see cref="IConfigurationRoot"/> with keys and values from the registered providers.</returns>
         public IConfigurationRoot Build()
         {
-            var providers = new List<IConfigurationProvider>();
+            var providers = new List<IConfigurationProvider>(_sources.Count);
             foreach (IConfigurationSource source in _sources)
             {
                 IConfigurationProvider provider = source.Build(this);

@@ -401,16 +401,15 @@ namespace System.Net.NetworkInformation
             };
         }
 
-        internal static IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
+        internal static unsafe IPInterfaceStatisticsTable ParseInterfaceStatisticsTableFromFile(string filePath, string name)
         {
             using (StreamReader sr = OpenStreamReader(filePath))
             {
                 sr.ReadLine();
                 sr.ReadLine();
                 Span<Range> pieces = stackalloc Range[18]; // [0]-[16] used, +1 to ensure any additional segment goes into [17]
-                while (!sr.EndOfStream)
+                while (sr.ReadLine() is string line)
                 {
-                    string line = sr.ReadLine()!;
                     if (line.Contains(name))
                     {
                         ReadOnlySpan<char> lineSpan = line;

@@ -8,6 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Wtsapi32
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Wtsapi32)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool WTSRegisterSessionNotification(IntPtr hWnd, int dwFlags);

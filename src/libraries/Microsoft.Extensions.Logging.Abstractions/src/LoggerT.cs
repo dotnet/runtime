@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="factory">The factory.</param>
         public Logger(ILoggerFactory factory)
         {
-            ThrowHelper.ThrowIfNull(factory);
+            ArgumentNullException.ThrowIfNull(factory);
 
             _logger = factory.CreateLogger(GetCategoryName());
         }

@@ -95,6 +95,9 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(intRange, new object());
             // Implements IConvertible (throws NotSupportedException - is caught)
             yield return new TestCase(intRange, new IConvertibleImplementor() { IntThrow = new NotSupportedException() });
+            // Values that overflow int range (throws OverflowException - should be caught)
+            yield return new TestCase(intRange, 2147483648L);
+            yield return new TestCase(intRange, -2147483649L);
 
             intRange = new RangeAttribute(0, 10) { MinimumIsExclusive = true };
             yield return new TestCase(intRange, -1);
@@ -869,6 +872,30 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal(type, attribute.OperandType);
         }
 
+        [Fact]
+        public static void FormatMessage_UsesSuppliedFormatAndConvertedBounds()
+        {
+            const string ExternalFormat = "external {0}:{1:D2}:{2:D2}";
+            const string ErrorMessageFormat = "internal {0}:{1:D2}:{2:D2}";
+            var attribute = new RangeAttribute(typeof(int), "1", "3") { ErrorMessage = ErrorMessageFormat };
+
+            Assert.Equal("external name:01:03", attribute.FormatMessage(ExternalFormat, "name"));
+            Assert.Equal("internal name:01:03", attribute.FormatErrorMessage("name"));
+            Assert.IsType<int>(attribute.Minimum);
+            Assert.IsType<int>(attribute.Maximum);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
+        public static void FormatMessage_UsesCurrentCulture()
+        {
+            using (new ThreadCultureChange("fr-FR"))
+            {
+                var attribute = new RangeAttribute(1.5, 3.5);
+
+                Assert.Equal("name:1,5:3,5", attribute.FormatMessage("{0}:{1:F1}:{2:F1}", "name"));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(GetRangeAttributeConstructorResults))]
         public static void ExclusiveBoundProperties_DefaultToFalse(RangeAttribute attribute)
@@ -980,10 +1007,12 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [Theory]
         [InlineData(1, 2, "2147483648")]
         [InlineData(1, 2, "-2147483649")]
-        public static void Validate_IntConversionOverflows_ThrowsOverflowException(int minimum, int maximum, object value)
+        [InlineData(-50, 50, 2147483648L)]
+        [InlineData(-50, 50, -2147483649L)]
+        public static void Validate_IntConversionOverflows_ReturnsFalse(int minimum, int maximum, object value)
         {
             RangeAttribute attribute = new RangeAttribute(minimum, maximum);
-            Assert.Throws<OverflowException>(() => attribute.Validate(value, new ValidationContext(new object())));
+            Assert.False(attribute.IsValid(value));
         }
 
         [Fact]

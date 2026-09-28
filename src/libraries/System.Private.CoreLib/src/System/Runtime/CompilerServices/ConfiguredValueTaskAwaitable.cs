@@ -14,7 +14,7 @@ namespace System.Runtime.CompilerServices
     public readonly struct ConfiguredValueTaskAwaitable
     {
         /// <summary>The wrapped <see cref="Task"/>.</summary>
-        private readonly ValueTask _value;
+        internal readonly ValueTask _value;
 
         /// <summary>Initializes the awaitable.</summary>
         /// <param name="value">The wrapped <see cref="ValueTask"/>.</param>
@@ -102,6 +102,14 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
+                    if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags) && obj is not IAsyncStateMachineBox)
+                    {
+                        if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                        {
+                            box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                        }
+                    }
+
                     Unsafe.As<IValueTaskSource>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value._continueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }
@@ -119,7 +127,7 @@ namespace System.Runtime.CompilerServices
     public readonly struct ConfiguredValueTaskAwaitable<TResult>
     {
         /// <summary>The wrapped <see cref="ValueTask{TResult}"/>.</summary>
-        private readonly ValueTask<TResult> _value;
+        internal readonly ValueTask<TResult> _value;
 
         /// <summary>Initializes the awaitable.</summary>
         /// <param name="value">The wrapped <see cref="ValueTask{TResult}"/>.</param>
@@ -207,6 +215,14 @@ namespace System.Runtime.CompilerServices
                 }
                 else if (obj != null)
                 {
+                    if (AsyncInstrumentation.IsActive && AsyncInstrumentation.LoadFlags(out AsyncInstrumentation.Flags flags) && obj is not IAsyncStateMachineBox)
+                    {
+                        if (AsyncInstrumentation.IsEnabled.AsyncProfiler(flags))
+                        {
+                            box = AsyncStateMachineDispatcherInfo.CreateDispatcher(box, flags);
+                        }
+                    }
+
                     Unsafe.As<IValueTaskSource<TResult>>(obj).OnCompleted(ThreadPool.s_invokeAsyncStateMachineBox, box, _value._token,
                         _value._continueOnCapturedContext ? ValueTaskSourceOnCompletedFlags.UseSchedulingContext : ValueTaskSourceOnCompletedFlags.None);
                 }

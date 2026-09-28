@@ -1,9 +1,13 @@
 <!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
 <Project>
+  <PropertyGroup>
+    <WorkloadTelemetryDependsOn>_WorkloadGatherTelemetryData;$(WorkloadTelemetryDependsOn)</WorkloadTelemetryDependsOn>
+  </PropertyGroup>
+
   <Target Name="_WorkloadTelemetry"
           Condition="'$(_MonoWorkloadTargetsMobile)' == 'true' and '$(TargetsCurrent)' == 'true'"
           AfterTargets="Publish"
-          DependsOnTargets="_WorkloadGatherTelemetryData">
+          DependsOnTargets="$(WorkloadTelemetryDependsOn)">
 
     <ItemGroup>
       <WorkloadPublishProperties Include="TargetPlatformIdentifier" Value="$(TargetPlatformIdentifier)" />
@@ -17,7 +21,6 @@
       <WorkloadPublishProperties Include="NativeAOT" Value="$(_WorkloadUsesNativeAOT)" />
       <WorkloadPublishProperties Include="Interp" Value="$(_WorkloadUsesInterpreter)" />
       <WorkloadPublishProperties Include="LibraryMode" Value="$(_WorkloadUsesLibraryMode)" />
-      <WorkloadPublishProperties Include="HybridGlobalization" Value="$(HybridGlobalization)" />
       <WorkloadPublishProperties Include="ResolvedRuntimePack" Value="$(_MonoWorkloadRuntimePackPackageVersion)" />
       <WorkloadPublishProperties Include="StripILAfterAOT" Value="$(_WorkloadUsesStripILAfterAOT)" />
     </ItemGroup>

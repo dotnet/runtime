@@ -22,9 +22,9 @@ extends:
   parameters:
     sdl:
       codeql:
-        compiled: 
+        compiled:
           enabled: false
-          justificationForDisabling: 'CodeQL is run on the runtime-codeql pipeline'
+          justificationForDisabling: 'CodeQL is run manually on the runtime-codeql pipeline'
       credscan:
         suppressionsFile: $(Build.SourcesDirectory)/.config/CredScanSuppressions.json
       policheck:

@@ -81,6 +81,24 @@ NESTED_END RhpThrowHwEx
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
+// RhpThrowExact
+//
+// SUMMARY:  Similar to RhpThrowEx, except that it sets the rethrow flag
+//
+// INPUT:  R0:  exception object
+//
+// OUTPUT:
+//
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+LEAF_ENTRY RhpThrowExact, _TEXT
+
+        mov         r2, #4                                          // r2 = ExKind.RethrowFlag
+        b           C_FUNC(RhpThrowImpl)
+
+LEAF_END RhpThrowExact, _TEXT
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//
 // RhpThrowEx
 //
 // INPUT:  R0:  exception object
@@ -88,7 +106,13 @@ NESTED_END RhpThrowHwEx
 // OUTPUT:
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
+LEAF_ENTRY RhpThrowEx, _TEXT
+
+        mov         r2, #1                                          // r2 = ExKind.Throw
+        b           C_FUNC(RhpThrowImpl)
+LEAF_END RhpThrowEx, _TEXT
+
+NESTED_ENTRY RhpThrowImpl, _TEXT, NoHandler
 
         // Setup a PAL_LIMITED_CONTEXT on the stack {
         PROLOG_VPUSH {d8-d15}
@@ -103,10 +127,9 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         str         r4, [sp, #(rsp_offsetof_Context + OFFSETOF__PAL_LIMITED_CONTEXT__SP)]
 
         mov         r4, r0 // Save exception object
+        mov         r5, r2 // Save ExKind
         // r0 = GetThread()
         INLINE_GETTHREAD
-
-        add         r2, sp, #(rsp_offsetof_Context + SIZEOF__PAL_LIMITED_CONTEXT + 0x8) 	// r2 <- addr of return address
 
         // There is runtime C# code that can tail call to RhpThrowEx using a binder intrinsic. So  the return
         // address could have been hijacked when we were in that C# code and we must remove the hijack and
@@ -121,6 +144,7 @@ NESTED_ENTRY RhpThrowEx, _TEXT, NoHandler
         ldr         r3, [r0, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
 
         // r4: exception object
+        // r5: ExKind
         // r1: hijacked return address
         // r0: pThread
         // r3: hijacked return address location
@@ -158,9 +182,9 @@ LOCAL_LABEL(NotHiJacked):
         str         r3, [r1, #OFFSETOF__ExInfo__m_exception] 	      // init the exception object to null
         mov         r3, #1
         strb        r3, [r1, #OFFSETOF__ExInfo__m_passNumber]       // init to the first pass
-        strb        r3, [r1, #OFFSETOF__ExInfo__m_kind]
+        strb        r5, [r1, #OFFSETOF__ExInfo__m_kind]             // ExKind
         mov         r3, #0xFFFFFFFF
-        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]     // ExKind.Throw
+        str         r3, [r1, #OFFSETOF__ExInfo__m_idxCurClause]
 
         // link the ExInfo into the thread's ExInfo chain
         ldr         r3, [r0, #OFFSETOF__Thread__m_pExInfoStackHead]
@@ -176,12 +200,12 @@ LOCAL_LABEL(NotHiJacked):
         // r1 contains the address of the new ExInfo
         bl          C_FUNC(RhThrowEx)
 
-GLOBAL_LABEL RhpThrowEx2
+GLOBAL_LABEL RhpThrowImpl2
 
         // no return
         EMIT_BREAKPOINT
 
-NESTED_END RhpThrowEx, _TEXT
+NESTED_END RhpThrowImpl, _TEXT
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////

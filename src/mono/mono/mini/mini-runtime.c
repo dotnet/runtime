@@ -119,7 +119,6 @@ const char *mono_build_date;
 gboolean mono_do_signal_chaining;
 gboolean mono_do_crash_chaining;
 int mini_verbose = 0;
-gboolean mono_term_signaled = FALSE;
 
 /*
  * This flag controls whenever the runtime uses LLVM for JIT compilation, and whenever
@@ -3115,6 +3114,14 @@ mono_jit_search_all_backends_for_jit_info (MonoMethod *method, MonoJitInfo **out
 	return code;
 }
 
+static gpointer
+get_method_code_start (MonoMethod *method)
+{
+	MonoJitInfo *ji = NULL;
+	gpointer code = mono_jit_search_all_backends_for_jit_info (method, &ji);
+	return ji ? mono_jit_info_get_code_start (ji) : code;
+}
+
 gpointer
 mono_jit_find_compiled_method_with_jit_info (MonoMethod *method, MonoJitInfo **ji)
 {
@@ -3764,17 +3771,6 @@ MONO_SIG_HANDLER_FUNC (, mono_crashing_signal_handler)
 	}
 }
 
-MONO_SIG_HANDLER_FUNC (, mono_sigterm_signal_handler)
-{
-	mono_environment_exitcode_set(128+SIGTERM);	/* Set default exit code */
-
-	mono_term_signaled = TRUE;
-
-	mono_gc_finalize_notify ();
-
-	mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
-}
-
 #if defined(MONO_ARCH_USE_SIGACTION) || defined(HOST_WIN32)
 
 #define HAVE_SIG_INFO
@@ -3908,7 +3904,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -3918,7 +3915,8 @@ MONO_SIG_HANDLER_FUNC (, mono_sigsegv_signal_handler)
 	} else {
 		mono_handle_native_crash (mono_get_signame (SIGSEGV), &mctx, (MONO_SIG_HANDLER_INFO_TYPE*)info);
 		if (mono_do_crash_chaining) {
-			mono_chain_signal (MONO_SIG_HANDLER_PARAMS);
+			if (!mono_chain_signal (MONO_SIG_HANDLER_PARAMS))
+				mono_chain_signal_to_default_sigsegv_handler ();
 			return;
 		}
 	}
@@ -4506,7 +4504,7 @@ init_class (MonoClass *klass)
 	}
 #endif
 
-#ifdef TARGET_ARM64
+#if defined(TARGET_ARM64) || defined(TARGET_S390X)
 	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
 		if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") ||!strcmp (name, "Vector4") || !strcmp (name, "Quaternion") || !strcmp (name, "Plane"))
 			mono_class_set_is_simd_type (klass, TRUE);
@@ -4726,6 +4724,7 @@ mini_init (const char *filename)
 	callbacks.get_weak_field_indexes = mono_aot_get_weak_field_indexes;
 #endif
 	callbacks.find_jit_info_in_aot = mono_aot_find_jit_info;
+	callbacks.get_method_code_start = get_method_code_start;
 	callbacks.metadata_update_published = mini_invalidate_transformed_interp_methods;
 	callbacks.interp_jit_info_foreach = mini_interp_jit_info_foreach;
 	callbacks.interp_sufficient_stack = mini_interp_sufficient_stack;
@@ -4938,6 +4937,7 @@ register_icalls (void)
 	 * so on.
 	 */
 	register_icall (mono_profiler_raise_method_enter, mono_icall_sig_void_ptr_ptr, TRUE);
+	register_icall (mono_profiler_raise_method_samplepoint, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_leave, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_method_tail_call, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_profiler_raise_exception_clause, mono_icall_sig_void_ptr_int_int_object, TRUE);
@@ -5089,9 +5089,9 @@ register_icalls (void)
 #endif
 	register_icall (mono_ckfinite, mono_icall_sig_double_double, FALSE);
 
-#ifdef COMPRESSED_INTERFACE_BITMAP
-	register_icall (mono_class_interface_match, mono_icall_sig_uint32_ptr_int32, TRUE);
-#endif
+	// opt is initialized because mono_metadata_init is ran before this
+	if (mono_opt_compressed_interface_bitmap)
+		register_icall (mono_class_interface_match_compressed, mono_icall_sig_uint32_ptr_int32, TRUE);
 
 	/* other jit icalls */
 	register_icall (ves_icall_mono_delegate_ctor, mono_icall_sig_void_object_object_ptr, FALSE);
@@ -5114,6 +5114,7 @@ register_icalls (void)
 	register_icall (mono_helper_ldstr, mono_icall_sig_object_ptr_int, FALSE);
 	register_icall (mono_helper_ldstr_mscorlib, mono_icall_sig_object_int, FALSE);
 	register_icall (mono_helper_newobj_mscorlib, mono_icall_sig_object_int, FALSE);
+	register_icall (mono_helper_box_nullable, mono_icall_sig_object_ptr_ptr, FALSE);
 	register_icall (mono_value_copy_internal, mono_icall_sig_void_ptr_ptr_ptr, FALSE);
 	register_icall (mono_object_castclass_unbox, mono_icall_sig_object_object_ptr, FALSE);
 	register_icall (mono_break, mono_icall_sig_void, TRUE);
@@ -5372,7 +5373,7 @@ mono_precompile_assembly (MonoAssembly *ass, void *user_data)
 			mono_error_cleanup (error); /* FIXME don't swallow the error */
 			continue;
 		}
-		if (strcmp (method->name, "Finalize") == 0) {
+		if (strcmp (method->name, "GuardedFinalize") == 0) {
 			invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 			mono_compile_method_checked (invoke, error);
 			mono_error_assert_ok (error);

@@ -89,30 +89,46 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (certAndKey.Key is not null)
             {
-                AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, certAndKey.Key);
-                pal.Dispose();
-                pal = newPal;
+                if (certAndKey.Key is { Key: AsymmetricAlgorithm alg })
+                {
+                    AppleCertificatePal newPal = AppleCertificatePal.ImportPkcs12(pal, alg);
+                    pal.Dispose();
+                    pal = newPal;
+                }
+                else
+                {
+                    Debug.Fail($"Unhandled key type '{certAndKey.Key.Key?.GetType()?.FullName}'.");
+                    throw new CryptographicException();
+                }
             }
 
             return new Pkcs12Return(pal);
         }
 
-        private static partial AsymmetricAlgorithm? CreateKey(string algorithm)
+        private static partial Pkcs12Key? CreateKey(string algorithm, ReadOnlySpan<byte> pkcs8)
         {
-            return algorithm switch
+            switch (algorithm)
             {
-                Oids.Rsa or Oids.RsaPss => new RSAImplementation.RSASecurityTransforms(),
-                Oids.EcPublicKey or Oids.EcDiffieHellman => new ECDsaImplementation.ECDsaSecurityTransforms(),
-                // There's no DSA support on iOS/tvOS.
-                _ => null,
-            };
+                case Oids.Rsa or Oids.RsaPss:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new RSAImplementation.RSAAppleCrypto());
+                case Oids.EcPublicKey or Oids.EcDiffieHellman:
+                    return new AsymmetricAlgorithmPkcs12PrivateKey(
+                        pkcs8,
+                        static () => new ECDsaImplementation.ECDsaAppleCrypto());
+
+                default:
+                    // No DSA or PQC support on iOS / tvOS.
+                    return null;
+            }
         }
 
         private static partial ICertificatePalCore LoadX509Der(ReadOnlyMemory<byte> data)
         {
             ReadOnlySpan<byte> span = data.Span;
 
-            AsnValueReader reader = new AsnValueReader(span, AsnEncodingRules.DER);
+            ValueAsnReader reader = new ValueAsnReader(span, AsnEncodingRules.DER);
             reader.ReadSequence();
             reader.ThrowIfNotEmpty();
 

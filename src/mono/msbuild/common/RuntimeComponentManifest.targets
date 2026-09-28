@@ -1,10 +1,10 @@
 <Project>
-  <Target Name="_MonoReadAvailableComponentsManifest">
+  <Target Name="_MonoReadAvailableComponentsManifest" Condition="'$(UseMonoRuntime)' == 'true'">
     <Error Condition="'%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App' and '%(ResolvedFrameworkReference.RuntimePackPath)' == '' and '$(_MonoRuntimeComponentManifestJsonFilePath)' == ''"
            Text="Empty ResolveFrameworkReference.RuntimePackPath while trying to read runtime components manifest. ResolvedFrameworkReference available: @(ResolvedFrameworkReference -> '{ %(Identity), RuntimePackPath: %(RuntimePackPath) }')" />
 
     <PropertyGroup>
-      <_MonoRuntimeComponentManifestJsonFilePath 
+      <_MonoRuntimeComponentManifestJsonFilePath
         Condition="'$(_MonoRuntimeComponentManifestJsonFilePath)' == '' and '%(ResolvedFrameworkReference.Identity)' == 'Microsoft.NETCore.App'">$([MSBuild]::NormalizePath('%(RuntimePackPath)', 'runtimes', '$(RuntimeIdentifier)', 'build', 'RuntimeComponentManifest.json'))</_MonoRuntimeComponentManifestJsonFilePath>
     </PropertyGroup>
 
@@ -69,7 +69,7 @@
          Such a workload should then use DontLink to exclude the disabled components.  On the other
          hand a workload that explicitly picks the native libraries from native/ should use
          _MonoRuntimeComponentLink to pick just the needed runtime component artifacts. -->
-   
+
     <!-- The target also depends on the following items that are provided by the component-manifest.props from the runtime pack -->
     <!-- _MonoRuntimeComponentLinking item list: either 'dynamic' or 'static' (defined by the runtime for each possible RuntimeIdentifier) -->
     <!-- _MonoRuntimeComponentName item list: the components for the current RuntimeIdentifier (defined by _MonoComputeAvailableComponentDefinitions above ) -->

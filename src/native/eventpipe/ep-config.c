@@ -80,7 +80,9 @@ config_compute_keyword_and_level (
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session) {
+		// Skip sessions that are published but not yet enabled (session init ran but enable holding lock has
+		// not): their allow_write bit is clear. Including them would let a provider observe a session not yet tracing.
+		if (session && (ep_volatile_load_allow_write () & ((uint64_t)1 << i))) {
 			EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 			EP_ASSERT (providers != NULL);
 
@@ -119,7 +121,10 @@ config_register_provider (
 	for (int i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; i++) {
 		// Entering EventPipe lock gave us a barrier, we don't need more of them.
 		EventPipeSession *session = ep_volatile_load_session_without_barrier (i);
-		if (session) {
+		// Skip sessions that are published but not yet enabled (session init ran but enable holding lock has
+		// not): their allow_write bit is clear. config_enable_disable from enable holding lock sets up the
+		// provider for such a session once it is enabled.
+		if (session && (ep_volatile_load_allow_write () & ((uint64_t)1 << i))) {
 			EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 			EP_ASSERT (providers != NULL);
 

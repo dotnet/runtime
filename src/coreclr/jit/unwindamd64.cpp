@@ -71,6 +71,54 @@ short Compiler::mapRegNumToDwarfReg(regNumber reg)
         case REG_R15:
             dwarfReg = 15;
             break;
+        case REG_R16:
+            dwarfReg = 16;
+            break;
+        case REG_R17:
+            dwarfReg = 17;
+            break;
+        case REG_R18:
+            dwarfReg = 18;
+            break;
+        case REG_R19:
+            dwarfReg = 19;
+            break;
+        case REG_R20:
+            dwarfReg = 20;
+            break;
+        case REG_R21:
+            dwarfReg = 21;
+            break;
+        case REG_R22:
+            dwarfReg = 22;
+            break;
+        case REG_R23:
+            dwarfReg = 23;
+            break;
+        case REG_R24:
+            dwarfReg = 24;
+            break;
+        case REG_R25:
+            dwarfReg = 25;
+            break;
+        case REG_R26:
+            dwarfReg = 26;
+            break;
+        case REG_R27:
+            dwarfReg = 27;
+            break;
+        case REG_R28:
+            dwarfReg = 28;
+            break;
+        case REG_R29:
+            dwarfReg = 29;
+            break;
+        case REG_R30:
+            dwarfReg = 30;
+            break;
+        case REG_R31:
+            dwarfReg = 31;
+            break;
         default:
             noway_assert(!"unexpected REG_NUM");
     }
@@ -102,7 +150,7 @@ void Compiler::unwindBegProlog()
 
 void Compiler::unwindBegPrologWindows()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -130,7 +178,7 @@ void Compiler::unwindBegPrologWindows()
 //
 void Compiler::unwindEndProlog()
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(compGeneratingUnwindProlog);
     compGeneratingUnwindProlog = false;
 }
@@ -141,7 +189,7 @@ void Compiler::unwindEndProlog()
 //
 void Compiler::unwindBegEpilog()
 {
-    assert(compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
     assert(!compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = true;
 }
@@ -152,7 +200,7 @@ void Compiler::unwindBegEpilog()
 //
 void Compiler::unwindEndEpilog()
 {
-    assert(compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
     assert(compGeneratingUnwindEpilog);
     compGeneratingUnwindEpilog = false;
 }
@@ -177,9 +225,30 @@ void Compiler::unwindPush(regNumber reg)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Windows: Record  push/save of 2 registers simultaneously.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2(regNumber reg1, regNumber reg2)
+{
+#ifdef UNIX_AMD64_ABI
+    if (generateCFIUnwindCodes())
+    {
+        unwindPush2Pop2CFI(reg1, reg2);
+    }
+    else
+#endif // UNIX_AMD64_ABI
+    {
+        unwindPush2Windows(reg1, reg2);
+    }
+}
+
 void Compiler::unwindPushWindows(regNumber reg)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -212,6 +281,20 @@ void Compiler::unwindPushWindows(regNumber reg)
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::unwindPush2Windows: Record  push/save of 2 registers simultaneously in windows OS.
+//
+// Arguments:
+//    reg1 - The first register being pushed/saved.
+//    reg2 - The second register being pushed/saved.
+//
+void Compiler::unwindPush2Windows(regNumber reg1, regNumber reg2)
+{
+    // ToDo: This is a placeholder till Windows OS has unwind support for push2/pop2.
+    unwindPushWindows(reg1);
+    unwindPushWindows(reg2);
+}
+
 #ifdef UNIX_AMD64_ABI
 #endif // UNIX_AMD64_ABI
 
@@ -237,7 +320,7 @@ void Compiler::unwindAllocStack(unsigned size)
 
 void Compiler::unwindAllocStackWindows(unsigned size)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -298,7 +381,7 @@ void Compiler::unwindSetFrameReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -364,7 +447,7 @@ void Compiler::unwindSaveReg(regNumber reg, unsigned offset)
 
 void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     FuncInfoDsc* func = funCurrentFunc();
 
@@ -399,7 +482,22 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
             code             = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
             code->UnwindOp   = (genIsValidFloatReg(reg)) ? UWOP_SAVE_XMM128_FAR : UWOP_SAVE_NONVOL_FAR;
         }
-        code->OpInfo          = (BYTE)reg;
+        unsigned unwindRegNum;
+        if (genIsValidFloatReg(reg))
+        {
+            unwindRegNum = reg - XMMBASE;
+        }
+        else
+        {
+            assert(genIsValidIntReg(reg));
+            unwindRegNum = reg;
+        }
+        // We only add unwind codes for non-volatile registers and for x86/x64,
+        // the max registers index for a non-volatile register is 15.
+        assert(unwindRegNum <= 15);
+        code->OpInfo = (UCHAR)unwindRegNum;
+        assert((unsigned)code->OpInfo == unwindRegNum);
+
         unsigned int cbProlog = unwindGetCurrentOffset(func);
         noway_assert((BYTE)cbProlog == cbProlog);
         code->CodeOffset = (BYTE)cbProlog;
@@ -409,7 +507,7 @@ void Compiler::unwindSaveRegWindows(regNumber reg, unsigned offset)
 #ifdef UNIX_AMD64_ABI
 void Compiler::unwindSaveRegCFI(regNumber reg, unsigned offset)
 {
-    assert(compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (RBM_CALLEE_SAVED & genRegMask(reg))
     {
@@ -597,13 +695,12 @@ void DumpUnwindInfo(bool                     isHotCode,
 //
 void Compiler::unwindReserve()
 {
-    assert(!compGeneratingProlog);
-    assert(!compGeneratingEpilog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindReserveFunc(funGetFunc(funcIdx));
+        unwindReserveFunc(func);
     }
 }
 
@@ -709,13 +806,12 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 //
 void Compiler::unwindEmit(void* pHotCode, void* pColdCode)
 {
-    assert(!compGeneratingProlog);
-    assert(!compGeneratingEpilog);
+    assert(!GetEmitter()->emitGeneratingPrologOrFuncletProlog());
+    assert(!GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
-    assert(compFuncInfoCount > 0);
-    for (unsigned funcIdx = 0; funcIdx < compFuncInfoCount; funcIdx++)
+    for (FuncInfoDsc* const func : Funcs())
     {
-        unwindEmitFunc(funGetFunc(funcIdx), pHotCode, pColdCode);
+        unwindEmitFunc(func, pHotCode, pColdCode);
     }
 }
 
@@ -870,9 +966,9 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 void Compiler::unwindEmitFunc(FuncInfoDsc* func, void* pHotCode, void* pColdCode)
 {
     // Verify that the JIT enum is in sync with the JIT-EE interface enum
-    static_assert_no_msg(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
-    static_assert_no_msg(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
-    static_assert_no_msg(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
+    static_assert(FUNC_ROOT == (FuncKind)CORJIT_FUNC_ROOT);
+    static_assert(FUNC_HANDLER == (FuncKind)CORJIT_FUNC_HANDLER);
+    static_assert(FUNC_FILTER == (FuncKind)CORJIT_FUNC_FILTER);
 
 #ifdef DEBUG
     // If fake-splitting, treat all unwind info as hot.

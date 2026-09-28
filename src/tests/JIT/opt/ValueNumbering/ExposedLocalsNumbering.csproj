@@ -10,4 +10,7 @@
     <Compile Include="$(MSBuildProjectName).cs" />
     <CLRTestEnvironmentVariable Include="DOTNET_JitNoCSE" Value="1" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

@@ -10,30 +10,25 @@
 
 JitConfigValues JitConfig;
 
-void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host)
+//----------------------------------------------------------------------
+// initialize: Initialize the method set by parsing the string
+//
+// Arguments:
+//     listFromConfig - A string containing the list. The string must have come from the host's config,
+//                      and this class takes ownership of the string.
+//     host           - Pointer to host interface
+//
+void JitConfigValues::MethodSet::initialize(const char* listFromConfig, ICorJitHost* host)
 {
-    assert(m_list == nullptr);
+    assert(m_listFromConfig == nullptr);
     assert(m_names == nullptr);
 
-    // Convert the input list to UTF-8
-    int utf8ListLen = WideCharToMultiByte(CP_UTF8, 0, list, -1, nullptr, 0, nullptr, nullptr);
-    if (utf8ListLen == 0)
+    if (listFromConfig == nullptr)
     {
         return;
     }
-    else
-    {
-        // char* m_list;
-        //
-        m_list = static_cast<char*>(host->allocateMemory(utf8ListLen));
-        if (WideCharToMultiByte(CP_UTF8, 0, list, -1, static_cast<LPSTR>(m_list), utf8ListLen, nullptr, nullptr) == 0)
-        {
-            // Failed to convert the list. Free the memory and ignore the list.
-            host->freeMemory(static_cast<void*>(m_list));
-            m_list = nullptr;
-            return;
-        }
-    }
+
+    m_listFromConfig = listFromConfig;
 
     auto commitPattern = [this, host](const char* start, const char* end) {
         if (end <= start)
@@ -45,13 +40,17 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         name->m_next                  = m_names;
         name->m_patternStart          = start;
         name->m_patternEnd            = end;
-        const char* colon             = static_cast<const char*>(memchr(start, ':', end - start));
-        const char* startOfMethodName = colon != nullptr ? colon + 1 : start;
+        const char* exclamation       = static_cast<const char*>(memchr(start, '!', end - start));
+        const char* startOfClassName  = exclamation != nullptr ? exclamation + 1 : start;
+        const char* colon             = static_cast<const char*>(memchr(startOfClassName, ':', end - startOfClassName));
+        const char* startOfMethodName = colon != nullptr ? colon + 1 : startOfClassName;
 
         const char* parens          = static_cast<const char*>(memchr(startOfMethodName, '(', end - startOfMethodName));
         const char* endOfMethodName = parens != nullptr ? parens : end;
         name->m_methodNameContainsInstantiation =
             memchr(startOfMethodName, '[', endOfMethodName - startOfMethodName) != nullptr;
+
+        name->m_containsAssemblyName = (exclamation != nullptr);
 
         if (colon != nullptr)
         {
@@ -68,7 +67,7 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
         m_names                   = name;
     };
 
-    const char* curPatternStart = m_list;
+    const char* curPatternStart = m_listFromConfig;
     const char* curChar;
     for (curChar = curPatternStart; *curChar != '\0'; curChar++)
     {
@@ -82,6 +81,12 @@ void JitConfigValues::MethodSet::initialize(const WCHAR* list, ICorJitHost* host
     commitPattern(curPatternStart, curChar);
 }
 
+//----------------------------------------------------------------------
+// destroy: Destroy the method set.
+//
+// Arguments:
+//     host - Pointer to host interface
+//
 void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
 {
     // Free method names, free the list string, and reset our state
@@ -90,10 +95,10 @@ void JitConfigValues::MethodSet::destroy(ICorJitHost* host)
         next = name->m_next;
         host->freeMemory(static_cast<void*>(name));
     }
-    if (m_list != nullptr)
+    if (m_listFromConfig != nullptr)
     {
-        host->freeMemory(static_cast<void*>(m_list));
-        m_list = nullptr;
+        host->freeStringConfigValue(m_listFromConfig);
+        m_listFromConfig = nullptr;
     }
     m_names = nullptr;
 }
@@ -163,8 +168,9 @@ bool JitConfigValues::MethodSet::contains(CORINFO_METHOD_HANDLE methodHnd,
         {
             printer.Truncate(0);
             bool success = comp->eeRunFunctorWithSPMIErrorTrap([&]() {
-                comp->eePrintMethod(&printer, name->m_containsClassName ? classHnd : NO_CLASS_HANDLE, methodHnd,
-                                    sigInfo,
+                comp->eePrintMethod(&printer, classHnd, methodHnd, sigInfo,
+                                    /* includeAssembly */ name->m_containsAssemblyName,
+                                    /* includeClass */ name->m_containsClassName,
                                     /* includeClassInstantiation */ name->m_classNameContainsInstantiation,
                                     /* includeMethodInstantiation */ name->m_methodNameContainsInstantiation,
                                     /* includeSignature */ name->m_containsSignature,
@@ -194,9 +200,8 @@ void JitConfigValues::initialize(ICorJitHost* host)
 #define RELEASE_CONFIG_INTEGER(name, key, defaultValue) m_##name = host->getIntConfigValue(key, defaultValue);
 #define RELEASE_CONFIG_STRING(name, key)                m_##name = host->getStringConfigValue(key);
 #define RELEASE_CONFIG_METHODSET(name, key)                                                                            \
-    const WCHAR* name##value = host->getStringConfigValue(key);                                                        \
-    m_##name.initialize(name##value, host);                                                                            \
-    host->freeStringConfigValue(name##value);
+    const char* name##value = host->getStringConfigValue(key);                                                         \
+    m_##name.initialize(name##value, host);
 
 #include "jitconfigvalues.h"
 

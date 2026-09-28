@@ -16,7 +16,6 @@ Abstract:
 #include "config.h"
 #include "pal/dbgmsg.h"
 #include "pal/environ.h"
-#include "pal/malloc.hpp"
 #include "pal/thread.hpp"
 #include "machmessage.h"
 

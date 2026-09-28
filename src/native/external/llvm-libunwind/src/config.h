@@ -28,6 +28,9 @@
     #define _LIBUNWIND_SUPPORT_COMPACT_UNWIND 1
     #define _LIBUNWIND_SUPPORT_DWARF_UNWIND 1
   #endif
+  #if defined(__aarch64__) || defined(__arm64__) || defined(__arm64e__)
+    #define _LIBUNWIND_TRACE_RET_INJECT 1
+  #endif
 #elif defined(_WIN32)
   #ifdef __SEH__
     #define _LIBUNWIND_SUPPORT_SEH_UNWIND 1
@@ -61,6 +64,12 @@
   #endif
 #endif
 
+#ifdef _LIBUNWIND_TRACE_RET_INJECT
+#define _LIBUNWIND_TRACE_NO_INLINE __attribute__((noinline, disable_tail_calls))
+#else
+#define _LIBUNWIND_TRACE_NO_INLINE
+#endif
+
 #if defined(_LIBUNWIND_HIDE_SYMBOLS)
   // The CMake file passes -fvisibility=hidden to control ELF/Mach-O visibility.
   #define _LIBUNWIND_EXPORT
@@ -90,9 +99,15 @@
   __asm__(SYMBOL_NAME(aliasname) " = " SYMBOL_NAME(name));                     \
   _LIBUNWIND_ALIAS_VISIBILITY(SYMBOL_NAME(aliasname))
 #elif defined(__ELF__) || defined(_AIX) || defined(__wasm__)
+#if defined(__GNUC__) && !defined(__clang__) && (__GNUC__ >= 9)
+#define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
+  extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
+      __attribute__((weak, alias(#name), copy(name)));
+#else
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \
   extern "C" _LIBUNWIND_EXPORT __typeof(name) aliasname                        \
       __attribute__((weak, alias(#name)));
+#endif
 #elif defined(_WIN32)
 #if defined(__MINGW32__)
 #define _LIBUNWIND_WEAK_ALIAS(name, aliasname)                                 \

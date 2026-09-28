@@ -195,6 +195,34 @@ namespace System.Tests
             }).Dispose();
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnMono("Mono does not suppress reentrant first chance exception notifications")]
+        public void FirstChanceException_HandlerThrows_DoesNotRecurse()
+        {
+            // A handler that throws must not cause the runtime to recursively deliver
+            // first-chance notifications for the exceptions it throws, which would
+            // otherwise recurse until the stack overflows. The handler should be
+            // invoked exactly once for the original exception.
+            RemoteExecutor.Invoke(() => {
+                int count = 0;
+                EventHandler<FirstChanceExceptionEventArgs> handler = (sender, e) =>
+                {
+                    count++;
+                    throw new FirstChanceTestException("from handler");
+                };
+                AppDomain.CurrentDomain.FirstChanceException += handler;
+                try
+                {
+                    throw new FirstChanceTestException("outer");
+                }
+                catch
+                {
+                }
+                AppDomain.CurrentDomain.FirstChanceException -= handler;
+                Assert.Equal(1, count);
+            }).Dispose();
+        }
+
         class FirstChanceTestException : Exception
         {
             public FirstChanceTestException(string message) : base(message)
@@ -262,15 +290,15 @@ namespace System.Tests
         }
 
         // In Mono AOT, loading assemblies can happen, but they need to be AOT'd and registered on startup.  That is not the case
-        // with TestAppOutsideOfTPA.exe
+        // with TestAppOutsideOfTPA.dll
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonBundledAssemblyLoadingSupported))]
         public void ExecuteAssembly()
         {
             CopyTestAssemblies();
 
-            string name = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe");
+            string name = Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.dll");
             AssertExtensions.Throws<ArgumentNullException>("assemblyFile", () => AppDomain.CurrentDomain.ExecuteAssembly(null));
-            Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.exe"));
+            Assert.Throws<FileNotFoundException>(() => AppDomain.CurrentDomain.ExecuteAssembly("NonExistentFile.dll"));
 
 #pragma warning disable SYSLIB0003 // Code Access Security is not supported or honored by the runtime.
             Func<int> executeAssembly = () => AppDomain.CurrentDomain.ExecuteAssembly(name, new string[2] { "2", "3" }, null, Configuration.Assemblies.AssemblyHashAlgorithm.SHA1);
@@ -366,7 +394,7 @@ namespace System.Tests
             Assert.NotNull(AppDomain.CurrentDomain.Load(typeof(AppDomainTests).Assembly.FullName));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported), nameof(PlatformDetection.HasAssemblyFiles))]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void LoadBytes()
         {
@@ -601,7 +629,7 @@ namespace System.Tests
             RemoteExecutor.Invoke(() => {
                 // bool AssemblyResolveFlag = false;
 
-                Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe"));
+                Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.dll"));
 
                 ResolveEventHandler handler = (sender, args) =>
                 {
@@ -792,7 +820,7 @@ namespace System.Tests
             string rootPath;
             string assemblyResolvePath = "AssemblyResolveTestApp";
             string appOutsideTPAPath = "TestAppOutsideOfTPA";
-            
+
             if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
             {
                 rootPath = Path.GetTempPath();
@@ -812,11 +840,11 @@ namespace System.Tests
                 File.Copy("AssemblyResolveTestApp.dll", destTestAssemblyPath, false);
             }
 
-            destTestAssemblyPath = Path.Combine(appOutsideTPAPath, "TestAppOutsideOfTPA.exe");
-            if (!File.Exists(destTestAssemblyPath) && File.Exists("TestAppOutsideOfTPA.exe"))
+            destTestAssemblyPath = Path.Combine(appOutsideTPAPath, "TestAppOutsideOfTPA.dll");
+            if (!File.Exists(destTestAssemblyPath) && File.Exists("TestAppOutsideOfTPA.dll"))
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
-                File.Copy("TestAppOutsideOfTPA.exe", destTestAssemblyPath, false);
+                File.Copy("TestAppOutsideOfTPA.dll", destTestAssemblyPath, false);
             }
         }
 
@@ -839,9 +867,9 @@ namespace System.Tests
 #pragma warning restore SYSLIB0003 // Obsolete: CAS
         }
 
-        public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported;
+        public static bool FileCreateCaseSensitiveAndAssemblyLoadingSupported => PlatformDetection.FileCreateCaseSensitive && PlatformDetection.IsAssemblyLoadingSupported && PlatformDetection.HasAssemblyFiles;
 
-        [ConditionalTheory(nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
+        [ConditionalTheory(typeof(AppDomainTests), nameof(FileCreateCaseSensitiveAndAssemblyLoadingSupported))]
         [MemberData(nameof(TestingCreateInstanceFromObjectHandleData))]
         public static void TestingCreateInstanceFromObjectHandle(string physicalFileName, string assemblyFile, string type, string returnedFullNameType, Type exceptionType)
         {

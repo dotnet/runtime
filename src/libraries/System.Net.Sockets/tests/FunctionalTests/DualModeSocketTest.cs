@@ -330,9 +330,10 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
     public class DualModeConnectToHostString : DualModeBase
     {
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectToHostString), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnect_LoopbackDnsToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -349,9 +350,10 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
     public class DualModeConnectToDnsEndPoint : DualModeBase
     {
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectToDnsEndPoint), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnect_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -520,6 +522,7 @@ namespace System.Net.Sockets.Tests
     [Trait("IPv4", "true")]
     [Trait("IPv6", "true")]
     [SkipOnPlatform(TestPlatforms.Wasi, "Wasi doesn't support DualMode")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/127986", TestPlatforms.Android)]
     public class DualModeConnectAsync : DualModeBase
     {
         [Fact] // Base case
@@ -611,7 +614,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectAsync), nameof(LocalhostIsBothIPv4AndIPv6))]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
         {
@@ -638,7 +641,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ConditionalTheory(nameof(LocalhostIsBothIPv4AndIPv6))]
+        [ConditionalTheory(typeof(DualModeConnectAsync), nameof(LocalhostIsBothIPv4AndIPv6))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/22225")]
         [MemberData(nameof(DualMode_Connect_IPAddress_DualMode_Data))]
         public void DualModeConnectAsync_Static_DnsEndPointToHost_Helper(IPAddress listenOn, bool dualModeServer)
@@ -794,13 +797,28 @@ namespace System.Net.Sockets.Tests
 
         private async Task Accept_Helper_Failing(IPAddress listenOn, IPAddress connectTo)
         {
-            using Socket serverSocket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            int port = serverSocket.BindToAnonymousPort(listenOn);
+            using PortBlocker portBlocker = new PortBlocker(() =>
+            {
+                Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                socket.BindToAnonymousPort(listenOn);
+                return socket;
+            }, connectTo);
+
+            Socket serverSocket = portBlocker.MainSocket;
             serverSocket.Listen(1);
-            _ = AcceptAsync(serverSocket);
 
             using Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            await Assert.ThrowsAsync<SocketException>(() => client.ConnectAsync(connectTo, port));
+            Assert.False(client.TryConnect(new IPEndPoint(connectTo, portBlocker.Port), TestSettings.FailingTestTimeout));
+
+            IPAddress validConnectTo = listenOn.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Loopback : IPAddress.IPv6Loopback;
+            using Socket validClient = new Socket(validConnectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            await validClient.ConnectAsync(validConnectTo, portBlocker.Port).WaitAsync(TestSettings.PassingTestTimeout);
+
+            using Socket accepted = await AcceptAsync(serverSocket).WaitAsync(TestSettings.PassingTestTimeout);
+            var clientEndPoint = (IPEndPoint)validClient.LocalEndPoint;
+            var acceptedRemoteEndPoint = (IPEndPoint)accepted.RemoteEndPoint;
+            Assert.Equal(clientEndPoint.Port, acceptedRemoteEndPoint.Port);
+            Assert.Equal(clientEndPoint.Address.MapToIPv6(), acceptedRemoteEndPoint.Address.MapToIPv6());
         }
 
         protected static void AssertDualModeEnabled(Socket socket, IPAddress listenOn)

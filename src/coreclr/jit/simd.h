@@ -5,7 +5,7 @@
 #define _SIMD_H_
 
 template <typename T>
-static bool ElementsAreSame(T* array, size_t size)
+static bool ElementsAreSame(const T* array, size_t size)
 {
     for (size_t i = 1; i < size; i++)
     {
@@ -16,7 +16,7 @@ static bool ElementsAreSame(T* array, size_t size)
 }
 
 template <typename T>
-static bool ElementsAreAllBitsSetOrZero(T* array, size_t size)
+static bool ElementsAreAllBitsSetOrZero(const T* array, size_t size)
 {
     for (size_t i = 0; i < size; i++)
     {
@@ -56,7 +56,7 @@ struct simd8_t
     {
         simd8_t result;
 
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        result.u64[0] = UINT64_MAX;
 
         return result;
     }
@@ -76,7 +76,7 @@ struct simd8_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd8_t) == 8);
+static_assert(sizeof(simd8_t) == 8);
 
 #include <pshpack4.h>
 struct simd12_t
@@ -113,9 +113,9 @@ struct simd12_t
     {
         simd12_t result;
 
-        result.u32[0] = 0xFFFFFFFF;
-        result.u32[1] = 0xFFFFFFFF;
-        result.u32[2] = 0xFFFFFFFF;
+        result.u32[0] = UINT32_MAX;
+        result.u32[1] = UINT32_MAX;
+        result.u32[2] = UINT32_MAX;
 
         return result;
     }
@@ -136,7 +136,7 @@ struct simd12_t
     }
 };
 #include <poppack.h>
-static_assert_no_msg(sizeof(simd12_t) == 12);
+static_assert(sizeof(simd12_t) == 12);
 
 struct simd16_t
 {
@@ -190,9 +190,8 @@ struct simd16_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd16_t) == 16);
+static_assert(sizeof(simd16_t) == 16);
 
-#if defined(TARGET_XARCH)
 struct simd32_t
 {
     union
@@ -246,8 +245,9 @@ struct simd32_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd32_t) == 32);
+static_assert(sizeof(simd32_t) == 32);
 
+#if defined(TARGET_XARCH)
 struct simd64_t
 {
     union
@@ -302,10 +302,13 @@ struct simd64_t
         return {};
     }
 };
-static_assert_no_msg(sizeof(simd64_t) == 64);
+static_assert(sizeof(simd64_t) == 64);
 #endif // TARGET_XARCH
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
+// Forward declarations for mask types used by simdmask_t helpers.
+struct simdmaskscalable_t;
+struct simdmaskvalue_t;
+
 struct simdmask_t
 {
     union
@@ -322,7 +325,7 @@ struct simdmask_t
 
     bool operator==(const simdmask_t& other) const
     {
-        return (u64[0] == other.u64[0]);
+        return GetRawBits() == other.GetRawBits();
     }
 
     bool operator!=(const simdmask_t& other) const
@@ -330,18 +333,32 @@ struct simdmask_t
         return !(*this == other);
     }
 
-    static simdmask_t AllBitsSet()
+    static uint64_t GetBitMask(uint32_t elementCount)
+    {
+        assert((elementCount >= 1) && (elementCount <= 64));
+
+        if (elementCount == 64)
+        {
+            return UINT64_MAX;
+        }
+        else
+        {
+            return (1ULL << elementCount) - 1;
+        }
+    }
+
+    static simdmask_t AllBitsSet(uint32_t elementCount)
     {
         simdmask_t result;
 
-        result.u64[0] = 0xFFFFFFFFFFFFFFFF;
+        result.u64[0] = GetBitMask(elementCount);
 
         return result;
     }
 
     bool IsAllBitsSet() const
     {
-        return *this == AllBitsSet();
+        return *this == AllBitsSet(64);
     }
 
     bool IsZero() const
@@ -349,19 +366,67 @@ struct simdmask_t
         return *this == Zero();
     }
 
+    uint64_t GetRawBits() const
+    {
+        uint64_t value;
+        memcpy(&value, &u64[0], sizeof(uint64_t));
+        return value;
+    }
+
     static simdmask_t Zero()
     {
         return {};
     }
 };
-static_assert_no_msg(sizeof(simdmask_t) == 8);
-#endif // FEATURE_MASKED_HW_INTRINSICS
+static_assert(sizeof(simdmask_t) == 8);
 
+// Ensure simd_t is big enough to contain any simd type
 #if defined(TARGET_XARCH)
 typedef simd64_t simd_t;
+#elif defined(TARGET_ARM64)
+typedef simd32_t simd_t;
 #else
 typedef simd16_t simd_t;
 #endif
+
+static bool ElementsAreAllBitsSetOrZero(const simd_t* simdVal, var_types simdBaseType, unsigned elementCount)
+{
+    assert(simdVal != nullptr);
+
+    switch (simdBaseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u8[0], elementCount);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u16[0], elementCount);
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u32[0], elementCount);
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            return ElementsAreAllBitsSetOrZero(&simdVal->u64[0], elementCount);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 inline bool IsUnaryBitwiseOperation(genTreeOps oper)
 {
@@ -461,7 +526,7 @@ void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask
     }
     assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
 
-    uint64_t bitMask = static_cast<uint64_t>((static_cast<int64_t>(1) << count) - 1);
+    uint64_t bitMask = simdmask_t::GetBitMask(count);
 #elif defined(TARGET_ARM64)
     // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
     uint64_t bitMask;
@@ -501,8 +566,7 @@ void EvaluateUnaryMask(genTreeOps oper, bool scalar, unsigned simdSize, simdmask
 #error Unsupported platform
 #endif
 
-    uint64_t arg0Value;
-    memcpy(&arg0Value, &arg0.u64[0], sizeof(simdmask_t));
+    uint64_t arg0Value = arg0.GetRawBits();
 
     // We're only considering these bits
     arg0Value &= bitMask;
@@ -575,6 +639,68 @@ inline void EvaluateUnaryMask(
     }
 }
 #endif // FEATURE_MASKED_HW_INTRINSICS
+
+template <typename TSimd, typename TBase>
+inline void EvaluateExtractMSB(simdmask_t* result, const TSimd& arg0)
+{
+    uint64_t resultValue = 0;
+    uint32_t count       = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase input0;
+        memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
+
+        if (input0 < 0)
+        {
+            resultValue |= (static_cast<uint64_t>(1) << i);
+        }
+    }
+
+    memcpy(&result->u64[0], &resultValue, sizeof(uint64_t));
+}
+
+template <typename TSimd>
+inline void EvaluateExtractMSB(var_types baseType, simdmask_t* result, const TSimd& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            EvaluateExtractMSB<TSimd, int8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            EvaluateExtractMSB<TSimd, int16_t>(result, arg0);
+            break;
+        }
+
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+        {
+            EvaluateExtractMSB<TSimd, int32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+        {
+            EvaluateExtractMSB<TSimd, int64_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
 
 template <typename TSimd, typename TBase>
 void EvaluateUnarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0)
@@ -704,8 +830,9 @@ void EvaluateUnarySimd(genTreeOps oper, bool scalar, var_types baseType, TSimd* 
 
 inline bool IsBinaryBitwiseOperation(genTreeOps oper)
 {
-    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_ROL) ||
-           (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR);
+    return (oper == GT_AND) || (oper == GT_AND_NOT) || (oper == GT_LSH) || (oper == GT_OR) || (oper == GT_OR_NOT) ||
+           (oper == GT_ROL) || (oper == GT_ROR) || (oper == GT_RSH) || (oper == GT_RSZ) || (oper == GT_XOR) ||
+           (oper == GT_XOR_NOT);
 }
 
 template <typename TBase>
@@ -842,6 +969,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
             return arg0 | arg1;
         }
 
+        case GT_OR_NOT:
+        {
+            return arg0 | ~arg1;
+        }
+
         case GT_ROL:
         {
             // Normalize the "rotate by" value
@@ -899,6 +1031,11 @@ TBase EvaluateBinaryScalarSpecialized(genTreeOps oper, TBase arg0, TBase arg1)
         case GT_XOR:
         {
             return arg0 ^ arg1;
+        }
+
+        case GT_XOR_NOT:
+        {
+            return arg0 ^ ~arg1;
         }
 
         default:
@@ -1040,7 +1177,7 @@ void EvaluateBinaryMask(
     }
     assert((count == 8) || (count == 16) || (count == 32) || (count == 64));
 
-    uint64_t bitMask = static_cast<uint64_t>((static_cast<int64_t>(1) << count) - 1);
+    uint64_t bitMask = simdmask_t::GetBitMask(count);
 #elif defined(TARGET_ARM64)
     // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits apart
     uint64_t bitMask;
@@ -1071,6 +1208,12 @@ void EvaluateBinaryMask(
             break;
         }
 
+        case 16:
+        {
+            bitMask = 0x0001000100010001;
+            break;
+        }
+
         default:
         {
             unreached();
@@ -1080,11 +1223,8 @@ void EvaluateBinaryMask(
 #error Unsupported platform
 #endif
 
-    uint64_t arg0Value;
-    memcpy(&arg0Value, &arg0.u64[0], sizeof(simdmask_t));
-
-    uint64_t arg1Value;
-    memcpy(&arg1Value, &arg1.u64[0], sizeof(simdmask_t));
+    uint64_t arg0Value = arg0.GetRawBits();
+    uint64_t arg1Value = arg1.GetRawBits();
 
     // We're only considering these bits
     arg0Value &= bitMask;
@@ -1183,9 +1323,17 @@ inline void EvaluateBinaryMask(genTreeOps        oper,
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 template <typename TSimd, typename TBase>
-void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd& arg0, const TSimd& arg1)
+void EvaluateBinarySimd(genTreeOps   oper,
+                        bool         scalar,
+                        TSimd*       result,
+                        const TSimd& arg0,
+                        const TSimd& arg1,
+                        unsigned     simdSize = sizeof(TSimd))
 {
-    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+    assert(simdSize <= sizeof(TSimd));
+    assert((simdSize % sizeof(TBase)) == 0);
+
+    uint32_t count = simdSize / sizeof(TBase);
 
     if (scalar)
     {
@@ -1216,8 +1364,13 @@ void EvaluateBinarySimd(genTreeOps oper, bool scalar, TSimd* result, const TSimd
 }
 
 template <typename TSimd>
-void EvaluateBinarySimd(
-    genTreeOps oper, bool scalar, var_types baseType, TSimd* result, const TSimd& arg0, const TSimd& arg1)
+void EvaluateBinarySimd(genTreeOps   oper,
+                        bool         scalar,
+                        var_types    baseType,
+                        TSimd*       result,
+                        const TSimd& arg0,
+                        const TSimd& arg1,
+                        unsigned     simdSize = sizeof(TSimd))
 {
     switch (baseType)
     {
@@ -1230,11 +1383,11 @@ void EvaluateBinarySimd(
 
             if (IsBinaryBitwiseOperation(oper))
             {
-                EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1, simdSize);
             }
             else
             {
-                EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, float>(oper, scalar, result, arg0, arg1, simdSize);
             }
             break;
         }
@@ -1248,60 +1401,60 @@ void EvaluateBinarySimd(
 
             if (IsBinaryBitwiseOperation(oper))
             {
-                EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1, simdSize);
             }
             else
             {
-                EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1);
+                EvaluateBinarySimd<TSimd, double>(oper, scalar, result, arg0, arg1, simdSize);
             }
             break;
         }
 
         case TYP_BYTE:
         {
-            EvaluateBinarySimd<TSimd, int8_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int8_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_SHORT:
         {
-            EvaluateBinarySimd<TSimd, int16_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int16_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_INT:
         {
-            EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int32_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_LONG:
         {
-            EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, int64_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_UBYTE:
         {
-            EvaluateBinarySimd<TSimd, uint8_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint8_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_USHORT:
         {
-            EvaluateBinarySimd<TSimd, uint16_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint16_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_UINT:
         {
-            EvaluateBinarySimd<TSimd, uint32_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint32_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
         case TYP_ULONG:
         {
-            EvaluateBinarySimd<TSimd, uint64_t>(oper, scalar, result, arg0, arg1);
+            EvaluateBinarySimd<TSimd, uint64_t>(oper, scalar, result, arg0, arg1, simdSize);
             break;
         }
 
@@ -1310,6 +1463,97 @@ void EvaluateBinarySimd(
             unreached();
         }
     }
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsNaN(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsArithmetic(baseType));
+
+    TSimd result = {};
+
+    if (varTypeIsFloating(baseType))
+    {
+        EvaluateBinarySimd<TSimd>(GT_NE, false, baseType, &result, value, value, simdSize);
+    }
+    return result;
+}
+
+inline var_types GetSimdIntegralBaseType(var_types baseType)
+{
+    if (baseType == TYP_FLOAT)
+    {
+        return TYP_INT;
+    }
+    if (baseType == TYP_DOUBLE)
+    {
+        return TYP_LONG;
+    }
+    return baseType;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsNegative(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsArithmetic(baseType));
+
+    TSimd result = {};
+
+    if (!varTypeIsUnsigned(baseType))
+    {
+        EvaluateBinarySimd<TSimd>(GT_LT, false, GetSimdIntegralBaseType(baseType), &result, value, TSimd::Zero(),
+                                  simdSize);
+    }
+    return result;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsZero(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    TSimd result = {};
+    EvaluateBinarySimd<TSimd>(GT_EQ, false, baseType, &result, value, TSimd::Zero(), simdSize);
+    return result;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsNegativeZero(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsFloating(baseType));
+
+    TSimd result = EvaluateSimdIsZero(baseType, value, simdSize);
+    TSimd sign   = EvaluateSimdIsNegative(baseType, value, simdSize);
+    EvaluateBinarySimd<TSimd>(GT_AND, false, baseType, &result, result, sign, simdSize);
+    return result;
+}
+
+template <typename TSimd>
+TSimd EvaluateSimdIsPositiveZero(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    assert(varTypeIsFloating(baseType));
+
+    TSimd result = EvaluateSimdIsZero(baseType, value, simdSize);
+    TSimd sign   = EvaluateSimdIsNegative(baseType, value, simdSize);
+    EvaluateBinarySimd<TSimd>(GT_AND_NOT, false, baseType, &result, result, sign, simdSize);
+    return result;
+}
+
+template <typename TSimd>
+bool EvaluateSimdAnyWhereAllBitsSet(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    TSimd result     = {};
+    TSimd zero       = TSimd::Zero();
+    TSimd allBitsSet = TSimd::AllBitsSet();
+    EvaluateBinarySimd<TSimd>(GT_EQ, false, GetSimdIntegralBaseType(baseType), &result, value, allBitsSet, simdSize);
+    return memcmp(&result, &zero, simdSize) != 0;
+}
+
+template <typename TSimd>
+bool EvaluateSimdAllWhereAllBitsSet(var_types baseType, const TSimd& value, unsigned simdSize = sizeof(TSimd))
+{
+    TSimd result     = {};
+    TSimd allBitsSet = TSimd::AllBitsSet();
+    EvaluateBinarySimd<TSimd>(GT_EQ, false, GetSimdIntegralBaseType(baseType), &result, value, allBitsSet, simdSize);
+    return memcmp(&result, &allBitsSet, simdSize) == 0;
 }
 
 template <typename TSimd>
@@ -1401,7 +1645,7 @@ void EvaluateWithElementFloating(var_types simdBaseType, TSimd* result, const TS
 
         case TYP_DOUBLE:
         {
-            result->f64[arg1] = static_cast<float>(arg2);
+            result->f64[arg1] = arg2;
             break;
         }
 
@@ -1507,7 +1751,7 @@ void EvaluateSimdCvtMaskToVector(TSimd* result, simdmask_t arg0)
         isSet = ((mask >> i) & 1) != 0;
 #elif defined(TARGET_ARM64)
         // For Arm64 we have count total bits to read, but
-        // they are sizeof(TBase) bits apart. We still set
+        // they are sizeof(TBase) bits apart. We set
         // the result element to AllBitsSet or Zero depending
         // on the corresponding mask bit
 
@@ -1579,32 +1823,32 @@ void EvaluateSimdCvtVectorToMask(simdmask_t* result, TSimd arg0)
     uint32_t count = sizeof(TSimd) / sizeof(TBase);
     uint64_t mask  = 0;
 
-    TBase mostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+#if defined(TARGET_XARCH)
+    TBase MostSignificantBit = static_cast<TBase>(1) << ((sizeof(TBase) * 8) - 1);
+#endif
 
     for (uint32_t i = 0; i < count; i++)
     {
         TBase input0;
         memcpy(&input0, &arg0.u8[i * sizeof(TBase)], sizeof(TBase));
 
-        if ((input0 & mostSignificantBit) != 0)
-        {
 #if defined(TARGET_XARCH)
-            // For xarch we have count sequential bits to write
-            // depending on if the corresponding the input element
-            // has its most significant bit set
-
+        // For xarch we have count sequential bits to write depending on if the
+        // corresponding the input element has its most significant bit set
+        if ((input0 & MostSignificantBit) != 0)
+        {
             mask |= static_cast<uint64_t>(1) << i;
-#elif defined(TARGET_ARM64)
-            // For Arm64 we have count total bits to write, but
-            // they are sizeof(TBase) bits apart. We still set
-            // depending on if the corresponding input element
-            // has its most significant bit set
-
-            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
-#else
-            unreached();
-#endif
         }
+#elif defined(TARGET_ARM64)
+        // For Arm64 we have count total bits to write, but they are sizeof(TBase) bits
+        // apart. We set depending on if the corresponding input element is non zero
+        if (input0 != 0)
+        {
+            mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+        }
+#else
+        unreached();
+#endif
     }
 
     memcpy(&result->u8[0], &mask, sizeof(uint64_t));
@@ -1651,9 +1895,958 @@ void EvaluateSimdCvtVectorToMask(var_types baseType, simdmask_t* result, TSimd a
         }
     }
 }
+
+#if defined(TARGET_ARM64)
+
+// TODO-SVE: Once JitUseScalableVectorT is removed, the pattern evaluation functions can be removed too.
+
+enum SveMaskPattern
+{
+    SveMaskPatternLargestPowerOf2    = 0,  // The largest power of 2.
+    SveMaskPatternVectorCount1       = 1,  // Exactly 1 element.
+    SveMaskPatternVectorCount2       = 2,  // Exactly 2 elements.
+    SveMaskPatternVectorCount3       = 3,  // Exactly 3 elements.
+    SveMaskPatternVectorCount4       = 4,  // Exactly 4 elements.
+    SveMaskPatternVectorCount5       = 5,  // Exactly 5 elements.
+    SveMaskPatternVectorCount6       = 6,  // Exactly 6 elements.
+    SveMaskPatternVectorCount7       = 7,  // Exactly 7 elements.
+    SveMaskPatternVectorCount8       = 8,  // Exactly 8 elements.
+    SveMaskPatternVectorCount16      = 9,  // Exactly 16 elements.
+    SveMaskPatternVectorCount32      = 10, // Exactly 32 elements.
+    SveMaskPatternVectorCount64      = 11, // Exactly 64 elements.
+    SveMaskPatternVectorCount128     = 12, // Exactly 128 elements.
+    SveMaskPatternVectorCount256     = 13, // Exactly 256 elements.
+    SveMaskPatternLargestMultipleOf4 = 29, // The largest multiple of 4.
+    SveMaskPatternLargestMultipleOf3 = 30, // The largest multiple of 3.
+    SveMaskPatternAll                = 31, // All available (implicitly a multiple of two).
+    SveMaskPatternNone               = 14  // Invalid
+};
+
+template <typename TSimd, typename TBase>
+bool EvaluateSimdPatternToMask(simdmask_t* result, SveMaskPattern pattern)
+{
+    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
+    uint32_t finalOne = count + 1;
+    uint64_t mask     = 0;
+
+    switch (pattern)
+    {
+        case SveMaskPatternLargestPowerOf2:
+        case SveMaskPatternAll:
+            finalOne = count;
+            break;
+
+        case SveMaskPatternVectorCount1:
+        case SveMaskPatternVectorCount2:
+        case SveMaskPatternVectorCount3:
+        case SveMaskPatternVectorCount4:
+        case SveMaskPatternVectorCount5:
+        case SveMaskPatternVectorCount6:
+        case SveMaskPatternVectorCount7:
+        case SveMaskPatternVectorCount8:
+            finalOne = pattern - SveMaskPatternVectorCount1 + 1;
+            break;
+
+        case SveMaskPatternVectorCount16:
+        case SveMaskPatternVectorCount32:
+        case SveMaskPatternVectorCount64:
+        case SveMaskPatternVectorCount128:
+        case SveMaskPatternVectorCount256:
+            finalOne = 16 << (pattern - SveMaskPatternVectorCount16);
+            break;
+
+        case SveMaskPatternLargestMultipleOf4:
+            finalOne = (count - (count % 4));
+            break;
+
+        case SveMaskPatternLargestMultipleOf3:
+            finalOne = (count - (count % 3));
+            break;
+
+        default:
+            return false;
+    }
+
+    // For something like ptrue p0.s, vl5
+    // "If the constraint specifies more elements than are available at the current vector length then all elements of
+    // the destination predicate are set to false."
+    if (finalOne > count)
+    {
+        finalOne = 0;
+    }
+
+    // Write finalOne number of bits
+    for (uint32_t i = 0; i < finalOne; i++)
+    {
+        mask |= static_cast<uint64_t>(1) << (i * sizeof(TBase));
+    }
+
+    memcpy(&result->u8[0], &mask, sizeof(uint64_t));
+    return true;
+}
+
+template <typename TSimd>
+bool EvaluateSimdPatternToMask(var_types baseType, simdmask_t* result, SveMaskPattern pattern)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint32_t>(result, pattern);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint64_t>(result, pattern);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint8_t>(result, pattern);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdPatternToMask<TSimd, uint16_t>(result, pattern);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+bool EvaluateSimdPatternToVector(simd_t* result, SveMaskPattern pattern)
+{
+    uint32_t count    = sizeof(TSimd) / sizeof(TBase);
+    uint32_t finalOne = count + 1;
+
+    switch (pattern)
+    {
+        case SveMaskPatternLargestPowerOf2:
+        case SveMaskPatternAll:
+            finalOne = count;
+            break;
+
+        case SveMaskPatternVectorCount1:
+        case SveMaskPatternVectorCount2:
+        case SveMaskPatternVectorCount3:
+        case SveMaskPatternVectorCount4:
+        case SveMaskPatternVectorCount5:
+        case SveMaskPatternVectorCount6:
+        case SveMaskPatternVectorCount7:
+        case SveMaskPatternVectorCount8:
+            finalOne = std::min(uint32_t(pattern - SveMaskPatternVectorCount1 + 1), count);
+            break;
+
+        case SveMaskPatternVectorCount16:
+        case SveMaskPatternVectorCount32:
+        case SveMaskPatternVectorCount64:
+        case SveMaskPatternVectorCount128:
+        case SveMaskPatternVectorCount256:
+            finalOne = std::min(uint32_t(16 << (pattern - SveMaskPatternVectorCount16)), count);
+            break;
+
+        case SveMaskPatternLargestMultipleOf4:
+            finalOne = (count - (count % 4));
+            break;
+
+        case SveMaskPatternLargestMultipleOf3:
+            finalOne = (count - (count % 3));
+            break;
+
+        default:
+            return false;
+    }
+    assert(finalOne <= count);
+
+    // Write finalOne number of entries
+    for (uint32_t i = 0; i < count; i++)
+    {
+        TBase output;
+
+        if (i < finalOne)
+        {
+            memset(&output, 0xFF, sizeof(TBase));
+        }
+        else
+        {
+            memset(&output, 0x00, sizeof(TBase));
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &output, sizeof(TBase));
+    }
+
+    return true;
+}
+
+template <typename TSimd>
+bool EvaluateSimdPatternToVector(var_types baseType, TSimd* result, SveMaskPattern pattern)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint32_t>(result, pattern);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint64_t>(result, pattern);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint8_t>(result, pattern);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdPatternToVector<TSimd, uint16_t>(result, pattern);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+template <typename TSimd, typename TBase>
+SveMaskPattern EvaluateSimdMaskToPattern(simdmask_t arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    uint64_t mask;
+    memcpy(&mask, &arg0.u8[0], sizeof(uint64_t));
+    uint32_t firstZero = count;
+
+    constexpr uint64_t laneMask = (1ull << sizeof(TBase)) - 1ull;
+
+    // A mask is a vector of unsigned integers, where 1 indicates the lane is set, 0 is not set,
+    // and all other values are undefined.
+    // For a valid mask pattern:
+    // * Each element of size TBase contains 0 or 1 in the lowest bit, and no other bits set.
+    // * The sequence starts with zero or more 1s and then the rest of the mask is filled with 0s.
+
+    // Find an unbroken sequence of 1s.
+    for (uint32_t i = 0; i < count; i++)
+    {
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase          elem = (TBase)(lane & laneMask);
+
+        if (elem == 0)
+        {
+            // Found the first zero
+            firstZero = i;
+            break;
+        }
+        else if (elem != 1)
+        {
+            // Other bits are set. Invalid sequence
+            return SveMaskPatternNone;
+        }
+        // else just bit 1 in elem was set
+    }
+
+    // Find an unbroken sequence of 0s.
+    for (uint32_t i = firstZero; i < count; i++)
+    {
+        const uint64_t lane = (mask >> static_cast<uint32_t>(i * sizeof(TBase)));
+        TBase          elem = (TBase)(lane & laneMask);
+
+        if (elem != 0)
+        {
+            // Either a 1 or other bits are set. Invalid sequence
+            return SveMaskPatternNone;
+        }
+    }
+
+    assert(firstZero <= count);
+
+    if (firstZero == count)
+    {
+        // No zeros in the pattern
+        return SveMaskPatternAll;
+    }
+    else if (firstZero >= SveMaskPatternVectorCount1 && firstZero <= SveMaskPatternVectorCount8)
+    {
+        return (SveMaskPattern)firstZero;
+    }
+    else
+    {
+        // TODO: Add other patterns as required. These probably won't be seen until we get
+        //       to wider vector lengths.
+        return SveMaskPatternNone;
+    }
+}
+
+template <typename TSimd>
+SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint32_t>(arg0);
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint64_t>(arg0);
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint8_t>(arg0);
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            return EvaluateSimdMaskToPattern<TSimd, uint16_t>(arg0);
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+// Functionality for handling constant vectors of unknown size
+
+enum SimdScalableKind : uint8_t
+{
+    SimdScalableRepeated, // Each lane of the vector contains the same value.
+    SimdScalableSequence, // Each lane of the vector increments by a step value.
+    SimdScalableScalar,   // First lane is set. The rest of the vector is zero
+};
+
+uint64_t SimdAllBitsSetForElementType(var_types baseType);
+
+struct simdscalable_t
+{
+    var_types        gtSimdScalableBaseType;
+    SimdScalableKind gtSimdScalableKind;
+    union
+    {
+        float    gtSimdScalableIndexF32[2];
+        double   gtSimdScalableIndexF64[1];
+        int8_t   gtSimdScalableIndexI8[8];
+        int16_t  gtSimdScalableIndexI16[4];
+        int32_t  gtSimdScalableIndexI32[2];
+        int64_t  gtSimdScalableIndexI64[1];
+        uint8_t  gtSimdScalableIndexU8[8];
+        uint16_t gtSimdScalableIndexU16[4];
+        uint32_t gtSimdScalableIndexU32[2];
+        uint64_t gtSimdScalableIndexU64[1];
+        uint64_t gtSimdScalableIndex;
+    };
+    union
+    {
+        float    gtSimdScalableStepF32[2];
+        double   gtSimdScalableStepF64[1];
+        int8_t   gtSimdScalableStepI8[8];
+        int16_t  gtSimdScalableStepI16[4];
+        int32_t  gtSimdScalableStepI32[2];
+        int64_t  gtSimdScalableStepI64[1];
+        uint8_t  gtSimdScalableStepU8[8];
+        uint16_t gtSimdScalableStepU16[4];
+        uint32_t gtSimdScalableStepU32[2];
+        uint64_t gtSimdScalableStepU64[1];
+        uint64_t gtSimdScalableStep;
+    };
+
+    bool operator==(const simdscalable_t& other) const
+    {
+        if (IsZero() && other.IsZero())
+        {
+            return true;
+        }
+
+        return (gtSimdScalableBaseType == other.gtSimdScalableBaseType) &&
+               (gtSimdScalableKind == other.gtSimdScalableKind) && (gtSimdScalableIndex == other.gtSimdScalableIndex) &&
+               (gtSimdScalableStep == other.gtSimdScalableStep);
+    }
+
+    bool operator!=(const simdscalable_t& other) const
+    {
+        return !(*this == other);
+    }
+
+    static simdscalable_t AllBitsSet()
+    {
+        simdscalable_t result = {};
+
+        result.gtSimdScalableBaseType = TYP_BYTE;
+        result.gtSimdScalableKind     = SimdScalableRepeated;
+        result.gtSimdScalableIndex    = 0xff;
+
+        return result;
+    }
+
+    bool IsZero() const
+    {
+        return (gtSimdScalableIndex == 0) && (gtSimdScalableKind != SimdScalableSequence || gtSimdScalableStep == 0);
+    }
+
+    bool IsAllBitsSet() const;
+
+    static simdscalable_t Zero()
+    {
+        simdscalable_t result = {};
+
+        result.gtSimdScalableBaseType = TYP_BYTE;
+        result.gtSimdScalableKind     = SimdScalableRepeated;
+        result.gtSimdScalableIndex    = 0;
+
+        return result;
+    }
+};
+
+static_assert(sizeof(simd_t) >= sizeof(simdscalable_t));
+
+struct simdmaskscalable_t
+{
+    var_types gtSimdMaskScalableBaseType;
+    // Only 0 and 1 are valid values
+    uint8_t gtSimdMaskScalableIndex;
+
+    bool operator==(const simdmaskscalable_t& other) const
+    {
+        if (IsZero() && other.IsZero())
+        {
+            return true;
+        }
+
+        return (gtSimdMaskScalableBaseType == other.gtSimdMaskScalableBaseType) &&
+               (gtSimdMaskScalableIndex == other.gtSimdMaskScalableIndex);
+    }
+
+    bool operator!=(const simdmaskscalable_t& other) const
+    {
+        return !(*this == other);
+    }
+
+    static simdmaskscalable_t AllBitsSet()
+    {
+        simdmaskscalable_t result = {};
+
+        result.gtSimdMaskScalableBaseType = TYP_BYTE;
+        result.gtSimdMaskScalableIndex    = 1;
+
+        return result;
+    }
+
+    bool IsZero() const
+    {
+        return gtSimdMaskScalableIndex == 0;
+    }
+
+    // A type is required when checking for all bits set, as a all bits set mask
+    // for TYP_LONG would not be all true when used for TYP_BYTE, and instead would
+    // be 000100010001...
+    bool IsAllBitsSet(var_types simdBaseType) const;
+};
+
+static_assert(sizeof(simdmask_t) >= sizeof(simdmaskscalable_t));
+
+bool EvaluateSimdCvtScalableVectorToMask(var_types baseType, simdmaskscalable_t* maskCon, simdscalable_t vecCon);
+
+bool EvaluateSimdCvtScalableMaskToVector(var_types baseType, simdscalable_t* vecCon, simdmaskscalable_t maskCon);
+
+template <typename TBase>
+void BroadcastConstantToSimdScalable(simdscalable_t* result, var_types baseType, TBase arg0)
+{
+    result->gtSimdScalableBaseType = baseType;
+    result->gtSimdScalableKind     = SimdScalableRepeated;
+    result->gtSimdScalableStep     = 0;
+    result->gtSimdScalableIndex    = 0;
+    memcpy(&result->gtSimdScalableIndex, &arg0, sizeof(TBase));
+}
+
+template <typename TBase>
+bool SimdBitwiseEqual(TBase left, TBase right)
+{
+    return memcmp(&left, &right, sizeof(TBase)) == 0;
+}
+
+template <typename TBase>
+bool TryEvaluateUnaryScalarForSimdScalable(genTreeOps oper, TBase arg0, TBase* result)
+{
+    if ((oper == GT_LZCNT) && (sizeof(TBase) < sizeof(uint32_t)))
+    {
+        return false;
+    }
+
+    *result = EvaluateUnaryScalar<TBase>(oper, arg0);
+    return true;
+}
+
+template <typename TBase>
+bool TryEvaluateUnarySimdScalable(
+    genTreeOps oper, bool scalar, var_types baseType, simdscalable_t* result, const simdscalable_t& arg0)
+{
+    TBase index;
+    TBase step;
+    memcpy(&index, &arg0.gtSimdScalableIndex, sizeof(TBase));
+    memcpy(&step, &arg0.gtSimdScalableStep, sizeof(TBase));
+
+    auto setResult = [=](SimdScalableKind kind, TBase resultIndex, TBase resultStep, simdscalable_t* result) {
+        result->gtSimdScalableBaseType = baseType;
+        result->gtSimdScalableKind     = kind;
+        result->gtSimdScalableIndex    = 0;
+        result->gtSimdScalableStep     = 0;
+        memcpy(&result->gtSimdScalableIndex, &resultIndex, sizeof(TBase));
+        memcpy(&result->gtSimdScalableStep, &resultStep, sizeof(TBase));
+    };
+
+    // First try the unary operation on the index value
+    TBase resultIndex;
+    if (!TryEvaluateUnaryScalarForSimdScalable(oper, index, &resultIndex))
+    {
+        return false;
+    }
+
+    TBase zero = {};
+
+    if (scalar)
+    {
+        setResult(SimdScalableScalar, resultIndex, zero, result);
+        return true;
+    }
+
+    if (arg0.IsZero())
+    {
+        setResult(SimdScalableRepeated, resultIndex, zero, result);
+        return true;
+    }
+
+    switch (arg0.gtSimdScalableKind)
+    {
+        case SimdScalableRepeated:
+        {
+            setResult(SimdScalableRepeated, resultIndex, zero, result);
+            return true;
+        }
+
+        case SimdScalableSequence:
+        {
+            if (SimdBitwiseEqual(step, zero))
+            {
+                setResult(SimdScalableRepeated, resultIndex, zero, result);
+                return true;
+            }
+
+            switch (oper)
+            {
+                case GT_NEG:
+                {
+                    setResult(SimdScalableSequence, resultIndex, static_cast<TBase>(zero - step), result);
+                    return true;
+                }
+
+                case GT_NOT:
+                {
+                    if (varTypeIsFloating(baseType))
+                    {
+                        return false;
+                    }
+                    setResult(SimdScalableSequence, resultIndex, static_cast<TBase>(zero - step), result);
+                    return true;
+                }
+
+                default:
+                    return false;
+            }
+        }
+
+        case SimdScalableScalar:
+        {
+            TBase upperValue;
+            if (!TryEvaluateUnaryScalarForSimdScalable(oper, zero, &upperValue))
+            {
+                return false;
+            }
+
+            if (SimdBitwiseEqual(upperValue, zero))
+            {
+                setResult(SimdScalableScalar, resultIndex, zero, result);
+                return true;
+            }
+
+            return false;
+        }
+
+        default:
+            unreached();
+    }
+}
+
+inline bool TryEvaluateUnarySimdScalable(
+    genTreeOps oper, bool scalar, var_types baseType, simdscalable_t* result, const simdscalable_t& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        {
+            if (IsUnaryBitwiseOperation(oper))
+            {
+                return TryEvaluateUnarySimdScalable<uint32_t>(oper, scalar, baseType, result, arg0);
+            }
+            return TryEvaluateUnarySimdScalable<float>(oper, scalar, baseType, result, arg0);
+        }
+
+        case TYP_DOUBLE:
+        {
+            if (IsUnaryBitwiseOperation(oper))
+            {
+                return TryEvaluateUnarySimdScalable<uint64_t>(oper, scalar, baseType, result, arg0);
+            }
+            return TryEvaluateUnarySimdScalable<double>(oper, scalar, baseType, result, arg0);
+        }
+
+        case TYP_BYTE:
+            return TryEvaluateUnarySimdScalable<int8_t>(oper, scalar, baseType, result, arg0);
+        case TYP_SHORT:
+            return TryEvaluateUnarySimdScalable<int16_t>(oper, scalar, baseType, result, arg0);
+        case TYP_INT:
+            return TryEvaluateUnarySimdScalable<int32_t>(oper, scalar, baseType, result, arg0);
+        case TYP_LONG:
+            return TryEvaluateUnarySimdScalable<int64_t>(oper, scalar, baseType, result, arg0);
+        case TYP_UBYTE:
+            return TryEvaluateUnarySimdScalable<uint8_t>(oper, scalar, baseType, result, arg0);
+        case TYP_USHORT:
+            return TryEvaluateUnarySimdScalable<uint16_t>(oper, scalar, baseType, result, arg0);
+        case TYP_UINT:
+            return TryEvaluateUnarySimdScalable<uint32_t>(oper, scalar, baseType, result, arg0);
+        case TYP_ULONG:
+            return TryEvaluateUnarySimdScalable<uint64_t>(oper, scalar, baseType, result, arg0);
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// NarrowAndDuplicateSimdLong: Narrow each ULONG element in arg0 to size
+//    TSimd. Each element is then duplicated to the number of TSimd values
+//    that fit into a ULONG.
+//    For example, [1, 2] with TBase of UINT becomes [1, 1, 2, 2]
+//
+// Arguments:
+//    result -  Returns the narrowed and duplicated simd value
+//    arg0   -  The simd value to narrow and duplicate
+//
+template <typename TSimd, typename TBase>
+void NarrowAndDuplicateSimdLong(TSimd* result, const TSimd& arg0)
+{
+    uint32_t count = sizeof(TSimd) / sizeof(TBase);
+
+    for (uint32_t i = 0; i < count; i++)
+    {
+        uint64_t input0;
+        memcpy(&input0, &arg0.u8[(i * sizeof(TBase) / sizeof(uint64_t)) * sizeof(uint64_t)], sizeof(uint64_t));
+
+        // Saturate to largest value for TBase
+        if (input0 > (TBase)-1)
+        {
+            input0 = (TBase)-1;
+        }
+
+        memcpy(&result->u8[i * sizeof(TBase)], &input0, sizeof(TBase));
+    }
+}
+
+template <typename TSimd>
+void NarrowAndDuplicateSimdLong(var_types baseType, TSimd* result, const TSimd& arg0)
+{
+    switch (baseType)
+    {
+        case TYP_FLOAT:
+        case TYP_INT:
+        case TYP_UINT:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint32_t>(result, arg0);
+            break;
+        }
+
+        case TYP_DOUBLE:
+        case TYP_LONG:
+        case TYP_ULONG:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint64_t>(result, arg0);
+            break;
+        }
+
+        case TYP_BYTE:
+        case TYP_UBYTE:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint8_t>(result, arg0);
+            break;
+        }
+
+        case TYP_SHORT:
+        case TYP_USHORT:
+        {
+            NarrowAndDuplicateSimdLong<TSimd, uint16_t>(result, arg0);
+            break;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
+#endif // TARGET_ARM64
+
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
 #ifdef FEATURE_SIMD
+
+#ifdef TARGET_ARM64
+
+struct Arm64SimdScalableConstInfo
+{
+    var_types baseType;
+
+    ssize_t indexImm;
+    ssize_t stepImm;
+    bool    indexHasImm;
+    bool    stepHasImm;
+
+    uint64_t indexVal;
+    uint64_t stepVal;
+
+    static Arm64SimdScalableConstInfo Decode(const simdscalable_t& simdVal)
+    {
+        Arm64SimdScalableConstInfo info;
+        info.baseType    = simdVal.gtSimdScalableBaseType;
+        info.indexImm    = -1;
+        info.stepImm     = -1;
+        info.indexHasImm = true;
+        info.stepHasImm  = true;
+        info.indexVal    = 0;
+        info.stepVal     = 0;
+
+        switch (info.baseType)
+        {
+            case TYP_BYTE:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI8[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI8[0]);
+                info.indexVal = static_cast<uint64_t>(static_cast<int64_t>(info.indexImm));
+                info.stepVal  = static_cast<uint64_t>(static_cast<int64_t>(info.stepImm));
+                break;
+            }
+
+            case TYP_SHORT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI16[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI16[0]);
+                info.indexVal = static_cast<uint64_t>(static_cast<int64_t>(info.indexImm));
+                info.stepVal  = static_cast<uint64_t>(static_cast<int64_t>(info.stepImm));
+                break;
+            }
+
+            case TYP_INT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI32[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI32[0]);
+                info.indexVal = static_cast<uint64_t>(static_cast<int64_t>(info.indexImm));
+                info.stepVal  = static_cast<uint64_t>(static_cast<int64_t>(info.stepImm));
+                break;
+            }
+
+            case TYP_LONG:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexI64[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepI64[0]);
+                info.indexVal = static_cast<uint64_t>(simdVal.gtSimdScalableIndexI64[0]);
+                info.stepVal  = static_cast<uint64_t>(simdVal.gtSimdScalableStepI64[0]);
+                break;
+            }
+
+            case TYP_UBYTE:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU8[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU8[0]);
+                info.indexVal = simdVal.gtSimdScalableIndexU8[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU8[0];
+                break;
+            }
+
+            case TYP_USHORT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU16[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU16[0]);
+                info.indexVal = simdVal.gtSimdScalableIndexU16[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU16[0];
+                break;
+            }
+
+            case TYP_UINT:
+            {
+                info.indexImm = static_cast<ssize_t>(simdVal.gtSimdScalableIndexU32[0]);
+                info.stepImm  = static_cast<ssize_t>(simdVal.gtSimdScalableStepU32[0]);
+                info.indexVal = simdVal.gtSimdScalableIndexU32[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU32[0];
+                break;
+            }
+
+            case TYP_ULONG:
+            {
+                info.indexVal = simdVal.gtSimdScalableIndexU64[0];
+                info.stepVal  = simdVal.gtSimdScalableStepU64[0];
+                if (info.indexVal <= static_cast<uint64_t>(INT64_MAX))
+                {
+                    info.indexImm = static_cast<ssize_t>(info.indexVal);
+                }
+                else
+                {
+                    info.indexHasImm = false;
+                }
+
+                if (info.stepVal <= static_cast<uint64_t>(INT64_MAX))
+                {
+                    info.stepImm = static_cast<ssize_t>(info.stepVal);
+                }
+                else
+                {
+                    info.stepHasImm = false;
+                }
+                break;
+            }
+
+            case TYP_FLOAT:
+            {
+                uint32_t indexBits = 0;
+                uint32_t stepBits  = 0;
+                memcpy(&indexBits, &simdVal.gtSimdScalableIndexF32[0], sizeof(indexBits));
+                memcpy(&stepBits, &simdVal.gtSimdScalableStepF32[0], sizeof(stepBits));
+                info.indexVal    = indexBits;
+                info.stepVal     = stepBits;
+                info.indexHasImm = false;
+                info.stepHasImm  = false;
+                break;
+            }
+
+            case TYP_DOUBLE:
+            {
+                uint64_t indexBits = 0;
+                uint64_t stepBits  = 0;
+                memcpy(&indexBits, &simdVal.gtSimdScalableIndexF64[0], sizeof(indexBits));
+                memcpy(&stepBits, &simdVal.gtSimdScalableStepF64[0], sizeof(stepBits));
+                info.indexVal    = indexBits;
+                info.stepVal     = stepBits;
+                info.indexHasImm = false;
+                info.stepHasImm  = false;
+                break;
+            }
+
+            default:
+            {
+                unreached();
+            }
+        }
+
+        return info;
+    }
+
+    bool Has64BitElements() const
+    {
+        return (baseType == TYP_LONG) || (baseType == TYP_ULONG) || (baseType == TYP_DOUBLE);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeRepeated(const simdscalable_t& simdVal) const
+    {
+        if (varTypeIsIntegral(baseType))
+        {
+            return indexHasImm && (TEmitter::template isValidSimm<8>(indexImm) ||
+                                   TEmitter::template isValidSimm_MultipleOf<8, 256>(indexImm));
+        }
+
+        if (baseType == TYP_FLOAT)
+        {
+            return TEmitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF32[0]);
+        }
+
+        assert(baseType == TYP_DOUBLE);
+        return TEmitter::canEncodeFloatImm8(simdVal.gtSimdScalableIndexF64[0]);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeSequenceIndex() const
+    {
+        return indexHasImm && TEmitter::template isValidSimm<5>(indexImm);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeSequenceStep() const
+    {
+        return stepHasImm && TEmitter::template isValidSimm<5>(stepImm);
+    }
+
+    template <typename TEmitter>
+    bool CanEncodeSequence() const
+    {
+        return CanEncodeSequenceIndex<TEmitter>() && CanEncodeSequenceStep<TEmitter>();
+    }
+
+    template <typename TEmitter>
+    bool IndexNeedsSequenceReg() const
+    {
+        return !CanEncodeSequenceIndex<TEmitter>();
+    }
+
+    template <typename TEmitter>
+    bool StepNeedsSequenceReg() const
+    {
+        return !CanEncodeSequenceStep<TEmitter>();
+    }
+
+    template <typename TEmitter, typename TEmitAttr>
+    bool CanEncodeScalar(const simdscalable_t& simdVal, TEmitAttr emitSize) const
+    {
+        if (varTypeIsIntegral(baseType))
+        {
+            // There is no integral scalar immediate form for a SIMD element, only vector-wide immediates.
+            return false;
+        }
+
+        if (baseType == TYP_FLOAT)
+        {
+            return TEmitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF32[0]);
+        }
+
+        assert(baseType == TYP_DOUBLE);
+        return TEmitter::emitIns_valid_imm_for_fmov(simdVal.gtSimdScalableIndexF64[0]);
+    }
+};
+
+#endif // TARGET_ARM64
 
 #ifdef TARGET_XARCH
 // SSE2 Shuffle control byte to shuffle vector <W, Z, Y, X>

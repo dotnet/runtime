@@ -142,7 +142,20 @@ namespace ILCompiler
                 {
                     case TypeFlags.Array:
                     case TypeFlags.SzArray:
-                        return IsDeepPossiblyCyclicInstantiation(((ParameterizedType)type).ParameterType, ref breadthCounter, seenTypes);
+                        TypeDesc parameterType = type;
+                        int arrayNesting = 0;
+                        do
+                        {
+                            parameterType = ((ParameterizedType)parameterType).ParameterType;
+                            arrayNesting++;
+                        } while (parameterType.IsArray);
+
+                        if (arrayNesting > _depthCutoff)
+                        {
+                            return true;
+                        }
+
+                        return IsDeepPossiblyCyclicInstantiation(parameterType, ref breadthCounter, seenTypes);
                     default:
                         TypeDesc typeDef = type.GetTypeDefinition();
                         if (type != typeDef)
@@ -204,7 +217,7 @@ namespace ILCompiler
 
             private bool FormsCycle(TypeSystemEntity entity, out ModuleCycleInfo cycleInfo)
             {
-                EcmaModule ownerModule = (entity as EcmaType)?.EcmaModule ?? (entity as EcmaMethod)?.Module;
+                EcmaModule ownerModule = (entity as EcmaType)?.Module ?? (entity as EcmaMethod)?.Module;
                 if (ownerModule != null)
                 {
                     cycleInfo = _hashtable.GetOrCreateValue(ownerModule);
@@ -217,16 +230,25 @@ namespace ILCompiler
                 }
             }
 
+            /// <summary>
+            /// Returns true if the given entity (method or type definition) could be part of a
+            /// generic cycle.
+            /// </summary>
+            public bool CanBeInCycle(TypeSystemEntity entity)
+            {
+                return FormsCycle(entity, out _);
+            }
+
             public void DetectCycle(TypeSystemEntity owner, TypeSystemEntity referent)
             {
                 // This allows to disable cycle detection completely (typically for perf reasons as the algorithm is pretty slow)
                 if (_depthCutoff < 0)
                     return;
 
-                // Not clear if generic recursion through fields is a thing
-                if (referent is FieldDesc)
+                // Fields don't introduce more genericness than their owning type, so treat as their owning type
+                if (referent is FieldDesc referentField)
                 {
-                    return;
+                    referent = referentField.OwningType;
                 }
 
                 var ownerType = owner as TypeDesc;

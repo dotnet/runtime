@@ -135,7 +135,7 @@ could be used instead of
 <Target Name="ConfigureTrimming"
         BeforeTargets="PrepareForILLink">
   <ItemGroup>
-    <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
+    <TrimmerRootAssembly Include="$(AssemblyName)" />
     <ManagedAssemblyToLink>
       <IsTrimmable>true</IsTrimmable>
     </ManagedAssemblyToLink>

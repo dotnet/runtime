@@ -5,6 +5,17 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
+typedef enum
+{
+    PalPKeyFamilyId_Unknown = 0,
+    PalPKeyFamilyId_RSA = 1,
+    PalPKeyFamilyId_DSA = 2,
+    PalPKeyFamilyId_ECC = 3,
+    PalPKeyFamilyId_MLKem = 4,
+    PalPKeyFamilyId_SlhDsa = 5,
+    PalPKeyFamilyId_MLDsa = 6,
+} PalPKeyFamilyId;
+
 /*
 Shims the EVP_PKEY_new method.
 
@@ -21,7 +32,7 @@ No-op if pkey is null.
 The given EVP_PKEY pointer is invalid after this call.
 Always succeeds.
 */
-PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey, void* extraHandle);
+PALEXPORT void CryptoNative_EvpPkeyDestroy(EVP_PKEY* pkey);
 
 /*
 Returns the cryptographic length of the cryptosystem to which the key belongs, in bits.
@@ -35,7 +46,7 @@ duplicating a private key context as part of duplicating the Pal object.
 Returns the number (as of this call) of references to the EVP_PKEY. Anything less than
 2 is an error, because the key is already in the process of being freed.
 */
-PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey, void* extraHandle);
+PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
 
 /*
 Returns one of the following 4 values for the given EVP_PKEY:
@@ -45,6 +56,11 @@ Returns one of the following 4 values for the given EVP_PKEY:
     EVP_PKEY_DSA - DSA
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyType(EVP_PKEY* key);
+
+/*
+Returns the family identifier for the algorithm. See PalPKeyFamilyId for the return values.
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyFamily(const EVP_PKEY* key);
 
 /*
 Decodes an X.509 SubjectPublicKeyInfo into an EVP_PKEY*, verifying the interpreted algorithm type.
@@ -109,18 +125,41 @@ Returns a valid EVP_PKEY* on success, NULL on failure.
 PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName, int32_t* haveEngine);
 
 /*
-Load a key by URI from a specified OSSL_PROVIDER.
+Load a key by URI from specified OSSL_PROVIDERs.
 
 Returns a valid EVP_PKEY* on success, NULL on failure.
-On success extraHandle may be non-null value which we need to keep alive
-until the EVP_PKEY is destroyed.
-
+extraHandle is an in/out parameter for an opaque context. When extraHandle points to NULL, a new context is created.
+If the return value is non-NULL, it *must* be cached and re-used for each set of providers.
+propertyQuery is passed to OSSL_STORE_open_ex as the propq argument. It may be NULL.
 *haveProvider is 1 if OpenSSL providers are supported, otherwise 0.
 */
-PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri, void** extraHandle, int32_t* haveProvider);
+PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char** providerNames,
+                                                     int32_t providerNameCount,
+                                                     const char* keyUri,
+                                                     const char* propertyQuery,
+                                                     void** extraHandle,
+                                                     int32_t* haveProvider);
+
+/*
+Loads a key using EVP_PKEY_fromdata_init and EVP_PKEY_fromdata.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_EvpPKeyFromData(const char* algorithmName, uint8_t* key, int32_t keyLength, int32_t privateKey);
 
 /*
 It's a wrapper for EVP_PKEY_CTX_new_from_pkey and EVP_PKEY_CTX_new
 which handles extraHandle.
 */
 EVP_PKEY_CTX* EvpPKeyCtxCreateFromPKey(EVP_PKEY* pkey, void* extraHandle);
+
+/*
+Internal function to get the octet string parameter from the given EVP_PKEY.
+*/
+int32_t EvpPKeyGetKeyOctetStringParam(const EVP_PKEY* pKey,
+                                      const char* name,
+                                      uint8_t* destination,
+                                      int32_t destinationLength);
+
+/*
+Internal function to determine if an EVP_PKEY has a given octet string property.
+*/
+int32_t EvpPKeyHasKeyOctetStringParam(const EVP_PKEY* pKey, const char* name);

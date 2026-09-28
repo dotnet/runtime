@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include "framework_info.h"
+#include "fx_resolver.h"
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
@@ -24,94 +25,93 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
         return true;
     }
 
-    if (a.version == b.version)
-    {
-        return a.hive_depth > b.hive_depth;
-    }
-
     return false;
 }
 
 /*static*/ void framework_info::get_all_framework_infos(
-    const pal::string_t& own_dir,
+    const pal::string_t& dotnet_dir,
     const pal::char_t* fx_name,
-    bool disable_multilevel_lookup,
+    bool include_disabled_versions,
     std::vector<framework_info>* framework_infos)
 {
-    std::vector<pal::string_t> hive_dir;
-    get_framework_and_sdk_locations(own_dir, disable_multilevel_lookup, &hive_dir);
+    if (dotnet_dir.empty())
+        return;
 
-    int32_t hive_depth = 0;
+    std::vector<pal::string_t> disabled_versions = fx_resolver_t::get_disabled_versions();
 
-    for (const pal::string_t& dir : hive_dir)
+    pal::string_t fx_shared_dir = dotnet_dir;
+    append_path(&fx_shared_dir, _X("shared"));
+
+    if (!pal::directory_exists(fx_shared_dir))
+        return;
+
+    std::vector<pal::string_t> fx_names;
+    if (fx_name != nullptr)
     {
-        auto fx_shared_dir = dir;
-        append_path(&fx_shared_dir, _X("shared"));
+        // Use the provided framework name
+        fx_names.push_back(fx_name);
+    }
+    else
+    {
+        // Read all frameworks, including "Microsoft.NETCore.App"
+        pal::readdir_onlydirectories(fx_shared_dir, &fx_names);
+    }
 
-        if (!pal::directory_exists(fx_shared_dir))
+    for (const pal::string_t& fx_name_local : fx_names)
+    {
+        auto fx_dir = fx_shared_dir;
+        append_path(&fx_dir, fx_name_local.c_str());
+
+        if (!pal::directory_exists(fx_dir))
             continue;
 
-        std::vector<pal::string_t> fx_names;
-        if (fx_name != nullptr)
-        {
-            // Use the provided framework name
-            fx_names.push_back(fx_name);
-        }
-        else
-        {
-            // Read all frameworks, including "Microsoft.NETCore.App"
-            pal::readdir_onlydirectories(fx_shared_dir, &fx_names);
-        }
+        trace::verbose(_X("Gathering FX locations in [%s]"), fx_dir.c_str());
 
-        for (const pal::string_t& fx_name_local : fx_names)
+        const pal::string_t deps_file_name = fx_name_local + _X(".deps.json");
+        std::vector<pal::string_t> versions;
+        pal::readdir_onlydirectories(fx_dir, &versions);
+        for (const pal::string_t& ver : versions)
         {
-            auto fx_dir = fx_shared_dir;
-            append_path(&fx_dir, fx_name_local.c_str());
-
-            if (!pal::directory_exists(fx_dir))
+            // Make sure we filter out any non-version folders.
+            fx_ver_t parsed;
+            if (!fx_ver_t::parse(ver, &parsed))
                 continue;
 
-            trace::verbose(_X("Gathering FX locations in [%s]"), fx_dir.c_str());
-
-            const pal::string_t deps_file_name = fx_name_local + _X(".deps.json");
-            std::vector<pal::string_t> versions;
-            pal::readdir_onlydirectories(fx_dir, &versions);
-            for (const pal::string_t& ver : versions)
+            // Check that the framework's .deps.json exists.
+            pal::string_t fx_version_dir = fx_dir;
+            append_path(&fx_version_dir, ver.c_str());
+            if (!file_exists_in_dir(fx_version_dir, deps_file_name.c_str(), nullptr))
             {
-                // Make sure we filter out any non-version folders.
-                fx_ver_t parsed;
-                if (!fx_ver_t::parse(ver, &parsed, false))
-                    continue;
-
-                // Check that the framework's .deps.json exists.
-                pal::string_t fx_version_dir = fx_dir;
-                append_path(&fx_version_dir, ver.c_str());
-                if (!file_exists_in_dir(fx_version_dir, deps_file_name.c_str(), nullptr))
-                {
-                    trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), ver.c_str());
-                    continue;
-                }
-
-                trace::verbose(_X("Found FX version [%s]"), ver.c_str());
-
-                framework_info info(fx_name_local, fx_dir, parsed, hive_depth);
-                framework_infos->push_back(info);
+                trace::verbose(_X("Ignoring FX version [%s] without .deps.json"), ver.c_str());
+                continue;
             }
-        }
 
-        hive_depth++;
+            bool is_disabled = std::find(disabled_versions.begin(), disabled_versions.end(), ver) != disabled_versions.end();
+            if (is_disabled && !include_disabled_versions)
+            {
+                trace::verbose(_X("Ignoring disabled version [%s]"), ver.c_str());
+                continue;
+            }
+
+            trace::verbose(_X("Found FX version [%s]"), ver.c_str());
+
+            framework_info info(fx_name_local, fx_dir, parsed, is_disabled);
+            framework_infos->push_back(info);
+        }
     }
 
     std::sort(framework_infos->begin(), framework_infos->end(), compare_by_name_and_version);
 }
 
-/*static*/ bool framework_info::print_all_frameworks(const pal::string_t& own_dir, const pal::string_t& leading_whitespace)
+/*static*/ bool framework_info::print_all_frameworks(const pal::string_t& dotnet_dir, const pal::char_t* leading_whitespace)
 {
+    assert(leading_whitespace != nullptr);
+
     std::vector<framework_info> framework_infos;
-    get_all_framework_infos(own_dir, nullptr, /*disable_multilevel_lookup*/ true, &framework_infos);
+    get_all_framework_infos(dotnet_dir, nullptr, /*include_disabled_versions*/ false, &framework_infos);
     for (framework_info info : framework_infos)
     {
-        trace::println(_X("%s%s %s [%s]"), leading_whitespace.c_str(), info.name.c_str(), info.version.as_str().c_str(), info.path.c_str());
+        trace::println(_X("%s%s %s [%s]"), leading_whitespace, info.name.c_str(), info.version.as_str().c_str(), info.path.c_str());
     }
 
     return framework_infos.size() > 0;

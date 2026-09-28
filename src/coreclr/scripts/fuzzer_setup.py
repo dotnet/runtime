@@ -95,8 +95,9 @@ def main(main_args):
     helix_source_prefix = "official"
     creator = ""
 
+    # (repo url, proj path)
     build_repos = {
-        "Antigen": ("https://github.com/kunalspathak/Antigen.git", "Antigen/Antigen.csproj"),
+        "Antigen": ("https://github.com/dotnet/jitutils.git", "src/Antigen/Antigen/Antigen.csproj"),
         "Fuzzlyn": ("https://github.com/jakobbotsch/Fuzzlyn.git", "Fuzzlyn/Fuzzlyn.csproj"),
     }
 

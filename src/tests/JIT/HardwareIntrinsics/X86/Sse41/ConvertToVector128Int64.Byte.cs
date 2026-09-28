@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /******************************************************************************
+using TestLibrary;
  * This file is auto-generated from a template file by the GenerateTests.csx  *
  * script in tests\src\JIT\HardwareIntrinsics\X86\Shared. In order to make    *
  * changes, please update the corresponding template and run according to the *
@@ -15,11 +16,13 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
+using TestLibrary;
 
 namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
 {
     public static partial class Program
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/75767", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
         [Fact]
         public static void ConvertToVector128Int64Byte()
         {
@@ -95,8 +98,8 @@ namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
     {
         private static readonly int LargestVectorSize = 16;
 
-        private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<Byte>>() / sizeof(Byte);
-        private static readonly int RetElementCount = Unsafe.SizeOf<Vector128<Int64>>() / sizeof(Int64);
+        private static readonly int Op1ElementCount = sizeof(Vector128<Byte>) / sizeof(Byte);
+        private static readonly int RetElementCount = sizeof(Vector128<Int64>) / sizeof(Int64);
 
         private static Byte[] _data = new Byte[Op1ElementCount];
 
@@ -111,7 +114,7 @@ namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (byte)(random.Next(0, byte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar), ref Unsafe.As<Byte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar), ref Unsafe.As<Byte, byte>(ref _data[0]), (uint)sizeof(Vector128<Byte>));
         }
 
         public SimpleUnaryOpTest__ConvertToVector128Int64Byte()
@@ -121,7 +124,7 @@ namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
             var random = new Random();
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (byte)(random.Next(0, byte.MaxValue)); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _fld), ref Unsafe.As<Byte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _fld), ref Unsafe.As<Byte, byte>(ref _data[0]), (uint)sizeof(Vector128<Byte>));
 
             for (var i = 0; i < Op1ElementCount; i++) { _data[i] = (byte)(random.Next(0, byte.MaxValue)); }
             _dataTable = new SimpleUnaryOpTest__DataTable<Int64, Byte>(_data, new Int64[RetElementCount], LargestVectorSize);
@@ -289,7 +292,7 @@ namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
             Int64[] outArray = new Int64[RetElementCount];
 
             Unsafe.WriteUnaligned(ref Unsafe.As<Byte, byte>(ref inArray[0]), firstOp);
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof(Vector128<Int64>));
 
             ValidateResult(inArray, outArray, method);
         }
@@ -299,8 +302,8 @@ namespace JIT.HardwareIntrinsics.X86._Sse41.handwritten
             Byte[] inArray = new Byte[Op1ElementCount];
             Int64[] outArray = new Int64[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<Byte>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int64>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Byte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)sizeof(Vector128<Byte>));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int64, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)sizeof(Vector128<Int64>));
 
             ValidateResult(inArray, outArray, method);
         }

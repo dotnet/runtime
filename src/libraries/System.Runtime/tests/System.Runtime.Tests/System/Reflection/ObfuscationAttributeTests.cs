@@ -45,7 +45,7 @@ namespace System.Reflection.Tests
         [InlineData(null)]
         [InlineData("")]
         [InlineData("feature")]
-        public void Feature_Set_GetReturnsExpected(string value)
+        public void Feature_Set_GetReturnsExpected(string? value)
         {
             var attribute = new ObfuscationAttribute
             {

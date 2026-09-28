@@ -16,19 +16,42 @@ namespace System.Net.Http.Tests
             MockContent content = new MockContent();
             await content.LoadIntoBufferAsync();
 
-            Type type = typeof(HttpContent);
-            TypeInfo typeInfo = type.GetTypeInfo();
             FieldInfo bufferedContentField = typeof(HttpContent).GetField("_bufferedContent",
                 BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(bufferedContentField);
 
-            MemoryStream bufferedContentStream = bufferedContentField.GetValue(content) as MemoryStream;
-            Assert.NotNull(bufferedContentStream);
+            object stream = bufferedContentField.GetValue(content);
+            Assert.NotNull(stream);
+
+            var bufferedStream = Assert.IsType<HttpContent.LimitArrayPoolWriteStream>(stream);
+
+            Assert.NotNull(bufferedStream.GetSingleBuffer());
 
             content.Dispose();
 
-            // The following line will throw an ObjectDisposedException if the buffered-stream was correctly disposed.
-            Assert.Throws<ObjectDisposedException>(() => { string str = bufferedContentStream.Length.ToString(); });
+            Assert.Null(bufferedStream.GetSingleBuffer());
+        }
+
+        [Fact]
+        public async Task SerializeToStreamAsync_UserDisposesBufferedStream_Throws()
+        {
+            var content = new DisposeBufferedStreamContent();
+            await Assert.ThrowsAsync<InvalidOperationException>(() => content.LoadIntoBufferAsync());
+        }
+
+        private sealed class DisposeBufferedStreamContent : HttpContent
+        {
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                stream.Dispose();
+                return Task.CompletedTask;
+            }
+
+            protected internal override bool TryComputeLength(out long length)
+            {
+                length = 0;
+                return false;
+            }
         }
 
         [Theory]

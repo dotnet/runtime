@@ -5,12 +5,12 @@ using System;
 
 namespace Mono.Linker
 {
-	[Flags]
-	public enum MetadataTrimming
-	{
-		None = 0,
-		ParameterName = 1,
+    [Flags]
+    public enum MetadataTrimming
+    {
+        None = 0,
+        ParameterName = 1,
 
-		Any = ParameterName
-	}
+        Any = ParameterName
+    }
 }

@@ -565,7 +565,7 @@ namespace System.Xml
             }
         }
 
-        public override unsafe void WriteText(string value)
+        public override void WriteText(string value)
             => WriteTextImpl(value);
 
         public override void WriteText(char[] chars, int offset, int count)
@@ -774,7 +774,7 @@ namespace System.Xml
             }
             else
             {
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
                 decimal.TryGetBits(d, bits, out int intsWritten);
                 Debug.Assert(intsWritten == 4);
 
@@ -954,7 +954,7 @@ namespace System.Xml
             }
             else
             {
-                Span<int> bits = stackalloc int[4];
+                Span<int> bits = [0, 0, 0, 0];
                 WriteArrayInfo(XmlBinaryNodeType.DecimalTextWithEndElement, items.Length);
                 foreach (ref readonly decimal d in items)
                 {

@@ -18,6 +18,7 @@ class MyClass
 
 public class TypeGetType2
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -18,7 +18,7 @@ namespace ILCompiler.DependencyAnalysis
     /// body at object emission phase if the real method body was marked.
     /// It the real method body wasn't marked, this stub will tail-call into a throw helper.
     /// </summary>
-    public partial class TentativeMethodNode : AssemblyStubNode, IMethodNode, ISymbolNodeWithLinkage
+    public partial class TentativeMethodNode : AssemblyStubNode, IMethodCodeNodeWithTypeSignature, ISymbolNodeWithLinkage
     {
         private readonly IMethodBodyNode _methodNode;
 
@@ -32,7 +32,7 @@ namespace ILCompiler.DependencyAnalysis
         protected virtual ISymbolNode GetTarget(NodeFactory factory)
         {
             // If the class library doesn't provide this helper, the optimization is disabled.
-            MethodDesc helper = factory.TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers", "ThrowBodyRemoved");
+            MethodDesc helper = factory.TypeSystemContext.GetOptionalHelperEntryPoint("ThrowHelpers"u8, "ThrowBodyRemoved"u8);
             return helper == null ? RealBody : factory.MethodEntrypoint(helper);
         }
 
@@ -65,7 +65,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
-            return _methodNode.CompareToImpl(((TentativeMethodNode)other)._methodNode, comparer);
+            return comparer.Compare(_methodNode, ((TentativeMethodNode)other)._methodNode);
         }
 
         public ISymbolNode NodeForLinkage(NodeFactory factory)

@@ -507,7 +507,7 @@ mono_marshal_shared_emit_ptr_to_object_conv (MonoMethodBuilder *mb, MonoType *ty
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eklass = type->data.klass;
+			eklass = m_type_data_get_klass_unchecked (type);
 		} else {
 			g_assert_not_reached ();
 		}
@@ -774,8 +774,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 
 	if (klass != mono_class_try_get_safehandle_class ()) {
 		if (mono_class_is_auto_layout (klass)) {
+			char *type_name = mono_type_full_name (m_class_get_byval_arg (klass));
 			char *msg = g_strdup_printf ("Type %s which is passed to unmanaged code must have a StructLayout attribute.",
-										 mono_type_full_name (m_class_get_byval_arg (klass)));
+										 type_name);
+			g_free (type_name);
 			mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 			return;
 		}
@@ -862,8 +864,10 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				break;
 			case MONO_TYPE_GENERICINST:
 				if (!mono_type_generic_inst_is_valuetype (ftype)) {
+					char *type_name = mono_type_full_name (ftype);
 					char *msg = g_strdup_printf ("Generic type %s cannot be marshaled as field in a struct.",
-						mono_type_full_name (ftype));
+						type_name);
+					g_free (type_name);
 					mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 					break;
 				}
@@ -873,8 +877,8 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				MonoType *etype;
 				int len;
 
-				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (ftype->data.klass)) {
-					ftype = mono_class_enum_basetype_internal (ftype->data.klass);
+				if (t == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_type_data_get_klass_unchecked (ftype))) {
+					ftype = mono_class_enum_basetype_internal (m_type_data_get_klass_unchecked (ftype));
 					goto handle_enum;
 				}
 
@@ -903,8 +907,18 @@ mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *kla
 				mono_mb_emit_stloc (mb, 1);
 				break;
 			}
-			case MONO_TYPE_OBJECT: {
-				char *msg = g_strdup_printf ("COM support was disabled at compilation time.");
+			case MONO_TYPE_OBJECT:
+			case MONO_TYPE_STRING:
+			case MONO_TYPE_CLASS:
+			case MONO_TYPE_SZARRAY:
+			case MONO_TYPE_ARRAY: {
+				char *klass_name = mono_type_full_name (m_class_get_byval_arg (klass));
+				char *field_type_name = mono_type_full_name (ftype);
+				char *msg = g_strdup_printf ("Type %s with field type %s cannot be marshaled as an unmanaged struct field.",
+					klass_name,
+					field_type_name);
+				g_free (klass_name);
+				g_free (field_type_name);
 				mono_marshal_shared_mb_emit_exception_marshal_directive (mb, msg);
 				break;
 			}
@@ -1060,9 +1074,9 @@ mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *ty
 		int esize;
 
 		if (type->type == MONO_TYPE_SZARRAY) {
-			eklass = type->data.klass;
+			eklass = m_type_data_get_klass_unchecked (type);
 		} else if (type->type == MONO_TYPE_ARRAY) {
-			eklass = type->data.array->eklass;
+			eklass = m_type_data_get_array_unchecked (type)->eklass;
 			g_assert(m_class_is_blittable (eklass));
 		} else {
 			g_assert_not_reached ();

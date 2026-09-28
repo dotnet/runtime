@@ -18,18 +18,18 @@ namespace ILCompiler.Reflection.ReadyToRun
         public uint Offset { get; set; }
         public byte LowHashcode { get; }
 
-        byte[] _image;
+        NativeReader _imageReader;
 
-        public NativeParser(byte[] image, uint offset, byte lowHashcode = 0)
+        public NativeParser(NativeReader imageReader, uint offset, byte lowHashcode = 0)
         {
             Offset = offset;
             LowHashcode = lowHashcode;
-            _image = image;
+            _imageReader = imageReader;
         }
 
         public bool IsNull()
         {
-            return _image == null;
+            return _imageReader == null;
         }
 
         public uint GetRelativeOffset()
@@ -37,7 +37,7 @@ namespace ILCompiler.Reflection.ReadyToRun
             uint pos = Offset;
 
             int delta = 0;
-            Offset = NativeReader.DecodeSigned(_image, Offset, ref delta);
+            Offset = _imageReader.DecodeSigned(Offset, ref delta);
 
             return pos + (uint)delta;
         }
@@ -45,13 +45,13 @@ namespace ILCompiler.Reflection.ReadyToRun
         public NativeParser GetParserFromRelativeOffset()
         {
             byte lowHashcode = GetByte();
-            return new NativeParser(_image, GetRelativeOffset(), lowHashcode);
+            return new NativeParser(_imageReader, GetRelativeOffset(), lowHashcode);
         }
 
         public byte GetByte()
         {
             int off = (int)Offset;
-            byte val = NativeReader.ReadByte(_image, ref off);
+            byte val = _imageReader.ReadByte(ref off);
             Offset += 1;
             return val;
         }
@@ -59,7 +59,7 @@ namespace ILCompiler.Reflection.ReadyToRun
         public uint GetCompressedData()
         {
             int off = (int)Offset;
-            uint val = NativeReader.ReadCompressedData(_image, ref off);
+            uint val = _imageReader.ReadCompressedData(ref off);
             Offset = (uint)off;
             return val;
         }
@@ -67,14 +67,14 @@ namespace ILCompiler.Reflection.ReadyToRun
         public uint GetUnsigned()
         {
             uint value = 0;
-            Offset = NativeReader.DecodeUnsigned(_image, Offset, ref value);
+            Offset = _imageReader.DecodeUnsigned(Offset, ref value);
             return value;
         }
 
         public int GetSigned()
         {
             int value = 0;
-            Offset = NativeReader.DecodeSigned(_image, Offset, ref value);
+            Offset = _imageReader.DecodeSigned(Offset, ref value);
             return value;
         }
     }
@@ -85,17 +85,17 @@ namespace ILCompiler.Reflection.ReadyToRun
     public struct NativeHashtable
     {
         // TODO (refactoring) - all these Native* class should be private
-        private byte[] _image;
+        private NativeReader _imageReader;
         private uint _baseOffset;
         private uint _bucketMask;
         private byte _entryIndexSize;
         private uint _endOffset;
 
-        public NativeHashtable(byte[] image, NativeParser parser, uint endOffset)
+        public NativeHashtable(NativeReader imageReader, NativeParser parser, uint endOffset)
         {
             uint header = parser.GetByte();
             _baseOffset = parser.Offset;
-            _image = image;
+            _imageReader = imageReader;
 
             int numberOfBucketsShift = (int)(header >> 2);
             if (numberOfBucketsShift > 31)
@@ -134,7 +134,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 {
                     for (int i = curOffset; i < nextOffset; i++)
                     {
-                        sb.Append($"{_image[i]:X2} ");
+                        sb.Append($"{_imageReader[i]:X2} ");
                     }
                     sb.AppendLine();
                 }
@@ -205,24 +205,24 @@ namespace ILCompiler.Reflection.ReadyToRun
             if (_entryIndexSize == 0)
             {
                 int bucketOffset = (int)(_baseOffset + bucket);
-                start = NativeReader.ReadByte(_image, ref bucketOffset);
-                end = NativeReader.ReadByte(_image, ref bucketOffset);
+                start = _imageReader.ReadByte(ref bucketOffset);
+                end = _imageReader.ReadByte(ref bucketOffset);
             }
             else if (_entryIndexSize == 1)
             {
                 int bucketOffset = (int)(_baseOffset + 2 * bucket);
-                start = NativeReader.ReadUInt16(_image, ref bucketOffset);
-                end = NativeReader.ReadUInt16(_image, ref bucketOffset);
+                start = _imageReader.ReadUInt16(ref bucketOffset);
+                end = _imageReader.ReadUInt16(ref bucketOffset);
             }
             else
             {
                 int bucketOffset = (int)(_baseOffset + 4 * bucket);
-                start = NativeReader.ReadUInt32(_image, ref bucketOffset);
-                end = NativeReader.ReadUInt32(_image, ref bucketOffset);
+                start = _imageReader.ReadUInt32(ref bucketOffset);
+                end = _imageReader.ReadUInt32(ref bucketOffset);
             }
 
             endOffset = end + _baseOffset;
-            return new NativeParser(_image, _baseOffset + start);
+            return new NativeParser(_imageReader, _baseOffset + start);
         }
 
         public Enumerator Lookup(int hashcode)
@@ -246,13 +246,13 @@ namespace ILCompiler.Reflection.ReadyToRun
     public struct NativeCuckooFilter
     {
         // TODO (refactoring) - all these Native* class should be private
-        private byte[] _image;
+        private NativeReader _imageReader;
         private int _filterStartOffset;
         private int _filterEndOffset;
 
-        public NativeCuckooFilter(byte[] image, int filterStartOffset, int filterEndOffset)
+        public NativeCuckooFilter(NativeReader imageReader, int filterStartOffset, int filterEndOffset)
         {
-            _image = image;
+            _imageReader = imageReader;
             _filterStartOffset = filterStartOffset;
             _filterEndOffset = filterEndOffset;
 
@@ -271,7 +271,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 ushort[] bucket = new ushort[8];
                 for (int i = 0; i < bucket.Length; i++)
                 {
-                    bucket[i] = NativeReader.ReadUInt16(_image, ref offset);
+                    bucket[i] = _imageReader.ReadUInt16(ref offset);
                 }
                 yield return bucket;
             }
@@ -283,7 +283,7 @@ namespace ILCompiler.Reflection.ReadyToRun
 
             sb.AppendLine($"NativeCuckooFilter Size: {(_filterEndOffset - _filterStartOffset) / 16}");
             int bucket = 0;
-            foreach (ushort [] bucketContents in GetBuckets())
+            foreach (ushort[] bucketContents in GetBuckets())
             {
                 sb.Append($"Bucket: {bucket} [");
                 for (int i = 0; i < 8; i++)

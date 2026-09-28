@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 unsafe static class SuppressGCTransitionNative
 {
@@ -94,7 +95,10 @@ unsafe static class SuppressGCTransitionNative
             $"lib{nameof(SuppressGCTransitionNative)}.dylib",
         };
 
-        string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        // NativeAOT executables are in a native subdirectory of the test assets.
+        string binDir = Utilities.IsNativeAot
+            ? new DirectoryInfo(AppContext.BaseDirectory).Parent.FullName
+            : Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         foreach (var ln in libNames)
         {
             if (NativeLibrary.TryLoad(Path.Combine(binDir, ln), out IntPtr mod))
@@ -248,7 +252,7 @@ public unsafe class SuppressGCTransitionTest
         CheckGCMode.Validate(transitionSuppressed: false, ret);
         return n + 1;
     }
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReturnInt(int value)
     {
         return value;
@@ -286,8 +290,11 @@ public unsafe class SuppressGCTransitionTest
         return n + 1;
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64127", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/70490", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoFULLAOT))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/82859", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoMiniJIT), nameof(PlatformDetection.IsArm64Process))]
+    [Xunit.SkipOnCoreClrAttribute("Depends on marshalled pinvoke calli", RuntimeTestModes.InterpreterActive)]
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static void TestEntryPoint()
     {
         CheckGCMode.Initialize(&SuppressGCTransitionNative.SetIsInCooperativeModeFunction);

@@ -63,6 +63,23 @@ namespace System.Runtime.Intrinsics.X86
             /// </summary>
             [Experimental(Experimentals.X86BaseDivRemDiagId, UrlFormat = Experimentals.SharedUrlFormat)]
             public static (long Quotient, long Remainder) DivRem(ulong lower, long upper, long divisor) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>unsigned _umul128(unsigned __int64 Multiplier, unsigned __int64  Multiplicand, unsigned __int64 * HighProduct)</para>
+            ///   <para>  MUL reg/m64</para>
+            /// </summary>
+            /// <remarks>
+            ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
+            /// </remarks>
+            internal static (ulong Lower, ulong Upper) BigMul(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
+
+            /// <summary>
+            ///   <para>  IMUL reg/m64</para>
+            /// </summary>
+            /// <remarks>
+            ///   <para>Its functionality is exposed in the public <see cref="Math" /> class.</para>
+            /// </remarks>
+            internal static (long Lower, long Upper) BigMul(long left, long right) { throw new PlatformNotSupportedException(); }
         }
 
         /// <summary>

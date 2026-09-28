@@ -124,7 +124,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             sb.Append(nameMangler.GetMangledTypeName(DeclaringModule.GetGlobalModuleType()));
             sb.Append('_');
-            sb.Append(nameMangler.SanitizeName(ModuleName));
+            sb.Append(nameMangler.SanitizeName(new Utf8String(ModuleName)));
             if (DllImportSearchPath.HasValue)
             {
                 sb.Append('_');

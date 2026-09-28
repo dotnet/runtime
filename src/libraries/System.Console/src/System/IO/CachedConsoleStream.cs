@@ -22,11 +22,11 @@ namespace System.IO
 
         public override int Read(Span<byte> buffer) => throw Error.GetReadNotSupported();
 
-        public override void Write(ReadOnlySpan<byte> buffer)
+        public override unsafe void Write(ReadOnlySpan<byte> buffer)
         {
             int maxCharCount = _encoding.GetMaxCharCount(buffer.Length);
             char[]? pooledBuffer = null;
-            Span<char> charSpan = maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
+            Span<char> charSpan = (uint)maxCharCount <= 512 ? stackalloc char[512] : (pooledBuffer = ArrayPool<char>.Shared.Rent(maxCharCount));
             try
             {
                 int count = _decoder.GetChars(buffer, charSpan, false);

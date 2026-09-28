@@ -17,10 +17,10 @@ namespace LibraryImportGenerator.IntegrationTests
         internal partial class CallingConventions
         {
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "add_integers_cdecl")]
-            [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvCdecl) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
             public static partial long AddLongsCdecl(long i, long j, long k, long l, long m, long n, long o, long p, long q);
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "add_integers_stdcall")]
-            [UnmanagedCallConv(CallConvs = new[] { typeof(CallConvStdcall) })]
+            [UnmanagedCallConv(CallConvs = [typeof(CallConvStdcall)])]
             public static partial long AddLongsStdcall(long i, long j, long k, long l, long m, long n, long o, long p, long q);
         }
     }

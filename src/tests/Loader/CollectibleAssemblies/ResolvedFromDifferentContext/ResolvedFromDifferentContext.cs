@@ -14,6 +14,7 @@ using System.Runtime.Loader;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.IO;
+using TestLibrary;
 using Xunit;
 
 class TestAssemblyLoadContext : AssemblyLoadContext
@@ -207,7 +208,8 @@ public class Test
         return 100;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCollectibleAssembliesSupported))]
+    [SkipOnCoreClr("Test polls a fixed number of times for collectible ALCs to be unloaded, which is unreliable under GC stress", RuntimeTestModes.AnyGCStress)]
     public static int TestEntryPoint()
     {
         int status = 100;

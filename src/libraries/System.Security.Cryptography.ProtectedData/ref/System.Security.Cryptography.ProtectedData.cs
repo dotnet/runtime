@@ -14,6 +14,16 @@ namespace System.Security.Cryptography
     public static partial class ProtectedData
     {
         public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, System.Security.Cryptography.DataProtectionScope scope) { throw null; }
+#if NET
+        public static byte[] Protect(System.ReadOnlySpan<byte> userData, System.Security.Cryptography.DataProtectionScope scope, System.ReadOnlySpan<byte> optionalEntropy = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static int Protect(System.ReadOnlySpan<byte> userData, System.Security.Cryptography.DataProtectionScope scope, System.Span<byte> destination, System.ReadOnlySpan<byte> optionalEntropy = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static bool TryProtect(System.ReadOnlySpan<byte> userData, System.Security.Cryptography.DataProtectionScope scope, System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<byte> optionalEntropy = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static bool TryUnprotect(System.ReadOnlySpan<byte> encryptedData, System.Security.Cryptography.DataProtectionScope scope, System.Span<byte> destination, out int bytesWritten, System.ReadOnlySpan<byte> optionalEntropy = default(System.ReadOnlySpan<byte>)) { throw null; }
+#endif
         public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, System.Security.Cryptography.DataProtectionScope scope) { throw null; }
+#if NET
+        public static byte[] Unprotect(System.ReadOnlySpan<byte> encryptedData, System.Security.Cryptography.DataProtectionScope scope, System.ReadOnlySpan<byte> optionalEntropy = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public static int Unprotect(System.ReadOnlySpan<byte> encryptedData, System.Security.Cryptography.DataProtectionScope scope, System.Span<byte> destination, System.ReadOnlySpan<byte> optionalEntropy = default(System.ReadOnlySpan<byte>)) { throw null; }
+#endif
     }
 }

@@ -4,68 +4,74 @@ using Xunit;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
-	public sealed partial class ReflectionTests : LinkerTestBase
-	{
+    public sealed partial class ReflectionTests : LinkerTestBase
+    {
 
-		[Fact]
-		public Task AssemblyImportedViaReflection ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task AssemblyImportedViaReflection()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task AssemblyImportedViaReflectionWithDerivedType ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task AssemblyImportedViaReflectionWithDerivedType()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task AssemblyImportedViaReflectionWithReference ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task AssemblyImportedViaReflectionWithReference()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task AsType ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task AsType()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task CoreLibMessages ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task CoreLibMessages()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task IsAssignableFrom ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task IsAssignableFrom()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task ParametersUsedViaReflection ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task ParametersUsedViaReflection()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task UnderlyingSystemType ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task TypeMap()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task UnsafeAccessor ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task UnderlyingSystemType()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-		[Fact]
-		public Task UsedViaReflectionIntegrationTest ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
+        [Fact]
+        public Task UnsafeAccessor()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
 
-	}
+        [Fact]
+        public Task UsedViaReflectionIntegrationTest()
+        {
+            return RunTest(allowMissingWarnings: true);
+        }
+
+    }
 }

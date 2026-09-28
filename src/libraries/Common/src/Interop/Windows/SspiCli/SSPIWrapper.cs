@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -239,18 +239,18 @@ namespace System.Net
             return true;
         }
 
-        public static string? QueryStringContextAttributes(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute)
+        public static unsafe string? QueryStringContextAttributes(ISSPIInterface secModule, SafeDeleteContext securityContext, Interop.SspiCli.ContextAttribute contextAttribute)
         {
             Debug.Assert(
                 contextAttribute == Interop.SspiCli.ContextAttribute.SECPKG_ATTR_NAMES ||
                 contextAttribute == Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CLIENT_SPECIFIED_TARGET);
 
 
-            Span<IntPtr> buffer = stackalloc IntPtr[1];
+            Span<byte> buffer = stackalloc byte[IntPtr.Size];
             int errorCode = secModule.QueryContextAttributes(
                 securityContext,
                 contextAttribute,
-                MemoryMarshal.AsBytes(buffer),
+                buffer,
                 typeof(SafeFreeContextBuffer),
                 out SafeHandle? sspiHandle);
 

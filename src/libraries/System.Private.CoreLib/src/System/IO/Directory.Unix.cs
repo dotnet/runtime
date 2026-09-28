@@ -31,9 +31,9 @@ namespace System.IO
             string tempPath = Path.GetTempPath();
             int tempPathByteCount = Encoding.UTF8.GetByteCount(tempPath);
             int prefixByteCount = prefix is not null ? Encoding.UTF8.GetByteCount(prefix) : 0;
-            int totalByteCount = tempPathByteCount + prefixByteCount + 6 + 1;
+            int totalByteCount = checked(tempPathByteCount + prefixByteCount + 6 + 1);
 
-            Span<byte> path = totalByteCount <= 256 ? stackalloc byte[256].Slice(0, totalByteCount) : new byte[totalByteCount];
+            Span<byte> path = (uint)totalByteCount <= 256 ? stackalloc byte[totalByteCount] : new byte[totalByteCount];
             int pos = Encoding.UTF8.GetBytes(tempPath, path);
             if (prefix is not null)
             {

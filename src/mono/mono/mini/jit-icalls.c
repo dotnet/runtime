@@ -928,6 +928,10 @@ mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *me
 guint64
 mono_fconv_u8 (double v)
 {
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT64 : 0;
+	if (mono_isnan (v))
+		return 0;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	const double two63 = 2147483648.0 * 4294967296.0;
 	if (v < two63) {
@@ -945,6 +949,10 @@ mono_fconv_u8 (double v)
 guint64
 mono_rconv_u8 (float v)
 {
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT64 : 0;
+	if (mono_isnan (v))
+		return 0;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	const float two63 = 2147483648.0 * 4294967296.0;
 	if (v < two63) {
@@ -953,8 +961,6 @@ mono_rconv_u8 (float v)
 		return (gint64)(v - two63) + ((guint64)1 << 63);
 	}
 #else
-	if (mono_isinf (v) || mono_isnan (v))
-		return 0;
 	return (guint64)v;
 #endif
 }
@@ -972,8 +978,10 @@ mono_fconv_i8 (double v)
 guint32
 mono_fconv_u4 (double v)
 {
-	/* MS.NET behaves like this for some reason */
-	if (mono_isinf (v) || mono_isnan (v))
+	/* Match the saturating behavior of the managed conversion. */
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT32 : 0;
+	if (mono_isnan (v))
 		return 0;
 	return (guint32)v;
 }
@@ -981,7 +989,9 @@ mono_fconv_u4 (double v)
 guint32
 mono_rconv_u4 (float v)
 {
-	if (mono_isinf (v) || mono_isnan (v))
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT32 : 0;
+	if (mono_isnan (v))
 		return 0;
 	return (guint32) v;
 }
@@ -1157,6 +1167,15 @@ mono_helper_newobj_mscorlib (guint32 idx)
 	if (!is_ok (error))
 		mono_error_set_pending_exception (error);
 	return obj;
+}
+
+MonoObject*
+mono_helper_box_nullable (gpointer vbuf, MonoClass *klass)
+{
+	ERROR_DECL (error);
+	MonoObject *result = mono_nullable_box (vbuf, klass, error);
+	mono_error_set_pending_exception (error);
+	return result;
 }
 
 /*
@@ -1702,7 +1721,7 @@ mono_throw_type_load (MonoClass* klass)
 		mono_error_set_type_load_class (error, klass, "Attempting to load invalid type '%s'.", klass_name);
 		g_free (klass_name);
 	}
-	
+
 	mono_error_set_pending_exception (error);
 }
 
@@ -1742,6 +1761,11 @@ mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMeth
 		gpointer data = mini_instantiate_gshared_info (&info->entries [i],
 													   mono_method_get_context (m), m->klass);
 		g_assert (data);
+
+		// we need a barrier before publishing data via mrgctx->infos [i] because the contents of data may not
+		//  have been published to all cores and another thread may read zeroes or partially initialized data
+		//  out of it, even though we have a barrier before publication of entries in mrgctx->entries below
+		mono_memory_barrier();
 
 		/* The first few entries are stored inline, the rest are stored in mrgctx->entries */
 		if (i < ninline)

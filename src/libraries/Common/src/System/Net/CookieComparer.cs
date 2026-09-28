@@ -23,11 +23,8 @@ namespace System.Net
         }
 
         internal static bool EqualDomains(ReadOnlySpan<char> left, ReadOnlySpan<char> right)
-        {
-            if (left.StartsWith('.')) left = left.Slice(1);
-            if (right.StartsWith('.')) right = right.Slice(1);
+            => StripLeadingDot(left).Equals(StripLeadingDot(right), StringComparison.OrdinalIgnoreCase);
 
-            return left.Equals(right, StringComparison.OrdinalIgnoreCase);
-        }
+        internal static ReadOnlySpan<char> StripLeadingDot(ReadOnlySpan<char> s) => s.StartsWith('.') ? s[1..] : s;
     }
 }

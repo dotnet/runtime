@@ -18,11 +18,6 @@ Always succeeds.
 PALEXPORT void CryptoNative_BigNumDestroy(BIGNUM* a);
 
 /*
-Shims the BN_bin2bn method.
-*/
-PALEXPORT BIGNUM* CryptoNative_BigNumFromBinary(const uint8_t* s, int32_t len);
-
-/*
 Shims the BN_bn2bin method.
 */
 PALEXPORT int32_t CryptoNative_BigNumToBinary(const BIGNUM* a, uint8_t* to);

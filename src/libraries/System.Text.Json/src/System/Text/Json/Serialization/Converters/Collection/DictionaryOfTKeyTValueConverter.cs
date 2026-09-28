@@ -19,7 +19,19 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void Add(TKey key, in TValue value, JsonSerializerOptions options, ref ReadStack state)
         {
-            ((TCollection)state.Current.ReturnValue!)[key] = value;
+            TCollection dictionary = (TCollection)state.Current.ReturnValue!;
+
+            if (options.AllowDuplicateProperties)
+            {
+                dictionary[key] = value;
+            }
+            else
+            {
+                if (!dictionary.TryAdd(key, value))
+                {
+                    ThrowHelper.ThrowJsonException_DuplicatePropertyNotAllowed();
+                }
+            }
         }
 
         protected internal override bool OnWriteResume(
@@ -29,7 +41,7 @@ namespace System.Text.Json.Serialization.Converters
             ref WriteStack state)
         {
             Dictionary<TKey, TValue>.Enumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 if (!enumerator.MoveNext())
@@ -47,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
             _keyConverter ??= GetConverter<TKey>(typeInfo.KeyTypeInfo!);
             _valueConverter ??= GetConverter<TValue>(typeInfo.ElementTypeInfo!);
 
-            if (!state.SupportContinuation && _valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+            if (!state.SupportContinuation && _valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
             {
                 // Fast path that avoids validation and extra indirection.
                 do

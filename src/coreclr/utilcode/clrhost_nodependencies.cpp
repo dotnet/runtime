@@ -173,8 +173,8 @@ BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length)
     // No NX support on PAL
     return TRUE;
 #else // !(TARGET_UNIX)
-    BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, GetOsPageSize());
-    BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, GetOsPageSize());
+    BYTE *regionStart = (BYTE*) ALIGN_DOWN((BYTE*)lpMem, minipal_getpagesize());
+    BYTE *regionEnd = (BYTE*) ALIGN_UP((BYTE*)lpMem+length, minipal_getpagesize());
     _ASSERTE(length > 0);
     _ASSERTE(regionStart < regionEnd);
 

@@ -3,20 +3,26 @@
 
 #include "cdacplatformmetadata.hpp"
 
-#ifndef DACCESS_COMPILE
-CDacPlatformMetadata g_cdacPlatformMetadata;
+GVAL_IMPL(CDacPlatformMetadata, g_cdacPlatformMetadata);
 
+#ifndef DACCESS_COMPILE
 void CDacPlatformMetadata::Init()
 {
-    PrecodeMachineDescriptor::Init(&g_cdacPlatformMetadata.precode);
 #if defined(TARGET_ARM)
-    g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
-#elif defined(TARGET_ARM64) && defined(TARGET_OSX)
+    (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::HasArm32ThumbBit;
+#elif defined(TARGET_ARM64) && defined(TARGET_APPLE)
     // TODO set HasArm64PtrAuth if arm64e
-    g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::None;
+    (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::None;
 #else
-    g_cdacPlatformMetadata.codePointerFlags = CDacCodePointerFlags::None;
+    (&g_cdacPlatformMetadata)->codePointerFlags = CDacCodePointerFlags::None;
 #endif
+}
+
+void CDacPlatformMetadata::InitPrecodes()
+{
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+    PrecodeMachineDescriptor::Init(&(&g_cdacPlatformMetadata)->precode);
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 }
 
 #endif // !DACCESS_COMPILE

@@ -73,7 +73,7 @@ namespace System.Text.Encodings.Web
                 uint utf8lsb = (uint)UnicodeHelpers.GetUtf8RepresentationForScalarValue((uint)nextScalarValue.Value);
                 do
                 {
-                    if (SpanUtility.IsValidIndex(utf8Destination, dstIdx))
+                    if ((uint)utf8Destination.Length > (uint)dstIdx)
                     {
                         utf8Destination[dstIdx++] = (byte)utf8lsb;
                     }
@@ -319,7 +319,7 @@ namespace System.Text.Encodings.Web
         }
 
         // skips the call to FindFirstCharacterToEncodeUtf8
-        private protected virtual OperationStatus EncodeUtf8Core(
+        private protected virtual unsafe OperationStatus EncodeUtf8Core(
             ReadOnlySpan<byte> utf8Source,
             Span<byte> utf8Destination,
             out int bytesConsumed,

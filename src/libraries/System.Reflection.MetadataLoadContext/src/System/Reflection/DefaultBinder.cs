@@ -53,7 +53,7 @@ namespace System
             for (i = 0; i < types.Length; i++)
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
-                if (!(IsImplementedByMetadataLoadContext(realTypes[i]) || realTypes[i].IsSignatureType()))
+                if (!(IsImplementedByMetadataLoadContext(realTypes[i]) || realTypes[i].IsSignatureType))
                     throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
@@ -81,7 +81,7 @@ namespace System
                         continue;
 
                     Type? type = types[j];
-                    if (type.IsSignatureType())
+                    if (type.IsSignatureType)
                     {
                         if (!(candidates[i] is MethodInfo methodInfo))
                             break;
@@ -273,10 +273,7 @@ namespace System
         // Binder and is used by RuntimeType.)
         public static MethodBase? ExactBinding(MethodBase[] match, Type[] types)
         {
-            if (match is null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             MethodBase[] aExactMatches = new MethodBase[match.Length];
             int cExactMatches = 0;
@@ -318,10 +315,7 @@ namespace System
         //  Binder and is used by RuntimeType.)
         public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types)
         {
-            if (match is null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
@@ -433,7 +427,7 @@ namespace System
             if (c1 == c2)
                 return 0;
 
-            if (t.IsSignatureType())
+            if (t.IsSignatureType)
             {
                 if (t.MatchesExactly(c1))
                     return 1;

@@ -22,6 +22,13 @@ namespace System.Threading.RateLimiting
         private long _failedLeasesCount;
         private long _successfulLeasesCount;
 
+        /// <summary>
+        /// Function to calculate elapsed time from a given tick value.
+        /// Defaults to <see cref="RateLimiterHelper.GetElapsedTime(long?)"/>.
+        /// In tests, this field can be reassigned via reflection to inject custom time behavior without modifying the public API.
+        /// </summary>
+        private readonly Func<long?, TimeSpan?> _getElapsedTime = RateLimiterHelper.GetElapsedTime;
+
         private readonly Timer? _renewTimer;
         private readonly FixedWindowRateLimiterOptions _options;
         private readonly Deque<RequestRegistration> _queue = new Deque<RequestRegistration>();
@@ -30,10 +37,9 @@ namespace System.Threading.RateLimiting
 
         private static readonly RateLimitLease SuccessfulLease = new FixedWindowLease(true, null);
         private static readonly RateLimitLease FailedLease = new FixedWindowLease(false, null);
-        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         /// <inheritdoc />
-        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
+        public override TimeSpan? IdleDuration => RateLimiterHelper.GetElapsedTime(_idleSince);
 
         /// <inheritdoc />
         public override bool IsAutoReplenishing => _options.AutoReplenishment;
@@ -47,10 +53,7 @@ namespace System.Threading.RateLimiting
         /// <param name="options">Options to specify the behavior of the <see cref="FixedWindowRateLimiter"/>.</param>
         public FixedWindowRateLimiter(FixedWindowRateLimiterOptions options)
         {
-            if (options is null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            ArgumentNullException.ThrowIfNull(options);
             if (options.PermitLimit <= 0)
             {
                 throw new ArgumentException(SR.Format(SR.ShouldBeGreaterThan0, nameof(options.PermitLimit)), nameof(options));
@@ -87,12 +90,13 @@ namespace System.Threading.RateLimiting
         public override RateLimiterStatistics? GetStatistics()
         {
             ThrowIfDisposed();
+            // Volatile.Read avoids torn reads of a long on 32bit systems.
             return new RateLimiterStatistics()
             {
                 CurrentAvailablePermits = _permitCount,
                 CurrentQueuedCount = _queueCount,
-                TotalFailedLeases = Interlocked.Read(ref _failedLeasesCount),
-                TotalSuccessfulLeases = Interlocked.Read(ref _successfulLeasesCount),
+                TotalFailedLeases = Volatile.Read(ref _failedLeasesCount),
+                TotalSuccessfulLeases = Volatile.Read(ref _successfulLeasesCount),
             };
         }
 
@@ -118,7 +122,7 @@ namespace System.Threading.RateLimiting
                 }
 
                 Interlocked.Increment(ref _failedLeasesCount);
-                return CreateFailedWindowLease(permitCount);
+                return CreateFailedWindowLease();
             }
 
             lock (Lock)
@@ -129,7 +133,7 @@ namespace System.Threading.RateLimiting
                 }
 
                 Interlocked.Increment(ref _failedLeasesCount);
-                return CreateFailedWindowLease(permitCount);
+                return CreateFailedWindowLease();
             }
         }
 
@@ -197,7 +201,7 @@ namespace System.Threading.RateLimiting
                     {
                         Interlocked.Increment(ref _failedLeasesCount);
                         // Don't queue if queue limit reached and QueueProcessingOrder is OldestFirst
-                        return new ValueTask<RateLimitLease>(CreateFailedWindowLease(permitCount));
+                        return new ValueTask<RateLimitLease>(CreateFailedWindowLease());
                     }
                 }
 
@@ -210,13 +214,19 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private FixedWindowLease CreateFailedWindowLease(int permitCount)
+        private FixedWindowLease CreateFailedWindowLease()
         {
-            int replenishAmount = permitCount - _permitCount + _queueCount;
-            // can't have 0 replenish window, that would mean it should be a successful lease
-            int replenishWindow = Math.Max(replenishAmount / _options.PermitLimit, 1);
+            // Volatile.Read avoids torn reads of a long on 32bit systems.
+            long lastReplenishmentTick = Volatile.Read(ref _lastReplenishmentTick);
+            TimeSpan? remainingTime = _options.Window - _getElapsedTime(lastReplenishmentTick);
 
-            return new FixedWindowLease(false, TimeSpan.FromTicks(_options.Window.Ticks * replenishWindow));
+            // Clamp to zero if negative (window expired but not yet replenished)
+            if (remainingTime < TimeSpan.Zero)
+            {
+                remainingTime = TimeSpan.Zero;
+            }
+
+            return new FixedWindowLease(false, remainingTime);
         }
 
         private bool TryLeaseUnsynchronized(int permitCount, [NotNullWhen(true)] out RateLimitLease? lease)
@@ -291,12 +301,12 @@ namespace System.Threading.RateLimiting
                     return;
                 }
 
-                if (((nowTicks - _lastReplenishmentTick) * TickFrequency) < _options.Window.Ticks && !_options.AutoReplenishment)
+                if (RateLimiterHelper.GetElapsedTime(_lastReplenishmentTick, nowTicks) < _options.Window && !_options.AutoReplenishment)
                 {
                     return;
                 }
 
-                _lastReplenishmentTick = nowTicks;
+                Volatile.Write(ref _lastReplenishmentTick, nowTicks);
 
                 int availablePermitCounters = _permitCount;
 

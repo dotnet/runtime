@@ -170,6 +170,8 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <exception cref="PlatformNotSupportedException">The method is executed on an architecture other than WebAssembly.</exception>
         // JavaScriptExports need to be protected from trimming because they are used from C/JS code which IL linker can't see
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicMethods, "System.Runtime.InteropServices.JavaScript.JavaScriptExports", "System.Runtime.InteropServices.JavaScript")]
+        // PromiseHolderCount has no callers here, it is read by the leak tests through UnsafeAccessor
+        [DynamicDependency("get_PromiseHolderCount", typeof(JSFunctionBinding))]
         public static JSFunctionBinding BindJSFunction(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
             if (RuntimeInformation.OSArchitecture != Architecture.Wasm)
@@ -261,22 +263,29 @@ namespace System.Runtime.InteropServices.JavaScript
                 throw new PlatformNotSupportedException("Cannot call synchronous JS function from inside a synchronous call to a C# method.");
             }
 #endif
-            var args = (nint)Unsafe.AsPointer(ref arguments[0]);
-            var functionHandle = jsFunction.JSHandle;
-
-            // we already know that we are not on the right thread
-            // this will be blocking until resolved by that thread
-            // we know that the target has JS interop installed and that it could not block
-            // so it could take some time, while target is CPU busy, but not forever
-            Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.JSNativeTID, functionHandle, args);
-
-            ref JSMarshalerArgument exceptionArg = ref arguments[0];
-            if (exceptionArg.slot.Type != MarshalerType.None)
+            fixed (JSMarshalerArgument* argsPtr = arguments)
             {
-                JSHostImplementation.ThrowException(ref exceptionArg);
+                var args = (nint)argsPtr;
+                var functionHandle = jsFunction.JSHandle;
+
+                // we already know that we are not on the right thread
+                // this will be blocking until resolved by that thread
+                // we know that the target has JS interop installed and that it could not block
+                // so it could take some time, while target is CPU busy, but not forever
+                Interop.Runtime.InvokeJSFunctionSend(jsFunction.ProxyContext.JSNativeTID, functionHandle, args);
+
+                ref JSMarshalerArgument exceptionArg = ref arguments[0];
+                if (exceptionArg.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exceptionArg);
+                }
             }
         }
 #endif
+
+        // A pre-created holder has no JS-side proxy until JS adopts it, so a missed release is
+        // invisible to any JS-side census. Read from the leak tests with UnsafeAccessor.
+        private static int PromiseHolderCount => JSProxyContext.AssertIsInteropThread().PromiseHolderCount;
 
 #if !DEBUG
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -294,10 +303,12 @@ namespace System.Runtime.InteropServices.JavaScript
             var targetContext = JSProxyContext.MainThreadContext;
 #endif
 
+            JSHostImplementation.PromiseHolder? preCreatedHolder = null;
             if (signature.IsAsync)
             {
                 // pre-allocate the result handle and Task
                 var holder = targetContext.CreatePromiseHolder();
+                preCreatedHolder = holder;
                 res.slot.Type = MarshalerType.TaskPreCreated;
                 res.slot.GCHandle = holder.GCHandle;
 #if FEATURE_WASM_MANAGED_THREADS
@@ -320,39 +331,65 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 
 #if FEATURE_WASM_MANAGED_THREADS
-            // if we are on correct thread already or this is synchronous call, just call it
-            if (targetContext.IsCurrentThread())
+            try
             {
-                InvokeJSImportCurrent(signature, arguments);
-
-#if DEBUG
-                if (signature.IsAsync && arguments[1].slot.Type == MarshalerType.None)
+                // if we are on correct thread already or this is synchronous call, just call it
+                if (targetContext.IsCurrentThread())
                 {
-                    throw new InvalidOperationException("null Task/Promise return is not supported");
-                }
-#endif
+                    InvokeJSImportCurrent(signature, arguments);
 
+                    // if js synchronously returned null
+                    if (signature.IsAsync && arguments[1].slot.Type == MarshalerType.None)
+                    {
+                        targetContext.ReleasePromiseHolder(preCreatedHolder!.GCHandle);
+                        // cleared so the catch below does not release it a second time
+                        preCreatedHolder = null;
+#if DEBUG
+                        throw new InvalidOperationException("null Task/Promise return is not supported");
+#endif
+                    }
+                }
+                else if (signature.IsAsync || signature.IsDiscardNoWait)
+                {
+                    //async
+                    DispatchJSImportAsyncPost(signature, targetContext, arguments);
+                }
+                else
+                {
+                    //sync
+                    DispatchJSImportSyncSend(signature, targetContext, arguments);
+                }
             }
-            else if (signature.IsAsync || signature.IsDiscardNoWait)
+            catch
             {
-                //async
-                DispatchJSImportAsyncPost(signature, targetContext, arguments);
-            }
-            else
-            {
-                //sync
-                DispatchJSImportSyncSend(signature, targetContext, arguments);
+                // JS threw before it could take ownership of the pre-created holder
+                if (preCreatedHolder != null)
+                {
+                    targetContext.ReleasePromiseHolder(preCreatedHolder.GCHandle);
+                }
+                throw;
             }
 #else
-            InvokeJSImportCurrent(signature, arguments);
+            try
+            {
+                InvokeJSImportCurrent(signature, arguments);
+            }
+            catch
+            {
+                // JS threw before it could take ownership of the pre-created holder
+                if (preCreatedHolder != null)
+                {
+                    targetContext.ReleasePromiseHolder(preCreatedHolder.GCHandle);
+                }
+                throw;
+            }
 
             if (signature.IsAsync)
             {
                 // if js synchronously returned null
                 if (arguments[1].slot.Type == MarshalerType.None)
                 {
-                    var holderHandle = (GCHandle)arguments[1].slot.GCHandle;
-                    holderHandle.Free();
+                    targetContext.ReleasePromiseHolder(preCreatedHolder!.GCHandle);
                 }
             }
 #endif
@@ -386,18 +423,21 @@ namespace System.Runtime.InteropServices.JavaScript
 #endif
         internal static unsafe void DispatchJSImportSyncSend(JSFunctionBinding signature, JSProxyContext targetContext, Span<JSMarshalerArgument> arguments)
         {
-            var args = (nint)Unsafe.AsPointer(ref arguments[0]);
-            var sig = (nint)signature.Header;
-
-            ref JSMarshalerArgument exc = ref arguments[0];
-
-            // we already know that we are not on the right thread
-            // this will be blocking until resolved by that thread
-            Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, sig, args);
-
-            if (exc.slot.Type != MarshalerType.None)
+            fixed (JSMarshalerArgument* argsPtr = arguments)
             {
-                JSHostImplementation.ThrowException(ref exc);
+                var args = (nint)argsPtr;
+                var sig = (nint)signature.Header;
+
+                ref JSMarshalerArgument exc = ref arguments[0];
+
+                // we already know that we are not on the right thread
+                // this will be blocking until resolved by that thread
+                Interop.Runtime.InvokeJSImportSyncSend(targetContext.JSNativeTID, sig, args);
+
+                if (exc.slot.Type != MarshalerType.None)
+                {
+                    JSHostImplementation.ThrowException(ref exc);
+                }
             }
         }
 
@@ -411,9 +451,8 @@ namespace System.Runtime.InteropServices.JavaScript
             exc.slot.ReceiverShouldFree = true;
 
             var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-            void* cpy = (void*)Marshal.AllocHGlobal(bytes);
-            void* src = Unsafe.AsPointer(ref arguments[0]);
-            Unsafe.CopyBlock(cpy, src, (uint)bytes);
+            void* cpy = NativeMemory.Alloc((nuint)bytes);
+            arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));
             var sig = (nint)signature.Header;
 
             // we already know that we are not on the right thread
@@ -435,7 +474,7 @@ namespace System.Runtime.InteropServices.JavaScript
             if (exceptionPtr != IntPtr.Zero)
             {
                 var message = Marshal.PtrToStringUni(exceptionPtr)!;
-                Marshal.FreeHGlobal(exceptionPtr);
+                NativeMemory.Free((void*)exceptionPtr);
                 throw new JSException(message);
             }
 
@@ -473,11 +512,10 @@ namespace System.Runtime.InteropServices.JavaScript
                 // meaning JS side needs to dispose it
                 exc.slot.ReceiverShouldFree = true;
 
-                // this copy is freed in mono_wasm_resolve_or_reject_promise
+                // this copy is freed in SystemInteropJS_ResolveOrRejectPromise
                 var bytes = sizeof(JSMarshalerArgument) * arguments.Length;
-                void* cpy = (void*)Marshal.AllocHGlobal(bytes);
-                void* src = Unsafe.AsPointer(ref arguments[0]);
-                Unsafe.CopyBlock(cpy, src, (uint)bytes);
+                void* cpy = NativeMemory.Alloc((nuint)bytes);
+                arguments.CopyTo(new Span<JSMarshalerArgument>(cpy, arguments.Length));
 
                 // async
                 Interop.Runtime.ResolveOrRejectPromisePost(targetContext.JSNativeTID, (nint)cpy);

@@ -22,3 +22,17 @@ public: // GC interaction
 };
 
 #endif // FEATURE_OBJCMARSHAL
+
+#ifdef FEATURE_JAVAMARSHAL
+
+struct MarkCrossReferencesArgs;
+
+class JavaMarshalNative
+{
+public:
+    static void TriggerClientBridgeProcessing(
+        MarkCrossReferencesArgs* args);
+
+    static bool IsGCBridgeActive();
+};
+#endif // FEATURE_JAVAMARSHAL

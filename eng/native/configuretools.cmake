@@ -48,10 +48,6 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER AND NOT CLR_CMAKE_TARGET_WASI)
   locate_toolchain_exec(ranlib CMAKE_RANLIB YES)
   locate_toolchain_exec(strings CMAKE_STRINGS YES)
 
-  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    locate_toolchain_exec(link CMAKE_LINKER YES)
-  endif()
-
   if(NOT CLR_CMAKE_TARGET_APPLE AND (NOT CLR_CMAKE_TARGET_ANDROID OR CROSS_ROOTFS))
     locate_toolchain_exec(objdump CMAKE_OBJDUMP YES)
     locate_toolchain_exec(readelf CMAKE_READELF YES)
@@ -77,10 +73,17 @@ endif()
 
 if (NOT CLR_CMAKE_HOST_WIN32)
   # detect linker
-  execute_process(COMMAND sh -c "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version | head -1"
-    ERROR_QUIET
-    OUTPUT_VARIABLE ldVersionOutput
-    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    execute_process(COMMAND ${CMAKE_C_COMPILER} -Wl,--version
+      ERROR_QUIET
+      OUTPUT_VARIABLE ldVersionOutput
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  else()
+    execute_process(COMMAND sh -c "${CMAKE_C_COMPILER} ${CMAKE_SHARED_LINKER_FLAGS} -Wl,--version | head -1"
+      ERROR_QUIET
+      OUTPUT_VARIABLE ldVersionOutput
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+  endif()
 
   if("${ldVersionOutput}" MATCHES "LLD")
     set(LD_LLVM 1)

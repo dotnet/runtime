@@ -1,0 +1,77 @@
+<!--
+  Shared cache for externally acquired WebAssembly build and test tools
+  (emscripten, wasi-sdk, wasmtime, chrome, chromedriver, firefox, geckodriver, v8).
+
+  Layout:
+    $(WasmToolCacheDir)<tool>/<version>-<host rid>/           the tool itself
+    $(WasmToolCacheDir)<tool>/<version>-<host rid>.complete    sentinel, written last
+
+  Because the version and host RID are part of the path, a version bump is a cache miss by
+  construction. There is no staleness comparison to get wrong, switching between branches
+  reuses both versions instead of re-downloading, and x64/arm64 payloads coexist.
+
+  By default the cache is anchored under the repository's main checkout, in the gitignored
+  '.dotnet/wasm-tools' directory (outside 'artifacts/', so it survives `clean`). Anchoring at the
+  main checkout means every git worktree of the same clone shares one copy, yet the cache is
+  removed when the repository is deleted. Set DOTNET_WASM_TOOL_CACHE_DIR to relocate it.
+-->
+<Project>
+  <PropertyGroup>
+    <!-- Host RID used to key cache entries. $(HostOS)/$(BuildArchitecture) come from
+         eng/OSArch.props, which is imported early enough to be usable here. -->
+    <WasmToolHostRid>$(HostOS)-$(BuildArchitecture)</WasmToolHostRid>
+
+    <!-- Anchor the default cache at the *main* checkout so that:
+           * every git worktree of the same repo shares one copy (no per-worktree re-download), and
+           * it is removed when the repo is deleted (unlike a user-global cache).
+         A git worktree has a '.git' FILE containing 'gitdir: <main>/.git/worktrees/<name>'; a normal
+         clone has a '.git' DIRECTORY. This is derived by plain file I/O (no 'git' process) so it is
+         cheap enough to evaluate for every project. Only an ABSOLUTE gitdir is trusted as the main
+         checkout; a relative gitdir (git relative-worktrees) or a non-git checkout falls back to
+         $(RepoRoot). The native helpers eng/wasm/wasm-tool-cache.{sh,cmd} apply the identical rule
+         so provisioning and lookup can never disagree. -->
+    <_WasmToolGitPath>$([MSBuild]::NormalizePath('$(RepoRoot)', '.git'))</_WasmToolGitPath>
+    <_WasmToolGitFileText Condition="$([System.IO.File]::Exists('$(_WasmToolGitPath)'))">$([System.IO.File]::ReadAllText('$(_WasmToolGitPath)').Trim().Replace('\', '/'))</_WasmToolGitFileText>
+    <_WasmToolGitDir Condition="$(_WasmToolGitFileText.StartsWith('gitdir:'))">$(_WasmToolGitFileText.Substring(7).Trim())</_WasmToolGitDir>
+    <_WasmToolWorktreePrefix Condition="$(_WasmToolGitDir.Contains('/.git/worktrees/'))">$(_WasmToolGitDir.Substring(0, $(_WasmToolGitDir.IndexOf('/.git/worktrees/'))))</_WasmToolWorktreePrefix>
+    <_WasmToolAnchorRoot>$(RepoRoot)</_WasmToolAnchorRoot>
+    <_WasmToolAnchorRoot Condition="'$(_WasmToolWorktreePrefix)' != '' and $([System.IO.Path]::IsPathRooted('$(_WasmToolWorktreePrefix)'))">$([MSBuild]::EnsureTrailingSlash('$(_WasmToolWorktreePrefix)'))</_WasmToolAnchorRoot>
+
+    <!-- Explicit override wins; CI can point this at an agent-local cache that is preserved
+         between jobs, and heavy worktree users can point every checkout at one shared cache. -->
+    <WasmToolCacheDir Condition="'$(WasmToolCacheDir)' == '' and '$(DOTNET_WASM_TOOL_CACHE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash('$(DOTNET_WASM_TOOL_CACHE_DIR)'))</WasmToolCacheDir>
+    <WasmToolCacheDir Condition="'$(WasmToolCacheDir)' == '' and '$(_WasmToolAnchorRoot)' != ''">$([MSBuild]::NormalizeDirectory('$(_WasmToolAnchorRoot)', '.dotnet', 'wasm-tools'))</WasmToolCacheDir>
+    <!-- Last resort for environments without a resolvable repo root. -->
+    <WasmToolCacheDir Condition="'$(WasmToolCacheDir)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'wasm-tools'))</WasmToolCacheDir>
+
+    <!-- Scratch space for downloaded archives. Disposable, so it stays under artifacts. -->
+    <WasmToolDownloadDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'wasm-tool-downloads'))</WasmToolDownloadDir>
+  </PropertyGroup>
+
+  <!-- Tool versions. The version text files are the source of truth: they are also read by the
+       native build (eng/native/configurecompiler.cmake) and by the native build scripts
+       (eng/native/gen-buildsys.*), none of which can evaluate MSBuild properties. -->
+  <PropertyGroup>
+    <_EmscriptenVersionFile>$([MSBuild]::NormalizePath('$(BrowserProjectRoot)', 'emscripten-version.txt'))</_EmscriptenVersionFile>
+    <_WasmtimeVersionFile>$([MSBuild]::NormalizePath('$(WasiProjectRoot)', 'wasmtime-version.txt'))</_WasmtimeVersionFile>
+    <_WasiSdkVersionFile>$([MSBuild]::NormalizePath('$(MSBuildThisFileDirectory)', 'wasi-sdk-version.txt'))</_WasiSdkVersionFile>
+
+    <EmscriptenVersion Condition="'$(EmscriptenVersion)' == '' and Exists('$(_EmscriptenVersionFile)')">$([System.IO.File]::ReadAllText('$(_EmscriptenVersionFile)').Trim())</EmscriptenVersion>
+    <WasmtimeVersion Condition="'$(WasmtimeVersion)' == '' and Exists('$(_WasmtimeVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasmtimeVersionFile)').Trim())</WasmtimeVersion>
+    <WasiSdkVersion Condition="'$(WasiSdkVersion)' == '' and Exists('$(_WasiSdkVersionFile)')">$([System.IO.File]::ReadAllText('$(_WasiSdkVersionFile)').Trim())</WasiSdkVersion>
+  </PropertyGroup>
+
+  <!-- Cache entries for the tools whose versions are known this early. Browser and JS engine
+       entries are computed in eng/testing/wasm-provisioning.targets, once
+       eng/testing/BrowserVersions.props has been imported. -->
+  <PropertyGroup>
+    <EmscriptenSdkCacheDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'emscripten', '$(EmscriptenVersion)-$(WasmToolHostRid)'))</EmscriptenSdkCacheDir>
+    <EmscriptenSdkStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'emscripten', '$(EmscriptenVersion)-$(WasmToolHostRid).complete'))</EmscriptenSdkStampFile>
+
+    <WasiSdkCacheDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'wasi-sdk', '$(WasiSdkVersion)-$(WasmToolHostRid)'))</WasiSdkCacheDir>
+    <WasiSdkStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'wasi-sdk', '$(WasiSdkVersion)-$(WasmToolHostRid).complete'))</WasiSdkStampFile>
+
+    <WasmtimeCacheDir>$([MSBuild]::NormalizeDirectory('$(WasmToolCacheDir)', 'wasmtime', '$(WasmtimeVersion)-$(WasmToolHostRid)'))</WasmtimeCacheDir>
+    <WasmtimeStampFile>$([MSBuild]::NormalizePath('$(WasmToolCacheDir)', 'wasmtime', '$(WasmtimeVersion)-$(WasmToolHostRid).complete'))</WasmtimeStampFile>
+  </PropertyGroup>
+</Project>

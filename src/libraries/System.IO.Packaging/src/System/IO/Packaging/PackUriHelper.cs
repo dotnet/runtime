@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -35,10 +36,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter has a fragment</exception>
         public static Uri CreatePartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             ThrowIfAbsoluteUri(partUri);
 
@@ -78,14 +76,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If sourcePartUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri ResolvePartUri(Uri sourcePartUri, Uri targetUri)
         {
-            if (sourcePartUri is null)
-            {
-                throw new ArgumentNullException(nameof(sourcePartUri));
-            }
-            if (targetUri is null)
-            {
-                throw new ArgumentNullException(nameof(targetUri));
-            }
+            ArgumentNullException.ThrowIfNull(sourcePartUri);
+            ArgumentNullException.ThrowIfNull(targetUri);
 
             ThrowIfAbsoluteUri(sourcePartUri);
             ThrowIfAbsoluteUri(targetUri);
@@ -110,14 +102,8 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If either sourcePartUri or targetPartUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri GetRelativeUri(Uri sourcePartUri, Uri targetPartUri)
         {
-            if (sourcePartUri is null)
-            {
-                throw new ArgumentNullException(nameof(sourcePartUri));
-            }
-            if (targetPartUri is null)
-            {
-                throw new ArgumentNullException(nameof(targetPartUri));
-            }
+            ArgumentNullException.ThrowIfNull(sourcePartUri);
+            ArgumentNullException.ThrowIfNull(targetPartUri);
 
             sourcePartUri = new Uri(s_defaultUri, ValidatePartUri(sourcePartUri));
             targetPartUri = new Uri(s_defaultUri, ValidatePartUri(targetPartUri));
@@ -134,10 +120,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
         public static Uri GetNormalizedPartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
@@ -182,10 +165,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri Syntax</exception>
         public static bool IsRelationshipPartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             ValidatedPartUri validatedUri = partUri as ValidatedPartUri ?? ValidatePartUri(partUri);
 
@@ -207,10 +187,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri Syntax</exception>
         public static Uri GetRelationshipPartUri(Uri partUri)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             if (Uri.Compare(partUri, PackageRootUri, UriComponents.SerializationInfoString, UriFormat.UriEscaped, StringComparison.Ordinal) == 0)
                 return PackageRelationship.ContainerRelationshipPartName;
@@ -263,10 +240,7 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If the resultant Uri obtained is a relationship part Uri</exception>
         public static Uri GetSourcePartUriFromRelationshipPartUri(Uri relationshipPartUri)
         {
-            if (relationshipPartUri is null)
-            {
-                throw new ArgumentNullException(nameof(relationshipPartUri));
-            }
+            ArgumentNullException.ThrowIfNull(relationshipPartUri);
 
             // Verify -
             // 1. Validates that this part Uri is a valid part Uri
@@ -396,10 +370,7 @@ namespace System.IO.Packaging
         #region Private Methods
         private static Exception? GetExceptionIfPartUriInvalid(Uri partUri, out string partUriString)
         {
-            if (partUri is null)
-            {
-                throw new ArgumentNullException(nameof(partUri));
-            }
+            ArgumentNullException.ThrowIfNull(partUri);
 
             partUriString = string.Empty;
 
@@ -486,7 +457,7 @@ namespace System.IO.Packaging
 
         private static ArgumentException? GetExceptionIfFragmentPresent(string partName)
         {
-            if (partName.Contains("#")) // string.Contains(char) is .NetCore2.1+ specific
+            if (partName.Contains('#'))
                 return new ArgumentException(SR.PartUriCannotHaveAFragment);
             else
                 return null;
@@ -631,7 +602,7 @@ namespace System.IO.Packaging
         /// to reduce the parsing and number of allocations for Strings and Uris
         /// we cache the results after parsing.
         /// </summary>
- #pragma warning disable CA1067 // Override Equals because it implements IEquatable<T>; not overriding to avoid possible regressions in code that's working
+#pragma warning disable CA1067 // Not overriding Equals(object); changing equality behavior could affect existing case-sensitive comparisons.
         internal sealed class ValidatedPartUri : Uri, IComparable<ValidatedPartUri>, IEquatable<ValidatedPartUri>
 #pragma warning restore CA1067
         {
@@ -903,6 +874,37 @@ namespace System.IO.Packaging
             #endregion Private Methods
 
             //------------------------------------------------------
+        }
+
+        /// <summary>
+        /// Compares <see cref="ValidatedPartUri"/> instances for equality using the normalized (upper-cased) part URI
+        /// string comparison implemented by <see cref="IEquatable{ValidatedPartUri}.Equals(ValidatedPartUri)"/>.
+        /// This is used explicitly by internal collections that need case-insensitive part-name
+        /// semantics (e.g. <see cref="ZipPackage"/>'s content-type override dictionary), without
+        /// relying on <see cref="ValidatedPartUri"/> overriding <see cref="object.Equals(object?)"/>
+        /// or <see cref="object.GetHashCode"/>, which would break the equality contract inherited
+        /// from <see cref="Uri"/> when a <see cref="ValidatedPartUri"/> is compared against, or
+        /// co-located in a hash collection with, a plain <see cref="Uri"/> of the same value.
+        /// </summary>
+        internal sealed class ValidatedPartUriEqualityComparer : IEqualityComparer<ValidatedPartUri>
+        {
+            internal static readonly ValidatedPartUriEqualityComparer Instance = new();
+
+            private ValidatedPartUriEqualityComparer() { }
+
+            public bool Equals(ValidatedPartUri? x, ValidatedPartUri? y)
+            {
+                if (ReferenceEquals(x, y))
+                    return true;
+
+                if (x is null || y is null)
+                    return false;
+
+                return ((IEquatable<ValidatedPartUri>)x).Equals(y);
+            }
+
+            public int GetHashCode(ValidatedPartUri obj)
+                => StringComparer.Ordinal.GetHashCode(obj.NormalizedPartUriString);
         }
 
         #endregion Private Class

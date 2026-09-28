@@ -8,14 +8,13 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalLimitedContext.h"
+#include "Pal.h"
 #include "rhassert.h"
 #include "holder.h"
 #include "Crst.h"
 #include "RhConfig.h"
 #include "slist.h"
-#include "varint.h"
 #include "regdisplay.h"
 #include "forward_declarations.h"
 #include "StackFrameIterator.h"
@@ -26,6 +25,7 @@
 #include "shash.h"
 #include "shash.inl"
 #include "GcStressControl.h"
+#include "minipal/time.h"
 
 
 class GcStressControl
@@ -66,12 +66,12 @@ private:
         volatile InitState is = (InitState) PalInterlockedCompareExchange((volatile int32_t*)(&s_initState), isIniting, isNotInited);
         if (is == isNotInited)
         {
-            s_lock.InitNoThrow(CrstGcStressControl);
+            s_lock.Init(CrstGcStressControl);
 
             if (g_pRhConfig->GetGcStressSeed())
                 s_lGcStressRNGSeed = (uint32_t)g_pRhConfig->GetGcStressSeed();
             else
-                s_lGcStressRNGSeed = (uint32_t)PalGetTickCount64();
+                s_lGcStressRNGSeed = (uint32_t)minipal_lowres_ticks();
 
             if (g_pRhConfig->GetGcStressFreqDenom())
                 s_lGcStressFreqDenom = (uint32_t)g_pRhConfig->GetGcStressFreqDenom();

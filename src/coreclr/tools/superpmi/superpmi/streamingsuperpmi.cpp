@@ -13,7 +13,6 @@
 #include "methodcontextreader.h"
 #include "spmiutil.h"
 #include "fileio.h"
-#include "commandline.h"
 
 #if defined(_WIN32)
 #define strtok_r strtok_s
@@ -21,8 +20,8 @@
 
 static bool AddJitOption(LightWeightMap<DWORD,DWORD>* map, char* newOption)
 {
-    WCHAR* key;
-    WCHAR* value;
+    char* key;
+    char* value;
 
     if (!CommandLine::ParseJitOption(newOption, &key, &value))
     {
@@ -30,9 +29,9 @@ static bool AddJitOption(LightWeightMap<DWORD,DWORD>* map, char* newOption)
     }
 
     DWORD keyIndex =
-        (DWORD)map->AddBuffer((unsigned char*)key, sizeof(WCHAR) * ((unsigned int)u16_strlen(key) + 1));
+        (DWORD)map->AddBuffer((unsigned char*)key, sizeof(char) * ((unsigned int)strlen(key) + 1));
     DWORD valueIndex =
-        (DWORD)map->AddBuffer((unsigned char*)value, sizeof(WCHAR) * ((unsigned int)u16_strlen(value) + 1));
+        (DWORD)map->AddBuffer((unsigned char*)value, sizeof(char) * ((unsigned int)strlen(value) + 1));
     map->Add(keyIndex, valueIndex);
 
     delete[] key;
@@ -104,7 +103,7 @@ static MethodContext* getMethodContext(int index, MethodContextReader* reader)
         }
 
         MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(index, mcb.buff, mcb.size, /* readCompileResults */ false, &mc))
         {
             return nullptr;
         }

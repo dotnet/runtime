@@ -103,6 +103,16 @@ Returns a PAL_ErrorCode indicating success or an error number on failure.
 FUNCTIONEXPORT int32_t FUNCTIONCALLINGCONVENTION CompressionNative_DeflateEnd(PAL_ZStream* stream);
 
 /*
+This function is equivalent to CompressionNative_DeflateEnd followed by CompressionNative_DeflateInit2_,
+but does not free and reallocate the internal compression state. The stream preserves the original
+initialization settings (compression level, window bits, memory level, and strategy) that were supplied
+to CompressionNative_DeflateInit2_.
+
+Returns a PAL_ErrorCode indicating success or an error number on failure.
+*/
+FUNCTIONEXPORT int32_t FUNCTIONCALLINGCONVENTION CompressionNative_DeflateReset(PAL_ZStream* stream);
+
+/*
 Initializes the PAL_ZStream so the Inflate function can be invoked on it.
 
 Returns a PAL_ErrorCode indicating success or an error number on failure.
@@ -125,9 +135,27 @@ Returns a PAL_ErrorCode indicating success or an error number on failure.
 FUNCTIONEXPORT int32_t FUNCTIONCALLINGCONVENTION CompressionNative_InflateEnd(PAL_ZStream* stream);
 
 /*
+This function is equivalent to InflateEnd followed by InflateInit, but does not free and reallocate 
+the internal decompression state. The stream's window size will be modified and its memory may be
+reallocated if necessary.
+
+Returns a PAL_ErrorCode indicating success or an error number on failure.
+*/
+FUNCTIONEXPORT int32_t FUNCTIONCALLINGCONVENTION CompressionNative_InflateReset2_(PAL_ZStream* stream, int32_t windowBits);
+
+/*
 Update a running CRC-32 with the bytes buffer[0..len-1] and return the
 updated CRC-32.
 
 Returns the updated CRC-32.
 */
 FUNCTIONEXPORT uint32_t FUNCTIONCALLINGCONVENTION CompressionNative_Crc32(uint32_t crc, uint8_t* buffer, int32_t len);
+
+/*
+Calculates and returns an upper bound on the compressed size after deflate compressing sourceLen bytes.
+This is a worst-case estimate that accounts for incompressible data and zlib wrapper overhead.
+The actual compressed size will typically be smaller.
+
+Returns the maximum number of bytes the compressed output could require.
+*/
+FUNCTIONEXPORT uint32_t FUNCTIONCALLINGCONVENTION CompressionNative_CompressBound(uint32_t sourceLen);

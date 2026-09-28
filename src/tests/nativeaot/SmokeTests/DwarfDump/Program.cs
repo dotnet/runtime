@@ -40,7 +40,7 @@ public class Program
             return 3;
         }
 
-        proc = Process.Start(new ProcessStartInfo
+        ProcessTextOutput result = Process.RunAndCaptureText(new ProcessStartInfo
         {
             FileName = llvmDwarfDumpPath,
             Arguments = $"--verify {Environment.ProcessPath}",
@@ -50,31 +50,46 @@ public class Program
         });
 
         // Just count the number of warnings and errors. There are so many right now that it's not worth enumerating the list
-#if DEBUG
-        const int MinWarnings = 2000;
-        const int MaxWarnings = 4000;
-#else
-        const int MinWarnings = 3000;
-        const int MaxWarnings = 5000;
-#endif
+        const int MinWarnings = 15;
+        const int MaxWarnings = 150;
         int count = 0;
-        string line;
-        while ((line = proc.StandardOutput.ReadLine()) != null)
+        bool foundIlCpp = false;
+        bool insideIlCpp = false;
+        foreach (string rawLine in result.StandardOutput.Split('\n'))
         {
-            if (line.Contains("warning:") || line.Contains("error:"))
+            string line = rawLine.TrimEnd('\r');
+            if (line.StartsWith("Verifying unit:"))
+            {
+                if (line.EndsWith("\"il.cpp\""))
+                {
+                    foundIlCpp = true;
+                    insideIlCpp = true;
+                }
+                else
+                {
+                    insideIlCpp = false;
+                }
+            }
+            if ((line.Contains("warning:") || line.Contains("error:")) && insideIlCpp)
             {
                 count++;
             }
         }
 
+        if (!foundIlCpp)
+        {
+            Console.Error.WriteLine($"llvm-dwarfdump failed. Cound not find unit named \"il.cpp\".");
+            return 10;
+        }
 
         if (count == 0)
         {
             // something is off, lets check the StandardError stream
             int errorCount = 0;
             string[] firstFiveErrors = new string[5];
-            while ((line = proc.StandardError.ReadLine()) != null)
+            foreach (string rawLine in result.StandardError.Split('\n'))
             {
+                string line = rawLine.TrimEnd('\r');
                 if (line.Contains("error:"))
                 {
                     if (errorCount < 5) firstFiveErrors[errorCount] = line;
@@ -89,7 +104,6 @@ public class Program
             }
         }
 
-        proc.WaitForExit();
         Console.WriteLine($"Found {count} warnings and errors");
         if (count is not (>= MinWarnings and <= MaxWarnings))
         {

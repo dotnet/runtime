@@ -13,7 +13,7 @@ namespace System.ComponentModel
         [InlineData("", "")]
         [InlineData("propertyName", "invalidName")]
         [InlineData("propertyName", "System.Int32")]
-        public void Ctor_String_String(string propertyName, string receiverTypeName)
+        public void Ctor_String_String(string? propertyName, string? receiverTypeName)
         {
             var attribute = new ProvidePropertyAttribute(propertyName, receiverTypeName);
             Assert.Equal(propertyName, attribute.PropertyName);
@@ -24,7 +24,7 @@ namespace System.ComponentModel
         [InlineData(null, typeof(int))]
         [InlineData("", typeof(ProvidePropertyAttribute))]
         [InlineData("propertyName", typeof(ProvidePropertyAttributeTests))]
-        public void Ctor_String_Type(string propertyName, Type receiverType)
+        public void Ctor_String_Type(string? propertyName, Type receiverType)
         {
             var attribute = new ProvidePropertyAttribute(propertyName, receiverType);
             Assert.Equal(propertyName, attribute.PropertyName);

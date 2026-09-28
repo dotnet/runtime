@@ -186,6 +186,7 @@ CLiteWeightStgdbRW::InitFileForRead(
     if (SUCCEEDED(pStorage->OpenStream(MINIMAL_MD_STREAM, &cbData, &pvData)))
     {
         m_MiniMd.m_fMinimalDelta = TRUE;
+        m_MiniMd.m_fAll4ByteColumns = TRUE;
     }
 
     // Load the string pool.
@@ -305,12 +306,6 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     if (!szDatabase)
         szDatabase = pNoFile;
 
-    // Sanity check the name lentgh.
-    if (!IsValidFileNameLength(szDatabase))
-    {
-        IfFailGo(E_INVALIDARG);
-    }
-
     // If we have storage to work with, init it and get type.
     if (*szDatabase || pbData)
     {
@@ -409,16 +404,6 @@ HRESULT CLiteWeightStgdbRW::OpenForRead(
     // Save off everything.
     IfFailGo(SetFileName(szDatabase));
 
-    // If this was a file...
-    if (pbData == NULL)
-    {
-        WIN32_FILE_ATTRIBUTE_DATA faData;
-        if (!WszGetFileAttributesEx(szDatabase, GetFileExInfoStandard, &faData))
-            IfFailGo(E_FAIL);
-        m_dwDatabaseLFS = faData.nFileSizeLow;
-        m_dwDatabaseLFT = faData.ftLastWriteTime.dwLowDateTime;
-    }
-
 ErrExit:
     if (SUCCEEDED(hr))
     {
@@ -431,32 +416,6 @@ ErrExit:
     }
     return hr;
 }
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-// Open a metadata section for read/write
-__checkReturn
-HRESULT CLiteWeightStgdbRW::OpenForRead(
-    IMDCustomDataSource *pDataSource,   // data to open on top of
-    DWORD       dwFlags)                // Flags for the open.
-{
-    LPCWSTR     pNoFile = W("");            // Constant for empty file name.
-    StgIO       *pStgIO = NULL;         // For file i/o.
-    HRESULT     hr;
-
-    m_pImage = NULL;
-    m_dwImageSize = 0;
-    m_eFileType = FILETYPE_UNKNOWN;
-
-    IfFailGo(m_MiniMd.InitOnCustomDataSource(pDataSource));
-    IfFailGo(m_MiniMd.PostInit(0));
-
-    // Save off everything.
-    IfFailGo(SetFileName(pNoFile));
-
-ErrExit:
-    return hr;
-}
-#endif
 
 // Read/Write versions.
 //*****************************************************************************
@@ -922,12 +881,6 @@ HRESULT CLiteWeightStgdbRW::Save(
         IfFailGo(SetFileName(szDatabase));
     }
 
-    // Sanity check the name.
-    if (!IsValidFileNameLength(m_wszFileName))
-    {
-        IfFailGo(E_INVALIDARG);
-    }
-
     m_eFileType = FILETYPE_CLB;
 
     // Allocate a new storage object.
@@ -1036,11 +989,6 @@ HRESULT CLiteWeightStgdbRW::GetRawData(
     const void **ppvMd,                 // [OUT] put pointer to MD section here (aka, 'BSJB').
     ULONG   *pcbMd)                     // [OUT] put size of the stream here.
 {
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgIO == NULL)
-        return COR_E_NOTSUPPORTED;
-#endif
-
     *ppvMd = (const void*) m_pStgIO->m_pData;
     *pcbMd = m_pStgIO->m_cbData;
     return S_OK;
@@ -1064,11 +1012,6 @@ CLiteWeightStgdbRW::GetRawStreamInfo(
     ULONG          i;               // Loop control.
     void          *pData;
     ULONG          cbData;
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    if (m_pStgIO == NULL)
-        IfFailGo(COR_E_NOTSUPPORTED);
-#endif
 
     pData = m_pStgIO->m_pData;
     cbData = m_pStgIO->m_cbData;
@@ -1177,15 +1120,3 @@ CLiteWeightStgdbRW::SetFileName(
 ErrExit:
     return hr;
 } // CLiteWeightStgdbRW::SetFileName
-
-//=======================================================================================
-//
-// Returns TRUE if wszFileName has valid path length (MAX_PATH or 32767 if prefixed with \\?\).
-//
-//static
-BOOL
-CLiteWeightStgdbRW::IsValidFileNameLength(
-    const WCHAR * wszFileName)
-{
-    return TRUE;
-} // CLiteWeightStgdbRW::IsValidFileNameLength

@@ -22,8 +22,6 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/109024", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowserAndIsBuiltWithAggressiveTrimming))]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.Http.HttpTelemetry", throwOnError: true, ignoreCase: false);
@@ -52,7 +50,6 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> Redaction_MemberData()
         {
-            string[] uriTails = new string[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" };
             foreach (string uriTail in new[] { "/test/path?q1=a&q2=b", "/test/path", "?q1=a&q2=b", "" })
             {
                 foreach (string fragment in new[] { "", "#frag" })
@@ -855,7 +852,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     1 => (2, 2),
                     2 => (2, 3), // race condition: if a connection hits its stream limit, it will be removed from the list and re-added on a separate thread
-                    3 => (3, 3),
+                    3 => (2, 3),
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 Assert.InRange(requestLeftQueueEvents.Count(), minCount, maxCount);
@@ -934,15 +931,16 @@ namespace System.Net.Http.Functional.Tests
         {
             var psi = new ProcessStartInfo();
             psi.Environment.Add("DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION", disableRedaction.ToString());
-            var fragIndex = uriTail.IndexOf('#');
-            var expectedUriTail = uriTail.Substring(0, fragIndex >= 0 ? fragIndex : uriTail.Length);
+
+            string expectedUriTail = uriTail;
             if (!disableRedaction)
             {
                 var queryIndex = expectedUriTail.IndexOf('?');
                 expectedUriTail = expectedUriTail.Substring(0, queryIndex >= 0 ? queryIndex + 1 : expectedUriTail.Length);
                 expectedUriTail = queryIndex >= 0 ? expectedUriTail + '*' : expectedUriTail;
+
+                expectedUriTail = expectedUriTail.Split('#')[0];
             }
-            expectedUriTail = fragIndex >= 0 ? expectedUriTail + uriTail.Substring(fragIndex) : expectedUriTail;
 
             await RemoteExecutor.Invoke(static async (useVersionString, uriTail, expectedUriTail) =>
             {
@@ -993,17 +991,17 @@ namespace System.Net.Http.Functional.Tests
         public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
 
         [OuterLoop]
-        [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
+        [ConditionalTheory(typeof(TelemetryTest), nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
-        public void EventSource_Proxy_LogsIPAddress(bool useSsl)
+        public async Task EventSource_Proxy_LogsIPAddress(bool useSsl)
         {
             if (UseVersion.Major == 3)
             {
                 return;
             }
 
-            RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
+            await RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
             {
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
                 listener.AddActivityTracking();
@@ -1038,7 +1036,84 @@ namespace System.Net.Http.Functional.Tests
                         ip.Equals(IPAddress.Loopback) ||
                         ip.Equals(IPAddress.IPv6Loopback));
                 }
-            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+            }, UseVersion.ToString(), useSsl.ToString()).DisposeAsync();
+        }
+
+        [OuterLoop("Disposes the handler to force the connection closed.")]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public async Task EventSource_ConnectTunnel_LogsBothTransportAndTunnelConnections()
+        {
+            if (UseVersion.Major == 3)
+            {
+                return; // HTTP/3 (QUIC) cannot be tunneled through an HTTP CONNECT proxy.
+            }
+
+            await RemoteExecutor.Invoke(static async (string useVersionString) =>
+            {
+                Version version = Version.Parse(useVersionString);
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                long stampedConnectionId = -1;
+                Version requestVersion = null;
+
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+                    await GetFactoryForVersion(version).CreateClientAndServerAsync(
+                        async uri =>
+                        {
+                            using HttpClientHandler handler = CreateHttpClientHandler(useVersionString);
+                            handler.Proxy = new WebProxy(proxyServer.Uri);
+                            using HttpClient client = CreateHttpClient(handler, useVersionString);
+
+                            using var request = new HttpRequestMessage(HttpMethod.Get, uri)
+                            {
+                                Version = version,
+                                VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                            };
+                            (await client.SendAsync(request)).Dispose();
+
+                            Assert.NotNull(request.ConnectionId);
+                            stampedConnectionId = request.ConnectionId.Value;
+                            requestVersion = request.Version;
+                            // Disposing the handler (end of this scope) closes the tunnel connection, emitting
+                            // ConnectionClosed while the listener is still capturing.
+                        },
+                        server => server.HandleRequestAsync(),
+                        // HTTPS origin forces an HTTP/1 CONNECT tunnel through the proxy.
+                        options: new GenericLoopbackOptions() { UseSsl = true });
+                });
+
+                EventWrittenEventArgs[] established = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
+                EventWrittenEventArgs[] closed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
+
+                // A CONNECT tunnel uses two connection objects over one transport: the HTTP/1.1 connection to the proxy
+                // that carries the CONNECT (the tunnel) and the connection negotiated with the origin over it (the inner
+                // connection) that serves the request. Both report their lifecycle, so two ConnectionEstablished and two
+                // ConnectionClosed events are logged, with distinct ids.
+                Assert.Equal(2, established.Length);
+                Assert.Equal(2, closed.Length);
+
+                long[] establishedIds = established.Select(e => (long)e.Payload[2]).ToArray();
+                Assert.Equal(2, establishedIds.Distinct().Count());
+                Assert.Equal(establishedIds.OrderBy(id => id).ToArray(), closed.Select(e => (long)e.Payload[2]).OrderBy(id => id).ToArray());
+
+                // The inner connection served the request: it carries the id stamped on the request, at the negotiated
+                // end-to-end version (e.g. HTTP/2).
+                EventWrittenEventArgs innerEstablished = Assert.Single(established, e => (long)e.Payload[2] == stampedConnectionId);
+                Assert.Equal((byte)requestVersion.Major, (byte)innerEstablished.Payload[0]); // versionMajor
+                Assert.Equal((byte)requestVersion.Minor, (byte)innerEstablished.Payload[1]); // versionMinor
+
+                // The other is the tunnel's transport connection to the proxy, always logged as HTTP/1.1.
+                EventWrittenEventArgs tunnelEstablished = Assert.Single(established, e => (long)e.Payload[2] != stampedConnectionId);
+                Assert.Equal((byte)1, (byte)tunnelEstablished.Payload[0]); // versionMajor
+                Assert.Equal((byte)1, (byte)tunnelEstablished.Payload[1]); // versionMinor
+
+                // The request itself uses the negotiated end-to-end version (e.g. HTTP/2).
+                Assert.Equal(version, requestVersion);
+            }, UseVersion.ToString()).DisposeAsync();
         }
 
         protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
@@ -1175,7 +1250,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http20(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsHttp3Supported))]
     public sealed class TelemetryTest_Http30 : TelemetryTest
     {
         protected override Version UseVersion => HttpVersion.Version30;

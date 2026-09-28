@@ -20,6 +20,8 @@
 #ifndef MINIPAL_COM_COMTYPES_H
 #define MINIPAL_COM_COMTYPES_H
 
+#include "../guid.h"
+
 // Perform platform check
 #ifdef _MSC_VER
     #define MINIPAL_COM_WINDOWS
@@ -81,14 +83,6 @@
 
     typedef int32_t HRESULT;
     typedef void* HANDLE;
-
-    typedef struct
-    {
-        uint32_t  Data1;
-        uint16_t  Data2;
-        uint16_t  Data3;
-        uint8_t   Data4[8];
-    } GUID;
 
     typedef GUID IID;
 

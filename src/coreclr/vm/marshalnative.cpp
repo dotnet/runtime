@@ -44,9 +44,13 @@
 #include "interoputil.h"
 #endif // FEATURE_COMINTEROP
 
+#ifdef FEATURE_JAVAMARSHAL
+#include "interoplibinterface.h"
+#endif // FEATURE_JAVAMARSHAL
+
 // Prelink
-// Does advance loading of an N/Direct library
-extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
+// Does advance loading of an PInvoke library
+extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -55,12 +59,18 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 
     // If the code is already ready, we are done. Else, we need to execute the prestub
     // This is a perf thing since it's always safe to execute the prestub twice.
-    if (!pMD->IsPointingToPrestub())
+    if (!pMD->ShouldCallPrestub())
+    {
+        *qcallError = 0;
         return;
+    }
 
-    // Silently ignore if not N/Direct and not runtime generated.
-    if (!(pMD->IsNDirect()) && !(pMD->IsRuntimeSupplied()))
+    // Silently ignore if not PInvoke and not runtime generated.
+    if (!(pMD->IsPInvoke()) && !(pMD->IsRuntimeSupplied()))
+    {
+        *qcallError = 0;
         return;
+    }
 
     BEGIN_QCALL;
 
@@ -73,7 +83,7 @@ extern "C" VOID QCALLTYPE MarshalNative_Prelink(MethodDesc * pMD)
 // IsBuiltInComSupported
 // Built-in COM support is only checked from the native side to ensure the runtime
 // is in a consistent state
-extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
+extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -92,7 +102,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsBuiltInComSupported()
     return ret;
 }
 
-extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregisteredTypeHandle, PCODE* pStructMarshalStub, SIZE_T* pSize)
+extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIsBlittable, DWORD* pNativeSize, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -100,39 +110,25 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 
     BEGIN_QCALL;
 
-    TypeHandle th = TypeHandle::FromPtr(enregisteredTypeHandle);
+    TypeHandle th = t.AsTypeHandle();
 
-    if (th.IsBlittable())
+    if (th.IsEnum())
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = th.GetMethodTable()->GetNativeSize();
-        ret = TRUE;
+        // Enums don't have native layout info, but they marshal identically
+        // to their underlying primitive type.
+        th = CoreLibBinder::GetElementType(th.GetInternalCorElementType());
     }
-    else if (th.HasLayout())
+
+    if (th.HasLayout())
     {
-        MethodTable* pMT = th.GetMethodTable();
-        MethodDesc* structMarshalStub = NULL;
-
-        EEMarshalingData* pEEMarshalingData = pMT->GetLoaderAllocator()->GetMarshalingDataIfAvailable();
-        if (pEEMarshalingData != NULL)
-        {
-            GCX_COOP();
-            structMarshalStub = pEEMarshalingData->LookupStructILStubSpeculative(pMT);
-        }
-
-        if (structMarshalStub == NULL)
-        {
-            structMarshalStub = NDirect::CreateStructMarshalILStub(pMT);
-        }
-
-        *pStructMarshalStub = structMarshalStub->GetSingleCallableAddrOfCode();
-        *pSize = 0;
+        *pIsBlittable = th.IsBlittable();
+        *pNativeSize = th.GetMethodTable()->GetNativeSize();
         ret = TRUE;
     }
     else
     {
-        *pStructMarshalStub = (PCODE)NULL;
-        *pSize = 0;
+        *pIsBlittable = FALSE;
+        *pNativeSize = 0;
     }
 
     END_QCALL;
@@ -143,7 +139,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_TryGetStructMarshalStub(void* enregister
 /************************************************************************
  * PInvoke.SizeOf(Class)
  */
-extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable)
+extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL throwIfNotMarshalable, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -173,7 +169,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_SizeOfHelper(QCall::TypeHandle t, BOOL 
     return rv;
 }
 
-extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD)
+extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -225,7 +221,7 @@ extern "C" SIZE_T QCALLTYPE MarshalNative_OffsetOf(FieldDesc* pFD)
     return offset;
 }
 
-extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate)
+extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PVOID FPtr, QCall::TypeHandle t, QCall::ObjectHandleOnStack retDelegate, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -242,7 +238,7 @@ extern "C" void QCALLTYPE MarshalNative_GetDelegateForFunctionPointerInternal(PV
     END_QCALL;
 }
 
-extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(QCall::ObjectHandleOnStack d)
+extern "C" PVOID QCALLTYPE MarshalNative_GetFunctionPointerForDelegateInternal(QCall::ObjectHandleOnStack d, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -271,15 +267,7 @@ extern "C" IsInCooperativeGCMode_fn QCALLTYPE MarshalNative_GetIsInCooperativeGC
 {
     QCALL_CONTRACT;
 
-    IsInCooperativeGCMode_fn ret = NULL;
-
-    BEGIN_QCALL;
-
-    ret = IsInCooperativeGCMode;
-
-    END_QCALL;
-
-    return ret;
+    return IsInCooperativeGCMode;
 }
 #endif
 
@@ -329,7 +317,7 @@ DWORD STDMETHODCALLTYPE FalseGetLastError()
  * Support for the GCHandle class.
  */
 
-extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type)
+extern "C" OBJECTHANDLE QCALLTYPE GCHandle_InternalAllocWithGCTransition(QCall::ObjectHandleOnStack obj, int type, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -351,14 +339,16 @@ FCIMPL2(LPVOID, MarshalNative::GCHandleInternalAlloc, Object *obj, int type)
 
     assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_DEPENDENT);
 
+#if defined(PROFILING_SUPPORTED)
     if (CORProfilerTrackGC())
         return NULL;
+#endif // PROFILING_SUPPORTED
 
     return GetAppDomain()->GetHandleStore()->CreateHandleOfType(obj, static_cast<HandleType>(type));
 }
 FCIMPLEND
 
-extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle)
+extern "C" void QCALLTYPE GCHandle_InternalFreeWithGCTransition(OBJECTHANDLE handle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -377,8 +367,10 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::GCHandleInternalFree, OBJECTHANDLE handle)
 {
     FCALL_CONTRACT;
 
+#ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackGC())
         FC_RETURN_BOOL(false);
+#endif // PROFILING_SUPPORTED
 
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType(handle);
     FC_RETURN_BOOL(true);
@@ -397,6 +389,43 @@ FCIMPL1(LPVOID, MarshalNative::GCHandleInternalGet, OBJECTHANDLE handle)
     return *((LPVOID*)&objRef);
 }
 FCIMPLEND
+
+#ifdef FEATURE_JAVAMARSHAL
+// Get the object referenced by a GC handle, also waiting for bridge procesing to finish.
+// Used by WeakReference
+FCIMPL2(FC_BOOL_RET, MarshalNative::GCHandleInternalTryGetBridgeWait, OBJECTHANDLE handle, Object **pObjResult)
+{
+    FCALL_CONTRACT;
+
+    if (!Interop::TryGetObjectFromHandleWithoutBridgeWait(handle, pObjResult))
+        FC_RETURN_BOOL(false);
+
+    FC_RETURN_BOOL(true);
+}
+FCIMPLEND
+
+// Unlike the fast call above, this can block
+extern "C" void QCALLTYPE GCHandle_InternalGetBridgeWait(OBJECTHANDLE handle, QCall::ObjectHandleOnStack result, QCallExceptionStatus* qcallError)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(handle != NULL);
+
+    BEGIN_QCALL;
+
+    {
+        GCX_COOP();
+
+        Interop::WaitForGCBridgeFinish();
+        // No GC can happen between the wait and obtaining of the reference, so the
+        // bridge processing status can't change, guaranteeing the nulling of weak refs
+        // took place in the bridge processing finish stage.
+        result.Set(ObjectFromHandle(handle));
+    }
+
+    END_QCALL;
+}
+#endif // FEATURE_JAVAMARSHAL
 
 // Update the object referenced by a GC handle.
 FCIMPL2(VOID, MarshalNative::GCHandleInternalSet, OBJECTHANDLE handle, Object *obj)
@@ -426,7 +455,7 @@ FCIMPLEND
 // *** Interop Helpers ***
 //====================================================================
 
-extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOID errorInfo, QCall::ObjectHandleOnStack retVal)
+extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOID errorInfo, QCall::ObjectHandleOnStack retVal, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -468,7 +497,7 @@ extern "C" void QCALLTYPE MarshalNative_GetExceptionForHR(INT32 errorCode, LPVOI
 }
 
 #ifdef FEATURE_COMINTEROP
-extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandleOnStack obj)
+extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -493,7 +522,7 @@ extern "C" int32_t QCALLTYPE MarshalNative_GetHRForException(QCall::ObjectHandle
 //====================================================================
 // return the IUnknown* for an Object.
 //====================================================================
-extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o)
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectHandleOnStack o, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -518,7 +547,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_GetIUnknownForObject(QCall::ObjectH
 //====================================================================
 // return the IDispatch* for an Object.
 //====================================================================
-extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::ObjectHandleOnStack o)
+extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::ObjectHandleOnStack o, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -543,7 +572,7 @@ extern "C" IDispatch* QCALLTYPE MarshalNative_GetIDispatchForObject(QCall::Objec
 //====================================================================
 // return the IUnknown* or IDispatch* for an Object.
 //====================================================================
-extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::ObjectHandleOnStack o, BOOL* isIDispatch)
+extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::ObjectHandleOnStack o, BOOL* isIDispatch, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -571,7 +600,7 @@ extern "C" void* QCALLTYPE MarshalNative_GetIUnknownOrIDispatchForObject(QCall::
 // return the IUnknown* representing the interface for the Object
 // Object o should support Type T
 //====================================================================
-extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, BOOL bEnableCustomizedQueryInterface)
+extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, BOOL bEnableCustomizedQueryInterface, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -617,7 +646,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_GetComInterfaceForObject(QCall::Obj
 //====================================================================
 // return an Object for IUnknown
 //====================================================================
-extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -642,7 +671,7 @@ extern "C" void QCALLTYPE MarshalNative_GetObjectForIUnknown(IUnknown* pUnk, QCa
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUnk, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -672,7 +701,7 @@ extern "C" void QCALLTYPE MarshalNative_GetUniqueObjectForIUnknown(IUnknown* pUn
 //  NOTE:
 //  Type T should be either a COM imported Type or a sub-type of COM imported Type
 //====================================================================
-extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -704,7 +733,7 @@ extern "C" void QCALLTYPE MarshalNative_GetTypedObjectForIUnknown(IUnknown* pUnk
     END_QCALL;
 }
 
-extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o)
+extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pOuter, QCall::ObjectHandleOnStack o, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -731,7 +760,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
         COMPlusThrowArgumentException(W("o"), W("Argument_AlreadyACCW"));
 
     //get wrapper for the object, this could enable GC
-    CCWHolder pWrap =  ComCallWrapper::InlineGetWrapper(&oref);
+    CCWHolder pWrap{ ComCallWrapper::InlineGetWrapper(&oref) };
 
     // Aggregation support,
     pWrap->InitializeOuter(pOuter);
@@ -745,9 +774,9 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
 }
 
 //====================================================================
-// Free unused RCWs in the current COM+ context.
+// Free unused RCWs in the current CLR context.
 //====================================================================
-extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext()
+extern "C" void QCALLTYPE MarshalNative_CleanupUnusedObjectsInCurrentContext(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -786,7 +815,7 @@ FCIMPLEND
 // free the COM component and zombie this object if the ref count hits 0
 // further usage of this Object might throw an exception,
 //====================================================================
-extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE)
+extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -800,7 +829,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnS
     GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
 
@@ -818,7 +847,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_ReleaseComObject(QCall::ObjectHandleOnS
 // free the COM component and zombie this object
 // further usage of this Object might throw an exception,
 //====================================================================
-extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE)
+extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandleOnStack objUNSAFE, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -830,7 +859,7 @@ extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandl
     GCPROTECT_BEGIN(obj);
 
     MethodTable* pMT = obj->GetMethodTable();
-    PREFIX_ASSUME(pMT != NULL);
+    _ASSERTE(pMT != NULL);
     if(!pMT->IsComObjectType())
         COMPlusThrow(kArgumentException, IDS_EE_SRC_OBJ_NOT_COMOBJECT);
 
@@ -846,7 +875,7 @@ extern "C" void QCALLTYPE MarshalNative_FinalReleaseComObject(QCall::ObjectHandl
 // This method takes the given COM object and wraps it in an object
 // of the specified type. The type must be derived from __ComObject.
 //====================================================================
-extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::ObjectHandleOnStack o, QCall::TypeHandle t, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -908,7 +937,7 @@ extern "C" void QCALLTYPE MarshalNative_InternalCreateWrapperOfType(QCall::Objec
 //====================================================================
 // check if the type is visible from COM.
 //====================================================================
-extern "C" BOOL QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCall::TypeHandle t)
+extern "C" BOOL QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCall::TypeHandle t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -924,7 +953,7 @@ extern "C" BOOL QCALLTYPE MarshalNative_IsTypeVisibleFromCom(QCall::TypeHandle t
     return retVal;
 }
 
-extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectHandleOnStack ObjUNSAFE, LPVOID pDestNativeVariant)
+extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectHandleOnStack ObjUNSAFE, LPVOID pDestNativeVariant, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -958,7 +987,7 @@ extern "C" void QCALLTYPE MarshalNative_GetNativeVariantForObject(QCall::ObjectH
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNativeVariant, QCall::ObjectHandleOnStack retObject)
+extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNativeVariant, QCall::ObjectHandleOnStack retObject, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -981,7 +1010,7 @@ extern "C" void QCALLTYPE MarshalNative_GetObjectForNativeVariant(LPVOID pSrcNat
 
 }
 
-extern "C" void QCALLTYPE MarshalNative_GetObjectsForNativeVariants(VARIANT* aSrcNativeVariant, int cVars, QCall::ObjectHandleOnStack retArray)
+extern "C" void QCALLTYPE MarshalNative_GetObjectsForNativeVariants(VARIANT* aSrcNativeVariant, int cVars, QCall::ObjectHandleOnStack retArray, QCallExceptionStatus* qcallError)
 {
     CONTRACTL
     {
@@ -1044,7 +1073,7 @@ static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
         if (DefItfType == DefaultInterfaceType_AutoDual || DefItfType == DefaultInterfaceType_Explicit)
         {
             pMT = hndDefItfClass.GetMethodTable();
-            PREFIX_ASSUME(pMT != NULL);
+            _ASSERTE(pMT != NULL);
         }
         else
         {
@@ -1068,7 +1097,7 @@ static int GetComSlotInfo(MethodTable *pMT, MethodTable **ppDefItfMT)
     }
 }
 
-extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t)
+extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1091,7 +1120,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_GetStartComSlot(QCall::TypeHandle t)
     return retVal;
 }
 
-extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t)
+extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1130,7 +1159,7 @@ extern "C" INT32 QCALLTYPE MarshalNative_GetEndComSlot(QCall::TypeHandle t)
     return retVal;
 }
 
-extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak)
+extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::ObjectHandleOnStack otp, BOOL fIsWeak, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -1143,7 +1172,7 @@ extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::Objec
         OBJECTREF oref = otp.Get();
         GCPROTECT_BEGIN(oref);
 
-        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
+        CCWHolder pWrap{ ComCallWrapper::InlineGetWrapper(&oref) };
 
         if (fIsWeak)
             pWrap->MarkHandleWeak();
@@ -1156,7 +1185,7 @@ extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::Objec
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
+extern "C" void QCALLTYPE MarshalNative_GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

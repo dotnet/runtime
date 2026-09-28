@@ -8,6 +8,7 @@ internal static partial class Interop
     internal static partial class Kernel32
     {
         [SuppressGCTransition]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetThreadErrorMode(
@@ -15,6 +16,5 @@ internal static partial class Interop
             out uint lpOldMode);
 
         internal const int SEM_FAILCRITICALERRORS = 0x00000001;
-        internal const int SEM_NOOPENFILEERRORBOX = 0x00008000;
     }
 }

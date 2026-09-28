@@ -3,14 +3,18 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <SkipXunitTrimmerDescriptor>true</SkipXunitTrimmerDescriptor>
     <IsTestProject>true</IsTestProject>
+    <!-- https://github.com/dotnet/runtime/issues/126862 -->
+    <EnableTrimAnalyzer>false</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>false</EnableAotAnalyzer>
     <BundleXunitRunner>true</BundleXunitRunner>
     <TestFramework>xunit</TestFramework>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
-    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">TEST_DEBUG_CONFIG_ALSO</DefineConstants>
+    <DefineConstants Condition="'$(ContinuousIntegrationBuild)' != 'true'">$(DefineConstants);TEST_DEBUG_CONFIG_ALSO</DefineConstants>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
 
+    <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == '' and '$(RuntimeFlavor)' == 'CoreCLR'">false</TestUsingWorkloads>
     <TestUsingWorkloads Condition="'$(TestUsingWorkloads)' == ''">true</TestUsingWorkloads>
     <!-- these are imported in this project instead -->
     <SkipWorkloadsTestingTargetsImport>false</SkipWorkloadsTestingTargetsImport>
@@ -46,16 +50,49 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Playwright" Version="1.47.0" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
     <PackageReference Include="MSBuild.StructuredLogger" Version="2.2.350" />
-    <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonToolsetVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="3.1.10" />
     <ProjectReference Include="$(RepoRoot)src\tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.csproj" />
-    <Compile Include="$(BrowserProjectRoot)debugger\DebuggerTestSuite\BrowserLocator.cs" />
+    <!-- Only needed to build the task used by GenerateHelixJobsList below. -->
+    <ProjectReference Include="$(RepoTasksDir)WasmBuildTasks\WasmBuildTasks.csproj" ReferenceOutputAssembly="false" />
 
-    <None Include="$(BrowserProjectRoot)\test-main.js" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Referenced so dotnet-pgo is restored and built for _AddDotnetPgoToTestPayload. Private="false"
+         keeps its apphost and dependencies out of $(OutDir) so they don't collide with the dotnet-pgo/
+         subfolder that target creates there. -->
+    <ProjectReference Condition="'$(RuntimeFlavor)' == 'CoreCLR'"
+                      Include="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false" />
+
+    <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+
+  <!-- Deploy dotnet-pgo (and its managed dependencies) into a dotnet-pgo/ subfolder next to the test so
+       EventPipeDiagnosticsTests can invoke it. These are added as CopyToOutputDirectory None items (rather
+       than a post-Build copy into OutDir) so they flow into the Helix test payload, exactly like the
+       testassets/data items above; a plain copy into OutDir is not part of the browser test archive.
+       dotnet-pgo is built explicitly because ProjectReferences aren't resolved this early in the build. -->
+  <Target Name="_AddDotnetPgoToTestPayload" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" BeforeTargets="AssignTargetPaths">
+    <MSBuild Projects="$(RepoRoot)src\coreclr\tools\dotnet-pgo\dotnet-pgo.csproj" Targets="Build">
+      <Output TaskParameter="TargetOutputs" ItemName="_DotnetPgoBuiltAssembly" />
+    </MSBuild>
+    <PropertyGroup>
+      <_DotnetPgoDir>@(_DotnetPgoBuiltAssembly->'%(RootDir)%(Directory)')</_DotnetPgoDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <!-- Glob the tool's output dir via a separate item: a wildcard combined with item metadata in a
+           None Include does not expand reliably and silently drops dotnet-pgo.runtimeconfig.json/.deps.json.
+           Root files only (non-recursive) - the RID-specific native subdirs (amd64/arm64/x86/shims) are
+           Windows ETW/PDB helpers not needed to read a .nettrace. -->
+      <_DotnetPgoFile Include="$(_DotnetPgoDir)*" />
+      <None Include="@(_DotnetPgoFile)"
+            Link="dotnet-pgo\%(FileName)%(Extension)"
+            CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">
     <Error Condition="'$(TestUsingWorkloads)' == 'true' and '$(PackageVersionForWorkloadManifests)' == ''" Text="%24(PackageVersionForWorkloadManifests) is not set. PackageVersion=$(PackageVersion)." />
@@ -73,6 +110,11 @@
     <ItemGroup Condition="'$(TestUsingWorkloads)' == 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WORKLOAD_PACKS_VER=$(PackageVersionForWorkloadManifests)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' != ''">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export RUNTIME_FLAVOR=$(RuntimeFlavor)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set RUNTIME_FLAVOR=$(RuntimeFlavor)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -96,7 +138,10 @@
     <PropertyGroup>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
       <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
-      <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">-trait category=no-fingerprinting</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmFingerprintAssets)' == 'false'">$(_XUnitTraitArg) -trait category=no-fingerprinting</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(WasmBundlerFriendlyBootConfig)' == 'true'">$(_XUnitTraitArg) -trait category=bundler-friendly</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' == 'CoreCLR'">$(_XUnitTraitArg) -notrait category=mono</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(RuntimeFlavor)' != 'CoreCLR'">$(_XUnitTraitArg) -notrait category=coreclr</_XUnitTraitArg>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
@@ -104,6 +149,13 @@
       <_SdkPathForLocalTesting Condition="'$(TestUsingWorkloads)' != 'true'">$([System.IO.Path]::GetDirectoryName($(SdkWithNoWorkloadForTestingPath)))</_SdkPathForLocalTesting>
 
       <_SdkPathForLocalTesting>$([System.IO.Path]::GetFilename($(_SdkPathForLocalTesting)))</_SdkPathForLocalTesting>
+
+      <!-- CoreCLR WBT local runs need EMSDK_PATH for BrowserWasmApp.CoreCLR.targets.
+           Fall back to the shared wasm tool cache, gated on its '.complete' sentinel like
+           eng/AcquireEmscriptenSdk.targets does; leaving it empty otherwise produces the
+           "either set %24(EMSDK_PATH), or use workloads" error instead of a path that never existed. -->
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EMSDK_PATH)' != ''">$(EMSDK_PATH)</_LocalEmsdkPathForTests>
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</_LocalEmsdkPathForTests>
     </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
@@ -117,6 +169,9 @@
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_FINGERPRINT_ASSETS=$(WasmFingerprintAssets)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set WASM_BUNDLER_FRIENDLY_BOOT_CONFIG=$(WasmBundlerFriendlyBootConfig)" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
@@ -134,13 +189,23 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BUILT_NUGETS_PATH=$(LibrariesShippingPackagesDir)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <!-- Wasm.Build.Tests are not a shipping project, PackageVersion will have a version suffix even for release branch, where actual runtime pack version doesn't have version suffix. -->
+      <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' != ''">$(ProductVersion)</_RuntimePackCurrentVersion>
+      <_RuntimePackCurrentVersion Condition="'$(DotNetFinalVersionKind)' == ''">$(PackageVersion)</_RuntimePackCurrentVersion>
+    </PropertyGroup>
     <ItemGroup>
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER9" />
+      <!-- net11 Add new entry when adding major version -->
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER11" />
 
+      <_RuntimePackVersions Include="$(PackageVersionNet10)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER10" Condition="'$(PackageVersionNet10)' == ''" />
+      <_RuntimePackVersions Include="$(PackageVersionNet9)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' != ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER9" Condition="'$(PackageVersionNet9)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet8)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' != ''" />
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER8" Condition="'$(PackageVersionNet8)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet7)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' != ''" />
-      <_RuntimePackVersions Include="$(PackageVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
+      <_RuntimePackVersions Include="$(_RuntimePackCurrentVersion)" EnvVarName="RUNTIME_PACK_VER7" Condition="'$(PackageVersionNet7)' == ''" />
       <_RuntimePackVersions Include="$(PackageVersionNet6)" EnvVarName="RUNTIME_PACK_VER6" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export %(_RuntimePackVersions.EnvVarName)=&quot;%(_RuntimePackVersions.Identity)&quot;" />
@@ -171,5 +236,34 @@
       <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg%</RunScriptCommand>
       <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg</RunScriptCommand>
     </PropertyGroup>
+  </Target>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.GenerateXunitTestClassList"
+             AssemblyFile="$(WasmBuildTasksAssemblyPath)"
+             TaskFactory="TaskHostFactory" />
+
+  <!--
+    Generates the per-class Helix work item list consumed by src/libraries/sendtohelix-browser.targets,
+    so that adding a test class is enough to get it running on Helix.
+
+    This has to run before ZipTestArchive, because $(BundleDir) is $(OutDir) for this project and
+    ZipTestArchive deletes it once the archive is created in CI. AfterTargets="Build" covers the
+    local case where ArchiveTests is not set and ZipTestArchive never runs.
+  -->
+  <Target Name="GenerateHelixJobsList" AfterTargets="Build" BeforeTargets="ZipTestArchive">
+    <ItemGroup>
+      <!--
+        The lane that fans out per class always runs with these categories filtered out (see
+        $(_XUnitTraitArg) above and $(RunScriptCommand) below), so a class whose tests are all in
+        these categories would only produce a work item that runs nothing.
+      -->
+      <_HelixJobsListExcludedCategory Include="no-workload;IgnoreForCI;failing" />
+      <_HelixJobsListExcludedCategory Include="mono" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
+      <_HelixJobsListExcludedCategory Include="coreclr" Condition="'$(RuntimeFlavor)' != 'CoreCLR'" />
+    </ItemGroup>
+
+    <GenerateXunitTestClassList Assembly="$(TargetPath)"
+                                OutputPath="$(WasmBuildTestsJobsListFile)"
+                                ExcludedTestCategories="@(_HelixJobsListExcludedCategory)" />
   </Target>
 </Project>

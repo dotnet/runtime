@@ -111,10 +111,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
+            ArgumentNullException.ThrowIfNull(returnType);
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return ReadAsObject(ref reader, jsonTypeInfo);
@@ -161,10 +158,7 @@ namespace System.Text.Json
         /// </remarks>
         public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return Read(ref reader, jsonTypeInfo);
@@ -210,10 +204,7 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ref Utf8JsonReader reader, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             jsonTypeInfo.EnsureConfigured();
             return ReadAsObject(ref reader, jsonTypeInfo);
@@ -270,14 +261,8 @@ namespace System.Text.Json
         /// </remarks>
         public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
         {
-            if (returnType is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
-            }
-            if (context is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(context));
-            }
+            ArgumentNullException.ThrowIfNull(returnType);
+            ArgumentNullException.ThrowIfNull(context);
 
             return ReadAsObject(ref reader, GetTypeInfo(context, returnType));
         }
@@ -340,6 +325,9 @@ namespace System.Text.Json
             ReadOnlySpan<byte> valueSpan = default;
             ReadOnlySequence<byte> valueSequence = default;
 
+            long lineNumber = 0;
+            long bytePositionInLine = 0;
+
             try
             {
                 switch (reader.TokenType)
@@ -359,6 +347,13 @@ namespace System.Text.Json
                             break;
                         }
                 }
+
+                // Capture the original reader's position so that the scoped reader, after consuming its
+                // first token, lands on the same position the original reader is currently at.
+                // The values captured here represent the position immediately after the current token,
+                // the per-case logic below rewinds them to the position immediately before the value token starts.
+                lineNumber = reader.CurrentState._lineNumber;
+                bytePositionInLine = reader.CurrentState._bytePositionInLine;
 
                 switch (reader.TokenType)
                 {
@@ -386,6 +381,8 @@ namespace System.Text.Json
                             valueSequence = sequence.Slice(startingOffset, totalLength);
                         }
 
+                        // Rewind by 1 byte to point right before the opening '{' or '['.
+                        bytePositionInLine--;
                         Debug.Assert(reader.TokenType is JsonTokenType.EndObject or JsonTokenType.EndArray);
                         break;
 
@@ -394,13 +391,16 @@ namespace System.Text.Json
                     case JsonTokenType.True:
                     case JsonTokenType.False:
                     case JsonTokenType.Null:
+                        // Rewind by the length of the value token to point right before the start of the value.
                         if (reader.HasValueSequence)
                         {
                             valueSequence = reader.ValueSequence;
+                            bytePositionInLine -= valueSequence.Length;
                         }
                         else
                         {
                             valueSpan = reader.ValueSpan;
+                            bytePositionInLine -= valueSpan.Length;
                         }
 
                         break;
@@ -427,6 +427,9 @@ namespace System.Text.Json
                                 $"Calculated span ends with {readerSpan[(int)reader.TokenStartIndex + payloadLength - 1]}");
 
                             valueSpan = readerSpan.Slice((int)reader.TokenStartIndex, payloadLength);
+
+                            // Rewind by payloadLength to point right before the opening quote.
+                            bytePositionInLine -= payloadLength;
                         }
                         else
                         {
@@ -442,6 +445,9 @@ namespace System.Text.Json
                             Debug.Assert(
                                 valueSequence.ToArray()[payloadLength - 1] == (byte)'"',
                                 $"Calculated sequence ends with {valueSequence.ToArray()[payloadLength - 1]}");
+
+                            // Rewind by payloadLength to point right before the opening quote.
+                            bytePositionInLine -= payloadLength;
                         }
 
                         break;
@@ -466,10 +472,28 @@ namespace System.Text.Json
             }
 
             Debug.Assert(!valueSpan.IsEmpty ^ !valueSequence.IsEmpty);
+            Debug.Assert(lineNumber >= 0);
+            Debug.Assert(bytePositionInLine >= 0);
+
+            // Carry only the position information and reader options to the scoped reader
+            // so that any JsonException it raises reports a position relative to the original input.
+            var scopedCurrentState = new JsonReaderState
+            (
+                lineNumber: lineNumber,
+                bytePositionInLine: bytePositionInLine,
+                inObject: default,
+                isNotPrimitive: default,
+                valueIsEscaped: default,
+                trailingCommaBeforeComment: default,
+                tokenType: default,
+                previousTokenType: default,
+                readerOptions: reader.CurrentState.Options,
+                bitStack: default
+            );
 
             return valueSpan.IsEmpty
-                ? new Utf8JsonReader(valueSequence, reader.CurrentState.Options)
-                : new Utf8JsonReader(valueSpan, reader.CurrentState.Options);
+                ? new Utf8JsonReader(valueSequence, isFinalBlock: true, state: scopedCurrentState)
+                : new Utf8JsonReader(valueSpan, isFinalBlock: true, state: scopedCurrentState);
         }
     }
 }

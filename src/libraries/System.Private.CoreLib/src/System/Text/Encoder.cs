@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -72,7 +73,7 @@ namespace System.Text
         // We avoid GetMaxByteCount() because a) we can't call the base encoder and b) it might be really big.
         public virtual void Reset()
         {
-            char[] charTemp = Array.Empty<char>();
+            char[] charTemp = [];
             byte[] byteTemp = new byte[GetByteCount(charTemp, 0, 0, true)];
             GetBytes(charTemp, 0, 0, byteTemp, 0, true);
             _fallbackBuffer?.Reset();

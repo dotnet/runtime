@@ -58,6 +58,14 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
         }
+        else if (0 == _stricmp(targetArchitecture, "riscv64"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_RISCV64);
+        }
+        else if (0 == _stricmp(targetArchitecture, "wasm") || (0 == _stricmp(targetArchitecture, "wasm32")))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_WASM32);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);
@@ -157,12 +165,12 @@ static void PrintDiffsCsvRow(
     bool hasDiff)
 {
     fw.Printf("%d,%u,", context, contextSize);
-    fw.PrintQuotedCsvField(baseRes.CompileResults->MethodFullName == nullptr ? "" : baseRes.CompileResults->MethodFullName);
+    fw.PrintQuotedCsvField(diffRes.CompileResults->MethodFullName == nullptr ? "" : diffRes.CompileResults->MethodFullName);
     fw.Printf(
         ",%s,%s,%s,%s,%s,%lld,%lld",
-        baseRes.CompileResults->TieringName == nullptr ? "" : baseRes.CompileResults->TieringName,
+        diffRes.CompileResults->TieringName == nullptr ? "" : diffRes.CompileResults->TieringName,
         ResultToString(baseRes.Result), ResultToString(diffRes.Result),
-        baseRes.IsMinOpts ? "True" : "False",
+        diffRes.IsMinOpts ? "True" : "False",
         hasDiff ? "True" : "False",
         baseRes.NumExecutedInstructions, diffRes.NumExecutedInstructions);
 
@@ -398,7 +406,7 @@ int __cdecl main(int argc, char* argv[])
         loadedCount++;
         const int mcIndex = reader->GetMethodContextIndex();
         MethodContext* mc = nullptr;
-        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, &mc))
+        if (!MethodContext::Initialize(mcIndex, mcb.buff, mcb.size, /* readCompileResults */ false, &mc))
         {
             return (int)SpmiResult::GeneralFailure;
         }
@@ -437,6 +445,18 @@ int __cdecl main(int argc, char* argv[])
                     if (jit2 == nullptr)
                     {
                         // InitJit already printed a failure message
+                        return (int)SpmiResult::JitFailedToInit;
+                    }
+
+                    if (jit2->getModule() == jit->getModule())
+                    {
+                        // The baseline and diff JITs resolved to the same loaded module. Because the JIT keeps
+                        // global state (e.g. g_jitHost, JitConfig), sharing a single module between the two
+                        // JitInstances corrupts that state and produces spurious diffs and intermittent crashes.
+                        // Require the two JITs to be distinct files (copy one to a different path if needed).
+                        LogError("The baseline JIT ('%s') and diff JIT ('%s') resolve to the same loaded module. "
+                                 "They must be distinct files; copy one JIT to a different path.",
+                                 o.nameOfJit, o.nameOfJit2);
                         return (int)SpmiResult::JitFailedToInit;
                     }
                 }

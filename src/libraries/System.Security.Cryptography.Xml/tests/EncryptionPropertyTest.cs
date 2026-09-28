@@ -125,5 +125,101 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlElement output = encryptionProperty.GetXml();
             Assert.Equal(ValidXml, output.OuterXml);
         }
+
+        [Fact]
+        public void GetXml_NoPropertyElement()
+        {
+            EncryptionProperty encryptionProperty = new EncryptionProperty();
+            Assert.Throws<InvalidOperationException>(() => encryptionProperty.GetXml());
+        }
+
+        [Fact]
+        public void LoadXml_WithChildren()
+        {
+            string xml = @"<EncryptionProperty Id=""prop1"" Target=""#data1"" xmlns=""http://www.w3.org/2001/04/xmlenc#"">
+                <CustomData>Some data</CustomData>
+                <MoreData value=""123"" />
+            </EncryptionProperty>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            EncryptionProperty encryptionProperty = new EncryptionProperty();
+            encryptionProperty.LoadXml(doc.DocumentElement);
+            Assert.Equal("prop1", encryptionProperty.Id);
+            Assert.Equal("#data1", encryptionProperty.Target);
+            Assert.NotNull(encryptionProperty.PropertyElement);
+        }
+
+        [Fact]
+        public void Constructor_ReadProperties()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(ValidXml);
+            
+            EncryptionProperty encryptionProperty = new EncryptionProperty(doc.DocumentElement);
+            // PropertyElement is set via the constructor parameter
+            Assert.NotNull(encryptionProperty.PropertyElement);
+            Assert.Same(doc.DocumentElement, encryptionProperty.PropertyElement);
+        }
+
+        [Fact]
+        public void Constructor_InvalidElement()
+        {
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml("<InvalidElement />");
+            
+            Assert.Throws<CryptographicException>(() => new EncryptionProperty(doc.DocumentElement));
+        }
+
+        [Fact]
+        public void Constructor_Null()
+        {
+            Assert.Throws<ArgumentNullException>(() => new EncryptionProperty(null));
+        }
+
+        [Fact]
+        public void LoadXml_NoIdOrTarget()
+        {
+            string xml = @"<EncryptionProperty xmlns=""http://www.w3.org/2001/04/xmlenc#"">
+                <Data>content</Data>
+            </EncryptionProperty>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            EncryptionProperty encryptionProperty = new EncryptionProperty();
+            encryptionProperty.LoadXml(doc.DocumentElement);
+            Assert.Null(encryptionProperty.Id);
+            Assert.Null(encryptionProperty.Target);
+        }
+
+        [Fact]
+        public void LoadXml_OnlyId()
+        {
+            string xml = @"<EncryptionProperty Id=""prop1"" xmlns=""http://www.w3.org/2001/04/xmlenc#"">
+                <Data>content</Data>
+            </EncryptionProperty>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            EncryptionProperty encryptionProperty = new EncryptionProperty();
+            encryptionProperty.LoadXml(doc.DocumentElement);
+            Assert.Equal("prop1", encryptionProperty.Id);
+            Assert.Null(encryptionProperty.Target);
+        }
+
+        [Fact]
+        public void LoadXml_OnlyTarget()
+        {
+            string xml = @"<EncryptionProperty Target=""#data1"" xmlns=""http://www.w3.org/2001/04/xmlenc#"">
+                <Data>content</Data>
+            </EncryptionProperty>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            EncryptionProperty encryptionProperty = new EncryptionProperty();
+            encryptionProperty.LoadXml(doc.DocumentElement);
+            Assert.Null(encryptionProperty.Id);
+            Assert.Equal("#data1", encryptionProperty.Target);
+        }
     }
 }

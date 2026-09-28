@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 using Internal.TypeSystem;
 using ILCompiler.Diagnostics;
+using ILCompiler.ObjectWriter;
 
 namespace ILCompiler.PEWriter
 {

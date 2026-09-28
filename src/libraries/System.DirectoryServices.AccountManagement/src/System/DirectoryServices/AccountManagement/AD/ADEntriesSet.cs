@@ -48,7 +48,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since this class is only used internally, none of our code should be even calling this
                 // if MoveNext returned false, or before calling MoveNext.
-                Debug.Assert(_endReached == false && _current != null);
+                Debug.Assert(!_endReached && _current != null);
 
                 return ADUtils.SearchResultAsPrincipal(_current, _storeCtx, _discriminant);
             }

@@ -234,6 +234,7 @@ namespace System.SpanTests
         [Theory]
         [MemberData(nameof(Values_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/80875", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131891", typeof(PlatformDetection), nameof(PlatformDetection.IsMacCatalyst), nameof(PlatformDetection.IsCoreCLR))]
         public static void SearchValues_GetValues(string needle, byte[] byteNeedle)
         {
             char[] charValuesActual = s_getValuesCharMethod(SearchValues.Create(needle));
@@ -465,7 +466,7 @@ namespace System.SpanTests
                     s_randomLatin1Chars[i] = (char)rng.Next(0, 256);
                 }
 
-                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars));
+                rng.NextBytes(MemoryMarshal.Cast<char, byte>(s_randomChars.AsSpan()));
 
                 s_randomAsciiBytes = Encoding.ASCII.GetBytes(s_randomAsciiChars);
 

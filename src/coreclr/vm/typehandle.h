@@ -80,16 +80,11 @@ class ComCallWrapperTemplate;
 // The entries in these tables (i.e. the code) are, however, often shared.
 // Clients of TypeHandle don't need to know any of this detail; just use the
 // GetInstantiation and HasInstantiation methods.
+// [cDAC] [RuntimeTypeSystem]: If ever the scheme of having the lower two bits be zero for MethodTables and two for TypeDescs is changed, version the RuntimeTypeSystem cDAC contract.
 
 class TypeHandle
 {
 public:
-    TypeHandle() {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        m_asTAddr = 0;
-    }
-
     static TypeHandle FromPtr(PTR_VOID aPtr)
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -104,29 +99,34 @@ public:
         return TypeHandle(data);
     }
 
+    TypeHandle()
+        : m_asTAddr{ 0 }
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+    }
+
     // When you ask for a class in JitInterface when all you have
     // is a methodDesc of an array method...
     // Convert from a JitInterface handle to an internal EE TypeHandle
     explicit TypeHandle(struct CORINFO_CLASS_STRUCT_*aPtr)
+        : m_asTAddr{ dac_cast<TADDR>(aPtr) }
     {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        m_asTAddr = dac_cast<TADDR>(aPtr);
         INDEBUGIMPL(Verify());
     }
 
-    TypeHandle(MethodTable const * aMT) {
+    TypeHandle(MethodTable const * aMT)
+        : m_asTAddr{ dac_cast<TADDR>(aMT) }
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-
-        m_asTAddr = dac_cast<TADDR>(aMT);
         INDEBUGIMPL(Verify());
     }
 
-    explicit TypeHandle(TypeDesc *aType) {
+    explicit TypeHandle(TypeDesc *aType)
+        : m_asTAddr{ dac_cast<TADDR>(aType) | 2 }
+    {
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(aType);
-
-        m_asTAddr = (dac_cast<TADDR>(aType) | 2);
         INDEBUGIMPL(Verify());
     }
 
@@ -138,9 +138,9 @@ private:
     // TypeHandle::FromPtr and TypeHandle::TAddr instead of these constructors.
     // Allowing a public constructor that takes a "void *" or a "TADDR" is error-prone.
     explicit TypeHandle(TADDR aTAddr)
+        : m_asTAddr{ aTAddr }
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        m_asTAddr = aTAddr;
         INDEBUGIMPL(Verify());
     }
 
@@ -158,44 +158,17 @@ public:
         return(m_asTAddr != typeHnd.m_asTAddr);
     }
 
-        // Methods for probing exactly what kind of a type handle we have
-    FORCEINLINE BOOL IsNull() const {
+    // Methods for probing exactly what kind of a type handle we have
+    bool IsNull() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr == 0) {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr == NULL);
-#endif
-            return true;
-        }
-        else {
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr != NULL);
-#endif
-            return false;
-        }
-#else
-        return(m_asTAddr == 0);
-#endif
+        return (m_asTAddr == 0);
     }
 
-    // Note that this returns denormalized BOOL to help the compiler with optimizations
-    FORCEINLINE BOOL IsTypeDesc() const  {
+    bool IsTypeDesc() const
+    {
         LIMITED_METHOD_DAC_CONTRACT;
-#ifdef _PREFIX_
-        if (m_asTAddr & 2) {
-            PREFIX_ASSUME(m_asTAddr != NULL);
-#ifndef DACCESS_COMPILE
-            PREFIX_ASSUME(m_asPtr   != NULL);
-#endif
-            return true;
-        }
-        else {
-            return false;
-        }
-#else
-        return(m_asTAddr & 2);
-#endif
+        return !!(m_asTAddr & 2);
     }
 
     BOOL IsEnum() const;
@@ -227,25 +200,9 @@ public:
     // This helper:
     // - Will return enums underlying type
     // - Will return underlying primitive for System.Int32 etc...
-    // - Will return underlying primitive as will be used in the calling convention
-    //      For example
-    //              struct t
-    //              {
-    //                  public int i;
-    //              }
-    //      will return ELEMENT_TYPE_I4 in x86 instead of ELEMENT_TYPE_VALUETYPE. We
-    //      call this type of value type a primitive value type
     //
-    // Internal representation is used among another things for the calling convention
-    // (jit benefits of primitive value types) or optimizing marshalling.
-    //
-    // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS (though it probably
-    // should).  Use CorTypeInfo::IsObjRef for that.
+    // This will NOT convert E_T_ARRAY, E_T_SZARRAY etc. to E_T_CLASS. Use CorTypeInfo::IsObjRef for that.
     CorElementType GetInternalCorElementType() const;
-
-    // This helper will return the same as GetSignatureCorElementType except:
-    // - Will return enums underlying type
-    CorElementType GetVerifierCorElementType() const;
 
     //-------------------------------------------------------------------
     // CASTING
@@ -267,7 +224,8 @@ public:
     // Note that if the TypeHandle is a valuetype, the caller is responsible
     // for checking that the valuetype is in its boxed form before calling
     // CanCastTo. Otherwise, the caller should be using IsBoxedAndCanCastTo()
-    typedef enum { CannotCast, CanCast, MaybeCast } CastResult;
+    // See CastCache.cs for matching managed type.
+    typedef enum { CannotCast = 0, CanCast = 1, MaybeCast = 2 } CastResult;
 
     BOOL CanCastTo(TypeHandle type, TypeHandlePairList *pVisited = NULL) const;
     BOOL IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pVisited) const;
@@ -383,6 +341,8 @@ public:
 
     bool IsFloatHfa() const;
 
+    bool IsVectorT() const;
+
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
 #endif // FEATURE_64BIT_ALIGNMENT
@@ -413,6 +373,7 @@ public:
     // And some types (like ByRef or generic type parameters) have no
     // method table and this function returns NULL for them.
     inline PTR_MethodTable GetMethodTable() const;
+    inline TypeHandle UpCastTypeIfNeeded() const;
 
     // Returns the type which should be used for visibility checking.
     inline MethodTable* GetMethodTableOfRootTypeParam() const;
@@ -441,6 +402,8 @@ public:
 
     PTR_LoaderAllocator GetLoaderAllocator() const;
 
+    bool IsCollectible() const;
+
     // Get the class token, assuming the type handle represents a named type,
     // i.e. a class, a value type, a generic instantiation etc.
     inline mdTypeDef GetCl() const;
@@ -465,10 +428,11 @@ public:
     // String
     BOOL IsString() const;
 
+    // Continuation sub types
+    BOOL IsContinuationWithoutMetadata() const;
+
     // True if this type *is* a formal generic type parameter or any component of it is a formal generic type parameter
     BOOL ContainsGenericVariables(BOOL methodOnly=FALSE) const;
-
-    Module* GetDefiningModuleForOpenType() const;
 
     // Is type that has a type parameter (ARRAY, SZARRAY, BYREF, PTR)
     BOOL HasTypeParam() const;
@@ -615,7 +579,6 @@ inline CHECK CheckPointer(TypeHandle th, IsNullOK ok = NULL_NOT_OK)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
     SUPPORTS_DAC;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
@@ -720,7 +683,8 @@ public:
 
     bool ContainsAllOneType(TypeHandle th)
     {
-        for (auto i = GetNumArgs(); i > 0;)
+        LIMITED_METHOD_DAC_CONTRACT;
+        for (DWORD i = GetNumArgs(); i > 0;)
         {
             if ((*this)[--i] != th)
                 return false;

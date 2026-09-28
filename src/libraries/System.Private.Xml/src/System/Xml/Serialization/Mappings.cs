@@ -209,6 +209,21 @@ namespace System.Xml.Serialization
 
     internal sealed class TextAccessor : Accessor
     {
+        private bool _isList;
+
+        // Per-accessor decision to serialize this [XmlText] array-like member as a whitespace-separated
+        // list of values (space-separated on write, split on read), analogous to AttributeAccessor.IsList.
+        // Unlike AttributeAccessor, which keeps an independently computed flag, this value is snapshotted
+        // from the type-level Mapping.IsList at import time (as XmlSchemaImporter does for its accessors),
+        // then narrowed further: it is only true when the mapping is itself a list (Mapping.IsList), the
+        // member is pure text (no mixed element content), and the UseLegacyXmlListSeparation opt-out switch
+        // is off. It is therefore a strict refinement of Mapping.IsList, not a second independent source of
+        // truth: because it is derived from Mapping.IsList it can never mark a non-list mapping as a list.
+        internal bool IsList
+        {
+            get { return _isList; }
+            set { _isList = value; }
+        }
     }
 
     internal sealed class XmlnsAccessor : Accessor
@@ -476,7 +491,6 @@ namespace System.Xml.Serialization
         private bool _isSequence;
         private NameTable? _elements;
         private NameTable? _attributes;
-        private CodeIdentifiers? _scope;
 
         [DisallowNull]
         internal StructMapping? BaseMapping
@@ -577,8 +591,8 @@ namespace System.Xml.Serialization
 
         internal CodeIdentifiers Scope
         {
-            get => _scope ??= new CodeIdentifiers();
-            set => _scope = value;
+            get => field ??= new CodeIdentifiers();
+            set => field = value;
         }
 
         internal MemberMapping? FindDeclaringMapping(MemberMapping member, out StructMapping? declaringMapping, string? parent)
@@ -980,6 +994,31 @@ namespace System.Xml.Serialization
         internal MemberMapping Clone()
         {
             return new MemberMapping(this);
+        }
+
+        internal bool Hides(MemberMapping mapping)
+        {
+            // Semantics. But all mappings would hide a null mapping, so indicating that this particular instance of mapping
+            // specifically hides a null mapping is not necessary and could be misleading. So just return false.
+            if (mapping == null)
+                return false;
+
+            var baseMember = mapping.MemberInfo;
+            var derivedMember = this.MemberInfo;
+
+            // Similarly, if either mapping (or both) lacks MemberInfo, then its not appropriate to say that one hides the other.
+            if (baseMember == null || derivedMember == null)
+                return false;
+
+            // If the member names are different, they don't hide each other
+            if (baseMember.Name != derivedMember.Name)
+                return false;
+
+            // Names are the same. So, regardless of field or property or accessibility or return type, if derivedDeclaringType is a
+            // subclass of baseDeclaringType, then the base member is hidden.
+            Type? baseDeclaringType = baseMember.DeclaringType;
+            Type? derivedDeclaringType = derivedMember.DeclaringType;
+            return baseDeclaringType != null && derivedDeclaringType != null && baseDeclaringType.IsAssignableFrom(derivedDeclaringType);
         }
     }
 

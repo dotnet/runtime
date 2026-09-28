@@ -13,6 +13,7 @@
 #endif // _CRT_SECURE_NO_WARNINGS
 
 #include <stdint.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,7 +30,9 @@
 #include <limits>
 #include <algorithm>
 
-#ifdef TARGET_UNIX
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
 #include <pthread.h>
 #endif
 

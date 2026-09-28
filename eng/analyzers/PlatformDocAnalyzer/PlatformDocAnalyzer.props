@@ -1,0 +1,7 @@
+<Project>
+  <ItemGroup>
+    <CompilerVisibleProperty Include="TargetFramework" />
+    <CompilerVisibleProperty Include="UseCompilerGeneratedDocXmlFile" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="PlatformDocCanonical" />
+  </ItemGroup>
+</Project>

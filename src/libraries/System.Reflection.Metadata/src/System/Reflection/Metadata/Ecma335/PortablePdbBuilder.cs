@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Reflection.Metadata.Ecma335
 {
@@ -60,7 +61,7 @@ namespace System.Reflection.Metadata.Ecma335
             _builder = tablesAndHeaps;
             _entryPoint = entryPoint;
 
-            Debug.Assert(BlobUtilities.GetUTF8ByteCount(MetadataVersion) == MetadataVersion.Length);
+            Debug.Assert(Encoding.UTF8.GetByteCount(MetadataVersion) == MetadataVersion.Length);
             _serializedMetadata = tablesAndHeaps.GetSerializedMetadata(typeSystemRowCounts, MetadataVersion.Length, isStandaloneDebugMetadata: true);
 
             IdProvider = idProvider ?? BlobContentId.GetTimeBasedProvider();

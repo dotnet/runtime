@@ -21,6 +21,12 @@ namespace System.Net
     [StructLayout(LayoutKind.Auto)]
     internal struct ArrayBuffer : IDisposable
     {
+#if NET
+        private static int ArrayMaxLength => Array.MaxLength;
+#else
+        private const int ArrayMaxLength = 0X7FFFFFC7;
+#endif
+
         private readonly bool _usePool;
         private byte[] _bytes;
         private int _activeStart;
@@ -53,8 +59,7 @@ namespace System.Net
 
         public void Dispose()
         {
-            _activeStart = 0;
-            _availableStart = 0;
+            DiscardAll();
 
             byte[] array = _bytes;
             _bytes = null!;
@@ -71,8 +76,7 @@ namespace System.Net
             Debug.Assert(_usePool);
             Debug.Assert(_bytes is not null);
 
-            _activeStart = 0;
-            _availableStart = 0;
+            DiscardAll();
 
             byte[] bufferToReturn = _bytes;
             _bytes = Array.Empty<byte>();
@@ -104,6 +108,12 @@ namespace System.Net
                 _activeStart = 0;
                 _availableStart = 0;
             }
+        }
+
+        public void DiscardAll()
+        {
+            _activeStart = 0;
+            _availableStart = 0;
         }
 
         public void Commit(int byteCount)
@@ -144,13 +154,15 @@ namespace System.Net
                 return;
             }
 
-            // Double the size of the buffer until we have enough space.
             int desiredSize = ActiveLength + byteCount;
-            int newSize = _bytes.Length;
-            do
+
+            if ((uint)desiredSize > ArrayMaxLength)
             {
-                newSize *= 2;
-            } while (newSize < desiredSize);
+                throw new OutOfMemoryException();
+            }
+
+            // Double the existing buffer size (capped at Array.MaxLength).
+            int newSize = Math.Max(desiredSize, (int)Math.Min(ArrayMaxLength, 2 * (uint)_bytes.Length));
 
             byte[] newBytes = _usePool ?
                 ArrayPool<byte>.Shared.Rent(newSize) :

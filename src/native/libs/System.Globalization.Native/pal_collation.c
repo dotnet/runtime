@@ -27,7 +27,8 @@ c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found"
 #define CompareOptionsIgnoreSymbols 0x4
 #define CompareOptionsIgnoreKanaType 0x8
 #define CompareOptionsIgnoreWidth 0x10
-#define CompareOptionsMask 0x1f
+#define CompareOptionsNumericOrdering 0x20
+#define CompareOptionsMask 0x3f
 // #define CompareOptionsStringSort 0x20000000
 // ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric.
 // When StringSort is not specified (.NET's default), the sort order will be different between
@@ -275,11 +276,12 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 {
     UColAttributeValue strength = ucol_getStrength(pCollator);
 
-    int32_t isIgnoreCase        = (options & CompareOptionsIgnoreCase)     == CompareOptionsIgnoreCase;
-    int32_t isIgnoreNonSpace    = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
-    int32_t isIgnoreSymbols     = (options & CompareOptionsIgnoreSymbols)  == CompareOptionsIgnoreSymbols;
-    int32_t isIgnoreKanaType    = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
-    int32_t isIgnoreWidth       = (options & CompareOptionsIgnoreWidth)    == CompareOptionsIgnoreWidth;
+    int32_t isIgnoreCase        = (options & CompareOptionsIgnoreCase)      == CompareOptionsIgnoreCase;
+    int32_t isIgnoreNonSpace    = (options & CompareOptionsIgnoreNonSpace)  == CompareOptionsIgnoreNonSpace;
+    int32_t isIgnoreSymbols     = (options & CompareOptionsIgnoreSymbols)   == CompareOptionsIgnoreSymbols;
+    int32_t isIgnoreKanaType    = (options & CompareOptionsIgnoreKanaType)  == CompareOptionsIgnoreKanaType;
+    int32_t isIgnoreWidth       = (options & CompareOptionsIgnoreWidth)     == CompareOptionsIgnoreWidth;
+    int32_t isNumericOrdering   = (options & CompareOptionsNumericOrdering) == CompareOptionsNumericOrdering;
 
     if (isIgnoreCase)
     {
@@ -382,38 +384,10 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
     {
         ucol_setAttribute(pClonedCollator, UCOL_ALTERNATE_HANDLING, UCOL_SHIFTED, pErr);
 
-#if !defined(STATIC_ICU)
-    if (ucol_setMaxVariable_ptr != NULL)
-    {
         // by default, ICU alternate shifted handling only ignores punctuation, but
         // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
         // to include all symbols and currency
         ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
-    }
-    else
-    {
-        assert(ucol_setVariableTop_ptr != NULL);
-        // 0xfdfc is the last currency character before the first digit character
-        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
-        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
-        ucol_setVariableTop_ptr(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
-    }
-
-#else // !defined(STATIC_ICU)
-
-        // by default, ICU alternate shifted handling only ignores punctuation, but
-        // IgnoreSymbols needs symbols and currency as well, so change the "variable top"
-        // to include all symbols and currency
-#if HAVE_SET_MAX_VARIABLE
-        ucol_setMaxVariable(pClonedCollator, UCOL_REORDER_CODE_CURRENCY, pErr);
-#else
-        // 0xfdfc is the last currency character before the first digit character
-        // in http://source.icu-project.org/repos/icu/icu/tags/release-52-1/source/data/unidata/FractionalUCA.txt
-        const UChar ignoreSymbolsVariableTop[] = { 0xfdfc };
-        ucol_setVariableTop(pClonedCollator, ignoreSymbolsVariableTop, 1, pErr);
-#endif
-
-#endif //!defined(STATIC_ICU)
     }
 
     ucol_setAttribute(pClonedCollator, UCOL_STRENGTH, strength, pErr);
@@ -425,32 +399,22 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
         ucol_setAttribute(pClonedCollator, UCOL_CASE_LEVEL, UCOL_ON, pErr);
     }
 
+    if (isNumericOrdering)
+    {
+        ucol_setAttribute(pClonedCollator, UCOL_NUMERIC_COLLATION, UCOL_ON, pErr);
+    }
+
     return pClonedCollator;
 }
 
-// Returns TRUE if all the collation elements in str are completely ignorable
+// Returns TRUE if str is completely ignorable by the collator.
 static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lpStr, int32_t length)
 {
-    int result = true;
-    UErrorCode err = U_ZERO_ERROR;
-    UCollationElements* pCollElem = ucol_openElements(pColl, lpStr, length, &err);
-
-    if (U_SUCCESS(err))
-    {
-        int32_t curCollElem = UCOL_NULLORDER;
-        while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
-        {
-            if (curCollElem != UCOL_IGNORABLE)
-            {
-                result = false;
-                break;
-            }
-        }
-
-        ucol_closeElements(pCollElem);
-    }
-
-    return U_SUCCESS(err) ? result : false;
+    // Collation element iterators expose raw elements and do not apply shifted
+    // alternate handling. Compare against an empty string so all collator
+    // options, including IgnoreSymbols, are honored.
+    UChar emptyString = 0;
+    return ucol_strcoll(pColl, lpStr, length, &emptyString, 0) == UCOL_EQUAL;
 }
 
 static void CreateSortHandle(SortHandle** ppSortHandle)

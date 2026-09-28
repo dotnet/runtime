@@ -6,7 +6,6 @@
 
 #include "comtypes.h"
 #include "memory.h"
-#include "../guid.h"
 
 #ifdef __cplusplus
     extern "C"
@@ -24,24 +23,7 @@
     #define W(str)  u ## str
 #endif
 
-//
-// GUIDs
-//
-
 #ifdef __cplusplus
-    #ifdef MINIPAL_COM_WINHDRS
-    inline bool operator==(REFGUID a, REFGUID b)
-    {
-        minipal_guid_t const& ga = reinterpret_cast<minipal_guid_t const&>(a);
-        minipal_guid_t const& gb = reinterpret_cast<minipal_guid_t const&>(b);
-        return ga == gb;
-    }
-
-    inline bool operator!=(REFGUID a, REFGUID b)
-    {
-        return !(a == b);
-    }
-    #endif // MINIPAL_COM_WINHDRS
     }
 #endif // __cplusplus
 

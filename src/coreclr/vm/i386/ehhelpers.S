@@ -5,7 +5,7 @@
 #include "unixasmmacros.inc"
 #include "asmconstants.h"
 
-// DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
+// DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, CONTEXT *pContext, UINT_PTR *pFuncletCallerSP);
 // ESP based frame
 NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
@@ -23,7 +23,7 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     //
     // [ebp+ 8] = throwable
     // [ebp+12] = PC to invoke
-    // [ebp+16] = address of EDI register in CONTEXT record // used to restore the non-volatile registers of CrawlFrame
+    // [ebp+16] = address of CONTEXT record; used to restore the non-volatile registers of CrawlFrame
     // [ebp+20] = address of the location where the SP of funclet's caller (i.e. this helper) should be saved.
     //
 
@@ -36,10 +36,10 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     mov     eax, [ebp +  8]
     // Restore non-volatiles registers
     mov     ecx, [ebp + 16]
-    mov     edi, [ecx]
-    mov     esi, [ecx +  4]
-    mov     ebx, [ecx +  8]
-    mov     ebp, [ecx + 24]
+    mov     edi, [ecx + CONTEXT_Edi]
+    mov     esi, [ecx + CONTEXT_Esi]
+    mov     ebx, [ecx + CONTEXT_Ebx]
+    mov     ebp, [ecx + CONTEXT_Ebp]
     // Invoke the funclet
     call    edx
 

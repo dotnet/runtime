@@ -1,7 +1,4 @@
 add_definitions(
-    -DDBI_COMPILE
-    -DFEATURE_METADATA_CUSTOM_DATA_SOURCE
-    -DFEATURE_METADATA_DEBUGGEE_DATA_SOURCE
     -DFEATURE_NO_HOST
     -DFEATURE_METADATA_LOAD_TRUSTED_IMAGES)
 
@@ -24,7 +21,6 @@ set(CORDBDI_SOURCES
   rsclass.cpp
   rsfunction.cpp
   rsmain.cpp
-  rsmda.cpp
   rsregsetcommon.cpp
   rsstackwalk.cpp
   rsthread.cpp
@@ -60,9 +56,6 @@ if(CLR_CMAKE_HOST_WIN32)
     if ((CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64) AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
         convert_to_absolute_path(CORDBDI_SOURCES_ASM_FILE ${CORDBDI_SOURCES_ASM_FILE})
         preprocess_files(CORDBDI_SOURCES_ASM_FILE ${CORDBDI_SOURCES_ASM_FILE})
-        if (CMAKE_GENERATOR MATCHES "Visual Studio")
-            compile_asm(TARGET cordbdi ASM_FILES ${CORDBDI_SOURCES_ASM_FILE} OUTPUT_OBJECTS CORDBDI_SOURCES_ASM_FILE)
-        endif()
     endif()
 elseif(CLR_CMAKE_HOST_UNIX)
 
@@ -82,5 +75,14 @@ endif (CLR_CMAKE_TARGET_WIN32)
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
+set_target_properties(cordbdi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(cordbdi PRIVATE stdafx.h)
 add_dependencies(cordbdi eventing_headers)
+
+if(CLR_CMAKE_HOST_UNIX)
+    add_library_clr(cordbdi_universal STATIC ${CORDBDI_SOURCES})
+    set_target_properties(cordbdi_universal PROPERTIES DBI_COMPONENT TRUE)
+    target_compile_definitions(cordbdi_universal PRIVATE MSCORDBI_LINKS_PRIVATE_PAL)
+    target_precompile_headers(cordbdi_universal PRIVATE stdafx.h)
+    add_dependencies(cordbdi_universal eventing_headers)
+endif(CLR_CMAKE_HOST_UNIX)

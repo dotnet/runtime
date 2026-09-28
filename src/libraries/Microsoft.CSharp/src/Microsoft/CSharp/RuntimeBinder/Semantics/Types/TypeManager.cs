@@ -64,6 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static ArrayType GetArray(CType elementType, int args, bool isSZArray)
         {
             Debug.Assert(args > 0 && args < 32767);
@@ -86,6 +87,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pArray;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateType GetAggregate(AggregateSymbol agg, AggregateType atsOuter, TypeArray typeArgs)
         {
             Debug.Assert(atsOuter == null || atsOuter.OwningAggregate == agg.Parent, "");
@@ -110,6 +112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pAggregate;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateType GetAggregate(AggregateSymbol agg, TypeArray typeArgsAll)
         {
             Debug.Assert(typeArgsAll != null && typeArgsAll.Count == agg.GetTypeVarsAll().Count);
@@ -132,6 +135,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetAggregate(agg, atsOuter, typeArgsInner);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static PointerType GetPointer(CType baseType)
         {
             PointerType pPointer = TypeTable.LookupPointer(baseType);
@@ -147,6 +151,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pPointer;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static NullableType GetNullable(CType pUnderlyingType)
         {
             Debug.Assert(!(pUnderlyingType is NullableType), "Attempt to make nullable of nullable");
@@ -177,8 +182,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateSymbol GetNullable() => GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
         {
             Debug.Assert(typeSrc != null);
@@ -186,6 +193,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, ctx);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateType SubstType(AggregateType typeSrc, TypeArray typeArgsCls)
         {
             Debug.Assert(typeSrc != null);
@@ -194,9 +202,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, ctx);
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth) =>
             SubstType(typeSrc, typeArgsCls, typeArgsMeth, false);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeArray SubstTypeArray(TypeArray taSrc, SubstContext ctx)
         {
             if (taSrc != null && taSrc.Count != 0 && ctx != null && !ctx.IsNop)
@@ -224,13 +234,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return taSrc;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth)
             => taSrc == null || taSrc.Count == 0
             ? taSrc
             : SubstTypeArray(taSrc, new SubstContext(typeArgsCls, typeArgsMeth, false));
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeArray SubstTypeArray(TypeArray taSrc, TypeArray typeArgsCls) => SubstTypeArray(taSrc, typeArgsCls, null);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static AggregateType SubstTypeCore(AggregateType type, SubstContext ctx)
         {
             TypeArray args = type.TypeArgsAll;
@@ -246,6 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static CType SubstTypeCore(CType type, SubstContext pctx)
         {
             CType typeSrc;
@@ -310,6 +324,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool SubstEqualTypes(CType typeDst, CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, bool denormMeth)
         {
             if (typeDst.Equals(typeSrc))
@@ -544,30 +559,40 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateSymbol GetPredefAgg(PredefinedType pt) => PredefinedTypes.GetPredefinedAggregate(pt);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static AggregateType SubstType(AggregateType typeSrc, SubstContext ctx) =>
             ctx == null || ctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, ctx);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CType SubstType(CType typeSrc, SubstContext pctx) =>
             pctx == null || pctx.IsNop ? typeSrc : SubstTypeCore(typeSrc, pctx);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CType SubstType(CType typeSrc, AggregateType atsCls) => SubstType(typeSrc, atsCls, null);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CType SubstType(CType typeSrc, AggregateType atsCls, TypeArray typeArgsMeth) =>
             SubstType(typeSrc, atsCls?.TypeArgsAll, typeArgsMeth);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static CType SubstType(CType typeSrc, CType typeCls, TypeArray typeArgsMeth) =>
             SubstType(typeSrc, (typeCls as AggregateType)?.TypeArgsAll, typeArgsMeth);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls, TypeArray typeArgsMeth) =>
             SubstTypeArray(taSrc, atsCls?.TypeArgsAll, typeArgsMeth);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static TypeArray SubstTypeArray(TypeArray taSrc, AggregateType atsCls) => SubstTypeArray(taSrc, atsCls, null);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls, TypeArray typeArgsMeth) =>
             SubstEqualTypes(typeDst, typeSrc, (typeCls as AggregateType)?.TypeArgsAll, typeArgsMeth, false);
 
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         public static bool SubstEqualTypes(CType typeDst, CType typeSrc, CType typeCls) => SubstEqualTypes(typeDst, typeSrc, typeCls, null);
 
         public static TypeParameterType GetStdMethTypeVar(int iv) => s_stvcMethod.GetTypeVarSym(iv, true);
@@ -584,6 +609,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         internal static CType GetBestAccessibleType(AggregateSymbol context, CType typeSrc)
         {
             // This method implements the "best accessible type" algorithm for determining the type
@@ -661,6 +687,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool TryVarianceAdjustmentToGetAccessibleType(AggregateSymbol context, AggregateType typeSrc, out CType typeDst)
         {
             Debug.Assert(typeSrc != null);
@@ -722,6 +749,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
+        [RequiresDynamicCode(Binder.DynamicCodeWarning)]
         private static bool TryArrayVarianceAdjustmentToGetAccessibleType(AggregateSymbol context, ArrayType typeSrc, out CType typeDst)
         {
             Debug.Assert(typeSrc != null);

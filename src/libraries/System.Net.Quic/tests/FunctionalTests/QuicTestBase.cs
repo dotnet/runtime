@@ -44,6 +44,18 @@ namespace System.Net.Quic.Tests
         public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public static TimeSpan PassingTestTimeout => TimeSpan.FromMilliseconds(PassingTestTimeoutMilliseconds);
 
+        static QuicTestBase()
+        {
+            // Opt in to run with OpenSSL version on MsQuic on older windows where Schannel
+            // version is not supported.
+            //
+            // This has to happen here in order to be called before QuicTestBase.IsSupported
+            if (PlatformDetection.IsWindows10OrLater && !QuicTestCollection.IsWindowsVersionWithSchannelSupport())
+            {
+                AppContext.SetSwitch("System.Net.Quic.AppLocalMsQuic", true);
+            }
+        }
+
         public QuicTestBase(ITestOutputHelper output)
         {
             _output = output;
@@ -199,7 +211,7 @@ namespace System.Net.Quic.Tests
             }
 
             QuicConnection clientConnection = null;
-            ValueTask<QuicConnection> serverTask = listener.AcceptConnectionAsync();
+            Task<QuicConnection> serverTask = listener.AcceptConnectionAsync().AsTask();
             try
             {
                 while (retry > 0)
@@ -237,6 +249,10 @@ namespace System.Net.Quic.Tests
                 if (clientConnection is not null)
                 {
                     await clientConnection.DisposeAsync();
+                }
+                if (serverTask.IsCompleted)
+                {
+                    _output.WriteLine($"Server {(serverTask.IsCompletedSuccessfully ? "succeeded" : "failed with " + serverTask.Exception)}");
                 }
                 throw;
             }

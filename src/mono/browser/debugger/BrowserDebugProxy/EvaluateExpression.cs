@@ -41,7 +41,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
             [GeneratedRegex(@"[^A-Za-z0-9_]", RegexOptions.Singleline)]
-            private static partial Regex RegexForReplaceVarName();
+            private static partial Regex RegexForReplaceVarName { get; }
 
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
@@ -53,7 +53,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             public bool hasMethodCalls;
             public bool hasElementAccesses;
             public bool hasStringExpressionStatement;
-            internal List<VariableDefinition> variableDefinitions = new ();
+            internal List<VariableDefinition> variableDefinitions = new();
 
             public void VisitInternal(SyntaxNode node)
             {
@@ -126,7 +126,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = RegexForReplaceVarName().Replace(ma_str, "_");
+                        string prefix = RegexForReplaceVarName.Replace(ma_str, "_");
                         id_name = $"{prefix}_{suffix}";
 
                         memberAccessToParamName[ma_str] = id_name;
@@ -143,7 +143,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = RegexForReplaceVarName().Replace(iesStr, "_");
+                        string prefix = RegexForReplaceVarName.Replace(iesStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         methodCallToParamName[iesStr] = id_name;
                     }
@@ -159,7 +159,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         // Generate a random suffix
                         string suffix = Guid.NewGuid().ToString().Substring(0, 5);
-                        string prefix = RegexForReplaceVarName().Replace(eaStr, "_");
+                        string prefix = RegexForReplaceVarName.Replace(eaStr, "_");
                         id_name = $"{prefix}_{suffix}";
                         elementAccessToParamName[eaStr] = id_name;
                     }
@@ -227,7 +227,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (localsSet.Contains(idName))
                         return;
                     localsSet.Add(idName);
-                    variableDefinitions.Add(new (idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
+                    variableDefinitions.Add(new(idName, value, ConvertJSToCSharpLocalVariableAssignment(idName, value)));
                 }
             }
         }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Globalization
 {
@@ -10,9 +11,6 @@ namespace System.Globalization
         private unsafe void NlsChangeCase(char* pSource, int pSourceLen, char* pResult, int pResultLen, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
-#if TARGET_BROWSER
-            Debug.Assert(!GlobalizationMode.Hybrid);
-#endif
             Debug.Assert(GlobalizationMode.UseNls);
             Debug.Assert(pSource != null);
             Debug.Assert(pResult != null);

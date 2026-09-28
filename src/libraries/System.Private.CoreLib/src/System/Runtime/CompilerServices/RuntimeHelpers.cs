@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
                 if (length == 0)
                 {
-                    return Array.Empty<T>();
+                    return [];
                 }
 
                 dest = new T[length];
@@ -150,8 +150,16 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="ArgumentException"><paramref name="fldHandle"/> does not refer to a field which is an Rva, is misaligned, or T is of an invalid type.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code. T must be one of byte, sbyte, bool, char, short, ushort, int, uint, long, ulong, float, or double.</remarks>
         [Intrinsic]
-        public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+        public static ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle)
+#if NATIVEAOT
+            // We only support this intrinsic when it occurs within a well-defined IL sequence.
+            // If a call to this method occurs within the recognized sequence, codegen must expand the IL sequence completely.
+            // For any other purpose, the API is currently unsupported.
+            // We shortcut this here instead of in `GetSpanDataFrom` to avoid `typeof(T)` below marking T target of reflection.
+            => throw new PlatformNotSupportedException();
+#else
             => new ReadOnlySpan<T>(ref Unsafe.As<byte, T>(ref GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length)), length);
+#endif
 
 
         // The following intrinsics return true if input is a compile-time constant
@@ -170,8 +178,48 @@ namespace System.Runtime.CompilerServices
         internal static bool IsKnownConstant<T>(T t) where T : struct => false;
 #pragma warning restore IDE0060
 
+        // Returns true if the method being compiled is a runtime-async method.
+        // This is folded to a compile-time constant by the JIT and the interpreter.
+        [Intrinsic]
+        internal static bool IsRuntimeAsync() => false;
+
         /// <returns>true if the given type is a reference type or a value type that contains references or by-refs; otherwise, false.</returns>
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>() where T: allows ref struct => IsReferenceOrContainsReferences<T>();
+        public static bool IsReferenceOrContainsReferences<T>() where T : allows ref struct => IsReferenceOrContainsReferences<T>();
+
+        [Intrinsic]
+        internal static void WriteBarrier(ref object? dst, object? obj) => dst = obj;
+
+        [Intrinsic]
+        internal static unsafe void SetNextCallGenericContext(void* value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [Intrinsic]
+        internal static void SetNextCallAsyncContinuation(object value) => throw new UnreachableException(); // Unconditionally expanded intrinsic
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static unsafe bool AreTypesEquivalent(object a, object b)
+        {
+            Debug.Assert(a is not null);
+            Debug.Assert(b is not null);
+
+#if FEATURE_TYPEEQUIVALENCE
+            MethodTable* pMTa = GetMethodTable(a);
+            MethodTable* pMTb = GetMethodTable(b);
+
+            if (pMTa == pMTb)
+                return true;
+
+            bool ret = pMTa->HasTypeEquivalence && pMTb->HasTypeEquivalence &&
+                       // only use QCall to check the type equivalence scenario
+                       AreTypesEquivalent(pMTa, pMTb);
+
+            GC.KeepAlive(a);
+            GC.KeepAlive(b);
+
+            return ret;
+#else
+            return a.GetType() == b.GetType();
+#endif // FEATURE_TYPEEQUIVALENCE
+        }
     }
 }

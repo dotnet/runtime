@@ -259,7 +259,7 @@ public:
                         newTokenType = mdtString;
                         LPCWSTR wszUserString;
                         DWORD cchString;
-                        IfFailThrow(pMDImport->GetUserString(inputToken, &cchString, NULL, &wszUserString));
+                        IfFailThrow(pMDImport->GetUserString(inputToken, &cchString, &wszUserString));
                         blob.AppendData(cchString);
                         blob.AppendBlob((void * const)wszUserString, sizeof(WCHAR) * cchString);
                         // TODO: consider encoding via wtf-8, or possibly utf-8

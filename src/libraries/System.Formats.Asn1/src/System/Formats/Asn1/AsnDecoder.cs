@@ -18,26 +18,26 @@ namespace System.Formats.Asn1
         internal const int EndOfContentsEncodedLength = 2;
 
         /// <summary>
-        ///   Attempts locate the contents range for the encoded value at the beginning of the
+        ///   Attempts to locate the contents range for the encoded value at the beginning of the
         ///   <paramref name="source"/> buffer using the specified encoding rules.
         /// </summary>
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="tag">
-        ///   When this method returns, the tag identifying the content.
+        ///   When this method returns, contains the tag identifying the content.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="contentOffset">
-        ///   When this method returns, the offset of the content payload relative to the start of
+        ///   When this method returns, contains the offset of the content payload relative to the start of
         ///   <paramref name="source"/>.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="contentLength">
-        ///   When this method returns, the number of bytes in the content payload (which may be 0).
+        ///   When this method returns, contains the number of bytes in the content payload (which may be 0).
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="bytesConsumed">
-        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   When this method returns, contains the total number of bytes for the encoded value.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
@@ -105,16 +105,16 @@ namespace System.Formats.Asn1
         /// <param name="source">The buffer containing encoded data.</param>
         /// <param name="ruleSet">The encoding constraints to use when interpreting the data.</param>
         /// <param name="contentOffset">
-        ///   When this method returns, the offset of the content payload relative to the start of
+        ///   When this method returns, contains the offset of the content payload relative to the start of
         ///   <paramref name="source"/>.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="contentLength">
-        ///   When this method returns, the number of bytes in the content payload (which may be 0).
+        ///   When this method returns, contains the number of bytes in the content payload (which may be 0).
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <param name="bytesConsumed">
-        ///   When this method returns, the total number of bytes for the encoded value.
+        ///   When this method returns, contains the total number of bytes for the encoded value.
         ///   This parameter is treated as uninitialized.
         /// </param>
         /// <returns>
@@ -561,7 +561,7 @@ namespace System.Formats.Asn1
 
         /// <summary>
         /// Get the number of bytes between the start of <paramref name="source" /> and
-        /// the End-of-Contents marker
+        /// the End-of-Contents marker.
         /// </summary>
         private static int SeekEndOfContents(ReadOnlySpan<byte> source, AsnEncodingRules ruleSet)
         {
@@ -746,7 +746,7 @@ namespace System.Formats.Asn1
     }
 
     /// <summary>
-    ///   A stateful, forward-only reader for BER-, CER-, or DER-encoded ASN.1 data.
+    ///   Represents a stateful, forward-only reader for BER-encoded, CER-encoded, or DER-encoded ASN.1 data.
     /// </summary>
     public partial class AsnReader
     {
@@ -764,7 +764,7 @@ namespace System.Formats.Asn1
         public AsnEncodingRules RuleSet { get; }
 
         /// <summary>
-        ///   Gets an indication of whether the reader has remaining data available to process.
+        ///   Gets a value that indicates whether the reader has remaining data available to process.
         /// </summary>
         /// <value>
         ///   <see langword="true"/> if there is more data available for the reader to process;
@@ -799,7 +799,7 @@ namespace System.Formats.Asn1
 
         /// <summary>
         ///   Throws a standardized <see cref="AsnContentException"/> if the reader has remaining
-        ///   data, performs no function if <see cref="HasData"/> returns <see langword="false"/>.
+        ///   data, or performs no function if <see cref="HasData"/> returns <see langword="false"/>.
         /// </summary>
         /// <remarks>
         ///   This method provides a standardized target and standardized exception for reading a
@@ -814,13 +814,13 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Read the encoded tag at the next data position, without advancing the reader.
+        ///   Reads the encoded tag at the next data position, without advancing the reader.
         /// </summary>
         /// <returns>
         ///   The decoded tag value.
         /// </returns>
         /// <exception cref="AsnContentException">
-        ///   a tag could not be decoded at the reader's current position.
+        ///   A tag could not be decoded at the reader's current position.
         /// </exception>
         public Asn1Tag PeekTag()
         {
@@ -828,8 +828,8 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value without
-        ///   advancing the reader. For indefinite length encodings this includes the
+        ///   Gets a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value without
+        ///   advancing the reader. For indefinite length encodings, this includes the
         ///   End of Contents marker.
         /// </summary>
         /// <returns>
@@ -848,7 +848,7 @@ namespace System.Formats.Asn1
         }
 
         /// <summary>
-        ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the content octets (bytes) of the
+        ///   Gets a <see cref="ReadOnlyMemory{T}"/> view of the content octets (bytes) of the
         ///   next encoded value without advancing the reader.
         /// </summary>
         /// <returns>
@@ -873,7 +873,7 @@ namespace System.Formats.Asn1
 
         /// <summary>
         ///   Get a <see cref="ReadOnlyMemory{T}"/> view of the next encoded value,
-        ///   and advance the reader past it. For an indefinite length encoding this includes
+        ///   and advance the reader past it. For an indefinite length encoding, this includes
         ///   the End of Contents marker.
         /// </summary>
         /// <returns>
@@ -899,6 +899,148 @@ namespace System.Formats.Asn1
         private AsnReader CloneAtSlice(int start, int length)
         {
             return new AsnReader(_data.Slice(start, length), RuleSet, _options);
+        }
+    }
+
+    /// <summary>
+    ///   Represents a stateful, forward-only reader for BER-encoded, CER-encoded, or DER-encoded ASN.1 data.
+    /// </summary>
+    public ref partial struct ValueAsnReader
+    {
+        internal const int MaxCERSegmentSize = AsnDecoder.MaxCERSegmentSize;
+
+        private ReadOnlySpan<byte> _data;
+        private readonly AsnReaderOptions _options;
+
+        /// <summary>
+        ///   Gets the encoding rules in use by this reader.
+        /// </summary>
+        /// <value>
+        ///   The encoding rules in use by this reader.
+        /// </value>
+        public readonly AsnEncodingRules RuleSet { get; }
+
+        /// <summary>
+        ///   Gets a value that indicates whether the reader has remaining data available to process.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true"/> if there is more data available for the reader to process;
+        ///   otherwise, <see langword="false"/>.
+        /// </value>
+        public readonly bool HasData => !_data.IsEmpty;
+
+        /// <summary>
+        ///   Construct a <see cref="ValueAsnReader"/> over <paramref name="data"/> with a given ruleset.
+        /// </summary>
+        /// <param name="data">The data to read.</param>
+        /// <param name="ruleSet">The encoding constraints for the reader.</param>
+        /// <param name="options">Additional options for the reader.</param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="ruleSet"/> is not defined.
+        /// </exception>
+        /// <remarks>
+        ///   This constructor does not evaluate <paramref name="data"/> for correctness.
+        ///   Any correctness checks are done as part of member methods.
+        ///
+        ///   This constructor does not copy <paramref name="data"/>. The caller is responsible for
+        ///   ensuring that the values do not change until the reader is finished.
+        /// </remarks>
+        public ValueAsnReader(ReadOnlySpan<byte> data, AsnEncodingRules ruleSet, AsnReaderOptions options = default)
+        {
+            AsnDecoder.CheckEncodingRules(ruleSet);
+
+            _data = data;
+            RuleSet = ruleSet;
+            _options = options;
+        }
+
+        /// <summary>
+        ///   Throws a standardized <see cref="AsnContentException"/> if the reader has remaining
+        ///   data, or performs no function if <see cref="HasData"/> returns <see langword="false"/>.
+        /// </summary>
+        /// <remarks>
+        ///   This method provides a standardized target and standardized exception for reading a
+        ///   "closed" structure, such as the nested content for an explicitly tagged value.
+        /// </remarks>
+        public readonly void ThrowIfNotEmpty()
+        {
+            if (HasData)
+            {
+                throw new AsnContentException(SR.ContentException_TooMuchData);
+            }
+        }
+
+        /// <summary>
+        ///   Reads the encoded tag at the next data position, without advancing the reader.
+        /// </summary>
+        /// <returns>
+        ///   The decoded tag value.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   A tag could not be decoded at the reader's current position.
+        /// </exception>
+        public readonly Asn1Tag PeekTag()
+        {
+            return Asn1Tag.Decode(_data, out _);
+        }
+
+        /// <summary>
+        ///   Gets a <see cref="ReadOnlySpan{T}"/> view of the next encoded value without
+        ///   advancing the reader. For indefinite length encodings, this includes the
+        ///   End of Contents marker.
+        /// </summary>
+        /// <returns>
+        ///   The bytes of the next encoded value.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The reader is positioned at a point where the tag or length is invalid
+        ///   under the current encoding rules.
+        /// </exception>
+        /// <seealso cref="PeekContentBytes"/>
+        public readonly ReadOnlySpan<byte> PeekEncodedValue()
+        {
+            AsnDecoder.ReadEncodedValue(_data, RuleSet, out _, out _, out int bytesConsumed);
+            return _data.Slice(0, bytesConsumed);
+        }
+
+        /// <summary>
+        ///   Gets a <see cref="ReadOnlySpan{T}"/> view of the content octets (bytes) of the
+        ///   next encoded value without advancing the reader.
+        /// </summary>
+        /// <returns>
+        ///   The bytes of the contents octets of the next encoded value.
+        /// </returns>
+        /// <exception cref="AsnContentException">
+        ///   The reader is positioned at a point where the tag or length is invalid
+        ///   under the current encoding rules.
+        /// </exception>
+        /// <seealso cref="PeekEncodedValue"/>
+        public readonly ReadOnlySpan<byte> PeekContentBytes()
+        {
+            AsnDecoder.ReadEncodedValue(
+                _data,
+                RuleSet,
+                out int contentOffset,
+                out int contentLength,
+                out _);
+
+            return _data.Slice(contentOffset, contentLength);
+        }
+
+        /// <summary>
+        ///   Get a <see cref="ReadOnlySpan{T}"/> view of the next encoded value,
+        ///   and advance the reader past it. For an indefinite length encoding, this includes
+        ///   the End of Contents marker.
+        /// </summary>
+        /// <returns>
+        ///   A <see cref="ReadOnlySpan{T}"/> view of the next encoded value.
+        /// </returns>
+        /// <seealso cref="PeekEncodedValue"/>
+        public ReadOnlySpan<byte> ReadEncodedValue()
+        {
+            ReadOnlySpan<byte> encodedValue = PeekEncodedValue();
+            _data = _data.Slice(encodedValue.Length);
+            return encodedValue;
         }
     }
 }

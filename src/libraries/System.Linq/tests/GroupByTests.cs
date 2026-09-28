@@ -27,7 +27,7 @@ namespace System.Linq.Tests
             Assert.NotNull(keys);
 
             Dictionary<TKey, List<TElement>> dict = new Dictionary<TKey, List<TElement>>(keyComparer);
-            List<TElement> groupingForNullKeys = new List<TElement>();
+            List<TElement> groupingForNullKeys = [];
             using (IEnumerator<TElement> elEn = elements.GetEnumerator())
             using (IEnumerator<TKey> keyEn = keys.GetEnumerator())
             {
@@ -45,7 +45,7 @@ namespace System.Linq.Tests
                     {
                         List<TElement> list;
                         if (!dict.TryGetValue(key, out list))
-                            dict.Add(key, list = new List<TElement>());
+                            dict.Add(key, list = []);
                         list.Add(elEn.Current);
                     }
                 }
@@ -195,8 +195,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleNullKeySingleNullElement()
         {
-            string[] key = { null };
-            string[] element = { null };
+            string[] key = [null];
+            string[] element = [null];
 
             AssertGroupingCorrect(key, element, new string[] { null }.GroupBy(e => e, e => e, EqualityComparer<string>.Default), EqualityComparer<string>.Default);
         }
@@ -204,18 +204,18 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySource()
         {
-            string[] key = { };
-            int[] element = { };
-            Record[] source = { };
+            string[] key = [];
+            int[] element = [];
+            Record[] source = [];
             Assert.Empty(new Record[] { }.GroupBy(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
         }
 
         [Fact]
         public void EmptySourceRunOnce()
         {
-            string[] key = { };
-            int[] element = { };
-            Record[] source = { };
+            string[] key = [];
+            int[] element = [];
+            Record[] source = [];
             Assert.Empty(new Record[] { }.RunOnce().GroupBy(e => e.Name, e => e.Score, new AnagramEqualityComparer()));
         }
 
@@ -251,15 +251,15 @@ namespace System.Linq.Tests
         [Fact]
         public void KeySelectorNull()
         {
-            Record[] source = new[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.GroupBy(null, e => e.Score, new AnagramEqualityComparer()));
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.GroupBy(null, new AnagramEqualityComparer()));
@@ -268,15 +268,15 @@ namespace System.Linq.Tests
         [Fact]
         public void KeySelectorNullResultSelectorUsed()
         {
-            Record[] source = new[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.GroupBy(null, e => e.Score, (k, es) => es.Sum(), new AnagramEqualityComparer()));
         }
@@ -284,15 +284,15 @@ namespace System.Linq.Tests
         [Fact]
         public void KeySelectorNullResultSelectorUsedNoComparer()
         {
-            Record[] source = new[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Func<Record, string> keySelector = null;
 
@@ -302,8 +302,8 @@ namespace System.Linq.Tests
         [Fact]
         public void KeySelectorNullResultSelectorUsedNoElementSelector()
         {
-            string[] key = { "Tim", "Tim", "Tim", "Tim" };
-            int[] element = { 60, -10, 40, 100 };
+            string[] key = ["Tim", "Tim", "Tim", "Tim"];
+            int[] element = [60, -10, 40, 100];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
 
             AssertExtensions.Throws<ArgumentNullException>("keySelector", () => source.GroupBy(null, (k, es) => es.Sum(e => e.Score), new AnagramEqualityComparer()));
@@ -312,15 +312,15 @@ namespace System.Linq.Tests
         [Fact]
         public void ElementSelectorNull()
         {
-            Record[] source = new[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Func<Record, int> elementSelector = null;
 
@@ -330,15 +330,15 @@ namespace System.Linq.Tests
         [Fact]
         public void ElementSelectorNullResultSelectorUsedNoComparer()
         {
-            Record[] source = new[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Func<Record, int> elementSelector = null;
 
@@ -348,14 +348,15 @@ namespace System.Linq.Tests
         [Fact]
         public void ResultSelectorNull()
         {
-            Record[] source = {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Func<string, IEnumerable<int>, long> resultSelector = null;
 
@@ -365,14 +366,15 @@ namespace System.Linq.Tests
         [Fact]
         public void ResultSelectorNullNoComparer()
         {
-            Record[] source = {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Func<string, IEnumerable<int>, long> resultSelector = null;
 
@@ -382,14 +384,15 @@ namespace System.Linq.Tests
         [Fact]
         public void ResultSelectorNullNoElementSelector()
         {
-            Record[] source = {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Func<string, IEnumerable<Record>, long> resultSelector = null;
 
@@ -399,8 +402,8 @@ namespace System.Linq.Tests
         [Fact]
         public void ResultSelectorNullNoElementSelectorCustomComparer()
         {
-            string[] key = { "Tim", "Tim", "Tim", "Tim" };
-            int[] element = { 60, -10, 40, 100 };
+            string[] key = ["Tim", "Tim", "Tim", "Tim"];
+            int[] element = [60, -10, 40, 100];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
 
             Func<string, IEnumerable<Record>, long> resultSelector = null;
@@ -411,26 +414,27 @@ namespace System.Linq.Tests
         [Fact]
         public void EmptySourceWithResultSelector()
         {
-            string[] key = { };
-            int[] element = { };
-            Record[] source = { };
+            string[] key = [];
+            int[] element = [];
+            Record[] source = [];
             Assert.Empty(new Record[] { }.GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), new AnagramEqualityComparer()));
         }
 
         [Fact]
         public void DuplicateKeysCustomComparer()
         {
-            string[] key = { "Tim", "Tim", "Chris", "Chris", "Robert", "Prakash" };
-            int[] element = { 55, 25, 49, 24, -100, 9 };
-            Record[] source = {
+            string[] key = ["Tim", "Tim", "Chris", "Chris", "Robert", "Prakash"];
+            int[] element = [55, 25, 49, 24, -100, 9];
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "miT", Score = 25 }
-            };
-            long[] expected = { 240, 365, -600, 63 };
+            ];
+            long[] expected = [240, 365, -600, 63];
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), new AnagramEqualityComparer()));
         }
@@ -438,17 +442,18 @@ namespace System.Linq.Tests
         [Fact]
         public void DuplicateKeysCustomComparerRunOnce()
         {
-            string[] key = { "Tim", "Tim", "Chris", "Chris", "Robert", "Prakash" };
-            int[] element = { 55, 25, 49, 24, -100, 9 };
-            Record[] source = {
+            string[] key = ["Tim", "Tim", "Chris", "Chris", "Robert", "Prakash"];
+            int[] element = [55, 25, 49, 24, -100, 9];
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "miT", Score = 25 }
-            };
-            long[] expected = { 240, 365, -600, 63 };
+            ];
+            long[] expected = [240, 365, -600, 63];
 
             Assert.Equal(expected, source.RunOnce().GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), new AnagramEqualityComparer()));
         }
@@ -456,17 +461,18 @@ namespace System.Linq.Tests
         [Fact]
         public void NullComparer()
         {
-            string[] key = { "Tim", null, null, "Robert", "Chris", "miT" };
-            int[] element = { 55, 49, 9, -100, 24, 25 };
-            Record[] source = {
+            string[] key = ["Tim", null, null, "Robert", "Chris", "miT"];
+            int[] element = [55, 49, 9, -100, 24, 25];
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = null, Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = null, Score = 9 },
                 new Record { Name = "miT", Score = 25 }
-            };
-            long[] expected = { 165, 58, -600, 120, 75 };
+            ];
+            long[] expected = [165, 58, -600, 120, 75];
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), null));
         }
@@ -474,17 +480,18 @@ namespace System.Linq.Tests
         [Fact]
         public void NullComparerRunOnce()
         {
-            string[] key = { "Tim", null, null, "Robert", "Chris", "miT" };
-            int[] element = { 55, 49, 9, -100, 24, 25 };
-            Record[] source = {
+            string[] key = ["Tim", null, null, "Robert", "Chris", "miT"];
+            int[] element = [55, 49, 9, -100, 24, 25];
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = null, Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = null, Score = 9 },
                 new Record { Name = "miT", Score = 25 }
-            };
-            long[] expected = { 165, 58, -600, 120, 75 };
+            ];
+            long[] expected = [165, 58, -600, 120, 75];
 
             Assert.Equal(expected, source.RunOnce().GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum(), null));
         }
@@ -492,8 +499,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleNonNullElement()
         {
-            string[] key = { "Tim" };
-            Record[] source = { new Record { Name = key[0], Score = 60 } };
+            string[] key = ["Tim"];
+            Record[] source = [new Record { Name = key[0], Score = 60 }];
 
             AssertGroupingCorrect(key, source, source.GroupBy(e => e.Name));
         }
@@ -501,8 +508,8 @@ namespace System.Linq.Tests
         [Fact]
         public void AllElementsSameKey()
         {
-            string[] key = { "Tim", "Tim", "Tim", "Tim" };
-            int[] scores = { 60, -10, 40, 100 };
+            string[] key = ["Tim", "Tim", "Tim", "Tim"];
+            int[] scores = [60, -10, 40, 100];
             var source = key.Zip(scores, (k, e) => new Record { Name = k, Score = e });
 
             AssertGroupingCorrect(key, source, source.GroupBy(e => e.Name, new AnagramEqualityComparer()), new AnagramEqualityComparer());
@@ -511,8 +518,8 @@ namespace System.Linq.Tests
         [Fact]
         public void AllElementsDifferentKeyElementSelectorUsed()
         {
-            string[] key = { "Tim", "Chris", "Robert", "Prakash" };
-            int[] element = { 60, -10, 40, 100 };
+            string[] key = ["Tim", "Chris", "Robert", "Prakash"];
+            int[] element = [60, -10, 40, 100];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
 
             AssertGroupingCorrect(key, element, source.GroupBy(e => e.Name, e => e.Score));
@@ -521,8 +528,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SomeDuplicateKeys()
         {
-            string[] key = { "Tim", "Tim", "Chris", "Chris", "Robert", "Prakash" };
-            int[] element = { 55, 25, 49, 24, -100, 9 };
+            string[] key = ["Tim", "Tim", "Chris", "Chris", "Robert", "Prakash"];
+            int[] element = [55, 25, 49, 24, -100, 9];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
 
             AssertGroupingCorrect(key, element, source.GroupBy(e => e.Name, e => e.Score));
@@ -531,8 +538,8 @@ namespace System.Linq.Tests
         [Fact]
         public void SomeDuplicateKeysIncludingNulls()
         {
-            string[] key = { null, null, "Chris", "Chris", "Prakash", "Prakash" };
-            int[] element = { 55, 25, 49, 24, 9, 9 };
+            string[] key = [null, null, "Chris", "Chris", "Prakash", "Prakash"];
+            int[] element = [55, 25, 49, 24, 9, 9];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
 
             AssertGroupingCorrect(key, element, source.GroupBy(e => e.Name, e => e.Score));
@@ -541,9 +548,9 @@ namespace System.Linq.Tests
         [Fact]
         public void SingleElementResultSelectorUsed()
         {
-            string[] key = { "Tim" };
-            int[] element = { 60 };
-            long[] expected = { 180 };
+            string[] key = ["Tim"];
+            int[] element = [60];
+            long[] expected = [180];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, (k, es) => (long)(k ?? " ").Length * es.Sum(e => e.Score)));
@@ -568,10 +575,10 @@ namespace System.Linq.Tests
         [Fact]
         public void AllElementsDifferentKeyElementSelectorUsedResultSelector()
         {
-            string[] key = { "Tim", "Chris", "Robert", "Prakash" };
-            int[] element = { 60, -10, 40, 100 };
+            string[] key = ["Tim", "Chris", "Robert", "Prakash"];
+            int[] element = [60, -10, 40, 100];
             var source = key.Zip(element, (k, e) => new Record { Name = k, Score = e });
-            long[] expected = { 180, -50, 240, 700 };
+            long[] expected = [180, -50, 240, 700];
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, e => e.Score, (k, es) => (long)(k ?? " ").Length * es.Sum()));
         }
@@ -579,14 +586,15 @@ namespace System.Linq.Tests
         [Fact]
         public void AllElementsSameKeyResultSelectorUsed()
         {
-            int[] element = { 60, -10, 40, 100 };
-            long[] expected = { 570 };
-            Record[] source = {
+            int[] element = [60, -10, 40, 100];
+            long[] expected = [570];
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = element[0] },
                 new Record { Name = "Tim", Score = element[1] },
                 new Record { Name = "miT", Score = element[2] },
                 new Record { Name = "miT", Score = element[3] }
-            };
+            ];
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, (k, es) => k.Length * es.Sum(e => (long)e.Score), new AnagramEqualityComparer()));
         }
@@ -594,15 +602,16 @@ namespace System.Linq.Tests
         [Fact]
         public void NullComparerResultSelectorUsed()
         {
-            int[] element = { 60, -10, 40, 100 };
-            Record[] source = {
+            int[] element = [60, -10, 40, 100];
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = element[0] },
                 new Record { Name = "Tim", Score = element[1] },
                 new Record { Name = "miT", Score = element[2] },
-                new Record { Name = "miT", Score = element[3] },
-            };
+                new Record { Name = "miT", Score = element[3] }
+            ];
 
-            long[] expected = { 150, 420 };
+            long[] expected = [150, 420];
 
             Assert.Equal(expected, source.GroupBy(e => e.Name, (k, es) => k.Length * es.Sum(e => (long)e.Score), null));
         }
@@ -610,15 +619,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingToArray()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record{ Name = "Tim", Score = 55 },
                 new Record{ Name = "Chris", Score = 49 },
                 new Record{ Name = "Robert", Score = -100 },
                 new Record{ Name = "Chris", Score = 24 },
                 new Record{ Name = "Prakash", Score = 9 },
                 new Record{ Name = "Tim", Score = 25 }
-            };
+            ];
 
             IGrouping<string, Record>[] groupedArray = source.GroupBy(r => r.Name).ToArray();
             Assert.Equal(4, groupedArray.Length);
@@ -628,15 +637,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithElementSelectorToArray()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record{ Name = "Tim", Score = 55 },
                 new Record{ Name = "Chris", Score = 49 },
                 new Record{ Name = "Robert", Score = -100 },
                 new Record{ Name = "Chris", Score = 24 },
                 new Record{ Name = "Prakash", Score = 9 },
                 new Record{ Name = "Tim", Score = 25 }
-            };
+            ];
 
             IGrouping<string, int>[] groupedArray = source.GroupBy(r => r.Name, e => e.Score).ToArray();
             Assert.Equal(4, groupedArray.Length);
@@ -646,15 +655,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithResultsToArray()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record{ Name = "Tim", Score = 55 },
                 new Record{ Name = "Chris", Score = 49 },
                 new Record{ Name = "Robert", Score = -100 },
                 new Record{ Name = "Chris", Score = 24 },
                 new Record{ Name = "Prakash", Score = 9 },
                 new Record{ Name = "Tim", Score = 25 }
-            };
+            ];
 
             IEnumerable<Record>[] groupedArray = source.GroupBy(r => r.Name, (r, e) => e).ToArray();
             Assert.Equal(4, groupedArray.Length);
@@ -664,15 +673,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithElementSelectorAndResultsToArray()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record{ Name = "Tim", Score = 55 },
                 new Record{ Name = "Chris", Score = 49 },
                 new Record{ Name = "Robert", Score = -100 },
                 new Record{ Name = "Chris", Score = 24 },
                 new Record{ Name = "Prakash", Score = 9 },
                 new Record{ Name = "Tim", Score = 25 }
-            };
+            ];
 
             IEnumerable<Record>[] groupedArray = source.GroupBy(r => r.Name, e => e, (r, e) => e).ToArray();
             Assert.Equal(4, groupedArray.Length);
@@ -682,15 +691,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingToList()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             List<IGrouping<string, Record>> groupedList = source.GroupBy(r => r.Name).ToList();
             Assert.Equal(4, groupedList.Count);
@@ -700,15 +709,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithElementSelectorToList()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             List<IGrouping<string, int>> groupedList = source.GroupBy(r => r.Name, e => e.Score).ToList();
             Assert.Equal(4, groupedList.Count);
@@ -718,15 +727,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithResultsToList()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             List<IEnumerable<Record>> groupedList = source.GroupBy(r => r.Name, (r, e) => e).ToList();
             Assert.Equal(4, groupedList.Count);
@@ -736,15 +745,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithElementSelectorAndResultsToList()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             List<IEnumerable<Record>> groupedList = source.GroupBy(r => r.Name, e => e, (r, e) => e).ToList();
             Assert.Equal(4, groupedList.Count);
@@ -754,15 +763,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingCount()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Assert.Equal(4, source.GroupBy(r => r.Name).Count());
         }
@@ -770,15 +779,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithElementSelectorCount()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Assert.Equal(4, source.GroupBy(r => r.Name, e => e.Score).Count());
         }
@@ -786,15 +795,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithResultsCount()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Assert.Equal(4, source.GroupBy(r => r.Name, (r, e) => e).Count());
         }
@@ -802,15 +811,15 @@ namespace System.Linq.Tests
         [Fact]
         public void GroupingWithElementSelectorAndResultsCount()
         {
-            Record[] source = new Record[]
-            {
+            Record[] source =
+            [
                 new Record { Name = "Tim", Score = 55 },
                 new Record { Name = "Chris", Score = 49 },
                 new Record { Name = "Robert", Score = -100 },
                 new Record { Name = "Chris", Score = 24 },
                 new Record { Name = "Prakash", Score = 9 },
                 new Record { Name = "Tim", Score = 25 }
-            };
+            ];
 
             Assert.Equal(4, source.GroupBy(r => r.Name, e=> e, (r, e) => e).Count());
         }
@@ -856,7 +865,7 @@ namespace System.Linq.Tests
         {
             // Grouping.Key needs to be public (not explicitly implemented) for the sake of WPF.
 
-            object[] objs = { "Foo", 1.0M, "Bar", new { X = "X" }, 2.00M };
+            object[] objs = ["Foo", 1.0M, "Bar", new { X = "X" }, 2.00M];
             object group = objs.GroupBy(x => x.GetType()).First();
 
             Type grouptype = group.GetType();

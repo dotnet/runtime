@@ -1,153 +1,118 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using SourceGenerators;
 
 namespace Microsoft.Interop
 {
-    public readonly struct ContainingSyntax(SyntaxTokenList modifiers, SyntaxKind typeKind, SyntaxToken identifier, TypeParameterListSyntax? typeParameters) : IEquatable<ContainingSyntax>
+    public sealed record ContainingSyntaxContext(ImmutableArray<DeclarationHeader> ContainingSyntax, string? ContainingNamespace)
     {
-        public SyntaxTokenList Modifiers { get; init; } = modifiers.StripTriviaFromTokens();
-
-        public SyntaxToken Identifier { get; init; } = identifier.WithoutTrivia();
-
-        public SyntaxKind TypeKind { get; init; } = typeKind;
-
-        public TypeParameterListSyntax? TypeParameters { get; init; } = typeParameters;
-
-        public override bool Equals(object obj) => obj is ContainingSyntax other && Equals(other);
-
-        public bool Equals(ContainingSyntax other)
-        {
-            return Modifiers.SequenceEqual(other.Modifiers, SyntaxEquivalentComparer.Instance)
-                && TypeKind == other.TypeKind
-                && Identifier.IsEquivalentTo(other.Identifier)
-                && SyntaxEquivalentComparer.Instance.Equals(TypeParameters, other.TypeParameters);
-        }
-
-        public override int GetHashCode() => throw new UnreachableException();
-    }
-
-    public sealed record ContainingSyntaxContext(ImmutableArray<ContainingSyntax> ContainingSyntax, string? ContainingNamespace)
-    {
-        public ContainingSyntaxContext(MemberDeclarationSyntax memberDeclaration)
-            : this(GetContainingTypes(memberDeclaration), GetContainingNamespace(memberDeclaration))
-        {
-        }
-
-        public ContainingSyntaxContext AddContainingSyntax(ContainingSyntax nestedType)
+        public ContainingSyntaxContext AddContainingSyntax(DeclarationHeader nestedType)
         {
             return this with { ContainingSyntax = ContainingSyntax.Insert(0, nestedType) };
         }
 
-        private static ImmutableArray<ContainingSyntax> GetContainingTypes(MemberDeclarationSyntax memberDeclaration)
+        public bool Equals(ContainingSyntaxContext? other)
         {
-            ImmutableArray<ContainingSyntax>.Builder containingTypeInfoBuilder = ImmutableArray.CreateBuilder<ContainingSyntax>();
-            for (SyntaxNode? parent = memberDeclaration.Parent; parent is TypeDeclarationSyntax typeDeclaration; parent = parent.Parent)
-            {
-                containingTypeInfoBuilder.Add(
-                    new ContainingSyntax(
-                        typeDeclaration.Modifiers,
-                        typeDeclaration.Kind(),
-                        typeDeclaration.Identifier,
-                        typeDeclaration.TypeParameterList));
-            }
-
-            return containingTypeInfoBuilder.ToImmutable();
-        }
-
-        private static string GetContainingNamespace(MemberDeclarationSyntax memberDeclaration)
-        {
-            StringBuilder? containingNamespace = null;
-            for (SyntaxNode? parent = memberDeclaration.FirstAncestorOrSelf<BaseNamespaceDeclarationSyntax>(); parent is BaseNamespaceDeclarationSyntax ns; parent = parent.Parent)
-            {
-                if (containingNamespace is null)
-                {
-                    containingNamespace = new StringBuilder(ns.Name.ToString());
-                }
-                else
-                {
-                    string namespaceName = ns.Name.ToString();
-                    containingNamespace.Insert(0, namespaceName + ".");
-                }
-            }
-
-            return containingNamespace?.ToString();
-        }
-
-        public bool Equals(ContainingSyntaxContext other)
-        {
-            return ContainingSyntax.SequenceEqual(other.ContainingSyntax)
+            return other is not null
+                && ContainingSyntax.SequenceEqual(other.ContainingSyntax)
                 && ContainingNamespace == other.ContainingNamespace;
         }
 
         public override int GetHashCode()
         {
-            int code = ContainingNamespace?.GetHashCode() ?? 0;
-            foreach (ContainingSyntax containingSyntax in ContainingSyntax)
+            int hash = ContainingNamespace?.GetHashCode() ?? 0;
+            foreach (DeclarationHeader containingSyntax in ContainingSyntax)
             {
-                code = HashCode.Combine(code, containingSyntax.Identifier.Value);
+                hash = HashCode.Combine(hash, containingSyntax.GetHashCode());
             }
-            return code;
+            return hash;
         }
 
-        public MemberDeclarationSyntax WrapMemberInContainingSyntaxWithUnsafeModifier(MemberDeclarationSyntax member)
+        /// <summary>Wraps a member in its containing types and namespace.</summary>
+        public string WrapMemberInContainingSyntax(string member)
         {
-            bool addedUnsafe = false;
-            MemberDeclarationSyntax wrappedMember = member;
-            foreach (var containingType in ContainingSyntax)
+            var writer = new IndentedTextWriter();
+            WriteTo(writer, member, static (writer, member) => WriteMember(writer, member), addUnsafe: false);
+            return writer.ToString();
+        }
+
+        /// <summary>Wraps members, adding unsafe to containing types only under the legacy memory safety rules.</summary>
+        public string WrapMembersInContainingSyntaxWithUnsafeModifier(bool useUpdatedMemorySafetyRules, params string[] members)
+        {
+            var writer = new IndentedTextWriter();
+            WriteToWithUnsafeModifier(useUpdatedMemorySafetyRules, writer, members, static (writer, members) =>
             {
-                TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
-                    .WithModifiers(containingType.Modifiers)
-                    .AddMembers(wrappedMember);
-                if (!addedUnsafe)
+                foreach (string member in members)
                 {
-                    type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
+                    WriteMember(writer, member);
                 }
-                if (containingType.TypeParameters is not null)
+            });
+            return writer.ToString();
+        }
+
+        /// <summary>Writes containing declarations with their original modifiers.</summary>
+        public void WriteTo<TState>(IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
+        {
+            WriteTo(writer, writeMembersState, writeMembers, addUnsafe: false);
+        }
+
+        /// <summary>Writes containing declarations, adding unsafe only under the legacy memory safety rules.</summary>
+        public void WriteToWithUnsafeModifier<TState>(bool useUpdatedMemorySafetyRules, IndentedTextWriter writer, TState writeMembersState, Action<IndentedTextWriter, TState> writeMembers)
+        {
+            WriteTo(writer, writeMembersState, writeMembers, addUnsafe: !useUpdatedMemorySafetyRules);
+        }
+
+        private void WriteTo<TState>(IndentedTextWriter writer, TState state, Action<IndentedTextWriter, TState> writeMembers, bool addUnsafe)
+        {
+            if (ContainingNamespace is not null)
+            {
+                writer.WriteLine($"namespace {ContainingNamespace}");
+                writer.WriteLine('{');
+                writer.Indent++;
+            }
+
+            // Containing types are stored innermost-first.
+            for (int i = ContainingSyntax.Length - 1; i >= 0; i--)
+            {
+                DeclarationHeader syntax = ContainingSyntax[i];
+                ImmutableArray<string> modifiers = addUnsafe ? CodeWriterHelpers.AddModifier(syntax.Modifiers, "unsafe") : syntax.Modifiers;
+                if (!modifiers.IsEmpty)
                 {
-                    type = type.AddTypeParameterListParameters(containingType.TypeParameters.Parameters.ToArray());
+                    writer.Write(string.Join(" ", modifiers));
+                    writer.Write(' ');
                 }
-                wrappedMember = type;
+                writer.Write($"{syntax.Keyword} ");
+                writer.Write(syntax.Name);
+                writer.WriteLine();
+                writer.WriteLine('{');
+                writer.Indent++;
+            }
+
+            writeMembers(writer, state);
+
+            for (int i = 0; i < ContainingSyntax.Length; i++)
+            {
+                writer.Indent--;
+                writer.WriteLine('}');
             }
             if (ContainingNamespace is not null)
             {
-                wrappedMember = NamespaceDeclaration(ParseName(ContainingNamespace)).AddMembers(wrappedMember);
+                writer.Indent--;
+                writer.WriteLine('}');
             }
-            return wrappedMember;
         }
 
-        public MemberDeclarationSyntax WrapMembersInContainingSyntaxWithUnsafeModifier(params MemberDeclarationSyntax[] members)
+        private static void WriteMember(IndentedTextWriter writer, string member)
         {
-            bool addedUnsafe = false;
-            MemberDeclarationSyntax? wrappedMember = null;
-            foreach (var containingType in ContainingSyntax)
+            writer.Write(member);
+            if (member.Length != 0 && member[member.Length - 1] is not ('\r' or '\n'))
             {
-                TypeDeclarationSyntax type = TypeDeclaration(containingType.TypeKind, containingType.Identifier)
-                    .WithModifiers(containingType.Modifiers)
-                    .AddMembers(wrappedMember is not null ? new[] { wrappedMember } : members);
-                if (!addedUnsafe)
-                {
-                    type = type.WithModifiers(type.Modifiers.AddToModifiers(SyntaxKind.UnsafeKeyword));
-                }
-                if (containingType.TypeParameters is not null)
-                {
-                    type = type.AddTypeParameterListParameters(containingType.TypeParameters.Parameters.ToArray());
-                }
-                wrappedMember = type;
+                writer.WriteLine();
             }
-            if (ContainingNamespace is not null)
-            {
-                wrappedMember = NamespaceDeclaration(ParseName(ContainingNamespace)).AddMembers(wrappedMember);
-            }
-            return wrappedMember;
         }
     }
 }

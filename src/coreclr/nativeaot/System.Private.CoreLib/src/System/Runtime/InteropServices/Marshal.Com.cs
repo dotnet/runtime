@@ -181,11 +181,9 @@ namespace System.Runtime.InteropServices
                 case BStrWrapper value:
                     *data = ComVariant.Create(value);
                     break;
-#pragma warning disable 0618 // CurrencyWrapper is obsolete
                 case CurrencyWrapper value:
                     *data = ComVariant.Create(value);
                     break;
-#pragma warning restore 0618
                 case UnknownWrapper value:
                     *data = ComVariant.CreateRaw(VarEnum.VT_UNKNOWN, GetIUnknownForObject(value.WrappedObject));
                     break;
@@ -295,7 +293,7 @@ namespace System.Runtime.InteropServices
         [SupportedOSPlatform("windows")]
         public static object GetObjectForIUnknown(IntPtr pUnk)
         {
-            return ComWrappers.ComObjectForInterface(pUnk);
+            return ComWrappers.ComObjectForInterface(pUnk, CreateObjectFlags.TrackerObject | CreateObjectFlags.Unwrap);
         }
 
         [SupportedOSPlatform("windows")]

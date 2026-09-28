@@ -25,9 +25,6 @@
 
 #include "palclr.h"
 
-#undef CreateSemaphore
-#define CreateSemaphore(_secattr, _count, _maxcount, _name) CreateSemaphoreExW((_secattr), (_count), (_maxcount), (_name), 0, MAXIMUM_ALLOWED | SYNCHRONIZE | SEMAPHORE_MODIFY_STATE)
-
 #undef GetFileVersionInfo
 #define GetFileVersionInfo(_filename, _handle, _len, _data) GetFileVersionInfoEx(0, (_filename), (_handle), (_len), (_data))
 #undef GetFileVersionInfoSize
@@ -42,11 +39,11 @@
 #ifdef HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExWrapper
 #define WszCreateFile          CreateFileWrapper
-#define WszGetFileAttributesEx GetFileAttributesExWrapper
+#define fopen_lp               u16_fopen_wrapper
 #else // HOST_WINDOWS
 #define WszLoadLibrary         LoadLibraryExW
 #define WszCreateFile          CreateFileW
-#define WszGetFileAttributesEx GetFileAttributesExW
+#define fopen_lp               u16_fopen_s
 #endif // HOST_WINDOWS
 
 //APIS which have a buffer as an out parameter

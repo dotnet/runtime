@@ -12,21 +12,24 @@ namespace System
 {
     public static partial class Environment
     {
-        public static extern int CurrentManagedThreadId
+        public static int CurrentManagedThreadId
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Threading.ManagedThreadId.Current;
         }
 
         // Terminates this process with the given exit code.
+        /// <safety>QCall that passes the integer exit code to the runtime to terminate the process; it accesses no caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
-        private static partial void _Exit(int exitCode);
+        private static safe partial void _Exit(int exitCode);
 
         [DoesNotReturn]
         public static void Exit(int exitCode) => _Exit(exitCode);
 
-        public static extern int ExitCode
+        /// <safety>Runtime FCall get/set of the process-wide exit code (an int); it accesses no caller-supplied memory.</safety>
+        public static extern safe int ExitCode
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
@@ -83,6 +86,7 @@ namespace System
             FailFast(new StackCrawlMarkHandle(ref mark), message, ObjectHandleOnStack.Create(ref exception), errorMessage);
         }
 
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast", StringMarshalling = StringMarshalling.Utf16)]
         [DoesNotReturn]
         private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
@@ -103,26 +107,88 @@ namespace System
             return mainMethodArgs;
         }
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
-        private static partial int GetProcessorCount();
-
-        // Used by VM
-        internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
-
-        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
-        /// <value>A 32-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static extern int TickCount
+        [UnmanagedCallersOnly]
+        private static unsafe void InitializeCommandLineArgs(char* exePath, int argc, char** argv, string[]* pResult, Exception* pException)
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            try
+            {
+                *pResult = InitializeCommandLineArgs(exePath, argc, argv);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
         }
 
-        /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
-        /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
-        public static extern long TickCount64
+        /// <safety>QCall that returns the available processor count as an int; it accesses no caller-supplied memory.</safety>
+        [ErrorHandler(typeof(QCallExceptionStatusMarshaller), ErrorLocation.HiddenLastParameter)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
+        internal static safe partial int GetProcessorCount();
+
+        [UnmanagedCallersOnly]
+        private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)
         {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
+            try
+            {
+                *pResult = SR.GetResourceString(new string(pKey));
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        [DebuggerHidden]
+        internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool captureException, Exception* pException)
+        {
+            try
+            {
+                if (pArgument is not null)
+                {
+                    string[]? argument = *pArgument;
+
+                    if (pReturnValue is not null)
+                    {
+                        *pReturnValue = ((delegate*<string[]?, int>)entryPoint)(argument);
+                    }
+                    else
+                    {
+                        ((delegate*<string[]?, void>)entryPoint)(argument);
+                    }
+                }
+                else
+                {
+                    if (pReturnValue is not null)
+                    {
+                        *pReturnValue = ((delegate*<int>)entryPoint)();
+                    }
+                    else
+                    {
+                        ((delegate*<void>)entryPoint)();
+                    }
+                }
+            }
+            catch (Exception ex) when (captureException)
+            {
+                *pException = ex;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        [StackTraceHidden]
+        internal static unsafe int ExecuteInDefaultAppDomain(IntPtr entryPoint, char* pArgument, Exception* pException)
+        {
+            try
+            {
+                return ((delegate*<string?, int>)entryPoint)(pArgument is not null ? new string(pArgument) : null);
+            }
+            catch (Exception ex)
+            {
+                *pException = ex;
+                return default;
+            }
         }
     }
 }

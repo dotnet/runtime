@@ -5,12 +5,17 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// A <see cref="ComWrappers"/>-based type that uses customizable strategy objects to implement COM object wrappers and managed object wrappers exposed to COM.
     /// </summary>
+    [UnsupportedOSPlatform("android")]
+    [UnsupportedOSPlatform("browser")]
+    [UnsupportedOSPlatform("ios")]
+    [UnsupportedOSPlatform("tvos")]
     [CLSCompliant(false)]
     public class StrategyBasedComWrappers : ComWrappers
     {
@@ -29,7 +34,8 @@ namespace System.Runtime.InteropServices.Marshalling
         /// The default strategy to use for calling <c>IUnknown</c> methods.
         /// </summary>
         /// <remarks>
-        /// This strategy assumes that all provided COM objects are free threaded and that calls to <c>IUnknown</c> methods can be made from any thread.
+        /// This strategy expects that all provided COM objects are either free threaded and that calls to <c>IUnknown</c> methods can be made from any thread or affinitized to the current apartment and <c>IUnknown</c> methods can safely be called on the current thread.
+        /// This strategy is always safe on non-Windows platforms, since COM apartments do not exist on those platforms.
         /// </remarks>
         public static IIUnknownStrategy DefaultIUnknownStrategy { get; } = FreeThreadedStrategy.Instance;
 
@@ -73,6 +79,33 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <returns>The caching strategy to use for the new COM object.</returns>
         protected virtual IIUnknownCacheStrategy CreateCacheStrategy() => CreateDefaultCacheStrategy();
 
+        /// <summary>
+        /// Gets or creates a COM representation of the supplied object and queries it for the interface represented by <typeparamref name="TInterface"/>.
+        /// </summary>
+        /// <typeparam name="TInterface">The managed type that represents the requested COM interface.</typeparam>
+        /// <param name="instance">The managed object to expose outside the .NET runtime.</param>
+        /// <param name="flags">A bitwise combination of the enumeration values that specifies how to create the COM representation.</param>
+        /// <returns>A pointer to the requested COM interface. The caller is responsible for releasing the returned reference.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="instance"/> is <see langword="null"/>.</exception>
+        /// <exception cref="ArgumentException">The interface details strategy does not provide details for <typeparamref name="TInterface"/>.</exception>
+        /// <exception cref="InvalidCastException">The COM representation does not support the interface represented by <typeparamref name="TInterface"/>.</exception>
+        /// <remarks>
+        /// The COM representation is cached before querying for the requested interface, even if the query fails.
+        /// The requested interface is queried on every call.
+        /// </remarks>
+        public IntPtr GetOrCreateComInterfaceForObject<TInterface>(object instance, CreateComInterfaceFlags flags)
+        {
+            ArgumentNullException.ThrowIfNull(instance);
+
+            IIUnknownDerivedDetails? details = GetOrCreateInterfaceDetailsStrategy().GetIUnknownDerivedDetails(typeof(TInterface).TypeHandle);
+            if (details is null)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_UnknownComInterface, typeof(TInterface)), nameof(TInterface));
+            }
+
+            return GetOrCreateComInterfaceForObject(instance, flags, details.Iid);
+        }
+
         /// <inheritdoc cref="ComWrappers.ComputeVtables" />
         protected sealed override unsafe ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
         {
@@ -84,7 +117,7 @@ namespace System.Runtime.InteropServices.Marshalling
             return null;
         }
 
-        /// <inheritdoc cref="ComWrappers.CreateObject" />
+        /// <inheritdoc cref="ComWrappers.CreateObject(nint, CreateObjectFlags)" />
         protected sealed override unsafe object CreateObject(nint externalComObject, CreateObjectFlags flags)
         {
             if (flags.HasFlag(CreateObjectFlags.TrackerObject)
@@ -99,6 +132,12 @@ namespace System.Runtime.InteropServices.Marshalling
             };
 
             return rcw;
+        }
+
+        /// <inheritdoc cref="ComWrappers.CreateObject(nint, CreateObjectFlags, object?, out CreatedWrapperFlags)" />
+        protected sealed override object? CreateObject(nint externalComObject, CreateObjectFlags flags, object? userState, out CreatedWrapperFlags wrapperFlags)
+        {
+            return base.CreateObject(externalComObject, flags, userState, out wrapperFlags);
         }
 
         /// <inheritdoc cref="ComWrappers.ReleaseObjects" />

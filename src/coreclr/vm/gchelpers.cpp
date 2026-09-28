@@ -29,6 +29,7 @@
 #include "gchelpers.inl"
 #include "eeprofinterfaces.inl"
 #include "frozenobjectheap.h"
+#include "cdacstress.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -40,113 +41,163 @@
 //
 //========================================================================
 
-inline ee_alloc_context* GetThreadEEAllocContext()
+EXTERN_C ee_alloc_context* GetThreadEEAllocContext()
 {
     WRAPPER_NO_CONTRACT;
-
-    assert(GCHeapUtilities::UseThreadAllocationContexts());
 
     return &t_runtime_thread_locals.alloc_context;
 }
 
-// When not using per-thread allocation contexts, we (the EE) need to take care that
-// no two threads are concurrently modifying the global allocation context. This lock
-// must be acquired before any sort of operations involving the global allocation context
-// can occur.
-//
-// This lock is acquired by all allocations when not using per-thread allocation contexts.
-// It is acquired in two kinds of places:
-//   1) JIT_TrialAllocFastSP (and related assembly alloc helpers), which attempt to
-//      acquire it but move into an alloc slow path if acquiring fails
-//      (but does not decrement the lock variable when doing so)
-//   2) Alloc in gchelpers.cpp, which acquire the lock using
-//      the Acquire and Release methods below.
-class GlobalAllocLock {
-    friend struct AsmOffsets;
-private:
-    // The lock variable. This field must always be first.
-    LONG m_lock;
-
-public:
-    // Creates a new GlobalAllocLock in the unlocked state.
-    GlobalAllocLock() : m_lock(-1) {}
-
-    // Copy and copy-assignment operators should never be invoked
-    // for this type
-    GlobalAllocLock(const GlobalAllocLock&) = delete;
-    GlobalAllocLock& operator=(const GlobalAllocLock&) = delete;
-
-    // Acquires the lock, spinning if necessary to do so. When this method
-    // returns, m_lock will be zero and the lock will be acquired.
-    void Acquire()
-    {
-        CONTRACTL {
-            NOTHROW;
-            GC_TRIGGERS; // switch to preemptive mode
-            MODE_COOPERATIVE;
-        } CONTRACTL_END;
-
-        DWORD spinCount = 0;
-        while(InterlockedExchange(&m_lock, 0) != -1)
-        {
-            GCX_PREEMP();
-            __SwitchToThread(0, spinCount++);
-        }
-
-        assert(m_lock == 0);
-    }
-
-    // Releases the lock.
-    void Release()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        // the lock may not be exactly 0. This is because the
-        // assembly alloc routines increment the lock variable and
-        // jump if not zero to the slow alloc path, which eventually
-        // will try to acquire the lock again. At that point, it will
-        // spin in Acquire (since m_lock is some number that's not zero).
-        // When the thread that /does/ hold the lock releases it, the spinning
-        // thread will continue.
-        MemoryBarrier();
-        assert(m_lock >= 0);
-        m_lock = -1;
-    }
-
-    // Static helper to acquire a lock, for use with the Holder template.
-    static void AcquireLock(GlobalAllocLock *lock)
-    {
-        WRAPPER_NO_CONTRACT;
-        lock->Acquire();
-    }
-
-    // Static helper to release a lock, for use with the Holder template
-    static void ReleaseLock(GlobalAllocLock *lock)
-    {
-        WRAPPER_NO_CONTRACT;
-        lock->Release();
-    }
-
-    typedef class Holder<GlobalAllocLock *, GlobalAllocLock::AcquireLock, GlobalAllocLock::ReleaseLock> Holder;
-};
-
-typedef GlobalAllocLock::Holder GlobalAllocLockHolder;
-
-struct AsmOffsets {
-    static_assert(offsetof(GlobalAllocLock, m_lock) == 0, "ASM code relies on this property");
-};
-
-// For single-proc machines, the global allocation context is protected
-// from concurrent modification by this lock.
-//
-// When not using per-thread allocation contexts, certain methods on IGCHeap
-// require that this lock be held before calling. These methods are documented
-// on the IGCHeap interface.
-extern "C"
+// Allocate an object on the GC heap.
+//  pEEType         -  type of the object
+//  uFlags          -  GC type flags (see gc.h GC_ALLOC_*)
+//  numElements     -  number of array elements
+//  pTransitionBlock-  transition frame to make stack crawlable
+// Returns a pointer to the object allocated or NULL on failure.
+EXTERN_C Object* RhpGcAlloc(MethodTable* pMT, GC_ALLOC_FLAGS uFlags, intptr_t numElements, TransitionBlock* pTransitionBlock)
 {
-    GlobalAllocLock g_global_alloc_lock;
+    OBJECTREF newobj = NULL;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    if (pMT->HasComponentSize())
+    {
+        if (pMT == g_pStringClass)
+        {
+            newobj = AllocateString((DWORD)numElements);
+        }
+        else
+        {
+            _ASSERTE(pMT->IsFullyLoaded());
+            _ASSERTE(pMT->IsArray());
+            _ASSERTE(!pMT->IsMultiDimArray());
+
+            if (numElements < 0)
+                COMPlusThrow(kOverflowException);
+
+    #ifdef HOST_64BIT
+            // Even though ECMA allows using a native int as the argument to newarr instruction
+            // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+            // platforms we can't create an array whose size exceeds 32 bits.
+            if (numElements > INT_MAX)
+                EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+    #endif
+
+            newobj = AllocateSzArray(pMT, (INT32)numElements, uFlags);
+        }
+    }
+    else
+    {
+        newobj = AllocateObject(pMT, uFlags);
+    }
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
+    pFrame->Pop(CURRENT_THREAD);
+
+    return OBJECTREFToObject(newobj);
 }
 
+EXTERN_C Object* RhpGcAllocMaybeFrozen(MethodTable* pMT, intptr_t numElements, TransitionBlock* pTransitionBlock)
+{
+    OBJECTREF newobj = NULL;
+
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pFrame);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+#ifdef _DEBUG
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
+#endif // _DEBUG
+
+    if (pMT->HasComponentSize())
+    {
+        _ASSERTE(pMT->IsFullyLoaded());
+        _ASSERTE(pMT->IsArray());
+        _ASSERTE(!pMT->IsMultiDimArray());
+
+        if (numElements < 0)
+            COMPlusThrow(kOverflowException);
+
+#ifdef HOST_64BIT
+        // Even though ECMA allows using a native int as the argument to newarr instruction
+        // (therefore size is INT_PTR), ArrayBase::m_NumComponents is 32-bit, so even on 64-bit
+        // platforms we can't create an array whose size exceeds 32 bits.
+        if (numElements > INT_MAX)
+            EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
+#endif
+
+        newobj = TryAllocateFrozenSzArray(pMT, (INT32)numElements);
+        if (newobj == NULL)
+            newobj = AllocateSzArray(pMT, (INT32)numElements);
+    }
+    else
+    {
+        newobj = TryAllocateFrozenObject(pMT);
+        if (newobj == NULL)
+            newobj = AllocateObject(pMT);
+    }
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
+    pFrame->Pop(CURRENT_THREAD);
+
+    return OBJECTREFToObject(newobj);
+}
+
+EXTERN_C void RhExceptionHandling_FailedAllocation_Helper(MethodTable* pMT, bool isOverflow, TransitionBlock* pTransitionBlock)
+{
+    MAKE_CURRENT_THREAD_AVAILABLE();
+
+    DynamicHelperFrame frame(pTransitionBlock, 0);
+    DynamicHelperFrame * pFrame = &frame;
+
+    pFrame->Push(CURRENT_THREAD);
+
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(&frame);
+    INSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
+
+    if (isOverflow)
+    {
+        COMPlusThrow(kOverflowException);
+    }
+    COMPlusThrow(kOutOfMemoryException);
+
+    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
+    UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
+
+    pFrame->Pop(CURRENT_THREAD);
+}
 
 // Checks to see if the given allocation size exceeds the
 // largest object size allowed - if it does, it throws
@@ -183,6 +234,117 @@ inline void CheckObjectSize(size_t alloc_size)
     }
 }
 
+void FireAllocationSampled(GC_ALLOC_FLAGS flags, size_t size, size_t samplingBudgetOffset, Object* orObject)
+{
+#ifdef FEATURE_EVENT_TRACE
+    // Note: this code is duplicated from GCToCLREventSink::FireGCAllocationTick_V4
+    void* typeId = nullptr;
+    const WCHAR* name = nullptr;
+    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+    EX_TRY
+    {
+        TypeHandle th = GetThread()->GetTHAllocContextObj();
+
+        if (th != 0)
+        {
+            th.GetName(strTypeName);
+            name = strTypeName.GetUnicode();
+            typeId = th.GetMethodTable();
+        }
+    }
+    EX_CATCH{}
+    EX_END_CATCH
+    // end of duplication
+
+    if (typeId != nullptr)
+    {
+        unsigned int allocKind =
+            (flags & GC_ALLOC_PINNED_OBJECT_HEAP) ? 2 :
+            (flags & GC_ALLOC_LARGE_OBJECT_HEAP) ? 1 :
+            0;  // SOH
+        FireEtwAllocationSampled(allocKind, GetClrInstanceId(), typeId, name, (BYTE*)orObject, size, samplingBudgetOffset);
+    }
+#endif //FEATURE_EVENT_TRACE
+}
+
+inline Object* Alloc(ee_alloc_context* pEEAllocContext, size_t size, GC_ALLOC_FLAGS flags)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
+    } CONTRACTL_END;
+
+    Object* retVal = nullptr;
+    gc_alloc_context* pAllocContext = &pEEAllocContext->m_GCAllocContext;
+    bool isSampled = false;
+    size_t availableSpace = 0;
+    size_t aligned_size = 0;
+    size_t samplingBudget = 0;
+    bool isRandomizedSamplingEnabled = ee_alloc_context::IsRandomizedSamplingEnabled();
+    if (isRandomizedSamplingEnabled)
+    {
+        // object allocations are always padded up to pointer size
+        aligned_size = AlignUp(size, sizeof(uintptr_t));
+
+        // The number bytes we can allocate before we need to emit a sampling event.
+        // This calculation is only valid if combined_limit < alloc_limit.
+        samplingBudget = (size_t)(pEEAllocContext->m_CombinedLimit - pAllocContext->alloc_ptr);
+
+        // The number of bytes available in the current allocation context
+        availableSpace = (size_t)(pAllocContext->alloc_limit - pAllocContext->alloc_ptr);
+
+        // Check to see if the allocated object overlaps a sampled byte
+        // in this AC. This happens when both:
+        // 1) The AC contains a sampled byte (combined_limit < alloc_limit)
+        // 2) The object is large enough to overlap it (samplingBudget < aligned_size)
+        //
+        // Note that the AC could have no remaining space for allocations (alloc_ptr =
+        // alloc_limit = combined_limit). When a thread hasn't done any SOH allocations
+        // yet it also starts in an empty state where alloc_ptr = alloc_limit =
+        // combined_limit = nullptr. The (1) check handles both of these situations
+        // properly as an empty AC can not have a sampled byte inside of it.
+        isSampled =
+            (pEEAllocContext->m_CombinedLimit < pAllocContext->alloc_limit) &&
+            (samplingBudget < aligned_size);
+
+        // if the object overflows the AC, we need to sample the remaining bytes
+        // the sampling budget only included at most the bytes inside the AC
+        if (aligned_size > availableSpace && !isSampled)
+        {
+            samplingBudget = ee_alloc_context::ComputeGeometricRandom() + availableSpace;
+            isSampled = (samplingBudget < aligned_size);
+        }
+    }
+
+    CdacStress<cdac_on_alloc>::MaybeVerify();
+
+    GCStress<gc_on_alloc>::MaybeTrigger(pAllocContext);
+
+    // for SOH, if there is enough space in the current allocation context, then
+    // the allocation will be done in place (like in the fast path),
+    // otherwise a new allocation context will be provided
+    retVal = GCHeapUtilities::GetGCHeap()->Alloc(pAllocContext, size, flags);
+
+    if (isSampled)
+    {
+        // At this point the object methodtable isn't initialized yet but it doesn't matter when we are
+        // just emitting an ETW/EventPipe event. If we want this event to be more useful from ICorProfiler
+        // in the future we probably want to pass the isSampled flag back to callers so that the event
+        // can be raised after the MethodTable is initialized.
+        FireAllocationSampled(flags, aligned_size, samplingBudget, retVal);
+    }
+
+    // There are a variety of conditions that may have invalidated the previous combined_limit value
+    // such as not allocating the object in the AC memory region (UOH allocations), moving the AC, adding
+    // extra alignment padding, allocating a new AC, or allocating an object that consumed the sampling budget.
+    // Rather than test for all the different invalidation conditions individually we conservatively always
+    // recompute it. If sampling isn't enabled this inlined function is just trivially setting
+    // combined_limit=alloc_limit.
+    pEEAllocContext->UpdateCombinedLimit(isRandomizedSamplingEnabled);
+
+    return retVal;
+}
 
 // There are only two ways to allocate an object.
 //     * Call optimized helpers that were generated on the fly. This is how JIT compiled code does most
@@ -206,36 +368,16 @@ inline Object* Alloc(size_t size, GC_ALLOC_FLAGS flags)
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
     if (flags & GC_ALLOC_CONTAINS_REF)
         flags &= ~GC_ALLOC_ZEROING_OPTIONAL;
 
     Object *retVal = NULL;
     CheckObjectSize(size);
 
-    if (GCHeapUtilities::UseThreadAllocationContexts())
-    {
-        ee_alloc_context *threadContext = GetThreadEEAllocContext();
-        GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&threadContext->m_GCAllocContext, size, flags);
-        threadContext->UpdateCombinedLimit();
-
-    }
-    else
-    {
-        GlobalAllocLockHolder holder(&g_global_alloc_lock);
-        ee_alloc_context *globalContext = &g_global_alloc_context;
-        GCStress<gc_on_alloc>::MaybeTrigger(&globalContext->m_GCAllocContext);
-        retVal = GCHeapUtilities::GetGCHeap()->Alloc(&globalContext->m_GCAllocContext, size, flags);
-        globalContext->UpdateCombinedLimit();
-    }
+    ee_alloc_context *threadContext = GetThreadEEAllocContext();
+    CdacStress<cdac_on_alloc>::MaybeVerify();
+    GCStress<gc_on_alloc>::MaybeTrigger(&threadContext->m_GCAllocContext);
+    retVal = Alloc(threadContext, size, flags);
 
 
     if (!retVal)
@@ -288,7 +430,7 @@ inline void LogAlloc(Object* object)
 
     if (LoggingOn(LF_GCALLOC, LL_INFO10))
     {
-        LogSpewAlways("Allocated %5d bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
+        LogSpewAlways("Allocated %5zu bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
                       size,
                       pMT->IsValueType() ? "VAL" : "REF",
                       DBG_ADDR(object),
@@ -327,7 +469,7 @@ void PublishObjectAndNotify(TObj* &orObject, GC_ALLOC_FLAGS flags)
     // do this after initializing bounds so callback has size information
     if (TrackAllocations() ||
         (TrackLargeAllocations() && flags & GC_ALLOC_LARGE_OBJECT_HEAP) ||
-		(TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
+                (TrackPinnedAllocations() && flags & GC_ALLOC_PINNED_OBJECT_HEAP))
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);
@@ -404,15 +546,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     size_t totalSize = safeTotalSize.Value();
 #endif
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
-        ((DWORD)cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-    {
-        STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-    }
-#endif
-
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
@@ -427,12 +560,6 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        if (pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8))
-        {
-            flags |= GC_ALLOC_ALIGN8;
-        }
-#endif
 #ifdef FEATURE_64BIT_ALIGNMENT
         MethodTable* pElementMT = pArrayMT->GetArrayElementTypeHandle().GetMethodTable();
         if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
@@ -451,7 +578,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
 
     // Initialize Object
-    orArray->m_NumComponents = cElements;
+    orArray->SetNumComponents(cElements);
 
     PublishObjectAndNotify(orArray, flags);
     return ObjectToOBJECTREF((Object*)orArray);
@@ -516,7 +643,7 @@ OBJECTREF TryAllocateFrozenSzArray(MethodTable* pArrayMT, INT32 cElements)
     ArrayBase* orArray = static_cast<ArrayBase*>(
         foh->TryAllocateObject(pArrayMT, PtrAlign(totalSize), [](Object* obj, void* elemCntPtr){
             // Initialize newly allocated object before publish
-            static_cast<ArrayBase*>(obj)->m_NumComponents = *static_cast<DWORD*>(elemCntPtr);
+            static_cast<ArrayBase*>(obj)->SetNumComponents(*static_cast<DWORD*>(elemCntPtr));
         }, &cElements));
 
     if (orArray == nullptr)
@@ -575,14 +702,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
         PRECONDITION(dwNumArgs > 0);
     } CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
     SetTypeHandleOnThreadForAlloc(TypeHandle(pArrayMT));
 
     // keep original flags in case the call is recursive (jugged array case)
@@ -591,7 +710,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     GC_ALLOC_FLAGS flagsOriginal = flags;
 
    _ASSERTE(pArrayMT->CheckInstanceActivated());
-    PREFIX_ASSUME(pArrayMT != NULL);
+    _ASSERTE(pArrayMT != NULL);
     CorElementType kind = pArrayMT->GetInternalCorElementType();
     _ASSERTE(kind == ELEMENT_TYPE_ARRAY || kind == ELEMENT_TYPE_SZARRAY);
 
@@ -667,15 +786,6 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     size_t totalSize = safeTotalSize.Value();
 #endif
 
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    if ((pArrayMT->GetArrayElementTypeHandle() == CoreLibBinder::GetElementType(ELEMENT_TYPE_R8)) &&
-        (cElements >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-    {
-        STRESS_LOG2(LF_GC, LL_INFO10, "Allocating double MD array of size %d and length %d to large object heap\n", totalSize, cElements);
-        flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
-    }
-#endif
-
     if (totalSize >= LARGE_OBJECT_SIZE && totalSize >= GCHeapUtilities::GetGCHeap()->GetLOHThreshold())
         flags |= GC_ALLOC_LARGE_OBJECT_HEAP;
 
@@ -708,7 +818,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 
     // Initialize Object
-    orArray->m_NumComponents = cElements;
+    orArray->SetNumComponents(cElements);
     if (kind == ELEMENT_TYPE_ARRAY)
     {
         INT32 *pCountsPtr      = (INT32 *) orArray->GetBoundsPtr();
@@ -771,7 +881,6 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;  // returns an objref without pinning it => cooperative
     }
     CONTRACTL_END
@@ -864,14 +973,6 @@ STRINGREF AllocateString( DWORD cchStringLength )
         MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
     } CONTRACTL_END;
 
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
-    {
-        char *a = new char;
-        delete a;
-    }
-#endif
-
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
     // overflows in buffer size calculations.
     if (cchStringLength > CORINFO_String_MaxLength)
@@ -955,7 +1056,7 @@ void AllocateComClassObject(ComClassFactory* pComClsFac, OBJECTREF* ppRefClass)
         PRECONDITION(CheckPointer(ppRefClass));
     } CONTRACTL_END;
 
-    // Create a COM+ Class object.
+    // Create a CLR Class object.
     MethodTable *pMT = g_pRuntimeTypeClass;
     _ASSERTE(pMT != NULL);
     *ppRefClass= AllocateObject(pMT);
@@ -1014,7 +1115,8 @@ OBJECTREF AllocateObject(MethodTable *pMT
         if (pMT == g_pBaseCOMObject)
             COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
 
-        oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(AllocateComObject_ForManaged(pMT));
+        OBJECTREF obj = AllocateComObject_ForManaged(pMT);
+        oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(obj);
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #else  // FEATURE_COMINTEROP
@@ -1133,70 +1235,10 @@ static void SetCardBundleByte(BYTE* addr)
 
 // NOTE: non-ASM write barriers only work with Workstation GC.
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-static UINT64 CheckedBarrierCount = 0;
-static UINT64 CheckedBarrierRetBufCount = 0;
-static UINT64 CheckedBarrierByrefArgCount = 0;
-static UINT64 CheckedBarrierByrefOtherLocalCount = 0;
-static UINT64 CheckedBarrierAddrOfLocalCount = 0;
-static UINT64 UncheckedBarrierCount = 0;
-static UINT64 CheckedAfterHeapFilter = 0;
-static UINT64 CheckedAfterRefInEphemFilter = 0;
-static UINT64 CheckedAfterAlreadyDirtyFilter = 0;
-static UINT64 CheckedDestInEphem = 0;
-static UINT64 UncheckedAfterRefInEphemFilter = 0;
-static UINT64 UncheckedAfterAlreadyDirtyFilter = 0;
-static UINT64 UncheckedDestInEphem = 0;
-
-const unsigned BarrierCountPrintInterval = 1000000;
-static unsigned CheckedBarrierInterval = BarrierCountPrintInterval;
-static unsigned UncheckedBarrierInterval = BarrierCountPrintInterval;
-
-
-void IncCheckedBarrierCount()
-{
-	++CheckedBarrierCount;
-	if (--CheckedBarrierInterval == 0)
-	{
-		CheckedBarrierInterval = BarrierCountPrintInterval;
-		printf("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-			CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-		printf("    [Checked: %lld after heap check, %lld after ephem check, %lld after already dirty check.]\n",
-			CheckedAfterHeapFilter, CheckedAfterRefInEphemFilter, CheckedAfterAlreadyDirtyFilter);
-		printf("    [Unchecked: %lld after ephem check, %lld after already dirty check.]\n",
-			UncheckedAfterRefInEphemFilter, UncheckedAfterAlreadyDirtyFilter);
-		printf("    [Dest in ephem: checked = %lld, unchecked = %lld.]\n",
-			CheckedDestInEphem, UncheckedDestInEphem);
-        printf("    [Checked: %lld are stores to fields of ret buff, %lld via byref args,\n",
-            CheckedBarrierRetBufCount, CheckedBarrierByrefArgCount);
-        printf("     %lld via other locals, %lld via addr of local.]\n",
-            CheckedBarrierByrefOtherLocalCount, CheckedBarrierAddrOfLocalCount);
-	}
-}
-
-void IncUncheckedBarrierCount()
-{
-	++UncheckedBarrierCount;
-	if (--UncheckedBarrierInterval == 0)
-	{
-		printf("GC write barrier counts: checked = %lld, unchecked = %lld, total = %lld.\n",
-			CheckedBarrierCount, UncheckedBarrierCount, (CheckedBarrierCount + UncheckedBarrierCount));
-		UncheckedBarrierInterval = BarrierCountPrintInterval;
-	}
-}
-#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-// (We ignore the advice below on using a _RAW macro for this performance diagnostic mode, which need not function properly in
-// all situations...)
-extern "C" HCIMPL3(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref, CheckedWriteBarrierKinds kind)
-#else
-
 // This function is a JIT helper, but it must NOT use HCIMPL2 because it
 // modifies Thread state that will not be restored if an exception occurs
 // inside of memset.  A normal EH unwind will not occur.
 extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
-#endif
 {
     // Must use static contract here, because if an AV occurs, a normal EH
     // unwind will not occur, and destructors will not run.
@@ -1204,43 +1246,12 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    IncCheckedBarrierCount();
-    switch (kind)
-    {
-    case CWBKind_RetBuf:
-        CheckedBarrierRetBufCount++;
-        break;
-    case CWBKind_ByRefArg:
-        CheckedBarrierByrefArgCount++;
-        break;
-    case CWBKind_OtherByRefLocal:
-        CheckedBarrierByrefOtherLocalCount++;
-        break;
-    case CWBKind_AddrOfLocal:
-        CheckedBarrierAddrOfLocalCount++;
-        break;
-    case CWBKind_Unclassified:
-        break;
-    default:
-        // It should be some member of the enumeration.
-        _ASSERTE_ALL_BUILDS(false);
-        break;
-    }
-#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
-
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
-
     VolatileStore(dst, ref);
 
     // if the dst is outside of the heap (unboxed value classes) then we
     //      simply exit
     if (((BYTE*)dst < g_lowest_address) || ((BYTE*)dst >= g_highest_address))
         return;
-
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    CheckedAfterHeapFilter++;
-#endif
 
 #ifdef WRITE_BARRIER_CHECK
     updateGCShadow(dst, ref);     // support debugging write barrier
@@ -1253,25 +1264,13 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    if((BYTE*) dst >= g_ephemeral_low && (BYTE*) dst < g_ephemeral_high)
-    {
-        CheckedDestInEphem++;
-    }
-#endif
     if((BYTE*) ref >= g_ephemeral_low && (BYTE*) ref < g_ephemeral_high)
     {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-        CheckedAfterRefInEphemFilter++;
-#endif
         // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
         // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
         BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
         if(*pCardByte != 0xFF)
         {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-            CheckedAfterAlreadyDirtyFilter++;
-#endif
             *pCardByte = 0xFF;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -1293,11 +1292,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    IncUncheckedBarrierCount();
-#endif
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
-
     VolatileStore(dst, ref);
 
     // If the store above succeeded, "dst" should be in the heap.
@@ -1314,25 +1308,13 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    if((BYTE*) dst >= g_ephemeral_low && (BYTE*) dst < g_ephemeral_high)
-    {
-        UncheckedDestInEphem++;
-    }
-#endif
     if((BYTE*) ref >= g_ephemeral_low && (BYTE*) ref < g_ephemeral_high)
     {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-        UncheckedAfterRefInEphemFilter++;
-#endif
         // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered
         // with g_lowest/highest_address check above. See comment in StompWriteBarrier.
         BYTE* pCardByte = (BYTE*)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
         if(*pCardByte != 0xFF)
         {
-#ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-            UncheckedAfterAlreadyDirtyFilter++;
-#endif
             *pCardByte = 0xFF;
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
@@ -1344,23 +1326,6 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
 HCIMPLEND_RAW
 
 #endif // FEATURE_USE_ASM_GC_WRITE_BARRIERS
-
-extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrierEnsureNonHeapTarget, Object **dst, Object *ref)
-{
-    // Must use static contract here, because if an AV occurs, a normal EH
-    // unwind will not occur, and destructors will not run.
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-    assert(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((void*)dst));
-
-    // no HELPER_METHOD_FRAME because we are MODE_COOPERATIVE, GC_NOTRIGGER
-
-    // not a release store because NonHeap.
-    *dst = ref;
-}
-HCIMPLEND_RAW
 
 // This function sets the card table with the granularity of 1 byte, to avoid ghost updates
 //    that could occur if multiple threads were trying to set different bits in the same card.

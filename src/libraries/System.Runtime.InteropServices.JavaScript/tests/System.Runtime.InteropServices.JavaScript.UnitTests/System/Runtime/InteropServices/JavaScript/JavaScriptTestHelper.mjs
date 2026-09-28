@@ -246,13 +246,118 @@ export function invoke2(arg1, name) {
     return res;
 }
 
+export function invokeExportWithPromiseWithDateMaxValue(exportName) {
+    const fn1 = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    const res = fn1(returnResolvedPromiseWithDateMaxValue());
+    return res;
+}
+
+export function invokeExportWithDateMaxValue(exportName) {
+    const fn1 = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    const res = fn1(returnDateMaxValue());
+    return res;
+}
+
+export function invokeDelegate_DateTimeWithOffset(delegate, date, offset) {
+    return delegate(returnDateWithOffset(date, offset));
+}
+
+export function getInt32ArrayWithOutOfRangeValues() {
+    return [0, 1, 2147483648, 3147483648, 9007199254740991, 9007199254740992];
+}
+
 export function returnResolvedPromise() {
     return Promise.resolve();
+}
+
+export function returnResolvedPromiseWithIntMaxValue() {
+    return Promise.resolve(2147483647);
+}
+
+export function returnResolvedPromiseWithDateMaxValue() {
+    return Promise.resolve(new Date(8640000000000000));
+}
+
+export function returnDateMaxValue() {
+    return new Date(8640000000000000);
+}
+
+export function returnDateWithOffset(date, offset) {
+    return new Date(date.getTime() + offset);
 }
 
 export async function invokeReturnCompletedTask() {
     await dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper.ReturnCompletedTask();
     return "resolved";
+}
+
+function resolveExport(exportName) {
+    const fn = dllExports.System.Runtime.InteropServices.JavaScript.Tests.JavaScriptTestHelper[exportName];
+    if (typeof fn !== "function") throw new Error(`No such export ${exportName}`);
+    return fn;
+}
+
+// calls a [JSExport] returning a Task. "drop" is the fire-and-forget shape reported in
+// dotnet/runtime#132966, "catch" swallows the rejection without keeping the promise,
+// "await" observes it, "throws" expects the call itself to throw instead of returning a Task.
+export async function invokeExportAsyncNTimes(exportName, count, mode) {
+    const fn = resolveExport(exportName);
+    const observed = [];
+    for (let i = 0; i < count; i++) {
+        let res;
+        try {
+            res = fn();
+        } catch (ex) {
+            if (mode !== "throws") throw ex;
+            // there is no promise to observe, the eagerly created one had to be released
+            continue;
+        }
+        const thenable = res && typeof res.then === "function";
+        if (mode === "await" && thenable) {
+            observed.push(res.then(() => { }, () => { }));
+        } else if (mode === "catch" && thenable) {
+            res.then(() => { }, () => { });
+        }
+    }
+    await Promise.all(observed);
+}
+
+// passes a JS promise into a [JSExport] whose parameter is a Task
+export async function invokeExportWithPromiseNTimes(exportName, count, settled) {
+    const fn = resolveExport(exportName);
+    const observed = [];
+    for (let i = 0; i < count; i++) {
+        const arg = settled ? Promise.resolve(42) : delay(1).then(() => 42);
+        const res = fn(arg);
+        if (res && typeof res.then === "function") {
+            observed.push(res.then(() => { }, () => { }));
+        }
+    }
+    await Promise.all(observed);
+}
+
+// counterpart of thenvoid: JS never observes the promise it was handed
+export function dropArg(arg1) {
+}
+
+export async function tryGetAssemblyExports(assemblyName) {
+    try {
+        await App.runtime.getAssemblyExports(assemblyName);
+        return "resolved";
+    } catch (ex) {
+        return "" + ex;
+    }
+}
+
+// requires --expose-gc, which this test project passes via WasmXHarnessArgs
+export function forceJsGc() {
+    if (typeof globalThis.gc === "function") {
+        globalThis.gc();
+    }
+}
+
+export function invokeFuncWithOffset(fn, arg, offset) {
+    return fn(arg + offset);
 }
 
 export function invokeStructClassRecords(arg1) {
@@ -465,4 +570,34 @@ export function delay(ms) {
 
 export function reject(what) {
     return new Promise((_, reject) => globalThis.setTimeout(() => reject(what), 0));
+}
+
+// throws instead of returning a Promise, so the pre-created Task is never adopted
+export function throwBeforePromise() {
+    throw new Error("intentionally thrown before returning a promise");
+}
+
+let setTimeoutHit = false;
+let promiseThenHit = false;
+export function beforeYield() {
+    setTimeoutHit = false;
+    promiseThenHit = false;
+    setTimeout(() => {
+        setTimeoutHit = true;
+    }, 0);
+    let res;
+    new Promise((resolve) => {
+        res = resolve;
+    }).then(() => {
+        promiseThenHit = true;
+    });
+    res();
+}
+
+export function isSetTimeoutHit() {
+    return setTimeoutHit;
+}
+
+export function isPromiseThenHit() {
+    return promiseThenHit;
 }

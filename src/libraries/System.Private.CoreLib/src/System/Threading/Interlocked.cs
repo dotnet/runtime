@@ -6,8 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-#pragma warning disable CS8500 // takes the address of, gets the size of, or declares a pointer to a managed type ('T')
-
 namespace System.Threading
 {
     /// <summary>Provides atomic operations for variables that are shared by multiple threads.</summary>
@@ -82,7 +80,7 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe byte Exchange(ref byte location1, byte value)
+        public static byte Exchange(ref byte location1, byte value)
         {
 #if (MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
@@ -121,7 +119,7 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static unsafe ushort Exchange(ref ushort location1, ushort value)
+        public static ushort Exchange(ref ushort location1, ushort value)
         {
 #if ((MONO && (TARGET_AMD64 || TARGET_ARM64 || TARGET_WASM)) || !MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return Exchange(ref location1, value); // Must expand intrinsic
@@ -192,25 +190,23 @@ namespace System.Threading
         public static double Exchange(ref double location1, double value)
             => Unsafe.BitCast<long, double>(Exchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value)));
 
-        /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <summary>Sets a native-sized signed integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of location1 is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr Exchange(ref IntPtr location1, IntPtr value)
+        public static nint Exchange(ref nint location1, nint value)
         {
-#pragma warning disable CA2020 // Prevent from behavioral change
 #if TARGET_64BIT
-            return (IntPtr)Interlocked.Exchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value);
+            return (nint)Exchange(ref Unsafe.As<nint, long>(ref location1), (long)value);
 #else
-            return (IntPtr)Exchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value);
+            return (nint)Exchange(ref Unsafe.As<nint, int>(ref location1), (int)value);
 #endif
-#pragma warning restore CA2020
         }
 
-        /// <summary>Sets a platform-specific handle or pointer to a specified value and returns the original value, as an atomic operation.</summary>
+        /// <summary>Sets a native-sized unsigned integer to a specified value and returns the original value, as an atomic operation.</summary>
         /// <param name="location1">The variable to set to the specified value.</param>
         /// <param name="value">The value to which the <paramref name="location1"/> parameter is set.</param>
         /// <returns>The original value of <paramref name="location1"/>.</returns>
@@ -218,12 +214,12 @@ namespace System.Threading
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UIntPtr Exchange(ref UIntPtr location1, UIntPtr value)
+        public static nuint Exchange(ref nuint location1, nuint value)
         {
 #if TARGET_64BIT
-            return (UIntPtr)Interlocked.Exchange(ref Unsafe.As<UIntPtr, long>(ref location1), (long)value);
+            return (nuint)Exchange(ref Unsafe.As<nuint, long>(ref location1), (long)value);
 #else
-            return (UIntPtr)Exchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value);
+            return (nuint)Exchange(ref Unsafe.As<nuint, int>(ref location1), (int)value);
 #endif
         }
 
@@ -320,7 +316,7 @@ namespace System.Threading
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static unsafe byte CompareExchange(ref byte location1, byte value, byte comparand)
+        public static byte CompareExchange(ref byte location1, byte value, byte comparand)
         {
 #if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
@@ -363,7 +359,7 @@ namespace System.Threading
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CLSCompliant(false)]
-        public static unsafe ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
+        public static ushort CompareExchange(ref ushort location1, ushort value, ushort comparand)
         {
 #if (MONO && (TARGET_ARM64 || TARGET_AMD64 || TARGET_WASM)) || (!MONO && (TARGET_X86 || TARGET_AMD64 || TARGET_ARM64))
             return CompareExchange(ref location1, value, comparand); // Must expand intrinsic
@@ -441,40 +437,38 @@ namespace System.Threading
         public static double CompareExchange(ref double location1, double value, double comparand)
             => Unsafe.BitCast<long, double>(CompareExchange(ref Unsafe.As<double, long>(ref location1), Unsafe.BitCast<double, long>(value), Unsafe.BitCast<double, long>(comparand)));
 
-        /// <summary>Compares two platform-specific handles or pointers for equality and, if they are equal, replaces the first one.</summary>
-        /// <param name="location1">The destination <see cref="IntPtr"/>, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
-        /// <param name="value">The <see cref="IntPtr"/> that replaces the destination value if the comparison results in equality.</param>
-        /// <param name="comparand">The <see cref="IntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
+        /// <summary>Compares two native-sized signed integers for equality and, if they are equal, replaces the first one.</summary>
+        /// <param name="location1">The destination, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand)
+        public static nint CompareExchange(ref nint location1, nint value, nint comparand)
         {
-#pragma warning disable CA2020 // Prevent from behavioral change
 #if TARGET_64BIT
-            return (IntPtr)Interlocked.CompareExchange(ref Unsafe.As<IntPtr, long>(ref location1), (long)value, (long)comparand);
+            return (nint)CompareExchange(ref Unsafe.As<nint, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (IntPtr)CompareExchange(ref Unsafe.As<IntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (nint)CompareExchange(ref Unsafe.As<nint, int>(ref location1), (int)value, (int)comparand);
 #endif
-#pragma warning restore CA2020
         }
 
-        /// <summary>Compares two platform-specific handles or pointers for equality and, if they are equal, replaces the first one.</summary>
-        /// <param name="location1">The destination <see cref="UIntPtr"/>, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
-        /// <param name="value">The <see cref="UIntPtr"/> that replaces the destination value if the comparison results in equality.</param>
-        /// <param name="comparand">The <see cref="UIntPtr"/> that is compared to the value at <paramref name="location1"/>.</param>
+        /// <summary>Compares two native-sized unsigned integers for equality and, if they are equal, replaces the first one.</summary>
+        /// <param name="location1">The destination, whose value is compared with the value of <paramref name="comparand"/> and possibly replaced by <paramref name="value"/>.</param>
+        /// <param name="value">The value that replaces the destination value if the comparison results in equality.</param>
+        /// <param name="comparand">The value that is compared to the value at <paramref name="location1"/>.</param>
         /// <returns>The original value in <paramref name="location1"/>.</returns>
         /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
         [Intrinsic]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static UIntPtr CompareExchange(ref UIntPtr location1, UIntPtr value, UIntPtr comparand)
+        public static nuint CompareExchange(ref nuint location1, nuint value, nuint comparand)
         {
 #if TARGET_64BIT
-            return (UIntPtr)Interlocked.CompareExchange(ref Unsafe.As<UIntPtr, long>(ref location1), (long)value, (long)comparand);
+            return (nuint)CompareExchange(ref Unsafe.As<nuint, long>(ref location1), (long)value, (long)comparand);
 #else
-            return (UIntPtr)CompareExchange(ref Unsafe.As<UIntPtr, int>(ref location1), (int)value, (int)comparand);
+            return (nuint)CompareExchange(ref Unsafe.As<nuint, int>(ref location1), (int)value, (int)comparand);
 #endif
         }
 
@@ -640,6 +634,83 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static ulong And(ref ulong location1, ulong value) =>
             (ulong)And(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+
+        /// <summary>Bitwise "ands" two values of type <typeparamref name="T"/> and replaces the first value with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        /// <exception cref="NotSupportedException">An unsupported <typeparamref name="T"/> is specified.</exception>
+        /// <typeparam name="T">
+        /// The type to be used for <paramref name="location1"/> and <paramref name="value"/>.
+        /// This type must be an integer primitive type or an enum type backed by an integer type.
+        /// Floating-point types (float, double) are not supported.
+        /// </typeparam>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T And<T>(ref T location1, T value) where T : struct
+        {
+            // Only integer primitive types and enum types backed by integer types are supported.
+            // Floating-point types and floating-point backed enums are not supported.
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) ||
+                typeof(T) == typeof(float) || typeof(T) == typeof(double) ||
+                (typeof(T).IsEnum && (typeof(T).GetEnumUnderlyingType() == typeof(float) || typeof(T).GetEnumUnderlyingType() == typeof(double))))
+            {
+                throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
+            }
+
+            // For 1-byte and 2-byte types, we need to use CompareExchange-based implementations
+            // because there are no direct atomic And operations for these sizes.
+            if (sizeof(T) == 1)
+            {
+                byte current = Unsafe.BitCast<T, byte>(location1);
+                while (true)
+                {
+                    byte newValue = (byte)(current & Unsafe.BitCast<T, byte>(value));
+                    byte oldValue = CompareExchange(
+                        ref Unsafe.As<T, byte>(ref location1),
+                        newValue,
+                        current);
+                    if (oldValue == current)
+                    {
+                        return Unsafe.BitCast<byte, T>(oldValue);
+                    }
+                    current = oldValue;
+                }
+            }
+
+            if (sizeof(T) == 2)
+            {
+                ushort current = Unsafe.BitCast<T, ushort>(location1);
+                while (true)
+                {
+                    ushort newValue = (ushort)(current & Unsafe.BitCast<T, ushort>(value));
+                    ushort oldValue = CompareExchange(
+                        ref Unsafe.As<T, ushort>(ref location1),
+                        newValue,
+                        current);
+                    if (oldValue == current)
+                    {
+                        return Unsafe.BitCast<ushort, T>(oldValue);
+                    }
+                    current = oldValue;
+                }
+            }
+
+            if (sizeof(T) == 4)
+            {
+                return Unsafe.BitCast<int, T>(
+                    And(
+                        ref Unsafe.As<T, int>(ref location1),
+                        Unsafe.BitCast<T, int>(value)));
+            }
+
+            Debug.Assert(sizeof(T) == 8);
+            return Unsafe.BitCast<long, T>(
+                And(
+                    ref Unsafe.As<T, long>(ref location1),
+                    Unsafe.BitCast<T, long>(value)));
+        }
         #endregion
 
         #region Or
@@ -706,6 +777,83 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static ulong Or(ref ulong location1, ulong value) =>
             (ulong)Or(ref Unsafe.As<ulong, long>(ref location1), (long)value);
+
+        /// <summary>Bitwise "ors" two values of type <typeparamref name="T"/> and replaces the first value with the result, as an atomic operation.</summary>
+        /// <param name="location1">A variable containing the first value to be combined. The result is stored in <paramref name="location1"/>.</param>
+        /// <param name="value">The value to be combined with the value at <paramref name="location1"/>.</param>
+        /// <returns>The original value in <paramref name="location1"/>.</returns>
+        /// <exception cref="NullReferenceException">The address of <paramref name="location1"/> is a null pointer.</exception>
+        /// <exception cref="NotSupportedException">An unsupported <typeparamref name="T"/> is specified.</exception>
+        /// <typeparam name="T">
+        /// The type to be used for <paramref name="location1"/> and <paramref name="value"/>.
+        /// This type must be an integer primitive type or an enum type backed by an integer type.
+        /// Floating-point types (float, double) are not supported.
+        /// </typeparam>
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static unsafe T Or<T>(ref T location1, T value) where T : struct
+        {
+            // Only integer primitive types and enum types backed by integer types are supported.
+            // Floating-point types and floating-point backed enums are not supported.
+            if ((!typeof(T).IsPrimitive && !typeof(T).IsEnum) ||
+                typeof(T) == typeof(float) || typeof(T) == typeof(double) ||
+                (typeof(T).IsEnum && (typeof(T).GetEnumUnderlyingType() == typeof(float) || typeof(T).GetEnumUnderlyingType() == typeof(double))))
+            {
+                throw new NotSupportedException(SR.NotSupported_IntegerEnumOrPrimitiveTypeRequired);
+            }
+
+            // For 1-byte and 2-byte types, we need to use CompareExchange-based implementations
+            // because there are no direct atomic Or operations for these sizes.
+            if (sizeof(T) == 1)
+            {
+                byte current = Unsafe.BitCast<T, byte>(location1);
+                while (true)
+                {
+                    byte newValue = (byte)(current | Unsafe.BitCast<T, byte>(value));
+                    byte oldValue = CompareExchange(
+                        ref Unsafe.As<T, byte>(ref location1),
+                        newValue,
+                        current);
+                    if (oldValue == current)
+                    {
+                        return Unsafe.BitCast<byte, T>(oldValue);
+                    }
+                    current = oldValue;
+                }
+            }
+
+            if (sizeof(T) == 2)
+            {
+                ushort current = Unsafe.BitCast<T, ushort>(location1);
+                while (true)
+                {
+                    ushort newValue = (ushort)(current | Unsafe.BitCast<T, ushort>(value));
+                    ushort oldValue = CompareExchange(
+                        ref Unsafe.As<T, ushort>(ref location1),
+                        newValue,
+                        current);
+                    if (oldValue == current)
+                    {
+                        return Unsafe.BitCast<ushort, T>(oldValue);
+                    }
+                    current = oldValue;
+                }
+            }
+
+            if (sizeof(T) == 4)
+            {
+                return Unsafe.BitCast<int, T>(
+                    Or(
+                        ref Unsafe.As<T, int>(ref location1),
+                        Unsafe.BitCast<T, int>(value)));
+            }
+
+            Debug.Assert(sizeof(T) == 8);
+            return Unsafe.BitCast<long, T>(
+                Or(
+                    ref Unsafe.As<T, long>(ref location1),
+                    Unsafe.BitCast<T, long>(value)));
+        }
         #endregion
 
         #region MemoryBarrier
@@ -717,5 +865,15 @@ namespace System.Threading
         [Intrinsic]
         public static void MemoryBarrier() => MemoryBarrier();
         #endregion
+
+#if !MONO
+        #region MemoryBarrierProcessWide
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
+        private static partial void _MemoryBarrierProcessWide();
+
+        /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
+        public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();
+        #endregion
+#endif
     }
 }

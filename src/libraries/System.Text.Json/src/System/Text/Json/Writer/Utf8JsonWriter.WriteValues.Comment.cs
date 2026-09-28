@@ -26,10 +26,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteCommentValue(string value)
         {
-            if (value is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
             WriteCommentValue(value.AsSpan());
         }
 
@@ -47,7 +44,7 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(value);
 
-            if (value.IndexOf(s_singleLineCommentDelimiter) != -1)
+            if (value.Contains(s_singleLineCommentDelimiter, StringComparison.Ordinal))
             {
                 ThrowHelper.ThrowArgumentException_InvalidCommentValue();
             }
@@ -61,6 +58,13 @@ namespace System.Text.Json
 
         private void WriteCommentByOptions(ReadOnlySpan<char> value)
         {
+            if (!_options.SkipValidation)
+            {
+                // Comments generally can be placed anywhere in JSON, but not after a non-final
+                // string segment.
+                ValidateNotWithinUnfinalizedString();
+            }
+
             if (_options.Indented)
             {
                 WriteCommentIndented(value);
@@ -157,7 +161,7 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateValue(utf8Value);
 
-            if (utf8Value.IndexOf(SingleLineCommentDelimiterUtf8) != -1)
+            if (utf8Value.IndexOf(SingleLineCommentDelimiterUtf8) >= 0)
             {
                 ThrowHelper.ThrowArgumentException_InvalidCommentValue();
             }

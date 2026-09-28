@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- XCode 11.3 or higher
+- Xcode 11.3 or higher
 - a certificate and provisioning profile if using a device
 - a simulator with a proper device type and OS version.
-Go `XCode > Window > Devices and Simulators` to revise the list of the available simulators and then `"+" button on bottom left > OS Version dropdown selection > Download more simulator runtimes` in case you need to download more simulators.
+Go `Xcode > Window > Devices and Simulators` to revise the list of the available simulators and then `"+" button on bottom left > OS Version dropdown selection > Download more simulator runtimes` in case you need to download more simulators.
 
 ## Building Libs and Tests
 
@@ -96,7 +96,7 @@ Currently, only the `tracing/eventpipe` subset of runtime tests is enabled on iO
 The subset of runtime tests can be built by executing the following shell script:
 ```sh
 ./build.sh -arch arm64 -os ios -s mono+libs -c Release
-./src/tests/build.sh os ios arm64 Release -mono tree tracing/eventpipe /p:LibrariesConfiguration=Release
+./src/tests/build.sh -os ios -arch arm64 Release -mono tree tracing/eventpipe /p:LibrariesConfiguration=Release
 ```
 
 The script generates an Apple bundle that can be executed using Xcode or XHarness.

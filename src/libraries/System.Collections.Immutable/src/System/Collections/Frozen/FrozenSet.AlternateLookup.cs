@@ -53,7 +53,7 @@ namespace System.Collections.Frozen
             if (Comparer is IAlternateEqualityComparer<TAlternate, T> &&
                 (typeof(T) != typeof(string) || typeof(TAlternate) == typeof(ReadOnlySpan<char>)))
             {
-                lookup = new AlternateLookup<TAlternate>(this);
+                lookup = new AlternateLookup<TAlternate>(this, GetAlternateLookupDelegate<TAlternate>());
                 return true;
             }
 
@@ -63,10 +63,10 @@ namespace System.Collections.Frozen
 
         /// <summary>Gets the <see cref="Comparer"/> as an <see cref="IAlternateEqualityComparer{TAlternate, T}"/>.</summary>
         /// <remarks>This must only be used when it's already been proven that the comparer implements the target interface.</remarks>
-        private protected IAlternateEqualityComparer<TAlternateKey, T> GetAlternateEqualityComparer<TAlternateKey>() where TAlternateKey : allows ref struct
+        private protected IAlternateEqualityComparer<TAlternate, T> GetAlternateEqualityComparer<TAlternate>() where TAlternate : allows ref struct
         {
-            Debug.Assert(Comparer is IAlternateEqualityComparer<TAlternateKey, T>, "Must have already been verified");
-            return Unsafe.As<IAlternateEqualityComparer<TAlternateKey, T>>(Comparer);
+            Debug.Assert(Comparer is IAlternateEqualityComparer<TAlternate, T>, "Must have already been verified");
+            return Unsafe.As<IAlternateEqualityComparer<TAlternate, T>>(Comparer);
         }
 
         /// <summary>
@@ -76,12 +76,16 @@ namespace System.Collections.Frozen
         /// <typeparam name="TAlternate">The alternate type of a key for performing lookups.</typeparam>
         public readonly struct AlternateLookup<TAlternate> where TAlternate : allows ref struct
         {
+            private readonly AlternateLookupDelegate<TAlternate> _alternateLookupDelegate;
+
             /// <summary>Initialize the instance. The set must have already been verified to have a compatible comparer.</summary>
-            internal AlternateLookup(FrozenSet<T> set)
+            internal AlternateLookup(FrozenSet<T> set, AlternateLookupDelegate<TAlternate> alternateLookupDelegate)
             {
                 Debug.Assert(set is not null);
                 Debug.Assert(set.Comparer is IAlternateEqualityComparer<TAlternate, T>);
+                Debug.Assert(alternateLookupDelegate is not null);
                 Set = set;
+                _alternateLookupDelegate = alternateLookupDelegate;
             }
 
             /// <summary>Gets the <see cref="FrozenSet{T}"/> against which this instance performs operations.</summary>
@@ -90,7 +94,7 @@ namespace System.Collections.Frozen
             /// <summary>Determines whether a set contains the specified element.</summary>
             /// <param name="item">The element to locate in the set.</param>
             /// <returns>true if the set contains the specified element; otherwise, false.</returns>
-            public bool Contains(TAlternate item) => Set.FindItemIndex(item) >= 0;
+            public bool Contains(TAlternate item) => _alternateLookupDelegate(Set, item) >= 0;
 
             /// <summary>Searches the set for a given value and returns the equal value it finds, if any.</summary>
             /// <param name="equalValue">The value to search for.</param>
@@ -98,7 +102,7 @@ namespace System.Collections.Frozen
             /// <returns>A value indicating whether the search was successful.</returns>
             public bool TryGetValue(TAlternate equalValue, [MaybeNullWhen(false)] out T actualValue)
             {
-                int index = Set.FindItemIndex(equalValue);
+                int index = _alternateLookupDelegate(Set, equalValue);
                 if (index >= 0)
                 {
                     actualValue = Set.Items[index];

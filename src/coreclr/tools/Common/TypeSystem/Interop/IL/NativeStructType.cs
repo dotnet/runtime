@@ -3,7 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+
 using ILCompiler;
+
+using Internal.Text;
+
 using Debug = System.Diagnostics.Debug;
 
 namespace Internal.TypeSystem.Interop
@@ -21,11 +25,11 @@ namespace Internal.TypeSystem.Interop
             get;
         }
 
-        public override string Name
+        public override Utf8Span Name
         {
             get
             {
-                return "__NativeType__" + ManagedStructType.Name;
+                return "__NativeType__"u8.Append(ManagedStructType.Name);
             }
         }
 
@@ -37,11 +41,11 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override string Namespace
+        public override Utf8Span Namespace
         {
             get
             {
-                return "Internal.CompilerGenerated";
+                return "Internal.CompilerGenerated"u8;
             }
         }
 
@@ -69,17 +73,27 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override int GetInlineArrayLength()
-        {
-            Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
-            throw new InvalidOperationException();
-        }
-
         public override bool IsSequentialLayout
         {
             get
             {
                 return ManagedStructType.IsSequentialLayout;
+            }
+        }
+
+        public override bool IsExtendedLayout
+        {
+            get
+            {
+                return ManagedStructType.IsExtendedLayout;
+            }
+        }
+
+        public override bool IsAutoLayout
+        {
+            get
+            {
+                return ManagedStructType.IsAutoLayout;
             }
         }
 
@@ -91,15 +105,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType BaseType
-        {
-            get
-            {
-                return (DefType)Context.GetWellKnownType(WellKnownType.ValueType);
-            }
-        }
-
-        public override MetadataType MetadataBaseType
+        public override MetadataType BaseType
         {
             get
             {
@@ -123,7 +129,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override DefType ContainingType
+        public override MetadataType ContainingType
         {
             get
             {
@@ -178,7 +184,7 @@ namespace Internal.TypeSystem.Interop
             Module = owningModule;
             ManagedStructType = managedStructType;
             _interopStateManager = interopStateManager;
-            _hasInvalidLayout = !managedStructType.HasLayout();
+            _hasInvalidLayout = managedStructType.IsAutoLayout;
             _typeForFieldIteration = managedStructType.IsInlineArray ? new TypeWithRepeatedFields(managedStructType) : managedStructType;
 
             Stack<MetadataType> typesBeingLookedAt = (s_typesBeingLookedAt ??= new Stack<MetadataType>());
@@ -241,39 +247,7 @@ namespace Internal.TypeSystem.Interop
             }
         }
 
-        public override ClassLayoutMetadata GetClassLayout()
-        {
-            ClassLayoutMetadata layout = ManagedStructType.GetClassLayout();
-
-            ClassLayoutMetadata result;
-            result.PackingSize = layout.PackingSize;
-            result.Size = layout.Size;
-
-            if (IsExplicitLayout)
-            {
-                result.Offsets = new FieldAndOffset[layout.Offsets.Length];
-
-                Debug.Assert(layout.Offsets.Length <= _fields.Length);
-
-                int layoutIndex = 0;
-                for (int index = 0; index < _fields.Length; index++)
-                {
-                    if (_fields[index].Name == layout.Offsets[layoutIndex].Field.Name)
-                    {
-                        result.Offsets[layoutIndex] = new FieldAndOffset(_fields[index], layout.Offsets[layoutIndex].Offset);
-                        layoutIndex++;
-                    }
-                }
-
-                Debug.Assert(layoutIndex == layout.Offsets.Length);
-            }
-            else
-            {
-                result.Offsets = null;
-            }
-
-            return result;
-        }
+        public override ClassLayoutMetadata GetClassLayout() => ManagedStructType.GetClassLayout();
 
         public override bool HasCustomAttribute(string attributeNamespace, string attributeName)
         {
@@ -285,7 +259,7 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MetadataType>();
         }
 
-        public override MetadataType GetNestedType(string name)
+        public override MetadataType GetNestedType(Utf8Span name)
         {
             return null;
         }
@@ -295,33 +269,25 @@ namespace Internal.TypeSystem.Interop
             return Array.Empty<MethodImplRecord>();
         }
 
-        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(string name)
+        public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name)
         {
             return Array.Empty<MethodImplRecord>();
         }
 
         private int _hashCode;
 
-        private void InitializeHashCode()
+        private int InitializeHashCode()
         {
-            var hashCodeBuilder = new Internal.NativeFormat.TypeHashingAlgorithms.HashCodeBuilder(Namespace);
-
-            if (Namespace.Length > 0)
-            {
-                hashCodeBuilder.Append(".");
-            }
-
-            hashCodeBuilder.Append(Name);
-            _hashCode = hashCodeBuilder.ToHashCode();
+            return _hashCode = VersionResilientHashCode.NameHashCode(Namespace, Name);
         }
 
         public override int GetHashCode()
         {
-            if (_hashCode == 0)
+            if (_hashCode != 0)
             {
-                InitializeHashCode();
+                return _hashCode;
             }
-            return _hashCode;
+            return InitializeHashCode();
         }
 
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
@@ -419,7 +385,7 @@ namespace Internal.TypeSystem.Interop
                 }
             }
 
-            public override DefType OwningType
+            public override MetadataType OwningType
             {
                 get
                 {
@@ -432,11 +398,19 @@ namespace Internal.TypeSystem.Interop
                 return false;
             }
 
-            public override string Name
+            public override Utf8Span Name
             {
                 get
                 {
                     return _managedField.Name;
+                }
+            }
+
+            public override LayoutInt MetadataOffset
+            {
+                get
+                {
+                    return _managedField.MetadataOffset;
                 }
             }
 

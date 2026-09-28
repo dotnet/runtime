@@ -27,7 +27,6 @@ BOOL MemoryPool::AddBlock(SIZE_T elementCount)
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT(return FALSE;);
     } CONTRACTL_END;
 
     //
@@ -215,7 +214,6 @@ void *MemoryPool::AllocateElementNoThrow()
     CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-        INJECT_FAULT( return FALSE; );
     } CONTRACTL_END;
 
     void *element = m_freeList;
@@ -230,7 +228,7 @@ void *MemoryPool::AllocateElementNoThrow()
     }
 
     // if we come there means that addblock succeeded and m_freelist isn't null anymore
-    PREFIX_ASSUME(m_freeList!= NULL);
+    _ASSERTE(m_freeList!= NULL);
     m_freeList = m_freeList->next;
 
     return element;

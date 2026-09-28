@@ -30,14 +30,8 @@ namespace System.Configuration
         /// </summary>
         public object GetValue(string key, Type type)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
-            if (type is null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(type);
 
             string val = _map[key];
 
@@ -90,7 +84,7 @@ namespace System.Configuration
                 {
                     count++;
                 }
-                if (count > 0 && string.Compare(NullString, 0, val, count, len - 2 * count, StringComparison.Ordinal) != 0)
+                if (count > 0 && !val.AsSpan(count, len - 2 * count).Equals(NullString, StringComparison.Ordinal))
                 {
                     // the stuff between the parens is not "None"
                     count = 0;

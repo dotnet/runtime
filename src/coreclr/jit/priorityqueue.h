@@ -11,35 +11,6 @@ private:
     jitstd::vector<T> data;
     Compare           comp;
 
-#ifdef DEBUG
-    // Returns true only if each element has a higher priority than its children.
-    bool VerifyMaxHeap() const
-    {
-        for (size_t i = 0; i < data.size(); i++)
-        {
-            const size_t leftChild  = (2 * i) + 1;
-            const size_t rightChild = leftChild + 1;
-
-            if (rightChild < data.size())
-            {
-                if (comp(data[i], data[leftChild]) || comp(data[i], data[rightChild]))
-                {
-                    return false;
-                }
-            }
-            else if (leftChild < data.size())
-            {
-                if (comp(data[i], data[leftChild]))
-                {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-#endif // DEBUG
-
 public:
     PriorityQueue(const jitstd::allocator<T>& allocator, const Compare& compare)
         : data(allocator)
@@ -56,6 +27,11 @@ public:
     bool Empty() const
     {
         return data.empty();
+    }
+
+    void Clear()
+    {
+        data.clear();
     }
 
     // Insert new element at the back of the vector.
@@ -77,7 +53,6 @@ public:
         }
 
         data[i] = value;
-        // assert(VerifyMaxHeap());
     }
 
     // Remove and return the root element.
@@ -115,7 +90,6 @@ public:
         data[i] = lastElem;
         data.pop_back();
 
-        // assert(VerifyMaxHeap());
         return root;
     }
 };

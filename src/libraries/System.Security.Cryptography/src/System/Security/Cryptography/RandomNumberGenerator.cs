@@ -226,7 +226,7 @@ namespace System.Security.Cryptography
         /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, Span{T})" />
         /// <seealso cref="GetItems{T}(ReadOnlySpan{T}, int)" />
         /// <seealso cref="GetHexString(Span{char}, bool)" />
-        public static unsafe string GetString(ReadOnlySpan<char> choices, int length)
+        public static string GetString(ReadOnlySpan<char> choices, int length)
         {
             if (choices.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptySpan, nameof(choices));
@@ -303,7 +303,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void GetHexStringCore(Span<char> destination, bool lowercase)
+        private static unsafe void GetHexStringCore(Span<char> destination, bool lowercase)
         {
             Debug.Assert(!destination.IsEmpty);
 
@@ -313,7 +313,9 @@ namespace System.Security.Cryptography
 
             // Don't overfill the buffer if the destination is smaller than the buffer size. We need to round up when
             // when dividing by two to account for an odd-length destination.
-            int needed = (destination.Length + 1) / 2;
+            // Adding one to a span of length int.MaxValue may overflow. This is handled by the unsigned shift to the right
+            // which will correct the overflow.
+            int needed = (destination.Length + 1) >>> 1;
             Span<byte> remainingRandom = randomBuffer.Slice(0, Math.Min(RandomBufferSize, needed));
             RandomNumberGenerator.Fill(remainingRandom);
 
@@ -344,7 +346,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void GetItemsCore<T>(ReadOnlySpan<T> choices, Span<T> destination)
+        private static unsafe void GetItemsCore<T>(ReadOnlySpan<T> choices, Span<T> destination)
         {
             Debug.Assert(choices.Length > 0);
 

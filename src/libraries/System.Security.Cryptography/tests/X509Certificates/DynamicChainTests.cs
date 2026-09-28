@@ -2,11 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
@@ -524,6 +528,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_PermittedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -539,6 +544,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
         public static void NameConstraintViolation_ExcludedTree_Dns()
         {
             SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
@@ -591,6 +597,210 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             TestNameConstrainedChain(nameConstraints, builder, (bool result, X509Chain chain) => {
                 Assert.False(result, "chain.Build");
                 Assert.Equal(PlatformNameConstraints(X509ChainStatusFlags.InvalidNameConstraints), chain.AllStatusFlags());
+            });
+        }
+
+        [ConditionalFact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
+        public static void NameConstraintViolation_ExcludedTree_Upn()
+        {
+            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
+            {
+                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+            }
+
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.com");
+            byte[] exampleCom = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                ExcludedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleCom,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(X509ChainStatusFlags.HasExcludedNameConstraint, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
+        public static void NameConstraintViolation_PermittedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.org");
+            byte[] exampleOrg = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                PermittedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleOrg,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+                Assert.False(result, "chain.Build");
+
+                if (PlatformDetection.IsWindows)
+                {
+                    Assert.Equal(X509ChainStatusFlags.HasNotPermittedNameConstraint, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [Fact]
+        public static void NameConstraintsAllowed_PermittedTree_Upn()
+        {
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.com");
+            byte[] exampleOrg = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                PermittedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleOrg,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+
+                if (PlatformDetection.IsWindows)
+                {
+                    AssertExtensions.TrueExpression(result);
+                    Assert.Equal(X509ChainStatusFlags.NoError, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
+            });
+        }
+
+        [ConditionalFact]
+        public static void NameConstraintAllowed_ExcludedTree_Upn()
+        {
+            if (PlatformDetection.UsesAppleCrypto && !AppleHasExcludedSubTreeHandling)
+            {
+                throw new SkipTestException("Platform does not handle excludedSubtrees correctly.");
+            }
+
+            SubjectAlternativeNameBuilder builder = new SubjectAlternativeNameBuilder();
+            builder.AddUserPrincipalName("v@example.com");
+
+            AsnWriter writer = new(AsnEncodingRules.DER);
+            writer.WriteCharacterString(UniversalTagNumber.UTF8String, "@example.org");
+            byte[] exampleOrg = writer.Encode();
+            writer.Reset();
+
+            NameConstraintsAsn nameConstraints = new NameConstraintsAsn
+            {
+                ExcludedSubtrees =
+                [
+                    new GeneralSubtreeAsn
+                    {
+                        Base = new GeneralNameAsn
+                        {
+                            OtherName = new OtherNameAsn
+                            {
+                                TypeId = "1.3.6.1.4.1.311.20.2.3", //User Principal Name (UPN)
+                                Value = exampleOrg,
+                            }
+                        }
+                    }
+                ]
+            };
+
+            nameConstraints.Encode(writer);
+            string encoded = writer.Encode(Convert.ToHexString);
+
+            TestNameConstrainedChain(encoded, builder, (bool result, X509Chain chain) => {
+
+                if (PlatformDetection.IsWindows)
+                {
+                    AssertExtensions.TrueExpression(result);
+                    Assert.Equal(X509ChainStatusFlags.NoError, chain.AllStatusFlags());
+                }
+                else
+                {
+                    Assert.Equal(
+                        PlatformNameConstraints(X509ChainStatusFlags.HasNotSupportedNameConstraint),
+                        chain.AllStatusFlags());
+                }
             });
         }
 
@@ -919,6 +1129,97 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void IncrediblyLongChain()
+        {
+            const int LastCertNumber = 129;
+
+            X509Certificate2 target = null;
+            ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            X509Extension caExt = X509BasicConstraintsExtension.CreateForCertificateAuthority();
+            X509Extension caKU = new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign, critical: true);
+
+            ChainHolder chainHolder = new();
+            X509ChainPolicy policy = chainHolder.Chain.ChainPolicy;
+
+            try
+            {
+                DateTimeOffset notBefore = DateTimeOffset.Now.AddMinutes(-5);
+                DateTimeOffset notAfter = notBefore.AddMinutes(10);
+                Span<byte> skidBytes = stackalloc byte[256 / 8];
+                RandomNumberGenerator.Fill(skidBytes);
+
+                for (int i = 0; i <= LastCertNumber; i++)
+                {
+                    CertificateRequest req = new CertificateRequest($"CN=Turtle {i}", key, HashAlgorithmName.SHA256);
+
+                    if (i == LastCertNumber)
+                    {
+                        req.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForEndEntity());
+                        req.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, critical: true));
+                    }
+                    else
+                    {
+                        req.CertificateExtensions.Add(caExt);
+                        req.CertificateExtensions.Add(caKU);
+                    }
+
+                    req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(skidBytes, critical: false));
+
+                    if (target is not null)
+                    {
+                        X509Certificate2 noPriv = req.Create(target, notBefore, notAfter, skidBytes);
+                        policy.ExtraStore.Add(noPriv);
+
+                        target.Dispose();
+                        target = noPriv.CopyWithPrivateKey(key);
+                    }
+                    else
+                    {
+                        target = req.CreateSelfSigned(notBefore, notAfter);
+
+                        policy.CustomTrustStore.Add(X509CertificateLoader.LoadCertificate(target.RawDataMemory.Span));
+                    }
+
+                    // Increment the SKID so that each cert has a unique SKID.
+                    // Since we don't have more than 256, we can just increment the lead byte.
+                    skidBytes[0]++;
+
+                    notBefore = notBefore.AddSeconds(1);
+                    notAfter = notAfter.AddSeconds(-1);
+                }
+
+                policy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                policy.RevocationMode = X509RevocationMode.NoCheck;
+
+                // The policy builder makes assumptions that the native chain engines won't
+                // build chains longer than 127 certificates (it can handle longer chains,
+                // just not gracefully).
+                //
+                // This test just makes sure that the assumption holds.
+                _ = chainHolder.Chain.Build(target);
+                AssertExtensions.LessThan(chainHolder.Chain.ChainElements.Count, 128);
+            }
+            finally
+            {
+                target?.Dispose();
+
+
+                foreach (X509Certificate2 cert in policy.CustomTrustStore)
+                {
+                    cert.Dispose();
+                }
+
+                foreach (X509Certificate2 cert in policy.ExtraStore)
+                {
+                    cert.Dispose();
+                }
+
+                chainHolder.Dispose();
+                key.Dispose();
+            }
+        }
+
         private static X509ChainStatusFlags PlatformBasicConstraints(X509ChainStatusFlags flags)
         {
             if (OperatingSystem.IsAndroid())
@@ -929,6 +1230,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             return flags;
+        }
+
+        private static bool AppleHasExcludedSubTreeHandling
+        {
+            get
+            {
+                // Apple operating systems did not initially handle name constraint excluded subtree handling
+                // correctly, and trustd would effectively ignore them. This was addressed in macOS 15.4 and iOS-like 18.4.
+                return OperatingSystem.IsMacOSVersionAtLeast(15, 4) ||
+                    OperatingSystem.IsIOSVersionAtLeast(18, 4) || // Also handles MacCatalyst
+                    OperatingSystem.IsTvOSVersionAtLeast(18, 4);
+            }
         }
 
         private static X509ChainStatusFlags PlatformNameConstraints(X509ChainStatusFlags flags)
@@ -958,7 +1271,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return flags;
         }
 
-        private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
+        internal static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
         {
             if (PlatformDetection.UsesAppleCrypto)
             {
@@ -1042,7 +1355,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Certificate2(cert);
         }
 
-        private static X509Extension BuildPolicyConstraints(
+        internal static X509Extension BuildPolicyConstraints(
             int? requireExplicitPolicySkipCerts = null,
             int? inhibitPolicyMappingSkipCerts = null)
         {
@@ -1073,7 +1386,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Extension("2.5.29.36", writer.Encode(), critical: true);
         }
 
-        private static X509Extension BuildPolicyByIdentifiers(params string[] policyOids)
+        internal static X509Extension BuildPolicyByIdentifiers(params string[] policyOids)
         {
             // id-ce-certificatePolicies OBJECT IDENTIFIER ::=  { id-ce 32 }
 
@@ -1087,6 +1400,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             //              PolicyQualifierInfo OPTIONAL }
 
             // CertPolicyId ::= OBJECT IDENTIFIER
+            return new X509Extension("2.5.29.32", EncodeCertificatePoliciesValue(policyOids), critical: false);
+        }
+
+        // Produces the DER value shared by the RFC 5280 certificatePolicies (2.5.29.32) extension
+        // and the Microsoft szOID_APPLICATION_CERT_POLICIES (1.3.6.1.4.1.311.21.10) extension, which
+        // are structurally identical: SEQUENCE OF PolicyInformation, PolicyInformation ::= SEQUENCE {
+        // policyIdentifier OBJECT IDENTIFIER, policyQualifiers ... OPTIONAL }.
+        internal static byte[] EncodeCertificatePoliciesValue(params string[] policyOids)
+        {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence()) //CertificatePolicies
@@ -1100,10 +1422,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
 
-            return new X509Extension("2.5.29.32", writer.Encode(), critical: false);
+            return writer.Encode();
         }
 
-        private static X509Extension BuildPolicyMappings(
+        internal static X509Extension BuildPolicyMappings(
             params (string IssuerDomainPolicy, string SubjectDomainPolicy)[] policyMappings)
         {
             //    PolicyMappings ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
@@ -1128,11 +1450,44 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Extension("2.5.29.33", writer.Encode(), critical: true);
         }
 
-        private static void TestChain3(
+        internal static void TestChain4(
+            X509Certificate2 rootCertificate,
+            X509Certificate2 highIntermediateCertificate,
+            X509Certificate2 lowIntermediateCertificate,
+            X509Certificate2 endEntityCertificate,
+            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError,
+            Action<X509ChainPolicy> configurePolicy = null)
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = endEntityCertificate.NotBefore.AddSeconds(1);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(rootCertificate);
+                chain.ChainPolicy.ExtraStore.Add(highIntermediateCertificate);
+                chain.ChainPolicy.ExtraStore.Add(lowIntermediateCertificate);
+                configurePolicy?.Invoke(chain.ChainPolicy);
+
+                bool result = chain.Build(endEntityCertificate);
+                bool expected = expectedFlags == X509ChainStatusFlags.NoError;
+                X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
+                int depth = chain.ChainElements?.Count ?? 0;
+                Assert.True(result == expected, $"chain.Build returned {result} with flags ({actualFlags}) and depth {depth} when ({expectedFlags}) with depth 4 was expected");
+
+                Assert.True(
+                    actualFlags.HasFlag(expectedFlags),
+                    $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
+            }
+        }
+
+        internal static void TestChain3(
             X509Certificate2 rootCertificate,
             X509Certificate2 intermediateCertificate,
             X509Certificate2 endEntityCertificate,
-            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError)
+            X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError,
+            Action<X509ChainPolicy> configurePolicy = null,
+            Action<X509Chain> extraVerify = null)
         {
             using (ChainHolder chainHolder = new ChainHolder())
             {
@@ -1142,14 +1497,72 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
                 chain.ChainPolicy.CustomTrustStore.Add(rootCertificate);
                 chain.ChainPolicy.ExtraStore.Add(intermediateCertificate);
+                configurePolicy?.Invoke(chain.ChainPolicy);
 
                 bool result = chain.Build(endEntityCertificate);
+                bool expected = expectedFlags == X509ChainStatusFlags.NoError;
                 X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
-                Assert.True(result == (expectedFlags == X509ChainStatusFlags.NoError), $"chain.Build ({actualFlags})");
+                int depth = chain.ChainElements?.Count ?? 0;
+                Assert.True(result == expected, $"chain.Build returned {result} with flags ({actualFlags}) and depth {depth} when ({expectedFlags}) with depth 3 was expected");
 
                 Assert.True(
                     actualFlags.HasFlag(expectedFlags),
                     $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
+
+                if (extraVerify is not null)
+                {
+                    extraVerify(chain);
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(X509RevocationMode.NoCheck)]
+        [InlineData(X509RevocationMode.Online)]
+        public static void BuildChainForExpiredSelfSignedCertificate(X509RevocationMode revocationMode)
+        {
+            using (RSA key = RSA.Create())
+            {
+                CertificateRequest request = new CertificateRequest(
+                    "CN=Expired Self-Issued",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                request.CertificateExtensions.Add(BasicConstraintsCA);
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                // The certificate is already expired at verification time.
+                using (X509Certificate2 cert = request.CreateSelfSigned(now.AddDays(-30), now.AddDays(-10)))
+                using (ChainHolder chainHolder = new ChainHolder())
+                {
+                    X509Chain chain = chainHolder.Chain;
+                    chain.ChainPolicy.VerificationFlags = X509VerificationFlags.IgnoreNotTimeValid;
+                    chain.ChainPolicy.RevocationMode = revocationMode;
+                    chain.ChainPolicy.VerificationTime = now.UtcDateTime;
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.CustomTrustStore.Add(cert);
+
+                    bool valid = chain.Build(cert);
+                    X509ChainStatusFlags flags = chain.AllStatusFlags();
+
+                    Assert.True(valid, $"chain.Build; status flags: {flags}");
+                    Assert.Equal(1, chain.ChainElements.Count);
+
+                    // The certificate is trusted, so it must not be reported as an untrusted
+                    // root or a partial chain, and its (ignored) expiration must remain the
+                    // only reported problem.
+                    Assert.False(
+                        flags.HasFlag(X509ChainStatusFlags.UntrustedRoot),
+                        $"UntrustedRoot should not be set; status flags: {flags}");
+                    Assert.False(
+                        flags.HasFlag(X509ChainStatusFlags.PartialChain),
+                        $"PartialChain should not be set; status flags: {flags}");
+                    Assert.True(
+                        flags.HasFlag(X509ChainStatusFlags.NotTimeValid),
+                        $"NotTimeValid should be set; status flags: {flags}");
+                }
             }
         }
     }

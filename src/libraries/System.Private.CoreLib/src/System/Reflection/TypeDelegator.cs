@@ -41,7 +41,7 @@ namespace System.Reflection
         public override Guid GUID => typeImpl.GUID;
         public override int MetadataToken => typeImpl.MetadataToken;
 
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        [DynamicallyAccessedMembers(InvokeMemberMembers)]
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
             object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
@@ -56,6 +56,8 @@ namespace System.Reflection
         public override string? Namespace => typeImpl.Namespace;
         public override string? AssemblyQualifiedName => typeImpl.AssemblyQualifiedName;
         public override Type? BaseType => typeImpl.BaseType;
+
+        public override int GetArrayRank() => typeImpl.GetArrayRank();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
@@ -91,6 +93,9 @@ namespace System.Reflection
         public override Type[] GetFunctionPointerCallingConventions() => typeImpl.GetFunctionPointerCallingConventions();
         public override Type[] GetFunctionPointerParameterTypes() => typeImpl.GetFunctionPointerParameterTypes();
         public override Type GetFunctionPointerReturnType() => typeImpl.GetFunctionPointerReturnType();
+
+        public override Type[] GetOptionalCustomModifiers() => typeImpl.GetOptionalCustomModifiers();
+        public override Type[] GetRequiredCustomModifiers() => typeImpl.GetRequiredCustomModifiers();
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)]
@@ -150,6 +155,7 @@ namespace System.Reflection
         protected override bool IsValueTypeImpl() => typeImpl.IsValueType;
         protected override bool IsCOMObjectImpl() => typeImpl.IsCOMObject;
         public override bool IsByRefLike => typeImpl.IsByRefLike;
+        public override Type? GetNullableUnderlyingType() => typeImpl.GetNullableUnderlyingType();
         public override bool IsConstructedGenericType => typeImpl.IsConstructedGenericType;
 
         public override bool IsCollectible => typeImpl.IsCollectible;

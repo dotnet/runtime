@@ -18,7 +18,6 @@ namespace System.Runtime.Serialization.DataContracts
         private Dictionary<DataContract, object>? _processedContracts;
         private readonly ISerializationSurrogateProvider? _surrogateProvider;
         private readonly ISerializationSurrogateProvider2? _extendedSurrogateProvider;
-        private Hashtable? _surrogateData;
         private DataContractDictionary? _knownTypesForObject;
         private readonly List<Type>? _referencedTypes;
         private readonly List<Type>? _referencedCollectionTypes;
@@ -61,7 +60,7 @@ namespace System.Runtime.Serialization.DataContracts
         public Dictionary<DataContract, object> ProcessedContracts =>
             _processedContracts ??= new Dictionary<DataContract, object>();
 
-        public Hashtable SurrogateData => _surrogateData ??= new Hashtable();
+        public Hashtable SurrogateData => field ??= new Hashtable();
 
         public DataContractDictionary? KnownTypesForObject
         {
@@ -79,7 +78,7 @@ namespace System.Runtime.Serialization.DataContracts
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         internal void Add(Type type)
         {
-            DataContract dataContract = GetDataContract(type);
+            DataContract dataContract = GetDataContract(type, verifyConstructor: false);
             EnsureTypeNotGeneric(dataContract.UnderlyingType);
             Add(dataContract);
         }
@@ -227,15 +226,22 @@ namespace System.Runtime.Serialization.DataContracts
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
         public DataContract GetDataContract(Type type)
         {
+            return GetDataContract(type, verifyConstructor: true);
+        }
+
+        [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
+        [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
+        private DataContract GetDataContract(Type type, bool verifyConstructor)
+        {
             if (_surrogateProvider == null)
-                return DataContract.GetDataContract(type);
+                return DataContract.GetDataContract(type, verifyConstructor);
 
             DataContract? dataContract = DataContract.GetBuiltInDataContract(type);
             if (dataContract != null)
                 return dataContract;
 
             Type dcType = DataContractSurrogateCaller.GetDataContractType(_surrogateProvider, type);
-            dataContract = DataContract.GetDataContract(dcType);
+            dataContract = DataContract.GetDataContract(dcType, verifyConstructor);
             if (_extendedSurrogateProvider != null && !SurrogateData.Contains(dataContract))
             {
                 object? customData = DataContractSurrogateCaller.GetCustomDataToExport(_extendedSurrogateProvider, type, dcType);
@@ -282,7 +288,7 @@ namespace System.Runtime.Serialization.DataContracts
                 }
                 else
                 {
-                    return GetDataContract(dataMemberType);
+                    return GetDataContract(dataMemberType, verifyConstructor: false);
                 }
             }
             return dataMember.MemberTypeContract;
@@ -293,7 +299,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
             if (collectionContract.ItemType != null)
-                return GetDataContract(collectionContract.ItemType);
+                return GetDataContract(collectionContract.ItemType, verifyConstructor: false);
             return collectionContract.ItemContract;
         }
 
@@ -324,7 +330,7 @@ namespace System.Runtime.Serialization.DataContracts
                     foreach (Type type in _referencedTypes)
                     {
                         if (type == null)
-                            throw new InvalidOperationException(SR.Format(SR.ReferencedTypesCannotContainNull));
+                            throw new InvalidOperationException(SR.ReferencedTypesCannotContainNull);
 
                         AddReferencedType(_referencedTypesDictionary, type);
                     }
@@ -345,7 +351,7 @@ namespace System.Runtime.Serialization.DataContracts
                     foreach (Type type in _referencedCollectionTypes)
                     {
                         if (type == null)
-                            throw new InvalidOperationException(SR.Format(SR.ReferencedCollectionTypesCannotContainNull));
+                            throw new InvalidOperationException(SR.ReferencedCollectionTypesCannotContainNull);
                         AddReferencedType(_referencedCollectionTypesDictionary, type);
                     }
                 }

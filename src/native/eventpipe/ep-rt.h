@@ -80,6 +80,10 @@ int64_t
 ep_rt_atomic_dec_int64_t (volatile int64_t *value);
 
 static
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value);
+
+static
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value);
 
@@ -196,6 +200,16 @@ inline
 bool
 ep_rt_config_value_get_enable_stackwalk (void);
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void);
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void);
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -206,7 +220,33 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 
 static
 void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event);
+
+static
+void
+ep_rt_sample_profiler_session_enabled (void);
+
+static
+void
+ep_rt_sample_profiler_disabled (void);
+
+static
+void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider);
+
+/*
+ * Session lifecycle notifications.
+ */
+
+// Invoked while a session is stopping, before its providers are disabled and its buffers are flushed, so the
+// runtime can emit any pending end-of-session data (e.g. block-count PGO) into the still-open session. The
+// caller has already validated the session and bound the current thread to it as its rundown session, so the
+// runtime gates on ep_event_is_enabled_for_current_thread and its emitted events route only to that session.
+// Runs before the EventPipe lock is taken, because emitting events re-enters the write path and must not run
+// with that lock held.
+static
+void
+ep_rt_session_stopping (void);
 
 /*
  * Arrays.
@@ -307,6 +347,12 @@ ep_rt_thread_create (
 	void *params,
 	EventPipeThreadType thread_type,
 	void *id);
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params);
 
 static
 void

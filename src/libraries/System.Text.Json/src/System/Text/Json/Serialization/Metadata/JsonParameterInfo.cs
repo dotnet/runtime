@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Metadata
             get
             {
                 // Use delayed initialization to ensure that reflection dependencies are pay-for-play.
-                Debug.Assert(MatchingProperty.DeclaringTypeInfo != null, "Declaring type metadata must have already been configured.");
+                Debug.Assert(MatchingProperty.DeclaringTypeInfo is not null, "Declaring type metadata must have already been configured.");
                 ICustomAttributeProvider? parameterInfo = _attributeProvider;
                 if (parameterInfo is null && MatchingProperty.DeclaringTypeInfo.ConstructorAttributeProvider is MethodBase ctorInfo)
                 {

@@ -15,7 +15,7 @@ namespace System.IO.Packaging.Tests
     public class PartPieceTests : FileCleanupTestBase
     {
         private delegate byte[] FileContentsGenerator(PartConstructionParameters pcp, int totalLength);
-        private record class PartConstructionParameters (string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
+        private record class PartConstructionParameters(string FullPath, bool CreateAsAtomic, bool CreateAsValidPieceSequence, bool UppercaseFileName, bool ShufflePieces, int[] PieceLengths, FileContentsGenerator PieceGenerator)
         { }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
@@ -85,7 +85,7 @@ namespace System.IO.Packaging.Tests
         {
             var bytes = new byte[totalLength];
 
-            for(int i = 0; i < totalLength; i++)
+            for (int i = 0; i < totalLength; i++)
             {
                 bytes[i] = (byte)(i % 255);
             }
@@ -209,7 +209,7 @@ namespace System.IO.Packaging.Tests
 
             Assert.NotNull(s_ZipPackagePartPieceType);
             Assert.NotNull(s_TryParseZipPackagePartPiece);
-            Assert.False((bool)s_TryParseZipPackagePartPiece.Invoke(null, [ partPieceEntry, null ]));
+            Assert.False((bool)s_TryParseZipPackagePartPiece.Invoke(null, [partPieceEntry, null]));
         }
 
         [Theory]
@@ -271,6 +271,23 @@ namespace System.IO.Packaging.Tests
             Assert.NotEmpty(zipPackage.GetParts());
         }
 
+        // Regression test: an interleaved "[Content_Types].xml" (i.e. one split into pieces) must be
+        // bounded by the same maximum size as an atomic "[Content_Types].xml", since its pieces are
+        // recombined and parsed by the same XmlReader. Otherwise a malicious package could bypass the
+        // atomic-entry size guard simply by splitting the content types part into pieces.
+        [Fact]
+        public void InterleavedContentTypesExceedingMaxSizeThrows()
+        {
+            // Two highly-compressible (all-zero) pieces whose combined declared uncompressed size
+            // exceeds the 4 MB cap, even though neither piece alone does.
+            byte[] package = CreatePackage(
+                new PartConstructionParameters("AtomicPartEntry.bin", true, false, false, false, [200], GenerateRandomBytes),
+                new PartConstructionParameters("[Content_Types].xml", false, true, false, false, [2_500_000, 2_500_001], (_, totalLength) => new byte[totalLength]));
+
+            using var ms = new MemoryStream(package);
+            Assert.Throws<FileFormatException>(() => Package.Open(ms));
+        }
+
         // Verify that the IComparable<T> implementation on ZipPackagePartPiece works properly.
         // If it is, we should see the list reordered by piece number
         [Theory]
@@ -284,7 +301,9 @@ namespace System.IO.Packaging.Tests
             using var zipArchive = new ZipArchive(ms, ZipArchiveMode.Read);
             string[] archiveNames = partPieceLists.Split(',');
 
+#pragma warning disable IL3050 // s_ZipPackagePartPieceType is a reference type, this is safe to suppress
             Type genericSortedSetType = typeof(SortedSet<>).MakeGenericType(s_ZipPackagePartPieceType);
+#pragma warning restore IL3050
             MethodInfo sortedSetAddMethod = genericSortedSetType.GetMethod("Add");
             PropertyInfo zipPackagePartPieceNumberProperty = s_ZipPackagePartPieceType.GetProperty("PieceNumber", BindingFlags.NonPublic | BindingFlags.Instance);
             System.Collections.IEnumerable partPieces = (System.Collections.IEnumerable)Activator.CreateInstance(genericSortedSetType);
@@ -324,6 +343,104 @@ namespace System.IO.Packaging.Tests
             using var zipPackage = Package.Open(ms);
 
             Assert.NotEmpty(zipPackage.GetParts());
+        }
+
+        [Fact]
+        public void PartNamesAreCaseInsensitive()
+        {
+            using var ms = new MemoryStream();
+
+            using (var zipPackage = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+            {
+                zipPackage.CreatePart(new Uri("/part", UriKind.Relative), "text/plain");
+            }
+            ms.Position = 0;
+            using (var zipPackage = Package.Open(ms, FileMode.Open, FileAccess.Read))
+            {
+                var lowerPart = zipPackage.GetPart(new Uri("/part", UriKind.Relative));
+                var upperPart = zipPackage.GetPart(new Uri("/PART", UriKind.Relative));
+
+                Assert.Same(lowerPart, upperPart);
+                Assert.Equal(lowerPart.Uri, upperPart.Uri);
+                Assert.Equal(lowerPart.ContentType, upperPart.ContentType);
+            }
+        }
+
+        [Fact]
+        public void DuplicatePartsDifferingOnlyByCaseAreNotAllowed()
+        {
+            using var ms = new MemoryStream();
+            using (var zipPackage = Package.Open(ms, FileMode.Create, FileAccess.ReadWrite))
+            {
+                zipPackage.CreatePart(new Uri("/part", UriKind.Relative), "text/plain");
+                Assert.Throws<InvalidOperationException>(() =>
+                    zipPackage.CreatePart(new Uri("/PART", UriKind.Relative), "text/plain"));
+            }
+        }
+
+        [Fact]
+        public void PartUriHonorsSystemUriEqualityContract()
+        {
+            // PackUriHelper.CreatePartUri returns an internal Uri subclass (ValidatedPartUri) that must
+            // preserve System.Uri's object.Equals/GetHashCode contract so it can be safely mixed with
+            // plain System.Uri instances in hash-based collections such as HashSet<Uri>/Dictionary<Uri,_>.
+            Uri plain = new Uri("/foo.xml", UriKind.Relative);
+            Uri validated = PackUriHelper.CreatePartUri(plain);
+
+            object a = validated;
+            object b = plain;
+
+            // object.Equals must be symmetric and treat a value-equal plain System.Uri as equal.
+            Assert.True(a.Equals(b));
+            Assert.True(b.Equals(a));
+
+            // GetHashCode must be consistent with a value-equal plain System.Uri so both types can
+            // coexist as keys in the same hash-based collection.
+            Assert.Equal(plain.GetHashCode(), validated.GetHashCode());
+
+            var set = new HashSet<Uri> { plain };
+            Assert.Contains(validated, set);
+
+            var set2 = new HashSet<Uri> { validated };
+            Assert.Contains(plain, set2);
+        }
+
+        [Fact]
+        public void ContentTypeOverrideLookupIsCaseInsensitive()
+        {
+            // Regression test: a package whose [Content_Types].xml Override PartName differs only
+            // by case from the actual zip entry name must still resolve the part's content type.
+            // This exercises ZipPackage's internal ValidatedPartUri-keyed override dictionary, which
+            // must remain case-insensitive independent of whether ValidatedPartUri overrides
+            // object.Equals/GetHashCode.
+            using var ms = new MemoryStream();
+            using (var zipArchive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                var contentTypesEntry = zipArchive.CreateEntry("[Content_Types].xml");
+                using (var writer = new StreamWriter(contentTypesEntry.Open()))
+                {
+                    writer.Write(
+                        """
+                        <?xml version="1.0" encoding="utf-8"?>
+                        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                            <Override PartName="/Test.xml" ContentType="application/foo" />
+                        </Types>
+                        """);
+                }
+
+                var partEntry = zipArchive.CreateEntry("test.xml");
+                using (var writer = new StreamWriter(partEntry.Open()))
+                {
+                    writer.Write("<root/>");
+                }
+            }
+
+            ms.Position = 0;
+            using var package = Package.Open(ms, FileMode.Open, FileAccess.Read);
+            PackagePart[] parts = package.GetParts().ToArray();
+
+            Assert.Single(parts);
+            Assert.Equal("application/foo", parts[0].ContentType);
         }
 
         [Fact]
@@ -603,6 +720,22 @@ namespace System.IO.Packaging.Tests
             }
 
             zipArchive.Dispose();
+        }
+
+        [Fact]
+        public void InterleavedZipPackagePartStream_Length_ReturnsCorrectValueWhenCanSeekIsFalse()
+        {
+            using MemoryStream package = new(_partPieceSampleZipPackage);
+
+            using Package zipPackage = Package.Open(package, FileMode.Open, FileAccess.Read);
+            PackagePart partEntry = zipPackage.GetPart(new Uri("/ReadablePartPieceEntry.bin", UriKind.Relative));
+            using Stream stream = partEntry.GetStream(FileMode.Open);
+
+            // When the package is opened with FileAccess.Read, the underlying zip entry stream
+            // does not support seeking but Length should still return the correct value.
+            // ReadablePartPieceEntry.bin has 4 pieces of 16 bytes each = 64 bytes total.
+            Assert.False(stream.CanSeek);
+            Assert.Equal(64, stream.Length);
         }
     }
 }

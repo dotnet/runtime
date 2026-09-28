@@ -26,7 +26,7 @@ namespace System.Reflection.Metadata.Tests
                     Assert.Equal('Z', (char)peImagePtr[1]);
 
                     using (var peReader = useStream ?
-                        new PEReader(new ReadOnlyUnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage) :
+                        new PEReader(new UnmanagedMemoryStream(peImagePtr, int.MaxValue), PEStreamOptions.IsLoadedImage) :
                         new PEReader(peImagePtr, int.MaxValue, isLoadedImage: true))
                     {
                         validator(peReader);

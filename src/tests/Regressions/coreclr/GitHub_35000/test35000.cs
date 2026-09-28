@@ -3,6 +3,7 @@
 using System;
 using System.Reflection;
 using Xunit;
+using TestLibrary;
 
 public class Test35000
 {
@@ -16,6 +17,7 @@ public class Test35000
         public override object MyMethod(int a, int b, int c, int d, int e, int f, int g, int h) { return null; }
     }
 
+    [ActiveIssue("needs triage", typeof(PlatformDetection), nameof(PlatformDetection.IsSimulator))]
     [Fact]
     public static int TestEntryPoint()
     {

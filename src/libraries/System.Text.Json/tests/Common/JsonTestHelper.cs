@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -157,6 +158,7 @@ namespace System.Text.Json
             }
         }
 
+        [RequiresUnreferencedCode("AssertOptionsEqual uses reflection to enumerate JsonSerializerOptions properties.")]
         public static void AssertOptionsEqual(JsonSerializerOptions expected, JsonSerializerOptions actual)
         {
             foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
@@ -247,20 +249,40 @@ namespace System.Text.Json
             Func<TFirst, TSecond, TThird, TResult> resultSelector)
             => first.CrossJoin(second, third).Select(tuple => resultSelector(tuple.First, tuple.Second, tuple.Third));
 
-        public static async Task<List<T>> ToListAsync<T>(this IAsyncEnumerable<T> source)
-        {
-            var list = new List<T>();
-            await foreach (T item in source)
-            {
-                list.Add(item);
-            }
-            return list;
-        }
-
         private static readonly Regex s_stripWhitespace = new Regex(@"\s+", RegexOptions.Compiled);
 
         public static string StripWhitespace(this string value)
             => s_stripWhitespace.Replace(value, string.Empty);
+
+        public static TheoryData<JsonNumberHandling, JsonNumberHandling?, JsonNumberHandling?, JsonNumberHandling> GetUnionCaseNumberHandlingPrecedenceTestData()
+        {
+            const JsonNumberHandling Strict = JsonNumberHandling.Strict;
+            const JsonNumberHandling ReadFromString = JsonNumberHandling.AllowReadingFromString;
+            const JsonNumberHandling WriteAsString = JsonNumberHandling.WriteAsString;
+
+            // Columns: global options, union-type override, case-type override, expected effective case handling.
+            // null means no override; an explicit Strict value must still override less restrictive settings.
+            return new()
+            {
+                // With no type overrides, use the global options.
+                { Strict, null, null, Strict },
+                { ReadFromString, null, null, ReadFromString },
+                { WriteAsString, null, null, WriteAsString },
+
+                // The union-type override wins over both the case type and global options; flags are not merged.
+                { ReadFromString, Strict, null, Strict },
+                { ReadFromString, Strict, ReadFromString, Strict },
+                { Strict, ReadFromString, Strict, ReadFromString },
+                { ReadFromString, WriteAsString, ReadFromString, WriteAsString },
+                { ReadFromString | WriteAsString, Strict, null, Strict },
+
+                // Without a union override, the case-type setting wins over the global options.
+                { ReadFromString, null, Strict, Strict },
+                { Strict, null, ReadFromString, ReadFromString },
+                { Strict, null, WriteAsString, WriteAsString },
+                { Strict, null, ReadFromString | WriteAsString, ReadFromString | WriteAsString },
+            };
+        }
     }
 
     /// <summary>

@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//
-// COM+99 EE to Debugger Interface Header
-//
 
-
+//
+// EE to Debugger Interface Header
+//
 
 #ifndef _eedbginterface_h_
 #define _eedbginterface_h_
@@ -36,9 +35,6 @@ class Frame;
 // between the EE and the Debugger.
 //
 //
-typedef BOOL (*HashMapEnumCallback)(HashMap* h,
-                                    void* pData,
-                                    ULONG value);
 
 typedef enum AttachAppDomainEventsEnum
 {
@@ -133,6 +129,8 @@ public:
 
 #endif // #ifndef DACCESS_COMPILE
 
+    virtual BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip) = 0;
+
     virtual PCODE GetNativeCodeStartAddress(PCODE address) = 0;
 
     virtual MethodDesc *GetNativeCodeMethodDesc(const PCODE address) = 0;
@@ -157,10 +155,8 @@ public:
                                            size_t * hotSize,
                                            size_t * coldSize) = 0;
 
-#if defined(FEATURE_EH_FUNCLETS)
     virtual DWORD GetFuncletStartOffsets(const BYTE *pStart, DWORD* pStartOffsets, DWORD dwLength) = 0;
     virtual StackFrame FindParentStackFrame(CrawlFrame* pCF) = 0;
-#endif // FEATURE_EH_FUNCLETS
 
     virtual size_t GetFunctionSize(MethodDesc *pFD) = 0;
 
@@ -265,10 +261,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD) = 0;
-
-    virtual ULONG MethodDescGetRVA(MethodDesc *pFD) = 0;
-
     virtual void MarkDebuggerAttached(void) = 0;
 
     virtual void MarkDebuggerUnattached(void) = 0;
@@ -323,9 +315,6 @@ public:
 #endif // #ifndef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-
-    virtual void DebuggerModifyingLogSwitch (int iNewLevel,
-                                             const WCHAR *pLogSwitchName) = 0;
 
     virtual HRESULT SetIPFromSrcToDst(Thread *pThread,
                           SLOT addrStart,

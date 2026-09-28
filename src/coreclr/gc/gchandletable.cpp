@@ -17,12 +17,17 @@ IGCHandleManager* CreateGCHandleManager()
 
 void GCHandleStore::Uproot()
 {
-    Ref_RemoveHandleTableBucket(&_underlyingBucket);
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"Uproot is not in use");
 }
 
 bool GCHandleStore::ContainsHandle(OBJECTHANDLE handle)
 {
-    return _underlyingBucket.Contains(handle);
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"ContainsHandle is not in use");
+    return false;
 }
 
 // this is the number of handles we allocate in a handle table before we switch to the next table.
@@ -46,7 +51,7 @@ HHANDLETABLE GCHandleStore::GetTable()
     // high 16-bits are for the handle info.
     int handleInfo = (uint32_t)(ctx->alloc_count) >> 16;
 
-    // high 10 bits store the cpu index. 
+    // high 10 bits store the cpu index.
     // low 6 bits store the # of handles allocated so far (before the next reset).
     int numHandles = handleInfo & 0x3f;
     int cpuIndex = handleInfo >> 6;
@@ -129,25 +134,10 @@ IGCHandleStore* GCHandleManager::GetGlobalHandleStore()
 
 IGCHandleStore* GCHandleManager::CreateHandleStore()
 {
-#ifndef FEATURE_NATIVEAOT
-    GCHandleStore* store = new (nothrow) GCHandleStore();
-    if (store == nullptr)
-    {
-        return nullptr;
-    }
-
-    bool success = ::Ref_InitializeHandleTableBucket(&store->_underlyingBucket);
-    if (!success)
-    {
-        delete store;
-        return nullptr;
-    }
-
-    return store;
-#else
-    assert(!"CreateHandleStore is not implemented when FEATURE_NATIVEAOT is defined!");
+    // Dead path. The vtable slot is preserved for GC_INTERFACE_MAJOR_VERSION 5
+    // ABI compatibility with external standalone GC implementations.
+    assert(!"CreateHandleStore is not in use");
     return nullptr;
-#endif
 }
 
 void GCHandleManager::DestroyHandleStore(IGCHandleStore* store)
@@ -213,7 +203,7 @@ Object* GCHandleManager::InterlockedCompareExchangeObjectInHandle(OBJECTHANDLE h
 HandleType GCHandleManager::HandleFetchType(OBJECTHANDLE handle)
 {
     uint32_t type = ::HandleFetchType(handle);
-    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_WEAK_INTERIOR_POINTER);
+    assert(type >= HNDTYPE_WEAK_SHORT && type <= HNDTYPE_CROSSREFERENCE);
     return static_cast<HandleType>(type);
 }
 
@@ -221,4 +211,3 @@ void GCHandleManager::TraceRefCountedHandles(HANDLESCANPROC callback, uintptr_t 
 {
     ::Ref_TraceRefCountHandles(callback, param1, param2);
 }
-

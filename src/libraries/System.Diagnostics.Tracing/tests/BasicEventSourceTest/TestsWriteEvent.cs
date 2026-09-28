@@ -11,57 +11,33 @@ namespace BasicEventSourceTests
 {
     public partial class TestsWriteEvent
     {
-        /// <summary>
-        /// Tests WriteEvent using the manifest based mechanism.
-        /// Tests bTraceListener path.
-        /// </summary>
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
-        public void Test_WriteEvent_Manifest_EventListener()
+
+        public static TheoryData<Listener,bool> GetListenerConfigurations()
         {
-            using (var listener = new EventListenerListener())
+            TheoryData<Listener, bool> data = new TheoryData<Listener, bool>();
+            foreach(var listener in GetListeners())
             {
-                Test_WriteEvent(listener, false);
+                data.Add(listener, /*self-describing*/ false);
             }
-        }
-
-        /// <summary>
-        /// Tests WriteEvent using the manifest based mechanism.
-        /// Tests bTraceListener path using events instead of virtual callbacks.
-        /// </summary>
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
-        public void Test_WriteEvent_Manifest_EventListener_UseEvents()
-        {
-            Listener listener = new EventListenerListener(true);
-            Test_WriteEvent(listener, false);
-        }
-
-        /// <summary>
-        /// Tests WriteEvent using the self-describing mechanism.
-        /// Tests both the ETW and TraceListener paths.
-        /// </summary>
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
-        public void Test_WriteEvent_SelfDescribing_EventListener()
-        {
-            using (var listener = new EventListenerListener())
+            // listener objects are used once and then disposed, so we need to create a 2nd set
+            foreach (var listener in GetListeners())
             {
-                Test_WriteEvent(listener, true);
+                data.Add(listener, /*self-describing*/ true);
             }
+            return data;
         }
 
-        /// <summary>
-        /// Tests WriteEvent using the self-describing mechanism.
-        /// Tests both the ETW and TraceListener paths using events
-        /// instead of virtual callbacks.
-        /// </summary>
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
-        public void Test_WriteEvent_SelfDescribing_EventListener_UseEvents()
+        public static TheoryData<Listener> GetListeners()
         {
-            Listener listener = new EventListenerListener(true);
-            Test_WriteEvent(listener, true);
+            TheoryData<Listener> data = new TheoryData<Listener>();
+            if (PlatformDetection.IsNetCore && PlatformDetection.IsNotAndroid && PlatformDetection.IsNotBrowser &&
+                (PlatformDetection.IsNotMonoRuntime || PlatformDetection.IsMacCatalyst))
+            {
+                data.Add(new EventPipeListener());
+            }
+            data.Add(new EventListenerListener());
+            data.Add(new EventListenerListener(true));
+            return data;
         }
 
         [Fact]
@@ -89,10 +65,19 @@ namespace BasicEventSourceTests
             }
         }
 
-        /// <summary>
-        /// Helper method for the two tests above.
-        /// </summary>
-        private void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents, bool isEtwListener = false)
+        [Theory]
+        [MemberData(nameof(GetListenerConfigurations))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/21295", TargetFrameworkMonikers.NetFramework)]
+        public void Test_WriteEvent(Listener listener, bool useSelfDescribingEvents)
+        {
+            using (listener)
+            {
+                Test_WriteEvent_Helper(listener, useSelfDescribingEvents);
+            }
+        }
+
+
+        private void Test_WriteEvent_Helper(Listener listener, bool useSelfDescribingEvents)
         {
             using (var logger = new EventSourceTest(useSelfDescribingEvents))
             {
@@ -147,7 +132,48 @@ namespace BasicEventSourceTests
                         Assert.Equal("s8", (string)evt.PayloadValue(8, "s8"));
                     }));
                 /*************************************************************************/
-                Test_WriteEvent_AddEtwTests(tests, logger);
+
+                tests.Add(new SubTest("Write/Basic/EventWithManyTypeArgs",
+                delegate ()
+                {
+                    logger.EventWithManyTypeArgs("Hello", 1, 2, 3, 'a', 4, 5, 6, 7,
+                        (float)10.0, (double)11.0, logger.Guid);
+                },
+                delegate (Event evt)
+                {
+                    Assert.Equal(logger.Name, evt.ProviderName);
+                    Assert.Equal("EventWithManyTypeArgs", evt.EventName);
+                    Assert.Equal("Hello", evt.PayloadValue(0, "msg"));
+                    Assert.Equal((float)10.0, evt.PayloadValue(9, "f"));
+                    Assert.Equal((double)11.0, evt.PayloadValue(10, "d"));
+                    Assert.Equal(logger.Guid, evt.PayloadValue(11, "guid"));
+                }));
+
+                if (!listener.IsEventPipe) // EventPipe doesn't encode this correctly
+                {
+                    tests.Add(new SubTest("Write/Activity/EventWithXferWeirdArgs",
+                    delegate ()
+                    {
+                        var actid = Guid.NewGuid();
+                        logger.EventWithXferWeirdArgs(actid,
+                            (IntPtr)128,
+                            true,
+                            SdtEventSources.MyLongEnum.LongVal1);
+                    },
+                    delegate (Event evt)
+                    {
+                        Assert.Equal(logger.Name, evt.ProviderName);
+
+                        // We log EventWithXferWeirdArgs in one case and
+                        // WorkWeirdArgs/Send in the other
+                        Assert.Contains("WeirdArgs", evt.EventName);
+
+                        Assert.Equal("128", evt.PayloadValue(0, "iptr").ToString());
+                        Assert.True((bool)evt.PayloadValue(1, "b"));
+                        Assert.Equal((long)SdtEventSources.MyLongEnum.LongVal1, ((IConvertible)evt.PayloadValue(2, "le")).ToInt64(null));
+                    }));
+                }
+
 
                 /*************************************************************************/
                 /*************************** ENUM TESTING *******************************/
@@ -165,7 +191,7 @@ namespace BasicEventSourceTests
                         Assert.Equal("EventEnum", evt.EventName);
 
                         Assert.Equal(1, ((IConvertible)evt.PayloadValue(0, "x")).ToInt32(null));
-                        if (evt.IsEtw && !useSelfDescribingEvents)
+                        if (evt.IsEnumValueStronglyTyped(useSelfDescribingEvents, writeEvent:true))
                             Assert.Equal("Blue", evt.PayloadString(0, "x"));
                     }));
 
@@ -180,7 +206,7 @@ namespace BasicEventSourceTests
                        Assert.Equal("EventEnum1", evt.EventName);
 
                        Assert.Equal(1, ((IConvertible)evt.PayloadValue(0, "x")).ToInt32(null));
-                       if (evt.IsEtw && !useSelfDescribingEvents)
+                       if (evt.IsEnumValueStronglyTyped(useSelfDescribingEvents, writeEvent: true))
                            Assert.Equal("Blue", evt.PayloadString(0, "x"));
                    }));
 
@@ -298,8 +324,8 @@ namespace BasicEventSourceTests
                         Assert.Equal("", evt.PayloadValue(2, null));
                     }));
 
-                // Self-describing ETW does not support NULL arguments.
-                if (useSelfDescribingEvents && !(isEtwListener))
+                // Self-describing ETW+EventPipe do not support NULL arguments.
+                if (useSelfDescribingEvents && listener.IsSelfDescribingNullArgSupported)
                 {
                     tests.Add(new SubTest("WriteEvent/Basic/EventVarArgsWithString",
                         delegate ()
@@ -353,23 +379,19 @@ namespace BasicEventSourceTests
             }
         }
 
-        static partial void Test_WriteEvent_AddEtwTests(List<SubTest> tests, EventSourceTest logger);
-
         /**********************************************************************/
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent
-        /// Tests the EventListener case
-        /// </summary>
-        [Fact]
-        public void Test_WriteEvent_ComplexData_SelfDescribing_EventListener()
+
+        [Theory]
+        [MemberData(nameof(GetListeners))]
+        public void Test_WriteEvent_ComplexData_SelfDescribing(Listener listener)
         {
-            using (var listener = new EventListenerListener())
+            using (listener)
             {
-                Test_WriteEvent_ComplexData_SelfDescribing(listener);
+                Test_WriteEvent_ComplexData_SelfDescribing_Helper(listener);
             }
         }
 
-        private void Test_WriteEvent_ComplexData_SelfDescribing(Listener listener)
+        private void Test_WriteEvent_ComplexData_SelfDescribing_Helper(Listener listener)
         {
             using (var logger = new EventSourceTestSelfDescribingOnly())
             {
@@ -391,7 +413,9 @@ namespace BasicEventSourceTests
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
 
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/UserData",
+                if(!listener.IsEventPipe) // EventPipe doesn't correctly encode metadata for this
+                {
+                    tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/UserData",
                     delegate ()
                     {
                         logger.EventUserDataInt(new UserData() { x = 3, y = 8 }, 5);
@@ -406,71 +430,74 @@ namespace BasicEventSourceTests
                         Assert.Equal(8, (int)aClass["y"]);
                         Assert.Equal(5, evt.PayloadValue(1, "anInt"));
                     }));
+                }
 
+                if (listener.IsSelfDescribingNullableSupported)
+                {
+                    int? nullableInt = 12;
+                    tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Int12",
+                        delegate ()
+                        {
+                            logger.EventNullableIntInt(nullableInt, 5);
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventNullableIntInt", evt.EventName);
 
-                int? nullableInt = 12;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/Int12",
-                    delegate ()
-                    {
-                        logger.EventNullableIntInt(nullableInt, 5);
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventNullableIntInt", evt.EventName);
+                            var payload = evt.PayloadValue(0, "nullableInt");
+                            Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
+                            Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                        }));
 
-                        var payload = evt.PayloadValue(0, "nullableInt");
-                        Assert.Equal(nullableInt, TestUtilities.UnwrapNullable<int>(payload));
-                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
-                    }));
+                    int? nullableInt2 = null;
+                    tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/IntNull",
+                        delegate ()
+                        {
+                            logger.EventNullableIntInt(nullableInt2, 5);
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventNullableIntInt", evt.EventName);
 
-                int? nullableInt2 = null;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/IntNull",
-                    delegate ()
-                    {
-                        logger.EventNullableIntInt(nullableInt2, 5);
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventNullableIntInt", evt.EventName);
+                            var payload = evt.PayloadValue(0, "nullableInt");
+                            Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
+                            Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                        }));
 
-                        var payload = evt.PayloadValue(0, "nullableInt");
-                        Assert.Equal(nullableInt2, TestUtilities.UnwrapNullable<int>(payload));
-                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
-                    }));
+                    DateTime? nullableDate = DateTime.Now;
+                    tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNow",
+                        delegate ()
+                        {
+                            logger.EventNullableDateTimeInt(nullableDate, 5);
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventNullableDateTimeInt", evt.EventName);
 
-                DateTime? nullableDate = DateTime.Now;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNow",
-                    delegate ()
-                    {
-                        logger.EventNullableDateTimeInt(nullableDate, 5);
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventNullableDateTimeInt", evt.EventName);
+                            var payload = evt.PayloadValue(0, "nullableDate");
+                            Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
+                            Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                        }));
 
-                        var payload = evt.PayloadValue(0, "nullableDate");
-                        Assert.Equal(nullableDate, TestUtilities.UnwrapNullable<DateTime>(payload));
-                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
-                    }));
+                    DateTime? nullableDate2 = null;
+                    tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNull",
+                        delegate ()
+                        {
+                            logger.EventNullableDateTimeInt(nullableDate2, 5);
+                        },
+                        delegate (Event evt)
+                        {
+                            Assert.Equal(logger.Name, evt.ProviderName);
+                            Assert.Equal("EventNullableDateTimeInt", evt.EventName);
 
-                DateTime? nullableDate2 = null;
-                tests.Add(new SubTest("WriteEvent/SelfDescribingOnly/DateTimeNull",
-                    delegate ()
-                    {
-                        logger.EventNullableDateTimeInt(nullableDate2, 5);
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventNullableDateTimeInt", evt.EventName);
-
-                        var payload = evt.PayloadValue(0, "nullableDate");
-                        Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(nullableDate2));
-                        Assert.Equal(5, evt.PayloadValue(1, "anInt"));
-                    }));
+                            var payload = evt.PayloadValue(0, "nullableDate");
+                            Assert.Equal(nullableDate2, TestUtilities.UnwrapNullable<DateTime>(nullableDate2));
+                            Assert.Equal(5, evt.PayloadValue(1, "anInt"));
+                        }));
+                }
 
                 // If you only wish to run one or several of the tests you can filter them here by
                 // Uncommenting the following line.
@@ -481,48 +508,17 @@ namespace BasicEventSourceTests
             }
         }
 
-        /**********************************************************************/
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent
-        /// Uses Manifest format
-        /// Tests the EventListener case
-        /// </summary>
-        [Fact]
-        public void Test_WriteEvent_ByteArray_Manifest_EventListener()
+        [Theory]
+        [MemberData(nameof(GetListenerConfigurations))]
+        private void Test_WriteEvent_ByteArray(Listener listener, bool useSelfDescribingEvents)
         {
-            using (var listener = new EventListenerListener())
+            using(listener)
             {
-                Test_WriteEvent_ByteArray(false, listener);
+                Test_WriteEvent_ByteArray_Helper(listener, useSelfDescribingEvents);
             }
         }
 
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent
-        /// Uses Manifest format
-        /// Tests the EventListener case using events instead of virtual
-        /// callbacks.
-        /// </summary>
-        [Fact]
-        public void Test_WriteEvent_ByteArray_Manifest_EventListener_UseEvents()
-        {
-            Test_WriteEvent_ByteArray(false, new EventListenerListener(true));
-        }
-
-        /// <summary>
-        /// Tests sending complex data (class, arrays etc) from WriteEvent
-        /// Uses Self-Describing format
-        /// Tests the EventListener case
-        /// </summary>
-        [Fact]
-        public void Test_WriteEvent_ByteArray_SelfDescribing_EventListener()
-        {
-            using (var listener = new EventListenerListener())
-            {
-                Test_WriteEvent_ByteArray(true, listener);
-            }
-        }
-
-        private void Test_WriteEvent_ByteArray(bool useSelfDescribingEvents, Listener listener)
+        private void Test_WriteEvent_ByteArray_Helper(Listener listener, bool useSelfDescribingEvents)
         {
             EventSourceSettings settings = EventSourceSettings.EtwManifestEventFormat;
             if (useSelfDescribingEvents)
@@ -558,54 +554,60 @@ namespace BasicEventSourceTests
 
                 if (!useSelfDescribingEvents)
                 {
-                    /*************************************************************************/
-                    tests.Add(new SubTest("Write/Array/NonEventCallingEventWithBytePtrArg",
+                    if (!listener.IsEventPipe) // EventPipe doesn't correctly encode metadata for this
+                    {
+                        /*************************************************************************/
+                        tests.Add(new SubTest("Write/Array/NonEventCallingEventWithBytePtrArg",
+                            delegate ()
+                            {
+                                logger.NonEventCallingEventWithBytePtrArg(blob, 2, 4, 1001);
+                            },
+                            delegate (Event evt)
+                            {
+                                Assert.Equal(logger.Name, evt.ProviderName);
+                                Assert.Equal("EventWithBytePtrArg", evt.EventName);
+
+                                if (evt.IsSizeAndPointerCoallescedIntoSingleArg)
+                                {
+                                    Assert.Equal(2, evt.PayloadCount);
+                                    byte[] retBlob = (byte[])evt.PayloadValue(0, "blob");
+                                    Assert.Equal(4, retBlob.Length);
+                                    Assert.Equal(retBlob[0], blob[2]);
+                                    Assert.Equal(retBlob[3], blob[2 + 3]);
+                                    Assert.Equal(1001, (int)evt.PayloadValue(1, "n"));
+                                }
+                                else
+                                {
+                                    Assert.Equal(3, evt.PayloadCount);
+                                    byte[] retBlob = (byte[])evt.PayloadValue(1, "blob");
+                                    Assert.Equal(4, retBlob.Length);
+                                    Assert.Equal(retBlob[0], blob[2]);
+                                    Assert.Equal(retBlob[3], blob[2 + 3]);
+                                    Assert.Equal(1001, (int)evt.PayloadValue(2, "n"));
+                                }
+                            }));
+                    }
+                }
+
+                if (!listener.IsEventPipe) // EventPipe doesn't correctly encode metadata for this
+                {
+                    tests.Add(new SubTest("Write/Array/EventWithLongByteArray",
                         delegate ()
                         {
-                            logger.NonEventCallingEventWithBytePtrArg(blob, 2, 4, 1001);
+                            logger.EventWithLongByteArray(blob, 1000);
                         },
                         delegate (Event evt)
                         {
                             Assert.Equal(logger.Name, evt.ProviderName);
-                            Assert.Equal("EventWithBytePtrArg", evt.EventName);
+                            Assert.Equal("EventWithLongByteArray", evt.EventName);
 
-                            if (evt.IsEtw)
-                            {
-                                Assert.Equal(2, evt.PayloadCount);
-                                byte[] retBlob = (byte[])evt.PayloadValue(0, "blob");
-                                Assert.Equal(4, retBlob.Length);
-                                Assert.Equal(retBlob[0], blob[2]);
-                                Assert.Equal(retBlob[3], blob[2 + 3]);
-                                Assert.Equal(1001, (int)evt.PayloadValue(1, "n"));
-                            }
-                            else
-                            {
-                                Assert.Equal(3, evt.PayloadCount);
-                                byte[] retBlob = (byte[])evt.PayloadValue(1, "blob");
-                                Assert.Equal(4, retBlob.Length);
-                                Assert.Equal(retBlob[0], blob[2]);
-                                Assert.Equal(retBlob[3], blob[2 + 3]);
-                                Assert.Equal(1001, (int)evt.PayloadValue(2, "n"));
-                            }
+                            Assert.Equal(2, evt.PayloadCount);
+                            byte[] retBlob = (byte[])evt.PayloadValue(0, "blob");
+                            Assert.True(Equal(blob, retBlob));
+
+                            Assert.Equal(1000, (long)evt.PayloadValue(1, "lng"));
                         }));
                 }
-
-                tests.Add(new SubTest("Write/Array/EventWithLongByteArray",
-                    delegate ()
-                    {
-                        logger.EventWithLongByteArray(blob, 1000);
-                    },
-                    delegate (Event evt)
-                    {
-                        Assert.Equal(logger.Name, evt.ProviderName);
-                        Assert.Equal("EventWithLongByteArray", evt.EventName);
-
-                        Assert.Equal(2, evt.PayloadCount);
-                        byte[] retBlob = (byte[])evt.PayloadValue(0, "blob");
-                        Assert.True(Equal(blob, retBlob));
-
-                        Assert.Equal(1000, (long)evt.PayloadValue(1, "lng"));
-                    }));
 
                 /* TODO: NULL byte array does not seem to be supported.
                  * An EventSourceMessage event is written for this case.
@@ -628,7 +630,9 @@ namespace BasicEventSourceTests
                     }));
                 */
 
-                tests.Add(new SubTest("Write/Array/EventWithEmptyByteArray",
+                if (!listener.IsEventPipe) // EventPipe doesn't correctly encode metadata for this
+                {
+                    tests.Add(new SubTest("Write/Array/EventWithEmptyByteArray",
                     delegate ()
                     {
                         logger.EventWithByteArrayArg(Array.Empty<byte>(), 0);
@@ -644,6 +648,7 @@ namespace BasicEventSourceTests
 
                         Assert.Equal(0, (int)evt.PayloadValue(1, "n"));
                     }));
+                }
 
                 // If you only wish to run one or several of the tests you can filter them here by
                 // Uncommenting the following line.

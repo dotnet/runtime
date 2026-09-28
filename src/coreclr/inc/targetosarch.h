@@ -22,7 +22,7 @@ public:
     static bool OSSettingConfigured;
     static bool IsApplePlatform;
 #else
-#if defined(TARGET_OSX)
+#if defined(TARGET_APPLE)
     static const bool IsApplePlatform = true;
 #else
     static const bool IsApplePlatform = false;
@@ -46,6 +46,11 @@ public:
     static const bool Is64Bit = true;
 #else
     static const bool Is64Bit = false;
+#endif
+#ifdef TARGET_WASM
+    static const bool IsWasm = true;
+#else
+    static const bool IsWasm = false;
 #endif
 #ifdef TARGET_ARM
     static const bool IsX86 = false;
@@ -95,6 +100,14 @@ public:
     static const bool IsArmArch = false;
     static const bool IsLoongArch64 = false;
     static const bool IsRiscV64 = true;
+#elif defined(TARGET_WASM)
+    static const bool IsX86 = false;
+    static const bool IsX64 = false;
+    static const bool IsArm64 = false;
+    static const bool IsArm32 = false;
+    static const bool IsArmArch = false;
+    static const bool IsLoongArch64 = false;
+    static const bool IsRiscV64 = false;
 #else
 #error Unknown architecture
 #endif

@@ -7,12 +7,15 @@
   .ver 4:0:0:0
 }
 .assembly extern legacy library mscorlib {}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly 'b26324a'
 {
   
   
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .namespace Test
 {
   .class public auto ansi FormatSpecException extends [mscorlib]System.Exception
@@ -126,9 +129,10 @@
     .field private static initonly class [mscorlib]System.String expResult
     .method public static int32 Main() il managed
     {
-      .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
-          01 00 00 00
-      )
+      .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ConditionalFactAttribute::.ctor(class [System.Runtime]System.Type, string[]) = {
+          type([TestLibrary]TestLibrary.PlatformDetection)
+          string[1] ('IsVarArgSupported')
+      }
       .entrypoint
       .maxstack  12
       .locals ([0] class Test.GCClass inst)

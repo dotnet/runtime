@@ -6,4 +6,7 @@
   <ItemGroup>
     <Compile Include="method001f.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
 </Project>

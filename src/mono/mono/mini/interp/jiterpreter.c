@@ -977,7 +977,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 					JiterpreterOpcode *opcode = (JiterpreterOpcode *)p;
 					guint32 trace_index = opcode->trace_index;
 					need_extra_free = FALSE;
-					mono_jiterp_free_method_data_js (method, imethod, trace_index);
+					mono_wasm_free_method_data (method, imethod, trace_index);
 					break;
 				}
 			}
@@ -988,7 +988,7 @@ mono_jiterp_free_method_data (MonoMethod *method, InterpMethod *imethod)
 	if (need_extra_free) {
 		// HACK: Perform a single free operation to clear out any stuff from the jit queues
 		// This will happen if we didn't encounter any jiterpreter traces in the method
-		mono_jiterp_free_method_data_js (method, imethod, 0);
+		mono_wasm_free_method_data (method, imethod, 0);
 	}
 }
 
@@ -1379,7 +1379,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 #endif
 
 		if (mono_opt_jiterpreter_trace_monitoring_log > 2)
-			g_print ("trace #%d @%d '%s' bailout recorded at opcode #%d, penalty=%d\n", opcode->trace_index, ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
+			g_print ("trace #%d @%p '%s' bailout recorded at opcode #%d, penalty=%d\n", opcode->trace_index, (void*)ip, frame->imethod->method->name, cinfo.bailout_opcode_count, penalty);
 	}
 
 #ifdef DISABLE_THREADS
@@ -1400,7 +1400,7 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 
 		if (average_penalty <= threshold) {
 			if ((int)thunk < mono_jiterp_first_trace_fn_ptr)
-				g_error ("thunk ptr %d below start of trace table %d\n", thunk, mono_jiterp_first_trace_fn_ptr);
+				g_error ("thunk ptr %d below start of trace table %d\n", (int)(gsize)thunk, mono_jiterp_first_trace_fn_ptr);
 			guint16 new_relative_fn_ptr = (int)thunk - mono_jiterp_first_trace_fn_ptr;
 
 #ifdef DISABLE_THREADS
@@ -1415,13 +1415,13 @@ mono_jiterp_monitor_trace (const guint16 *ip, void *_frame, void *locals)
 			g_assert (mono_jiterp_patch_opcode (opcode, MINT_TIER_NOP_JITERPRETER, MINT_TIER_ENTER_JITERPRETER));
 
 			if (mono_opt_jiterpreter_trace_monitoring_log > 1)
-				g_print ("trace #%d @%d '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, ip, frame->imethod->method->name, average_penalty, threshold);
+				g_print ("trace #%d @%p '%s' accepted; average_penalty %f <= %f\n", opcode->trace_index, (void*)ip, frame->imethod->method->name, average_penalty, threshold);
 		} else {
 			// FIXME: Harmless race condition if threads are in use
 			traces_rejected++;
 			if (mono_opt_jiterpreter_trace_monitoring_log > 0) {
 				char * full_name = mono_method_get_full_name (frame->imethod->method);
-				g_print ("trace #%d @%d '%s' rejected; average_penalty %f > %f\n", opcode->trace_index, ip, full_name, average_penalty, threshold);
+				g_print ("trace #%d @%p '%s' rejected; average_penalty %f > %f\n", opcode->trace_index, (void*)ip, full_name, average_penalty, threshold);
 				g_free (full_name);
 			}
 		}

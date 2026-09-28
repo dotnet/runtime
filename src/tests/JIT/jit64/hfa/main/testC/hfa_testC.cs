@@ -3,6 +3,7 @@
 
 using System;
 using Xunit;
+using TestLibrary;
 
 namespace HFATest
 {
@@ -18,6 +19,8 @@ namespace HFATest
         const double CONST_FLOAT64 = (double)77.0;
 #pragma warning restore 0414
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/54906", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
         [Fact]
         public static int TestEntryPoint()
         {

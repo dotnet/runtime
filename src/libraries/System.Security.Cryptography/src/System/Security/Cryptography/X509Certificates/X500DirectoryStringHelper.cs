@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        internal static string ReadAnyAsnString(ref this AsnValueReader tavReader)
+        internal static string ReadAnyAsnString(ref this ValueAsnReader tavReader)
         {
             Asn1Tag tag = tavReader.PeekTag();
 

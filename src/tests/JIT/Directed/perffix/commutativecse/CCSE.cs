@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+namespace JitTest_Directed_perffix_commutativecse_CCSE;
+
 using System;
 using Xunit;
 public class CCSE
@@ -8,6 +10,7 @@ public class CCSE
     private static volatile uint s_source = 4;
     private static volatile uint s_sink1 = 0;
     private static volatile uint s_sink2 = 0;
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

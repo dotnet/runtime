@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -9,7 +9,7 @@ namespace System.Drawing
     // Minimal color conversion functionality, without a dependency on TypeConverter itself.
     internal static class ColorConverterCommon
     {
-        public static Color ConvertFromString(string strValue, CultureInfo culture)
+        public static unsafe Color ConvertFromString(string strValue, CultureInfo culture)
         {
             Debug.Assert(culture != null);
 

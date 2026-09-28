@@ -20,30 +20,30 @@ namespace ILCompiler
 
         private EventDefinition Definition => _type.MetadataReader.GetEventDefinition(_handle);
 
-        public MethodDesc AddMethod
+        public EcmaMethod AddMethod
         {
             get
             {
                 MethodDefinitionHandle adder = Definition.GetAccessors().Adder;
-                return adder.IsNil ? null : _type.EcmaModule.GetMethod(adder);
+                return adder.IsNil ? null : _type.Module.GetMethod(adder);
             }
         }
 
-        public MethodDesc RemoveMethod
+        public EcmaMethod RemoveMethod
         {
             get
             {
                 MethodDefinitionHandle setter = Definition.GetAccessors().Remover;
-                return setter.IsNil ? null : _type.EcmaModule.GetMethod(setter);
+                return setter.IsNil ? null : _type.Module.GetMethod(setter);
             }
         }
 
-        public MethodDesc RaiseMethod
+        public EcmaMethod RaiseMethod
         {
             get
             {
                 MethodDefinitionHandle raiser = Definition.GetAccessors().Raiser;
-                return raiser.IsNil ? null : _type.EcmaModule.GetMethod(raiser);
+                return raiser.IsNil ? null : _type.Module.GetMethod(raiser);
             }
         }
 
@@ -55,7 +55,7 @@ namespace ILCompiler
             }
         }
 
-        public MetadataType OwningType
+        public EcmaType OwningType
         {
             get
             {
@@ -91,7 +91,18 @@ namespace ILCompiler
 
         public override int GetHashCode() => _type.GetHashCode() ^ _handle.GetHashCode();
 
-        public static bool operator ==(EventPseudoDesc a, EventPseudoDesc b) => a._type == b._type && a._handle == b._handle;
+        public override string ToString() => $"{_type}.{Name}";
+
+        public static bool operator ==(EventPseudoDesc a, EventPseudoDesc b)
+        {
+            if (a is null)
+                return b is null;
+
+            if (b is null)
+                return false;
+
+            return a._type == b._type && a._handle == b._handle;
+        }
 
         public static bool operator !=(EventPseudoDesc a, EventPseudoDesc b) => !(a == b);
     }

@@ -62,10 +62,7 @@ namespace System.CodeDom.Compiler
 
         public CodeDomProvider CreateProvider(IDictionary<string, string> providerOptions)
         {
-            if (providerOptions is null)
-            {
-                throw new ArgumentNullException(nameof(providerOptions));
-            }
+            ArgumentNullException.ThrowIfNull(providerOptions);
 
             ConstructorInfo constructor = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
             if (constructor != null)

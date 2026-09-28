@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -124,7 +124,7 @@
     <value>The format of the HTTP method is invalid.</value>
   </data>
   <data name="net_http_reasonphrase_format_error" xml:space="preserve">
-    <value>The reason phrase must not contain new-line characters.</value>
+    <value>The reason phrase must not contain new-line or NUL characters.</value>
   </data>
   <data name="net_http_copyto_array_too_small" xml:space="preserve">
     <value>The number of elements is greater than the available space from arrayIndex to the end of the destination array.</value>
@@ -150,8 +150,8 @@
   <data name="net_http_headers_invalid_range" xml:space="preserve">
     <value>Invalid range. At least one of the two parameters must not be null.</value>
   </data>
-  <data name="net_http_headers_no_newlines" xml:space="preserve">
-    <value>New-line characters are not allowed in header values.</value>
+  <data name="net_http_headers_no_newlines_no_nul" xml:space="preserve">
+    <value>New-line or NUL characters are not allowed in header values.</value>
   </data>
   <data name="net_http_content_buffersize_exceeded" xml:space="preserve">
     <value>Cannot write more bytes to the buffer than the configured maximum buffer size: {0}.</value>
@@ -173,6 +173,9 @@
   </data>
   <data name="net_http_content_stream_copy_error" xml:space="preserve">
     <value>Error while copying content to a stream.</value>
+  </data>
+  <data name="net_http_content_buffer_stream_disposed" xml:space="preserve">
+    <value>The stream passed to SerializeToStream(Async) is owned by HttpContent and must not be disposed by user code.</value>
   </data>
   <data name="net_http_content_read_as_stream_has_task" xml:space="preserve">
     <value>The content's stream has already been retrieved via async ReadAsStreamAsync and cannot be subsequently accessed synchronously.</value>
@@ -321,6 +324,9 @@
   <data name="net_http_invalid_response_chunk_terminator_invalid" xml:space="preserve">
     <value>Received an invalid chunk terminator: '{0}'.</value>
   </data>
+  <data name="net_http_invalid_response_chunk_line_ending" xml:space="preserve">
+    <value>Received an invalid chunk line ending. Chunked encoding lines must be terminated by CRLF.</value>
+  </data>
   <data name="net_http_invalid_response_status_line" xml:space="preserve">
     <value>Received an invalid status line: '{0}'.</value>
   </data>
@@ -367,10 +373,13 @@
     <value>Cannot access a closed stream.</value>
   </data>
   <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
-    <value>Only the 'http', 'https', 'socks4', 'socks4a' and 'socks5' schemes are allowed for proxies.</value>
+    <value>Only the 'http', 'https', 'socks4', 'socks4a', 'socks5', and 'socks5h' schemes are allowed for proxies.</value>
   </data>
   <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
     <value>Request headers must contain only ASCII characters.</value>
+  </data>
+  <data name="net_http_request_invalid_host_punycode" xml:space="preserve">
+    <value>Request Uri's host could not be Punycode encoded.</value>
   </data>
   <data name="net_http_ssl_connection_failed" xml:space="preserve">
     <value>The SSL connection could not be established, see inner exception.</value>
@@ -416,6 +425,9 @@
   </data>
   <data name="net_http_http2_invalidinitialstreamwindowsize" xml:space="preserve">
     <value>The initial HTTP/2 stream window size must be between {0} and {1}.</value>
+  </data>
+  <data name="net_http_http2_frame_limit_exceeded" xml:space="preserve">
+    <value>The HTTP/2 connection was aborted because the size of the frame queue exceeded an internal limit.</value>
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
@@ -480,11 +492,17 @@
   <data name="net_http_http3_connection_close" xml:space="preserve">
     <value>The HTTP/3 server closed the connection. HTTP/3 error code '{0}' (0x{1}).</value>
   </data>
+  <data name="net_http_http3_connection_quic_error" xml:space="preserve">
+    <value>The QUIC connection with the HTTP/3 server failed on the transport level.</value>
+  </data>
   <data name="net_http_retry_on_older_version" xml:space="preserve">
     <value>The server is unable to process the request using the current HTTP version and indicates the request should be retried on an older HTTP version.</value>
   </data>
   <data name="net_http_content_write_larger_than_content_length" xml:space="preserve">
     <value>Unable to write content to request stream; content would exceed Content-Length.</value>
+  </data>
+  <data name="net_http_qpack_invalid_index" xml:space="preserve">
+    <value>The HTTP/3 server attempted to reference the static table index {0}, which does not exist.</value>
   </data>
   <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
     <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
@@ -544,7 +562,7 @@
     <value>SOCKS server returned an unknown address type.</value>
   </data>
   <data name="net_socks_connection_failed" xml:space="preserve">
-    <value>SOCKS server failed to connect to the destination.</value>
+    <value>SOCKS server failed to connect to the destination. Received error code 0x{0}.</value>
   </data>
   <data name="net_socks_ipv6_notsupported" xml:space="preserve">
     <value>SOCKS4 does not support IPv6 addresses.</value>
@@ -577,7 +595,7 @@
     <value>The HTTP/1.1 response chunk was too large.</value>
   </data>
   <data name="net_unsupported_extended_connect" xml:space="preserve">
-    <value>Failed to establish web socket connection over HTTP/2 because extended CONNECT is not supported. Try to downgrade the request version to HTTP/1.1.</value>
+    <value>The HTTP/2 server does not support extended CONNECT requests. Try to downgrade the request version to HTTP/1.1.</value>
   </data>
   <data name="net_ping_request_timed_out" xml:space="preserve">
     <value>The HTTP/2 server didn't respond to a ping request within the configured KeepAlivePingDelay.</value>

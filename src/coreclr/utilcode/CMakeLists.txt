@@ -1,6 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(UTILCODE_COMMON_SOURCES
+  dn_xxhash.cpp
   clrhost_nodependencies.cpp
   ccomprc.cpp
   ex.cpp
@@ -14,20 +15,19 @@ set(UTILCODE_COMMON_SOURCES
   configuration.cpp
   collections.cpp
   posterror.cpp
-  fstream.cpp
   clrhelpers.cpp
-  stgpool.cpp
-  stgpooli.cpp
-  stgpoolreadonly.cpp
-  utsem.cpp
   check.cpp
   log.cpp
   arraylist.cpp
-  bitvector.cpp
   comex.cpp
   guidfromname.cpp
   memorypool.cpp
+  memorystreams.cpp
   loaderheap.cpp
+  interleavedloaderheap.cpp
+  loaderheap_shared.cpp
+  explicitcontrolloaderheap.cpp
+  rangelist.cpp
   outstring.cpp
   ilformatter.cpp
   opinfo.cpp
@@ -46,6 +46,7 @@ set(UTILCODE_COMMON_SOURCES
   stresslog.cpp
   debug.cpp
   pedecoder.cpp
+  webcildecoder.cpp
   winfix.cpp
   longfilepathwrappers.cpp
   yieldprocessornormalized.cpp
@@ -64,6 +65,7 @@ endif(CLR_CMAKE_TARGET_WIN32)
 
 set(UTILCODE_SOURCES
   ${UTILCODE_COMMON_SOURCES}
+  allocmemtracker.cpp
   executableallocator.cpp
 )
 
@@ -84,7 +86,9 @@ convert_to_absolute_path(UTILCODE_SOURCES ${UTILCODE_SOURCES})
 convert_to_absolute_path(UTILCODE_DAC_SOURCES ${UTILCODE_DAC_SOURCES})
 convert_to_absolute_path(UTILCODE_STATICNOHOST_SOURCES ${UTILCODE_STATICNOHOST_SOURCES})
 
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
 add_library_clr(utilcode_dac STATIC ${UTILCODE_DAC_SOURCES})
+endif()
 add_library_clr(utilcode OBJECT ${UTILCODE_SOURCES})
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 
@@ -92,9 +96,11 @@ target_link_libraries(utilcodestaticnohost PUBLIC coreclrminipal)
 
 if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(utilcodestaticnohost PUBLIC nativeresourcestring)
-  target_link_libraries(utilcode_dac PUBLIC nativeresourcestring)
+  if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    target_link_libraries(utilcode_dac PUBLIC nativeresourcestring)
+    add_dependencies(utilcode_dac coreclrpal)
+  endif()
   target_link_libraries(utilcode INTERFACE nativeresourcestring)
-  add_dependencies(utilcode_dac coreclrpal)
   add_dependencies(utilcode coreclrpal)
 endif(CLR_CMAKE_HOST_UNIX)
 
@@ -103,16 +109,20 @@ if(CLR_CMAKE_HOST_WIN32)
     target_compile_definitions(utilcodestaticnohost PRIVATE _CRTIMP=) # use static version of crt
 
     link_natvis_sources_for_target(utilcodestaticnohost INTERFACE utilcode.natvis)
-    link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+      link_natvis_sources_for_target(utilcode_dac INTERFACE utilcode.natvis)
+    endif()
     link_natvis_sources_for_target(utilcode INTERFACE utilcode.natvis)
 endif(CLR_CMAKE_HOST_WIN32)
 
-set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
-target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set_target_properties(utilcode_dac PROPERTIES DAC_COMPONENT TRUE)
+  target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
+  add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
+  target_precompile_headers(utilcode_dac PRIVATE [["stdafx.h"]])
+  endif()
 target_compile_definitions(utilcodestaticnohost PRIVATE SELF_NO_HOST)
-add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
 add_dependencies(utilcode ${UTILCODE_DEPENDENCIES})
 add_dependencies(utilcodestaticnohost ${UTILCODE_DEPENDENCIES})
-target_precompile_headers(utilcode_dac PRIVATE [["stdafx.h"]])
 target_precompile_headers(utilcode PRIVATE [["stdafx.h"]])
 target_precompile_headers(utilcodestaticnohost PRIVATE [["stdafx.h"]])

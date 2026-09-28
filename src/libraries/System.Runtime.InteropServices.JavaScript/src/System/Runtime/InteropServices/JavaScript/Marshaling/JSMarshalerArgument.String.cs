@@ -24,7 +24,7 @@ namespace System.Runtime.InteropServices.JavaScript
             }
 #if ENABLE_JS_INTEROP_BY_VALUE
             value = Marshal.PtrToStringUni(slot.IntPtrValue, slot.Length);
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
 #else
             fixed (void* argAsRoot = &slot.IntPtrValue)
             {
@@ -96,7 +96,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.DeregisterGCRoot(slot.IntPtrValue);
 #endif
-            Marshal.FreeHGlobal(slot.IntPtrValue);
+            NativeMemory.Free((void*)slot.IntPtrValue);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.Length = value.Length;
             int bytes = value.Length * sizeof(JSMarshalerArgument);
             slot.Type = MarshalerType.Array;
-            JSMarshalerArgument* payload = (JSMarshalerArgument*)Marshal.AllocHGlobal(bytes);
+            JSMarshalerArgument* payload = (JSMarshalerArgument*)NativeMemory.Alloc((nuint)bytes);
             Unsafe.InitBlock(payload, 0, (uint)bytes);
 #if !ENABLE_JS_INTEROP_BY_VALUE
             Interop.Runtime.RegisterGCRoot(payload, bytes, IntPtr.Zero);

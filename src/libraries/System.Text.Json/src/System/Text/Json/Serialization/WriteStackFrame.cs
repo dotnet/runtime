@@ -19,15 +19,14 @@ namespace System.Text.Json
         public IEnumerator? CollectionEnumerator;
 
         /// <summary>
-        /// The enumerator for resumable async disposables.
+        /// The async enumerator for resumable async enumerable collections.
         /// </summary>
-        public IAsyncDisposable? AsyncDisposable;
+        public object? AsyncEnumerator;
 
         /// <summary>
-        /// The current stackframe has suspended serialization due to a pending task,
-        /// stored in the <see cref="WriteStack.PendingTask"/> property.
+        /// The state of the async enumerator for the current stack frame.
         /// </summary>
-        public bool AsyncEnumeratorIsPendingCompletion;
+        public AsyncEnumeratorState AsyncEnumeratorState;
 
         /// <summary>
         /// The original JsonPropertyInfo that is not changed. It contains all properties.

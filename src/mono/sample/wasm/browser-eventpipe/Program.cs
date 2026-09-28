@@ -2,15 +2,109 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.JavaScript;
-using System.Threading;
+using System.Reflection;
 using System.Threading.Tasks;
+using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.InteropServices;
 using System.Diagnostics.Tracing;
-
+using System.Runtime.CompilerServices;
 
 namespace Sample
 {
+    class ConsoleWriterEventListener : EventListener
+    {
+        public static ConsoleWriterEventListener Instance;
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            if(eventSource.Name == "WasmHello")
+            {
+                EnableEvents(eventSource, EventLevel.Informational);
+            }
+            if(eventSource.Name == "System.Runtime")
+            {
+                EnableEvents(eventSource, EventLevel.Informational);
+            }
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            Console.WriteLine(eventData.TimeStamp + " " + eventData.EventName);
+        }
+    }
+
+    public partial class Test
+    {
+        public static int Main(string[] args)
+        {
+            DisplayMeaning(42);
+
+            WasmHelloEventSource.Instance.NewCallsCounter();
+            ConsoleWriterEventListener.Instance = new ConsoleWriterEventListener();
+
+            // SayHi();
+            return 0;
+        }
+
+        [JSImport("Sample.Test.displayMeaning", "main.js")]
+        internal static partial void DisplayMeaning(int meaning);
+
+        public static int counter;
+
+        [JSExport]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void SayHi()
+        {
+            Console.WriteLine("Hi from C#! " + EventSource.CurrentThreadActivityId);
+            WasmHelloEventSource.Instance.HelloStart(counter);
+            Console.WriteLine("Wave from C#! " + EventSource.CurrentThreadActivityId);
+            for(int i = 0; i < 100000; i++)
+            {
+                WasmHelloEventSource.Instance.CountCall();
+            }
+            counter++;
+            SayHiCatch();
+            WasmHelloEventSource.Instance.HelloStop(counter, "counter"+counter);
+            Console.WriteLine("Bye from C#! " + EventSource.CurrentThreadActivityId);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void SayHiThrow()
+        {
+            throw new Exception("Hello from C#!");
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        internal static void SayHiCatch()
+        {
+            try
+            {
+                SayHiThrow();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Caught exception: " + e.Message);
+            }
+        }
+
+        [JSExport]
+        internal static Task SayHiAsync()
+        {
+            WasmHelloEventSource.Instance.HelloStart(counter);
+            Console.WriteLine("Hi from C#!");
+            for(int i = 0; i < 100000; i++)
+            {
+                WasmHelloEventSource.Instance.CountCall();
+            }
+            counter++;
+            Console.WriteLine("Hello from C#!");
+            WasmHelloEventSource.Instance.HelloStop(counter, "counter"+counter);
+
+            return Task.CompletedTask;
+        }
+    }
+
+
 
     [EventSource(Name = "WasmHello")]
     public class WasmHelloEventSource  : EventSource
@@ -27,9 +121,9 @@ namespace Sample
         public void NewCallsCounter()
         {
             _calls?.Dispose();
-            _calls = new ("fib-calls", this)
+            _calls = new ("hello-calls", this)
             {
-                DisplayName = "Recursive Fib calls",
+                DisplayName = "Hello calls",
             };
         }
 
@@ -46,8 +140,8 @@ namespace Sample
             base.Dispose(disposing);
         }
 
-        [Event(1, Message="Started Fib({0})", Level = EventLevel.Informational)]
-        public void StartFib(int n)
+        [Event(1, Message="Started Hello({0})", Level = EventLevel.Informational)]
+        public void HelloStart(int n)
         {
             if (!IsEnabled())
                 return;
@@ -55,111 +149,13 @@ namespace Sample
             WriteEvent(1, n);
         }
 
-        [Event(2, Message="Stopped Fib({0}) = {1}", Level = EventLevel.Informational)]
-        public void StopFib(int n, string result)
+        [Event(2, Message="Stopped Hello({0}) = {1}", Level = EventLevel.Informational)]
+        public void HelloStop(int n, string result)
         {
             if (!IsEnabled())
                 return;
 
             WriteEvent(2, n, result);
         }
-    }
-
-    public partial class Test
-    {
-        public static void Main(string[] args)
-        {
-            // not called.  See main.js for all the interesting bits
-        }
-
-        private static int iterations;
-        private static CancellationTokenSource cts;
-
-        public static CancellationToken GetCancellationToken()
-        {
-            cts ??= new CancellationTokenSource ();
-            return cts.Token;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static long recursiveFib (int n)
-        {
-            if (n < 1)
-                return 0;
-            if (n == 1)
-                return 1;
-            WasmHelloEventSource.Instance.CountCall();
-            return recursiveFib (n - 1) + recursiveFib (n - 2);
-        }
-
-#if false
-            // dead code to prove that starting user threads isn't possible on the perftracing runtime
-            public static void Meth() {
-                    Thread.Sleep (500);
-                    while (!GetCancellationToken().IsCancellationRequested) {
-                            Console.WriteLine ("ping");
-                            Thread.Sleep (500);
-                    }
-            }
-#endif
-
-        [JSExport]
-        public static async Task<double> StartAsyncWork(int N)
-        {
-            CancellationToken ct = GetCancellationToken();
-#if false
-            new Thread(new ThreadStart(Meth)).Start();
-#endif
-            await Task.Delay(1);
-            long b;
-            WasmHelloEventSource.Instance.NewCallsCounter();
-            iterations = 0;
-            while (true)
-            {
-                WasmHelloEventSource.Instance.StartFib(N);
-                await Task.Delay(1);
-                b = recursiveFib (N);
-                WasmHelloEventSource.Instance.StopFib(N, b.ToString());
-                iterations++;
-                            Console.WriteLine ("ping1");
-                if (ct.IsCancellationRequested)
-                    break;
-            }
-            Console.WriteLine ("stopping");
-            long expected = fastFib(N);
-            Console.WriteLine ("stopping2");
-            if (expected == b)
-                return (double)b;
-            else {
-                Console.Error.WriteLine ("expected {0}, but got {1}", expected, b);
-                return 0.0;
-            }
-        }
-
-        [JSExport]
-        public static void StopWork()
-        {
-            cts.Cancel();
-        }
-
-        [JSExport]
-        public static string GetIterationsDone()
-        {
-            return iterations.ToString();
-        }
-
-        private static long fastFib(int N) {
-            if (N < 1)
-                return 0;
-            long a = 0;
-            long b = 1;
-            for (int i = 1; i < N; ++i) {
-                long tmp = a+b;
-                a = b;
-                b = tmp;
-            }
-            return b;
-        }
-
     }
 }

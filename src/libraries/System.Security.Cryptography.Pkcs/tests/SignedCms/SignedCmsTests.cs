@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Versioning;
+using System.Security.Cryptography.SLHDsa.Tests;
+using System.Security.Cryptography.Tests;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
 using Test.Cryptography;
@@ -9,6 +13,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Pkcs.Tests
 {
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/126697", typeof(PlatformDetection), nameof(PlatformDetection.IsAppleMobile), nameof(PlatformDetection.IsNativeAot))]
     public static partial class SignedCmsTests
     {
         [Fact]
@@ -187,11 +192,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 () => new SignedCms(SubjectIdentifierType.SubjectKeyIdentifier, null, true));
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void CheckSignature_ExtraStore_IsAdditional()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+            cms.Decode(SignedDocuments.RsaPkcs1Sha256OneSignerIssuerAndSerialNumber);
 
             // Assert.NotThrows
             cms.CheckSignature(true);
@@ -200,10 +205,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(new X509Certificate2Collection(), true);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void Decode_IgnoresExtraData()
         {
-            byte[] basis = SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber;
+            byte[] basis = SignedDocuments.RsaPkcs1Sha256OneSignerIssuerAndSerialNumber;
             byte[] data = new byte[basis.Length + 60];
             data.AsSpan(basis.Length).Fill(0x5E);
             basis.AsSpan().CopyTo(data);
@@ -457,47 +462,19 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, true)]
         public static void AddFirstSigner_RSA(SubjectIdentifierType identifierType, bool detached)
         {
-            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
-            SignedCms cms = new SignedCms(contentInfo, detached);
-
-            using (X509Certificate2 signerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
-            {
-                CmsSigner signer = new CmsSigner(identifierType, signerCert);
-                cms.ComputeSignature(signer);
-            }
-
-            Assert.Same(contentInfo.Content, cms.ContentInfo.Content);
-            Assert.Single(cms.SignerInfos);
-            Assert.Single(cms.Certificates);
-
-            int expectedVersion = identifierType == SubjectIdentifierType.SubjectKeyIdentifier ? 3 : 1;
-            Assert.Equal(expectedVersion, cms.Version);
-
-            SignerInfo firstSigner = cms.SignerInfos[0];
-            Assert.Equal(identifierType, firstSigner.SignerIdentifier.Type);
-            Assert.NotNull(firstSigner.Certificate);
-            Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
-            Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
-
-            cms.CheckSignature(true);
-            byte[] encoded = cms.Encode();
-
-            cms = new SignedCms();
-            cms.Decode(encoded);
-            Assert.Single(cms.SignerInfos);
-            Assert.Single(cms.Certificates);
-            Assert.Equal(expectedVersion, cms.Version);
-            Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
-            Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
-
-            if (detached)
-            {
-                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
-                cms = new SignedCms(contentInfo, detached);
-                cms.Decode(encoded);
-            }
-
-            cms.CheckSignature(true);
+            AssertAddFirstSigner(
+                identifierType,
+                detached,
+                cms =>
+                {
+                    using (X509Certificate2 signerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())
+                    {
+                        CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                        cms.ComputeSignature(signer);
+                    }
+                },
+                firstSigner => { /* No additional asserts */ },
+                roundtrippedFirstSigner => { /* No additional asserts */  });
         }
 
         [Fact]
@@ -532,68 +509,46 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformSupport), nameof(PlatformSupport.IsDSASupported))]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, false)]
         [InlineData(SubjectIdentifierType.IssuerAndSerialNumber, true)]
-        [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public static void AddFirstSigner_DSA(SubjectIdentifierType identifierType, bool detached)
         {
-            ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
-            SignedCms cms = new SignedCms(contentInfo, detached);
-
-            using (X509Certificate2 signerCert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
-            {
-                CmsSigner signer = new CmsSigner(identifierType, signerCert);
-                signer.IncludeOption = X509IncludeOption.EndCertOnly;
-                // Best compatibility for DSA is SHA-1 (FIPS 186-2)
-                signer.DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1);
-                cms.ComputeSignature(signer);
-            }
-
-            Assert.Single(cms.SignerInfos);
-            Assert.Single(cms.Certificates);
-
-            int expectedVersion = identifierType == SubjectIdentifierType.SubjectKeyIdentifier ? 3 : 1;
-            Assert.Equal(expectedVersion, cms.Version);
-
-            SignerInfo firstSigner = cms.SignerInfos[0];
-            Assert.Equal(identifierType, firstSigner.SignerIdentifier.Type);
-            Assert.NotNull(firstSigner.Certificate);
-            Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
-            Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
-
 #if NET
-            byte[] signature = firstSigner.GetSignature();
-            Assert.NotEmpty(signature);
-            // DSA PKIX signature format is a DER SEQUENCE.
-            Assert.Equal(0x30, signature[0]);
+            byte[]? signature = null;
 #endif
 
-            cms.CheckSignature(true);
-            byte[] encoded = cms.Encode();
-
-            cms = new SignedCms();
-            cms.Decode(encoded);
-
-            Assert.Single(cms.SignerInfos);
-            Assert.Single(cms.Certificates);
-            Assert.Equal(expectedVersion, cms.Version);
-            Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
-            Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
-
+            AssertAddFirstSigner(
+                identifierType,
+                detached,
+                cms =>
+                {
+                    using (X509Certificate2 signerCert = Certificates.Dsa1024.TryGetCertificateWithPrivateKey())
+                    {
+                        CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                        signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                        // Best compatibility for DSA is SHA-1 (FIPS 186-2)
+                        signer.DigestAlgorithm = new Oid(Oids.Sha1, Oids.Sha1);
+                        cms.ComputeSignature(signer);
+                    }
+                },
+                firstSigner =>
+                {
 #if NET
-            byte[] sig2 = cms.SignerInfos[0].GetSignature();
-            Assert.Equal(signature, sig2);
+                    // Store signature for comparison after roundtrip.
+                    signature = firstSigner.GetSignature();
+                    Assert.NotEmpty(signature);
+                    // DSA PKIX signature format is a DER SEQUENCE.
+                    Assert.Equal(0x30, signature[0]);
 #endif
-
-            if (detached)
-            {
-                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
-                cms = new SignedCms(contentInfo, detached);
-                cms.Decode(encoded);
-            }
-
-            cms.CheckSignature(true);
+                },
+                roundtrippedFirstSigner =>
+                {
+#if NET
+                    byte[] sig2 = roundtrippedFirstSigner.GetSignature();
+                    Assert.Equal(signature, sig2);
+#endif
+                });
         }
 
         [Theory]
@@ -610,18 +565,175 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(SubjectIdentifierType.SubjectKeyIdentifier, true, Oids.Sha512)]
         public static void AddFirstSigner_ECDSA(SubjectIdentifierType identifierType, bool detached, string digestOid)
         {
+#if NET
+            byte[]? signature = null;
+#endif
+
+            AssertAddFirstSigner(
+                identifierType,
+                detached,
+                cms =>
+                {
+                    using (X509Certificate2 signerCert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
+                    {
+                        CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                        signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                        signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                        cms.ComputeSignature(signer);
+                    }
+                },
+                firstSigner =>
+                {
+#if NET
+                    // Store signature for comparison after roundtrip.
+                    signature = firstSigner.GetSignature();
+                    Assert.NotEmpty(signature);
+                    // ECDSA PKIX signature format is a DER SEQUENCE.
+                    Assert.Equal(0x30, signature[0]);
+
+                    // ECDSA Oids are all under 1.2.840.10045.4.
+                    Assert.StartsWith("1.2.840.10045.4.", firstSigner.SignatureAlgorithm.Value);
+#endif
+                },
+                roundtrippedFirstSigner =>
+                {
+#if NET
+                    byte[] sig2 = roundtrippedFirstSigner.GetSignature();
+                    Assert.Equal(signature, sig2);
+#endif
+                });
+        }
+
+        public static IEnumerable<object[]> AddFirstSignerSlhDsaTestData =>
+            from sit in new[] { SubjectIdentifierType.IssuerAndSerialNumber, SubjectIdentifierType.SubjectKeyIdentifier }
+            from detached in new[] { false, true }
+            from algorithms in new (SlhDsaAlgorithm signAlgorithm, string hashAlgorithm)[]
+            {
+                (SlhDsaAlgorithm.SlhDsaSha2_128s, Oids.Sha256),
+                (SlhDsaAlgorithm.SlhDsaShake128f, Oids.Shake128),
+                (SlhDsaAlgorithm.SlhDsaSha2_256f, Oids.Sha512),
+                (SlhDsaAlgorithm.SlhDsaShake256f, Oids.Shake256),
+            }
+            from SlhDsaTestData.SlhDsaGeneratedKeyInfo info in SlhDsaTestData.GeneratedKeyInfosRaw
+            where info.Algorithm == algorithms.signAlgorithm // Find the matching test data for the algorithm
+            select new object[] { sit, detached, algorithms.hashAlgorithm, info };
+
+        [ConditionalTheory(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        [MemberData(nameof(AddFirstSignerSlhDsaTestData))]
+        public static void AddFirstSigner_SlhDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, SlhDsaTestData.SlhDsaGeneratedKeyInfo info)
+        {
+            byte[]? signature = null;
+
+            AssertAddFirstSigner(
+                identifierType,
+                detached,
+                cms =>
+                {
+                    CertLoader loader = Certificates.SlhDsaGeneratedCerts.Single(cert => cert.CerData.SequenceEqual(info.Certificate));
+                    using (X509Certificate2 signerCert = loader.TryGetCertificateWithPrivateKey())
+                    {
+                        CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                        signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                        signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                        cms.ComputeSignature(signer);
+                    }
+                },
+                firstSigner =>
+                {
+                    // Store signature for comparison after roundtrip.
+                    signature = firstSigner.GetSignature();
+                    Assert.NotEmpty(signature);
+
+                    // SLH-DSA Oids are all under 2.16.840.1.101.3.4.3.
+                    Assert.StartsWith("2.16.840.1.101.3.4.3.", firstSigner.SignatureAlgorithm.Value);
+                },
+                roundtrippedFirstSigner =>
+                {
+                    byte[] sig2 = roundtrippedFirstSigner.GetSignature();
+                    Assert.Equal(signature, sig2);
+                });
+        }
+
+        public static IEnumerable<object[]> AddFirstSignerMLDsaTestData =>
+            from sit in new[] { SubjectIdentifierType.IssuerAndSerialNumber, SubjectIdentifierType.SubjectKeyIdentifier }
+            from detached in new[] { false, true }
+            from data in new (MLDsaAlgorithm algorithm, string hashAlgorithm)[]
+            {
+                (MLDsaAlgorithm.MLDsa44, Oids.Shake128),
+                (MLDsaAlgorithm.MLDsa65, Oids.Sha512),
+                (MLDsaAlgorithm.MLDsa87, Oids.Shake256),
+            }
+            select new object[] { sit, detached, data.hashAlgorithm, data.algorithm };
+
+        [ConditionalTheory(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        [MemberData(nameof(AddFirstSignerMLDsaTestData))]
+        public static void AddFirstSigner_MLDsa(SubjectIdentifierType identifierType, bool detached, string digestOid, MLDsaAlgorithm algorithm)
+        {
+            void SignWithMLDsa(SignedCms cms)
+            {
+                using (X509Certificate2 signerCert = Certificates.MLDsaIetf[algorithm].TryGetCertificateWithPrivateKey())
+                {
+                    CmsSigner signer = new CmsSigner(identifierType, signerCert);
+                    signer.IncludeOption = X509IncludeOption.EndCertOnly;
+                    signer.DigestAlgorithm = new Oid(digestOid, digestOid);
+                    cms.ComputeSignature(signer);
+                }
+            }
+
+            if (PlatformDetection.IsNetFramework && (digestOid == Oids.Shake128 || digestOid == Oids.Shake256))
+            {
+                const int CryptEUnknownAlgorithm = unchecked((int)0x80091002);
+
+                // .NET Framework's CMS is backed by Windows CAPI, which does not recognize SHAKE
+                // digest algorithms and fails signing with CRYPT_E_UNKNOWN_ALGO. .NET builds the
+                // CMS in managed code and succeeds.
+                ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
+                SignedCms cms = new SignedCms(contentInfo, detached);
+                CryptographicException exception = Assert.Throws<CryptographicException>(() => SignWithMLDsa(cms));
+                Assert.Equal(CryptEUnknownAlgorithm, exception.HResult);
+                return;
+            }
+
+            byte[]? signature = null;
+
+            AssertAddFirstSigner(
+                identifierType,
+                detached,
+                SignWithMLDsa,
+                firstSigner =>
+                {
+                    // Store signature for comparison after roundtrip.
+                    signature = firstSigner.GetSignature();
+                    Assert.NotEmpty(signature);
+
+                    // ML-DSA Oids are all under 2.16.840.1.101.3.4.3.
+                    Assert.StartsWith("2.16.840.1.101.3.4.3.", firstSigner.SignatureAlgorithm.Value);
+                },
+                roundtrippedFirstSigner =>
+                {
+                    byte[] sig2 = roundtrippedFirstSigner.GetSignature();
+                    Assert.Equal(signature, sig2);
+                });
+        }
+
+        private static void AssertAddFirstSigner(
+            SubjectIdentifierType identifierType,
+            bool detached,
+            Action<SignedCms> signCms,
+            Action<SignerInfo> assertFirstSigner,
+            Action<SignerInfo> assertRoundtrippedFirstSigner)
+        {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 9, 8, 7, 6, 5 });
             SignedCms cms = new SignedCms(contentInfo, detached);
 
-            using (X509Certificate2 signerCert = Certificates.ECDsaP256Win.TryGetCertificateWithPrivateKey())
-            {
-                CmsSigner signer = new CmsSigner(identifierType, signerCert);
-                signer.IncludeOption = X509IncludeOption.EndCertOnly;
-                signer.DigestAlgorithm = new Oid(digestOid, digestOid);
-                cms.ComputeSignature(signer);
-            }
+            signCms(cms);
 
+            Assert.Same(contentInfo.Content, cms.ContentInfo.Content);
             Assert.Single(cms.SignerInfos);
+
+            // Currently the test assumes only a single certificate is added.
+            // If this assertion fails in newly added tests, update the provided signing
+            // callback to use EndCertOnly.
             Assert.Single(cms.Certificates);
 
             int expectedVersion = identifierType == SubjectIdentifierType.SubjectKeyIdentifier ? 3 : 1;
@@ -633,15 +745,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.NotSame(cms.Certificates[0], firstSigner.Certificate);
             Assert.Equal(cms.Certificates[0], firstSigner.Certificate);
 
-#if NET
-            byte[] signature = firstSigner.GetSignature();
-            Assert.NotEmpty(signature);
-            // ECDSA PKIX signature format is a DER SEQUENCE.
-            Assert.Equal(0x30, signature[0]);
-
-            // ECDSA Oids are all under 1.2.840.10045.4.
-            Assert.StartsWith("1.2.840.10045.4.", firstSigner.SignatureAlgorithm.Value);
-#endif
+            assertFirstSigner(firstSigner);
 
             cms.CheckSignature(true);
             byte[] encoded = cms.Encode();
@@ -655,10 +759,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(identifierType, cms.SignerInfos[0].SignerIdentifier.Type);
             Assert.Equal(firstSigner.Certificate, cms.SignerInfos[0].Certificate);
 
-#if NET
-            byte[] sig2 = cms.SignerInfos[0].GetSignature();
-            Assert.Equal(signature, sig2);
-#endif
+            assertRoundtrippedFirstSigner(cms.SignerInfos[0]);
 
             if (detached)
             {
@@ -1038,8 +1139,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             {
                 cms = new SignedCms();
 
-                // DSA is not supported on mobile Apple platforms, so use ECDsa signed document instead
-                if (PlatformDetection.UsesMobileAppleCrypto)
+                // DSA is not supported, so use ECDsa signed document instead
+                if (!PlatformSupport.IsDSASupported)
                 {
                     cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
                 }
@@ -1132,11 +1233,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(true);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void UntrustedCertFails_WhenTrustChecked()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+            cms.Decode(SignedDocuments.RsaPkcs1Sha256OneSignerIssuerAndSerialNumber);
 
             // Assert.NoThrow
             cms.CheckSignature(true);
@@ -1395,6 +1496,30 @@ namespace System.Security.Cryptography.Pkcs.Tests
             signedCms.CheckSignature(true);
         }
 
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        public static void CheckSignature_Pkcs1_Rsa1024WithSha1()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.RsaPkcs1OneSignerIssuerAndSerialNumber);
+
+            // Assert.NoThrows
+            signedCms.CheckSignature(true);
+        }
+
+        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        public static void CheckSignature_Pkcs1_Rsa1024WithSha1_CounterSigned()
+        {
+            SignedCms signedCms = new SignedCms();
+            signedCms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
+
+            SignerInfo signer = signedCms.SignerInfos[0];
+            Assert.Single(signer.CounterSignerInfos);
+
+            // Assert.NoThrows
+            signer.CounterSignerInfos[0].CheckSignature(true);
+            signedCms.CheckSignature(true);
+        }
+
         [Fact]
         public static void CheckSignature_Pkcs1_Sha1_Declared_Sha256WithRsa()
         {
@@ -1413,7 +1538,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
         [InlineData(" 1.1", "010100", null)]
         [InlineData("1.1 ", "010100", null)]
         [InlineData("1 1", "010100", null)]
-        public static void SignIdentifiedContent_BadOid(string oidValueIn, string contentHex, string oidValueOut)
+        public static void SignIdentifiedContent_BadOid(string? oidValueIn, string contentHex, string? oidValueOut)
         {
             SignedCms signedCms = new SignedCms(
                 new ContentInfo(new Oid(oidValueIn, "Some Friendly Name"), contentHex.HexToByteArray()));
@@ -1441,20 +1566,22 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(contentHex, signedCms.ContentInfo.Content.ByteArrayToHex());
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void CheckSignedEncrypted_IssuerSerial_FromNetFx()
         {
             CheckSignedEncrypted(
-                SignedDocuments.SignedCmsOverEnvelopedCms_IssuerSerial_NetFx,
-                SubjectIdentifierType.IssuerAndSerialNumber);
+                SignedDocuments.SignedCmsOverEnvelopedCms_IssuerSerial_Sha256_NetFx,
+                SubjectIdentifierType.IssuerAndSerialNumber,
+                Certificates.RSA2048Sha256KeyTransfer1);
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void CheckSignedEncrypted_SKID_FromNetFx()
         {
             CheckSignedEncrypted(
-                SignedDocuments.SignedCmsOverEnvelopedCms_SKID_NetFx,
-                SubjectIdentifierType.SubjectKeyIdentifier);
+                SignedDocuments.SignedCmsOverEnvelopedCms_SKID_Sha256_NetFx,
+                SubjectIdentifierType.SubjectKeyIdentifier,
+                Certificates.RSA2048Sha256KeyTransfer1);
         }
 
         [Fact]
@@ -1489,7 +1616,10 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.Encode();
         }
 
-        private static void CheckSignedEncrypted(byte[] docBytes, SubjectIdentifierType expectedType)
+        private static void CheckSignedEncrypted(
+            byte[] docBytes,
+            SubjectIdentifierType expectedType,
+            CertLoader? decryptionCert = null)
         {
             SignedCms signedCms = new SignedCms();
             signedCms.Decode(docBytes);
@@ -1506,7 +1636,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             EnvelopedCms envelopedCms = new EnvelopedCms();
             envelopedCms.Decode(signedCms.ContentInfo.Content);
 
-            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            using (X509Certificate2 cert = (decryptionCert ?? Certificates.RSAKeyTransferCapi1).TryGetCertificateWithPrivateKey())
             {
                 envelopedCms.Decrypt(new X509Certificate2Collection(cert));
             }
@@ -1611,6 +1741,89 @@ namespace System.Security.Cryptography.Pkcs.Tests
             cms.CheckSignature(verifySignatureOnly: true);
         }
 
+        // Ed25519 certificate from https://datatracker.ietf.org/doc/html/rfc8410#section-10.2
+        private const string UnknownAlgorithmCert =
+            """
+            MIIBLDCB36ADAgECAghWAUdKKo3DMDAFBgMrZXAwGTEXMBUGA1UEAwwOSUVURiBUZX
+            N0IERlbW8wHhcNMTYwODAxMTIxOTI0WhcNNDAxMjMxMjM1OTU5WjAZMRcwFQYDVQQD
+            DA5JRVRGIFRlc3QgRGVtbzAqMAUGAytlbgMhAIUg8AmJMKdUdIt93LQ+91oNvzoNJj
+            ga9OukqY6qm05qo0UwQzAPBgNVHRMBAf8EBTADAQEAMA4GA1UdDwEBAAQEAwIDCDAg
+            BgNVHQ4BAQAEFgQUmx9e7e0EM4Xk97xiPFl1uQvIuzswBQYDK2VwA0EAryMB/t3J5v
+            /BzKc9dNZIpDmAgs3babFOTQbs+BolzlDUwsPrdGxO3YNGhW7Ibz3OGhhlxXrCe1Cg
+            w1AH9efZBw==
+            """;
+
+        [Fact]
+        public static void ComputeSignature_UnknownAlgorithm_NoSignature()
+        {
+            using X509Certificate2 cert = X509CertificateLoader.LoadCertificate(Convert.FromBase64String(UnknownAlgorithmCert));
+
+            byte[] message = "Hello World!"u8.ToArray();
+            SignedCms cms = new SignedCms(new ContentInfo(message));
+            CmsSigner cmsSigner = new CmsSigner(SubjectIdentifierType.NoSignature, cert)
+            {
+                DigestAlgorithm = new Oid(Oids.Sha256, Oids.Sha256)
+            };
+
+            cms.ComputeSignature(cmsSigner);
+
+            // "NoSignature" OID
+            Assert.Equal("1.3.6.1.5.5.7.6.2", cms.SignerInfos[0].SignatureAlgorithm.Value);
+
+            byte[] messageHash = Convert.FromBase64String("f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");
+            byte[] signature = cms.SignerInfos[0].GetSignature();
+
+            Assert.Equal(messageHash, signature);
+
+            SignedCms cmsNoCert = new SignedCms(new ContentInfo(message));
+            cmsNoCert.Decode(cms.Encode());
+
+            // Assert.NoThrow
+            cmsNoCert.SignerInfos[0].CheckHash();
+
+            // Assert.NoThrow
+            cmsNoCert.CheckHash();
+        }
+
+        [Fact]
+        public static void ComputeSignature_Rsa_NoSignature_DefaultDigest()
+        {
+            ComputeSignature_NoSignature_DefaultDigest(Certificates.RSAKeyTransferCapi1.GetCertificate);
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void ComputeSignature_MLDsa_NoSignature_DefaultDigest()
+        {
+            ComputeSignature_NoSignature_DefaultDigest(Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].GetCertificate);
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ComputeSignature_SlhDsa_NoSignature_DefaultDigest()
+        {
+            ComputeSignature_NoSignature_DefaultDigest(Certificates.SlhDsaSha2_128s_Ietf.GetCertificate);
+        }
+
+        private static void ComputeSignature_NoSignature_DefaultDigest(Func<X509Certificate2> getCert)
+        {
+            using X509Certificate2 cert = getCert();
+
+            byte[] message = "Hello World!"u8.ToArray();
+            SignedCms cms = new SignedCms(new ContentInfo(message));
+
+            // Use default value for DigestAlgorithm
+            CmsSigner signer = new CmsSigner(SubjectIdentifierType.NoSignature, cert);
+
+            cms.ComputeSignature(signer);
+
+            bool defaultHashIsSha1 = IsNetFramework471OrLower;
+            byte[] expectedMessageHash = Convert.FromBase64String(
+                defaultHashIsSha1
+                    ? "Lve95gjOVATpfV8EL5X4nxwjKHE="                    // Sha1
+                    : "f4OxZX/x/FO5LcGBSKHWXfwtSx+j1ncoSt3SABJtkGk=");  // Sha256
+
+            Assert.Equal(expectedMessageHash, cms.SignerInfos[0].GetSignature());
+        }
+
         private static void CheckNoSignature(byte[] encoded, bool badOid=false)
         {
             SignedCms cms = new SignedCms();
@@ -1630,5 +1843,157 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 cms.CheckHash();
             }
         }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void ComputeSignature_MLDsa_DefaultDigest()
+        {
+#if !NETFRAMEWORK
+            // Test signer with public certificate and private key
+            AssertSignerHasCorrectDefaultDigest(
+                useSigner =>
+                {
+                    using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].GetCertificate())
+                    using (MLDsa key = MLDsa.ImportMLDsaPrivateSeed(MLDsaAlgorithm.MLDsa65, MLDsaTestsData.IetfMLDsa65.PrivateSeed))
+                    {
+                        useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key));
+                    }
+                });
+
+            // Test signer with private certificate
+            AssertSignerHasCorrectDefaultDigest(
+                useSigner =>
+                {
+                    using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+                    {
+                        useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, (MLDsa?)null));
+                    }
+                });
+#endif
+
+            // Test signer with private certificate
+            AssertSignerHasCorrectDefaultDigest(
+                useSigner =>
+                {
+                    using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+                    {
+                        useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert));
+                    }
+                });
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void ComputeSignature_SlhDsa_DefaultDigest()
+        {
+#if !NETFRAMEWORK
+            // Test signer with public certificate and private key
+            AssertSignerHasCorrectDefaultDigest(
+                useSigner =>
+                {
+                    using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.GetCertificate())
+                    using (SlhDsa key = SlhDsa.ImportSlhDsaPrivateKey(SlhDsaAlgorithm.SlhDsaSha2_128s, SlhDsaTestData.IetfSlhDsaSha2_128sPrivateKeyValue))
+                    {
+                        useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, key));
+                    }
+                });
+
+            // Test signer with private certificate
+            AssertSignerHasCorrectDefaultDigest(
+                useSigner =>
+                {
+                    using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+                    {
+                        useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert, (SlhDsa?)null));
+                    }
+                });
+#endif
+
+            // Test signer with private certificate
+            AssertSignerHasCorrectDefaultDigest(
+                useSigner =>
+                {
+                    using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+                    {
+                        useSigner(new CmsSigner(SubjectIdentifierType.SubjectKeyIdentifier, cert));
+                    }
+                });
+        }
+
+        [ConditionalFact(typeof(MLDsa), nameof(MLDsa.IsSupported))]
+        public static void VerifySignature_MLDsa_WrongSignatureAlgorithmId()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.MLDsaIetf[MLDsaAlgorithm.MLDsa65].TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(Oids.Sha384, null);
+                cms.ComputeSignature(signer);
+                byte[] cmsBytes = cms.Encode();
+
+                ReadOnlySpan<byte> mldsa65Oid = [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12];
+                int scanLength = cmsBytes.Length - MLDsaAlgorithm.MLDsa65.SignatureSizeInBytes;
+                int signerAlgTypeIndex = cmsBytes.AsSpan(0, scanLength).LastIndexOf(mldsa65Oid);
+
+                // Change the last byte of the OID to make it say ML-DSA-87
+                cmsBytes[signerAlgTypeIndex + mldsa65Oid.Length - 1] = 0x13;
+
+                cms.Decode(cmsBytes);
+                Assert.Equal(Oids.MLDsa87, cms.SignerInfos[0].SignatureAlgorithm.Value);
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        [ConditionalFact(typeof(SlhDsa), nameof(SlhDsa.IsSupported))]
+        public static void VerifySignature_SlhDsa_WrongSignatureAlgorithmId()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+
+            using (X509Certificate2 cert = Certificates.SlhDsaSha2_128s_Ietf.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(SubjectIdentifierType.IssuerAndSerialNumber, cert);
+                signer.DigestAlgorithm = new Oid(Oids.Sha384, null);
+                cms.ComputeSignature(signer);
+                byte[] cmsBytes = cms.Encode();
+
+                ReadOnlySpan<byte> slhDsaSha2_128sOid = [0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x14];
+                int scanLength = cmsBytes.Length - SlhDsaAlgorithm.SlhDsaSha2_128s.SignatureSizeInBytes;
+                int signerAlgTypeIndex = cmsBytes.AsSpan(0, scanLength).LastIndexOf(slhDsaSha2_128sOid);
+
+                // Change the last byte of the OID to make it say SLH-DSA-SHAKE-256f
+                cmsBytes[signerAlgTypeIndex + slhDsaSha2_128sOid.Length - 1] = 0x1F;
+
+                cms.Decode(cmsBytes);
+                Assert.Equal(Oids.SlhDsaShake256f, cms.SignerInfos[0].SignatureAlgorithm.Value);
+                Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
+            }
+        }
+
+        private static void AssertSignerHasCorrectDefaultDigest(Action<Action<CmsSigner>> test)
+        {
+            // DigestAlgorithm property on new signer has correct default value
+            test(static signer => Assert.Equal(DefaultHashForPlatform.Value, signer.DigestAlgorithm.Value));
+
+            // Signer signs with correct digest value
+            test(
+                static signer =>
+                {
+                    byte[] message = "Hello World!"u8.ToArray();
+                    SignedCms cms = new SignedCms(new ContentInfo(message));
+
+                    cms.ComputeSignature(signer);
+
+                    Assert.Equal(DefaultHashForPlatform.Value, cms.SignerInfos[0].DigestAlgorithm.Value);
+
+                    // Assert.NoThrow
+                    cms.SignerInfos[0].CheckSignature(verifySignatureOnly: true);
+                });
+        }
+
+        private static bool IsNetFramework471OrLower { get; } =
+            PlatformDetection.IsNetFramework && new FrameworkName(AppDomain.CurrentDomain.SetupInformation.TargetFrameworkName).Version <= new Version(4, 7, 1);
+
+        private static Oid DefaultHashForPlatform = IsNetFramework471OrLower ? new Oid(Oids.Sha1, Oids.Sha1) : new Oid(Oids.Sha256, Oids.Sha256);
     }
 }

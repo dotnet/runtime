@@ -600,7 +600,34 @@ public class ComparisonTestAnd2Chains
             return 101;
         }
 
+        // Regression: CCMP must still form when both relops have a contained shift.
+        // See dotnet/runtime#129188.
+        if (Eq_long_shifted_2_consume(0, 0, 0) != 1)
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_long_shifted_2_consume failed");
+            return 101;
+        }
+        if (Eq_long_shifted_2_consume(1, 2, 3) != 0)
+        {
+            Console.WriteLine("ComparisonTestAnd2Chains:Eq_long_shifted_2_consume failed (neg)");
+            return 101;
+        }
+
         Console.WriteLine("PASSED");
         return 100;
+    }
+
+    // Both relops have a contained shift on op2. Prior to dotnet/runtime#129188's
+    // follow-up, the CCMP transformation would bail because the CCMP-side operand
+    // was contained, and we would emit a cset/orr fallback. The fix lets CCMP form
+    // with one un-contained shift, giving (asr + cmp shifted + ccmp + cset).
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Eq_long_shifted_2_consume(long a, long b, long c)
+    {
+        //ARM64-FULL-LINE:      asr {{x[0-9]+}}, {{x[0-9]+}}, #63
+        //ARM64-FULL-LINE-NEXT: cmp {{x[0-9]+}}, {{x[0-9]+}},  ASR #63
+        //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, {{x[0-9]+}}, 0, eq
+        //ARM64-FULL-LINE-NEXT: cset {{x[0-9]+}}, eq
+        return ((a == (b >> 63)) & (a == (c >> 63))) ? 1 : 0;
     }
 }

@@ -443,8 +443,9 @@ ProfilerEnum< EnumInterface, IID_EnumInterface, Element >::Clone(EnumInterface**
     {
         *pInterface = NULL;
         hr = E_OUTOFMEMORY;
+        RethrowTerminalExceptions();
     }
-    EX_END_CATCH(RethrowTerminalExceptions)
+    EX_END_CATCH
 
     return hr;
 }

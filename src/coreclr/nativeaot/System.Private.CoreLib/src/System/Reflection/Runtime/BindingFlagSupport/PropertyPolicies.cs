@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.BindingFlagSupport
@@ -17,13 +16,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public PropertyPolicies() : base(MemberTypeIndex.Property) { }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
-            Justification = "Reflection implementation")]
-        public sealed override IEnumerable<PropertyInfo> GetDeclaredMembers(Type type)
-        {
-            return type.GetProperties(DeclaredOnlyLookup);
-        }
-
         public sealed override IEnumerable<PropertyInfo> CoreGetDeclaredMembers(RuntimeTypeInfo type, NameFilter? optionalNameFilter, RuntimeTypeInfo reflectedType)
         {
             return type.CoreGetDeclaredProperties(optionalNameFilter, reflectedType);
@@ -33,7 +25,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override void GetMemberAttributes(PropertyInfo member, out MethodAttributes visibility, out bool isStatic, out bool isVirtual, out bool isNewSlot)
         {
-            MethodInfo? accessorMethod = GetAccessorMethod(member);
+            MethodInfo? accessorMethod = GetMostAccessibleAccessor(member);
             if (accessorMethod == null)
             {
                 // If we got here, this is a inherited PropertyInfo that only had private accessors and is now refusing to give them out
@@ -52,13 +44,6 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             isStatic = (0 != (methodAttributes & MethodAttributes.Static));
             isVirtual = (0 != (methodAttributes & MethodAttributes.Virtual));
             isNewSlot = (0 != (methodAttributes & MethodAttributes.NewSlot));
-        }
-
-        public sealed override bool ImplicitlyOverrides(PropertyInfo? baseMember, PropertyInfo? derivedMember)
-        {
-            MethodInfo? baseAccessor = GetAccessorMethod(baseMember!);
-            MethodInfo? derivedAccessor = GetAccessorMethod(derivedMember!);
-            return MethodPolicies.Instance.ImplicitlyOverrides(baseAccessor, derivedAccessor);
         }
 
         //
@@ -98,6 +83,21 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             }
 
             return accessor;
+        }
+
+        private static MethodInfo? GetMostAccessibleAccessor(PropertyInfo property)
+        {
+            MethodInfo? getter = property.GetMethod;
+            MethodInfo? setter = property.SetMethod;
+
+            if (getter == null)
+                return setter;
+            if (setter == null)
+                return getter;
+
+            // Return the setter if it's more accessible, otherwise return the getter.
+            // MethodAttributes acessibility values are higher for more accessible methods: private (1) --> public (6).
+            return (setter.Attributes & MethodAttributes.MemberAccessMask) > (getter.Attributes & MethodAttributes.MemberAccessMask) ? setter : getter;
         }
     }
 }

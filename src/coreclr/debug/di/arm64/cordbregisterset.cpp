@@ -103,7 +103,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
 
             if ((i >= REGISTER_ARM64_X0) && (i <= REGISTER_ARM64_X28))
             {
-                regBuffer[iRegister++] = m_rd->X[i - REGISTER_ARM64_X0];
+                regBuffer[iRegister++] = m_context.X[i - REGISTER_ARM64_X0];
                 continue;
             }
 
@@ -133,13 +133,13 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG64 mask, ULONG32 regCount,
             switch (i)
             {
             case REGISTER_ARM64_PC:
-                regBuffer[iRegister++] = m_rd->PC; break;
+                regBuffer[iRegister++] = m_context.Pc; break;
             case REGISTER_ARM64_SP:
-                regBuffer[iRegister++] = m_rd->SP; break;
+                regBuffer[iRegister++] = m_context.Sp; break;
             case REGISTER_ARM64_FP:
-                regBuffer[iRegister++] = m_rd->FP; break;
+                regBuffer[iRegister++] = m_context.Fp; break;
             case REGISTER_ARM64_LR:
-                regBuffer[iRegister++] = m_rd->LR; break;
+                regBuffer[iRegister++] = m_context.Lr; break;
             default:
                 _ASSERTE(false); break;
             }
@@ -193,7 +193,7 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
 
                 if ((i >= REGISTER_ARM64_X0) && (i <= REGISTER_ARM64_X28))
                 {
-                    regBuffer[iRegister++] = m_rd->X[i - REGISTER_ARM64_X0];
+                    regBuffer[iRegister++] = m_context.X[i - REGISTER_ARM64_X0];
                     continue;
                 }
 
@@ -223,13 +223,13 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
                 switch (i)
                 {
                 case REGISTER_ARM64_PC:
-                    regBuffer[iRegister++] = m_rd->PC; break;
+                    regBuffer[iRegister++] = m_context.Pc; break;
                 case REGISTER_ARM64_SP:
-                    regBuffer[iRegister++] = m_rd->SP; break;
+                    regBuffer[iRegister++] = m_context.Sp; break;
                 case REGISTER_ARM64_FP:
-                    regBuffer[iRegister++] = m_rd->FP; break;
+                    regBuffer[iRegister++] = m_context.Fp; break;
                 case REGISTER_ARM64_LR:
-                    regBuffer[iRegister++] = m_rd->LR; break;
+                    regBuffer[iRegister++] = m_context.Lr; break;
                 default:
                     _ASSERTE(false); break;
                 }
@@ -238,29 +238,4 @@ HRESULT CordbRegisterSet::GetRegisters(ULONG32 maskCount, BYTE mask[],
     }
 
     return S_OK;
-}
-
-
-// This is just a convenience function to convert a regdisplay into a Context.
-// Since a context has more info than a regdisplay, the conversion isn't perfect
-// and the context can't be fully accurate.
-void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT *pInputContext)
-{    INTERNAL_SYNC_API_ENTRY(GetProcess());
-    _ASSERTE(pInputContext);
-
-    if ((pInputContext->ContextFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
-    {
-        for (int i = 0 ; i < 29 ; ++i)
-        {
-            pInputContext->X[i] = m_rd->X[i];
-        }
-    }
-
-    if ((pInputContext->ContextFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
-    {
-        pInputContext->Sp = m_rd->SP;
-        pInputContext->Lr = m_rd->LR;
-        pInputContext->Pc = m_rd->PC;
-        pInputContext->Fp = m_rd->FP;
-    }
 }

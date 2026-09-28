@@ -3,6 +3,8 @@
 
   <PropertyGroup>
     <EnableDefaultItems>true</EnableDefaultItems>
+    <!-- Hot Reload enables startup hooks in runtimeconfig.dev.json, which can override values set by host activation tests. -->
+    <EnableHotReloadInRuntimeConfigDevFile>false</EnableHotReloadInRuntimeConfigDevFile>
     <UseLocalTargetingRuntimePack>true</UseLocalTargetingRuntimePack>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>

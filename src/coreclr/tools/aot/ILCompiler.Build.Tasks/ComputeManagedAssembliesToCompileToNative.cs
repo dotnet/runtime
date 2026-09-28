@@ -5,9 +5,8 @@ using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Reflection.Metadata;
-using System.Reflection.PortableExecutable;
 
 
 
@@ -73,22 +72,12 @@ namespace Build.Tasks
             set;
         }
 
+        /// <summary>
+        /// CoreCLR runtime pack files (apphost, native assets, managed assemblies replaced by NativeAOT equivalents)
+        /// that should be removed from the publish output and replaced with NativeAOT runtime pack assemblies.
+        /// </summary>
         [Output]
-        public ITaskItem[] ManagedAssemblies
-        {
-            get;
-            set;
-        }
-
-        [Output]
-        public ITaskItem[] SatelliteAssemblies
-        {
-            get;
-            set;
-        }
-
-        [Output]
-        public ITaskItem[] AssembliesToSkipPublish
+        public ITaskItem[] RuntimePackFilesToSkipPublish
         {
             get;
             set;
@@ -96,106 +85,81 @@ namespace Build.Tasks
 
         public override bool Execute()
         {
-            var list = new List<ITaskItem>();
-            var assembliesToSkipPublish = new List<ITaskItem>();
-            var satelliteAssemblies = new List<ITaskItem>();
-            var nativeAotFrameworkAssembliesToUse = new HashSet<string>();
+            var runtimePackFilesToSkipPublish = new List<ITaskItem>();
+            var nativeAotFrameworkAssembliesToUse = new Dictionary<string, ITaskItem>();
 
             foreach (ITaskItem taskItem in SdkAssemblies)
             {
-                nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
+                var fileName = Path.GetFileName(taskItem.ItemSpec);
+                if (!nativeAotFrameworkAssembliesToUse.ContainsKey(fileName))
+                    nativeAotFrameworkAssembliesToUse.Add(fileName, taskItem);
             }
 
             foreach (ITaskItem taskItem in FrameworkAssemblies)
             {
-                nativeAotFrameworkAssembliesToUse.Add(Path.GetFileName(taskItem.ItemSpec));
+                var fileName = Path.GetFileName(taskItem.ItemSpec);
+                if (!nativeAotFrameworkAssembliesToUse.ContainsKey(fileName))
+                    nativeAotFrameworkAssembliesToUse.Add(fileName, taskItem);
             }
 
             foreach (ITaskItem taskItem in Assemblies)
             {
                 // In the case of disk-based assemblies, this holds the file path
                 string itemSpec = taskItem.ItemSpec;
+                string assemblyFileName = Path.GetFileName(itemSpec);
+                bool isFromRuntimePack = taskItem.GetMetadata("NuGetPackageId")?.StartsWith("Microsoft.NETCore.App.Runtime.", StringComparison.OrdinalIgnoreCase) == true;
 
                 // Skip the native apphost (whose name ends up colliding with the native output binary) and supporting libraries
                 if (itemSpec.EndsWith(DotNetAppHostExecutableName, StringComparison.OrdinalIgnoreCase) || itemSpec.Contains(DotNetHostFxrLibraryName) || itemSpec.Contains(DotNetHostPolicyLibraryName))
                 {
-                    assembliesToSkipPublish.Add(taskItem);
+                    runtimePackFilesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
-                // Prototype aid - remove the native CoreCLR runtime pieces from the publish folder
-                if (itemSpec.IndexOf("microsoft.netcore.app", StringComparison.OrdinalIgnoreCase) != -1 && (itemSpec.Contains("\\native\\") || itemSpec.Contains("/native/")))
+                if (isFromRuntimePack && taskItem.GetMetadata("AssetType")?.Equals("native", StringComparison.OrdinalIgnoreCase) == true
+                    && !assemblyFileName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase)
+                    && !assemblyFileName.EndsWith(".dex", StringComparison.OrdinalIgnoreCase))
                 {
-                    assembliesToSkipPublish.Add(taskItem);
-                    continue;
-                }
-
-                var assemblyFileName = Path.GetFileName(itemSpec);
-
-                if (assemblyFileName == "WindowsBase.dll")
-                {
-                    // There are two instances of WindowsBase.dll, one small one, in the NativeAOT framework
-                    // and real one in WindowsDesktop SDK. We want to make sure that if both are present,
-                    // we will use the one from WindowsDesktop SDK, and not from NativeAOT framework.
-                    foreach (ITaskItem taskItemToSkip in FrameworkAssemblies)
-                    {
-                        if (Path.GetFileName(taskItemToSkip.ItemSpec) == assemblyFileName)
-                        {
-                            assembliesToSkipPublish.Add(taskItemToSkip);
-                            break;
-                        }
-                    }
-
-                    assembliesToSkipPublish.Add(taskItem);
-                    list.Add(taskItem);
+                    // Skip the native components of the runtime pack, we don't need them for NativeAOT.
+                    runtimePackFilesToSkipPublish.Add(taskItem);
                     continue;
                 }
 
                 // Remove any assemblies whose implementation we want to come from NativeAOT's package.
                 // Currently that's System.Private.* SDK assemblies and a bunch of framework assemblies.
-                if (nativeAotFrameworkAssembliesToUse.Contains(assemblyFileName))
+                if (nativeAotFrameworkAssembliesToUse.TryGetValue(assemblyFileName, out ITaskItem frameworkItem))
                 {
-                    assembliesToSkipPublish.Add(taskItem);
-                    continue;
-                }
-
-                try
-                {
-                    using (FileStream moduleStream = File.OpenRead(itemSpec))
-                    using (var module = new PEReader(moduleStream))
+                    // If the assembly is part of the Microsoft.NETCore.App.Runtime runtime pack, we want to swap it with the corresponding package from the NativeAOT SDK.
+                    // Otherwise we want to use the assembly the user has referenced.
+                    if (!isFromRuntimePack)
                     {
-                        if (module.HasMetadata)
-                        {
-                            MetadataReader moduleMetadataReader = module.GetMetadataReader();
-                            if (moduleMetadataReader.IsAssembly)
-                            {
-                                string culture = moduleMetadataReader.GetString(moduleMetadataReader.GetAssemblyDefinition().Culture);
-
-                                assembliesToSkipPublish.Add(taskItem);
-
-                                // Split satellite assemblies from normal assemblies
-                                if (culture == "" || culture.Equals("neutral", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    list.Add(taskItem);
-                                }
-                                else
-                                {
-                                    satelliteAssemblies.Add(taskItem);
-                                }
-                            }
-                        }
+                        // The assembly was overridden by an OOB package through standard .NET SDK conflict resolution.
+                        // Don't swap to the NativeAOT version; the user's version stays in
+                        // ResolvedFileToPublish and will be picked up as an ILC input via
+                        // its PostprocessAssembly=true metadata.
+                        continue;
                     }
-                }
-                catch (BadImageFormatException)
-                {
+                    else if (assemblyFileName == "System.Private.CoreLib.dll" && GetFileVersion(itemSpec).CompareTo(GetFileVersion(frameworkItem.ItemSpec)) > 0)
+                    {
+                        // Validate that we aren't trying to use an older NativeAOT package against a newer non-NativeAOT runtime pack.
+                        // That's not supported.
+                        Log.LogError($"Overriding System.Private.CoreLib.dll with a newer version is not supported. Attempted to use {itemSpec} instead of {frameworkItem.ItemSpec}.");
+                    }
+
+                    runtimePackFilesToSkipPublish.Add(taskItem);
+                    continue;
                 }
             }
 
-            ManagedAssemblies = list.ToArray();
-            AssembliesToSkipPublish = assembliesToSkipPublish.ToArray();
-            SatelliteAssemblies = satelliteAssemblies.ToArray();
+            RuntimePackFilesToSkipPublish = runtimePackFilesToSkipPublish.ToArray();
 
             return true;
+
+            static Version GetFileVersion(string path)
+            {
+                var versionInfo = FileVersionInfo.GetVersionInfo(path);
+                return new Version(versionInfo.FileMajorPart, versionInfo.FileMinorPart, versionInfo.FileBuildPart, versionInfo.FilePrivatePart);
+            }
         }
     }
 }

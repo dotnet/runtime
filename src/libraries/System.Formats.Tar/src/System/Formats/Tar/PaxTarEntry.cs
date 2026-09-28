@@ -12,8 +12,6 @@ namespace System.Formats.Tar
     /// </summary>
     public sealed class PaxTarEntry : PosixTarEntry
     {
-        private ReadOnlyDictionary<string, string>? _readOnlyExtendedAttributes;
-
         // Constructor called when reading a TarEntry from a TarReader.
         internal PaxTarEntry(TarHeader header, TarReader readerOfOrigin)
             : base(header, readerOfOrigin, TarEntryFormat.Pax)
@@ -21,7 +19,7 @@ namespace System.Formats.Tar
         }
 
         /// <summary>
-        /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name, and the default extended attributes.
+        /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type and entry name.
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
@@ -30,20 +28,7 @@ namespace System.Formats.Tar
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
-        /// <para>Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include additional extended attributes when creating the entry.</para>
-        /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
-        /// <list type="bullet">
-        /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
-        /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
-        /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
-        /// <item>Path, under the name <c>path</c>, as a string.</item>
-        /// </list>
-        /// <para>The following entries are only found in the Extended Attributes dictionary of a PAX entry if certain conditions are met:</para>
-        /// <list type="bullet">
-        /// <item>Group name, under the name <c>gname</c>, as a string, if it is larger than 32 bytes.</item>
-        /// <item>User name, under the name <c>uname</c>, as a string, if it is larger than 32 bytes.</item>
-        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
-        /// </list>
+        /// <para>Use the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor to include extended attributes when creating the entry.</para>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="entryName"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentException"><para><paramref name="entryName"/> is empty.</para>
@@ -53,35 +38,25 @@ namespace System.Formats.Tar
             : base(entryType, entryName, TarEntryFormat.Pax, isGea: false)
         {
             _header._prefix = string.Empty;
-
-            Debug.Assert(_header._mTime != default);
-            AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
         }
 
         /// <summary>
-        /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name and Extended Attributes enumeration.
+        /// Initializes a new <see cref="PaxTarEntry"/> instance with the specified entry type, entry name and extended attributes.
         /// </summary>
         /// <param name="entryType">The type of the entry.</param>
         /// <param name="entryName">A string with the path and file name of this entry.</param>
         /// <param name="extendedAttributes">An enumeration of string key-value pairs that represents the metadata to include in the Extended Attributes entry that precedes the current entry.</param>
-        /// <remarks>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string)"/> constructor, only the following entry types are supported:
+        /// <remarks><para>When creating an instance using the <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> constructor, only the following entry types are supported:</para>
         /// <list type="bullet">
         /// <item>In all platforms: <see cref="TarEntryType.Directory"/>, <see cref="TarEntryType.HardLink"/>, <see cref="TarEntryType.SymbolicLink"/>, <see cref="TarEntryType.RegularFile"/>.</item>
         /// <item>In Unix platforms only: <see cref="TarEntryType.BlockDevice"/>, <see cref="TarEntryType.CharacterDevice"/> and <see cref="TarEntryType.Fifo"/>.</item>
         /// </list>
-        /// The specified <paramref name="extendedAttributes"/> get appended to the default attributes, unless the specified enumeration overrides any of them.
-        /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
+        /// <para>The specified <paramref name="extendedAttributes"/> are additional attributes to be used for the entry. If any of the provided extended attributes correspond to standard entry properties (such as <c>path</c>, <c>mtime</c>, <c>uid</c>, <c>gid</c>, <c>uname</c>, <c>gname</c>, <c>linkpath</c>, <c>devmajor</c>, or <c>devminor</c>), those values are applied to the corresponding properties. The <paramref name="entryName"/> parameter always takes precedence over a <c>path</c> extended attribute if both are specified.</para>
+        /// <para>Setting a property after construction will update the corresponding extended attribute.</para>
+        /// <para>It may include PAX attributes like:</para>
         /// <list type="bullet">
-        /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
         /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
         /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
-        /// <item>Path, under the name <c>path</c>, as a string.</item>
-        /// </list>
-        /// <para>The following entries are only found in the Extended Attributes dictionary of a PAX entry if certain conditions are met:</para>
-        /// <list type="bullet">
-        /// <item>Group name, under the name <c>gname</c>, as a string, if it is larger than 32 bytes.</item>
-        /// <item>User name, under the name <c>uname</c>, as a string, if it is larger than 32 bytes.</item>
-        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
         /// </list>
         /// </remarks>
         /// <exception cref="ArgumentNullException"><paramref name="extendedAttributes"/> or <paramref name="entryName"/> is <see langword="null"/>.</exception>
@@ -94,18 +69,22 @@ namespace System.Formats.Tar
             ArgumentNullException.ThrowIfNull(extendedAttributes);
 
             _header._prefix = string.Empty;
-            _header.InitializeExtendedAttributesWithExisting(extendedAttributes);
+            _header.ReplaceNormalAttributesWithExtended(extendedAttributes);
 
-            Debug.Assert(_header._mTime != default);
-            AddNewAccessAndChangeTimestampsIfNotExist(useMTime: true);
+            // The entryName parameter takes precedence over a "path" extended attribute.
+            _header._name = entryName;
+            _header.ExtendedAttributes[TarHeader.PaxEaName] = entryName;
         }
 
         /// <summary>
         /// Initializes a new <see cref="PaxTarEntry"/> instance by converting the specified <paramref name="other"/> entry into the PAX format.
         /// </summary>
-        /// <exception cref="ArgumentException"><para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
+        /// <exception cref="ArgumentException">
+        /// <para><paramref name="other"/> is a <see cref="PaxGlobalExtendedAttributesTarEntry"/> and cannot be converted.</para>
         /// <para>-or-</para>
-        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para></exception>
+        /// <para>The entry type of <paramref name="other"/> is not supported for conversion to the PAX format.</para>
+        /// </exception>
+        /// <remarks>When converting a <see cref="GnuTarEntry"/> to <see cref="PaxTarEntry"/> using this constructor, the <see cref="GnuTarEntry.AccessTime"/> and <see cref="GnuTarEntry.ChangeTime"/> values will get transferred to the <see cref="ExtendedAttributes" /> dictionary only if their values are not <see langword="default"/> (which is <see cref="DateTimeOffset.MinValue"/>).</remarks>
         public PaxTarEntry(TarEntry other)
             : base(other, TarEntryFormat.Pax)
         {
@@ -116,66 +95,40 @@ namespace System.Formats.Tar
 
             if (other is PaxTarEntry paxOther)
             {
-                _header.InitializeExtendedAttributesWithExisting(paxOther.ExtendedAttributes);
+                _header.ReplaceNormalAttributesWithExtended(paxOther.ExtendedAttributes);
             }
-            else
+            else if (other is GnuTarEntry gnuOther)
             {
-                if (other is GnuTarEntry gnuOther)
+                if (gnuOther.AccessTime != default)
                 {
                     _header.ExtendedAttributes[TarHeader.PaxEaATime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.AccessTime);
+                }
+                if (gnuOther.ChangeTime != default)
+                {
                     _header.ExtendedAttributes[TarHeader.PaxEaCTime] = TarHelpers.GetTimestampStringFromDateTimeOffset(gnuOther.ChangeTime);
                 }
             }
-
-            AddNewAccessAndChangeTimestampsIfNotExist(useMTime: false);
         }
 
         /// <summary>
         /// Returns the extended attributes for this entry.
         /// </summary>
-        /// <remarks>The extended attributes are specified when constructing an entry. Use <see cref="PaxTarEntry(TarEntryType, string, IEnumerable{KeyValuePair{string, string}})"/> to append your own enumeration of extended attributes to the current entry on top of the default ones. Use <see cref="PaxTarEntry(TarEntryType, string)"/> to only use the default extended attributes.
-        /// <para>The following entries are always found in the Extended Attributes dictionary of any PAX entry:</para>
+        /// <remarks>The extended attributes are specified when constructing an entry. All provided extended attributes are preserved, including those whose values fit within the standard header fields.
+        /// <para>Setting properties such as <see cref="TarEntry.Name"/>, <see cref="TarEntry.ModificationTime"/>, <see cref="TarEntry.Uid"/>, <see cref="TarEntry.Gid"/>, <see cref="PosixTarEntry.UserName"/>, <see cref="PosixTarEntry.GroupName"/>, <see cref="TarEntry.LinkName"/>, <see cref="PosixTarEntry.DeviceMajor"/>, or <see cref="PosixTarEntry.DeviceMinor"/> will update the corresponding extended attribute to keep properties and extended attributes synchronized.</para>
+        /// <para>The following common PAX attributes may be included:</para>
         /// <list type="bullet">
         /// <item>Modification time, under the name <c>mtime</c>, as a <see cref="double"/> number.</item>
         /// <item>Access time, under the name <c>atime</c>, as a <see cref="double"/> number.</item>
         /// <item>Change time, under the name <c>ctime</c>, as a <see cref="double"/> number.</item>
         /// <item>Path, under the name <c>path</c>, as a string.</item>
-        /// </list>
-        /// <para>The following entries are only found in the Extended Attributes dictionary of a PAX entry if certain conditions are met:</para>
-        /// <list type="bullet">
-        /// <item>Group name, under the name <c>gname</c>, as a string, if it is larger than 32 bytes.</item>
-        /// <item>User name, under the name <c>uname</c>, as a string, if it is larger than 32 bytes.</item>
-        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>, if the string representation of the number is larger than 12 bytes.</item>
+        /// <item>Group name, under the name <c>gname</c>, as a string.</item>
+        /// <item>User name, under the name <c>uname</c>, as a string.</item>
+        /// <item>File length, under the name <c>size</c>, as an <see cref="int"/>.</item>
         /// </list>
         /// </remarks>
-        public IReadOnlyDictionary<string, string> ExtendedAttributes => _readOnlyExtendedAttributes ??= _header.ExtendedAttributes.AsReadOnly();
+        public IReadOnlyDictionary<string, string> ExtendedAttributes => field ??= _header.GetPopulatedExtendedAttributes().AsReadOnly();
 
         // Determines if the current instance's entry type supports setting a data stream.
         internal override bool IsDataStreamSetterSupported() => EntryType == TarEntryType.RegularFile;
-
-        // Checks if the extended attributes dictionary contains 'atime' and 'ctime'.
-        // If any of them is not found, it is added with the value of either the current entry's 'mtime',
-        // or 'DateTimeOffset.UtcNow', depending on the value of 'useMTime'.
-        private void AddNewAccessAndChangeTimestampsIfNotExist(bool useMTime)
-        {
-            Debug.Assert(!useMTime || (useMTime && _header._mTime != default));
-            bool containsATime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaATime);
-            bool containsCTime = _header.ExtendedAttributes.ContainsKey(TarHeader.PaxEaCTime);
-
-            if (!containsATime || !containsCTime)
-            {
-                string secondsFromEpochString = TarHelpers.GetTimestampStringFromDateTimeOffset(useMTime ? _header._mTime : DateTimeOffset.UtcNow);
-
-                if (!containsATime)
-                {
-                    _header.ExtendedAttributes[TarHeader.PaxEaATime] = secondsFromEpochString;
-                }
-
-                if (!containsCTime)
-                {
-                    _header.ExtendedAttributes[TarHeader.PaxEaCTime] = secondsFromEpochString;
-                }
-            }
-        }
     }
 }

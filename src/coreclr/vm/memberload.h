@@ -17,7 +17,7 @@
 /*
  *  Include Files
  */
-#include "eecontract.h"
+#include <contract.h>
 #include "argslot.h"
 #include "vars.hpp"
 #include "cor.h"
@@ -215,7 +215,6 @@ public:
        FM_Flags flags = FM_Default);
 
     // typeHnd is the type handle associated with the class being looked up.
-    // It has additional information in the case of a domain neutral class (Arrays)
     static MethodDesc *FindMethod(
        MethodTable * pMT,
        LPCUTF8 pszName,

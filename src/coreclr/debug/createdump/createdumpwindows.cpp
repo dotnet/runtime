@@ -27,7 +27,7 @@ CreateDump(const CreateDumpOptions& options)
     _ASSERTE(options.CreateDump);
     _ASSERTE(!options.CrashReport);
 
-    ArrayHolder<char> pszName = new char[MAX_LONGPATH + 1];
+    AStringHolder pszName = new char[MAX_LONGPATH + 1];
     std::string dumpPath;
 
     // On Windows, createdump is restricted for security reasons to only the .NET process (parent process) that launched createdump
@@ -63,7 +63,7 @@ CreateDump(const CreateDumpOptions& options)
         printf_error("Invalid dump path '%s' - %s\n", dumpPath.c_str(), GetLastErrorString().c_str());
         goto exit;
     }
-    
+
     int retryCount = 10;
     // Retry the write dump on ERROR_PARTIAL_COPY
     for (int i = 0; i <= retryCount; i++)

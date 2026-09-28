@@ -36,17 +36,17 @@ using Mono.Cecil;
 namespace Mono.Linker
 {
 
-	public interface IXApiVisitor
-	{
+    public interface IXApiVisitor
+    {
 
-		void OnAssembly (XPathNavigator nav, AssemblyDefinition assembly);
-		void OnAttribute (XPathNavigator nav);
-		void OnClass (XPathNavigator nav, TypeDefinition type);
-		void OnInterface (XPathNavigator nav, TypeDefinition type);
-		void OnField (XPathNavigator nav, FieldDefinition field);
-		void OnMethod (XPathNavigator nav, MethodDefinition method);
-		void OnConstructor (XPathNavigator nav, MethodDefinition method);
-		void OnProperty (XPathNavigator nav, PropertyDefinition property);
-		void OnEvent (XPathNavigator nav, EventDefinition evt);
-	}
+        void OnAssembly(XPathNavigator nav, AssemblyDefinition assembly);
+        void OnAttribute(XPathNavigator nav);
+        void OnClass(XPathNavigator nav, TypeDefinition type);
+        void OnInterface(XPathNavigator nav, TypeDefinition type);
+        void OnField(XPathNavigator nav, FieldDefinition field);
+        void OnMethod(XPathNavigator nav, MethodDefinition method);
+        void OnConstructor(XPathNavigator nav, MethodDefinition method);
+        void OnProperty(XPathNavigator nav, PropertyDefinition property);
+        void OnEvent(XPathNavigator nav, EventDefinition evt);
+    }
 }

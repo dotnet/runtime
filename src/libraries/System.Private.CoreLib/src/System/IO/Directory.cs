@@ -60,7 +60,7 @@ namespace System.IO
         /// <returns>An object that represents the directory that was created.</returns>
         /// <exception cref="ArgumentException"><paramref name="prefix" /> contains a directory separator.</exception>
         /// <exception cref="IOException">A new directory cannot be created.</exception>
-        public static unsafe DirectoryInfo CreateTempSubdirectory(string? prefix = null)
+        public static DirectoryInfo CreateTempSubdirectory(string? prefix = null)
         {
             EnsureNoDirectorySeparators(prefix);
 
@@ -197,18 +197,19 @@ namespace System.IO
             string path,
             string searchPattern,
             SearchTarget searchTarget,
-            EnumerationOptions options)
+            EnumerationOptions enumerationOptions)
         {
             ArgumentNullException.ThrowIfNull(path);
             ArgumentNullException.ThrowIfNull(searchPattern);
+            ArgumentNullException.ThrowIfNull(enumerationOptions);
 
-            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
+            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, enumerationOptions.MatchType);
 
             return searchTarget switch
             {
-                SearchTarget.Files => FileSystemEnumerableFactory.UserFiles(path, searchPattern, options),
-                SearchTarget.Directories => FileSystemEnumerableFactory.UserDirectories(path, searchPattern, options),
-                SearchTarget.Both => FileSystemEnumerableFactory.UserEntries(path, searchPattern, options),
+                SearchTarget.Files => FileSystemEnumerableFactory.UserFiles(path, searchPattern, enumerationOptions),
+                SearchTarget.Directories => FileSystemEnumerableFactory.UserDirectories(path, searchPattern, enumerationOptions),
+                SearchTarget.Both => FileSystemEnumerableFactory.UserEntries(path, searchPattern, enumerationOptions),
                 _ => throw new ArgumentOutOfRangeException(nameof(searchTarget)),
             };
         }

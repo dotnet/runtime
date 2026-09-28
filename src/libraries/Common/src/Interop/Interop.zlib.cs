@@ -23,8 +23,14 @@ internal static partial class Interop
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateEnd")]
         internal static unsafe partial ZLibNative.ErrorCode DeflateEnd(ZLibNative.ZStream* stream);
 
+        [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_DeflateReset")]
+        internal static unsafe partial ZLibNative.ErrorCode DeflateReset(ZLibNative.ZStream* stream);
+
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateInit2_")]
         internal static unsafe partial ZLibNative.ErrorCode InflateInit2_(ZLibNative.ZStream* stream, int windowBits);
+
+        [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_InflateReset2_")]
+        internal static unsafe partial ZLibNative.ErrorCode InflateReset2_(ZLibNative.ZStream* stream, int windowBits);
 
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Inflate")]
         internal static unsafe partial ZLibNative.ErrorCode Inflate(ZLibNative.ZStream* stream, ZLibNative.FlushCode flush);
@@ -34,5 +40,8 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_Crc32")]
         internal static unsafe partial uint crc32(uint crc, byte* buffer, int len);
+
+        [LibraryImport(Libraries.CompressionNative, EntryPoint = "CompressionNative_CompressBound")]
+        internal static partial uint compressBound(uint sourceLen);
     }
 }

@@ -6,8 +6,8 @@
 #pragma hdrstop
 #endif
 
-// For now the max possible size is Vector512<ushort>.Count * 2
-#define MaxPossibleUnrollSize 64
+// Overestimated threshold to avoid memory allocations,
+#define MaxPossibleUnrollSize 128
 
 //------------------------------------------------------------------------
 // importer_vectorization.cpp
@@ -90,7 +90,7 @@ static bool ConvertToLowerCase(WCHAR* input, WCHAR* mask, int length)
 GenTree* Compiler::impExpandHalfConstEquals(
     GenTreeLclVarCommon* data, WCHAR* cns, int charLen, int dataOffset, StringComparison cmpMode)
 {
-    static_assert_no_msg(sizeof(WCHAR) == 2);
+    static_assert(sizeof(WCHAR) == 2);
     assert((charLen > 0) && (charLen <= MaxPossibleUnrollSize));
 
     // A gtNewOperNode which can handle SIMD operands (used for bitwise operations):
@@ -98,13 +98,13 @@ GenTree* Compiler::impExpandHalfConstEquals(
 #ifdef FEATURE_HW_INTRINSICS
         if (varTypeIsSIMD(type))
         {
-            return gtNewSimdBinOpNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(type));
+            return gtNewSimdBinOpNode(oper, type, op1, op2, TYP_U_IMPL, genTypeSize(type));
         }
         if (varTypeIsSIMD(op1))
         {
             // E.g. a comparison of SIMD ops returning TYP_INT;
             assert(varTypeIsSIMD(op2));
-            return gtNewSimdCmpOpAllNode(oper, type, op1, op2, CORINFO_TYPE_NATIVEUINT, genTypeSize(op1));
+            return gtNewSimdCmpOpAllNode(oper, type, op1, op2, TYP_U_IMPL, genTypeSize(op1));
         }
 #endif
         return gtNewOperNode(oper, type, op1, op2);
@@ -351,7 +351,7 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         argCall = span->AsCall();
     }
 
-    if ((argCall != nullptr) && ((argCall->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0))
+    if ((argCall != nullptr) && argCall->IsSpecialIntrinsic())
     {
         const NamedIntrinsic ni = lookupNamedIntrinsic(argCall->gtCallMethHnd);
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
@@ -474,7 +474,7 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
     {
         // check for fake "" first
         cnsLength = 0;
-        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n", str)
+        JITDUMP("Trying to unroll String.Equals|StartsWith|EndsWith(op1, \"\")...\n")
     }
     else
     {
@@ -484,9 +484,8 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        if (cnsLength > (int)genTypeSize(roundDownMaxType(MaxPossibleUnrollSize * 2)))
+        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
         {
-            // Not more than two loads (of max width)
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
             return nullptr;
         }
@@ -501,28 +500,36 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
     // Create a tree representing string's Length:
     int      strLenOffset = OFFSETOF__CORINFO_String__stringLen;
-    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset, compCurBB);
+    GenTree* lenNode      = gtNewArrLen(TYP_INT, varStrLcl, strLenOffset);
     varStrLcl             = gtClone(varStrLcl)->AsLclVar();
 
     GenTree* unrolled = impExpandHalfConstEquals(varStrLcl, lenNode, needsNullcheck, kind, (WCHAR*)str, cnsLength,
                                                  strLenOffset + sizeof(int), cmpMode);
     if (unrolled != nullptr)
     {
-        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+        // Wrap with the reference equality check for Equals.
+        // We believe it's less likely to be useful for StartsWith/EndsWith.
+        if (kind == StringComparisonKind::Equals)
+        {
+            GenTreeColon* refEqualityColon = gtNewColonNode(TYP_INT, gtNewTrue(), unrolled);
+            unrolled =
+                gtNewQmarkNode(TYP_INT, gtNewOperNode(GT_EQ, TYP_INT, gtCloneExpr(varStrLcl), gtCloneExpr(cnsStr)),
+                               refEqualityColon);
+        }
+
+        impPopStack(argsCount);
+
+        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_ALL);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
         JITDUMP("\n... Successfully unrolled to:\n")
         DISPTREE(unrolled)
-        for (int i = 0; i < argsCount; i++)
-        {
-            impPopStack();
-        }
     }
     return unrolled;
 }
@@ -642,13 +649,19 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
             // We were unable to get the literal (e.g. dynamic context)
             return nullptr;
         }
-        if (cnsLength > (int)genTypeSize(roundDownMaxType(MaxPossibleUnrollSize * 2)))
+        if (cnsLength > ((int)getUnrollThreshold(MemcmpU16) / 2))
         {
-            // Not more than two loads (of max width)
             JITDUMP("UTF16 data is too long to unroll - bail out.\n");
             return nullptr;
         }
-        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%ws\")...\n", str)
+
+#if DEBUG
+        constexpr int maxLiteralLength = 256;
+        char          dst[maxLiteralLength];
+        convertUtf16ToUtf8ForPrinting(str, cnsLength, dst, maxLiteralLength);
+        JITDUMP("Trying to unroll MemoryExtensions.Equals|SequenceEqual|StartsWith(op1, \"%.50s%s\")...\n", dst,
+                cnsLength > 50 ? "..." : "");
+#endif
     }
 
     unsigned spanLclNum;
@@ -673,26 +686,23 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
 
     if (unrolled != nullptr)
     {
+        impPopStack(argsCount);
+
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
-            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_ALL);
         }
 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
         JITDUMP("... Successfully unrolled to:\n")
         DISPTREE(unrolled)
-
-        for (int i = 0; i < argsCount; i++)
-        {
-            impPopStack();
-        }
 
         // We have to clean up GT_RET_EXPR for String.op_Implicit or MemoryExtensions.AsSpans
         if ((spanObj != op1) && op1->OperIs(GT_RET_EXPR))

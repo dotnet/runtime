@@ -3,6 +3,8 @@
 
 //Testing simple math on local vars and fields - add
 
+namespace JitTest_Directed_coverage_oldtests_lclfldadd;
+
 #pragma warning disable 0414
 using System;
 using Xunit;

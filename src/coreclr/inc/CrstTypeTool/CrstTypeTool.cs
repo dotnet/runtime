@@ -472,10 +472,10 @@ internal sealed partial class TypeFileParser
 
     // Compile regular expressions for detecting comments and tokens in the parser input.
     [GeneratedRegex(@"//.*")]
-    private static partial Regex CommentRegex();
+    private static partial Regex CommentRegex { get; }
 
     [GeneratedRegex(@"^(\s*(\S+)\s*)*")]
-    private static partial Regex TokenRegex();
+    private static partial Regex TokenRegex { get; }
 
     // Input is lexed into an array of tokens. We record the index of the token being currently parsed.
     private Token[] m_tokens;
@@ -630,10 +630,10 @@ internal sealed partial class TypeFileParser
         while ((line = file.ReadLine()) != null)
         {
             // Remove comments from the current line.
-            line = CommentRegex().Replace(line, "");
+            line = CommentRegex.Replace(line, "");
 
             // Match all contiguous non-whitespace characters as individual tokens.
-            Match match = TokenRegex().Match(line);
+            Match match = TokenRegex.Match(line);
             if (match.Success)
             {
                 // For each token captured build a token instance and record the token text and the file, line

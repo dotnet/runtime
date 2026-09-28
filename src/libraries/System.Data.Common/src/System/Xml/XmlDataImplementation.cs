@@ -8,13 +8,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
+    [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
+    [RequiresDynamicCode(DataSet.RequiresDynamicCodeMessage)]
     internal sealed class XmlDataImplementation : XmlImplementation
     {
-        [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         public XmlDataImplementation() : base() { }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "This whole class is unsafe. Constructors are marked as such.")]
         public override XmlDocument CreateDocument() => new XmlDataDocument(this);
     }
 }

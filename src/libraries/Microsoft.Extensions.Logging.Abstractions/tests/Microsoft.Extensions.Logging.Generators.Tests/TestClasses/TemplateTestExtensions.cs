@@ -16,5 +16,11 @@ namespace Microsoft.Extensions.Logging.Generators.Tests.TestClasses
 
         [LoggerMessage(EventId = 3, Level = LogLevel.Error, Message = "M3 {a2} {A1}")]
         public static partial void M3(ILogger logger, int a1, int a2);
+
+        [LoggerMessage(EventId = 4, Level = LogLevel.Error, Message = "M4 {A1}")]
+        public static partial void M4(ILogger logger, double a1);
+
+        [LoggerMessage(EventId = 5, Level = LogLevel.Error, Message = "M5 {A1} {a2} {A3} {a4} {A5} {a6} {A7}")]
+        public static partial void M5(ILogger logger, double a1, double a2, double a3, double a4, double a5, double a6, double a7);
     }
 }

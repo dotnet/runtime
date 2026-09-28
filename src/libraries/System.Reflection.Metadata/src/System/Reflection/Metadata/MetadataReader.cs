@@ -1080,8 +1080,7 @@ namespace System.Reflection.Metadata
 
         public ImmutableArray<byte> GetBlobContent(BlobHandle handle)
         {
-            // TODO: We can skip a copy for virtual blobs.
-            byte[]? bytes = GetBlobBytes(handle);
+            byte[]? bytes = BlobHeap.GetBytes(handle, unique: false);
             return ImmutableCollectionsMarshal.AsImmutableArray(bytes);
         }
 
@@ -1348,6 +1347,26 @@ namespace System.Reflection.Metadata
             }
 
             return TypeDefTable.FindTypeContainingField(fieldRowId, FieldTable.NumberOfRows);
+        }
+
+        internal TypeDefinitionHandle GetDeclaringType(EventDefinitionHandle eventDef)
+        {
+            if (UseEventPtrTable)
+            {
+                eventDef = EventPtrTable.GetEventFor(eventDef.RowId);
+            }
+
+            return EventMapTable.FindTypeContainingEvent(eventDef.RowId, EventTable.NumberOfRows);
+        }
+
+        internal TypeDefinitionHandle GetDeclaringType(PropertyDefinitionHandle propertyDef)
+        {
+            if (UsePropertyPtrTable)
+            {
+                propertyDef = PropertyPtrTable.GetPropertyFor(propertyDef.RowId);
+            }
+
+            return PropertyMapTable.FindTypeContainingProperty(propertyDef.RowId, PropertyTable.NumberOfRows);
         }
 
         public string GetString(DocumentNameBlobHandle handle)

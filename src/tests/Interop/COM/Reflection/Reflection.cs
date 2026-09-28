@@ -8,6 +8,7 @@ using System.Security;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 public class Reflection
 {
@@ -105,6 +106,7 @@ public class Reflection
     }
 
     [System.Security.SecuritySafeCritical]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/34371", TestRuntimes.Mono)]
     [Fact]
     public static int TestEntryPoint()
     {

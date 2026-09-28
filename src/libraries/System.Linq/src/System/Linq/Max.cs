@@ -3,22 +3,34 @@
 
 using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.Intrinsics;
 
 namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static int Max(this IEnumerable<int> source) => MinMaxInteger<int, MaxCalc<int>>(source);
+        public static int Max(this IEnumerable<int> source) => Max(source, comparer: null);
 
-        public static long Max(this IEnumerable<long> source) => MinMaxInteger<long, MaxCalc<long>>(source);
+        public static long Max(this IEnumerable<long> source) => Max(source, comparer: null);
 
-        private readonly struct MaxCalc<T> : IMinMaxCalc<T> where T : struct, IBinaryInteger<T>
+        private static T MaxIntegerEnumerator<T>(IEnumerable<T> source) where T : struct, IBinaryInteger<T>
         {
-            public static bool Compare(T left, T right) => left > right;
-            public static Vector128<T> Compare(Vector128<T> left, Vector128<T> right) => Vector128.Max(left, right);
-            public static Vector256<T> Compare(Vector256<T> left, Vector256<T> right) => Vector256.Max(left, right);
-            public static Vector512<T> Compare(Vector512<T> left, Vector512<T> right) => Vector512.Max(left, right);
+            using IEnumerator<T> e = source.GetEnumerator();
+            if (!e.MoveNext())
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            T value = e.Current;
+            while (e.MoveNext())
+            {
+                T x = e.Current;
+                if (x > value)
+                {
+                    value = x;
+                }
+            }
+
+            return value;
         }
 
         public static int? Max(this IEnumerable<int?> source) => MaxInteger(source);
@@ -33,53 +45,51 @@ namespace System.Linq
             }
 
             T? value = null;
-            using (IEnumerator<T?> e = source.GetEnumerator())
+            using IEnumerator<T?> e = source.GetEnumerator();
+            do
             {
-                do
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = e.Current;
+                    return value;
                 }
-                while (!value.HasValue);
 
-                T valueVal = value.GetValueOrDefault();
-                if (valueVal >= T.Zero)
+                value = e.Current;
+            }
+            while (!value.HasValue);
+
+            T valueVal = value.GetValueOrDefault();
+            if (valueVal >= T.Zero)
+            {
+                // To avoid having to check cur.HasValue every iteration of the loop,
+                // we special-case the circumstance where the first value we found
+                // is >= 0.  We can then compare its value against the value stored in
+                // all subsequent nullables, regardless of whether they're null or not,
+                // because if they are null, the value will be 0 and the comparison will
+                // still be accurate.
+                while (e.MoveNext())
                 {
-                    // To avoid having to check cur.HasValue every iteration of the loop,
-                    // we special-case the circumstance where the first value we found
-                    // is >= 0.  We can then compare its value against the value stored in
-                    // all subsequent nullables, regardless of whether they're null or not,
-                    // because if they are null, the value will be 0 and the comparison will
-                    // still be accurate.
-                    while (e.MoveNext())
+                    T? cur = e.Current;
+                    T x = cur.GetValueOrDefault();
+                    if (x > valueVal)
                     {
-                        T? cur = e.Current;
-                        T x = cur.GetValueOrDefault();
-                        if (x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
+                        valueVal = x;
+                        value = cur;
                     }
                 }
-                else
+            }
+            else
+            {
+                while (e.MoveNext())
                 {
-                    while (e.MoveNext())
-                    {
-                        T? cur = e.Current;
-                        T x = cur.GetValueOrDefault();
+                    T? cur = e.Current;
+                    T x = cur.GetValueOrDefault();
 
-                        // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                        // unless nulls either never happen or always happen.
-                        if (cur.HasValue & x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
+                    // Do not replace & with &&. The branch prediction cost outweighs the extra operation
+                    // unless nulls either never happen or always happen.
+                    if (cur.HasValue & x > valueVal)
+                    {
+                        valueVal = x;
+                        value = cur;
                     }
                 }
             }
@@ -130,35 +140,33 @@ namespace System.Linq
                 return value;
             }
 
-            using (IEnumerator<T> e = source.GetEnumerator())
+            using IEnumerator<T> e = source.GetEnumerator();
+            if (!e.MoveNext())
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            // As described in a comment on Min(this IEnumerable<T>) NaN is ordered
+            // less than all other values. We need to do explicit checks to ensure this, but
+            // once we've found a value that is not NaN we need no longer worry about it,
+            // so first loop until such a value is found (or not, as the case may be).
+            value = e.Current;
+            while (T.IsNaN(value))
             {
                 if (!e.MoveNext())
                 {
-                    ThrowHelper.ThrowNoElementsException();
+                    return value;
                 }
 
-                // As described in a comment on Min(this IEnumerable<T>) NaN is ordered
-                // less than all other values. We need to do explicit checks to ensure this, but
-                // once we've found a value that is not NaN we need no longer worry about it,
-                // so first loop until such a value is found (or not, as the case may be).
                 value = e.Current;
-                while (T.IsNaN(value))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
+            }
 
-                    value = e.Current;
-                }
-
-                while (e.MoveNext())
+            while (e.MoveNext())
+            {
+                T x = e.Current;
+                if (x > value)
                 {
-                    T x = e.Current;
-                    if (x > value)
-                    {
-                        value = x;
-                    }
+                    value = x;
                 }
             }
 
@@ -173,46 +181,44 @@ namespace System.Linq
             }
 
             T? value = null;
-            using (IEnumerator<T?> e = source.GetEnumerator())
+            using IEnumerator<T?> e = source.GetEnumerator();
+            do
             {
-                do
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = e.Current;
-                }
-                while (!value.HasValue);
-
-                T valueVal = value.GetValueOrDefault();
-                while (T.IsNaN(valueVal))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    T? cur = e.Current;
-                    if (cur.HasValue)
-                    {
-                        valueVal = (value = cur).GetValueOrDefault();
-                    }
+                    return value;
                 }
 
-                while (e.MoveNext())
-                {
-                    T? cur = e.Current;
-                    T x = cur.GetValueOrDefault();
+                value = e.Current;
+            }
+            while (!value.HasValue);
 
-                    // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                    // unless nulls either never happen or always happen.
-                    if (cur.HasValue & x > valueVal)
-                    {
-                        valueVal = x;
-                        value = cur;
-                    }
+            T valueVal = value.GetValueOrDefault();
+            while (T.IsNaN(valueVal))
+            {
+                if (!e.MoveNext())
+                {
+                    return value;
+                }
+
+                T? cur = e.Current;
+                if (cur.HasValue)
+                {
+                    valueVal = (value = cur).GetValueOrDefault();
+                }
+            }
+
+            while (e.MoveNext())
+            {
+                T? cur = e.Current;
+                T x = cur.GetValueOrDefault();
+
+                // Do not replace & with &&. The branch prediction cost outweighs the extra operation
+                // unless nulls either never happen or always happen.
+                if (cur.HasValue & x > valueVal)
+                {
+                    valueVal = x;
+                    value = cur;
                 }
             }
 
@@ -247,21 +253,19 @@ namespace System.Linq
                 return value;
             }
 
-            using (IEnumerator<decimal> e = source.GetEnumerator())
+            using IEnumerator<decimal> e = source.GetEnumerator();
+            if (!e.MoveNext())
             {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
+                ThrowHelper.ThrowNoElementsException();
+            }
 
-                value = e.Current;
-                while (e.MoveNext())
+            value = e.Current;
+            while (e.MoveNext())
+            {
+                decimal x = e.Current;
+                if (x > value)
                 {
-                    decimal x = e.Current;
-                    if (x > value)
-                    {
-                        value = x;
-                    }
+                    value = x;
                 }
             }
 
@@ -277,29 +281,27 @@ namespace System.Linq
             }
 
             decimal? value = null;
-            using (IEnumerator<decimal?> e = source.GetEnumerator())
+            using IEnumerator<decimal?> e = source.GetEnumerator();
+            do
             {
-                do
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = e.Current;
+                    return value;
                 }
-                while (!value.HasValue);
 
-                decimal valueVal = value.GetValueOrDefault();
-                while (e.MoveNext())
+                value = e.Current;
+            }
+            while (!value.HasValue);
+
+            decimal valueVal = value.GetValueOrDefault();
+            while (e.MoveNext())
+            {
+                decimal? cur = e.Current;
+                decimal x = cur.GetValueOrDefault();
+                if (cur.HasValue && x > valueVal)
                 {
-                    decimal? cur = e.Current;
-                    decimal x = cur.GetValueOrDefault();
-                    if (cur.HasValue && x > valueVal)
-                    {
-                        valueVal = x;
-                        value = cur;
-                    }
+                    valueVal = x;
+                    value = cur;
                 }
             }
 
@@ -327,43 +329,70 @@ namespace System.Linq
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
+            if (source.TryGetSpan(out ReadOnlySpan<TSource> span))
+            {
+                return span.Max(comparer);
+            }
+
+            // For the non-span integer sequences, use a direct comparison rather than paying the
+            // per-element cost of Comparer<TSource>.Default.
+            if (comparer is null || comparer == Comparer<TSource>.Default)
+            {
+                if (typeof(TSource) == typeof(byte)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<byte>)source);
+                if (typeof(TSource) == typeof(sbyte)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<sbyte>)source);
+                if (typeof(TSource) == typeof(ushort)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<ushort>)source);
+                if (typeof(TSource) == typeof(short)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<short>)source);
+                if (typeof(TSource) == typeof(char)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<char>)source);
+                if (typeof(TSource) == typeof(uint)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<uint>)source);
+                if (typeof(TSource) == typeof(int)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<int>)source);
+                if (typeof(TSource) == typeof(ulong)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<ulong>)source);
+                if (typeof(TSource) == typeof(long)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<long>)source);
+                if (typeof(TSource) == typeof(nuint)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<nuint>)source);
+                if (typeof(TSource) == typeof(nint)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<nint>)source);
+                if (typeof(TSource) == typeof(Int128)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<Int128>)source);
+                if (typeof(TSource) == typeof(UInt128)) return (TSource)(object)MaxIntegerEnumerator((IEnumerable<UInt128>)source);
+            }
+
             comparer ??= Comparer<TSource>.Default;
 
-            // TODO https://github.com/dotnet/csharplang/discussions/6308: Update this to use generic constraint bridging if/when available.
-            if (typeof(TSource) == typeof(byte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<byte, MaxCalc<byte>>((IEnumerable<byte>)source);
-            if (typeof(TSource) == typeof(sbyte) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<sbyte, MaxCalc<sbyte>>((IEnumerable<sbyte>)source);
-            if (typeof(TSource) == typeof(ushort) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ushort, MaxCalc<ushort>>((IEnumerable<ushort>)source);
-            if (typeof(TSource) == typeof(short) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<short, MaxCalc<short>>((IEnumerable<short>)source);
-            if (typeof(TSource) == typeof(char) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<char, MaxCalc<char>>((IEnumerable<char>)source);
-            if (typeof(TSource) == typeof(uint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<uint, MaxCalc<uint>>((IEnumerable<uint>)source);
-            if (typeof(TSource) == typeof(int) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<int, MaxCalc<int>>((IEnumerable<int>)source);
-            if (typeof(TSource) == typeof(ulong) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<ulong, MaxCalc<ulong>>((IEnumerable<ulong>)source);
-            if (typeof(TSource) == typeof(long) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<long, MaxCalc<long>>((IEnumerable<long>)source);
-            if (typeof(TSource) == typeof(nuint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nuint, MaxCalc<nuint>>((IEnumerable<nuint>)source);
-            if (typeof(TSource) == typeof(nint) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<nint, MaxCalc<nint>>((IEnumerable<nint>)source);
-            if (typeof(TSource) == typeof(Int128) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<Int128, MaxCalc<Int128>>((IEnumerable<Int128>)source);
-            if (typeof(TSource) == typeof(UInt128) && comparer == Comparer<TSource>.Default) return (TSource)(object)MinMaxInteger<UInt128, MaxCalc<UInt128>>((IEnumerable<UInt128>)source);
-
             TSource? value = default;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (value is null)
             {
-                if (value is null)
+                do
                 {
-                    do
+                    if (!e.MoveNext())
                     {
-                        if (!e.MoveNext())
-                        {
-                            return value;
-                        }
-
-                        value = e.Current;
+                        return value;
                     }
-                    while (value is null);
 
+                    value = e.Current;
+                }
+                while (value is null);
+
+                while (e.MoveNext())
+                {
+                    TSource next = e.Current;
+                    if (next is not null && comparer.Compare(next, value) > 0)
+                    {
+                        value = next;
+                    }
+                }
+            }
+            else
+            {
+                if (!e.MoveNext())
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                value = e.Current;
+                if (comparer == Comparer<TSource>.Default)
+                {
                     while (e.MoveNext())
                     {
                         TSource next = e.Current;
-                        if (next is not null && comparer.Compare(next, value) > 0)
+                        if (Comparer<TSource>.Default.Compare(next, value) > 0)
                         {
                             value = next;
                         }
@@ -371,32 +400,12 @@ namespace System.Linq
                 }
                 else
                 {
-                    if (!e.MoveNext())
+                    while (e.MoveNext())
                     {
-                        ThrowHelper.ThrowNoElementsException();
-                    }
-
-                    value = e.Current;
-                    if (comparer == Comparer<TSource>.Default)
-                    {
-                        while (e.MoveNext())
+                        TSource next = e.Current;
+                        if (comparer.Compare(next, value) > 0)
                         {
-                            TSource next = e.Current;
-                            if (Comparer<TSource>.Default.Compare(next, value) > 0)
-                            {
-                                value = next;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        while (e.MoveNext())
-                        {
-                            TSource next = e.Current;
-                            if (comparer.Compare(next, value) > 0)
-                            {
-                                value = next;
-                            }
+                            value = next;
                         }
                     }
                 }
@@ -546,21 +555,19 @@ namespace System.Linq
             }
 
             TResult value;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
             {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
+                ThrowHelper.ThrowNoElementsException();
+            }
 
-                value = selector(e.Current);
-                while (e.MoveNext())
+            value = selector(e.Current);
+            while (e.MoveNext())
+            {
+                TResult x = selector(e.Current);
+                if (x > value)
                 {
-                    TResult x = selector(e.Current);
-                    if (x > value)
-                    {
-                        value = x;
-                    }
+                    value = x;
                 }
             }
 
@@ -580,53 +587,51 @@ namespace System.Linq
             }
 
             TResult? value = null;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            do
             {
-                do
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = selector(e.Current);
+                    return value;
                 }
-                while (!value.HasValue);
 
-                TResult valueVal = value.GetValueOrDefault();
-                if (valueVal >= TResult.Zero)
+                value = selector(e.Current);
+            }
+            while (!value.HasValue);
+
+            TResult valueVal = value.GetValueOrDefault();
+            if (valueVal >= TResult.Zero)
+            {
+                // We can fast-path this case where we know HasValue will
+                // never affect the outcome, without constantly checking
+                // if we're in such a state. Similar fast-paths could
+                // be done for other cases, but as all-positive
+                // or mostly-positive integer values are quite common in real-world
+                // uses, it's only been done in this direction for int? and long?.
+                while (e.MoveNext())
                 {
-                    // We can fast-path this case where we know HasValue will
-                    // never affect the outcome, without constantly checking
-                    // if we're in such a state. Similar fast-paths could
-                    // be done for other cases, but as all-positive
-                    // or mostly-positive integer values are quite common in real-world
-                    // uses, it's only been done in this direction for int? and long?.
-                    while (e.MoveNext())
+                    TResult? cur = selector(e.Current);
+                    TResult x = cur.GetValueOrDefault();
+                    if (x > valueVal)
                     {
-                        TResult? cur = selector(e.Current);
-                        TResult x = cur.GetValueOrDefault();
-                        if (x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
+                        valueVal = x;
+                        value = cur;
                     }
                 }
-                else
+            }
+            else
+            {
+                while (e.MoveNext())
                 {
-                    while (e.MoveNext())
-                    {
-                        TResult? cur = selector(e.Current);
-                        TResult x = cur.GetValueOrDefault();
+                    TResult? cur = selector(e.Current);
+                    TResult x = cur.GetValueOrDefault();
 
-                        // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                        // unless nulls either never happen or always happen.
-                        if (cur.HasValue & x > valueVal)
-                        {
-                            valueVal = x;
-                            value = cur;
-                        }
+                    // Do not replace & with &&. The branch prediction cost outweighs the extra operation
+                    // unless nulls either never happen or always happen.
+                    if (cur.HasValue & x > valueVal)
+                    {
+                        valueVal = x;
+                        value = cur;
                     }
                 }
             }
@@ -655,31 +660,29 @@ namespace System.Linq
             }
 
             TResult value;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
+            {
+                ThrowHelper.ThrowNoElementsException();
+            }
+
+            value = selector(e.Current);
+            while (TResult.IsNaN(value))
             {
                 if (!e.MoveNext())
                 {
-                    ThrowHelper.ThrowNoElementsException();
+                    return value;
                 }
 
                 value = selector(e.Current);
-                while (TResult.IsNaN(value))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
+            }
 
-                    value = selector(e.Current);
-                }
-
-                while (e.MoveNext())
+            while (e.MoveNext())
+            {
+                TResult x = selector(e.Current);
+                if (x > value)
                 {
-                    TResult x = selector(e.Current);
-                    if (x > value)
-                    {
-                        value = x;
-                    }
+                    value = x;
                 }
             }
 
@@ -699,46 +702,44 @@ namespace System.Linq
             }
 
             TResult? value = null;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            do
             {
-                do
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = selector(e.Current);
-                }
-                while (!value.HasValue);
-
-                TResult valueVal = value.GetValueOrDefault();
-                while (TResult.IsNaN(valueVal))
-                {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    TResult? cur = selector(e.Current);
-                    if (cur.HasValue)
-                    {
-                        valueVal = (value = cur).GetValueOrDefault();
-                    }
+                    return value;
                 }
 
-                while (e.MoveNext())
-                {
-                    TResult? cur = selector(e.Current);
-                    TResult x = cur.GetValueOrDefault();
+                value = selector(e.Current);
+            }
+            while (!value.HasValue);
 
-                    // Do not replace & with &&. The branch prediction cost outweighs the extra operation
-                    // unless nulls either never happen or always happen.
-                    if (cur.HasValue & x > valueVal)
-                    {
-                        valueVal = x;
-                        value = cur;
-                    }
+            TResult valueVal = value.GetValueOrDefault();
+            while (TResult.IsNaN(valueVal))
+            {
+                if (!e.MoveNext())
+                {
+                    return value;
+                }
+
+                TResult? cur = selector(e.Current);
+                if (cur.HasValue)
+                {
+                    valueVal = (value = cur).GetValueOrDefault();
+                }
+            }
+
+            while (e.MoveNext())
+            {
+                TResult? cur = selector(e.Current);
+                TResult x = cur.GetValueOrDefault();
+
+                // Do not replace & with &&. The branch prediction cost outweighs the extra operation
+                // unless nulls either never happen or always happen.
+                if (cur.HasValue & x > valueVal)
+                {
+                    valueVal = x;
+                    value = cur;
                 }
             }
 
@@ -758,21 +759,19 @@ namespace System.Linq
             }
 
             decimal value;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (!e.MoveNext())
             {
-                if (!e.MoveNext())
-                {
-                    ThrowHelper.ThrowNoElementsException();
-                }
+                ThrowHelper.ThrowNoElementsException();
+            }
 
-                value = selector(e.Current);
-                while (e.MoveNext())
+            value = selector(e.Current);
+            while (e.MoveNext())
+            {
+                decimal x = selector(e.Current);
+                if (x > value)
                 {
-                    decimal x = selector(e.Current);
-                    if (x > value)
-                    {
-                        value = x;
-                    }
+                    value = x;
                 }
             }
 
@@ -792,29 +791,27 @@ namespace System.Linq
             }
 
             decimal? value = null;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            do
             {
-                do
+                if (!e.MoveNext())
                 {
-                    if (!e.MoveNext())
-                    {
-                        return value;
-                    }
-
-                    value = selector(e.Current);
+                    return value;
                 }
-                while (!value.HasValue);
 
-                decimal valueVal = value.GetValueOrDefault();
-                while (e.MoveNext())
+                value = selector(e.Current);
+            }
+            while (!value.HasValue);
+
+            decimal valueVal = value.GetValueOrDefault();
+            while (e.MoveNext())
+            {
+                decimal? cur = selector(e.Current);
+                decimal x = cur.GetValueOrDefault();
+                if (cur.HasValue && x > valueVal)
                 {
-                    decimal? cur = selector(e.Current);
-                    decimal x = cur.GetValueOrDefault();
-                    if (cur.HasValue && x > valueVal)
-                    {
-                        valueVal = x;
-                        value = cur;
-                    }
+                    valueVal = x;
+                    value = cur;
                 }
             }
 
@@ -834,46 +831,44 @@ namespace System.Linq
             }
 
             TResult? value = default;
-            using (IEnumerator<TSource> e = source.GetEnumerator())
+            using IEnumerator<TSource> e = source.GetEnumerator();
+            if (value is null)
             {
-                if (value is null)
-                {
-                    do
-                    {
-                        if (!e.MoveNext())
-                        {
-                            return value;
-                        }
-
-                        value = selector(e.Current);
-                    }
-                    while (value is null);
-
-                    Comparer<TResult> comparer = Comparer<TResult>.Default;
-                    while (e.MoveNext())
-                    {
-                        TResult x = selector(e.Current);
-                        if (x is not null && comparer.Compare(x, value) > 0)
-                        {
-                            value = x;
-                        }
-                    }
-                }
-                else
+                do
                 {
                     if (!e.MoveNext())
                     {
-                        ThrowHelper.ThrowNoElementsException();
+                        return value;
                     }
 
                     value = selector(e.Current);
-                    while (e.MoveNext())
+                }
+                while (value is null);
+
+                Comparer<TResult> comparer = Comparer<TResult>.Default;
+                while (e.MoveNext())
+                {
+                    TResult x = selector(e.Current);
+                    if (x is not null && comparer.Compare(x, value) > 0)
                     {
-                        TResult x = selector(e.Current);
-                        if (Comparer<TResult>.Default.Compare(x, value) > 0)
-                        {
-                            value = x;
-                        }
+                        value = x;
+                    }
+                }
+            }
+            else
+            {
+                if (!e.MoveNext())
+                {
+                    ThrowHelper.ThrowNoElementsException();
+                }
+
+                value = selector(e.Current);
+                while (e.MoveNext())
+                {
+                    TResult x = selector(e.Current);
+                    if (Comparer<TResult>.Default.Compare(x, value) > 0)
+                    {
+                        value = x;
                     }
                 }
             }

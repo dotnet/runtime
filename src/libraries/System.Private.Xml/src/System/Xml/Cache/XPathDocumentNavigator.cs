@@ -890,7 +890,7 @@ namespace MS.Internal.Xml.Cache
         /// <summary>
         /// Create a unique id for the current node.  This is used by the generate-id() function.
         /// </summary>
-        internal override string UniqueId
+        internal override unsafe string UniqueId
         {
             get
             {

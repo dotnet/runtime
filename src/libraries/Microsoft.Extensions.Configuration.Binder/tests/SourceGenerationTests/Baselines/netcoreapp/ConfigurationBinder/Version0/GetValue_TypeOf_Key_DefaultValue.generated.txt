@@ -46,17 +46,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             IConfigurationSection section = configuration.GetSection(key);
 
-            if (section.Value is not string value)
+            if (TryGetConfigurationValue(section, key: null, out string? value) && !string.IsNullOrEmpty(value))
             {
-                return null;
-            }
-
-            if (type == typeof(global::System.Globalization.CultureInfo))
-            {
-                return ParseSystemGlobalizationCultureInfo(value, section.Path);
+                if (type == typeof(global::System.Globalization.CultureInfo))
+                {
+                    return ParseSystemGlobalizationCultureInfo(value, section.Path);
+                }
             }
 
             return null;
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
         public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, string? path)
@@ -67,7 +77,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(global::System.Globalization.CultureInfo)}'.", exception);
             }
         }
         #endregion Core binding extensions.

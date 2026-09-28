@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.Extensions.DependencyModel;
 using Xunit;
@@ -69,7 +70,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer = null);
+            Action<NetCoreAppBuilder> appCustomizer = null,
+            [CallerMemberName] string caller = "");
 
         protected TestApp UpdateAppConfigForTest(TestApp app, TestSetup setup, bool copyOnUpdate)
         {
@@ -92,8 +94,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         // The fallback RID is a compile-time define for the host. On Windows, it is always win10 and on
         // other platforms, it matches the build RID (non-portable for source-builds, portable otherwise)
         private static string FallbackRid = OperatingSystem.IsWindows()
-            ? $"win10-{TestContext.BuildArchitecture}"
-            : TestContext.BuildRID;
+            ? $"win10-{HostTestContext.BuildArchitecture}"
+            : HostTestContext.BuildRID;
 
         protected const string UnknownRid = "unknown-rid";
 
@@ -330,15 +332,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         }
 
         // The build RID from the test context should match the build RID of the host under test
-        private static string CurrentRid = TestContext.BuildRID;
+        private static string CurrentRid = HostTestContext.BuildRID;
         private static string CurrentRidAsset = $"{CurrentRid}/{CurrentRid}Asset.dll";
 
         // Strip the -<arch> from the RID to get the OS
-        private static string CurrentOS = CurrentRid[..^(TestContext.BuildArchitecture.Length + 1)];
+        private static string CurrentOS = CurrentRid[..^(HostTestContext.BuildArchitecture.Length + 1)];
         private static string CurrentOSAsset = $"{CurrentOS}/{CurrentOS}Asset.dll";
 
         // Append a different architecture - arm64 if current architecture is x64, otherwise x64
-        private static string DifferentArch = $"{CurrentOS}-{(TestContext.BuildArchitecture == "x64" ? "arm64" : "x64")}";
+        private static string DifferentArch = $"{CurrentOS}-{(HostTestContext.BuildArchitecture == "x64" ? "arm64" : "x64")}";
         private static string DifferentArchAsset = $"{DifferentArch}/{DifferentArch}Asset.dll";
 
         [Theory]
@@ -601,7 +603,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         protected static void UseFallbacksFromBuiltDotNet(NetCoreAppBuilder builder)
         {
             IReadOnlyList<RuntimeFallbacks> fallbacks;
-            string depsJson = Path.Combine(TestContext.BuiltDotNet.GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
+            string depsJson = Path.Combine(HostTestContext.BuiltDotNet.GreatestVersionSharedFxPath, $"{Constants.MicrosoftNETCoreApp}.deps.json");
             using (FileStream fileStream = File.OpenRead(depsJson))
             using (DependencyContextJsonReader reader = new DependencyContextJsonReader())
             {
@@ -649,7 +651,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer)
+            Action<NetCoreAppBuilder> appCustomizer,
+            [CallerMemberName] string caller = "")
         {
             using (TestApp app = NetCoreAppBuilder.PortableForNETCoreApp(SharedState.FrameworkReferenceApp)
                 .WithProject(p => { p.WithAssemblyGroup(null, g => g.WithMainAssembly()); assetsCustomizer?.Invoke(p); })
@@ -672,7 +675,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 var result = dotnet.Exec(app.AppDll)
                     .EnableTracingAndCaptureOutputs()
                     .RuntimeId(setup.Rid)
-                    .Execute();
+                    .Execute(caller);
                 result.Should().Pass()
                     .And.HaveResolvedAssembly(expected.IncludedAssemblyPaths, app)
                     .And.NotHaveResolvedAssembly(expected.ExcludedAssemblyPaths, app)
@@ -703,7 +706,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer)
+            Action<NetCoreAppBuilder> appCustomizer,
+            [CallerMemberName] string caller = "")
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage("NativeDependency", "1.0.0", p => assetsCustomizer?.Invoke(p))
@@ -722,8 +726,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             TestApp app = UpdateAppConfigForTest(SharedState.FrameworkReferenceApp, setup, copyOnUpdate: true);
 
-            var result = SharedState.RunComponentResolutionTest(component.AppDll, app, dotnet.GreatestVersionHostFxrPath, command => command
-                .RuntimeId(setup.Rid));
+            var result = SharedState.RunComponentResolutionTest(
+                component.AppDll,
+                app,
+                dotnet.GreatestVersionHostFxrPath,
+                command => command.RuntimeId(setup.Rid),
+                caller: caller);
             result.Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)
@@ -754,7 +762,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             Action<NetCoreAppBuilder.RuntimeLibraryBuilder> assetsCustomizer,
             TestSetup setup,
             ResolvedPaths expected,
-            Action<NetCoreAppBuilder> appCustomizer)
+            Action<NetCoreAppBuilder> appCustomizer,
+            [CallerMemberName] string caller = "")
         {
             var component = SharedState.CreateComponentWithNoDependencies(b => b
                 .WithPackage("NativeDependency", "1.0.0", p => assetsCustomizer?.Invoke(p))
@@ -773,8 +782,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             app = UpdateAppConfigForTest(app, setup, copyOnUpdate: true);
 
-            var result = SharedState.RunComponentResolutionTest(component.AppDll, app, app.Location, command => command
-                .RuntimeId(setup.Rid));
+            var result = SharedState.RunComponentResolutionTest(
+                component.AppDll,
+                app,
+                app.Location,
+                command => command.RuntimeId(setup.Rid),
+                caller: caller);
             result.Should().Pass()
                 .And.HaveSuccessfullyResolvedComponentDependencies()
                 .And.HaveResolvedComponentDependencyAssembly(expected.IncludedAssemblyPaths, component)

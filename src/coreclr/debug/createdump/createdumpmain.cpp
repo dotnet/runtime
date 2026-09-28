@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
+#include "minipal/time.h"
 
 #ifdef HOST_WINDOWS
 #define DEFAULT_DUMP_PATH "%TEMP%\\"
@@ -11,11 +12,8 @@
 #define DEFAULT_DUMP_TEMPLATE "coredump.%p"
 #endif
 
-#ifdef HOST_UNIX
-const char* g_help = "createdump [options] pid\n"
-#else
 const char* g_help = "createdump [options]\n"
-#endif
+"createdump writes a dump of its parent process; a target PID cannot be specified.\n"
 "-f, --name - dump path and file name. The default is '" DEFAULT_DUMP_PATH DEFAULT_DUMP_TEMPLATE "'. These specifiers are substituted with following values:\n"
 "   %p  PID of dumped process.\n"
 "   %e  The process executable filename.\n"
@@ -45,8 +43,6 @@ bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
 uint64_t g_ticksPerMS = 0;
 uint64_t g_startTime = 0;
-uint64_t GetTickFrequency();
-uint64_t GetTimeStamp();
 
 //
 // Common entry point
@@ -70,7 +66,11 @@ int createdump_main(const int argc, const char* argv[])
     options.CreateDump = true;
     options.Signal = 0;
     options.CrashThread = 0;
+#ifdef HOST_UNIX
+    options.Pid = static_cast<int>(getppid());
+#else
     options.Pid = 0;
+#endif
     options.SignalCode = 0;
     options.SignalErrno = 0;
     options.SignalAddress = 0;
@@ -78,7 +78,7 @@ int createdump_main(const int argc, const char* argv[])
     bool help = false;
     int exitCode = 0;
 
-    // Parse the command line options and target pid
+    // Parse the command line options
     argv++;
     for (int i = 1; i < argc; i++)
     {
@@ -173,36 +173,24 @@ int createdump_main(const int argc, const char* argv[])
             }
             else
             {
-#ifdef HOST_UNIX
-                options.Pid = atoi(*argv);
-#else
-                printf_error("The pid argument is no longer supported\n");
+                printf_error("Unrecognized argument '%s'\n", *argv);
                 return -1;
-#endif
             }
             argv++;
         }
     }
 
-#ifdef HOST_UNIX
-    if (options.Pid == 0)
-    {
-        help = true;
-    }
-#endif
-
     if (help)
     {
-        // if no pid or invalid command line option
         printf_error("%s", g_help);
         return -1;
     }
 
-    g_ticksPerMS = GetTickFrequency() / 1000UL;
-    g_startTime = GetTimeStamp();
-    TRACE("TickFrequency: %d ticks per ms\n", g_ticksPerMS);
+    g_ticksPerMS = minipal_hires_tick_frequency() / 1000UL;
+    g_startTime = minipal_hires_ticks();
+    TRACE("TickFrequency: %" PRIu64 " ticks per ms\n", g_ticksPerMS);
 
-    ArrayHolder<char> tmpPath = new char[MAX_LONGPATH];
+    AStringHolder tmpPath = new char[MAX_LONGPATH];
     if (options.DumpPathTemplate == nullptr)
     {
         if (GetTempPathWrapper(MAX_LONGPATH, tmpPath) == 0)
@@ -221,11 +209,11 @@ int createdump_main(const int argc, const char* argv[])
 
     if (CreateDump(options))
     {
-        printf_status("Dump successfully written in %llums\n", GetTimeStamp() - g_startTime);
+        printf_status("Dump successfully written in %" PRIu64 "ms\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
     }
     else
     {
-        printf_error("Failure took %llums\n", GetTimeStamp() - g_startTime);
+        printf_error("Failure took %" PRIu64 "ms\n", (minipal_hires_ticks() - g_startTime) / g_ticksPerMS);
         exitCode = -1;
     }
 
@@ -257,7 +245,7 @@ GetDumpTypeString(DumpType dumpType)
             return "unknown";
     }
 }
-            
+
 MINIDUMP_TYPE
 GetMiniDumpType(DumpType dumpType)
 {
@@ -332,24 +320,6 @@ printf_error(const char* format, ...)
     va_end(args);
 }
 
-uint64_t
-GetTickFrequency()
-{
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceFrequency(&ret);
-    return ret.QuadPart;
-}
-
-uint64_t
-GetTimeStamp()
-{
-    LARGE_INTEGER ret;
-    ZeroMemory(&ret, sizeof(LARGE_INTEGER));
-    QueryPerformanceCounter(&ret);
-    return ret.QuadPart / g_ticksPerMS;
-}
-
 #ifdef HOST_UNIX
 
 static void
@@ -360,7 +330,7 @@ trace_prefix(const char* format, va_list args)
     {
         fprintf(g_stdout, "[createdump] ");
     }
-    fprintf(g_stdout, "%08" PRIx64 " ", GetTimeStamp());
+    fprintf(g_stdout, "%08" PRIx64 " ", minipal_hires_ticks() / g_ticksPerMS);
     vfprintf(g_stdout, format, args);
     fflush(g_stdout);
 }

@@ -2,15 +2,23 @@
 
   <PropertyGroup>
     <TargetFramework>$(TestInfraTargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RuntimeIdentifier>$(TargetRid)</RuntimeIdentifier>
     <AssemblyName>Microsoft.NET.HostModel.Tests</AssemblyName>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
     <TestsOutputName>hm</TestsOutputName>
+    <TestRunnerName>XUnitV3</TestRunnerName>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
     <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
+    <PackageReference Include="Microsoft.NET.HostModel.TestData" Version="$(MicrosoftNETHostModelTestDataVersion)" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 using System;
+using System.Runtime.InteropServices;
+using TestLibrary;
 
 namespace TestStackOverflow3
 {
@@ -11,6 +13,9 @@ namespace TestStackOverflow3
 
         public static void Main()
         {
+            // Ensure that the OS doesn't generate core dump for this intentionally crashing process
+            Utilities.DisableOSCoreDump();
+
             Program ex = new Program();
             ex.Execute();
         }

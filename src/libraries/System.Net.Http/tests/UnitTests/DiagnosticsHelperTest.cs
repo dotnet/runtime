@@ -4,7 +4,6 @@
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Diagnostics.Runtime.Utilities;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -27,7 +26,7 @@ namespace System.Net.Http.Tests
         [MemberData(nameof(GetRedactedUriString_Data))]
         public void GetRedactedUriString_RedactsUriByDefault(string original, string expected)
         {
-            string redacted = DiagnosticsHelper.GetRedactedUriString(new Uri(original));
+            string redacted = UriRedactionHelper.GetRedactedUriString(new Uri(original));
             Assert.Equal(expected, redacted);
         }
 
@@ -42,7 +41,7 @@ namespace System.Net.Http.Tests
 
                 foreach (Uri uri in uris)
                 {
-                    string actual = DiagnosticsHelper.GetRedactedUriString(uri);
+                    string actual = UriRedactionHelper.GetRedactedUriString(uri);
                     Assert.Equal(uri.AbsoluteUri, actual);
                 }
             }).DisposeAsync();

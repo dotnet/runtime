@@ -28,8 +28,19 @@ namespace System
         // X86Base.DivRem is experimental since performance is not as optimized as T.DivRem
         internal const string X86BaseDivRemDiagId = "SYSLIB5004";
 
-        // System.Formats.Nrbf is experimental
-        internal const string NrbfDecoderDiagId = "SYSLIB5005";
+        // System.Formats.Nrbf was experimental, do not reuse "SYSLIB5005"
+
+        // Types for Post-Quantum Cryptography (PQC) are experimental.
+        internal const string PostQuantumCryptographyDiagId = "SYSLIB5006";
+
+        // Low-level TLS engine (TlsContext / TlsSession) is experimental.
+        internal const string LowLevelTlsDiagId = "SYSLIB5007";
+
+        // SocketsHttpHandler connection eviction control and HttpRequestMessage.ConnectionId APIs are experimental.
+        internal const string SocketsHttpHandlerExperimentalDiagId = "SYSLIB5008";
+
+        // Types for HPKE (Hybrid Public Key Encryption) are experimental.
+        internal const string HpkeExperimentalDiagId = "SYSLIB5009";
 
         // When adding a new diagnostic ID, add it to the table in docs\project\list-of-diagnostics.md as well.
         // Keep new const identifiers above this comment.

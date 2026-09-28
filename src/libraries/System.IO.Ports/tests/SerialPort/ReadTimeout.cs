@@ -33,7 +33,7 @@ namespace System.IO.Ports.Tests
         #region Test Cases
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying default ReadTimeout with Read(byte[] buffer, int offset, int count)");
@@ -41,7 +41,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_Read_char_int_int()
         {
             Debug.WriteLine("Verifying default ReadTimeout with Read(char[] buffer, int offset, int count)");
@@ -49,7 +49,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadByte()
         {
             Debug.WriteLine("Verifying default ReadTimeout with ReadByte()");
@@ -57,7 +57,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadLine()
         {
             Debug.WriteLine("Verifying default ReadTimeout with ReadLine()");
@@ -65,7 +65,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Default_ReadTo()
         {
             Debug.WriteLine("Verifying default ReadTimeout with ReadTo()");
@@ -73,7 +73,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_Read_byte_int_int()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with Read(byte[] buffer, int offset, int count)");
@@ -81,7 +81,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_Read_char_int_int()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with Read(char[] buffer, int offset, int count)");
@@ -89,7 +89,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadByte()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with ReadByte()");
@@ -97,7 +97,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadLine()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with ReadLine()");
@@ -105,7 +105,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasLoopbackOrNullModem))]
         public void ReadTimeout_Infinite_ReadTo()
         {
             Debug.WriteLine("Verifying infinite ReadTimeout with ReadTo()");
@@ -113,7 +113,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_byte_int_int_BeforeOpen()
         {
             Debug.WriteLine("Verifying setting ReadTimeout=0 before Open() with Read(byte[] buffer, int offset, int count)");
@@ -121,7 +121,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_char_int_int_BeforeOpen()
         {
             Debug.WriteLine("Verifying setting ReadTimeout=0 before Open() with Read(char[] buffer, int offset, int count)");
@@ -129,7 +129,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadByte_BeforeOpen()
         {
             Debug.WriteLine("Verifying zero ReadTimeout before Open with ReadByte()");
@@ -137,7 +137,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadLine_BeforeOpen()
         {
             Debug.WriteLine("Verifying zero ReadTimeout before Open with ReadLine()");
@@ -145,7 +145,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadTo_BeforeOpen()
         {
             Debug.WriteLine("Verifying zero ReadTimeout before Open with ReadTo()");
@@ -153,7 +153,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_byte_int_int_AfterOpen()
         {
             Debug.WriteLine("Verifying setting ReadTimeout=0 after Open() with Read(byte[] buffer, int offset, int count)");
@@ -161,7 +161,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_Read_char_int_int_AfterOpen()
         {
             Debug.WriteLine("Verifying setting ReadTimeout=0 after Open() with Read(char[] buffer, int offset, int count)");
@@ -169,7 +169,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadByte_AfterOpen()
         {
             Debug.WriteLine("Verifying zero ReadTimeout after Open with ReadByte()");
@@ -177,7 +177,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadLine_AfterOpen()
         {
             Debug.WriteLine("Verifying zero ReadTimeout after Open with ReadLine()");
@@ -185,7 +185,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_0_ReadTo_AfterOpen()
         {
             Debug.WriteLine("Verifying zero ReadTimeout after Open with ReadTo()");
@@ -193,7 +193,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_Int32MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue ReadTimeout");
@@ -202,7 +202,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/runtime/issues/20149")]
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(ReadTimeout_Property), nameof(HasOneSerialPort))]
         public void ReadTimeout_NEG2()
         {
             Debug.WriteLine("Verifying -2 ReadTimeout");

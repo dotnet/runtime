@@ -1,9 +1,11 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Tests;
 using Xunit;
@@ -2776,6 +2778,486 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         }
 
         [Fact]
+        public void Vector128ByteShuffleNativeOneInputTest()
+        {
+            Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector128<byte> result = Vector128.ShuffleNative(vector, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128DoubleShuffleNativeOneInputTest()
+        {
+            Vector128<double> vector = Vector128.Create((double)1, 2);
+            Vector128<double> result = Vector128.ShuffleNative(vector, Vector128.Create((long)1, 0));
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector128<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int16ShuffleNativeOneInputTest()
+        {
+            Vector128<short> vector = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector128<short> result = Vector128.ShuffleNative(vector, Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector128<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int32ShuffleNativeOneInputTest()
+        {
+            Vector128<int> vector = Vector128.Create((int)1, 2, 3, 4);
+            Vector128<int> result = Vector128.ShuffleNative(vector, Vector128.Create((int)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector128<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int64ShuffleNativeOneInputTest()
+        {
+            Vector128<long> vector = Vector128.Create((long)1, 2);
+            Vector128<long> result = Vector128.ShuffleNative(vector, Vector128.Create((long)1, 0));
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector128<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SByteShuffleNativeOneInputTest()
+        {
+            Vector128<sbyte> vector = Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector128<sbyte> result = Vector128.ShuffleNative(vector, Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector128<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SingleShuffleNativeOneInputTest()
+        {
+            Vector128<float> vector = Vector128.Create((float)1, 2, 3, 4);
+            Vector128<float> result = Vector128.ShuffleNative(vector, Vector128.Create((int)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector128<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt16ShuffleNativeOneInputTest()
+        {
+            Vector128<ushort> vector = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector128<ushort> result = Vector128.ShuffleNative(vector, Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector128<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt32ShuffleNativeOneInputTest()
+        {
+            Vector128<uint> vector = Vector128.Create((uint)1, 2, 3, 4);
+            Vector128<uint> result = Vector128.ShuffleNative(vector, Vector128.Create((uint)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector128<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt64ShuffleNativeOneInputTest()
+        {
+            Vector128<ulong> vector = Vector128.Create((ulong)1, 2);
+            Vector128<ulong> result = Vector128.ShuffleNative(vector, Vector128.Create((ulong)1, 0));
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector128<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128ByteShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<byte> result = Vector128.ShuffleNative(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128DoubleShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<double> result = Vector128.ShuffleNative(Vector128.Create((double)1, 2), Vector128.Create((long)1, 0));
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector128<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int16ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<short> result = Vector128.ShuffleNative(Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8), Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector128<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int32ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<int> result = Vector128.ShuffleNative(Vector128.Create((int)1, 2, 3, 4), Vector128.Create((int)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector128<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int64ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<long> result = Vector128.ShuffleNative(Vector128.Create((long)1, 2), Vector128.Create((long)1, 0));
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector128<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SByteShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<sbyte> result = Vector128.ShuffleNative(Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector128<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SingleShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<float> result = Vector128.ShuffleNative(Vector128.Create((float)1, 2, 3, 4), Vector128.Create((int)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector128<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt16ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<ushort> result = Vector128.ShuffleNative(Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8), Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector128<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt32ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<uint> result = Vector128.ShuffleNative(Vector128.Create((uint)1, 2, 3, 4), Vector128.Create((uint)3, 2, 1, 0));
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector128<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt64ShuffleNativeOneInputWithDirectVectorTest()
+        {
+            Vector128<ulong> result = Vector128.ShuffleNative(Vector128.Create((ulong)1, 2), Vector128.Create((ulong)1, 0));
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector128<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128ByteShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector128<byte> indices = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector128<byte> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128DoubleShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<double> vector = Vector128.Create((double)1, 2);
+            Vector128<long> indices = Vector128.Create((long)1, 0);
+            Vector128<double> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)(Vector128<double>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int16ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<short> vector = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector128<short> indices = Vector128.Create((short)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector128<short> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)(Vector128<short>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int32ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<int> vector = Vector128.Create((int)1, 2, 3, 4);
+            Vector128<int> indices = Vector128.Create((int)3, 2, 1, 0);
+            Vector128<int> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)(Vector128<int>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int64ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<long> vector = Vector128.Create((long)1, 2);
+            Vector128<long> indices = Vector128.Create((long)1, 0);
+            Vector128<long> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)(Vector128<long>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SByteShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<sbyte> vector = Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector128<sbyte> indices = Vector128.Create((sbyte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+            Vector128<sbyte> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)(Vector128<sbyte>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SingleShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<float> vector = Vector128.Create((float)1, 2, 3, 4);
+            Vector128<int> indices = Vector128.Create((int)3, 2, 1, 0);
+            Vector128<float> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)(Vector128<float>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt16ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<ushort> vector = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector128<ushort> indices = Vector128.Create((ushort)7, 6, 5, 4, 3, 2, 1, 0);
+            Vector128<ushort> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)(Vector128<ushort>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt32ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<uint> vector = Vector128.Create((uint)1, 2, 3, 4);
+            Vector128<uint> indices = Vector128.Create((uint)3, 2, 1, 0);
+            Vector128<uint> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)(Vector128<uint>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt64ShuffleNativeOneInputWithLocalIndicesTest()
+        {
+            Vector128<ulong> vector = Vector128.Create((ulong)1, 2);
+            Vector128<ulong> indices = Vector128.Create((ulong)1, 0);
+            Vector128<ulong> result = Vector128.ShuffleNative(vector, indices);
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)(Vector128<ulong>.Count - index), result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128ByteShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector128<byte> result = Vector128.ShuffleNative(vector, Vector128<byte>.Zero);
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128DoubleShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<double> vector = Vector128.Create((double)1, 2);
+            Vector128<double> result = Vector128.ShuffleNative(vector, Vector128<long>.Zero);
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal((double)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int16ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<short> vector = Vector128.Create((short)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector128<short> result = Vector128.ShuffleNative(vector, Vector128<short>.Zero);
+
+            for (int index = 0; index < Vector128<short>.Count; index++)
+            {
+                Assert.Equal((short)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int32ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<int> vector = Vector128.Create((int)1, 2, 3, 4);
+            Vector128<int> result = Vector128.ShuffleNative(vector, Vector128<int>.Zero);
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal((int)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128Int64ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<long> vector = Vector128.Create((long)1, 2);
+            Vector128<long> result = Vector128.ShuffleNative(vector, Vector128<long>.Zero);
+
+            for (int index = 0; index < Vector128<long>.Count; index++)
+            {
+                Assert.Equal((long)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SByteShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<sbyte> vector = Vector128.Create((sbyte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+            Vector128<sbyte> result = Vector128.ShuffleNative(vector, Vector128<sbyte>.Zero);
+
+            for (int index = 0; index < Vector128<sbyte>.Count; index++)
+            {
+                Assert.Equal((sbyte)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128SingleShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<float> vector = Vector128.Create((float)1, 2, 3, 4);
+            Vector128<float> result = Vector128.ShuffleNative(vector, Vector128<int>.Zero);
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal((float)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt16ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<ushort> vector = Vector128.Create((ushort)1, 2, 3, 4, 5, 6, 7, 8);
+            Vector128<ushort> result = Vector128.ShuffleNative(vector, Vector128<ushort>.Zero);
+
+            for (int index = 0; index < Vector128<ushort>.Count; index++)
+            {
+                Assert.Equal((ushort)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt32ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<uint> vector = Vector128.Create((uint)1, 2, 3, 4);
+            Vector128<uint> result = Vector128.ShuffleNative(vector, Vector128<uint>.Zero);
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal((uint)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void Vector128UInt64ShuffleNativeOneInputWithZeroIndicesTest()
+        {
+            Vector128<ulong> vector = Vector128.Create((ulong)1, 2);
+            Vector128<ulong> result = Vector128.ShuffleNative(vector, Vector128<ulong>.Zero);
+
+            for (int index = 0; index < Vector128<ulong>.Count; index++)
+            {
+                Assert.Equal((ulong)1, result.GetElement(index));
+            }
+        }
+
+        [Fact]
         public unsafe void Vector128ByteStoreTest()
         {
             byte* value = stackalloc byte[16] {
@@ -4480,14 +4962,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public void Vector128DoubleEqualsNaNTest()
         {
-            Vector128<double> nan = Vector128.Create(double.NaN);
+            Vector128<double> nan = Vector128<double>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
         [Fact]
         public void Vector128SingleEqualsNaNTest()
         {
-            Vector128<float> nan = Vector128.Create(float.NaN);
+            Vector128<float> nan = Vector128<float>.NaN;
             Assert.True(nan.Equals(nan));
         }
 
@@ -4505,9 +4987,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             };
 
             // all Vector<double> NaNs .Equals compare the same, but == compare as different
-            foreach(var i in nans)
+            foreach (var i in nans)
             {
-                foreach(var j in nans)
+                foreach (var j in nans)
                 {
                     Assert.True(Vector128.Create(i).Equals(Vector128.Create(j)));
                     Assert.False(Vector128.Create(i) == Vector128.Create(j));
@@ -4529,9 +5011,9 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             };
 
             // all Vector<float> NaNs .Equals compare the same, but == compare as different
-            foreach(var i in nans)
+            foreach (var i in nans)
             {
-                foreach(var j in nans)
+                foreach (var j in nans)
                 {
                     Assert.True(Vector128.Create(i).Equals(Vector128.Create(j)));
                     Assert.False(Vector128.Create(i) == Vector128.Create(j));
@@ -4823,6 +5305,262 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             }
         }
 
+        [Fact]
+        public void CreateGeometricSequenceInt32Test()
+        {
+            Vector128<int> sequence = Vector128.CreateGeometricSequence(1, 2);
+            int expected = 1;
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected *= 2;
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceByteWrapsTest()
+        {
+            Vector128<byte> sequence = Vector128.CreateGeometricSequence((byte)200, (byte)2);
+            byte expected = 200;
+
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal(expected, sequence.GetElement(index));
+                expected = unchecked((byte)(expected * 2));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceSingleNonConstantInitialTest()
+        {
+            const float multiplier = 1.0064822f;
+            float initial = GetNonConstant(1.0059024f);
+            Vector128<float> sequence = Vector128.CreateGeometricSequence(initial, multiplier);
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                float expected = initial * float.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateGeometricSequenceDoubleNonConstantInitialTest()
+        {
+            const double multiplier = 1e-50;
+            double initial = GetNonConstant(1e-154);
+            Vector128<double> sequence = Vector128.CreateGeometricSequence(initial, multiplier);
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                double expected = initial * double.Pow(multiplier, index);
+                AssertExtensions.Equal(expected, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceInt32Test()
+        {
+            Vector128<int> sequence = Vector128.CreateAlternatingSequence(5, -5);
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5 : -5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceUInt32Test()
+        {
+            Vector128<uint> sequence = Vector128.CreateAlternatingSequence(5u, uint.MaxValue - 1u);
+
+            for (int index = 0; index < Vector128<uint>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 5u : uint.MaxValue - 1u, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateAlternatingSequenceDoubleTest()
+        {
+            Vector128<double> sequence = Vector128.CreateAlternatingSequence(1.5, -2.5);
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.5 : -2.5, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceInt32Test()
+        {
+            Vector128<int> sequence = Vector128.CreateHarmonicSequence(1, 1);
+            int expected = 1;
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal(1 / expected, sequence.GetElement(index));
+                expected += 1;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceSingleTest()
+        {
+            Vector128<float> sequence = Vector128.CreateHarmonicSequence(1.0f, 1.0f);
+            float expected = 1.0f;
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0f / expected, sequence.GetElement(index), 1e-6f);
+                expected += 1.0f;
+            }
+        }
+
+        [Fact]
+        public void CreateHarmonicSequenceDoubleTest()
+        {
+            Vector128<double> sequence = Vector128.CreateHarmonicSequence(1.0, 1.0);
+            double expected = 1.0;
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                AssertExtensions.Equal(1.0 / expected, sequence.GetElement(index), 1e-15);
+                expected += 1.0;
+            }
+        }
+
+        [Fact]
+        public void SignSequenceInt32Test()
+        {
+            Vector128<int> sequence = Vector128<int>.SignSequence;
+
+            for (int index = 0; index < Vector128<int>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1 : -1, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceSingleTest()
+        {
+            Vector128<float> sequence = Vector128<float>.SignSequence;
+
+            for (int index = 0; index < Vector128<float>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0f : -1.0f, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void SignSequenceDoubleTest()
+        {
+            Vector128<double> sequence = Vector128<double>.SignSequence;
+
+            for (int index = 0; index < Vector128<double>.Count; index++)
+            {
+                Assert.Equal(((index & 1) == 0) ? 1.0 : -1.0, sequence.GetElement(index));
+            }
+        }
+
+        [Fact]
+        public void LaneOperationsInt32Test()
+        {
+            Vector128<int> left = Vector128.CreateSequence(0, 1);
+            Vector128<int> right = Vector128.CreateSequence(100, 1);
+            int count = Vector128<int>.Count;
+            int lowerCount = (count + 1) / 2;
+            int upperStart = count - lowerCount;
+
+            AssertVectorEqual(CreateVector128(index => ((index & 1) == 0) ? left.GetElement(index / 2) : right.GetElement(index / 2)), Vector128.ZipLower(left, right));
+            AssertVectorEqual(CreateVector128(index => ((index & 1) == 0) ? left.GetElement(upperStart + (index / 2)) : right.GetElement(upperStart + (index / 2))), Vector128.ZipUpper(left, right));
+
+            (Vector128<int> lower, Vector128<int> upper) = Vector128.Zip(left, right);
+            AssertVectorEqual(Vector128.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector128.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector128.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector128.UnzipOdd(lower, upper));
+
+            (Vector128<int> even, Vector128<int> odd) = Vector128.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(CreateVector128(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(index - lowerCount)), Vector128.ConcatLowerLower(left, right));
+            AssertVectorEqual(CreateVector128(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(index - lowerCount)), Vector128.ConcatUpperLower(left, right));
+            AssertVectorEqual(CreateVector128(index => (index < lowerCount) ? left.GetElement(upperStart + index) : right.GetElement(upperStart + index - lowerCount)), Vector128.ConcatUpperUpper(left, right));
+            AssertVectorEqual(CreateVector128(index => (index < lowerCount) ? left.GetElement(index) : right.GetElement(upperStart + index - lowerCount)), Vector128.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(CreateVector128(index => left.GetElement(count - 1 - index)), Vector128.Reverse(left));
+        }
+
+        [Fact]
+        public void LaneOperationsDoubleTest()
+        {
+            Vector128<double> left = Vector128.Create(0.0, 1.0);
+            Vector128<double> right = Vector128.Create(100.0, 101.0);
+
+            AssertVectorEqual(Vector128.Create(0.0, 100.0), Vector128.ZipLower(left, right));
+            AssertVectorEqual(Vector128.Create(1.0, 101.0), Vector128.ZipUpper(left, right));
+
+            (Vector128<double> lower, Vector128<double> upper) = Vector128.Zip(left, right);
+            AssertVectorEqual(Vector128.ZipLower(left, right), lower);
+            AssertVectorEqual(Vector128.ZipUpper(left, right), upper);
+
+            AssertVectorEqual(left, Vector128.UnzipEven(lower, upper));
+            AssertVectorEqual(right, Vector128.UnzipOdd(lower, upper));
+
+            (Vector128<double> even, Vector128<double> odd) = Vector128.Unzip(lower, upper);
+            AssertVectorEqual(left, even);
+            AssertVectorEqual(right, odd);
+
+            AssertVectorEqual(Vector128.Create(0.0, 100.0), Vector128.ConcatLowerLower(left, right));
+            AssertVectorEqual(Vector128.Create(1.0, 100.0), Vector128.ConcatUpperLower(left, right));
+            AssertVectorEqual(Vector128.Create(1.0, 101.0), Vector128.ConcatUpperUpper(left, right));
+            AssertVectorEqual(Vector128.Create(0.0, 101.0), Vector128.ConcatLowerUpper(left, right));
+
+            AssertVectorEqual(Vector128.Create(1.0, 0.0), Vector128.Reverse(left));
+        }
+
+        private static Vector128<int> CreateVector128(Func<int, int> elementSelector)
+        {
+            int[] values = new int[Vector128<int>.Count];
+
+            for (int index = 0; index < values.Length; index++)
+            {
+                values[index] = elementSelector(index);
+            }
+
+            return Vector128.Create<int>(values);
+        }
+
+        private static void AssertVectorEqual<T>(Vector128<T> expected, Vector128<T> actual)
+            where T : struct
+        {
+            for (int index = 0; index < Vector128<T>.Count; index++)
+            {
+                Assert.Equal(expected.GetElement(index), actual.GetElement(index));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static T GetNonConstant<T>(T value) => value;
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AsinDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void AsinDoubleTest(double value, double expectedResult, double variance)
+        {
+            Vector128<double> actualResult = Vector128.Asin(Vector128.Create(value));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.AsinSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void AsinSingleTest(float value, float expectedResult, float variance)
+        {
+            Vector128<float> actualResult = Vector128.Asin(Vector128.Create(value));
+            AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.CosDouble), MemberType = typeof(GenericMathTestMemberData))]
         public void CosDoubleTest(double value, double expectedResult, double variance)
@@ -4885,6 +5623,40 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<float> actualResult = Vector128.Log2(Vector128.Create(value));
             AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128.Create(variance));
+        }
+
+        [Theory]
+        [InlineData(double.Epsilon, 1e-12)]
+        [InlineData(double.MaxValue, 1e-12)]
+        [InlineData(-0.0, 0.0)]
+        [InlineData(-1.0, 0.0)]
+        [InlineData(double.NegativeInfinity, 0.0)]
+        [InlineData(double.PositiveInfinity, 0.0)]
+        [InlineData(double.NaN, 0.0)]
+        public void LogAndLog2DoubleMixedLanesTest(double value, double variance)
+        {
+            Vector128<double> input = Vector128.Create(value, 2.0);
+            Vector128<double> allowedVariance = Vector128.Create(variance, GenericMathTestMemberData.DoubleCrossPlatformMachineEpsilon);
+
+            AssertEqual(Vector128.Create(double.Log(value), double.Log(2.0)), Vector128.Log(input), allowedVariance);
+            AssertEqual(Vector128.Create(double.Log2(value), 1.0), Vector128.Log2(input), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(float.Epsilon, 1e-4f)]
+        [InlineData(float.MaxValue, 1e-4f)]
+        [InlineData(-0.0f, 0.0f)]
+        [InlineData(-1.0f, 0.0f)]
+        [InlineData(float.NegativeInfinity, 0.0f)]
+        [InlineData(float.PositiveInfinity, 0.0f)]
+        [InlineData(float.NaN, 0.0f)]
+        public void LogAndLog2SingleMixedLanesTest(float value, float variance)
+        {
+            Vector128<float> input = Vector128.Create(value, 2.0f, value, 2.0f);
+            Vector128<float> allowedVariance = Vector128.Create(variance, 4.76837158e-07f, variance, 4.76837158e-07f);
+
+            AssertEqual(Vector128.Create(float.Log(value), float.Log(2.0f), float.Log(value), float.Log(2.0f)), Vector128.Log(input), allowedVariance);
+            AssertEqual(Vector128.Create(float.Log2(value), 1.0f, float.Log2(value), 1.0f), Vector128.Log2(input), allowedVariance);
         }
 
         [Theory]
@@ -5066,75 +5838,635 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             AssertEqual(Vector128.Create(expectedResult), Vector128.Hypot(Vector128.Create(+y), Vector128.Create(+x)), Vector128.Create(variance));
         }
 
-        [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNaNDoubleTest(double value, bool expectedResult)
+        private void IntegerClassification<T>(T value)
+            where T : IFloatingPointIeee754<T>
         {
-            Assert.Equal(expectedResult ? Vector128<double>.AllBitsSet : Vector128<double>.Zero, Vector128.IsNaN(Vector128.Create(value)));
+            Vector128<T> vector = Vector128<T>.Zero;
+            Vector128<T> integer = Vector128<T>.Zero;
+            Vector128<T> even = Vector128<T>.Zero;
+            Vector128<T> odd = Vector128<T>.Zero;
+            T allBitsSet = Vector128<T>.AllBitsSet.GetElement(0);
+            T two = T.CreateChecked(2);
+
+            for (int i = 0; i < Vector128<T>.Count; i++)
+            {
+                T element = (i % 2 == 0) ? value : T.CreateChecked(i - 1);
+                vector = vector.WithElement(i, element);
+                integer = integer.WithElement(i, (element % T.One == T.Zero) ? allBitsSet : T.Zero);
+                even = even.WithElement(i, (element % two == T.Zero) ? allBitsSet : T.Zero);
+                odd = odd.WithElement(i, (T.Abs(element % two) == T.One) ? allBitsSet : T.Zero);
+            }
+
+            Assert.Equal(integer.AsByte(), Vector128.IsInteger(vector).AsByte());
+            Assert.Equal(even.AsByte(), Vector128.IsEvenInteger(vector).AsByte());
+            Assert.Equal(odd.AsByte(), Vector128.IsOddInteger(vector).AsByte());
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNaNSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNaNSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationDoubleTest(double value) => IntegerClassification(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IntegerClassificationSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IntegerClassificationSingleTest(float value) => IntegerClassification(value);
+
+        private void IsEvenInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<float>.AllBitsSet : Vector128<float>.Zero, Vector128.IsNaN(Vector128.Create(value)));
+            Assert.Equal(T.IsEvenInteger(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsEvenInteger(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNegativeDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerByteTest(byte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerDoubleTest(double value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt16Test(short value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt32Test(int value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerInt64Test(long value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSByteTest(sbyte value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerSingleTest(float value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt16Test(ushort value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt32Test(uint value) => IsEvenInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsEvenIntegerUInt64Test(ulong value) => IsEvenInteger(value);
+
+        private void IsFinite<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<double>.AllBitsSet : Vector128<double>.Zero, Vector128.IsNegative(Vector128.Create(value)));
+            Assert.Equal(T.IsFinite(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsFinite(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsNegativeSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsNegativeSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteByteTest(byte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteDoubleTest(double value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt16Test(short value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt32Test(int value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteInt64Test(long value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSByteTest(sbyte value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteSingleTest(float value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt16Test(ushort value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt32Test(uint value) => IsFinite(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsFiniteUInt64Test(ulong value) => IsFinite(value);
+
+        private void IsInfinity<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<float>.AllBitsSet : Vector128<float>.Zero, Vector128.IsNegative(Vector128.Create(value)));
+            Assert.Equal(T.IsInfinity(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsInfinity(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityByteTest(byte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityDoubleTest(double value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt16Test(short value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt32Test(int value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityInt64Test(long value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySByteTest(sbyte value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinitySingleTest(float value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt16Test(ushort value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt32Test(uint value) => IsInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsInfinityUInt64Test(ulong value) => IsInfinity(value);
+
+        private void IsInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<double>.AllBitsSet : Vector128<double>.Zero, Vector128.IsPositive(Vector128.Create(value)));
+            Assert.Equal(T.IsInteger(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsInteger(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerByteTest(byte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerDoubleTest(double value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt16Test(short value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt32Test(int value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerInt64Test(long value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSByteTest(sbyte value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerSingleTest(float value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt16Test(ushort value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt32Test(uint value) => IsInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsIntegerUInt64Test(ulong value) => IsInteger(value);
+
+        private void IsNaN<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<float>.AllBitsSet : Vector128<float>.Zero, Vector128.IsPositive(Vector128.Create(value)));
+            Assert.Equal(T.IsNaN(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsNaN(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinityDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveInfinityDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNByteTest(byte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNDoubleTest(double value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt16Test(short value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt32Test(int value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNInt64Test(long value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSByteTest(sbyte value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNSingleTest(float value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt16Test(ushort value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt32Test(uint value) => IsNaN(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNaNUInt64Test(ulong value) => IsNaN(value);
+
+        private void IsNegative<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<double>.AllBitsSet : Vector128<double>.Zero, Vector128.IsPositiveInfinity(Vector128.Create(value)));
+            Assert.Equal(T.IsNegative(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsNegative(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsPositiveInfinitySingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsPositiveInfinitySingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeByteTest(byte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeDoubleTest(double value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt16Test(short value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt32Test(int value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInt64Test(long value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSByteTest(sbyte value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeSingleTest(float value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt16Test(ushort value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt32Test(uint value) => IsNegative(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeUInt64Test(ulong value) => IsNegative(value);
+
+        private void IsNegativeInfinity<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<float>.AllBitsSet : Vector128<float>.Zero, Vector128.IsPositiveInfinity(Vector128.Create(value)));
+            Assert.Equal(T.IsNegativeInfinity(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsNegativeInfinity(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsZeroDouble), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsZeroDoubleTest(double value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityByteTest(byte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityDoubleTest(double value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt16Test(short value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt32Test(int value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityInt64Test(long value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySByteTest(sbyte value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinitySingleTest(float value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt16Test(ushort value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt32Test(uint value) => IsNegativeInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNegativeInfinityUInt64Test(ulong value) => IsNegativeInfinity(value);
+
+        private void IsNormal<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<double>.AllBitsSet : Vector128<double>.Zero, Vector128.IsZero(Vector128.Create(value)));
+            Assert.Equal(T.IsNormal(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsNormal(Vector128.Create(value)));
         }
 
         [Theory]
-        [MemberData(nameof(GenericMathTestMemberData.IsZeroSingle), MemberType = typeof(GenericMathTestMemberData))]
-        public void IsZeroSingleTest(float value, bool expectedResult)
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalByteTest(byte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalDoubleTest(double value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt16Test(short value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt32Test(int value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalInt64Test(long value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSByteTest(sbyte value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalSingleTest(float value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt16Test(ushort value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt32Test(uint value) => IsNormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsNormalUInt64Test(ulong value) => IsNormal(value);
+
+        private void IsOddInteger<T>(T value)
+            where T : INumber<T>
         {
-            Assert.Equal(expectedResult ? Vector128<float>.AllBitsSet : Vector128<float>.Zero, Vector128.IsZero(Vector128.Create(value)));
+            Assert.Equal(T.IsOddInteger(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsOddInteger(Vector128.Create(value)));
         }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerByteTest(byte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerDoubleTest(double value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt16Test(short value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt32Test(int value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerInt64Test(long value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSByteTest(sbyte value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerSingleTest(float value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt16Test(ushort value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt32Test(uint value) => IsOddInteger(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsOddIntegerUInt64Test(ulong value) => IsOddInteger(value);
+
+        private void IsPositive<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsPositive(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsPositive(Vector128.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveByteTest(byte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveDoubleTest(double value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt16Test(short value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt32Test(int value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInt64Test(long value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSByteTest(sbyte value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveSingleTest(float value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt16Test(ushort value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt32Test(uint value) => IsPositive(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveUInt64Test(ulong value) => IsPositive(value);
+
+        private void IsPositiveInfinity<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsPositiveInfinity(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsPositiveInfinity(Vector128.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityByteTest(byte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityDoubleTest(double value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt16Test(short value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt32Test(int value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityInt64Test(long value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySByteTest(sbyte value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinitySingleTest(float value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt16Test(ushort value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt32Test(uint value) => IsPositiveInfinity(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsPositiveInfinityUInt64Test(ulong value) => IsPositiveInfinity(value);
+
+        private void IsSubnormal<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsSubnormal(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsSubnormal(Vector128.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalByteTest(byte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalDoubleTest(double value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt16Test(short value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt32Test(int value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalInt64Test(long value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSByteTest(sbyte value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalSingleTest(float value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt16Test(ushort value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt32Test(uint value) => IsSubnormal(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsSubnormalUInt64Test(ulong value) => IsSubnormal(value);
+
+        private void IsZero<T>(T value)
+            where T : INumber<T>
+        {
+            Assert.Equal(T.IsZero(value) ? Vector128<T>.AllBitsSet : Vector128<T>.Zero, Vector128.IsZero(Vector128.Create(value)));
+        }
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroByteTest(byte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestDouble), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroDoubleTest(double value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt16Test(short value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt32Test(int value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroInt64Test(long value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSByte), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSByteTest(sbyte value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestSingle), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroSingleTest(float value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt16), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt16Test(ushort value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt32), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt32Test(uint value) => IsZero(value);
+
+        [Theory]
+        [MemberData(nameof(GenericMathTestMemberData.IsTestUInt64), MemberType = typeof(GenericMathTestMemberData))]
+        public void IsZeroUInt64Test(ulong value) => IsZero(value);
 
         [Theory]
         [MemberData(nameof(GenericMathTestMemberData.LerpDouble), MemberType = typeof(GenericMathTestMemberData))]
@@ -5392,6 +6724,917 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<float> actualResult = Vector128.Truncate(Vector128.Create(value));
             AssertEqual(Vector128.Create(expectedResult), actualResult, Vector128<float>.Zero);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector128.Create<T>(value1);
+            var input2 = Vector128.Create<T>(value2);
+
+            Assert.True(Vector128.All(input1, value1));
+            Assert.True(Vector128.All(input2, value2));
+            Assert.False(Vector128.All(input1.WithElement(0, value2), value1));
+            Assert.False(Vector128.All(input2.WithElement(0, value1), value2));
+            Assert.False(Vector128.All(input1, value2));
+            Assert.False(Vector128.All(input2, value1));
+            Assert.False(Vector128.All(input1.WithElement(0, value2), value2));
+            Assert.False(Vector128.All(input2.WithElement(0, value1), value1));
+
+            Assert.True(Vector128.Any(input1, value1));
+            Assert.True(Vector128.Any(input2, value2));
+            Assert.True(Vector128.Any(input1.WithElement(0, value2), value1));
+            Assert.True(Vector128.Any(input2.WithElement(0, value1), value2));
+            Assert.False(Vector128.Any(input1, value2));
+            Assert.False(Vector128.Any(input2, value1));
+            Assert.True(Vector128.Any(input1.WithElement(0, value2), value2));
+            Assert.True(Vector128.Any(input2.WithElement(0, value1), value1));
+
+            Assert.False(Vector128.None(input1, value1));
+            Assert.False(Vector128.None(input2, value2));
+            Assert.False(Vector128.None(input1.WithElement(0, value2), value1));
+            Assert.False(Vector128.None(input2.WithElement(0, value1), value2));
+            Assert.True(Vector128.None(input1, value2));
+            Assert.True(Vector128.None(input2, value1));
+            Assert.False(Vector128.None(input1.WithElement(0, value2), value2));
+            Assert.False(Vector128.None(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector128.Create<T>(value);
+
+            Assert.False(Vector128.All(input, value));
+            Assert.False(Vector128.Any(input, value));
+            Assert.True(Vector128.None(input, value));
+        }
+
+        [Fact]
+        public void AllAnyNoneByteTest() => AllAnyNoneTest<byte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest() => AllAnyNoneTest<double>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneDoubleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void AllAnyNoneInt16Test() => AllAnyNoneTest<short>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt32Test() => AllAnyNoneTest<int>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneInt64Test() => AllAnyNoneTest<long>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSByteTest() => AllAnyNoneTest<sbyte>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest() => AllAnyNoneTest<float>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneSingleTest_AllBitsSet() => AllAnyNoneTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void AllAnyNoneUInt16Test() => AllAnyNoneTest<ushort>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt32Test() => AllAnyNoneTest<uint>(3, 2);
+
+        [Fact]
+        public void AllAnyNoneUInt64Test() => AllAnyNoneTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AllAnyNoneWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector128.Create<T>(allBitsSet);
+            var input2 = Vector128.Create<T>(value2);
+
+            Assert.True(Vector128.AllWhereAllBitsSet(input1));
+            Assert.False(Vector128.AllWhereAllBitsSet(input2));
+            Assert.False(Vector128.AllWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector128.AllWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.True(Vector128.AnyWhereAllBitsSet(input1));
+            Assert.False(Vector128.AnyWhereAllBitsSet(input2));
+            Assert.True(Vector128.AnyWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.True(Vector128.AnyWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.False(Vector128.NoneWhereAllBitsSet(input1));
+            Assert.True(Vector128.NoneWhereAllBitsSet(input2));
+            Assert.False(Vector128.NoneWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.False(Vector128.NoneWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetByteTest() => AllAnyNoneWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetDoubleTest() => AllAnyNoneWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt16Test() => AllAnyNoneWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt32Test() => AllAnyNoneWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetInt64Test() => AllAnyNoneWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSByteTest() => AllAnyNoneWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetSingleTest() => AllAnyNoneWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt16Test() => AllAnyNoneWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt32Test() => AllAnyNoneWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void AllAnyNoneWhereAllBitsSetUInt64Test() => AllAnyNoneWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest<T>(T value1, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector128.Create<T>(value1);
+            var input2 = Vector128.Create<T>(value2);
+
+            Assert.Equal(Vector128<T>.Count, Vector128.Count(input1, value1));
+            Assert.Equal(Vector128<T>.Count, Vector128.Count(input2, value2));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.Count(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.Count(input2.WithElement(0, value1), value2));
+            Assert.Equal(0, Vector128.Count(input1, value2));
+            Assert.Equal(0, Vector128.Count(input2, value1));
+            Assert.Equal(1, Vector128.Count(input1.WithElement(0, value2), value2));
+            Assert.Equal(1, Vector128.Count(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(0, Vector128.IndexOf(input1, value1));
+            Assert.Equal(0, Vector128.IndexOf(input2, value2));
+            Assert.Equal(1, Vector128.IndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal(1, Vector128.IndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector128.IndexOf(input1, value2));
+            Assert.Equal(-1, Vector128.IndexOf(input2, value1));
+            Assert.Equal(0, Vector128.IndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector128.IndexOf(input2.WithElement(0, value1), value1));
+
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.LastIndexOf(input1, value1));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.LastIndexOf(input2, value2));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.LastIndexOf(input1.WithElement(0, value2), value1));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.LastIndexOf(input2.WithElement(0, value1), value2));
+            Assert.Equal(-1, Vector128.LastIndexOf(input1, value2));
+            Assert.Equal(-1, Vector128.LastIndexOf(input2, value1));
+            Assert.Equal(0, Vector128.LastIndexOf(input1.WithElement(0, value2), value2));
+            Assert.Equal(0, Vector128.LastIndexOf(input2.WithElement(0, value1), value1));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfTest_IFloatingPointIeee754<T>(T value)
+            where T : struct, IFloatingPointIeee754<T>
+        {
+            var input = Vector128.Create<T>(value);
+
+            Assert.Equal(0, Vector128.Count(input, value));
+            Assert.Equal(-1, Vector128.IndexOf(input, value));
+            Assert.Equal(-1, Vector128.LastIndexOf(input, value));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfByteTest() => CountIndexOfLastIndexOfTest<byte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest() => CountIndexOfLastIndexOfTest<double>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfDoubleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<double>(BitConverter.Int64BitsToDouble(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt16Test() => CountIndexOfLastIndexOfTest<short>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt32Test() => CountIndexOfLastIndexOfTest<int>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfInt64Test() => CountIndexOfLastIndexOfTest<long>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSByteTest() => CountIndexOfLastIndexOfTest<sbyte>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest() => CountIndexOfLastIndexOfTest<float>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfSingleTest_AllBitsSet() => CountIndexOfLastIndexOfTest_IFloatingPointIeee754<float>(BitConverter.Int32BitsToSingle(-1));
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt16Test() => CountIndexOfLastIndexOfTest<ushort>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt32Test() => CountIndexOfLastIndexOfTest<uint>(3, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfUInt64Test() => CountIndexOfLastIndexOfTest<ulong>(3, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void CountIndexOfLastIndexOfWhereAllBitsSetTest<T>(T allBitsSet, T value2)
+            where T : struct, INumber<T>
+        {
+            var input1 = Vector128.Create<T>(allBitsSet);
+            var input2 = Vector128.Create<T>(value2);
+
+            Assert.Equal(Vector128<T>.Count, Vector128.CountWhereAllBitsSet(input1));
+            Assert.Equal(0, Vector128.CountWhereAllBitsSet(input2));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.CountWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(1, Vector128.CountWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(0, Vector128.IndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector128.IndexOfWhereAllBitsSet(input2));
+            Assert.Equal(1, Vector128.IndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector128.IndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.LastIndexOfWhereAllBitsSet(input1));
+            Assert.Equal(-1, Vector128.LastIndexOfWhereAllBitsSet(input2));
+            Assert.Equal(Vector128<T>.Count - 1, Vector128.LastIndexOfWhereAllBitsSet(input1.WithElement(0, value2)));
+            Assert.Equal(0, Vector128.LastIndexOfWhereAllBitsSet(input2.WithElement(0, allBitsSet)));
+        }
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<byte>(byte.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetDoubleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<double>(BitConverter.Int64BitsToDouble(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<short>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<int>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<long>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSByteTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<sbyte>(-1, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetSingleTest() => CountIndexOfLastIndexOfWhereAllBitsSetTest<float>(BitConverter.Int32BitsToSingle(-1), 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt16Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ushort>(ushort.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt32Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<uint>(uint.MaxValue, 2);
+
+        [Fact]
+        public void CountIndexOfLastIndexOfWhereAllBitsSetUInt64Test() => CountIndexOfLastIndexOfWhereAllBitsSetTest<ulong>(ulong.MaxValue, 2);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMaxTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector128<T> left = Vector128.CreateSequence<T>(start, T.One);
+            Vector128<T> right = Vector128.Create<T>(T.MaxValue - T.CreateTruncating(Vector128<T>.Count) + T.One);
+
+            Vector128<T> result = Vector128.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddSaturateToMinTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector128<T> left = Vector128.CreateSequence<T>(start, T.NegativeOne);
+            Vector128<T> right = Vector128.Create<T>(T.MinValue + T.CreateTruncating(Vector128<T>.Count) - T.One);
+
+            Vector128<T> result = Vector128.AddSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] + right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void AddSaturateByteTest() => AddSaturateToMaxTest<byte>(1);
+
+        [Fact]
+        public void AddSaturateInt16Test()
+        {
+            AddSaturateToMinTest<short>(-1);
+            AddSaturateToMaxTest<short>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt32Test()
+        {
+            AddSaturateToMinTest<int>(-1);
+            AddSaturateToMaxTest<int>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateInt64Test()
+        {
+            AddSaturateToMinTest<long>(-1);
+            AddSaturateToMaxTest<long>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateIntPtrTest()
+        {
+            AddSaturateToMinTest<nint>(-1);
+            AddSaturateToMaxTest<nint>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateSByteTest()
+        {
+            AddSaturateToMinTest<sbyte>(-1);
+            AddSaturateToMaxTest<sbyte>(+1);
+        }
+
+        [Fact]
+        public void AddSaturateUInt16Test() => AddSaturateToMaxTest<ushort>(1);
+
+        [Fact]
+        public void AddSaturateUInt32Test() => AddSaturateToMaxTest<uint>(1);
+
+        [Fact]
+        public void AddSaturateUInt64Test() => AddSaturateToMaxTest<ulong>(1);
+
+        [Fact]
+        public void AddSaturateUIntPtrTest() => AddSaturateToMaxTest<nuint>(1);
+
+        private (Vector128<TFrom> lower, Vector128<TFrom> upper) GetNarrowWithSaturationInputs<TFrom, TTo>()
+            where TFrom : unmanaged, IMinMaxValue<TFrom>, INumber<TFrom>
+            where TTo : unmanaged, IMinMaxValue<TTo>, INumber<TTo>
+        {
+            Vector128<TFrom> lower = Vector128.Create<TFrom>(TFrom.CreateTruncating(TTo.MaxValue) - TFrom.CreateTruncating(Vector128<TFrom>.Count) + TFrom.One)
+                                  + Vector128.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            Vector128<TFrom> upper = Vector128.Create<TFrom>(TFrom.CreateTruncating(TTo.MinValue) + TFrom.CreateTruncating(Vector128<TFrom>.Count) - TFrom.One)
+                                  - Vector128.CreateSequence<TFrom>(TFrom.One, TFrom.One);
+
+            return (lower, upper);
+        }
+
+        private void NarrowWithSaturationTest<TFrom, TTo>(Vector128<TFrom> lower, Vector128<TFrom> upper, Vector128<TTo> result)
+            where TFrom : unmanaged, INumber<TFrom>
+            where TTo : unmanaged, INumber<TTo>
+        {
+            for (int i = 0; i < Vector128<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(lower[i]);
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            for (int i = 0; i < Vector128<TFrom>.Count; i++)
+            {
+                TTo expectedResult = TTo.CreateSaturating(upper[i]);
+                Assert.Equal(expectedResult, result[Vector128<TFrom>.Count + i]);
+            }
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt16Test()
+        {
+            (Vector128<short> lower, Vector128<short> upper) = GetNarrowWithSaturationInputs<short, sbyte>();
+            Vector128<sbyte> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt32Test()
+        {
+            (Vector128<int> lower, Vector128<int> upper) = GetNarrowWithSaturationInputs<int, short>();
+            Vector128<short> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationInt64Test()
+        {
+            (Vector128<long> lower, Vector128<long> upper) = GetNarrowWithSaturationInputs<long, int>();
+            Vector128<int> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt16Test()
+        {
+            (Vector128<ushort> lower, Vector128<ushort> upper) = GetNarrowWithSaturationInputs<ushort, byte>();
+            Vector128<byte> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt32Test()
+        {
+            (Vector128<uint> lower, Vector128<uint> upper) = GetNarrowWithSaturationInputs<uint, ushort>();
+            Vector128<ushort> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [Fact]
+        public void NarrowWithSaturationUInt64Test()
+        {
+            (Vector128<ulong> lower, Vector128<ulong> upper) = GetNarrowWithSaturationInputs<ulong, uint>();
+            Vector128<uint> result = Vector128.NarrowWithSaturation(lower, upper);
+            NarrowWithSaturationTest(lower, upper, result);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMaxTest<T>(T start)
+            where T : struct, ISignedNumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.NegativeOne);
+
+            Vector128<T> left = Vector128.Create<T>(T.MaxValue - T.CreateTruncating(Vector128<T>.Count) + T.One);
+            Vector128<T> right = Vector128.CreateSequence<T>(start, T.NegativeOne);
+
+            Vector128<T> result = Vector128.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MaxValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void SubtractSaturateToMinTest<T>(T start)
+            where T : struct, INumber<T>, IMinMaxValue<T>
+        {
+            // We just take it as a parameter to prevent constant folding
+            Debug.Assert(start == T.One);
+
+            Vector128<T> left = Vector128.Create<T>(T.MinValue + T.CreateTruncating(Vector128<T>.Count) - T.One);
+            Vector128<T> right = Vector128.CreateSequence<T>(start, T.One);
+
+            Vector128<T> result = Vector128.SubtractSaturate(left, right);
+
+            for (int i = 0; i < Vector128<T>.Count - 1; i++)
+            {
+                T expectedResult = left[i] - right[i];
+                Assert.Equal(expectedResult, result[i]);
+            }
+
+            Assert.Equal(T.MinValue, result[Vector128<T>.Count - 1]);
+        }
+
+        [Fact]
+        public void SubtractSaturateByteTest() => SubtractSaturateToMinTest<byte>(1);
+
+        [Fact]
+        public void SubtractSaturateInt16Test()
+        {
+            SubtractSaturateToMinTest<short>(+1);
+            SubtractSaturateToMaxTest<short>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt32Test()
+        {
+            SubtractSaturateToMinTest<int>(+1);
+            SubtractSaturateToMaxTest<int>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateInt64Test()
+        {
+            SubtractSaturateToMinTest<long>(+1);
+            SubtractSaturateToMaxTest<long>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateIntPtrTest()
+        {
+            SubtractSaturateToMinTest<nint>(+1);
+            SubtractSaturateToMaxTest<nint>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateSByteTest()
+        {
+            SubtractSaturateToMinTest<sbyte>(+1);
+            SubtractSaturateToMaxTest<sbyte>(-1);
+        }
+
+        [Fact]
+        public void SubtractSaturateUInt16Test() => SubtractSaturateToMinTest<ushort>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt32Test() => SubtractSaturateToMinTest<uint>(1);
+
+        [Fact]
+        public void SubtractSaturateUInt64Test() => SubtractSaturateToMinTest<ulong>(1);
+
+        [Fact]
+        public void SubtractSaturateUIntPtrTest() => SubtractSaturateToMinTest<nuint>(1);
+
+        [Fact]
+        public void EDoubleTest() => TestConstant(Vector128<double>.E, double.E);
+
+        [Fact]
+        public void ESingleTest() => TestConstant(Vector128<float>.E, float.E);
+
+        [Fact]
+        public void EpsilonDoubleTest() => TestConstant(Vector128<double>.Epsilon, double.Epsilon);
+
+        [Fact]
+        public void EpsilonSingleTest() => TestConstant(Vector128<float>.Epsilon, float.Epsilon);
+
+        [Fact]
+        public void NaNDoubleTest() => TestConstant(Vector128<double>.NaN, double.NaN);
+
+        [Fact]
+        public void NaNSingleTest() => TestConstant(Vector128<float>.NaN, float.NaN);
+
+        [Fact]
+        public void NegativeInfinityDoubleTest() => TestConstant(Vector128<double>.NegativeInfinity, double.NegativeInfinity);
+
+        [Fact]
+        public void NegativeInfinitySingleTest() => TestConstant(Vector128<float>.NegativeInfinity, float.NegativeInfinity);
+
+        [Fact]
+        public void NegativeOneDoubleTest() => TestConstant(Vector128<double>.NegativeOne, -1.0);
+
+        [Fact]
+        public void NegativeOneInt16Test() => TestConstant<short>(Vector128<short>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt32Test() => TestConstant<int>(Vector128<int>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneInt64Test() => TestConstant<long>(Vector128<long>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSByteTest() => TestConstant<sbyte>(Vector128<sbyte>.NegativeOne, -1);
+
+        [Fact]
+        public void NegativeOneSingleTest() => TestConstant(Vector128<float>.NegativeOne, -1.0f);
+
+        [Fact]
+        public void NegativeZeroDoubleTest() => TestConstant(Vector128<double>.NegativeZero, double.NegativeZero);
+
+        [Fact]
+        public void NegativeZeroSingleTest() => TestConstant(Vector128<float>.NegativeZero, float.NegativeZero);
+
+        [Fact]
+        public void PiDoubleTest() => TestConstant(Vector128<double>.Pi, double.Pi);
+
+        [Fact]
+        public void PiSingleTest() => TestConstant(Vector128<float>.Pi, float.Pi);
+
+        [Fact]
+        public void PositiveInfinityDoubleTest() => TestConstant(Vector128<double>.PositiveInfinity, double.PositiveInfinity);
+
+        [Fact]
+        public void PositiveInfinitySingleTest() => TestConstant(Vector128<float>.PositiveInfinity, float.PositiveInfinity);
+
+        [Fact]
+        public void TauDoubleTest() => TestConstant(Vector128<double>.Tau, double.Tau);
+
+        [Fact]
+        public void TauSingleTest() => TestConstant(Vector128<float>.Tau, float.Tau);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector128<double> actual, double expected)
+        {
+            for (int i = 0; i < Vector128<double>.Count; i++)
+            {
+                if (double.IsNaN(expected))
+                {
+                    Assert.True(double.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.DoubleToInt64Bits(expected), BitConverter.DoubleToInt64Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant(Vector128<float> actual, float expected)
+        {
+            for (int i = 0; i < Vector128<float>.Count; i++)
+            {
+                if (float.IsNaN(expected))
+                {
+                    Assert.True(float.IsNaN(actual[i]));
+                }
+                else
+                {
+                    Assert.Equal(BitConverter.SingleToInt32Bits(expected), BitConverter.SingleToInt32Bits(actual[i]));
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void TestConstant<T>(Vector128<T> actual, T expected)
+            where T : IBinaryInteger<T>
+        {
+            for (int i = 0; i < Vector128<T>.Count; i++)
+            {
+                Assert.Equal(expected, actual[i]);
+            }
+        }
+
+        // The Mono interpreter and jiterpreter only lower GetElement/WithElement when the index is a
+        // compile time constant that is provably in range, so these tests deliberately use literal
+        // indexes to exercise that path. The loop based tests elsewhere in this file cover the
+        // variable index path, which stays in managed code.
+
+        [Fact]
+        public void Vector128GetElementConstantIndexTest()
+        {
+            Vector128<sbyte> sbyteVector = Vector128.Create((sbyte)-1, 1, -2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, -128);
+            Assert.Equal((sbyte)-1, sbyteVector.GetElement(0));
+            Assert.Equal((sbyte)-2, sbyteVector.GetElement(2));
+            Assert.Equal((sbyte)-128, sbyteVector.GetElement(15));
+
+            Vector128<byte> byteVector = Vector128.Create((byte)255, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 254);
+            Assert.Equal((byte)255, byteVector.GetElement(0));
+            Assert.Equal((byte)7, byteVector.GetElement(7));
+            Assert.Equal((byte)254, byteVector.GetElement(15));
+
+            Vector128<short> shortVector = Vector128.Create((short)-1, 1, -2, 3, 4, 5, 6, short.MinValue);
+            Assert.Equal((short)-1, shortVector.GetElement(0));
+            Assert.Equal((short)-2, shortVector.GetElement(2));
+            Assert.Equal(short.MinValue, shortVector.GetElement(7));
+
+            Vector128<ushort> ushortVector = Vector128.Create((ushort)65535, 1, 2, 3, 4, 5, 6, 65534);
+            Assert.Equal((ushort)65535, ushortVector.GetElement(0));
+            Assert.Equal((ushort)3, ushortVector.GetElement(3));
+            Assert.Equal((ushort)65534, ushortVector.GetElement(7));
+
+            Vector128<int> intVector = Vector128.Create(int.MinValue, 1, 2, int.MaxValue);
+            Assert.Equal(int.MinValue, intVector.GetElement(0));
+            Assert.Equal(2, intVector.GetElement(2));
+            Assert.Equal(int.MaxValue, intVector.GetElement(3));
+
+            Vector128<uint> uintVector = Vector128.Create(uint.MaxValue, 1u, 2u, 3u);
+            Assert.Equal(uint.MaxValue, uintVector.GetElement(0));
+            Assert.Equal(3u, uintVector.GetElement(3));
+
+            Vector128<long> longVector = Vector128.Create(long.MinValue, long.MaxValue);
+            Assert.Equal(long.MinValue, longVector.GetElement(0));
+            Assert.Equal(long.MaxValue, longVector.GetElement(1));
+
+            Vector128<ulong> ulongVector = Vector128.Create(ulong.MaxValue, 1ul);
+            Assert.Equal(ulong.MaxValue, ulongVector.GetElement(0));
+            Assert.Equal(1ul, ulongVector.GetElement(1));
+
+            Vector128<float> floatVector = Vector128.Create(-0.0f, 1.5f, float.NaN, float.NegativeInfinity);
+            // Compare the bits so that the sign of zero is actually validated.
+            Assert.Equal(BitConverter.SingleToInt32Bits(-0.0f), BitConverter.SingleToInt32Bits(floatVector.GetElement(0)));
+            Assert.Equal(1.5f, floatVector.GetElement(1));
+            Assert.Equal(float.NaN, floatVector.GetElement(2));
+            Assert.Equal(float.NegativeInfinity, floatVector.GetElement(3));
+
+            Vector128<double> doubleVector = Vector128.Create(-0.0, double.NaN);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(doubleVector.GetElement(0)));
+            Assert.Equal(double.NaN, doubleVector.GetElement(1));
+
+            Vector128<nint> nintVector = Vector128<nint>.Zero.WithElement(0, (nint)(-1)).WithElement(1, (nint)2);
+            Assert.Equal((nint)(-1), nintVector.GetElement(0));
+            Assert.Equal((nint)2, nintVector.GetElement(1));
+
+            Vector128<nuint> nuintVector = Vector128<nuint>.Zero.WithElement(0, (nuint)1).WithElement(1, (nuint)2);
+            Assert.Equal((nuint)1, nuintVector.GetElement(0));
+            Assert.Equal((nuint)2, nuintVector.GetElement(1));
+        }
+
+        [Fact]
+        public void Vector128WithElementConstantIndexTest()
+        {
+            Vector128<sbyte> sbyteVector = Vector128<sbyte>.Zero.WithElement(0, (sbyte)-1).WithElement(15, (sbyte)-128);
+            Assert.Equal((sbyte)-1, sbyteVector.GetElement(0));
+            Assert.Equal((sbyte)0, sbyteVector.GetElement(1));
+            Assert.Equal((sbyte)-128, sbyteVector.GetElement(15));
+
+            Vector128<byte> byteVector = Vector128<byte>.Zero.WithElement(0, (byte)255).WithElement(15, (byte)254);
+            Assert.Equal((byte)255, byteVector.GetElement(0));
+            Assert.Equal((byte)0, byteVector.GetElement(1));
+            Assert.Equal((byte)254, byteVector.GetElement(15));
+
+            Vector128<short> shortVector = Vector128<short>.Zero.WithElement(0, (short)-1).WithElement(7, short.MinValue);
+            Assert.Equal((short)-1, shortVector.GetElement(0));
+            Assert.Equal(short.MinValue, shortVector.GetElement(7));
+
+            Vector128<ushort> ushortVector = Vector128<ushort>.Zero.WithElement(0, (ushort)65535).WithElement(7, (ushort)65534);
+            Assert.Equal((ushort)65535, ushortVector.GetElement(0));
+            Assert.Equal((ushort)65534, ushortVector.GetElement(7));
+
+            Vector128<int> intVector = Vector128<int>.Zero.WithElement(0, int.MinValue).WithElement(3, int.MaxValue);
+            Assert.Equal(int.MinValue, intVector.GetElement(0));
+            Assert.Equal(int.MaxValue, intVector.GetElement(3));
+
+            Vector128<uint> uintVector = Vector128<uint>.Zero.WithElement(0, uint.MaxValue);
+            Assert.Equal(uint.MaxValue, uintVector.GetElement(0));
+
+            Vector128<long> longVector = Vector128<long>.Zero.WithElement(0, long.MinValue).WithElement(1, long.MaxValue);
+            Assert.Equal(long.MinValue, longVector.GetElement(0));
+            Assert.Equal(long.MaxValue, longVector.GetElement(1));
+
+            Vector128<ulong> ulongVector = Vector128<ulong>.Zero.WithElement(1, ulong.MaxValue);
+            Assert.Equal(0ul, ulongVector.GetElement(0));
+            Assert.Equal(ulong.MaxValue, ulongVector.GetElement(1));
+
+            Vector128<float> floatVector = Vector128<float>.Zero.WithElement(0, -0.0f).WithElement(1, 1.5f).WithElement(2, float.NaN);
+            // Compare the bits so that the sign of zero is actually validated.
+            Assert.Equal(BitConverter.SingleToInt32Bits(-0.0f), BitConverter.SingleToInt32Bits(floatVector.GetElement(0)));
+            Assert.Equal(1.5f, floatVector.GetElement(1));
+            Assert.Equal(float.NaN, floatVector.GetElement(2));
+            Assert.Equal(BitConverter.SingleToInt32Bits(0.0f), BitConverter.SingleToInt32Bits(floatVector.GetElement(3)));
+
+            Vector128<double> doubleVector = Vector128<double>.Zero.WithElement(0, -0.0).WithElement(1, double.NaN);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(doubleVector.GetElement(0)));
+            Assert.Equal(double.NaN, doubleVector.GetElement(1));
+
+            Vector128<nint> nintVector = Vector128<nint>.Zero.WithElement(1, (nint)(-1));
+            Assert.Equal((nint)0, nintVector.GetElement(0));
+            Assert.Equal((nint)(-1), nintVector.GetElement(1));
+
+            Vector128<nuint> nuintVector = Vector128<nuint>.Zero.WithElement(1, (nuint)3);
+            Assert.Equal((nuint)0, nuintVector.GetElement(0));
+            Assert.Equal((nuint)3, nuintVector.GetElement(1));
+        }
+
+        [Fact]
+        public void Vector128GetElementOutOfRangeTest()
+        {
+            // Constant out of range indexes must still throw, so they must not be lowered to an
+            // unchecked lane access.
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.GetElement(16));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.GetElement(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<short>.Zero.GetElement(8));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.GetElement(4));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<long>.Zero.GetElement(2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<float>.Zero.GetElement(4));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<double>.Zero.GetElement(2));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.WithElement(16, (byte)1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.WithElement(-1, (byte)1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<short>.Zero.WithElement(8, (short)1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.WithElement(4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<long>.Zero.WithElement(2, 1L));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<float>.Zero.WithElement(4, 1.0f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<double>.Zero.WithElement(2, 1.0));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(4)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        public void Vector128GetElementVariableOutOfRangeTest(int index)
+        {
+            // A variable index is never lowered, but it must still be bounds checked.
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.GetElement(index));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.WithElement(index, 1));
+        }
+
+        private enum StoreKind
+        {
+            Store,
+            StoreUnsafe,
+            StoreUnsafeWithOffset,
+        }
+
+        /// <summary>
+        /// Stores a vector holding a distinct byte per lane at every alignment from 0 to 15 and checks
+        /// the whole buffer, so a wrong store destination, a reversed operand pair, or a byte written
+        /// outside the 16-byte window is caught rather than masked by a uniform fill.
+        /// </summary>
+        private static unsafe void ValidateStore<T>(StoreKind kind)
+            where T : unmanaged
+        {
+            const int Guard = 16;
+            const int MaxAlignmentOffset = 16;
+            const byte Filler = 0x5A;
+
+            byte[] pattern = new byte[Vector128<byte>.Count];
+            for (int i = 0; i < pattern.Length; i++)
+            {
+                pattern[i] = (byte)(0xA0 + i);
+            }
+
+            Vector128<T> vector = Vector128.Create<byte>(new ReadOnlySpan<byte>(pattern)).As<byte, T>();
+
+            byte[] buffer = new byte[Guard + MaxAlignmentOffset + pattern.Length + Guard];
+            byte[] expected = new byte[buffer.Length];
+
+            for (int offset = 0; offset < MaxAlignmentOffset; offset++)
+            {
+                Array.Fill(buffer, Filler);
+                Array.Fill(expected, Filler);
+                pattern.CopyTo(expected, Guard + offset);
+
+                fixed (byte* pBuffer = buffer)
+                {
+                    T* destination = (T*)(pBuffer + Guard + offset);
+
+                    switch (kind)
+                    {
+                        case StoreKind.Store:
+                            vector.Store(destination);
+                            break;
+
+                        case StoreKind.StoreUnsafe:
+                            vector.StoreUnsafe(ref *destination);
+                            break;
+
+                        case StoreKind.StoreUnsafeWithOffset:
+                            // Bias the destination backwards and let the element offset undo it, so a
+                            // dropped offset argument shows up as a wrongly placed store.
+                            vector.StoreUnsafe(ref *(destination - 1), elementOffset: 1);
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"Unexpected {nameof(StoreKind)}: {kind}");
+                    }
+                }
+
+                Assert.Equal(expected, buffer);
+            }
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.Store);
+            ValidateStore<sbyte>(StoreKind.Store);
+            ValidateStore<short>(StoreKind.Store);
+            ValidateStore<ushort>(StoreKind.Store);
+            ValidateStore<int>(StoreKind.Store);
+            ValidateStore<uint>(StoreKind.Store);
+            ValidateStore<long>(StoreKind.Store);
+            ValidateStore<ulong>(StoreKind.Store);
+            ValidateStore<float>(StoreKind.Store);
+            ValidateStore<double>(StoreKind.Store);
+            ValidateStore<nint>(StoreKind.Store);
+            ValidateStore<nuint>(StoreKind.Store);
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnsafeUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.StoreUnsafe);
+            ValidateStore<sbyte>(StoreKind.StoreUnsafe);
+            ValidateStore<short>(StoreKind.StoreUnsafe);
+            ValidateStore<ushort>(StoreKind.StoreUnsafe);
+            ValidateStore<int>(StoreKind.StoreUnsafe);
+            ValidateStore<uint>(StoreKind.StoreUnsafe);
+            ValidateStore<long>(StoreKind.StoreUnsafe);
+            ValidateStore<ulong>(StoreKind.StoreUnsafe);
+            ValidateStore<float>(StoreKind.StoreUnsafe);
+            ValidateStore<double>(StoreKind.StoreUnsafe);
+            ValidateStore<nint>(StoreKind.StoreUnsafe);
+            ValidateStore<nuint>(StoreKind.StoreUnsafe);
+        }
+
+        [Fact]
+        public unsafe void Vector128StoreUnsafeElementOffsetUnalignedTest()
+        {
+            ValidateStore<byte>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<sbyte>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<short>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<ushort>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<int>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<uint>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<long>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<ulong>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<float>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<double>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<nint>(StoreKind.StoreUnsafeWithOffset);
+            ValidateStore<nuint>(StoreKind.StoreUnsafeWithOffset);
         }
     }
 }

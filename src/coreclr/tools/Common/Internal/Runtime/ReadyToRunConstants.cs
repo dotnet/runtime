@@ -17,8 +17,13 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_FLAG_NonSharedPInvokeStubs = 0x00000008,     // PInvoke stubs compiled into image are non-shareable (no secret parameter)
         READYTORUN_FLAG_EmbeddedMSIL = 0x00000010,              // MSIL is embedded in the composite R2R executable
         READYTORUN_FLAG_Component = 0x00000020,                 // This is the header describing a component assembly of composite R2R
-        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,   // This R2R module has multiple modules within its version bubble
+        READYTORUN_FLAG_MultiModuleVersionBubble = 0x00000040,  // This R2R module has multiple modules within its version bubble
         READYTORUN_FLAG_UnrelatedR2RCode = 0x00000080,          // This R2R module has generic code in it that would not be naturally encoded into this module
+        READYTORUN_FLAG_PlatformNativeImage = 0x00000100,       // The owning composite executable is in the platform native format
+        READYTORUN_FLAG_StrippedILBodies = 0x00000200,         // IL method bodies have been stripped from the image
+        READYTORUN_FLAG_StrippedInliningInfo = 0x00000400,     // Inlining info has been stripped from the image
+        READYTORUN_FLAG_StrippedDebugInfo = 0x00000800,        // Debug info has been stripped from the image
+        READYTORUN_FLAG_VerifyGCModeTransitions = 0x00001000,  // Code in this image verifies that GC mode transitions are legal. Catch resumption points call READYTORUN_HELPER_ResumeAfterCatch.
     }
 
     public enum ReadyToRunImportSectionType : byte
@@ -41,7 +46,7 @@ namespace Internal.ReadyToRunConstants
     /// Constants for method and field encoding
     /// </summary>
     [Flags]
-    public enum ReadyToRunMethodSigFlags : byte
+    public enum ReadyToRunMethodSigFlags : uint
     {
         READYTORUN_METHOD_SIG_None = 0x00,
         READYTORUN_METHOD_SIG_UnboxingStub = 0x01,
@@ -52,6 +57,7 @@ namespace Internal.ReadyToRunConstants
         READYTORUN_METHOD_SIG_Constrained = 0x20,
         READYTORUN_METHOD_SIG_OwnerType = 0x40,
         READYTORUN_METHOD_SIG_UpdateContext = 0x80,
+        READYTORUN_METHOD_SIG_AsyncVariant = 0x100,
     }
 
     [Flags]
@@ -119,6 +125,9 @@ namespace Internal.ReadyToRunConstants
         DispatchStubAddrSlot = 5,
         FieldDescSlot = 6,
         DeclaringTypeHandleSlot = 7,
+        // Only used by ReadyToRun signatures (ReadyToRunFixupKind.DeclaringTypeHandle). The signature encodes a
+        // method and the slot is populated with the type which declares that method.
+        DeclaringTypeHandleFromMethodSlot = 8,
     }
 
     public enum ReadyToRunFixupKind
@@ -140,7 +149,7 @@ namespace Internal.ReadyToRunConstants
         VirtualEntry = 0x16,                // For invoking a virtual method
         VirtualEntry_DefToken = 0x17,       // Smaller version of VirtualEntry - method is def token
         VirtualEntry_RefToken = 0x18,       // Smaller version of VirtualEntry - method is ref token
-        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot
+        VirtualEntry_Slot = 0x19,           // Smaller version of VirtualEntry - type & slot - OBSOLETE, not currently used, and hasn't ever been used in R2R codegen since crossgen2 was introduced, and may not have ever been used.
 
         Helper = 0x1A,                      // Helper
         StringHandle = 0x1B,                // String handle
@@ -169,7 +178,7 @@ namespace Internal.ReadyToRunConstants
         Check_FieldOffset = 0x2B,
 
         DelegateCtor = 0x2C,                // optimized delegate ctor
-        DeclaringTypeHandle = 0x2D,
+        DeclaringTypeHandle = 0x2D,         // Type which declares the method described by the (method) signature
 
         IndirectPInvokeTarget = 0x2E,       // Target (indirect) of an inlined pinvoke
         PInvokeTarget = 0x2F,               // Target of an inlined pinvoke
@@ -184,6 +193,13 @@ namespace Internal.ReadyToRunConstants
 
         Check_IL_Body              = 0x35, /* Check to see if an IL method is defined the same at runtime as at compile time. A failed match will cause code not to be used. */
         Verify_IL_Body             = 0x36, /* Verify an IL body is defined the same at compile time and runtime. A failed match will cause a hard runtime failure. */
+
+        ContinuationLayout = 0x37, /* Layout of an async method continuation type */
+        ResumptionStubEntryPoint = 0x38, /* Entry point of an async method resumption stub */
+
+        InjectStringThunks = 0x39, /* Inject pregenerated string-to-code thunk mappings into the global lookup table */
+
+        StoreMultiCallableAddrOfCode = 0x3A, /* Store a method's MultiCallableAddrOfCode into a location in the R2R image (processed at method load time; used on WebAssembly) */
 
         ModuleOverride = 0x80,
         // followed by sig-encoded UInt with assemblyref index into either the assemblyref
@@ -228,12 +244,18 @@ namespace Internal.ReadyToRunConstants
         FailFast                    = 0x24,
         ThrowNullRef                = 0x25,
         ThrowDivZero                = 0x26,
+        ThrowExact                  = 0x27,
+        ThrowArgument               = 0x28,
+        ThrowArgumentOutOfRange     = 0x29,
+        ThrowPlatformNotSupported   = 0x2A,
+        ThrowNotImplemented         = 0x2B,
 
         // Write barriers
         WriteBarrier                = 0x30,
         CheckedWriteBarrier         = 0x31,
-        ByRefWriteBarrier           = 0x32,
+        ByRefWriteBarrier           = 0x32, // No longer supported as of READYTORUN_MAJOR_VERSION 19.0
         BulkWriteBarrier            = 0x33,
+        BulkWriteBarrierSmall       = 0x34,
 
         // Array helpers
         Stelem_Ref                  = 0x38,
@@ -250,6 +272,7 @@ namespace Internal.ReadyToRunConstants
         GCPoll                      = 0x44,
         ReversePInvokeEnter         = 0x45,
         ReversePInvokeExit          = 0x46,
+        ResumeAfterCatch            = 0x47,
 
         // Get string handle lazily
         GetString = 0x50,
@@ -304,14 +327,16 @@ namespace Internal.ReadyToRunConstants
         UMod                        = 0xCF,
 
         // Floating point conversions
-        Dbl2Int                     = 0xD0,
+        Dbl2Int                     = 0xD0, // Unused since READYTORUN_MAJOR_VERSION 15.0
         Dbl2IntOvf                  = 0xD1,
         Dbl2Lng                     = 0xD2,
         Dbl2LngOvf                  = 0xD3,
-        Dbl2UInt                    = 0xD4,
+        Dbl2UInt                    = 0xD4, // Unused since READYTORUN_MAJOR_VERSION 15.0
         Dbl2UIntOvf                 = 0xD5,
         Dbl2ULng                    = 0xD6,
         Dbl2ULngOvf                 = 0xD7,
+        Lng2Flt                     = 0xD8,
+        ULng2Flt                    = 0xD9,
 
         // Floating point ops
         DblRem                      = 0xE0,
@@ -348,6 +373,14 @@ namespace Internal.ReadyToRunConstants
 
         GetCurrentManagedThreadId   = 0x112,
 
+        AllocContinuation              = 0x113,
+        AllocContinuationClass         = 0x114,
+        AllocContinuationMethod        = 0x115,
+
+        InitClass                   = 0x116,
+        InitInstClass               = 0x117,
+        R2RToInterpreter            = 0x118,
+
         // **********************************************************************************************
         //
         // These are not actually part of the R2R file format. We have them here because it's convenient.
@@ -356,11 +389,6 @@ namespace Internal.ReadyToRunConstants
 
         // Marker to be used in asserts.
         FirstFakeHelper,
-
-        ThrowArgumentOutOfRange,
-        ThrowArgument,
-        ThrowPlatformNotSupported,
-        ThrowNotImplemented,
 
         DebugBreak,
 

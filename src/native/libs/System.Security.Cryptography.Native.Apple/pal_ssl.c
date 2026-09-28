@@ -230,12 +230,12 @@ int32_t AppleCryptoNative_SSLSetALPNProtocols(SSLContextRef sslContext,
     return *pOSStatus == noErr;
 }
 
-int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, void* protocol, int length, int32_t* pOSStatus)
+int32_t AppleCryptoNative_SSLSetALPNProtocol(SSLContextRef sslContext, const void* protocol, int length, int32_t* pOSStatus)
 {
     if (sslContext == NULL || protocol == NULL || length <= 0 || pOSStatus == NULL)
         return -1;
 
-    CFStringRef value = CFStringCreateWithBytes(NULL, protocol, length, kCFStringEncodingASCII, 0);
+    CFStringRef value = CFStringCreateWithBytes(NULL, (const UInt8*)protocol, length, kCFStringEncodingASCII, 0);
     if (!value)
     {
         *pOSStatus = errSecMemoryError;
@@ -294,7 +294,7 @@ int32_t AppleCryptoNative_SslGetAlpnSelected(SSLContextRef sslContext, CFDataRef
     if (osStatus == noErr && protocols != NULL && CFArrayGetCount(protocols) > 0)
     {
         *protocol =
-            CFStringCreateExternalRepresentation(NULL, CFArrayGetValueAtIndex(protocols, 0), kCFStringEncodingASCII, 0);
+            CFStringCreateExternalRepresentation(NULL, (CFStringRef)CFArrayGetValueAtIndex(protocols, 0), kCFStringEncodingASCII, 0);
     }
 
     if (protocols)
@@ -336,6 +336,89 @@ PAL_TlsHandshakeState AppleCryptoNative_SslHandshake(SSLContextRef sslContext)
         default:
             return osStatus;
     }
+}
+
+static OSStatus PalTlsAlertMessageToSslStatus(PAL_TlsAlertMessage alertMessage)
+{
+    switch (alertMessage)
+    {
+        case PAL_TlsAlertMessage_UnexpectedMessage:
+            return errSSLUnexpectedMessage;
+        case PAL_TlsAlertMessage_BadRecordMac:
+            return errSSLBadRecordMac;
+        case PAL_TlsAlertMessage_DecryptionFailed:
+            return errSSLDecryptionFail;
+        case PAL_TlsAlertMessage_RecordOverflow:
+            return errSSLRecordOverflow;
+        case PAL_TlsAlertMessage_DecompressionFail:
+            return errSSLDecompressFail;
+        case PAL_TlsAlertMessage_HandshakeFailure:
+            return errSSLHandshakeFail;
+        case PAL_TlsAlertMessage_BadCertificate:
+            return errSSLBadCert;
+        case PAL_TlsAlertMessage_UnsupportedCert:
+            return errSSLBadCert;
+        case PAL_TlsAlertMessage_CertificateRevoked:
+            return errSSLXCertChainInvalid;
+        case PAL_TlsAlertMessage_CertificateExpired:
+            return errSSLCertExpired;
+        case PAL_TlsAlertMessage_CertificateUnknown:
+            return errSSLXCertChainInvalid;
+        case PAL_TlsAlertMessage_IllegalParameter:
+            return errSSLIllegalParam;
+        case PAL_TlsAlertMessage_UnknownCA:
+            return errSSLUnknownRootCert;
+        case PAL_TlsAlertMessage_AccessDenied:
+            return errSSLPeerAccessDenied;
+        case PAL_TlsAlertMessage_DecodeError:
+            return errSSLDecodeError;
+        case PAL_TlsAlertMessage_DecryptError:
+            return errSSLPeerDecryptError;
+        case PAL_TlsAlertMessage_ExportRestriction:
+            return errSSLPeerExportRestriction;
+        case PAL_TlsAlertMessage_ProtocolVersion:
+            return errSSLPeerProtocolVersion;
+        case PAL_TlsAlertMessage_InsufficientSecurity:
+            return errSSLPeerInsufficientSecurity;
+        case PAL_TlsAlertMessage_InternalError:
+            return errSSLPeerInternalError;
+        case PAL_TlsAlertMessage_InappropriateFallback:
+            return errSSLInappropriateFallback;
+        case PAL_TlsAlertMessage_UserCanceled:
+            return errSSLPeerUserCancelled;
+        case PAL_TlsAlertMessage_NoRenegotiation:
+            return errSSLPeerNoRenegotiation;
+        case PAL_TlsAlertMessage_MissingExtension:
+            return errSSLMissingExtension;
+        case PAL_TlsAlertMessage_UnsupportedExtension:
+            return errSSLUnsupportedExtension;
+        case PAL_TlsAlertMessage_UnrecognizedName:
+            return errSSLUnrecognizedName;
+        case PAL_TlsAlertMessage_BadCertificateStatusResponse:
+            return errSSLBadCertificateStatusResponse;
+        case PAL_TlsAlertMessage_UnknownPskIdentity:
+            return errSSLUnknownPSKIdentity;
+        case PAL_TlsAlertMessage_CertificateRequired:
+            return errSSLCertificateRequired;
+        default:
+            return errSSLPeerInternalError;
+    }
+}
+
+int32_t AppleCryptoNative_SslSetError(SSLContextRef sslContext, PAL_TlsAlertMessage alertMessage, int32_t* pOSStatus)
+{
+    if (pOSStatus != NULL)
+        *pOSStatus = noErr;
+
+    if (sslContext == NULL || pOSStatus == NULL)
+        return -1;
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    *pOSStatus = SSLSetError(sslContext, PalTlsAlertMessageToSslStatus(alertMessage));
+#pragma clang diagnostic pop
+
+    return *pOSStatus == noErr;
 }
 
 static PAL_TlsIo OSStatusToPAL_TlsIo(OSStatus status)
@@ -414,181 +497,6 @@ PAL_TlsIo AppleCryptoNative_SslRead(SSLContextRef sslContext, uint8_t* buf, uint
     }
 
     return OSStatusToPAL_TlsIo(status);
-}
-
-int32_t AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHostname, CFDateRef notBefore, int32_t* pOSStatus)
-{
-    if (pOSStatus != NULL)
-        *pOSStatus = noErr;
-
-    if (sslContext == NULL || notBefore == NULL || pOSStatus == NULL)
-        return -1;
-
-    if (cfHostname == NULL)
-        return -2;
-
-    SecPolicyRef sslPolicy = SecPolicyCreateSSL(true, cfHostname);
-
-    if (sslPolicy == NULL)
-        return -3;
-
-    CFMutableArrayRef certs = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-
-    if (certs == NULL)
-        return -4;
-
-    SecTrustRef existingTrust = NULL;
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    OSStatus osStatus = SSLCopyPeerTrust(sslContext, &existingTrust);
-#pragma clang diagnostic pop
-
-    if (osStatus != noErr)
-    {
-        CFRelease(certs);
-        *pOSStatus = osStatus;
-        return -5;
-    }
-
-    CFMutableArrayRef anchors = CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks);
-
-    if (anchors == NULL)
-    {
-        CFRelease(certs);
-        CFRelease(existingTrust);
-        return -6;
-    }
-
-    CFIndex certificateCount = SecTrustGetCertificateCount(existingTrust);
-
-    for (CFIndex i = 0; i < certificateCount; i++)
-    {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        SecCertificateRef item = SecTrustGetCertificateAtIndex(existingTrust, i);
-#pragma clang diagnostic pop
-
-        CFArrayAppendValue(certs, item);
-
-        // Copy the EE cert into the anchors set, this will make the chain part
-        // always return true.
-        if (i == 0)
-        {
-            CFArrayAppendValue(anchors, item);
-        }
-    }
-
-    SecTrustRef trust = NULL;
-    osStatus = SecTrustCreateWithCertificates(certs, sslPolicy, &trust);
-    int32_t ret = INT_MIN;
-
-    if (osStatus == noErr)
-    {
-        osStatus = SecTrustSetAnchorCertificates(trust, anchors);
-    }
-
-    if (osStatus == noErr)
-    {
-        osStatus = SecTrustSetVerifyDate(trust, notBefore);
-    }
-
-    if (osStatus == noErr)
-    {
-        SecTrustResultType trustResult;
-        memset(&trustResult, 0, sizeof(SecTrustResultType));
-
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        osStatus = SecTrustEvaluate(trust, &trustResult);
-
-        if (trustResult == kSecTrustResultRecoverableTrustFailure && osStatus == noErr && certificateCount > 1)
-        {
-            // If we get recoverable failure, let's try it again with full anchor list.
-            // We already stored just the first certificate into anchors; now we store the rest.
-            for (CFIndex i = 1; i < certificateCount; i++)
-            {
-                CFArrayAppendValue(anchors, SecTrustGetCertificateAtIndex(existingTrust, i));
-            }
-
-            osStatus = SecTrustSetAnchorCertificates(trust, anchors);
-            if (osStatus == noErr)
-            {
-                memset(&trustResult, 0, sizeof(SecTrustResultType));
-                osStatus = SecTrustEvaluate(trust, &trustResult);
-            }
-        }
-#pragma clang diagnostic pop
-
-        if (osStatus == noErr && trustResult != kSecTrustResultUnspecified && trustResult != kSecTrustResultProceed)
-        {
-            // If evaluation succeeded but result is not trusted try to get details.
-            CFDictionaryRef detailsAndStuff = SecTrustCopyResult(trust);
-
-            if (detailsAndStuff != NULL)
-            {
-                CFArrayRef details = CFDictionaryGetValue(detailsAndStuff, CFSTR("TrustResultDetails"));
-
-                if (details != NULL && CFArrayGetCount(details) > 0)
-                {
-                    CFArrayRef statusCodes = CFDictionaryGetValue(CFArrayGetValueAtIndex(details,0), CFSTR("StatusCodes"));
-
-                    if (statusCodes != NULL)
-                    {
-                        OSStatus status = 0;
-                        // look for first failure to keep it simple. Normally, there will be exactly one.
-                        for (int i = 0; i < CFArrayGetCount(statusCodes); i++)
-                        {
-                            CFNumberGetValue(CFArrayGetValueAtIndex(statusCodes, i), kCFNumberSInt32Type, &status);
-                            if (status != noErr)
-                            {
-                                *pOSStatus = status;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                CFRelease(detailsAndStuff);
-            }
-        }
-
-        if (osStatus != noErr)
-        {
-            ret = -7;
-            *pOSStatus = osStatus;
-        }
-        else if (trustResult == kSecTrustResultUnspecified || trustResult == kSecTrustResultProceed)
-        {
-            ret = 1;
-        }
-        else if (trustResult == kSecTrustResultDeny || trustResult == kSecTrustResultRecoverableTrustFailure)
-        {
-            ret = 0;
-        }
-        else
-        {
-            ret = -8;
-        }
-    }
-    else
-    {
-        *pOSStatus = osStatus;
-    }
-
-    if (trust != NULL)
-        CFRelease(trust);
-
-    if (certs != NULL)
-        CFRelease(certs);
-
-    if (anchors != NULL)
-        CFRelease(anchors);
-
-    if (existingTrust != NULL)
-        CFRelease(existingTrust);
-
-    CFRelease(sslPolicy);
-    return ret;
 }
 
 int32_t AppleCryptoNative_SslShutdown(SSLContextRef sslContext)

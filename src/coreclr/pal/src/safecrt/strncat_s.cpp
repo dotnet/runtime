@@ -4,12 +4,9 @@
 /***
 *strncat_s.c - append n chars of string to new string
 *
-
-*
 *Purpose:
 *   defines strncat_s() - appends n characters of string onto
 *   end of other string
-*
 *******************************************************************************/
 
 #include <string.h>
@@ -19,7 +16,6 @@
 
 #include "mbusafecrt_internal.h"
 
-#define _FUNC_PROLOGUE
 #define _FUNC_NAME strncat_s
 #define _CHAR char
 #define _DEST _Dst

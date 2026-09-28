@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.Arm;
-using System.Runtime.Intrinsics.X86;
 
 namespace System.Numerics.Tensors
 {
@@ -25,8 +22,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static T MaxNumber<T>(ReadOnlySpan<T> x)
-            where T : INumber<T> =>
-            MinMaxCore<T, MaxNumberOperator<T>>(x);
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryMinMaxHalfAsInt16<T, MaxNumberOperator<float>>(x, out T result))
+            {
+                return result;
+            }
+
+            return MinMaxCore<T, MaxNumberOperator<T>>(x);
+        }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -50,8 +54,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxNumber<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxNumberOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanSpanIntoSpan<T, MaxNumberOperator<T>>(x, y, destination);
+        }
 
         /// <summary>Computes the element-wise maximum of the numbers in the specified tensors.</summary>
         /// <param name="x">The first tensor, represented as a span.</param>
@@ -73,8 +84,15 @@ namespace System.Numerics.Tensors
         /// </para>
         /// </remarks>
         public static void MaxNumber<T>(ReadOnlySpan<T> x, T y, Span<T> destination)
-            where T : INumber<T> =>
+            where T : INumber<T>
+        {
+            if (typeof(T) == typeof(Half) && TryAggregateInvokeHalfAsInt16<T, MaxNumberOperator<float>>(x, y, destination))
+            {
+                return;
+            }
+
             InvokeSpanScalarIntoSpan<T, MaxNumberOperator<T>>(x, y, destination);
+        }
 
         /// <summary>T.MaxNumber(x, y)</summary>
         internal readonly struct MaxNumberOperator<T> : IAggregationOperator<T> where T : INumber<T>
@@ -86,58 +104,19 @@ namespace System.Numerics.Tensors
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<T> Invoke(Vector128<T> x, Vector128<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector128.MaxNumber(x, y);
-#else
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector128.ConditionalSelect(
-                        Vector128.LessThan(y, x) | IsNaN(y) | (Vector128.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-
-                return Vector128.Max(x, y);
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector256<T> Invoke(Vector256<T> x, Vector256<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector256.MaxNumber(x, y);
-#else
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector256.ConditionalSelect(
-                        Vector256.LessThan(y, x) | IsNaN(y) | (Vector256.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-
-                return Vector256.Max(x, y);
-#endif
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<T> Invoke(Vector512<T> x, Vector512<T> y)
             {
-#if NET9_0_OR_GREATER
                 return Vector512.MaxNumber(x, y);
-#else
-                if ((typeof(T) == typeof(float)) || (typeof(T) == typeof(double)))
-                {
-                    return Vector512.ConditionalSelect(
-                        Vector512.LessThan(y, x) | IsNaN(y) | (Vector512.Equals(x, y) & IsNegative(y)),
-                        x,
-                        y
-                    );
-                }
-
-                return Vector512.Max(x, y);
-#endif
             }
 
             public static T Invoke(Vector128<T> x) => HorizontalAggregate<T, MaxNumberOperator<T>>(x);

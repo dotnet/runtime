@@ -69,6 +69,9 @@ extern void ep_rt_mono_provider_config_init (EventPipeProviderConfiguration *pro
 extern void ep_rt_mono_init_providers_and_events (void);
 extern bool ep_rt_mono_providers_validate_all_disabled (void);
 extern bool ep_rt_mono_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sampling_thread, EventPipeEvent *sampling_event);
+extern void ep_rt_mono_sample_profiler_enabled (EventPipeEvent *sampling_event);
+extern void ep_rt_mono_sample_profiler_session_enabled (void);
+extern void ep_rt_mono_sample_profiler_disabled (void);
 extern void ep_rt_mono_execute_rundown (dn_vector_ptr_t *execution_checkpoints);
 extern int64_t ep_rt_mono_perf_counter_query (void);
 extern int64_t ep_rt_mono_perf_frequency_query (void);
@@ -354,6 +357,14 @@ ep_rt_atomic_dec_int64_t (volatile int64_t *value)
 
 static
 inline
+int64_t
+ep_rt_atomic_compare_exchange_int64_t (volatile int64_t *target, int64_t expected, int64_t value)
+{
+	return (int64_t)(mono_atomic_cas_i64 ((volatile gint64 *)(target), (gint64)(value), (gint64)(expected)));
+}
+
+static
+inline
 size_t
 ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, size_t value)
 {
@@ -583,6 +594,21 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+	uint32_t buffering_mode = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeBufferingMode");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeBufferingMode");
+	if (value)
+		buffering_mode = strtoul (value, NULL, 10);
+	g_free (value);
+	return buffering_mode;
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {
@@ -626,6 +652,25 @@ ep_rt_config_value_get_enable_stackwalk (void)
 	return value_uint32_t != 0;
 }
 
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	uint32_t value_uint32_t = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeThreadSamplingRate");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeThreadSamplingRate");
+	if (value) {
+		gchar *endptr = NULL;
+		guint64 parsed = strtoull (value, &endptr, 10);
+		if (endptr != value && *endptr == '\0' && value [0] != '-' && parsed <= G_MAXUINT32)
+			value_uint32_t = (uint32_t)parsed;
+	}
+	g_free (value);
+	return value_uint32_t;
+}
+
 /*
  * EventPipeSampleProfiler.
  */
@@ -638,10 +683,41 @@ ep_rt_sample_profiler_write_sampling_event_for_threads (ep_rt_thread_handle_t sa
 }
 
 static
+inline
+void
+ep_rt_sample_profiler_enabled (EventPipeEvent *sampling_event)
+{
+	ep_rt_mono_sample_profiler_enabled (sampling_event);
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_session_enabled (void)
+{
+	ep_rt_mono_sample_profiler_session_enabled ();
+}
+
+static
+inline
+void
+ep_rt_sample_profiler_disabled (void)
+{
+	ep_rt_mono_sample_profiler_disabled ();
+}
+
+static
 void
 ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
 {
 	;
+}
+
+static
+inline
+void
+ep_rt_session_stopping (void)
+{
 }
 
 /*
@@ -667,6 +743,8 @@ ep_rt_byte_array_free (uint8_t *ptr)
 /*
  * Event.
  */
+
+#ifndef PERFTRACING_DISABLE_THREADS
 
 static
 inline
@@ -736,6 +814,70 @@ ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
 	else
 		return true;
 }
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static
+inline
+void
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial)
+{
+	EP_ASSERT (wait_event != NULL);
+	wait_event->event = INVALID_HANDLE_VALUE;
+}
+
+static
+inline
+void
+ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
+{
+	wait_event->event = NULL;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
+{
+	return true;
+}
+
+static
+inline
+int32_t
+ep_rt_wait_event_wait (
+	ep_rt_wait_event_handle_t *wait_event,
+	uint32_t timeout,
+	bool alertable)
+{
+	EP_ASSERT (wait_event != NULL && wait_event->event == INVALID_HANDLE_VALUE);
+	return (int32_t)0;
+}
+
+static
+inline
+EventPipeWaitHandle
+ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
+{
+	EP_ASSERT (wait_event != NULL);
+	return (EventPipeWaitHandle)wait_event->event;
+}
+
+static
+inline
+bool
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
+	if (wait_event == NULL || wait_event->event == NULL || wait_event->event != INVALID_HANDLE_VALUE)
+		return false;
+	else
+		return true;
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
 
 /*
  * Misc.
@@ -830,16 +972,41 @@ typedef struct _rt_mono_thread_params_internal_t {
 #undef EP_RT_DEFINE_THREAD_FUNC
 #define EP_RT_DEFINE_THREAD_FUNC(name) static mono_thread_start_return_t WINAPI name (gpointer data)
 
+#ifndef PERFTRACING_DISABLE_THREADS
 EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
 
-	ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_params->thread_params.thread_type);
+	const EventPipeThreadType thread_type = thread_params->thread_params.thread_type;
+
+	if (thread_type == EP_THREAD_TYPE_SERVER) {
+		// The diagnostics server thread dispatches managed IPC command callbacks, so it takes a full managed attach.
+		ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_type);
+	} else if (thread_type == EP_THREAD_TYPE_SESSION) {
+		// The session drain thread runs only the native drain loop; it never runs managed code (managed provider
+		// callbacks auto-attach through the native->managed wrapper, and no managed provider can be registered
+		// before the runtime finishes starting up). Attach it at the thread-info level only - a MonoThreadInfo is
+		// all the drain loop's cooperative-GC primitives (sleep/wait/lock) need. A full managed attach's teardown
+		// runs mono_thread_internal_detach -> mono_gc_finalize_notify, which aborts when a session is started and
+		// stopped during diagnostic-port startup suspension, before the finalizer thread exists.
+		mono_thread_info_attach ();
+		// Flag it NO_GC (never scanned or suspended for GC) and NO_SAMPLE (never sampled by the profiler),
+		// matching mono_threads_attach_tools_thread: the drain loop touches no managed heap and must not be probed.
+		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	} else if (thread_type == EP_THREAD_TYPE_SAMPLING) {
+		// The sample profiler thread walks managed stacks, so it takes a full managed attach.
+		ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_type);
+	}
 
 	thread_params->thread_params.thread = ep_rt_thread_get_handle ();
 	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);
 
-	ep_rt_mono_thread_teardown ();
+	// Tear down symmetrically: only the SESSION thread's thread-info attach avoids the managed detach path
+	// (mono_thread_internal_detach -> mono_gc_finalize_notify).
+	if (thread_type == EP_THREAD_TYPE_SESSION)
+		mono_thread_info_detach ();
+	else
+		ep_rt_mono_thread_teardown ();
 
 	g_free (thread_params);
 
@@ -868,6 +1035,60 @@ ep_rt_thread_create (
 }
 
 static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+	EP_UNREACHABLE ("Not implemented on in multi threaded");
+	return false;
+}
+
+#else // PERFTRACING_DISABLE_THREADS
+
+static
+inline
+bool
+ep_rt_thread_create (
+	void *thread_func,
+	void *params,
+	EventPipeThreadType thread_type,
+	void *id)
+{
+	EP_UNREACHABLE ("Not implemented on in single threaded");
+	return false;
+}
+
+static
+bool
+ep_rt_queue_job (
+	void *job_func,
+	void *params)
+{
+#ifdef HOST_BROWSER
+	// in single-threaded, it will run the callback inline and re-schedule itself if necessary
+	// it's called from browser event loop
+	ds_job_cb cb = (ds_job_cb)job_func;
+
+	// invoke the callback inline for the first time
+	gsize done = cb (params);
+
+	// see if it's done or needs to be scheduled again
+	if (!done) {
+		// self schedule again
+		SystemJS_DiagnosticServerQueueJob (cb, params);
+	}
+
+	return true;
+#else
+	// not implemented
+	return false;
+#endif
+}
+
+#endif // PERFTRACING_DISABLE_THREADS
+
+static
 inline
 void
 ep_rt_set_server_name(void)
@@ -880,6 +1101,7 @@ inline
 void
 ep_rt_thread_sleep (uint64_t ns)
 {
+#ifndef PERFTRACING_DISABLE_THREADS
 	MONO_REQ_GC_UNSAFE_MODE;
 	if (ns == 0) {
 		mono_thread_info_yield ();
@@ -888,6 +1110,7 @@ ep_rt_thread_sleep (uint64_t ns)
 		g_usleep ((gulong)(ns / 1000));
 		MONO_EXIT_GC_SAFE;
 	}
+#endif // PERFTRACING_DISABLE_THREADS
 }
 
 static
@@ -1969,6 +2192,9 @@ extern void ep_rt_mono_runtime_provider_init (void);
 extern void ep_rt_mono_runtime_provider_fini (void);
 extern void ep_rt_mono_runtime_provider_thread_started_callback (MonoProfiler *prof, uintptr_t tid);
 extern void ep_rt_mono_runtime_provider_thread_stopped_callback (MonoProfiler *prof, uintptr_t tid);
+
+extern void ep_rt_mono_sampling_provider_component_init (void);
+extern void ep_rt_mono_sampling_provider_component_fini (void);
 
 extern void ep_rt_mono_profiler_provider_component_init (void);
 extern void ep_rt_mono_profiler_provider_init (void);

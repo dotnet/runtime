@@ -12,8 +12,6 @@ namespace System.IO
     // the resulting sequence of characters to be presented as a string.
     public class StringWriter : TextWriter
     {
-        private static UnicodeEncoding? s_encoding;
-
         private readonly StringBuilder _sb;
         private bool _isOpen;
 
@@ -57,7 +55,7 @@ namespace System.IO
         }
 
 
-        public override Encoding Encoding => s_encoding ??= new UnicodeEncoding(false, false);
+        public override Encoding Encoding => field ??= new UnicodeEncoding(false, false);
 
         // Returns the underlying StringBuilder. This is either the StringBuilder
         // that was passed to the constructor, or the StringBuilder that was

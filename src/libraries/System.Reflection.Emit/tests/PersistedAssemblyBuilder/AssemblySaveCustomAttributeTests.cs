@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public class AssemblySaveCustomAttributeTests
     {
         private List<CustomAttributeBuilder> _attributes = new List<CustomAttributeBuilder>
@@ -208,7 +208,7 @@ namespace System.Reflection.Emit.Tests
                     Type testType = moduleFromDisk.GetTypes()[0];
                     IList<CustomAttributeData> attributesFromDisk = testType.GetCustomAttributesData();
 
-                    Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes 
+                    Assert.Equal(typeAttributes.Count - 3, attributesFromDisk.Count); // 3 pseudo attributes
                     Assert.True((testType.Attributes & TypeAttributes.Serializable) != 0); // SerializableAttribute
                     Assert.True((testType.Attributes & TypeAttributes.SpecialName) != 0); // SpecialNameAttribute
                     Assert.True((testType.Attributes & TypeAttributes.ExplicitLayout) != 0); // StructLayoutAttribute
@@ -510,6 +510,42 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
+        [Fact]
+        public void NamedArgumentsOnlyEnumArrayCustomAttributeRoundTrips()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                PersistedAssemblyBuilder ab = AssemblySaveTools.PopulateAssemblyBuilder(new AssemblyName("NamedArgumentsAttributeAssembly"));
+                ModuleBuilder module = ab.DefineDynamicModule("Module");
+                TypeBuilder typeBuilder = module.DefineType("AttributedType", TypeAttributes.Public | TypeAttributes.Class);
+
+                ConstructorInfo ctor = typeof(NamedArgumentsOnlyAttribute).GetConstructor(Type.EmptyTypes);
+                PropertyInfo modesProperty = typeof(NamedArgumentsOnlyAttribute).GetProperty(nameof(NamedArgumentsOnlyAttribute.Modes));
+                PropertyInfo primaryModeProperty = typeof(NamedArgumentsOnlyAttribute).GetProperty(nameof(NamedArgumentsOnlyAttribute.PrimaryMode));
+                CustomAttributeBuilder attributeBuilder = new CustomAttributeBuilder(
+                    ctor,
+                    Array.Empty<object>(),
+                    new[] { modesProperty, primaryModeProperty },
+                    new object[] { new[] { AttributeEdgeMode.Second, AttributeEdgeMode.First }, AttributeEdgeMode.Second });
+
+                typeBuilder.SetCustomAttribute(attributeBuilder);
+                typeBuilder.CreateType();
+                ab.Save(file.Path);
+
+                using MetadataLoadContext mlc = new MetadataLoadContext(new CoreMetadataAssemblyResolver());
+                Type typeFromDisk = mlc.LoadFromAssemblyPath(file.Path).GetType("AttributedType");
+                CustomAttributeData attributeFromDisk = typeFromDisk.GetCustomAttributesData().Single(c => c.AttributeType.Name == nameof(NamedArgumentsOnlyAttribute));
+
+                CustomAttributeNamedArgument modesNamedArgument = attributeFromDisk.NamedArguments.Single(na => na.MemberName == nameof(NamedArgumentsOnlyAttribute.Modes));
+                IList<CustomAttributeTypedArgument> modes = (IList<CustomAttributeTypedArgument>)modesNamedArgument.TypedValue.Value;
+                Assert.Equal((int)AttributeEdgeMode.Second, (int)modes[0].Value);
+                Assert.Equal((int)AttributeEdgeMode.First, (int)modes[1].Value);
+
+                CustomAttributeNamedArgument primaryModeNamedArgument = attributeFromDisk.NamedArguments.Single(na => na.MemberName == nameof(NamedArgumentsOnlyAttribute.PrimaryMode));
+                Assert.Equal((int)AttributeEdgeMode.Second, (int)primaryModeNamedArgument.TypedValue.Value);
+            }
+        }
+
         private void AssertEnumAttributes(string fullName, object value, CustomAttributeData testAttribute)
         {
             Assert.Equal(fullName, testAttribute.AttributeType.FullName);
@@ -521,5 +557,17 @@ namespace System.Reflection.Emit.Tests
     {
         private bool _b;
         public BoolAttribute(bool myBool) { _b = myBool; }
+    }
+
+    public enum AttributeEdgeMode
+    {
+        First,
+        Second
+    }
+
+    public class NamedArgumentsOnlyAttribute : Attribute
+    {
+        public AttributeEdgeMode[] Modes { get; set; } = [];
+        public AttributeEdgeMode PrimaryMode { get; set; }
     }
 }

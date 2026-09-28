@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -11,6 +12,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Text.Json.Serialization.Tests;
 using System.Xml.Linq;
 using Json.Schema;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Sdk;
 
@@ -38,8 +40,10 @@ namespace System.Text.Json.Schema.Tests
             AssertValidJsonSchema(testData.Type, testData.ExpectedJsonSchema, schema);
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [MemberData(nameof(GetTestDataUsingAllValues))]
+        [RequiresUnreferencedCode("Uses reflection-based JsonSerializer.SerializeToNode(object, Type, options).")]
+        [RequiresDynamicCode("Uses reflection-based JsonSerializer.SerializeToNode(object, Type, options).")]
         public void TestTypes_SerializedValueMatchesGeneratedSchema(ITestData testData)
         {
             JsonSerializerOptions options = testData.SerializerOptions is { } opts
@@ -49,6 +53,84 @@ namespace System.Text.Json.Schema.Tests
             JsonNode schema = options.GetJsonSchemaAsNode(testData.Type, testData.Options);
             JsonNode? instance = JsonSerializer.SerializeToNode(testData.Value, testData.Type, options);
             AssertDocumentMatchesSchema(schema, instance);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UnionNumberHandling_StrictTypeAttributeOverridesWebDefaults(bool asCollectionElement)
+        {
+            JsonSerializerOptions options = new(JsonSerializerDefaults.Web)
+            {
+                TypeInfoResolver = Serializer.DefaultOptions.TypeInfoResolver,
+            };
+
+            Type type = asCollectionElement ? typeof(List<StrictIntOrStringUnion>) : typeof(StrictIntOrStringUnion);
+            JsonNode schema = Serializer.GetTypeInfo(type, options).GetJsonSchemaAsNode();
+            JsonNode unionSchema = asCollectionElement ? schema["items"]! : schema;
+
+            JsonTestHelper.AssertJsonEqual("""{"type":"integer"}""", unionSchema["anyOf"]![0]!.ToJsonString());
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTestHelper.GetUnionCaseNumberHandlingPrecedenceTestData), MemberType = typeof(JsonTestHelper))]
+        public void UnionNumberHandling_MetadataOverrides(
+            JsonNumberHandling globalHandling, JsonNumberHandling? unionHandling, JsonNumberHandling? caseHandling, JsonNumberHandling expectedHandling)
+        {
+            foreach ((Type unionType, Type numberType) in new[] { (typeof(IntOrBoolUnion), typeof(int)), (typeof(NullableIntUnion), typeof(int?)) })
+            {
+                JsonSerializerOptions options = Serializer.CreateOptions(
+                    configure: options => options.NumberHandling = globalHandling,
+                    modifier: typeInfo =>
+                    {
+                        if (typeInfo.Type == numberType)
+                        {
+                            typeInfo.NumberHandling = caseHandling;
+                        }
+                    });
+
+                JsonTypeInfo typeInfo = Serializer.GetTypeInfo(unionType, options, mutable: true);
+                typeInfo.NumberHandling = unionHandling;
+                JsonNode schema = typeInfo.GetJsonSchemaAsNode();
+                JsonNode numberSchema = numberType == typeof(int) ? schema["anyOf"]![0]! : schema;
+                JsonNode schemaType = numberSchema["type"]!;
+                IEnumerable<string?> actualTypes = schemaType is JsonArray types
+                    ? types.Select(type => (string?)type)
+                    : [(string?)schemaType];
+
+                List<string> expectedTypes = ["integer"];
+                if ((expectedHandling & (JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)) != 0)
+                {
+                    expectedTypes.Add("string");
+                }
+                if (numberType == typeof(int?))
+                {
+                    expectedTypes.Add("null");
+                }
+
+                Assert.Equal(expectedTypes.OrderBy(type => type, StringComparer.Ordinal), actualTypes.OrderBy(type => type, StringComparer.Ordinal));
+            }
+        }
+
+        [Theory]
+        [InlineData(JsonNumberHandling.AllowReadingFromString, JsonNumberHandling.Strict)]
+        [InlineData(JsonNumberHandling.Strict, JsonNumberHandling.AllowReadingFromString)]
+        public void UnionNumberHandling_NullableCasePreservesElementOverride(JsonNumberHandling globalHandling, JsonNumberHandling elementHandling)
+        {
+            JsonSerializerOptions options = Serializer.CreateOptions(
+                configure: options => options.NumberHandling = globalHandling,
+                modifier: typeInfo =>
+                {
+                    if (typeInfo.Type == typeof(int))
+                    {
+                        typeInfo.NumberHandling = elementHandling;
+                    }
+                });
+
+            bool allowsStrings = (elementHandling & JsonNumberHandling.AllowReadingFromString) != 0;
+            JsonNode schema = Serializer.GetTypeInfo<NullableIntUnion>(options).GetJsonSchemaAsNode();
+            JsonArray types = Assert.IsType<JsonArray>(schema["type"]);
+            Assert.Equal(allowsStrings, types.Any(type => (string?)type == "string"));
         }
 
         [Theory]
@@ -96,6 +178,32 @@ namespace System.Text.Json.Schema.Tests
         {
             JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(XElement));
             Assert.True(schema.ToJsonString().Length < 100_000);
+        }
+
+        [Fact]
+        public void TransformSchemaNode_PropertiesWithCustomConverters()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109868
+            List<(Type? ParentType, string? PropertyName, Type type)> visitedNodes = new();
+            JsonSchemaExporterOptions exporterOptions = new()
+            {
+                TransformSchemaNode = (ctx, schema) =>
+                {
+                    visitedNodes.Add((ctx.PropertyInfo?.DeclaringType, ctx.PropertyInfo?.Name, ctx.TypeInfo.Type));
+                    return schema;
+                }
+            };
+
+            List<(Type? ParentType, string? PropertyName, Type type)> expectedNodes =
+            [
+                (typeof(ClassWithPropertiesUsingCustomConverters), "Prop1", typeof(ClassWithPropertiesUsingCustomConverters.ClassWithCustomConverter1)),
+                (typeof(ClassWithPropertiesUsingCustomConverters), "Prop2", typeof(ClassWithPropertiesUsingCustomConverters.ClassWithCustomConverter2)),
+                (null, null, typeof(ClassWithPropertiesUsingCustomConverters)),
+            ];
+
+            Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(ClassWithPropertiesUsingCustomConverters), exporterOptions);
+
+            Assert.Equal(expectedNodes, visitedNodes);
         }
 
         [Fact]
@@ -189,6 +297,52 @@ namespace System.Text.Json.Schema.Tests
             Assert.Same(JsonSchemaExporterOptions.Default, JsonSchemaExporterOptions.Default);
         }
 
+        [ConditionalFact(typeof(JsonSerializer), nameof(JsonSerializer.IsReflectionEnabledByDefault))]
+        [RequiresUnreferencedCode("Uses private reflection to access System.Text.Json converter internals.")]
+        [RequiresDynamicCode("Uses private reflection to access System.Text.Json converter internals.")]
+        public void LegacySchemaExporter_CanAccessReflectedMembers()
+        {
+            // A number of libraries such as Microsoft.Extensions.AI and Semantic Kernel
+            // rely on a polyfilled version of JsonSchemaExporter for System.Text.Json v8
+            // that uses private reflection to access necessary metadata. This test validates
+            // that the necessary members are still present in newer implementations of STJ.
+
+            JsonStringEnumConverter converter = new(namingPolicy: JsonNamingPolicy.CamelCase, allowIntegerValues: false);
+            JsonSerializerOptions options = new(JsonSerializerOptions.Default) { Converters = { converter } };
+            JsonConverter nullableConverter = options.GetConverter(typeof(BindingFlags?));
+
+            Type nullableConverterType = nullableConverter.GetType();
+            Assert.True(nullableConverterType.IsGenericType);
+            Assert.StartsWith("System.Text.Json.Serialization.Converters.NullableConverter`1", nullableConverterType.FullName);
+
+            FieldInfo elementConverterField = nullableConverterType.GetField("_elementConverter", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(elementConverterField);
+            var enumConverter = (JsonConverter)elementConverterField.GetValue(nullableConverter);
+            Assert.NotNull(enumConverter);
+
+            Type enumConverterType = enumConverter.GetType();
+            Assert.True(enumConverterType.IsGenericType);
+            Assert.StartsWith("System.Text.Json.Serialization.Converters.EnumConverter`1", enumConverterType.FullName);
+
+            FieldInfo namingPolicyField = enumConverterType.GetField("_namingPolicy", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(namingPolicyField);
+            Assert.Same(JsonNamingPolicy.CamelCase, namingPolicyField.GetValue(enumConverter));
+
+            FieldInfo converterOptionsField = enumConverterType.GetField("_converterOptions", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(converterOptionsField);
+            Assert.Equal(1, (int)converterOptionsField.GetValue(enumConverter));
+
+            JsonPropertyInfo propertyInfo = PocoWithPropertyContext.Default.PocoWithProperty.Properties.Single();
+            PropertyInfo memberNameProperty = typeof(JsonPropertyInfo).GetProperty("MemberName", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(memberNameProperty);
+            Assert.Equal("Value", memberNameProperty.GetValue(propertyInfo));
+        }
+
+        record PocoWithProperty(int Value);
+
+        [JsonSerializable(typeof(PocoWithProperty))]
+        partial class PocoWithPropertyContext : JsonSerializerContext;
+
         protected void AssertValidJsonSchema(Type type, string expectedJsonSchema, JsonNode actualJsonSchema)
         {
             JsonNode? expectedJsonSchemaNode = JsonNode.Parse(expectedJsonSchema, documentOptions: new() { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
@@ -254,6 +408,6 @@ namespace System.Text.Json.Schema.Tests
         };
 
         private string FormatJson(JsonNode? node) =>
-            JsonSerializer.Serialize(node, _indentedOptions);
+            JsonSerializer.Serialize(node, _indentedOptions.GetTypeInfo<JsonNode>());
     }
 }

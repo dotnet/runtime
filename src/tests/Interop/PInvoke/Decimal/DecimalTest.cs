@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
+using TestLibrary;
 
 [SkipOnMono("needs triage")]
 [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
@@ -12,6 +13,7 @@ public class DecimalTest
     private const int StartingIntValue = 42;
     private const int NewIntValue = 18;
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     public static void RunDecimalTests()
     {
@@ -40,6 +42,7 @@ public class DecimalTest
         DecimalTestNative.PassThroughDecimalToCallback((decimal)NewIntValue, d => Assert.Equal((decimal)NewIntValue, d));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     public static void RunLPDecimalTests()
@@ -58,6 +61,7 @@ public class DecimalTest
         DecimalTestNative.PassThroughLPDecimalToCallback((decimal)NewIntValue, d => Assert.Equal((decimal)NewIntValue, d));
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(Utilities), nameof(Utilities.IsNativeAot))]
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
     [ActiveIssue("https://github.com/dotnet/runtimelab/issues/175", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]

@@ -64,7 +64,7 @@ namespace System.Text.Json.Nodes
                 return CreateFromElement(ref element, options);
             }
 
-            var jsonTypeInfo = (JsonTypeInfo<T>)JsonSerializerOptions.Default.GetTypeInfo(typeof(T));
+            var jsonTypeInfo = JsonSerializerOptions.Default.GetTypeInfo<T>();
             return CreateFromTypeInfo(value, jsonTypeInfo, options);
         }
 
@@ -81,10 +81,7 @@ namespace System.Text.Json.Nodes
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         public static JsonValue? Create<T>(T? value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
         {
-            if (jsonTypeInfo is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
-            }
+            ArgumentNullException.ThrowIfNull(jsonTypeInfo);
 
             if (value is null)
             {
@@ -143,7 +140,7 @@ namespace System.Text.Json.Nodes
                 {
                     node.WriteTo(writer);
                     writer.Flush();
-                    Utf8JsonReader reader = new(output.WrittenMemory.Span);
+                    Utf8JsonReader reader = new(output.WrittenSpan);
                     backingDocument = JsonDocument.ParseValue(ref reader);
                     return backingDocument.RootElement;
                 }
@@ -156,7 +153,7 @@ namespace System.Text.Json.Nodes
 
         internal sealed override void GetPath(ref ValueStringBuilder path, JsonNode? child)
         {
-            Debug.Assert(child == null);
+            Debug.Assert(child is null);
 
             Parent?.GetPath(ref path, this);
         }
@@ -164,7 +161,7 @@ namespace System.Text.Json.Nodes
         internal static JsonValue CreateFromTypeInfo<T>(T value, JsonTypeInfo<T> jsonTypeInfo, JsonNodeOptions? options = null)
         {
             Debug.Assert(jsonTypeInfo.IsConfigured);
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (JsonValue<T>.TypeIsSupportedPrimitive &&
                 jsonTypeInfo is { EffectiveConverter.IsInternalConverter: true } &&

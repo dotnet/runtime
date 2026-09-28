@@ -7,15 +7,6 @@
 #include "asmconstants.h"
 #include "virtualcallstub.h"
 
-PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_DISPATCHER_CONTEXT * pDispatcherContext)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    UINT_PTR stackSlot = pDispatcherContext->EstablisherFrame + REDIRECTSTUB_SP_OFFSET_CONTEXT;
-    PTR_PTR_CONTEXT ppContext = dac_cast<PTR_PTR_CONTEXT>((TADDR)stackSlot);
-    return *ppContext;
-}
-
 PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -26,32 +17,6 @@ PTR_CONTEXT GetCONTEXTFromRedirectedStubStackFrame(T_CONTEXT * pContext)
 }
 
 #if !defined(DACCESS_COMPILE)
-
-// The next two functions help retrieve data kept relative to FaultingExceptionFrame that is setup
-// for handling async exceptions (e.g. AV, NullRef, ThreadAbort, etc).
-//
-// FEF (and related data) is available relative to R4 - the thing to be kept in mind is that the
-// DispatcherContext->ContextRecord:
-//
-// 1) represents the caller context in the first pass.
-// 2) represents the current context in the second pass.
-//
-// Since R4 is a non-volatile register, this works for us since we setup the value of R4
-// in the redirection helpers (e.g. RedirectForThreadAbort) but do not
-// change it in their respective callee functions (e.g. RedirectForThreadAbort2)
-// that have the personality routines associated with them (which perform the collided unwind and also
-// invoke the two functions below).
-//
-// Thus, when our personality routine gets called in either passes, DC->ContextRecord->R4 will
-// have the same value.
-
-// Returns the pointer to the FEF
-FaultingExceptionFrame *GetFrameFromRedirectedStubStackFrame (T_DISPATCHER_CONTEXT *pDispatcherContext)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return (FaultingExceptionFrame*)((TADDR)pDispatcherContext->ContextRecord->R4);
-}
 
 // Returns TRUE if caller should resume execution.
 BOOL
@@ -74,6 +39,7 @@ AdjustContextForVirtualStub(
     TADDR pInstr = PCODEToPINSTR(f_IP);
 
     StubCodeBlockKind sk = RangeSectionStubManager::GetStubKind(f_IP);
+    size_t pushedRegistersSize = 0;
 
     if (sk == STUB_CODE_BLOCK_VSD_DISPATCH_STUB)
     {
@@ -82,6 +48,8 @@ AdjustContextForVirtualStub(
             _ASSERTE(!"AV in DispatchStub at unknown instruction");
             return FALSE;
         }
+
+        pushedRegistersSize = 2 * sizeof(TADDR); // push {r4,r5}
     }
     else
     if (sk == STUB_CODE_BLOCK_VSD_RESOLVE_STUB)
@@ -91,11 +59,15 @@ AdjustContextForVirtualStub(
             _ASSERTE(!"AV in ResolveStub at unknown instruction");
             return FALSE;
         }
+
+        pushedRegistersSize = 3 * sizeof(TADDR); // push {r4,r5,r6}
     }
     else
     {
         return FALSE;
     }
+
+    SetSP(pContext, dac_cast<PCODE>(dac_cast<PTR_BYTE>(GetSP(pContext)) + pushedRegistersSize));
 
     PCODE callsite = GetAdjustedCallAddress(GetLR(pContext));
 
@@ -109,4 +81,3 @@ AdjustContextForVirtualStub(
     return TRUE;
 }
 #endif // !DACCESS_COMPILE
-
