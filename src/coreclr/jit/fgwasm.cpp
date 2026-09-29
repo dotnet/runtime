@@ -2026,7 +2026,18 @@ PhaseStatus Compiler::fgWasmControlFlow()
     // Verify that an adjacent forward edge that cannot fall through, because a Try or
     // ExnRefWrapper interval ends at its target (see BasicBlock::CanRemoveJumpToTarget),
     // has a plain Block interval enclosing the source and ending at the target, so the
-    // explicit branch codegen emits has a label to bind to.
+    // explicit branch codegen emits has a label to bind to. For example, a callfinally
+    // whose continuation follows the end of a try_table:
+    //
+    //   block                ;; Block interval ending at the continuation
+    //     try_table ...
+    //       ...
+    //       call_indirect    ;; call the finally
+    //       br 1             ;; branch to the continuation
+    //     end                ;; end of try_table
+    //     unreachable        ;; fall-through from the try_table would trap here
+    //   end
+    //   ...                  ;; continuation
     //
     for (unsigned cursor = 0; cursor < numBlocks; cursor++)
     {
