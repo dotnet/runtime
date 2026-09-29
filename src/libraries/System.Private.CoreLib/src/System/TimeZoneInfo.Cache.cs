@@ -496,6 +496,31 @@ namespace System
         }
 
         /// <summary>
+        /// Gets the standard (non-daylight) UTC offset ticks that apply to the specified local time.
+        /// This is the zone's base UTC offset combined with the applicable rule's <see cref="AdjustmentRule.BaseUtcOffsetDelta"/>,
+        /// and is used to convert an invalid (DST gap) local time to UTC so that zones which changed their
+        /// standard offset over time (a non-zero BaseUtcOffsetDelta) are handled correctly.
+        /// </summary>
+        /// <param name="localDateTime">The local time that falls within a daylight saving gap.</param>
+        /// <returns>The standard UTC offset ticks to subtract from the local time.</returns>
+        private long GetStandardUtcOffsetTicks(DateTime localDateTime)
+        {
+            AdjustmentRule[]? rules = _adjustmentRules;
+            if (rules is null || rules.Length == 0)
+            {
+                return _baseUtcOffset.Ticks;
+            }
+
+            int ruleIndex = FindRuleForYear(localDateTime.Year);
+            if (ruleIndex < 0)
+            {
+                return _baseUtcOffset.Ticks;
+            }
+
+            return GetTransitionUtcOffsetTicks(rules[ruleIndex], includeDaylightDelta: false);
+        }
+
+        /// <summary>
         /// Grows the given pool array to accommodate the required capacity.
         /// </summary>
         /// <typeparam name="T">The type of elements in the array.</typeparam>

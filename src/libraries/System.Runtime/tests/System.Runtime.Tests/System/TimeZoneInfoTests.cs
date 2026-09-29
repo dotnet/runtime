@@ -3322,23 +3322,34 @@ namespace System.Tests
             Assert.Equal(expectedIsInvalid, timeZone.IsInvalidTime(testTime));
         }
 
-        public static TheoryData<string, DateTime> InvalidLocalTimeToUniversalTimeData => new()
+        public static TheoryData<string, DateTime, DateTime> InvalidLocalTimeToUniversalTimeData => new()
         {
             // Spring-forward gap (invalid local times); expected UTC subtracts the standard offset.
-            { "Europe/Berlin", new DateTime(2026, 3, 29, 2, 30, 0) },
-            { "Europe/Lisbon", new DateTime(2026, 3, 29, 1, 30, 0) },
-            { "Europe/London", new DateTime(2026, 3, 29, 1, 30, 0) },
+            // Each row lists the time zone, the invalid local wall-clock time, and the expected UTC result.
+
+            // UTC+1 standard offset.
+            { "Europe/Berlin", new DateTime(2026, 3, 29, 2, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
+            // UTC+0 standard offset.
+            { "Europe/Lisbon", new DateTime(2026, 3, 29, 1, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
+            { "Europe/London", new DateTime(2026, 3, 29, 1, 30, 0), new DateTime(2026, 3, 29, 1, 30, 0) },
+            // Negative (behind UTC) standard offset: EST is UTC-5, so UTC is ahead of the local wall clock.
+            { "America/New_York", new DateTime(2026, 3, 8, 2, 30, 0), new DateTime(2026, 3, 8, 7, 30, 0) },
+            // Historical case where the standard offset itself differed from the zone's base UTC offset
+            // (non-zero BaseUtcOffsetDelta): Portugal observed CET (UTC+1) as standard in 1993, so the
+            // gap time must subtract 1 hour, not the base UTC+0 offset.
+            { "Europe/Lisbon", new DateTime(1993, 3, 28, 2, 30, 0), new DateTime(1993, 3, 28, 1, 30, 0) },
         };
 
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [MemberData(nameof(InvalidLocalTimeToUniversalTimeData))]
-        public static void ToUniversalTime_InvalidLocalTime_SubtractsStandardOffset(string timeZoneId, DateTime wallClock)
+        public static void ToUniversalTime_InvalidLocalTime_SubtractsStandardOffset(string timeZoneId, DateTime wallClock, DateTime expectedUtcWallClock)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/134846.
             // For a Local DateTime in the spring-forward gap (an invalid time), ToUniversalTime()
-            // must subtract the standard UTC offset, and it must agree with GetUtcOffset and DateTimeOffset.
-            RemoteExecutor.Invoke(static (id, ticks) =>
+            // must subtract the standard UTC offset. The expected result is asserted against an
+            // independent literal value and cross-checked with GetUtcOffset and DateTimeOffset.
+            RemoteExecutor.Invoke(static (id, ticks, expectedTicks) =>
             {
                 string originalTZ = Environment.GetEnvironmentVariable("TZ");
                 try
@@ -3348,20 +3359,22 @@ namespace System.Tests
 
                     TimeZoneInfo local = TimeZoneInfo.Local;
                     DateTime invalidLocal = DateTime.SpecifyKind(new DateTime(long.Parse(ticks)), DateTimeKind.Local);
+                    DateTime expectedUtc = new DateTime(long.Parse(expectedTicks), DateTimeKind.Utc);
                     Assert.True(local.IsInvalidTime(invalidLocal), $"Expected an invalid time for '{id}'.");
-
-                    TimeSpan offset = local.GetUtcOffset(invalidLocal);
-                    DateTime expectedUtc = new DateTime(invalidLocal.Ticks - offset.Ticks, DateTimeKind.Utc);
 
                     Assert.Equal(expectedUtc, invalidLocal.ToUniversalTime());
                     Assert.Equal(expectedUtc, new DateTimeOffset(invalidLocal).UtcDateTime);
+
+                    // The subtracted offset must match the standard (non-daylight) offset reported for this time.
+                    TimeSpan offset = local.GetUtcOffset(invalidLocal);
+                    Assert.Equal(expectedUtc, new DateTime(invalidLocal.Ticks - offset.Ticks, DateTimeKind.Utc));
                 }
                 finally
                 {
                     TimeZoneInfo.ClearCachedData();
                     Environment.SetEnvironmentVariable("TZ", originalTZ);
                 }
-            }, timeZoneId, wallClock.Ticks.ToString()).Dispose();
+            }, timeZoneId, wallClock.Ticks.ToString(), expectedUtcWallClock.Ticks.ToString()).Dispose();
         }
 
         public static TheoryData<DateTime, string, bool> AmbiguousTimeTestData => new()
