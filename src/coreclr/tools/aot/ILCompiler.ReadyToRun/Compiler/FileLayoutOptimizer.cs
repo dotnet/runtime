@@ -103,47 +103,57 @@ namespace ILCompiler
                 sortOrder++;
             }
 
-            const int MaxDependencyDepth = 5;
-            var dependencySinks = new DependencySink<NodeFactory>[MaxDependencyDepth + 1];
-
             if (_fileLayoutAlgorithm == FileLayoutAlgorithm.MethodOrder)
             {
+                const int MaxDependencyDepth = 5;
+                var dependencySinks = new DependencySink<NodeFactory>[MaxDependencyDepth + 1];
+                var visitedNonSortableNodeDepths = new Dictionary<DependencyNodeCore<NodeFactory>, int>();
+
                 // Sort the dependencies of methods by the method order
                 foreach (var method in sortedMethodsList)
                 {
                     ApplySortToDependencies(method, 0);
+                }
+
+                void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)
+                {
+                    if (depth > MaxDependencyDepth)
+                        return;
+
+                    if (node is SortableDependencyNode sortableNode)
+                    {
+                        if (sortableNode.CustomSort != Int32.MaxValue)
+                            return; // Node already sorted
+                        sortableNode.CustomSort += sortOrder++;
+                    }
+                    else
+                    {
+                        if (visitedNonSortableNodeDepths.TryGetValue(node, out int previousDepth) && previousDepth <= depth)
+                            return;
+
+                        // A shallower visit can reach dependencies missed at the depth limit.
+                        visitedNonSortableNodeDepths[node] = depth;
+                    }
+
+                    var dependencySink = dependencySinks[depth];
+                    if (dependencySink is null)
+                    {
+                        dependencySink = new DependencySink<NodeFactory>();
+                        dependencySinks[depth] = dependencySink;
+                    }
+
+                    node.AddStaticDependencies(dependencySink, _nodeFactory);
+                    using var dependencies = dependencySink.Drain();
+                    while (dependencies.MoveNext())
+                    {
+                        ApplySortToDependencies(dependencies.Dependency, depth + 1);
+                    }
                 }
             }
 
             var newNodesArray = nodes.ToArray();
             newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
             return newNodesArray.ToImmutableArray();
-
-            void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)
-            {
-                if (depth > MaxDependencyDepth)
-                    return;
-
-                if (node is SortableDependencyNode sortableNode)
-                {
-                    if (sortableNode.CustomSort != Int32.MaxValue)
-                        return; // Node already sorted
-                    sortableNode.CustomSort += sortOrder++;
-                }
-                var dependencySink = dependencySinks[depth];
-                if (dependencySink is null)
-                {
-                    dependencySink = new DependencySink<NodeFactory>();
-                    dependencySinks[depth] = dependencySink;
-                }
-
-                node.AddStaticDependencies(dependencySink, _nodeFactory);
-                using var dependencies = dependencySink.Drain();
-                while (dependencies.MoveNext())
-                {
-                    ApplySortToDependencies(dependencies.Dependency, depth + 1);
-                }
-            }
         }
 
         private List<MethodWithGCInfo> ApplyMethodSort(List<MethodWithGCInfo> methods)
