@@ -1332,7 +1332,8 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // However we may be able to update the flow from block's predecessors so they
                         // bypass block and instead transfer control to jump's successors (aka jump threading).
                         //
-                        const bool wasThreaded = optJumpThreadDom(block, domBlock, !rii.reverseSense);
+                        const bool wasThreaded =
+                            optJumpThreadDom(block, domBlock, !rii.reverseSense, domCmpExcVN, treeExcVN);
 
                         if (wasThreaded)
                         {
@@ -1585,6 +1586,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
     assert(jti.m_numAmbiguousPreds != 0);
 
     bool              foundReplacement = false;
+    BitVec            coveredPreds     = BitVecOps::MakeEmpty(&jti.traits);
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1598,6 +1600,8 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
             continue;
         }
 
+        BitVecOps::AddElemD(&jti.traits, coveredPreds, predBlock->bbPostorderNum);
+
         if (!foundReplacement)
         {
             replacementSsa   = phiArgNode->GetSsaNum();
@@ -1609,7 +1613,7 @@ static bool optGetThreadedSsaNumForBlock(JumpThreadInfo& jti, GenTreeLclVar* phi
         }
     }
 
-    if (!foundReplacement)
+    if (!foundReplacement || !BitVecOps::Equal(&jti.traits, coveredPreds, jti.m_ambiguousPreds))
     {
         return false;
     }
@@ -1643,7 +1647,34 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     *hasThreadedPreds  = false;
     *replacementSsaNum = SsaConfig::RESERVED_SSA_NUM;
 
+    BitVec expectedPreds = BitVecOps::MakeCopy(&jti.traits, jti.m_ambiguousPreds);
+    for (BasicBlock* const predBlock : jti.m_block->PredBlocks())
+    {
+        if (BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum))
+        {
+            continue;
+        }
+
+        BasicBlock* predTarget = nullptr;
+        if (BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum))
+        {
+            predTarget = jti.m_trueTarget;
+        }
+        else
+        {
+            assert(jti.m_numFalsePreds != 0);
+            predTarget = jti.m_falseTarget;
+        }
+
+        if (predTarget == successor)
+        {
+            BitVecOps::AddElemD(&jti.traits, expectedPreds, predBlock->bbPostorderNum);
+            *hasThreadedPreds = true;
+        }
+    }
+
     bool              foundReplacement = false;
+    BitVec            coveredPreds     = BitVecOps::MakeEmpty(&jti.traits);
     unsigned          replacementSsa   = SsaConfig::RESERVED_SSA_NUM;
     GenTreePhi* const phi              = phiDef->Data()->AsPhi();
 
@@ -1651,19 +1682,12 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     {
         GenTreePhiArg* const phiArgNode = use.GetNode()->AsPhiArg();
         BasicBlock* const    predBlock  = phiArgNode->gtPredBB;
-        bool const           isTruePred = BitVecOps::IsMember(&jti.traits, jti.m_truePreds, predBlock->bbPostorderNum);
-        bool const isAmbiguousPred = BitVecOps::IsMember(&jti.traits, jti.m_ambiguousPreds, predBlock->bbPostorderNum);
-
-        if (!isAmbiguousPred)
+        if (!BitVecOps::IsMember(&jti.traits, expectedPreds, predBlock->bbPostorderNum))
         {
-            BasicBlock* const predTarget = isTruePred ? jti.m_trueTarget : jti.m_falseTarget;
-            if (predTarget != successor)
-            {
-                continue;
-            }
-
-            *hasThreadedPreds = true;
+            continue;
         }
+
+        BitVecOps::AddElemD(&jti.traits, coveredPreds, predBlock->bbPostorderNum);
 
         if (!foundReplacement)
         {
@@ -1677,7 +1701,7 @@ static bool optGetThreadedSsaNumForSuccessor(JumpThreadInfo& jti,
     }
 
     *replacementSsaNum = replacementSsa;
-    return foundReplacement;
+    return foundReplacement && BitVecOps::Equal(&jti.traits, coveredPreds, expectedPreds);
 }
 
 //------------------------------------------------------------------------
@@ -1996,8 +2020,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
         //
         // We can ignore exception side effects in the jump tree.
         //
-        // They are covered by the exception effects in the dominating compare.
-        // We know this because the VNs match and they encode exception states.
+        // For dominator-based threading, the caller has verified they are covered by
+        // the exception effects in the dominating compare.
         //
         if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
         {
@@ -2036,6 +2060,8 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
 //   domBlock - a dominating block that has an equivalent branch
 //   domIsSameRelop - if true, dominating block does the same compare;
 //                    if false, dominating block does a reverse compare
+//   domCmpExcVN - exception set for the dominating compare
+//   treeExcVN - exception set for the dominated compare
 //
 // Returns:
 //   True if the branch was optimized.
@@ -2070,10 +2096,20 @@ Compiler::JumpThreadCheckResult Compiler::optJumpThreadCheck(BasicBlock* const b
 //     /     \           |       |
 //    Tt     Ft          Tt      Ft    True/false target
 //
-bool Compiler::optJumpThreadDom(BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop)
+bool Compiler::optJumpThreadDom(
+    BasicBlock* const block, BasicBlock* const domBlock, bool domIsSameRelop, ValueNum domCmpExcVN, ValueNum treeExcVN)
 {
     assert(block->KindIs(BBJ_COND));
     assert(domBlock->KindIs(BBJ_COND));
+
+    // Jump threading bypasses the dominated compare. Make sure the dominating compare
+    // produces all exceptions that the dominated compare would produce.
+    //
+    if (!vnStore->VNExcIsSubset(domCmpExcVN, treeExcVN))
+    {
+        JITDUMP("Dominating compare does not anticipate all current relop exceptions\n");
+        return false;
+    }
 
     // If the dominating block is not the immediate dominator
     // we might need to duplicate a lot of code to thread

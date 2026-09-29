@@ -30,7 +30,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <!-- The framework P/Invoke modules, shared with the build that generates the checked-in product
        call tables so that the two cannot be edited apart. -->
-  <Import Project="$(RepositoryEngineeringDir)wasm\WasmPInvokeModules.props" />
+  <Import Project="$(WasmPInvokeModulesPropsPath)" />
 
   <!-- The shared wasm tool cache (eng/wasm/WasmToolCache.props) is already populated by the native
        CoreCLR build that produced the link kit, so nothing needs provisioning here. -->
@@ -305,7 +305,10 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            replace libcoreclr_gen_static.a wholesale, so the list has to name every module the
            product's own tables cover: one missing becomes a DllNotFoundException at run time, in
            the test rather than in the build. -->
-      <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule)" />
+      <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Browser', 'true'))"
+                                  Condition="'$(TargetOS)' == 'browser'" />
+      <_WasmCorerunPInvokeModule Include="@(WasmCoreClrFrameworkPInvokeModule->WithMetadataValue('Wasi', 'true'))"
+                                  Condition="'$(TargetOS)' == 'wasi'" />
 
       <!-- The test's own modules, named after the archives that get linked in. The generator also
            accepts the [DllImport] spelling without the 'lib' prefix, which is how tests write it. -->

@@ -519,15 +519,12 @@ GenTree* Compiler::impUtf16StringComparison(StringComparisonKind kind, CORINFO_S
 
         impPopStack(argsCount);
 
-        // Include global reads so nonfaulting volatile loads stay ahead of the comparison.
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("unrolled UTF16 string comparison"));
-
-        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_NONE);
+        impStoreToTemp(varStrTmp, varStr, CHECK_SPILL_ALL);
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK nodes cannot reside on the evaluation stack
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 
@@ -691,19 +688,16 @@ GenTree* Compiler::impUtf16SpanComparison(StringComparisonKind kind, CORINFO_SIG
     {
         impPopStack(argsCount);
 
-        // Include global reads so nonfaulting volatile loads stay ahead of the comparison.
-        impSpillSideEffects(true, CHECK_SPILL_ALL DEBUGARG("unrolled UTF16 span comparison"));
-
         if (!spanObj->OperIs(GT_LCL_VAR))
         {
-            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_NONE);
+            impStoreToTemp(spanLclNum, spanObj, CHECK_SPILL_ALL);
         }
 
         if (unrolled->OperIs(GT_QMARK))
         {
             // QMARK can't be a root node, spill it to a temp
             unsigned rootTmp = lvaGrabTemp(true DEBUGARG("spilling unroll qmark"));
-            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_NONE);
+            impStoreToTemp(rootTmp, unrolled, CHECK_SPILL_ALL);
             unrolled = gtNewLclvNode(rootTmp, TYP_INT);
         }
 

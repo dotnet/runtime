@@ -1002,6 +1002,7 @@ void* ExecutableAllocator::AllocateThunksFromTemplate(void *pTemplate, size_t te
         else
         {
             BackoutBlock(block, isFreeBlock);
+            return NULL;
         }
 
         void *pTemplateAddressAllocated = VMToOSInterface::AllocateThunksFromTemplate(pTemplate, templateSize, block->baseRX, dataPageGenerator);

@@ -611,7 +611,11 @@ Thread* SetupThread()
     if ((pThread = GetThreadNULLOk()) != NULL)
         return pThread;
 
+#ifndef TARGET_APPLE
+    // Disable the check on Apple platforms
+    // See https://github.com/dotnet/runtime/issues/134571
     CheckThreadStateNotDestroyed();
+#endif
 
     // For interop debugging, we must mark that we're in a can't-stop region
     // b.c we may take Crsts here that may block the helper thread.
@@ -1525,7 +1529,6 @@ Thread::Thread()
     m_HijackHasAsyncRet = false;
 #endif
 
-    m_currentPrepareCodeConfig = nullptr;
     m_isInForbidSuspendForDebuggerRegion = false;
     m_hasPendingActivation = false;
 
@@ -6364,6 +6367,7 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     return total;
 }
 
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
   : m_pHoldingThread(NULL)
 #ifdef _DEBUG
@@ -6566,7 +6570,7 @@ void DeadlockAwareLock::LeaveLock()
 
     m_pHoldingThread = NULL;
 }
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 

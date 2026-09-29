@@ -791,17 +791,23 @@ bool emitter::HasRegularWideImmediateForm(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// DoesWriteZeroFlag: check if the instruction write the
-//     ZF flag.
+// DoesWriteZeroFlagForResult: check if the instruction writes ZF according to
+//     whether its result is zero.
 //
 // Arguments:
 //    ins - instruction to test
 //
 // Return Value:
-//    true if instruction writes the ZF flag, false otherwise.
+//    true if instruction writes ZF based on its result, false otherwise.
 //
-bool emitter::DoesWriteZeroFlag(instruction ins)
+bool emitter::DoesWriteZeroFlagForResult(instruction ins)
 {
+    // BSF/BSR write ZF based on the source, not the result.
+    if ((ins == INS_bsf) || (ins == INS_bsr))
+    {
+        return false;
+    }
+
     insFlags flags = CodeGenInterface::instInfo[ins];
     return (flags & Writes_ZF) != 0;
 }
@@ -1618,7 +1624,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
     // Certain instruction like and, or and xor modifies exactly same flags
     // as "test" instruction.
     // They reset OF and CF to 0 and modifies SF, ZF and PF.
-    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlag(lastIns) &&
+    if (DoesResetOverflowAndCarryFlags(lastIns) && DoesWriteSignFlag(lastIns) && DoesWriteZeroFlagForResult(lastIns) &&
         DoesWriteParityFlag(lastIns))
     {
         return id->idOpSize() == opSize;
@@ -1626,7 +1632,7 @@ bool emitter::AreFlagsSetToZeroCmp(regNumber reg, emitAttr opSize, GenCondition 
 
     if ((cond.GetCode() == GenCondition::NE) || (cond.GetCode() == GenCondition::EQ))
     {
-        if (DoesWriteZeroFlag(lastIns) && IsFlagsAlwaysModified(id))
+        if (DoesWriteZeroFlagForResult(lastIns) && IsFlagsAlwaysModified(id))
         {
             return id->idOpSize() == opSize;
         }

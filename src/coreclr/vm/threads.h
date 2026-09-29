@@ -134,7 +134,6 @@ class     EECodeInfo;
 class     DebuggerPatchSkip;
 class     FaultingExceptionFrame;
 enum      BinderMethodID : int;
-class     PrepareCodeConfig;
 class     NativeCodeVersion;
 struct    InterpThreadContext;
 
@@ -3702,32 +3701,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 public:
-    class CurrentPrepareCodeConfigHolder
-    {
-    private:
-        Thread *const m_thread;
-#ifdef _DEBUG
-        PrepareCodeConfig *const m_config;
-#endif
-
-    public:
-        CurrentPrepareCodeConfigHolder(Thread *thread, PrepareCodeConfig *config);
-        ~CurrentPrepareCodeConfigHolder();
-    };
-
-public:
-    PrepareCodeConfig *GetCurrentPrepareCodeConfig() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_currentPrepareCodeConfig;
-    }
-#endif // !DACCESS_COMPILE
-
-private:
-    PrepareCodeConfig *m_currentPrepareCodeConfig;
-
-#ifndef DACCESS_COMPILE
-public:
     bool IsInForbidSuspendForDebuggerRegion() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -5287,6 +5260,46 @@ struct ManagedThreadBase
 
 class DeadlockAwareLock
 {
+#if !defined(FEATURE_MULTITHREADING) && !defined(_DEBUG)
+private:
+    // A held lock can only belong to this thread. Reentry must still fail, including
+    // indirect cycles through other entries, without disturbing the outer holder.
+    bool m_isHeld;
+
+public:
+    DeadlockAwareLock(const char *description = nullptr) : m_isHeld(false)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+
+    BOOL CanEnterLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return !m_isHeld;
+    }
+
+    BOOL TryBeginEnterLock()
+    {
+        WRAPPER_NO_CONTRACT;
+        return CanEnterLock();
+    }
+
+    void BeginEnterLock() { LIMITED_METHOD_CONTRACT; }
+
+    void EndEnterLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isHeld = true;
+    }
+
+    void LeaveLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_isHeld = false;
+    }
+
+    typedef StateHolder<DoNothing, DoNothing> BlockingLockHolder;
+#else
  private:
     VolatilePtr<Thread> m_pHoldingThread;
 #ifdef _DEBUG
@@ -5322,6 +5335,7 @@ class DeadlockAwareLock
     }
 public:
     typedef StateHolder<DoNothing,DeadlockAwareLock::ReleaseBlockingLock> BlockingLockHolder;
+#endif // !FEATURE_MULTITHREADING && !_DEBUG
 };
 
 inline void SetTypeHandleOnThreadForAlloc(TypeHandle th)

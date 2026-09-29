@@ -215,6 +215,18 @@ export class HostBuilder implements DotnetHostBuilder {
         }
     }
 
+    withDownloadResourceProgress (callback?: (resourcesLoaded: number, totalResources: number) => void): DotnetHostBuilder {
+        try {
+            deep_merge_module(emscriptenModule, {
+                onDownloadResourceProgress: callback
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
     withResourceLoader (loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         try {
             loaderHelpers.loadBootResource = loadBootResource;

@@ -13,12 +13,7 @@ using Xunit;
 public class Async2CollectibleAlc
 {
     [ConditionalFact(typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsCollectibleAssembliesSupported))]
-    public static void TestEntryPoint()
-    {
-        AsyncEntryPoint().Wait();
-    }
-
-    private static async Task AsyncEntryPoint()
+    public static async Task AsyncEntryPoint()
     {
         WeakReference wr = await CallFooAsyncAndUnload();
 
