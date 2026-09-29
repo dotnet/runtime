@@ -432,8 +432,8 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 #else
         int fd = -1;
     
-#if !defined(TARGET_ANDROID) && !defined(TARGET_WASI)
-        // Bionic and wasi-libc don't have shm_{open,unlink}
+#if !defined(TARGET_ANDROID) && !defined(TARGET_WASM)
+        // Bionic doesn't have shm_{open,unlink}, and template thunks are not used on Wasm
         // POSIX fallback
         if (fd == -1)
         {
@@ -444,7 +444,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
             shm_unlink(name);
         }
-#endif // !TARGET_ANDROID && !TARGET_WASI
+#endif // !TARGET_ANDROID && !TARGET_WASM
 #endif
         if (fd != -1)
         {
