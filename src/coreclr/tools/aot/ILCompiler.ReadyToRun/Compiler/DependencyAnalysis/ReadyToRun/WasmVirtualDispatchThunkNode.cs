@@ -40,7 +40,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
-        bool INodeWithTypeSignature.HasGenericContextArg => _wasmSignature.SignatureString.Contains('g');
+        bool INodeWithTypeSignature.HasGenericContextArg => false;
 
         public override void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {

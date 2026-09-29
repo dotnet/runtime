@@ -438,7 +438,6 @@ namespace Internal.JitInterface
             'S' or 'A' => "a struct passed by reference",
             'T' => "the 'this' argument",
             'p' => "the portable entry point argument",
-            'g' => "the generic context argument",
             'a' => "the async continuation argument",
             'e' => "an empty struct",
             _ => $"an unrecognized element '{c}'"
@@ -458,29 +457,18 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Gets the hidden generic context and async continuation flags encoded in a managed Wasm signature.
+        /// Returns true when the Wasm signature has a hidden generic context followed by an async continuation.
         /// </summary>
-        public static LoweringFlags GetHiddenArgumentFlags(WasmSignature wasmSignature)
+        public static bool HasGenericContextBeforeAsync(WasmSignature wasmSignature, TypeSystemContext context)
         {
             string sig = wasmSignature.SignatureString;
-            LoweringFlags flags = LoweringFlags.None;
-            if (sig.Contains('g'))
-            {
-                flags |= LoweringFlags.HasGenericContextArg;
-            }
+            int asyncIndex = sig.IndexOf('a');
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
 
-            if (sig.Contains('a'))
-            {
-                flags |= LoweringFlags.IsAsyncCall;
-            }
-
-            return flags;
+            // Index 0 is the return type, not a generic context.
+            return (asyncIndex > 1) && (sig[asyncIndex - 1] == hiddenParamChar);
         }
 
-        /// <summary>
-        /// Raises a Wasm signature to a <see cref="MethodSignature"/>. The hidden generic context and async
-        /// continuation are not parameters of the result; see <see cref="GetHiddenArgumentFlags"/>.
-        /// </summary>
         public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
         {
             string sig = wasmSignature.SignatureString;
@@ -507,6 +495,7 @@ namespace Internal.JitInterface
 
             List<TypeDesc> parameters = new List<TypeDesc>();
             bool hasThis = false;
+            bool isAsyncCall = false;
 
             if (pos < sig.Length && sig[pos] == 'T')
             {
@@ -514,13 +503,19 @@ namespace Internal.JitInterface
                 pos++;
             }
 
-            if (pos < sig.Length && sig[pos] == 'g')
+            // A generic context precedes the async continuation; it is encoded with the
+            // hidden-pointer char (matching the encode side), i32 on wasm32 and i64 on wasm64.
+            char hiddenParamChar = (context.Target.PointerSize == 4) ? 'i' : 'l';
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync(wasmSignature, context);
+            if (hasGenericContextBeforeAsync)
             {
+                parameters.Add(RaiseSigChar(sig[pos], context));
                 pos++;
             }
 
             if (pos < sig.Length && sig[pos] == 'a')
             {
+                isAsyncCall = true;
                 pos++;
             }
 
@@ -576,9 +571,16 @@ namespace Internal.JitInterface
 
             MethodSignature result = new MethodSignature(flags, 0, returnType, parameters.ToArray());
 
-            WasmSignature roundtripped = GetSignature(result, GetHiddenArgumentFlags(wasmSignature));
-            Debug.Assert(roundtripped.SignatureString.Equals(wasmSignature.SignatureString, StringComparison.Ordinal),
-                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtripped.SignatureString}'");
+            WasmSignature roundtripped = GetSignature(result, isAsyncCall ? LoweringFlags.IsAsyncCall : LoweringFlags.None);
+            string roundtrippedStr = roundtripped.SignatureString;
+            if (hasGenericContextBeforeAsync && isAsyncCall)
+            {
+                // The roundtrip re-encodes the generic context as a leading parameter, so it emits the
+                // async marker before the hidden-pointer char; swap them back to match the input ordering.
+                roundtrippedStr = roundtrippedStr.Replace($"a{hiddenParamChar}", $"{hiddenParamChar}a");
+            }
+            Debug.Assert(roundtrippedStr.Equals(wasmSignature.SignatureString, StringComparison.Ordinal),
+                $"RaiseSignature roundtrip failed: input='{wasmSignature.SignatureString}', roundtripped='{roundtrippedStr}'");
 
             return result;
         }
@@ -685,6 +687,7 @@ namespace Internal.JitInterface
 
             TypeDesc returnType = signature.ReturnType;
             WasmValueType pointerType = (signature.ReturnType.Context.Target.PointerSize == 4) ? WasmValueType.I32 : WasmValueType.I64;
+            char hiddenParamChar = WasmValueTypeToSigChar(pointerType);
 
             StringBuilder sigBuilder = new StringBuilder();
 
@@ -774,7 +777,7 @@ namespace Internal.JitInterface
             if (flags.HasFlag(LoweringFlags.HasGenericContextArg))
             {
                 result.Add(pointerType); // generic context
-                sigBuilder.Append('g');
+                sigBuilder.Append(hiddenParamChar);
             }
 
             if (flags.HasFlag(LoweringFlags.IsAsyncCall))

@@ -81,7 +81,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
         bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
-        bool INodeWithTypeSignature.HasGenericContextArg => _wasmSignature.SignatureString.Contains('g');
+        bool INodeWithTypeSignature.HasGenericContextArg => false;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

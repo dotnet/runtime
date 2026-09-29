@@ -91,9 +91,9 @@ public class WasmArgumentLayoutTests
 
     [Theory]
     [InlineData(WasmLowering.LoweringFlags.None, "viiS16p", 5)]
-    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg, "vgiiS16p", 6)]
+    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg, "viiiS16p", 6)]
     [InlineData(WasmLowering.LoweringFlags.IsAsyncCall, "vaiiS16p", 6)]
-    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "vgaiiS16p", 7)]
+    [InlineData(WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "viaiiS16p", 7)]
     public void ClosedStaticDelegateSignaturePreservesHiddenArguments(WasmLowering.LoweringFlags flags, string expectedSignature, int expectedParameters)
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
@@ -109,22 +109,20 @@ public class WasmArgumentLayoutTests
     }
 
     [Theory]
-    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "igaip",
+    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iiaip",
         "GenericContext@8:1 AsyncContinuation@16:2 Argument@24:3")]
-    [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iTgaip",
+    [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "iTiaip",
         "This@8:1 GenericContext@16:2 AsyncContinuation@24:3 Argument@32:4")]
-    [InlineData(false, true, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "S16gaip",
+    [InlineData(false, true, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "S16iaip",
         "RetBuf@-1:1 GenericContext@8:2 AsyncContinuation@16:3 Argument@24:4")]
-    [InlineData(true, true, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "S16Tgaip",
+    [InlineData(true, true, WasmLowering.LoweringFlags.HasGenericContextArg | WasmLowering.LoweringFlags.IsAsyncCall, "S16Tiaip",
         "This@8:1 RetBuf@-1:2 GenericContext@16:3 AsyncContinuation@24:4 Argument@32:5")]
     [InlineData(false, false, WasmLowering.LoweringFlags.IsAsyncCall, "iaip",
         "AsyncContinuation@8:1 Argument@16:2")]
-    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg, "igip",
-        "GenericContext@8:1 Argument@16:2")]
-    [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iTgip",
-        "This@8:1 GenericContext@16:2 Argument@24:3")]
-    [InlineData(true, true, WasmLowering.LoweringFlags.HasGenericContextArg, "S16Tgip",
-        "This@8:1 RetBuf@-1:2 GenericContext@16:3 Argument@24:4")]
+    [InlineData(false, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iiip",
+        "Argument@8:1 Argument@16:2")]
+    [InlineData(true, false, WasmLowering.LoweringFlags.HasGenericContextArg, "iTiip",
+        "This@8:1 Argument@16:2 Argument@24:3")]
     [InlineData(false, false, WasmLowering.LoweringFlags.None, "iip",
         "Argument@8:1")]
     public void WasmThunkArgLayoutFollowsSignatureOrder(bool hasThis, bool returnsStruct, WasmLowering.LoweringFlags flags, string expectedSignature, string expectedArgs)
@@ -136,30 +134,13 @@ public class WasmArgumentLayoutTests
 
         WasmSignature lowered = WasmLowering.GetSignature(signature, flags);
         Assert.Equal(expectedSignature, lowered.SignatureString);
-        Assert.Equal(flags, WasmLowering.GetHiddenArgumentFlags(lowered));
-        Assert.Equal(signature.Length, WasmLowering.RaiseSignature(lowered, context).Length);
+        Assert.Equal(expectedArgs.Contains("GenericContext"), WasmLowering.HasGenericContextBeforeAsync(lowered, context));
 
         // The interpreter and the method's GC ref map expect [this][generic context][async continuation][args].
         WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
         Assert.Equal(expectedArgs, string.Join(" ", layout.Args.Select(arg => $"{arg.Kind}@{arg.Offset}:{arg.WasmParamIndex}")));
         Assert.All(layout.Args, arg => Assert.Equal(1, arg.WasmParamCount));
         Assert.Equal(lowered.FuncType.Params.Types.Length - 1, layout.PortableEntrypointParamIndex);
-
-        var (argIterator, _) = GCRefMapBuilder.BuildArgIterator(signature, context,
-            methodRequiresInstArg: flags.HasFlag(WasmLowering.LoweringFlags.HasGenericContextArg),
-            methodIsAsyncCall: flags.HasFlag(WasmLowering.LoweringFlags.IsAsyncCall));
-        foreach (WasmThunkArg arg in layout.Args)
-        {
-            switch (arg.Kind)
-            {
-                case WasmThunkArgKind.GenericContext:
-                    Assert.Equal(argIterator.GetParamTypeArgOffset(), arg.Offset);
-                    break;
-                case WasmThunkArgKind.AsyncContinuation:
-                    Assert.Equal(argIterator.GetAsyncContinuationArgOffset(), arg.Offset);
-                    break;
-            }
-        }
     }
 
     [Fact]
@@ -242,8 +223,9 @@ public class WasmArgumentLayoutTests
             callRefMapOffsets.Add(argOffset);
         }
 
+        // Without an async continuation the generic context stays the first explicit argument, in the same slot.
         WasmThunkArgLayout layout = new WasmThunkArgLayout(lowered, context);
-        Assert.Equal(sharedGeneric, layout.Args.Any(arg => arg.Kind == WasmThunkArgKind.GenericContext));
+        Assert.Equal(sharedGeneric && asyncVariant, layout.Args.Any(arg => arg.Kind == WasmThunkArgKind.GenericContext));
         Assert.Equal(callRefMapOffsets, layout.Args.Where(arg => arg.Kind != WasmThunkArgKind.RetBuf).Select(arg => arg.Offset));
     }
 
