@@ -67,6 +67,7 @@ unsafe class PlatformDefaultMemberFunctionNative
 public unsafe class PlatformDefaultMemberFunctionTest
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/50440", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131811", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public static int TestEntryPoint()
     {
