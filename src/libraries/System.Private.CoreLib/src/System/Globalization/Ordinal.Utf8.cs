@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -329,276 +328,79 @@ namespace System.Globalization
 
         internal static bool StartsWithIgnoreCaseUtf8(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix)
         {
-            // Work on local copies, so the JIT can pass the untouched parameters to the slow path as is.
-            ReadOnlySpan<byte> a = source;
-            ReadOnlySpan<byte> b = prefix;
-
             // NOTE: Two UTF-8 inputs of different length might compare as equal under
-            // the OrdinalIgnoreCase comparer, so a longer prefix still needs the slow path.
-            if (!Vector128.IsHardwareAccelerated || (b.Length > a.Length))
-            {
-                return StartsWithIgnoreCaseUtf8_Slow(source, prefix, 0);
-            }
+            // the OrdinalIgnoreCase comparer. This is distinct from UTF-16, where the
+            // inputs being different length will mean that they can never compare as
+            // equal under an OrdinalIgnoreCase comparer.
 
-            // Same length for both spans lets the JIT eliminate the bounds checks for both.
-            a = a.Slice(0, b.Length);
-
-            if (b.Length < Vector128<byte>.Count)
+            while (!prefix.IsEmpty && !source.IsEmpty)
             {
-                if (b.IsEmpty)
+                uint a = source[0];
+                uint b = prefix[0];
+
+                if ((a | b) > 0x7F)
                 {
-                    return true;
+                    // No non-ASCII scalar is equal to an ASCII one under ordinal casing, so both must be non-ASCII to match
+                    return ((a & b) > 0x7F) && StartsWithStringIgnoreCaseNonAsciiUtf8(source, prefix);
                 }
 
-                LoadSmallAsVector128(a, b, out Vector128<byte> va, out Vector128<byte> vb);
-                if (!Utf8Utility.AllBytesInVector128AreAscii(va | vb))
-                {
-                    return StartsWithIgnoreCaseUtf8_Slow(source, prefix, 0);
-                }
-                return Utf8Utility.Vector128OrdinalIgnoreCaseAscii(va, vb);
-            }
-
-            ReadOnlySpan<byte> ra = a;
-            ReadOnlySpan<byte> rb = b;
-            while ((ra.Length > Vector128<byte>.Count) && (rb.Length > Vector128<byte>.Count))
-            {
-                Vector128<byte> va = Vector128.Create(ra);
-                Vector128<byte> vb = Vector128.Create(rb);
-                if (!Utf8Utility.AllBytesInVector128AreAscii(va | vb))
-                {
-                    return StartsWithIgnoreCaseUtf8_Slow(source, prefix, b.Length - rb.Length);
-                }
-                if (!Utf8Utility.Vector128OrdinalIgnoreCaseAscii(va, vb))
+                // Ordinal equals or lowercase equals if the result ends up in the a-z range
+                if ((a != b) && (((a | 0x20) != (b | 0x20)) || !char.IsAsciiLetter((char)a)))
                 {
                     return false;
                 }
-                ra = ra.Slice(Vector128<byte>.Count);
-                rb = rb.Slice(Vector128<byte>.Count);
+
+                source = source.Slice(1);
+                prefix = prefix.Slice(1);
             }
 
-            // Last (possibly overlapping) block
-            Vector128<byte> lastA = Vector128.Create(a.Slice(a.Length - Vector128<byte>.Count));
-            Vector128<byte> lastB = Vector128.Create(b.Slice(b.Length - Vector128<byte>.Count));
-            if (!Utf8Utility.AllBytesInVector128AreAscii(lastA | lastB))
-            {
-                return StartsWithIgnoreCaseUtf8_Slow(source, prefix, b.Length - Vector128<byte>.Count);
-            }
-            return Utf8Utility.Vector128OrdinalIgnoreCaseAscii(lastA, lastB);
+            // Success if we reached the end of the prefix
+            return prefix.IsEmpty;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static bool StartsWithIgnoreCaseUtf8_Slow(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prefix, int offset)
+        private static bool StartsWithStringIgnoreCaseNonAsciiUtf8(ReadOnlySpan<byte> spanA, ReadOnlySpan<byte> spanB)
         {
-            // Everything before 'offset' is ASCII and equal (ignoring case) in both inputs.
-            ReadOnlySpan<byte> a = source.Slice(offset);
-            ReadOnlySpan<byte> b = prefix.Slice(offset);
-            while (true)
+            // NLS/ICU doesn't provide native UTF-8 support so we need to do our own corresponding ordinal comparison
+
+            do
             {
-                int length = Math.Min(a.Length, b.Length);
-                int matched = MatchAsciiIgnoreCaseUtf8(a.Slice(0, length), b.Slice(0, length));
-                if (matched < 0)
+                OperationStatus statusA = Rune.DecodeFromUtf8(spanA, out Rune runeA, out int bytesConsumedA);
+                OperationStatus statusB = Rune.DecodeFromUtf8(spanB, out Rune runeB, out int bytesConsumedB);
+
+                if (statusA != statusB)
                 {
+                    // OperationStatus don't match; fail immediately
                     return false;
                 }
-                if (matched == length)
-                {
-                    // Either the whole prefix has matched, or the source has ended first.
-                    return b.Length == length;
-                }
-                a = a.Slice(matched);
-                b = b.Slice(matched);
 
-                // Compare the remaining ASCII bytes one by one, a non-ASCII byte is expected shortly.
-                ReadOnlySpan<byte> sa = a.Slice(0, Math.Min(a.Length, b.Length));
-                ReadOnlySpan<byte> sb = b.Slice(0, sa.Length);
-                int i = 0;
-                for (; i < sa.Length; i++)
+                if (statusA == OperationStatus.Done)
                 {
-                    uint ca = sa[i];
-                    uint cb = sb[i];
-                    if ((ca | cb) > 0x7F)
+                    if (Rune.ToUpperOrdinal(runeA) != Rune.ToUpperOrdinal(runeB))
                     {
-                        break;
-                    }
-                    if (!Utf8Utility.UInt32OrdinalIgnoreCaseAscii(ca, cb))
-                    {
+                        // Runes don't match when ignoring case; fail immediately
                         return false;
                     }
                 }
-                a = a.Slice(i);
-                b = b.Slice(i);
-
-                // Compare runes (or invalid sequences) until both inputs start with ASCII again.
-                do
+                else if (!spanA.Slice(0, bytesConsumedA).SequenceEqual(spanB.Slice(0, bytesConsumedB)))
                 {
-                    if (b.IsEmpty)
-                    {
-                        return true;
-                    }
-
-                    // NLS/ICU doesn't provide native UTF-8 support so we need to do our own corresponding ordinal comparison.
-                    // If 'a' ends first, it returns NeedMoreData with bytesConsumed=0, which never matches 'b'.
-                    OperationStatus statusA = Rune.DecodeFromUtf8(a, out Rune runeA, out int bytesConsumedA);
-                    OperationStatus statusB = Rune.DecodeFromUtf8(b, out Rune runeB, out int bytesConsumedB);
-                    if (statusA != statusB)
-                    {
-                        return false;
-                    }
-
-                    if (statusA == OperationStatus.Done)
-                    {
-                        if ((runeA != runeB) && (Rune.ToUpperInvariant(runeA) != Rune.ToUpperInvariant(runeB)))
-                        {
-                            return false;
-                        }
-                    }
-                    else if (!a.Slice(0, bytesConsumedA).SequenceEqual(b.Slice(0, bytesConsumedB)))
-                    {
-                        // Invalid sequences must match exactly.
-                        return false;
-                    }
-
-                    a = a.Slice(bytesConsumedA);
-                    b = b.Slice(bytesConsumedB);
-                }
-                while (a.IsEmpty || b.IsEmpty || ((a[0] | b[0]) > 0x7F));
-            }
-        }
-
-        /// <summary>
-        /// Compares two inputs of the same length, returns:
-        /// <list type="bullet">
-        /// <item><description><c>a.Length</c> if all bytes are ASCII and equal ignoring case;</description></item>
-        /// <item><description>-1 if a mismatch was found in ASCII data;</description></item>
-        /// <item><description>otherwise, the offset (less than <c>a.Length</c>) all bytes before which are equal ignoring case,
-        /// and a non-ASCII byte is within the next <see cref="Vector128{T}.Count"/> bytes.</description></item>
-        /// </list>
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int MatchAsciiIgnoreCaseUtf8(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-        {
-            Debug.Assert(a.Length == b.Length);
-
-            if (!Vector128.IsHardwareAccelerated)
-            {
-                return MatchAsciiIgnoreCaseUtf8_Scalar(a, b);
-            }
-
-            if (b.Length < Vector128<byte>.Count)
-            {
-                if (b.IsEmpty)
-                {
-                    return 0;
+                    // OperationStatus match, but bytesConsumed or the sequence of bytes consumed do not; fail immediately
+                    return false;
                 }
 
-                LoadSmallAsVector128(a, b, out Vector128<byte> va, out Vector128<byte> vb);
-                if (!Utf8Utility.AllBytesInVector128AreAscii(va | vb))
-                {
-                    return 0;
-                }
-                return Utf8Utility.Vector128OrdinalIgnoreCaseAscii(va, vb) ? b.Length : -1;
-            }
+                // The current runes or invalid byte sequences matched, slice and continue.
+                // We'll exit the loop when the entirety of spanB has been processed.
+                //
+                // In the scenario where spanA is empty before spanB, we'll end up with that
+                // span returning OperationStatus.NeedMoreData and bytesConsumed=0 while spanB
+                // will return a different OperationStatus or different bytesConsumed and thus
+                // fail the operation.
 
-            ReadOnlySpan<byte> ra = a;
-            ReadOnlySpan<byte> rb = b;
-            while ((ra.Length > Vector128<byte>.Count) && (rb.Length > Vector128<byte>.Count))
-            {
-                Vector128<byte> va = Vector128.Create(ra);
-                Vector128<byte> vb = Vector128.Create(rb);
-                if (!Utf8Utility.AllBytesInVector128AreAscii(va | vb))
-                {
-                    return b.Length - rb.Length;
-                }
-                if (!Utf8Utility.Vector128OrdinalIgnoreCaseAscii(va, vb))
-                {
-                    return -1;
-                }
-                ra = ra.Slice(Vector128<byte>.Count);
-                rb = rb.Slice(Vector128<byte>.Count);
+                spanA = spanA.Slice(bytesConsumedA);
+                spanB = spanB.Slice(bytesConsumedB);
             }
+            while (spanB.Length != 0);
 
-            Vector128<byte> lastA = Vector128.Create(a.Slice(a.Length - Vector128<byte>.Count));
-            Vector128<byte> lastB = Vector128.Create(b.Slice(b.Length - Vector128<byte>.Count));
-            if (!Utf8Utility.AllBytesInVector128AreAscii(lastA | lastB))
-            {
-                return b.Length - Vector128<byte>.Count;
-            }
-            return Utf8Utility.Vector128OrdinalIgnoreCaseAscii(lastA, lastB) ? b.Length : -1;
-        }
-
-        private static int MatchAsciiIgnoreCaseUtf8_Scalar(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-        {
-            Debug.Assert(a.Length == b.Length);
-
-            ReadOnlySpan<byte> ra = a;
-            ReadOnlySpan<byte> rb = b;
-            while ((ra.Length >= sizeof(ulong)) && (rb.Length >= sizeof(ulong)))
-            {
-                ulong valueA = BinaryPrimitives.ReadUInt64LittleEndian(ra);
-                ulong valueB = BinaryPrimitives.ReadUInt64LittleEndian(rb);
-                if (!Utf8Utility.AllBytesInUInt64AreAscii(valueA | valueB))
-                {
-                    return b.Length - rb.Length;
-                }
-                if (!Utf8Utility.UInt64OrdinalIgnoreCaseAscii(valueA, valueB))
-                {
-                    return -1;
-                }
-                ra = ra.Slice(sizeof(ulong));
-                rb = rb.Slice(sizeof(ulong));
-            }
-
-            for (int i = 0; (i < ra.Length) && (i < rb.Length); i++)
-            {
-                uint valueA = ra[i];
-                uint valueB = rb[i];
-                if ((valueA | valueB) > 0x7F)
-                {
-                    return b.Length - rb.Length + i;
-                }
-                if (!Utf8Utility.UInt32OrdinalIgnoreCaseAscii(valueA, valueB))
-                {
-                    return -1;
-                }
-            }
-            return b.Length;
-        }
-
-        /// <summary>
-        /// Loads 1-15 bytes of both same-length inputs into vectors (via overlapping reads), the remaining bytes are zero.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void LoadSmallAsVector128(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b, out Vector128<byte> va, out Vector128<byte> vb)
-        {
-            Debug.Assert((a.Length == b.Length) && (b.Length is > 0 and < 16));
-
-            if (b.Length >= sizeof(ulong))
-            {
-                va = Vector128.Create(
-                    BinaryPrimitives.ReadUInt64LittleEndian(a),
-                    BinaryPrimitives.ReadUInt64LittleEndian(a.Slice(a.Length - sizeof(ulong)))).AsByte();
-                vb = Vector128.Create(
-                    BinaryPrimitives.ReadUInt64LittleEndian(b),
-                    BinaryPrimitives.ReadUInt64LittleEndian(b.Slice(b.Length - sizeof(ulong)))).AsByte();
-            }
-            else if (b.Length >= sizeof(uint))
-            {
-                va = Vector128.CreateScalar(BinaryPrimitives.ReadUInt32LittleEndian(a) |
-                    ((ulong)BinaryPrimitives.ReadUInt32LittleEndian(a.Slice(a.Length - sizeof(uint))) << 32)).AsByte();
-                vb = Vector128.CreateScalar(BinaryPrimitives.ReadUInt32LittleEndian(b) |
-                    ((ulong)BinaryPrimitives.ReadUInt32LittleEndian(b.Slice(b.Length - sizeof(uint))) << 32)).AsByte();
-            }
-            else if (b.Length >= sizeof(ushort))
-            {
-                va = Vector128.CreateScalar(BinaryPrimitives.ReadUInt16LittleEndian(a) |
-                    ((uint)BinaryPrimitives.ReadUInt16LittleEndian(a.Slice(a.Length - sizeof(ushort))) << 16)).AsByte();
-                vb = Vector128.CreateScalar(BinaryPrimitives.ReadUInt16LittleEndian(b) |
-                    ((uint)BinaryPrimitives.ReadUInt16LittleEndian(b.Slice(b.Length - sizeof(ushort))) << 16)).AsByte();
-            }
-            else
-            {
-                va = Vector128.CreateScalar(a[0]);
-                vb = Vector128.CreateScalar(b[0]);
-            }
+            return true;
         }    }
 }

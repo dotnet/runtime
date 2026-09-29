@@ -272,14 +272,24 @@ namespace System.Text.Unicode
         {
             // ASSUMPTION: Caller has validated that input values are ASCII.
 
-            // Clearing the 0x20 bit maps [a-z] to [A-Z], so all bits of 'letterMask' are set iff vec1's byte is [A-Za-z]
-            Vector128<byte> upper1 = vec1 & Vector128.Create(unchecked((byte)~0x20));
-            Vector128<byte> letterMask = Vector128.LessThan(
-                (upper1 + Vector128.Create((byte)(0x80 - 'A'))).AsSByte(),
-                Vector128.Create(unchecked((sbyte)(('Z' - 'A' + 1) - 0x80)))).AsByte();
+            // the 0x80 bit of each word of 'lowerIndicator' will be set iff the word has value >= 'A'
+            Vector128<sbyte> lowIndicator1 = Vector128.Create((sbyte)(0x80 - 'A')) + vec1.AsSByte();
+            Vector128<sbyte> lowIndicator2 = Vector128.Create((sbyte)(0x80 - 'A')) + vec2.AsSByte();
 
-            // The inputs are equal ignoring case iff they differ only by the 0x20 bit of letters
-            return Vector128.AndNot(vec1 ^ vec2, letterMask & Vector128.Create((byte)0x20)) == Vector128<byte>.Zero;
+            // the 0x80 bit of each word of 'combinedIndicator' will be set iff the word has value >= 'A' and <= 'Z'
+            Vector128<sbyte> combIndicator1 =
+                Vector128.LessThan(Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator1);
+            Vector128<sbyte> combIndicator2 =
+                Vector128.LessThan(Vector128.Create(unchecked((sbyte)(('Z' - 'A') - 0x80))), lowIndicator2);
+
+            // Convert both vectors to lower case by adding 0x20 bit for all [A-Z][a-z] characters
+            Vector128<sbyte> lcVec1 =
+                Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator1) + vec1.AsSByte();
+            Vector128<sbyte> lcVec2 =
+                Vector128.AndNot(Vector128.Create((sbyte)0x20), combIndicator2) + vec2.AsSByte();
+
+            // Compare two lowercased vectors
+            return (lcVec1 ^ lcVec2) == Vector128<sbyte>.Zero;
         }
 #endif
     }
