@@ -112,7 +112,9 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
 
         SortKey keyA = compareInfo.GetSortKey(a, options);
         SortKey keyB = compareInfo.GetSortKey(b, options);
-        Check(Math.Sign(SortKey.Compare(keyA, keyB)) == Math.Sign(compare),
+        // Finding 58: in shifted mode Compare counts a mark that follows symbol + ignorable control, the sort key doesn't. Only the
+        // Compare != 0 direction is tolerated; Compare == 0 with different keys would break StringComparer hashing.
+        Check(Math.Sign(SortKey.Compare(keyA, keyB)) == Math.Sign(compare) || (!s_strict && compare != 0 && IsShifted(compareInfo, options) && HasMark(Decompose(a + b))),
             () => $"{Name(compareInfo)} sort keys order {Describe(a)} / {Describe(b)} as {SortKey.Compare(keyA, keyB)} but Compare says {compare} ({options})");
         if (compare == 0)
         {

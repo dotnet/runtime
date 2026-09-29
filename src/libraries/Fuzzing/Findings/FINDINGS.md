@@ -74,6 +74,7 @@ Findings 48 to 54 are in the ICU-based globalization code, so their repros only 
 | 55 | Compression | The new span decoders `DeflateDecoder`/`ZLibDecoder`/`GZipDecoder` can't decode a valid stream of empty data into an empty destination (`TryDecompress` is false; Brotli and Zstandard accept it), and `ZstandardDecoder.Decompress` returns `Done` instead of throwing after `Dispose` | Low | Yes | [55](repros/55-CompressionDecoders-SpanEdgeCases.cs) |
 | 56 | Compression (zstd) | `ZstandardDecoder.TryDecompress` accepts frames with a raw/RLE block larger than the window, which the format forbids and `Decompress`/`ZstandardStream` reject, so the same bytes decode or fail depending on the API, and `TryGetMaxDecompressedLength` underestimates the output | Low | Yes | [56](repros/56-Zstandard-OneShotAcceptsOversizedBlock.cs) |
 | 57 | Compression (zstd) | Whether a Zstandard frame decodes depends on how its bytes are split across `Decompress` calls or `Stream.Read` results: a 10-byte frame decodes whole but is `InvalidData` in smaller chunks, and `ZstandardStream` rejects it as a later concatenated frame or over a trickling stream | Low | Yes | [57](repros/57-Zstandard-ResultDependsOnInputChunking.cs) |
+| 58 | CompareInfo (ICU) | With `IgnoreSymbols`, `Compare` isn't transitive and disagrees with the sort keys (`"-\u0001\u0301"` = `"-\u0301"` = `"-"` but the first > the last), so `Array.Sort` with that comparer returns unsorted arrays | Medium | Yes | [58](repros/58-CompareInfo-IgnoreSymbols-NotTransitive.cs) |
 
 "Shipped in 11.0 RC1" was checked against the `11.0.0-rc.1` NuGet packages and the 11.0 RC1 shared framework.
 
@@ -355,6 +356,12 @@ The trigger is a value that starts with a combining mark, where the source has a
 
 The cause is in the bundled zstd 1.5.7. `ZSTD_decompressStream` takes a single-pass shortcut (`ZSTD_decompress_usingDDict`) when the whole frame is already in the input buffer and the output has room. Otherwise it decodes block by block, and `ZSTD_decompressContinue` compares the *compressed* block size with `blockSizeMax` ("Block Size Exceeds Maximum"). For a single-segment frame the window, and with it `blockSizeMax`, equals the content size, here 0. An RLE block's compressed size is always 1 (the repeated byte), so the check fails although the block decodes to nothing. This is the mirror image of finding 56: there the one-shot path skips a check, here the block-by-block path applies it to the wrong size. Real encoders don't produce this frame, so the impact is a parser differential on crafted input. Found by `CompressionCodecsFuzzer`, which compares `ZstandardStream` with the one-shot decoder.
 
+### 58. IgnoreSymbols comparisons aren't transitive
+
+[Repro](repros/58-CompareInfo-IgnoreSymbols-NotTransitive.cs). With `CompareOptions.IgnoreSymbols` on ICU, take `a = "-\u0001\u0301"`, `b = "-\u0301"` and `c = "-"`. `Compare(a, b)` and `Compare(b, c)` are both 0, but `Compare(a, c)` is 1. The three sort keys are all equal. The pattern is a symbol (ignored under `IgnoreSymbols`), then a completely ignorable control character (U+0000, U+0001, U+0004...), then a combining mark. In shifted collation a mark that follows an ignored symbol is ignored as well. The sort key keeps applying that rule across the control character, but `Compare` (`ucol_strcoll`) doesn't, so it counts the mark. Some pairs even come out in opposite order: `Compare("^^\u0308a\u0301", "^\u0000\u0301a-")` is -1 while the sort keys say +1. `SortKey` is documented to order strings exactly as `Compare` does.
+
+A non-transitive comparer breaks sorting. Sorting six such strings with `CompareInfo.GetStringComparer(IgnoreSymbols)` in all 720 input orders leaves 220 results that aren't sorted according to that same comparer. Hashing is fine: across 200,000 random pairs, `Compare` returning 0 always came with equal sort keys, so `StringComparer.GetHashCode` stays consistent with `Equals` and dictionaries work. The cause is the same shifted-mode handling of marks as finding 51, this time inside ICU's comparison rather than its search. Found by `GlobalizationIcuFuzzer`'s "sort keys order strings like Compare" check.
+
 ## Things that looked like bugs but aren't
 
 - `NrbfDecoderFuzzer` OOM on the repo's own seed `largeArrayOfNulls.nrbf`: the input asks for an `Array.MaxLength` array, and the `ArrayRecord.GetArray` docs tell callers to check `Lengths` first. It only fails on machines that can't allocate 16 GB.
@@ -408,7 +415,7 @@ Clean runs, with the known issues above tolerated so the fuzzers could get past 
 | Vector2/3/4, Matrix4x4, Quaternion, Plane vs scalar references | `NumericsVectorsFuzzer` | 2.4M (SIMD mostly inlined, low coverage) |
 | IPNetwork and IPEndPoint parsing, string/span/UTF-8 | `IPNetworkEndPointFuzzer` | 0.7M (finding 45) |
 | HTTP header value parsers (MediaType, CacheControl, ...), round-trip | `HttpHeaderValuesFuzzer` | 0.9M |
-| ICU globalization interop: sort keys, culture-aware search, normalization, IDN, casing, guard-paged buffers | `GlobalizationIcuFuzzer` | in progress (findings 48 to 54) |
+| ICU globalization interop: sort keys, culture-aware search, normalization, IDN, casing, guard-paged buffers | `GlobalizationIcuFuzzer` | in progress (findings 48 to 54 and 58) |
 | Span compression codecs over native zlib-ng and zstd: Deflate/ZLib/GZip/Zstandard encoders and decoders vs the Stream classes | `CompressionCodecsFuzzer` | in progress (findings 55 to 57) |
 
 A planted tie-breaking bug in `argmin-blocks` was caught by the saved corpus in under a second, so the clean result on those branches means something.
