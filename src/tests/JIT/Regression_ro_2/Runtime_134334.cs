@@ -58,6 +58,45 @@ public class Runtime_134334
         Assert.Equal(1, s_calls);
     }
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public static void ConcatUpperUpperPreservesLocalReads(bool useCall, bool writeFirst)
+    {
+        Vector128<int> result = Concat128WithLocalWrite(Vector128.Create(3), useCall, writeFirst);
+        Assert.Equal(Vector128.Create(writeFirst ? 7 : 3, writeFirst ? 7 : 3, 7, 7), result);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector128<int> Concat128WithLocalWrite(Vector128<int> value, bool useCall, bool writeFirst)
+    {
+        if (useCall)
+        {
+            if (writeFirst)
+            {
+                return Vector128.ConcatUpperUpper(Replace(ref value), value);
+            }
+
+            return Vector128.ConcatUpperUpper(value, Replace(ref value));
+        }
+
+        if (writeFirst)
+        {
+            return Vector128.ConcatUpperUpper(value = Vector128.Create(7), value);
+        }
+
+        return Vector128.ConcatUpperUpper(value, value = Vector128.Create(7));
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static Vector128<int> Replace(ref Vector128<int> value)
+    {
+        value = Vector128.Create(7);
+        return value;
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Shuffle256Receiver(Receiver receiver)
     {

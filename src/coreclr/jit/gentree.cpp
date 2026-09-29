@@ -5496,10 +5496,10 @@ bool Compiler::gtGetAddrNodeCost(GenTree* addr, var_types type, bool isVolatile,
 //
 bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
 {
-    // Don't swap "CONST_HDL op CNS"
-    if (firstNode->IsIconHandle() && secondNode->IsIntegralConst())
+    if (impIsInvariant(firstNode) || impIsInvariant(secondNode))
     {
-        return false;
+        // Invariant operands need no sequencing.
+        return true;
     }
 
     if (optValnumCSE_phase && !optCSE_canSwap(firstNode, secondNode))
@@ -5507,15 +5507,9 @@ bool Compiler::gtCanSwapOrder(GenTree* firstNode, GenTree* secondNode)
         return false;
     }
 
-    if (impIsInvariant(firstNode) || impIsInvariant(secondNode))
-    {
-        // Invariant operands need no sequencing.
-        return true;
-    }
-
-    // Either operand may change the value read by the other. Also preserve
-    // ordering constraints such as those imposed by GT_CATCH_ARG.
-    if (((firstNode->gtFlags | secondNode->gtFlags) & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
+    // Neither operand is invariant, so the first must not modify the second
+    // or carry ordering constraints such as those imposed by GT_CATCH_ARG.
+    if ((firstNode->gtFlags & (GTF_PERSISTENT_SIDE_EFFECTS | GTF_ORDER_SIDEEFF)) != 0)
     {
         return false;
     }
