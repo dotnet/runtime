@@ -2106,7 +2106,8 @@ PCODE MethodDesc::GetSingleCallableAddrOfCodeForUnmanagedCallersOnly()
 }
 
 //*******************************************************************************
-PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH)
+PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(
+    OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH, MethodDesc* pResolvedTargetMD)
 {
     CONTRACTL
     {
@@ -2122,7 +2123,11 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
     if (HasMethodInstantiation())
     {
         CheckRestore();
-        MethodDesc *pResultMD = ResolveGenericVirtualMethod(orThis, pMTOfThis);
+        _ASSERTE(pResolvedTargetMD == nullptr ||
+            pResolvedTargetMD == ResolveGenericVirtualMethod(orThis, pMTOfThis));
+        MethodDesc *pResultMD = pResolvedTargetMD != nullptr
+            ? pResolvedTargetMD
+            : ResolveGenericVirtualMethod(orThis, pMTOfThis);
 
         // If we're remoting this call we can't call directly on the returned
         // method desc, we need to go through a stub that guarantees we end up
@@ -2137,10 +2142,15 @@ PCODE MethodDesc::GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, Meth
 
     if (IsInterface())
     {
-        MethodDesc * pTargetMD = MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH,this,orThis, pMTOfThis);
+        _ASSERTE(pResolvedTargetMD == nullptr ||
+            pResolvedTargetMD == MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis));
+        MethodDesc * pTargetMD = pResolvedTargetMD != nullptr
+            ? pResolvedTargetMD
+            : MethodTable::GetMethodDescForInterfaceMethodAndServer(staticTH, this, orThis, pMTOfThis);
         return pTargetMD->GetSingleCallableAddrOfCode();
     }
 
+    // A class virtual slot can contain a dispatch stub; use it rather than the resolved method's entrypoint.
     return pMTOfThis->GetRestoredSlot(GetSlot());
 }
 

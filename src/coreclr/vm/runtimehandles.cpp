@@ -1336,8 +1336,23 @@ extern "C" void* QCALLTYPE RuntimeMethodHandle_GetVirtualFunctionPointer(
         GCX_PREEMP();
         pMethod->EnsureActive();
         pMethod->PrepareForUseAsAFunctionPointer();
+        MethodDesc* pResolvedTargetMD = nullptr;
+#ifdef FEATURE_TYPEEQUIVALENCE
+        if (pMethod->IsVtableMethod() && !pMethod->DoesNotHaveEquivalentValuetypeParameters())
+        {
+            pResolvedTargetMD = pMethod->GetMethodDescOfVirtualizedCode(
+                &receiver, pReceiverMT, declaringType.AsTypeHandle());
+            if (pResolvedTargetMD != pMethod)
+            {
+                // The resolved implementation can have value-type parameters distinct from the declaration.
+                pResolvedTargetMD->EnsureActive();
+                pResolvedTargetMD->PrepareForUseAsAFunctionPointer();
+            }
+        }
+#endif
         PCODE callTarget = pMethod->IsVtableMethod()
-            ? pMethod->GetSingleCallableAddrOfVirtualizedCode(&receiver, pReceiverMT, declaringType.AsTypeHandle())
+            ? pMethod->GetSingleCallableAddrOfVirtualizedCode(
+                &receiver, pReceiverMT, declaringType.AsTypeHandle(), pResolvedTargetMD)
             : pMethod->GetSingleCallableAddrOfCode();
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
         // Virtual dispatch can return an entrypoint whose R2R-to-interpreter thunk is not prepared yet.
