@@ -786,16 +786,85 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// The interpreter looks up a thunk for each unmanaged <c>calli</c> by signature, so the generator
+    /// has to emit one for every function pointer signature an app calls through, whatever the
+    /// calling convention spelling.
+    /// </summary>
+    [Fact]
+    public void PortableCallHelpersGeneratorEmitsThunksForUnmanagedCalliSites()
+    {
+        string source = """
+            public struct FloatPair
+            {
+                public float X;
+                public float Y;
+            }
+
+            public static unsafe class Calls
+            {
+                public static FloatPair MemberFunction(delegate* unmanaged[Cdecl, MemberFunction]<void*, long, FloatPair> fn)
+                    => fn(null, 1);
+
+                public static int ThisCall(delegate* unmanaged[Thiscall]<void*, double, double, double, int> fn)
+                    => fn(null, 1, 2, 3);
+
+                public static double Managed(delegate*<int, int, int, int, int, int, double> fn)
+                    => fn(1, 2, 3, 4, 5, 6);
+
+                public static T Generic<T>(delegate* unmanaged<T> fn)
+                    => fn();
+            }
+            """;
+
+        string workingDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        Directory.CreateDirectory(workingDirectory);
+
+        try
+        {
+            string inputAssembly = CompileCallbackAssembly(source, Path.Combine(workingDirectory, "Calls.dll"), allowUnsafe: true);
+            string outputDirectory = Path.Combine(workingDirectory, "generated");
+
+            var options = new PortableCallHelpersGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+            };
+
+            var log = new StringWriter();
+            int exitCode = PortableCallHelpersGenerator.Run(
+                CreateWasmContext(inputAssembly), options, new Logger(log, isVerbose: true));
+
+            Assert.True(exitCode == 0, log.ToString());
+
+            string thunks = File.ReadAllText(Path.Combine(outputDirectory, "callhelpers-interp-to-managed.cpp"));
+            Assert.Contains("\"MS8il\"", thunks);
+            Assert.Contains("\"Miiddd\"", thunks);
+            Assert.DoesNotContain("\"Mdiiiiii\"", thunks);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(workingDirectory, recursive: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    /// <summary>
     /// Builds an input assembly for the generator to scan. It references the same CoreLib the context
     /// reads, so the attributes it applies are the ones the type system will resolve.
     /// </summary>
-    private static string CompileCallbackAssembly(string source, string outputPath)
+    private static string CompileCallbackAssembly(string source, string outputPath, bool allowUnsafe = false)
     {
         CSharpCompilation compilation = CSharpCompilation.Create(
             Path.GetFileNameWithoutExtension(outputPath),
             new[] { CSharpSyntaxTree.ParseText(source) },
             new[] { MetadataReference.CreateFromFile(TestPaths.SystemPrivateCoreLibPath) },
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, allowUnsafe: allowUnsafe));
 
         EmitResult result = compilation.Emit(outputPath);
         Assert.True(result.Success,
