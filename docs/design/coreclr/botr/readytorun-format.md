@@ -592,6 +592,8 @@ will proceed to every module which specified `READYTORUN_FLAG_UNRELATED_R2R_CODE
 
 **TODO**: document inlining info encoding
 
+CoreCLR no longer consumes this legacy section. R2R inspection tools retain support for reading it.
+
 ## ReadyToRunSectionType.ProfileDataInfo (v2.2+)
 
 **TODO**: document profile data encoding
@@ -644,6 +646,7 @@ section pointed to by the `READYTORUN_SECTION_ASSEMBLIES_ENTRY` core header stru
 ## ReadyToRunSectionType.InliningInfo2 (v4.1+)
 
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+CoreCLR loads this section only in builds that support profiling, ReJIT, or code versioning.
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed by hashcode of the module name XORed with inlinee RID.
 
@@ -704,6 +707,7 @@ manifest metadata representing the versioning bubble.
 
 ## ReadyToRunSectionType.CrossModuleInlineInfo (v6.3+)
 The inlining information section captures what methods got inlined into other methods. It consists of a single _Native Format Hashtable_ (described below).
+CoreCLR loads this section only in builds that support profiling, ReJIT, or code versioning.
 
 The entries in the hashtable are lists of inliners for each inlinee. One entry in the hashtable corresponds to one inlinee. The hashtable is hashed with the version resilient hashcode of the uninstantiated methoddef inlinee.
 
