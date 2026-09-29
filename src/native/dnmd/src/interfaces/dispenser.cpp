@@ -8,6 +8,7 @@
 
 #include <internal/dnmd_platform.hpp>
 #include "dnmd_interfaces.hpp"
+#include "metadatainitialsize.h"
 #include "controllingiunknown.hpp"
 #include "metadataimportro.hpp"
 #include "metadataemit.hpp"
@@ -32,6 +33,7 @@ namespace
     {
         bool _threadSafe = false;
         uint32_t _duplicateChecks = MDDupDefault;
+        CorMetaDataInitialSize _initialSize = MDInitialSizeDefault;
     private:
         minipal::com_ptr<ControllingIUnknown> CreateExposedObject(minipal::com_ptr<ControllingIUnknown> unknown, DNMDOwner* owner)
         {
@@ -211,6 +213,17 @@ namespace
                     return S_OK;
                 }
 
+                if (optionid == MetaDataInitialSize)
+                {
+                    if (V_VT(value) != VT_UI4 ||
+                        (V_UI4(value) != MDInitialSizeDefault && V_UI4(value) != MDInitialSizeMinimal))
+                        return E_INVALIDARG;
+
+                    // DNMD allocates table and heap storage on demand, so Minimal is already satisfied.
+                    _initialSize = static_cast<CorMetaDataInitialSize>(V_UI4(value));
+                    return S_OK;
+                }
+
                 if (optionid == MetaDataThreadSafetyOptions)
             {
                 _threadSafe = V_UI4(value) == CorThreadSafetyOptions::MDThreadSafetyOn;
@@ -230,6 +243,13 @@ namespace
             {
                 V_VT(pvalue) = VT_UI4;
                 V_UI4(pvalue) = _duplicateChecks;
+                return S_OK;
+            }
+
+            if (optionid == MetaDataInitialSize)
+            {
+                V_VT(pvalue) = VT_UI4;
+                V_UI4(pvalue) = _initialSize;
                 return S_OK;
             }
 

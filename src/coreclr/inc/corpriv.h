@@ -13,6 +13,7 @@
 #include "corimage.h"
 #include "metadata.h"
 #include "metadataemithelper.h"
+#include "metadatainitialsize.h"
 
 // Creation function to get IMetaDataDispenser(Ex) interface.
 STDAPI CreateMetaDataDispenser(
@@ -160,19 +161,6 @@ typedef enum CorCallingConventionInternal
 //////////////////////////////////////////////////////////////////////////
 #define ELEMENT_TYPE_VALUEARRAY_UNSUPPORTED ((CorElementType) 0x17)
 #define ELEMENT_TYPE_R_UNSUPPORTED          ((CorElementType) 0x1a)
-
-// Use this guid in the SetOption if Reflection.Emit wants to control size of the initially allocated
-// MetaData. See values: code:CorMetaDataInitialSize.
-//
-// {2675b6bf-f504-4cb4-a4d5-084eea770ddc}
-EXTERN_GUID(MetaDataInitialSize, 0x2675b6bf, 0xf504, 0x4cb4, 0xa4, 0xd5, 0x08, 0x4e, 0xea, 0x77, 0x0d, 0xdc);
-
-// Allowed values for code:MetaDataInitialSize option.
-typedef enum CorMetaDataInitialSize
-{
-    MDInitialSizeDefault = 0,
-    MDInitialSizeMinimal = 1
-} CorMetaDataInitialSize;
 
 // Internal extension of open flags code:CorOpenFlags
 typedef enum CorOpenFlagsInternal

@@ -14,6 +14,7 @@ set(SOURCES
 	fieldmarshal.cpp
 	fieldrva.cpp
 	duplicates.cpp
+	initialsize.cpp
 	metadataemithelper.cpp)
 
 set(HEADERS emit.hpp)
