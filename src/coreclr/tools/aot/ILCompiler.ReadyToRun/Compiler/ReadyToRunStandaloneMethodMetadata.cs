@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
@@ -92,14 +93,17 @@ namespace ILCompiler
                     }
                 }
 
-                if (localsBlob.Length == 0)
+                // The impl flags bits record flags that change how the same IL executes.
+                byte localsAndImplFlags = localsBlob.Length == 0 ? (byte)2 : (_methodBody.LocalVariablesInitialized ? (byte)1 : (byte)0);
+                MethodImplAttributes implAttributes = metadataReader.GetMethodDefinition(wrappedMethod.Handle).ImplAttributes;
+                if ((implAttributes & MethodImplAttributes.Async) != 0)
+                    localsAndImplFlags |= 4;
+                if ((implAttributes & MethodImplAttributes.Synchronized) != 0)
+                    localsAndImplFlags |= 8;
+                _nonCodeAlternateBlob.WriteByte(localsAndImplFlags);
+
+                if (localsBlob.Length != 0)
                 {
-                    // No locals. Encode a 2 to indicate this
-                    _nonCodeAlternateBlob.WriteByte(2);
-                }
-                else
-                {
-                    _nonCodeAlternateBlob.WriteByte(_methodBody.LocalVariablesInitialized ? (byte)1 : (byte)0);
                     EcmaSignatureTranslator sigTranslator = new EcmaSignatureTranslator(localsBlob, _nonCodeAlternateBlob, GetAlternateStreamToken);
                     sigTranslator.ParseLocalsSignature();
                 }

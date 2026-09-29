@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <Features>$(Features);runtime-async=on</Features>
+    <!-- V1 and V2 must produce identical IL bodies. -->
+    <Optimize>true</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../helper.cs" />
+  </ItemGroup>
+</Project>

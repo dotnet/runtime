@@ -19,6 +19,7 @@ class ReadyToRunStandaloneMethodMetadataHelper
     MapSHash<uint32_t, uint32_t> alternateTokens;
     Module* pModule;
     IMDInternalImport* pMDImport;
+    DWORD dwImplFlags;
 
 public:
 
@@ -27,8 +28,11 @@ public:
         currentILStreamIterator(0),
         pTypeRefTokenStream(pTypeRefTokenStreamInput),
         pModule(pMD->GetModule()),
-        pMDImport(pMD->GetMDImport())
+        pMDImport(pMD->GetMDImport()),
+        dwImplFlags(0)
     {
+        IfFailThrow(pMDImport->GetMethodImplProps(pMD->GetMemberDef(), NULL, &dwImplFlags));
+
         {
             // Fill IL stream with initial data
             byte* ilStreamData = ilStream.OpenRawBuffer(header.CodeSize);
@@ -63,13 +67,16 @@ public:
             }
         }
 
-        if (header.cbLocalVarSig == 0)
+        // The impl flags bits record flags that change how the same IL executes.
+        uint8_t localsAndImplFlags = (header.cbLocalVarSig == 0) ? 2 : ((header.Flags & CorILMethod_InitLocals) ? 1 : 0);
+        if (IsMiAsync(dwImplFlags))
+            localsAndImplFlags |= 4;
+        if (IsMiSynchronized(dwImplFlags))
+            localsAndImplFlags |= 8;
+        nonCodeAlternateBlob.AppendByte(localsAndImplFlags);
+
+        if (header.cbLocalVarSig != 0)
         {
-            nonCodeAlternateBlob.AppendByte(2);
-        }
-        else
-        {
-            nonCodeAlternateBlob.AppendByte((header.Flags & CorILMethod_InitLocals) ? 1 : 0);
             SigParser localSigParser(header.LocalVarSig, header.cbLocalVarSig);
             StandaloneSigTranslator sigTranslator(&localSigParser, &nonCodeAlternateBlob, this);
             sigTranslator.ParseLocalsSignature();
@@ -665,6 +672,10 @@ void InitReadyToRunStandaloneMethodMetadata()
 ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(MethodDesc *pMD)
 {
     ReadyToRunStandaloneMethodMetadata* retVal;
+
+    // For example, the task-returning thunk of a runtime-async method has no IL body to compare.
+    if (!pMD->HasILHeader())
+        return NULL;
 
     {
         CrstHolder lock(&s_csReadyToRunStandaloneMethodMetadata);

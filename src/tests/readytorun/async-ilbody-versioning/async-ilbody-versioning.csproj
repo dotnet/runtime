@@ -1,0 +1,101 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <CrossGenTest>false</CrossGenTest>
+    <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <Features>$(Features);runtime-async=on</Features>
+    <!-- This test launches crossgen2, skip when sanitizers are enabled. -->
+    <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
+    <!-- Disable on Mono which does not support runtime-async. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'mono'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="helperv1/helper.csproj" />
+    <ProjectReference Include="helperv2/helper.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+  </ItemGroup>
+  <PropertyGroup>
+    <CLRTestBatchPreCommands><![CDATA[
+$(CLRTestBatchPreCommands)
+
+REM Suppress some DOTNET variables for the duration of Crossgen2 execution
+setlocal
+set "DOTNET_GCName="
+set "DOTNET_GCStress="
+set "DOTNET_HeapVerify="
+set "DOTNET_ReadyToRun="
+
+md IL_DLLS 2>NUL
+if not exist IL_DLLS\async-ilbody-versioning.dll (
+    copy /y async-ilbody-versioning.dll IL_DLLS\async-ilbody-versioning.dll
+)
+if not exist IL_DLLS\async-ilbody-versioning.dll (
+    echo FAILED to copy async-ilbody-versioning.dll to IL_DLLS
+    exit /b 1
+)
+
+REM Compile against V1 of the helper, with cross-module inlining of its methods
+%Core_Root%\crossgen2\crossgen2.exe -O --opt-cross-module:helper -r:%Core_Root%\*.dll -r:%25CD%\helperv1\helper.dll -o:async-ilbody-versioning.dll IL_DLLS\async-ilbody-versioning.dll
+
+set CrossGenStatus=!ERRORLEVEL!
+IF NOT !CrossGenStatus!==0 (
+    ECHO Crossgen of async-ilbody-versioning.dll failed with exitcode - !CrossGenStatus!
+    Exit /b 1
+)
+
+REM Run against V2 of the helper
+copy /y helperv2\helper.dll helper.dll
+
+endlocal
+]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+$(CLRTestBashPreCommands)
+
+# Suppress some DOTNET variables for the duration of Crossgen2 execution
+export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+
+mkdir -p IL_DLLS
+
+if [ ! -f IL_DLLS/async-ilbody-versioning.dll ]
+then
+  cp async-ilbody-versioning.dll IL_DLLS/async-ilbody-versioning.dll
+fi
+if [ ! -f IL_DLLS/async-ilbody-versioning.dll ]
+then
+  echo Failed to copy async-ilbody-versioning.dll to IL_DLLS
+  exit 1
+fi
+
+# Compile against V1 of the helper, with cross-module inlining of its methods
+"$CORE_ROOT"/crossgen2/crossgen2 -O --opt-cross-module:helper -r:"$CORE_ROOT"/*.dll -r:helperv1/helper.dll -o:async-ilbody-versioning.dll IL_DLLS/async-ilbody-versioning.dll
+
+__cgExitCode=$?
+if [ $__cgExitCode -ne 0 ]
+then
+  echo Crossgen of async-ilbody-versioning.dll failed with exitcode: $__cgExitCode
+  exit 1
+fi
+
+# Run against V2 of the helper
+cp helperv2/helper.dll helper.dll
+
+export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
+]]></CLRTestBashPreCommands>
+  </PropertyGroup>
+
+  <Target Name="CopyHelperAssembliesToOutputs" AfterTargets="Build" Condition="'$(CLRTestTargetUnsupported)' != 'true'">
+    <PropertyGroup>
+      <HelperV1SourcePath>$(OutputPath)/../helperv1/helper/</HelperV1SourcePath>
+      <HelperV1TargetPath>$(OutputPath)/helperv1</HelperV1TargetPath>
+      <HelperV2SourcePath>$(OutputPath)/../helperv2/helper/</HelperV2SourcePath>
+      <HelperV2TargetPath>$(OutputPath)/helperv2</HelperV2TargetPath>
+    </PropertyGroup>
+    <MakeDir Directories="$(HelperV1TargetPath);$(HelperV2TargetPath)" />
+    <Copy SourceFiles="$(HelperV1SourcePath)helper.dll" DestinationFolder="$(HelperV1TargetPath)" />
+    <Copy SourceFiles="$(HelperV2SourcePath)helper.dll" DestinationFolder="$(HelperV2TargetPath)" />
+  </Target>
+</Project>
