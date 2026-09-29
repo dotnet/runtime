@@ -409,7 +409,7 @@
       <Output TaskParameter="EmccProperties" ItemName="_EmccPropItems" />
       <Output TaskParameter="EmccDefaultExportedFunctions" ItemName="EmccExportedFunction" />
       <Output TaskParameter="EmccDefaultExportedRuntimeMethods" ItemName="EmccExportedRuntimeMethod" />
-      <Output TaskParameter="EmccDefaultIncomingModuleJSAPI" ItemName="EmccIncomingModuleJSAPI" />
+      <Output TaskParameter="EmccDefaultIncomingModuleJSAPI" ItemName="_EmccIncomingModuleJSAPI" />
 
       <!-- shared by browser/wasi -->
       <Output TaskParameter="WasmOptConfigurationFlags" ItemName="_DefaulWasmOptConfigurationFlags" />

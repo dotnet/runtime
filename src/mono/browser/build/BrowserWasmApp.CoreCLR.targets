@@ -806,7 +806,7 @@
 
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>"[BROWSER_HOST,@(EmccExportedRuntimeMethod -> '%27%(Identity)%27', ',')]"</_EmccExportedRuntimeMethods>
-      <_EmccIncomingModuleJSAPI>"[@(EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPI>
+      <_EmccIncomingModuleJSAPIs>"[@(_EmccIncomingModuleJSAPI -> '%27%(Identity)%27', ',')]"</_EmccIncomingModuleJSAPIs>
       <_EmccExportedFunctions>@(EmccExportedFunction -> '%(Identity)',',')</_EmccExportedFunctions>
     </PropertyGroup>
 
@@ -886,7 +886,8 @@
 
       <!-- Exported functions and runtime methods -->
       <_EmccLinkStepArgs Include="-s EXPORTED_RUNTIME_METHODS=$(_EmccExportedRuntimeMethods)" />
-      <_EmccLinkStepArgs Include="-s INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPI)" />
+      <!-- INCOMING_MODULE_JS_API only matters with emscripten assertions (Debug); in Release let emscripten use its default list. -->
+      <_EmccLinkStepArgs Condition="'$(Configuration)' == 'Debug'" Include="-s INCOMING_MODULE_JS_API=$(_EmccIncomingModuleJSAPIs)" />
       <_EmccLinkStepArgs Include="-s EXPORTED_FUNCTIONS=$(_EmccExportedFunctions)" />
 
       <!-- JS library files -->

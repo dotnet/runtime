@@ -117,6 +117,10 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
         -sASSERTIONS=1
         -sLLD_REPORT_UNDEFINED
         -sERROR_ON_UNDEFINED_SYMBOLS=1
+        # Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare
+        # aborts the build early. This is only meaningful with ASSERTIONS=1, so it is Debug-only. The value
+        # comes from GenerateEmccExports in eng/native.wasm.targets.
+        -sINCOMING_MODULE_JS_API=${CMAKE_EMCC_INCOMING_MODULE_JS_API}
     )
 endif ()
 
@@ -132,8 +136,6 @@ target_link_options(browserhost PRIVATE
     -sEXIT_RUNTIME=1
     -sALLOW_TABLE_GROWTH=1
     -sEXPORTED_RUNTIME_METHODS=BROWSER_HOST,${CMAKE_EMCC_EXPORTED_RUNTIME_METHODS}
-    # Emscripten's default INCOMING_MODULE_JS_API, kept explicit so a Module property we don't declare aborts a debug build early. Value comes from GenerateEmccExports in eng/native.wasm.targets.
-    -sINCOMING_MODULE_JS_API=${CMAKE_EMCC_INCOMING_MODULE_JS_API}
     -sEXPORTED_FUNCTIONS=${CMAKE_EMCC_EXPORTED_FUNCTIONS}
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
