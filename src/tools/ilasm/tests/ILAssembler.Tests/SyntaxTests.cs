@@ -446,6 +446,97 @@ namespace ILAssembler.Tests
                 culture: null)!;
         }
 
+        [Theory]
+        [InlineData("[mscorlib]System.Object")]
+        [InlineData("[.module Other.netmodule]System.Object")]
+        [InlineData("System.Object")]
+        [InlineData("class [mscorlib]System.Object")]
+        [InlineData("class [.module Other.netmodule]System.Object")]
+        [InlineData("class [mscorlib]Generic`1<int32>")]
+        public void EmptyClasses_DoNotBufferFollowingDeclarations(string baseType)
+        {
+            var source = new StringBuilder(".assembly extern mscorlib { } .module extern Other.netmodule ");
+            for (int i = 0; i < 100; i++)
+            {
+                source.Append($".class public C{i} extends {baseType} {{ }} ");
+            }
+
+            var tokens = new MeasuringTokenStream(new CILLexer(new AntlrInputStream(source.ToString())));
+            CILParser parser = CreateParser(tokens);
+
+            parser.decls();
+
+            Assert.Equal(0, parser.NumberOfSyntaxErrors);
+            Assert.Equal(TokenConstants.EOF, tokens.LA(1));
+            Assert.InRange(tokens.MaximumBufferedTokens, 1, 64);
+        }
+
+        [Theory]
+        [InlineData("[Scope]", false)]
+        [InlineData("method void [Scope]::Target()", false)]
+        [InlineData("field int32 [Scope]::Value", false)]
+        [InlineData("[.module Scope]", true)]
+        [InlineData("method void [.module Scope]::Target()", true)]
+        [InlineData("field int32 [.module Scope]::Value", true)]
+        public void BareScopes_ArePreservedForOwners(string source, bool isModule)
+        {
+            var tokens = new UnbufferedTokenStream(new CILLexer(new AntlrInputStream(source)));
+            CILParser parser = CreateParser(tokens);
+
+            CILParser.OwnerTypeContext owner = parser.ownerType();
+
+            Assert.Equal(0, parser.NumberOfSyntaxErrors);
+            Assert.False(owner.HasSyntaxError);
+            Assert.Equal(TokenConstants.EOF, tokens.LA(1));
+            CILParser.TypeSpecificationValue? scope = owner.Value switch
+            {
+                CILParser.TypeOwnerValue type => type.Type,
+                CILParser.MemberOwnerValue
+                {
+                    Member: CILParser.MethodMemberReferenceValue
+                    {
+                        Method: CILParser.ParsedMethodReferenceValue method
+                    }
+                } => method.Owner,
+                CILParser.MemberOwnerValue
+                {
+                    Member: CILParser.FieldMemberReferenceValue
+                    {
+                        Field: CILParser.ParsedFieldReferenceValue field
+                    }
+                } => field.Owner,
+                _ => throw new InvalidOperationException($"Unexpected owner: {owner.Value}")
+            };
+            if (isModule)
+            {
+                Assert.Equal("Scope", Assert.IsType<CILParser.ModuleTypeSpecificationValue>(scope).ModuleName);
+            }
+            else
+            {
+                Assert.Equal("Scope", Assert.IsType<CILParser.AssemblyTypeSpecificationValue>(scope).AssemblyName);
+            }
+        }
+
+        private static CILParser CreateParser(ITokenStream tokens)
+        {
+            var parser = new CILParser(tokens) { BuildParseTree = false };
+            typeof(CILParser).GetProperty("Actions", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(parser, CreateGrammarActions());
+
+            return parser;
+        }
+
+        private sealed class MeasuringTokenStream(ITokenSource source) : UnbufferedTokenStream(source)
+        {
+            public int MaximumBufferedTokens { get; private set; }
+
+            public override void Release(int marker)
+            {
+                MaximumBufferedTokens = Math.Max(MaximumBufferedTokens, n);
+                base.Release(marker);
+            }
+        }
+
         public static TheoryData<string, bool> TruncatedDirectiveMutations
         {
             get

@@ -677,7 +677,7 @@ locals [int InitialSyntaxErrorCount]
 	_localctx.Value = CILParser.OwnerTypeValue.Error;
 }
 :
-	typeValue = typeSpec {_localctx.Value = Actions.CreateTypeOwner($typeValue.Value);}
+	typeValue = typeSpecOrScope {_localctx.Value = Actions.CreateTypeOwner($typeValue.Value);}
 	| member = memberRef {_localctx.Value = Actions.CreateMemberOwner($member.Value);}
 ;
 finally {
@@ -1133,8 +1133,6 @@ locals [int InitialSyntaxErrorCount]
 }
 :
 	classType = className {_localctx.Value = Actions.CreateClassTypeSpecification($classType.Value);}
-	| '[' assemblyName = dottedName ']' {_localctx.Value = Actions.CreateAssemblyTypeSpecification($assemblyName.Value);}
-	| '[' MODULE moduleName = dottedName ']' {_localctx.Value = Actions.CreateModuleTypeSpecification($moduleName.Value);}
 	| signatureType = type {_localctx.Value = Actions.CreateSignatureTypeSpecification($signatureType.Value);}
 ;
 finally {
@@ -1142,6 +1140,16 @@ finally {
 		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
 		_localctx.exception is not null;
 }
+
+// A bare scope is an owner, not a type. Keeping it out of typeSpec prevents
+// prediction from treating a qualified type name as a following declaration name.
+typeSpecOrScope returns [CILParser.TypeSpecificationValue Value]
+@init {_localctx.Value = CILParser.TypeSpecificationValue.Error;}
+:
+	typeValue = typeSpec {_localctx.Value = $typeValue.Value;}
+	| '[' assemblyName = dottedName ']' {_localctx.Value = Actions.CreateAssemblyTypeSpecification($assemblyName.Value);}
+	| '[' MODULE moduleName = dottedName ']' {_localctx.Value = Actions.CreateModuleTypeSpecification($moduleName.Value);}
+;
 
 /*  Native types for marshaling signatures  */
 nativeType returns [CILParser.NativeTypeValue Value]
@@ -1483,9 +1491,9 @@ locals [int InitialSyntaxErrorCount]
 	_localctx.Value = CILParser.MethodReferenceValue.Error;
 }
 :
-	convention = callConv returnType = type owner = typeSpec '::' name = methodName genericArguments = typeArgs? arguments = sigArgs
+	convention = callConv returnType = type owner = typeSpecOrScope '::' name = methodName genericArguments = typeArgs? arguments = sigArgs
 		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, $genericArguments.ctx is null ? null : $genericArguments.Value, null, $arguments.Value);}
-	| convention = callConv returnType = type owner = typeSpec '::' name = methodName genericArity = genArityNotEmpty arguments = sigArgs
+	| convention = callConv returnType = type owner = typeSpecOrScope '::' name = methodName genericArity = genArityNotEmpty arguments = sigArgs
 		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, null, $genericArity.Value, $arguments.Value);}
 	| convention = callConv returnType = type name = methodName genericArguments = typeArgs? arguments = sigArgs
 		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, null, $name.Value, $genericArguments.ctx is null ? null : $genericArguments.Value, null, $arguments.Value);}
@@ -1547,7 +1555,7 @@ locals [int InitialSyntaxErrorCount]
 	_localctx.Value = CILParser.FieldReferenceValue.Error;
 }
 :
-	fieldType = type owner = typeSpec '::' name = dottedName
+	fieldType = type owner = typeSpecOrScope '::' name = dottedName
 		{_localctx.Value = Actions.CreateFieldReference($fieldType.Value, $owner.Value, $name.Value);}
 	| fieldType = type name = dottedName
 		{_localctx.Value = Actions.CreateFieldReference($fieldType.Value, null, $name.Value);}
@@ -1643,8 +1651,8 @@ locals [
 	| '.pack' packing = int32 {Actions.SetClassPackingSize($packing.start);}
 	| export = exportHead '{' exportDeclarations = exptypeDecls '}'
 		{Actions.ProcessClassExport($export.ctx, $exportDeclarations.ctx);}
-	| OVERRIDE declarationOwner = typeSpec '::' declarationName = methodName 'with'
-		bodyConvention = callConv bodyReturnType = type bodyOwner = typeSpec '::'
+	| OVERRIDE declarationOwner = typeSpecOrScope '::' declarationName = methodName 'with'
+		bodyConvention = callConv bodyReturnType = type bodyOwner = typeSpecOrScope '::'
 		bodyName = methodName bodyArguments = sigArgs
 		{Actions.AddClassMethodOverride(
 			_localctx,
@@ -1656,10 +1664,10 @@ locals [
 			$bodyName.Value,
 			$bodyArguments.Value);}
 	| OVERRIDE 'method'
-		declarationConvention = callConv declarationReturnType = type declarationOwner = typeSpec '::'
+		declarationConvention = callConv declarationReturnType = type declarationOwner = typeSpecOrScope '::'
 		declarationName = methodName declarationArity = genArity declarationArguments = sigArgs
 		'with' 'method'
-		bodyConvention = callConv bodyReturnType = type bodyOwner = typeSpec '::'
+		bodyConvention = callConv bodyReturnType = type bodyOwner = typeSpecOrScope '::'
 		bodyName = methodName bodyArity = genArity bodyArguments = sigArgs
 		{Actions.AddClassMethodOverride(
 			_localctx,
@@ -2066,8 +2074,8 @@ overrideDecl
 locals [int InitialSyntaxErrorCount]
 @init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
-	OVERRIDE owner = typeSpec '::' name = methodName
-	| OVERRIDE 'method' convention = callConv returnType = type owner = typeSpec '::' name = methodName
+	OVERRIDE owner = typeSpecOrScope '::' name = methodName
+	| OVERRIDE 'method' convention = callConv returnType = type owner = typeSpecOrScope '::' name = methodName
 		arity = genArity arguments = sigArgs
 ;
 finally {Actions.EndOverrideDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
