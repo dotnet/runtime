@@ -134,6 +134,9 @@ Pos      quick_insert_string_roll(deflate_state *const s, uint32_t str);
 /* Struct for memory allocation handling */
 typedef struct deflate_allocs_s {
     char            *buf_start;
+#ifdef _WIN64
+    char            *head_buf_start;
+#endif
     free_func        zfree;
     deflate_state   *state;
     unsigned char   *window;

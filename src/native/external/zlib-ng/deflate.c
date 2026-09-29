@@ -196,11 +196,16 @@ static const config configuration_table[10] = {
 #endif
 
 /* ===========================================================================
- * Allocate a big buffer and divide it up into the various buffers deflate needs.
+ * Allocate the various buffers deflate needs.
  * Handles alignment of allocated buffer and alignment of individual buffers.
  */
 Z_INTERNAL deflate_allocs* alloc_deflate(PREFIX3(stream) *strm, int windowBits, int lit_bufsize) {
     int curr_size = 0;
+
+#ifdef _WIN64
+    if (HASH_SIZE > (INT32_MAX - 63) / sizeof(Pos))
+        return NULL;
+#endif
 
     /* Define sizes */
     int window_size = DEFLATE_ADJUST_WINDOW_SIZE((1 << windowBits) * 2);
@@ -219,9 +224,11 @@ Z_INTERNAL deflate_allocs* alloc_deflate(PREFIX3(stream) *strm, int windowBits, 
     int prev_pos = PAD_64(curr_size);
     curr_size = prev_pos + prev_size;
 
+#ifndef _WIN64
     LOGSZP("head", head_size, PAD_64(curr_size), PADSZ(curr_size,64));
     int head_pos = PAD_64(curr_size);
     curr_size = head_pos + head_size;
+#endif
 
     LOGSZP("pending", pending_size, PAD_64(curr_size), PADSZ(curr_size,64));
     int pending_pos = PAD_64(curr_size);
@@ -254,7 +261,17 @@ Z_INTERNAL deflate_allocs* alloc_deflate(PREFIX3(stream) *strm, int windowBits, 
     /* Assign buffers */
     alloc_bufs->window = (unsigned char *)HINT_ALIGNED_WINDOW(buff + window_pos);
     alloc_bufs->prev = (Pos *)HINT_ALIGNED_64(buff + prev_pos);
+#ifdef _WIN64
+    /* Split out the hash table while keeping window and prev adjacent in the owner allocation. */
+    alloc_bufs->head_buf_start = (char *)strm->zalloc(strm->opaque, 1, head_size + 63);
+    if (alloc_bufs->head_buf_start == NULL) {
+        alloc_bufs->zfree(strm->opaque, alloc_bufs->buf_start);
+        return NULL;
+    }
+    alloc_bufs->head = (Pos *)HINT_ALIGNED_64((char *)PAD_64(alloc_bufs->head_buf_start));
+#else
     alloc_bufs->head = (Pos *)HINT_ALIGNED_64(buff + head_pos);
+#endif
     alloc_bufs->pending_buf = (unsigned char *)HINT_ALIGNED_64(buff + pending_pos);
     alloc_bufs->state = (deflate_state *)HINT_ALIGNED_16(buff + state_pos);
 
@@ -271,6 +288,9 @@ static inline void free_deflate(PREFIX3(stream) *strm) {
 
     if (state->alloc_bufs != NULL) {
         deflate_allocs *alloc_bufs = state->alloc_bufs;
+#ifdef _WIN64
+        alloc_bufs->zfree(strm->opaque, alloc_bufs->head_buf_start);
+#endif
         alloc_bufs->zfree(strm->opaque, alloc_bufs->buf_start);
         strm->state = NULL;
     }

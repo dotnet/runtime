@@ -10,3 +10,8 @@ We have removed the following folders from our local copy as these files are not
 - zlib-ng/test/
 - zlib-ng/arch/s390/self-hosted-builder/
 
+Local modifications:
+
+- On _WIN64, deflate.c and deflate.h allocate the hash-head table separately,
+  preserving its 64-byte alignment and keeping window and prev adjacent in the
+  original allocation. Both allocations are released through the saved free callback.
