@@ -103,7 +103,7 @@ Run one app at a time because both commands below listen on port 5000. Start wit
 cd <benchmarks-repo>/src/BenchmarksApps/TechEmpower/PlatformBenchmarks/bin/Release/"$TFM"
 <runtime-repo>/.dotnet/dotnet exec PlatformBenchmarks.dll --urls http://127.0.0.1:5000 &
 sleep 5
-curl -sS http://127.0.0.1:5000/json
+curl --fail-with-body -sS http://127.0.0.1:5000/json
 ```
 
 After running its load tests, stop `PlatformBenchmarks`, then run `BasicMinimalApi`:
@@ -112,7 +112,7 @@ After running its load tests, stop `PlatformBenchmarks`, then run `BasicMinimalA
 cd <benchmarks-repo>/src/BenchmarksApps/BasicMinimalApi/bin/Release/"$TFM"
 <runtime-repo>/.dotnet/dotnet exec BasicMinimalApi.dll --urls http://127.0.0.1:5000 &
 sleep 5
-curl -sS http://127.0.0.1:5000/todos
+curl --fail-with-body -sS http://127.0.0.1:5000/todos
 ```
 
 Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_URING=1`/`=0`) *before* starting the process — it's read once at startup.
@@ -284,9 +284,9 @@ Create the parent directory first if necessary. Extend the explicit copy list ac
 
 Crank's `--application.options.outputFiles` uploads local files into the application's published output (the `published/` folder produced by `dotnet publish` on the agent) *after* that build completes. It is different from uploading source files or build inputs. Leave the controller's SDK/shared frameworks untouched; no in-place SDK replacement is needed.
 
-**`PlatformBenchmarks` publishes framework-dependent by default, and `outputFiles` alone does not override the shared framework for a framework-dependent app.** A framework-dependent publish's own `published/` output does not contain a private copy of `Microsoft.NETCore.App`/`Microsoft.AspNetCore.App` at all — the host resolves `System.Private.CoreLib.dll`, `libcoreclr.so`, `libclrjit.so`, and other framework assemblies (including `System.Net.Sockets.dll`) exclusively from the shared framework directory selected by `--application.runtimeVersion`/`--application.aspNetCoreVersion`, which Crank provisions separately and does not touch when applying `outputFiles`. Dropping same-named files into `published/` in this mode has no effect: the run silently benchmarks the stock shared-framework binaries instead of the uploaded ones, for every row in the table above except application-local, non-framework assemblies.
+Crank currently makes .NET jobs self-contained by default. If a configuration or command-line override explicitly sets `selfContained=false`, however, `outputFiles` cannot replace shared-framework binaries: a framework-dependent publish's `published/` directory has no private copy of `Microsoft.NETCore.App`/`Microsoft.AspNetCore.App`, and the host resolves `System.Private.CoreLib.dll`, `libcoreclr.so`, `libclrjit.so`, and other framework assemblies (including `System.Net.Sockets.dll`) from the separately provisioned shared framework.
 
-To make the overlay actually take effect, publish the job **self-contained** instead, so the local runtime bits become part of `published/` itself and the later `outputFiles` copy overwrites them in place:
+Keep the job explicitly **self-contained** so the local runtime bits are part of `published/` and the later `outputFiles` copy overwrites them in place, regardless of configuration overrides:
 
 ```bash
 CONFIG='<scenario-config-url>'
