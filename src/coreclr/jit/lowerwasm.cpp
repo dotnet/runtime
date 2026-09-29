@@ -388,7 +388,10 @@ void Lowering::LowerDivOrMod(GenTreeOp* divMod)
 // Arguments:
 //    blkNode - The block store node to lower
 //
-void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
+// Return Value:
+//    Always false: the WASM lowering keeps blkNode in LIR.
+//
+bool Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
 {
     assert(blkNode->OperIsInitBlkOp());
 
@@ -416,6 +419,8 @@ void Lowering::LowerInitBlockStore(GenTreeBlk* blkNode)
     {
         SetMultiplyUsed(dstAddr DEBUGARG("LowerInitBlockStore destination address"));
     }
+
+    return false;
 }
 
 //------------------------------------------------------------------------

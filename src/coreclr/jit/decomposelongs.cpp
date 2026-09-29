@@ -881,8 +881,9 @@ GenTree* DecomposeLongs::DecomposeCnsLng(LIR::Use& use)
     INT32    loVal = tree->AsLngCon()->LoVal();
     INT32    hiVal = tree->AsLngCon()->HiVal();
 
-    GenTree* loResult = tree;
-    loResult->BashToConst(loVal);
+    GenTree* loResult = m_compiler->gtNewIconNode(loVal);
+    Range().InsertAfter(tree, loResult);
+    Range().Remove(tree);
 
     GenTree* hiResult = m_compiler->gtNewIconNode(hiVal);
     Range().InsertAfter(loResult, hiResult);

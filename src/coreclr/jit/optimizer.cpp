@@ -3154,11 +3154,12 @@ void Compiler::optSetWeightForPreheaderOrExit(FlowGraphNaturalLoop* loop, BasicB
  *  get called with 'doit' being true, we actually perform the narrowing.
  */
 
-bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit)
+bool Compiler::optNarrowTree(GenTree** use, var_types srct, var_types dstt, ValueNumPair vnpNarrow, bool doit)
 {
     genTreeOps oper;
     unsigned   kind;
 
+    GenTree* const tree = *use;
     noway_assert(tree);
     noway_assert(genActualType(tree->gtType) == genActualType(srct));
 
@@ -3225,8 +3226,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if (doit)
                 {
-                    tree->BashToConst(static_cast<int32_t>(lval));
-                    fgUpdateConstTreeValueNumber(tree);
+                    *use = gtNewIconNodeWithVN(this, static_cast<int32_t>(lval));
+                    (*use)->SetMorphed(this);
                 }
 
                 return true;
@@ -3322,7 +3323,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
 
-                GenTree* opToNarrow;
+                GenTree** opToNarrow;
                 opToNarrow = nullptr;
                 GenTree** otherOpPtr;
                 otherOpPtr = nullptr;
@@ -3334,9 +3335,9 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 // The same is true if one of the operands is an int const and can be narrowed into 'dsst'.
                 if (op2->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt))
                 {
-                    if (optNarrowTree(op2, srct, dstt, NoVNPair, false))
+                    if (optNarrowTree(&tree->AsOp()->gtOp2, srct, dstt, NoVNPair, false))
                     {
-                        opToNarrow = op2;
+                        opToNarrow = &tree->AsOp()->gtOp2;
                         otherOpPtr = &tree->AsOp()->gtOp1;
                     }
                     else
@@ -3347,9 +3348,9 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
 
                 if ((opToNarrow == nullptr) && (op1->OperIs(GT_CNS_INT) || varTypeIsUnsigned(dstt)))
                 {
-                    if (optNarrowTree(op1, srct, dstt, NoVNPair, false))
+                    if (optNarrowTree(&tree->AsOp()->gtOp1, srct, dstt, NoVNPair, false))
                     {
-                        opToNarrow = op1;
+                        opToNarrow = &tree->AsOp()->gtOp1;
                         otherOpPtr = &tree->AsOp()->gtOp2;
                     }
                     else
@@ -3403,7 +3404,8 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 noway_assert(genActualType(tree->gtType) == genActualType(op1->gtType));
                 noway_assert(genActualType(tree->gtType) == genActualType(op2->gtType));
             COMMON_BINOP:
-                if (!optNarrowTree(op1, srct, dstt, NoVNPair, doit) || !optNarrowTree(op2, srct, dstt, NoVNPair, doit))
+                if (!optNarrowTree(&tree->AsOp()->gtOp1, srct, dstt, NoVNPair, doit) ||
+                    !optNarrowTree(&tree->AsOp()->gtOp2, srct, dstt, NoVNPair, doit))
                 {
                     noway_assert(doit == false);
                     return false;
@@ -3502,7 +3504,7 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 return false;
 
             case GT_COMMA:
-                if (optNarrowTree(op2, srct, dstt, vnpNarrow, doit))
+                if (optNarrowTree(&tree->AsOp()->gtOp2, srct, dstt, vnpNarrow, doit))
                 {
                     /* Simply change the type of the tree */
 
@@ -5596,7 +5598,8 @@ void Compiler::AddModifiedElemTypeAllContainingLoops(FlowGraphNaturalLoop* loop,
 //    stmt   -  Statement the indexing nodes belong to.
 //
 // Return Value:
-//    Rewritten "check" - no-op if it has no side effects or the tree that contains them.
+//    The original "check" node, now removed from the statement. Its linear order
+//    links are left intact so that callers walking the node list can continue.
 //
 // Notes:
 //    This method is capable of removing checks of two kinds: COMMA-based and standalone top-level
@@ -5636,24 +5639,23 @@ GenTree* Compiler::optRemoveRangeCheck(GenTreeBoundsChk* check, GenTree* comma, 
     gtExtractSideEffList(check->GetArrayLength(), &sideEffList, GTF_ASG);
     gtExtractSideEffList(check->GetIndex(), &sideEffList);
 
-    if (sideEffList != nullptr)
+    // Replace the check with its side effects, if any, or a NOP.
+    GenTree* replacement = sideEffList;
+    if (replacement == nullptr)
     {
-        // We've got some side effects.
-        if (tree->OperIs(GT_COMMA))
-        {
-            // Make the comma handle them.
-            tree->AsOp()->gtOp1 = sideEffList;
-        }
-        else
-        {
-            // Make the statement execute them instead of the check.
-            stmt->SetRootNode(sideEffList);
-            tree = sideEffList;
-        }
+        replacement = gtNewNothingNode();
+        // Keep the "index < length" assertion of the removed check visible to RangeCheck.
+        replacement->SetAssertionInfo(check->GetAssertionInfo());
+    }
+
+    if (tree->OperIs(GT_COMMA))
+    {
+        tree->AsOp()->gtOp1 = replacement;
     }
     else
     {
-        check->gtBashToNOP();
+        stmt->SetRootNode(replacement);
+        tree = replacement;
     }
 
     if (tree->OperIs(GT_COMMA))

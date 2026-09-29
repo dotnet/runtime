@@ -17266,7 +17266,7 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
         // Remove the newobj and store to box temp
         JITDUMP("Bashing NEWOBJ [%06u] to NOP\n", dspTreeID(boxLclDef));
-        boxLclDef->gtBashToNOP();
+        allocStmt->SetRootNode(gtNewNothingNode());
 
         // Update the copy from the value to be boxed to the box temp
         copy->AsIndir()->Addr() = gtNewLclVarAddrNode(boxTempLcl, TYP_BYREF);
@@ -17323,7 +17323,8 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     //
     // Change the store expression to a NOP.
     JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(boxLclDef));
-    boxLclDef->gtBashToNOP();
+    allocStmt->SetRootNode(gtNewNothingNode());
+    allocStmt->GetRootNode()->SetMorphed(this);
 
     // Change the copy expression so it preserves key
     // source side effects.
@@ -17333,7 +17334,8 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
     {
         // If there were no copy source side effects just bash
         // the copy to a NOP.
-        copy->gtBashToNOP();
+        copyStmt->SetRootNode(gtNewNothingNode());
+        copyStmt->GetRootNode()->SetMorphed(this);
         JITDUMP(" to NOP; no source side effects.\n");
     }
     else if (!isStructCopy)
@@ -17742,7 +17744,7 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
                     {
                         lconVal = iconVal;
                     }
-                    return gtBashTreeToConstLng(tree, lconVal);
+                    return gtFoldTreeToConstLng(tree, lconVal);
                 }
 
                 case TYP_FLOAT:
@@ -17757,7 +17759,7 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
                     {
                         dconVal = static_cast<float>(iconVal);
                     }
-                    return gtBashTreeToConstDbl(tree, dconVal);
+                    return gtFoldTreeToConstDbl(tree, dconVal);
                 }
 
                 case TYP_DOUBLE:
@@ -17772,7 +17774,7 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
                     {
                         dconVal = static_cast<double>(iconVal);
                     }
-                    return gtBashTreeToConstDbl(tree, dconVal);
+                    return gtFoldTreeToConstDbl(tree, dconVal);
                 }
 
                 default:
@@ -17790,7 +17792,7 @@ GenTree* Compiler::gtFoldExprUnaryConstInt(GenTreeUnOp* tree, GenTreeIntCon* int
         }
     }
 
-    return gtBashTreeToConstInt(tree, iconVal);
+    return gtFoldTreeToConstInt(tree, iconVal);
 }
 
 //------------------------------------------------------------------------
@@ -17896,7 +17898,7 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
                 case TYP_ULONG:
                 case TYP_LONG:
                 {
-                    return gtBashTreeToConstLng(tree, lconVal);
+                    return gtFoldTreeToConstLng(tree, lconVal);
                 }
 
                 case TYP_FLOAT:
@@ -17911,7 +17913,7 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
                     {
                         dconVal = static_cast<float>(lconVal);
                     }
-                    return gtBashTreeToConstDbl(tree, dconVal);
+                    return gtFoldTreeToConstDbl(tree, dconVal);
                 }
 
                 case TYP_DOUBLE:
@@ -17926,7 +17928,7 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
                     {
                         dconVal = static_cast<double>(lconVal);
                     }
-                    return gtBashTreeToConstDbl(tree, dconVal);
+                    return gtFoldTreeToConstDbl(tree, dconVal);
                 }
 
                 default:
@@ -17936,7 +17938,7 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
                 }
             }
 
-            return gtBashTreeToConstInt(tree, static_cast<int32_t>(lconVal));
+            return gtFoldTreeToConstInt(tree, static_cast<int32_t>(lconVal));
         }
 
         default:
@@ -17945,7 +17947,7 @@ GenTree* Compiler::gtFoldExprUnaryConstLng(GenTreeUnOp* tree, GenTreeIntConCommo
         }
     }
 
-    return gtBashTreeToConstLng(tree, lconVal);
+    return gtFoldTreeToConstLng(tree, lconVal);
 }
 
 //------------------------------------------------------------------------
@@ -18054,19 +18056,19 @@ GenTree* Compiler::gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dbl
                 case TYP_LONG:
                 {
                     int64_t lconVal = static_cast<int64_t>(dconVal);
-                    return gtBashTreeToConstLng(tree, lconVal);
+                    return gtFoldTreeToConstLng(tree, lconVal);
                 }
 
                 case TYP_ULONG:
                 {
                     int64_t lconVal = static_cast<int64_t>(FloatingPointUtils::convertDoubleToUInt64(dconVal));
-                    return gtBashTreeToConstLng(tree, lconVal);
+                    return gtFoldTreeToConstLng(tree, lconVal);
                 }
 
                 case TYP_FLOAT:
                 {
                     dconVal = forceCastToFloat(dconVal);
-                    return gtBashTreeToConstDbl(tree, dconVal);
+                    return gtFoldTreeToConstDbl(tree, dconVal);
                 }
 
                 case TYP_DOUBLE:
@@ -18075,7 +18077,7 @@ GenTree* Compiler::gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dbl
                     {
                         dconVal = forceCastToFloat(dconVal);
                     }
-                    return gtBashTreeToConstDbl(tree, dconVal);
+                    return gtFoldTreeToConstDbl(tree, dconVal);
                 }
 
                 default:
@@ -18085,7 +18087,7 @@ GenTree* Compiler::gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dbl
                 }
             }
 
-            return gtBashTreeToConstInt(tree, iconVal);
+            return gtFoldTreeToConstInt(tree, iconVal);
         }
 
         default:
@@ -18094,7 +18096,7 @@ GenTree* Compiler::gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dbl
         }
     }
 
-    return gtBashTreeToConstDbl(tree, dconVal);
+    return gtFoldTreeToConstDbl(tree, dconVal);
 }
 
 //------------------------------------------------------------------------
@@ -18139,10 +18141,7 @@ GenTree* Compiler::gtFoldExprBinaryConst(GenTreeOp* tree)
             JITDUMP("\nFolding an in-range bounds check:\n");
             DISPTREE(tree);
 
-            tree->gtBashToNOP();
-
-            JITDUMP("Bashed to NOP:\n");
-            DISPTREE(tree);
+            return gtNewNothingNode();
         }
 
         return tree;
@@ -18170,12 +18169,12 @@ GenTree* Compiler::gtFoldExprBinaryConst(GenTreeOp* tree)
                 {
                     if (tree->OperIs(GT_EQ))
                     {
-                        return gtBashTreeToConstInt(tree, 0);
+                        return gtFoldTreeToConstInt(tree, 0);
                     }
 
                     if (tree->OperIs(GT_NE) || (tree->OperIs(GT_GT) && tree->IsUnsigned()))
                     {
-                        return gtBashTreeToConstInt(tree, 1);
+                        return gtFoldTreeToConstInt(tree, 1);
                     }
                 }
                 return tree;
@@ -18193,12 +18192,12 @@ GenTree* Compiler::gtFoldExprBinaryConst(GenTreeOp* tree)
             {
                 case GT_EQ:
                 {
-                    return gtBashTreeToConstInt(tree, (iconVal1 == iconVal2) ? 1 : 0);
+                    return gtFoldTreeToConstInt(tree, (iconVal1 == iconVal2) ? 1 : 0);
                 }
 
                 case GT_NE:
                 {
-                    return gtBashTreeToConstInt(tree, (iconVal1 != iconVal2) ? 1 : 0);
+                    return gtFoldTreeToConstInt(tree, (iconVal1 != iconVal2) ? 1 : 0);
                 }
 
                 case GT_ADD:
@@ -18212,13 +18211,12 @@ GenTree* Compiler::gtFoldExprBinaryConst(GenTreeOp* tree)
                         DISPTREE(tree);
 
                         // Fold into GT_IND of null byref.
-                        tree->BashToConst(0, TYP_BYREF);
-                        fgUpdateConstTreeValueNumber(tree);
+                        GenTree* nullByref = gtNewIconNodeWithVN(this, 0, TYP_BYREF);
 
                         JITDUMP("\nFolded to null byref:\n");
-                        DISPTREE(tree);
+                        DISPTREE(nullByref);
 
-                        tree->gtFlags &= ~GTF_ALL_EFFECT;
+                        return nullByref;
                     }
                     break;
                 }
@@ -18370,7 +18368,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
             iconVal1 = static_cast<int32_t>(static_cast<uint32_t>(iconVal1) + static_cast<uint32_t>(iconVal2));
 
             FieldSeq* fieldSeq = GetFieldSeqStore()->Append(intCon1->GetFieldSeq(), intCon2->GetFieldSeq());
-            return gtBashTreeToConstInt(tree, iconVal1, fieldSeq);
+            return gtFoldTreeToConstInt(tree, iconVal1, fieldSeq);
         }
 
         case GT_SUB:
@@ -18491,7 +18489,7 @@ GenTree* Compiler::gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intC
         }
     }
 
-    return gtBashTreeToConstInt(tree, iconVal1);
+    return gtFoldTreeToConstInt(tree, iconVal1);
 }
 
 //------------------------------------------------------------------------
@@ -18540,12 +18538,12 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
     {
         case GT_EQ:
         {
-            return gtBashTreeToConstInt(tree, (lconVal1 == lconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (lconVal1 == lconVal2) ? 1 : 0);
         }
 
         case GT_NE:
         {
-            return gtBashTreeToConstInt(tree, (lconVal1 != lconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (lconVal1 != lconVal2) ? 1 : 0);
             break;
         }
 
@@ -18553,13 +18551,13 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
         {
             if (tree->IsUnsigned())
             {
-                return gtBashTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) < static_cast<uint64_t>(lconVal2))
+                return gtFoldTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) < static_cast<uint64_t>(lconVal2))
                                                       ? 1
                                                       : 0);
             }
             else
             {
-                return gtBashTreeToConstInt(tree, (lconVal1 < lconVal2) ? 1 : 0);
+                return gtFoldTreeToConstInt(tree, (lconVal1 < lconVal2) ? 1 : 0);
             }
             break;
         }
@@ -18568,13 +18566,13 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
         {
             if (tree->IsUnsigned())
             {
-                return gtBashTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) <= static_cast<uint64_t>(lconVal2))
+                return gtFoldTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) <= static_cast<uint64_t>(lconVal2))
                                                       ? 1
                                                       : 0);
             }
             else
             {
-                return gtBashTreeToConstInt(tree, (lconVal1 <= lconVal2) ? 1 : 0);
+                return gtFoldTreeToConstInt(tree, (lconVal1 <= lconVal2) ? 1 : 0);
             }
             break;
         }
@@ -18583,13 +18581,13 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
         {
             if (tree->IsUnsigned())
             {
-                return gtBashTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) >= static_cast<uint64_t>(lconVal2))
+                return gtFoldTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) >= static_cast<uint64_t>(lconVal2))
                                                       ? 1
                                                       : 0);
             }
             else
             {
-                return gtBashTreeToConstInt(tree, (lconVal1 >= lconVal2) ? 1 : 0);
+                return gtFoldTreeToConstInt(tree, (lconVal1 >= lconVal2) ? 1 : 0);
             }
             break;
         }
@@ -18598,13 +18596,13 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
         {
             if (tree->IsUnsigned())
             {
-                return gtBashTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) > static_cast<uint64_t>(lconVal2))
+                return gtFoldTreeToConstInt(tree, (static_cast<uint64_t>(lconVal1) > static_cast<uint64_t>(lconVal2))
                                                       ? 1
                                                       : 0);
             }
             else
             {
-                return gtBashTreeToConstInt(tree, (lconVal1 > lconVal2) ? 1 : 0);
+                return gtFoldTreeToConstInt(tree, (lconVal1 > lconVal2) ? 1 : 0);
             }
             break;
         }
@@ -18621,7 +18619,7 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
 #if defined(TARGET_64BIT)
             FieldSeq* fieldSeq = GetFieldSeqStore()->Append(intConCommon1->AsIntCon()->GetFieldSeq(),
                                                             intConCommon2->AsIntCon()->GetFieldSeq());
-            return gtBashTreeToConstLng(tree, lconVal1, fieldSeq);
+            return gtFoldTreeToConstLng(tree, lconVal1, fieldSeq);
 #else
             break;
 #endif
@@ -18745,7 +18743,7 @@ GenTree* Compiler::gtFoldExprBinaryConstLng(GenTreeOp*           tree,
         }
     }
 
-    return gtBashTreeToConstLng(tree, lconVal1);
+    return gtFoldTreeToConstLng(tree, lconVal1);
 }
 
 //------------------------------------------------------------------------
@@ -18795,12 +18793,12 @@ GenTree* Compiler::gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblC
             if ((tree->gtFlags & GTF_RELOP_NAN_UN) != 0)
             {
                 // Unordered comparison with NaN always succeeds.
-                return gtBashTreeToConstInt(tree, 1);
+                return gtFoldTreeToConstInt(tree, 1);
             }
             else
             {
                 // Normal comparison with NaN always fails.
-                return gtBashTreeToConstInt(tree, 0);
+                return gtFoldTreeToConstInt(tree, 0);
             }
         }
     }
@@ -18809,32 +18807,32 @@ GenTree* Compiler::gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblC
     {
         case GT_EQ:
         {
-            return gtBashTreeToConstInt(tree, (dconVal1 == dconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (dconVal1 == dconVal2) ? 1 : 0);
         }
 
         case GT_NE:
         {
-            return gtBashTreeToConstInt(tree, (dconVal1 != dconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (dconVal1 != dconVal2) ? 1 : 0);
         }
 
         case GT_LT:
         {
-            return gtBashTreeToConstInt(tree, (dconVal1 < dconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (dconVal1 < dconVal2) ? 1 : 0);
         }
 
         case GT_LE:
         {
-            return gtBashTreeToConstInt(tree, (dconVal1 <= dconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (dconVal1 <= dconVal2) ? 1 : 0);
         }
 
         case GT_GE:
         {
-            return gtBashTreeToConstInt(tree, (dconVal1 >= dconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (dconVal1 >= dconVal2) ? 1 : 0);
         }
 
         case GT_GT:
         {
-            return gtBashTreeToConstInt(tree, (dconVal1 > dconVal2) ? 1 : 0);
+            return gtFoldTreeToConstInt(tree, (dconVal1 > dconVal2) ? 1 : 0);
         }
 
         case GT_ADD:
@@ -18872,53 +18870,50 @@ GenTree* Compiler::gtFoldExprBinaryConstDbl(GenTreeOp* tree, GenTreeDblCon* dblC
             return tree;
         }
     }
-    return gtBashTreeToConstDbl(tree, dconVal1);
+    return gtFoldTreeToConstDbl(tree, dconVal1);
 }
 
 //------------------------------------------------------------------------
-// gtBashTreeToConstInt: bashes a tree into a constant integer node
+// gtFoldTreeToConstInt: creates a constant integer node to replace a folded tree
 //
 // Arguments:
-//    tree     - the tree to bash
+//    tree     - the tree being folded
 //    iconVal  - the value of the constant
 //    fieldSeq - the field sequence, if any
 //
 // Returns:
-//    tree, bashed to GT_CNS_INT node
+//    A new GT_CNS_INT node
 //
-GenTree* Compiler::gtBashTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq)
+GenTree* Compiler::gtFoldTreeToConstInt(GenTree* tree, int32_t iconVal, FieldSeq* fieldSeq)
 {
     JITDUMP("\nFolding operator with constant nodes into a constant:\n");
     DISPTREE(tree);
 
-    tree->BashToConst(iconVal);
-    tree->AsIntCon()->SetFieldSeq(fieldSeq);
+    GenTreeIntCon* cns = gtNewIconNodeWithVN(this, iconVal);
+    cns->SetFieldSeq(fieldSeq);
 
-    fgUpdateConstTreeValueNumber(tree);
+    JITDUMP("Folded to constant:\n");
+    DISPTREE(cns);
 
-    JITDUMP("Bashed to constant:\n");
-    DISPTREE(tree);
-
-    tree->gtFlags &= ~GTF_ALL_EFFECT;
-    return tree;
+    return cns;
 }
 
 //------------------------------------------------------------------------
-// gtBashTreeToConstLng: bashes a tree into a constant integer node
+// gtFoldTreeToConstLng: creates a constant long node to replace a folded tree
 //
 // Arguments:
-//    tree     - the tree to bash
+//    tree     - the tree being folded
 //    lconVal  - the value of the constant
 //    fieldSeq - the field sequence, if any
 //
 // Returns:
-//    tree, bashed to GT_CNS_INT (64-bit target) or GT_CNS_LNG (32-bit target) node
+//    A new GT_CNS_INT (64-bit target) or GT_CNS_LNG (32-bit target) node
 //
 // Notes:
 //    On 32-bit targets, fieldSeq should only ever be `null`; however, we return tree
 //    unmodified if we somehow end up with a field sequence anyways.
 //
-GenTree* Compiler::gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq)
+GenTree* Compiler::gtFoldTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq* fieldSeq)
 {
 #if !defined(TARGET_64BIT)
     if (fieldSeq != nullptr)
@@ -18931,53 +18926,45 @@ GenTree* Compiler::gtBashTreeToConstLng(GenTree* tree, int64_t lconVal, FieldSeq
     JITDUMP("\nFolding operator with constant nodes into a constant:\n");
     DISPTREE(tree);
 
-    assert((GenTree::s_gtNodeSizes[GT_CNS_NATIVELONG] == TREE_NODE_SZ_SMALL) ||
-           (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
-
-    tree->BashToConst(lconVal);
+    GenTree* cns = gtNewLconNode(lconVal);
 #ifdef TARGET_64BIT
-    tree->AsIntCon()->SetFieldSeq(fieldSeq);
+    cns->AsIntCon()->SetFieldSeq(fieldSeq);
 #endif
+    fgUpdateConstTreeValueNumber(cns);
 
-    fgUpdateConstTreeValueNumber(tree);
+    JITDUMP("Folded to constant:\n");
+    DISPTREE(cns);
 
-    JITDUMP("Bashed to constant:\n");
-    DISPTREE(tree);
-
-    tree->gtFlags &= ~GTF_ALL_EFFECT;
-    return tree;
+    return cns;
 }
 
 //------------------------------------------------------------------------
-// gtBashTreeToConstDbl: bashes a tree into a constant floating-point node
+// gtFoldTreeToConstDbl: creates a constant floating-point node to replace a folded tree
 //
 // Arguments:
-//    tree     - the tree to bash
+//    tree     - the tree being folded
 //    dconVal  - the value of the constant
 //
 // Returns:
-//    tree, bashed to GT_CNS_DBL node
+//    A new GT_CNS_DBL node of the same type as tree
 //
-GenTree* Compiler::gtBashTreeToConstDbl(GenTree* tree, double dconVal)
+GenTree* Compiler::gtFoldTreeToConstDbl(GenTree* tree, double dconVal)
 {
     JITDUMP("\nFolding operator with constant nodes into a constant:\n");
     DISPTREE(tree);
-
-    assert((GenTree::s_gtNodeSizes[GT_CNS_DBL] == TREE_NODE_SZ_SMALL) || (tree->gtDebugFlags & GTF_DEBUG_NODE_LARGE));
 
     if (tree->TypeIs(TYP_FLOAT))
     {
         dconVal = forceCastToFloat(dconVal);
     }
 
-    tree->BashToConst(dconVal, tree->TypeGet());
-    fgUpdateConstTreeValueNumber(tree);
+    GenTree* cns = gtNewDconNode(dconVal, tree->TypeGet());
+    fgUpdateConstTreeValueNumber(cns);
 
-    JITDUMP("Bashed to constant:\n");
-    DISPTREE(tree);
+    JITDUMP("Folded to constant:\n");
+    DISPTREE(cns);
 
-    tree->gtFlags &= ~GTF_ALL_EFFECT;
-    return tree;
+    return cns;
 }
 
 //------------------------------------------------------------------------

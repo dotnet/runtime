@@ -189,7 +189,7 @@ private:
     template <typename GetRegisterInfoFunc>
     void LowerFieldListToFieldListOfRegisters(GenTreeFieldList* fieldList, unsigned numRegs, GetRegisterInfoFunc func);
     void LowerCallStruct(GenTreeCall* call);
-    void LowerStoreSingleRegCallStruct(GenTreeBlk* store);
+    bool LowerStoreSingleRegCallStruct(GenTreeBlk* store);
 #if !defined(WINDOWS_AMD64_ABI)
     GenTreeLclVar* SpillStructCallResult(GenTreeCall* call) const;
 #endif // WINDOWS_AMD64_ABI
@@ -281,6 +281,23 @@ private:
             return newUseNode->AsLclVar();
         }
         return oldUseNode->AsLclVar();
+    }
+
+    // Insert 'replacement' after 'node', redirect the use of 'node' (if any) to it and remove 'node'.
+    GenTree* ReplaceNode(GenTree* node, GenTree* replacement)
+    {
+        BlockRange().InsertAfter(node, replacement);
+        LIR::Use use;
+        if (BlockRange().TryGetUse(node, &use))
+        {
+            use.ReplaceWith(replacement);
+        }
+        else
+        {
+            replacement->SetUnusedValue();
+        }
+        BlockRange().Remove(node);
+        return replacement;
     }
 
     // return true if this call target is within range of a pc-rel call on the machine
@@ -423,13 +440,13 @@ private:
     bool     TryLowerConstIntDivOrMod(GenTree* node, GenTree** nextNode);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void     LowerDivOrMod(GenTreeOp* divMod);
-    void     LowerBlockStoreCommon(GenTreeBlk* blkNode);
+    bool     LowerBlockStoreCommon(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsHelperCall(GenTreeBlk* blkNode);
     void     LowerBlockStoreAsGcBulkCopyCall(GenTreeBlk* blkNode);
-    void     LowerInitBlockStore(GenTreeBlk* blkNode);
-    void     LowerCopyBlockStore(GenTreeBlk* blkNode);
+    bool     LowerInitBlockStore(GenTreeBlk* blkNode);
+    bool     LowerCopyBlockStore(GenTreeBlk* blkNode);
     bool     TryDecomposeBlockStoreAsIndirs(GenTreeBlk* blkNode);
-    void     LowerLclHeap(GenTree* node);
+    GenTree* LowerLclHeap(GenTree* node);
     void     ContainBlockStoreAddress(GenTreeBlk* blkNode, unsigned size, GenTree* addr, GenTree* addrParent);
     void     LowerPutArgStk(GenTreePutArgStk* putArgNode);
     GenTree* LowerArrLength(GenTreeArrCommon* node);

@@ -682,7 +682,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
                 DISPSTMT(storeStmt);
             }
 
-            retStmt->GetRootNode()->gtBashToNOP();
+            retStmt->SetRootNode(gtNewNothingNode());
         }
 
         // Jump to new shared restore + return block

@@ -450,16 +450,9 @@ void MorphInitBlockHelper::TryPrimitiveInit()
     if (m_src->IsIntegralConst(0) && (m_dstVarDsc != nullptr) && (genTypeSize(m_dstVarDsc) == m_blockSize))
     {
         var_types lclVarType = m_dstVarDsc->TypeGet();
-        if (varTypeIsSIMD(lclVarType))
-        {
-            m_src = m_compiler->gtNewZeroConNode(lclVarType);
-            m_src->SetMorphed(m_compiler);
-            m_store->Data() = m_src;
-        }
-        else
-        {
-            m_src->BashToZeroConst(lclVarType);
-        }
+        m_src                = m_compiler->gtNewZeroConNode(lclVarType);
+        m_src->SetMorphed(m_compiler);
+        m_store->Data() = m_src;
 
         m_store->ChangeType(m_dstVarDsc->lvNormalizeOnLoad() ? lclVarType : genActualType(lclVarType));
         m_store->ChangeOper(GT_STORE_LCL_VAR);

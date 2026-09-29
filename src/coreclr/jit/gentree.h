@@ -2123,9 +2123,7 @@ public:
     }
 
     template <typename T>
-    void           BashToConst(T value, var_types type = TYP_UNDEF);
-    void           BashToZeroConst(var_types type);
-    GenTreeLclVar* BashToLclVar(Compiler* comp, unsigned lclNum);
+    void BashToConst(T value, var_types type = TYP_UNDEF);
 
 #if NODEBASH_STATS
     static void RecordOperBashing(genTreeOps operOld, genTreeOps operNew);

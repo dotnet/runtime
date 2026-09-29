@@ -2290,7 +2290,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                     JITDUMP("Removing dead call:\n");
                     DISPNODE(call);
 
-                    node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
+                    node->VisitOperands([&next, &blockRange](GenTree* operand) -> GenTree::VisitResult {
                         if (operand->IsValue())
                         {
                             operand->SetUnusedValue();
@@ -2301,7 +2301,11 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
                         if (operand->OperIs(GT_PUTARG_STK))
                         {
                             operand->AsPutArgStk()->gtOp1->SetUnusedValue();
-                            operand->gtBashToNOP();
+                            if (operand == next)
+                            {
+                                next = operand->gtPrev;
+                            }
+                            blockRange.Remove(operand);
                         }
 
                         return GenTree::VisitResult::Continue;
