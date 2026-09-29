@@ -208,6 +208,29 @@ the relocation scheme in its own code, reducing the volume of code needed in eac
 images into linear memory, as well as for allowing for efficient storage of 128 bit vector constants
 within the binary.)
 
+##### WASI host composition
+
+WASI hosts use offline composition rather than instantiating R2R modules at runtime.
+The in-tree C# composer unbundles the host component, creates a shim exporting the image and
+table bases, merges the host, shim, and composite with `wasm-merge`, folds the globals with
+`wasm-opt --simplify-globals`, and replaces the component's core module. Both Binaryen steps
+preserve the `name` section with `-g`.
+
+The host exports its reserved buffer address, buffer capacity, and composite table base through
+`wasi_r2r_image_base`, `wasi_r2r_image_cap`, and `wasi_r2r_table_base`. Before merging, the composer
+checks that the active payload fits the buffer and that the composite's table entries end before
+the host's own active element segment. These checks must happen before instantiation: a runtime
+check cannot prevent an active segment from overwriting an undersized reservation.
+
+The shim's start function calls `patchWebcilHeader`; the active segments themselves install the
+payload and function table. The host's external assembly probe serves `composite-r2r.wasm` from
+the embedded buffer and maps raw per-assembly WebCIL forwarding stubs from `comp/<assembly>.dll`.
+The composer extracts those payloads from their self-installing Wasm wrappers at build time.
+Placing a composite on disk without composing it into the host does not satisfy this contract.
+
+Publishing sizes the host reservations from the generated app/framework composite.
+See [the WASI R2R workflow](../../workflow/building/coreclr/wasi-r2r.md) for usage and diagnostics.
+
 ### Webcil payload
 
 The webcil payload contains the ECMA-335 metadata, IL and resources comprising a .NET assembly.
