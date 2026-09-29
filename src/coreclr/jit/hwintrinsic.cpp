@@ -4883,6 +4883,14 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
 
             bool isShuffleNative = (intrinsic != NI_Vector_Shuffle);
 
+#if defined(TARGET_WASM)
+            if (isShuffleNative)
+            {
+                // FIXME: Re-enable once WASM ShuffleNative expansion no longer generates invalid code.
+                return nullptr;
+            }
+#endif // TARGET_WASM
+
             GenTree* indices = impStackTop(0).val;
 
             // Check if the required intrinsics are available to emit now (validForShuffle). If we have variable

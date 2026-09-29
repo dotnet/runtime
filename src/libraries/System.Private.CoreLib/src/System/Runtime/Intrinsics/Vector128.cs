@@ -3559,7 +3559,7 @@ namespace System.Runtime.Intrinsics
             {
                 return PackedSimd.Swizzle(vector, indices);
             }
-#else
+#elif !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3574,7 +3574,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<double> ShuffleNative(Vector128<double> vector, Vector128<long> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3589,7 +3589,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<short> ShuffleNative(Vector128<short> vector, Vector128<short> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3604,7 +3604,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<int> ShuffleNative(Vector128<int> vector, Vector128<int> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3619,7 +3619,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<long> ShuffleNative(Vector128<long> vector, Vector128<long> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3634,7 +3634,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<nint> ShuffleNative(Vector128<nint> vector, Vector128<nint> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3665,7 +3665,7 @@ namespace System.Runtime.Intrinsics
             {
                 return PackedSimd.Swizzle(vector, indices);
             }
-#else
+#elif !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3680,7 +3680,7 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<float> ShuffleNative(Vector128<float> vector, Vector128<int> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3696,7 +3696,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<ushort> ShuffleNative(Vector128<ushort> vector, Vector128<ushort> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3712,7 +3712,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<uint> ShuffleNative(Vector128<uint> vector, Vector128<uint> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3728,7 +3728,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<ulong> ShuffleNative(Vector128<ulong> vector, Vector128<ulong> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
@@ -3744,7 +3744,7 @@ namespace System.Runtime.Intrinsics
         [CLSCompliant(false)]
         public static Vector128<nuint> ShuffleNative(Vector128<nuint> vector, Vector128<nuint> indices)
         {
-#if !MONO
+#if !MONO && !TARGET_WASM
             if (IsHardwareAccelerated)
             {
                 return ShuffleNative(vector, indices);
