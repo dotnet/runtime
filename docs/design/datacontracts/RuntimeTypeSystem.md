@@ -607,6 +607,7 @@ static class RuntimeTypeSystem_1_Helpers
 | `MethodDesc` | `Flags` | `uint16` | The method's flags |
 | `MethodDesc` | `Flags3AndTokenRemainder` | `uint16` | More flags for the method, and the low bits of the method's token's RID |
 | `MethodDesc` | `GCCoverageInfo` | `pointer` | The method's GCCover debug info, if supported |
+| `MethodDesc` | `InterpreterCode` | `pointer` | Pointer to the method's `InterpByteCodeStart`, or the poison value 1 if the method will never be interpreted (only defined if `FEATURE_INTERPRETER` is enabled) |
 | `MethodDesc` | `Slot` | `uint16` | The method's slot |
 | `MethodDescChunk` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `MethodDescChunk` | `Count` | `uint8` | The number of MethodDesc entries in this chunk, minus 1. |
