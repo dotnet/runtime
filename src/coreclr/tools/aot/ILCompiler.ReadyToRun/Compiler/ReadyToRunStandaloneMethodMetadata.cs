@@ -20,6 +20,13 @@ namespace ILCompiler
     // That code can be found in src\coreclr\vm\readytorunstandalonemethodmetadata.cpp
     public class ReadyToRunStandaloneMethodMetadata
     {
+        // Values of the byte that follows the EH clauses. Must match the VM.
+        private const byte LocalsNotInitialized = 0;
+        private const byte LocalsInitialized = 1;
+        private const byte NoLocals = 2;
+        private const byte AsyncImplFlag = 4;
+        private const byte SynchronizedImplFlag = 8;
+
         public byte[] ConstantData;
         public TypeDesc[] TypeRefs;
 
@@ -93,13 +100,13 @@ namespace ILCompiler
                     }
                 }
 
-                // The impl flags bits record flags that change how the same IL executes.
-                byte localsAndImplFlags = localsBlob.Length == 0 ? (byte)2 : (_methodBody.LocalVariablesInitialized ? (byte)1 : (byte)0);
+                // Impl flags that change how the same IL executes are part of the IL body identity.
+                byte localsAndImplFlags = localsBlob.Length == 0 ? NoLocals : (_methodBody.LocalVariablesInitialized ? LocalsInitialized : LocalsNotInitialized);
                 MethodImplAttributes implAttributes = metadataReader.GetMethodDefinition(wrappedMethod.Handle).ImplAttributes;
                 if ((implAttributes & MethodImplAttributes.Async) != 0)
-                    localsAndImplFlags |= 4;
+                    localsAndImplFlags |= AsyncImplFlag;
                 if ((implAttributes & MethodImplAttributes.Synchronized) != 0)
-                    localsAndImplFlags |= 8;
+                    localsAndImplFlags |= SynchronizedImplFlag;
                 _nonCodeAlternateBlob.WriteByte(localsAndImplFlags);
 
                 if (localsBlob.Length != 0)

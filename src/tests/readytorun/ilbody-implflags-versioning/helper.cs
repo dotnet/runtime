@@ -2,14 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators
 
-// Each method has the same IL in V1 and V2; only the async impl flag differs. When the method is not
-// runtime-async, awaiting it yields null. When it is runtime-async, the returned Task is the result.
-public static class AsyncFlagHelper
+// Each method has the same IL in V1 and V2; only an impl flag differs.
+public static class ImplFlagHelper
 {
+    // Awaiting a non-runtime-async method yields null; awaiting a runtime-async one yields the returned Task.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #if V2
     public static async Task<object> BecomesAsync()
@@ -28,5 +29,15 @@ public static class AsyncFlagHelper
 #endif
     {
         return Task.FromResult<object>(null);
+    }
+
+#if V2
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.Synchronized)]
+#else
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#endif
+    public static bool BecomesSynchronized()
+    {
+        return Monitor.IsEntered(typeof(ImplFlagHelper));
     }
 }

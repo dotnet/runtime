@@ -30,20 +30,20 @@ set "DOTNET_HeapVerify="
 set "DOTNET_ReadyToRun="
 
 md IL_DLLS 2>NUL
-if not exist IL_DLLS\async-ilbody-versioning.dll (
-    copy /y async-ilbody-versioning.dll IL_DLLS\async-ilbody-versioning.dll
+if not exist IL_DLLS\ilbody-implflags-versioning.dll (
+    copy /y ilbody-implflags-versioning.dll IL_DLLS\ilbody-implflags-versioning.dll
 )
-if not exist IL_DLLS\async-ilbody-versioning.dll (
-    echo FAILED to copy async-ilbody-versioning.dll to IL_DLLS
+if not exist IL_DLLS\ilbody-implflags-versioning.dll (
+    echo FAILED to copy ilbody-implflags-versioning.dll to IL_DLLS
     exit /b 1
 )
 
 REM Compile against V1 of the helper, with cross-module inlining of its methods
-%Core_Root%\crossgen2\crossgen2.exe -O --opt-cross-module:helper -r:%Core_Root%\*.dll -r:%25CD%\helperv1\helper.dll -o:async-ilbody-versioning.dll IL_DLLS\async-ilbody-versioning.dll
+%Core_Root%\crossgen2\crossgen2.exe -O --opt-cross-module:helper -r:%Core_Root%\*.dll -r:%25CD%\helperv1\helper.dll -o:ilbody-implflags-versioning.dll IL_DLLS\ilbody-implflags-versioning.dll
 
 set CrossGenStatus=!ERRORLEVEL!
 IF NOT !CrossGenStatus!==0 (
-    ECHO Crossgen of async-ilbody-versioning.dll failed with exitcode - !CrossGenStatus!
+    ECHO Crossgen of ilbody-implflags-versioning.dll failed with exitcode - !CrossGenStatus!
     Exit /b 1
 )
 
@@ -60,23 +60,23 @@ export -n DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun
 
 mkdir -p IL_DLLS
 
-if [ ! -f IL_DLLS/async-ilbody-versioning.dll ]
+if [ ! -f IL_DLLS/ilbody-implflags-versioning.dll ]
 then
-  cp async-ilbody-versioning.dll IL_DLLS/async-ilbody-versioning.dll
+  cp ilbody-implflags-versioning.dll IL_DLLS/ilbody-implflags-versioning.dll
 fi
-if [ ! -f IL_DLLS/async-ilbody-versioning.dll ]
+if [ ! -f IL_DLLS/ilbody-implflags-versioning.dll ]
 then
-  echo Failed to copy async-ilbody-versioning.dll to IL_DLLS
+  echo Failed to copy ilbody-implflags-versioning.dll to IL_DLLS
   exit 1
 fi
 
 # Compile against V1 of the helper, with cross-module inlining of its methods
-"$CORE_ROOT"/crossgen2/crossgen2 -O --opt-cross-module:helper -r:"$CORE_ROOT"/*.dll -r:helperv1/helper.dll -o:async-ilbody-versioning.dll IL_DLLS/async-ilbody-versioning.dll
+"$CORE_ROOT"/crossgen2/crossgen2 -O --opt-cross-module:helper -r:"$CORE_ROOT"/*.dll -r:helperv1/helper.dll -o:ilbody-implflags-versioning.dll IL_DLLS/ilbody-implflags-versioning.dll
 
 __cgExitCode=$?
 if [ $__cgExitCode -ne 0 ]
 then
-  echo Crossgen of async-ilbody-versioning.dll failed with exitcode: $__cgExitCode
+  echo Crossgen of ilbody-implflags-versioning.dll failed with exitcode: $__cgExitCode
   exit 1
 fi
 

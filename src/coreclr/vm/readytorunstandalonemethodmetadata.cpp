@@ -3,6 +3,16 @@
 #include "openum.h"
 
 #ifdef FEATURE_READYTORUN
+// Values of the byte that follows the EH clauses. Must match CrossGen2.
+enum : uint8_t
+{
+    ILBodyLocalsNotInitialized = 0,
+    ILBodyLocalsInitialized = 1,
+    ILBodyNoLocals = 2,
+    ILBodyAsyncImplFlag = 4,
+    ILBodySynchronizedImplFlag = 8,
+};
+
 // Alternate form of metadata that represents a single method. Self contained except for type references
 // The behavior of this code must exactly match that of the ReadyToRunStandaloneMethodMetadata class in CrossGen2
 // That code can be found in src\coreclr\tools\aot\ILCompiler.ReadyToRun\Compiler\ReadyToRunStandaloneMethodMetadata.cs
@@ -67,12 +77,13 @@ public:
             }
         }
 
-        // The impl flags bits record flags that change how the same IL executes.
-        uint8_t localsAndImplFlags = (header.cbLocalVarSig == 0) ? 2 : ((header.Flags & CorILMethod_InitLocals) ? 1 : 0);
+        // Impl flags that change how the same IL executes are part of the IL body identity.
+        uint8_t localsAndImplFlags = (header.cbLocalVarSig == 0) ? ILBodyNoLocals :
+            ((header.Flags & CorILMethod_InitLocals) ? ILBodyLocalsInitialized : ILBodyLocalsNotInitialized);
         if (IsMiAsync(dwImplFlags))
-            localsAndImplFlags |= 4;
+            localsAndImplFlags |= ILBodyAsyncImplFlag;
         if (IsMiSynchronized(dwImplFlags))
-            localsAndImplFlags |= 8;
+            localsAndImplFlags |= ILBodySynchronizedImplFlag;
         nonCodeAlternateBlob.AppendByte(localsAndImplFlags);
 
         if (header.cbLocalVarSig != 0)
@@ -673,7 +684,7 @@ ReadyToRunStandaloneMethodMetadata* GetReadyToRunStandaloneMethodMetadata(Method
 {
     ReadyToRunStandaloneMethodMetadata* retVal;
 
-    // For example, the task-returning thunk of a runtime-async method has no IL body to compare.
+    // Thunks, such as the task-returning variant of a runtime-async method, have no IL body to compare.
     if (!pMD->HasILHeader())
         return NULL;
 
