@@ -64,17 +64,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool StartsWithOrdinalIgnoreCaseUtf8(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value)
         {
-            ReadOnlySpan<byte> source = span;
-            ReadOnlySpan<byte> prefix = value;
-
-            if ((prefix.Length == 1) && (prefix[0] <= 0x7F))
-            {
-                // Fast path for a single ASCII byte prefix, e.g. PositiveSign/NegativeSign in most cultures.
-                // A non-ASCII byte never matches it under ordinal casing.
-                return !source.IsEmpty &&
-                    ((source[0] == prefix[0]) || (((source[0] | 0x20) == (prefix[0] | 0x20)) && char.IsAsciiLetter((char)prefix[0])));
-            }
-
             return Ordinal.StartsWithIgnoreCaseUtf8(span, value);
         }
     }
