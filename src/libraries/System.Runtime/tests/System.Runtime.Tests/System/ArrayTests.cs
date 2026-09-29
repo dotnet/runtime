@@ -4640,7 +4640,7 @@ namespace System.Tests
         }
 
         [Fact]
-        public void CreateFilled_Factory_Empty()
+        public void CreateFilled_Factory_Empty_ValueType()
         {
             var array = Array.CreateFilled<int>(0, index => index);
             Assert.Empty(array);
