@@ -123,6 +123,60 @@ namespace System.Reflection.Tests
             Assert.Equal(85, constructorArguments[0]);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Constructor_AbstractDeclaringTypeWithExistingInstance_RegularArguments()
+        {
+            ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new[] { typeof(int) },
+                modifiers: null)!;
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            var target = new ConcreteRegularConstructorTarget(0);
+
+            Assert.Null(invoker.Invoke(target, 42));
+            Assert.Equal(42, target.Value);
+            Assert.Null(invoker.Invoke(target, 43));
+            Assert.Equal(43, target.Value);
+
+            object?[] arguments = { 44 };
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(44, target.Value);
+            arguments[0] = 45;
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(45, target.Value);
+
+            Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, 46));
+            object?[] nullTargetArguments = { 47 };
+            Assert.Throws<MemberAccessException>(() => invoker.Invoke(null, nullTargetArguments.AsSpan()));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        public void Constructor_AbstractDeclaringTypeWithExistingInstance_ManyRegularArguments()
+        {
+            ConstructorInfo constructor = typeof(AbstractRegularConstructorTarget).GetConstructor(
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new[]
+                {
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int),
+                    typeof(int)
+                },
+                modifiers: null)!;
+            MethodInvoker invoker = MethodInvoker.Create(constructor);
+            var target = new ConcreteRegularConstructorTarget(0);
+            object?[] arguments = { 1, 2, 3, 4, 5 };
+
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(15, target.Value);
+            arguments[0] = 10;
+            Assert.Null(invoker.Invoke(target, arguments.AsSpan()));
+            Assert.Equal(24, target.Value);
+        }
+
         public abstract class AbstractRefConstructorTarget
         {
             public int Value;
@@ -137,6 +191,28 @@ namespace System.Reflection.Tests
         public sealed class ConcreteRefConstructorTarget : AbstractRefConstructorTarget
         {
             public ConcreteRefConstructorTarget(ref int value) : base(ref value)
+            {
+            }
+        }
+
+        public abstract class AbstractRegularConstructorTarget
+        {
+            public int Value;
+
+            protected AbstractRegularConstructorTarget(int value)
+            {
+                Value = value;
+            }
+
+            protected AbstractRegularConstructorTarget(int a, int b, int c, int d, int e)
+            {
+                Value = a + b + c + d + e;
+            }
+        }
+
+        public sealed class ConcreteRegularConstructorTarget : AbstractRegularConstructorTarget
+        {
+            public ConcreteRegularConstructorTarget(int value) : base(value)
             {
             }
         }

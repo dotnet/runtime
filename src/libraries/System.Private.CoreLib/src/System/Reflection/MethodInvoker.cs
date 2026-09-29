@@ -188,7 +188,8 @@ namespace System.Reflection
 
         private object? InvokeImpl(object? obj, object? arg1, object? arg2, object? arg3, object? arg4)
         {
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0)
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0 &&
+                ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0 || _isStatic || obj is null))
             {
                 ThrowForBadInvocationFlags();
             }
@@ -266,8 +267,8 @@ namespace System.Reflection
                 }
             }
 
-            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0 ||
-                (_invocationFlags & InvocationFlags.NoConstructorInvoke) != 0 && (_isStatic || obj is null))
+            if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers | InvocationFlags.NoConstructorInvoke)) != 0 &&
+                ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0 || _isStatic || obj is null))
             {
                 ThrowForBadInvocationFlags();
             }
