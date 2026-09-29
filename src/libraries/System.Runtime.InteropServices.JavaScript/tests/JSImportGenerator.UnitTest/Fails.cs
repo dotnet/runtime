@@ -87,10 +87,9 @@ namespace JSImportGenerator.Unit.Tests
 
             ImmutableArray<Diagnostic> analyzerDiags = await RunAnalyzerAsync(comp);
 
-            // JSExport still generates a pointer-based wrapper, so it requires AllowUnsafeBlocks.
+            // The errors should indicate the AllowUnsafeBlocks is required.
+            Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1074") != null);
             Assert.True(analyzerDiags.Single(d => d.Id == "SYSLIB1075") != null);
-            // JSImport does not.
-            Assert.Empty(analyzerDiags.Where(d => d.Id == "SYSLIB1074"));
         }
 
         private static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(Compilation comp)
