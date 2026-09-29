@@ -1,15 +1,18 @@
 // Finding: on ICU, culture-aware StartsWith/EndsWith accept a prefix or suffix that splits a grapheme cluster, while
 // IndexOf/LastIndexOf (correctly) don't, so a string can "start with" something it doesn't "contain". In every culture, with
 // CompareOptions.None or IgnoreCase:
-//   "कि".StartsWith("क", CurrentCulture) = true     but  "कि".IndexOf("क", CurrentCulture)      = -1  (Hindi KA + vowel sign I)
-//   "கி".StartsWith("க", CurrentCulture) = true     but  IndexOf = -1                               (Tamil)
+//   "क\u093F".StartsWith("क", CurrentCulture) = true     but  "क\u093F".IndexOf("क", CurrentCulture)      = -1  (Hindi KA + vowel sign I)
+//   "க\u0BBF".StartsWith("க", CurrentCulture) = true     but  IndexOf = -1                               (Tamil)
 //   "가나".StartsWith("ᄀ")         = true     but  IndexOf = -1  (the syllable's leading conjoining jamo)
-//   "é".EndsWith("́")        = true     but  "é".LastIndexOf("́") = -1  (even plain Latin, backwards)
+//   "e\u0301".EndsWith("\u0301")        = true     but  "e\u0301".LastIndexOf("\u0301") = -1  (even plain Latin, backwards)
+//   "เก".StartsWith("ก")                  = true     but  IndexOf = -1  (Thai: the collation reorders the prevowel with the consonant)
+//   "ﬁx".StartsWith("f", CurrentCultureIgnoreCase) = true  but  IndexOf(..., CurrentCultureIgnoreCase) = -1  (ligature; also Ⅸ/I, ǆ/d)
 //
 // StartsWith/EndsWith go through SimpleAffix in pal_collation.c, which walks raw collation elements. Going forward it refuses a
 // match followed by a *nonspacing* mark (it checks for an element with primary weight 0 and a secondary weight, which is why
-// "é".StartsWith("e") is false), but Indic vowel signs, viramas and Hangul vowel/final jamo have primary weights, so the
-// check doesn't fire. Going backward there's no such check at all. IndexOf/LastIndexOf use ICU usearch, which only accepts
+// "e\u0301".StartsWith("e") is false), but Indic vowel signs, viramas and Hangul vowel/final jamo have primary weights, so the
+// check doesn't fire. The same happens when the prefix ends inside one character's expansion (a Thai prevowel+consonant
+// contraction, or a ligature once IgnoreCase drops the tertiary difference). Going backward there's no such check at all. IndexOf/LastIndexOf use ICU usearch, which only accepts
 // matches on grapheme boundaries. With IgnoreWidth or IgnoreKanaType (the usearch-based ComplexStartsWith/ComplexEndsWith path)
 // StartsWith/EndsWith agree with IndexOf.
 // Run: dotnet run 53-CompareInfo-AffixSplitsGrapheme.cs   (on Linux or macOS; Windows uses NLS)
@@ -24,11 +27,12 @@ if (OperatingSystem.IsWindows())
 bool reproduced = false;
 (string Text, string Prefix, string Suffix, string What)[] cases =
 [
-    ("कि", "क", "ि", "Hindi KA + vowel sign I"),
-    ("கி", "க", "ி", "Tamil KA + vowel sign I"),
-    ("क्ष", "क", "ष", "Hindi conjunct KSSA"),
+    ("क\u093F", "क", "\u093F", "Hindi KA + vowel sign I"),
+    ("க\u0BBF", "க", "\u0BBF", "Tamil KA + vowel sign I"),
+    ("क\u094Dष", "क", "ष", "Hindi conjunct KSSA"),
     ("가나", "ᄀ", "ᅡ", "Hangul syllables vs conjoining jamo"),
-    ("é", "e", "́", "Latin e + combining acute"),
+    ("e\u0301", "e", "\u0301", "Latin e + combining acute"),
+    ("\u0E40\u0E01", "\u0E01", "\u0E40", "Thai SARA E + KO KAI"),
 ];
 
 foreach (string cultureName in new[] { "", "en-US", "hi-IN", "ko-KR" })
@@ -45,5 +49,17 @@ foreach (string cultureName in new[] { "", "en-US", "hi-IN", "ko-KR" })
     }
 }
 
+// Ligatures and compatibility characters with IgnoreCase.
+CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("en-US");
+foreach ((string text, string prefix) in new[] { ("\uFB01x", "f"), ("\u2168", "I"), ("\u01C6x", "d") })
+{
+    bool startsWith = text.StartsWith(prefix, StringComparison.CurrentCultureIgnoreCase);
+    int indexOf = text.IndexOf(prefix, StringComparison.CurrentCultureIgnoreCase);
+    Console.WriteLine($"[en-US, IgnoreCase] \"{Escape(text)}\": StartsWith(\"{prefix}\")={startsWith} IndexOf={indexOf}");
+    reproduced |= startsWith && indexOf != 0;
+}
+
 Console.WriteLine("Expected: StartsWith(x) implies IndexOf(x) == 0 and EndsWith(x) implies LastIndexOf(x) >= 0.");
 Console.WriteLine(reproduced ? "REPRODUCED" : "NOT REPRODUCED");
+
+static string Escape(string s) => string.Concat(s.Select(c => c is >= ' ' and < '\x7F' ? c.ToString() : $"\\u{(int)c:X4}"));

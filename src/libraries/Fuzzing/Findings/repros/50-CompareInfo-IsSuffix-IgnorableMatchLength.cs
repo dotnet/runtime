@@ -25,7 +25,7 @@ foreach (string cultureName in new[] { "", "en-US", "de-DE", "tr-TR" })
     CompareInfo compare = CultureInfo.GetCultureInfo(cultureName).CompareInfo;
     foreach (CompareOptions options in new[] { CompareOptions.None, CompareOptions.IgnoreCase })
     {
-        foreach ((string source, string suffix) in new[] { ("Strasse", "\0"), ("hello world", "‍"), ("abcé", "­­"), ("x", "\0\0\0") })
+        foreach ((string source, string suffix) in new[] { ("Strasse", "\0"), ("hello world", "\u200D"), ("abcé", "\u00AD\u00AD"), ("x", "\0\0\0") })
         {
             bool isSuffix = compare.IsSuffix(source, suffix, options, out int suffixLength);
             bool isPrefix = compare.IsPrefix(source, suffix, options, out int prefixLength);

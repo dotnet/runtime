@@ -1,9 +1,9 @@
 // Finding: on ICU, culture-aware backward searches give different answers for the *same* input depending on what the previous
 // search did, because the native layer reuses cached ICU string-search objects. In a fresh process, calling
 // CompareInfo.LastIndexOf(source, value, options, out int matchLength) twice with identical arguments:
-//   source "\t́q", value "́q":   1st call index 1, matchLength 2;   2nd call index 1, matchLength -1
+//   source "\t\u0301q", value "\u0301q":   1st call index 1, matchLength 2;   2nd call index 1, matchLength -1
 // A negative matchLength breaks the documented contract, and source.AsSpan(index, matchLength) / Substring throws on it. The
-// stale state also changes the *index*: for source "unu\0ͅ\0\0\0\0\0\u0010\0\0ͅ" and value "ͅ\0\0" with
+// stale state also changes the *index*: for source "unu\0\u0345\0\0\0\0\0\u0010\0\0\u0345" and value "\u0345\0\0" with
 // IgnoreCase, the first LastIndexOf returns 13 and the second returns 4 (not the last occurrence). And IsSuffix, which for
 // IgnoreKanaType/IgnoreWidth computes idx + usearch_getMatchedLength, flips from true to false on the second call.
 // The trigger is a value that starts with a combining mark preceded in the source by a control or whitespace character (\t, \n,
@@ -28,9 +28,9 @@ CompareInfo compare = CultureInfo.GetCultureInfo("en-US").CompareInfo;
 
 foreach ((string source, string value, CompareOptions options) in new[]
 {
-    ("\t́q", "́q", CompareOptions.None),
-    ("line\n̈x", "̈x", CompareOptions.None),
-    ("unu\0ͅ\0\0\0\0\0\u0010\0\0ͅ", "ͅ\0\0", CompareOptions.IgnoreCase),
+    ("\t\u0301q", "\u0301q", CompareOptions.None),
+    ("line\n\u0308x", "\u0308x", CompareOptions.None),
+    ("unu\0\u0345\0\0\0\0\0\u0010\0\0\u0345", "\u0345\0\0", CompareOptions.IgnoreCase),
 })
 {
     var results = new List<string>();
@@ -50,7 +50,7 @@ foreach ((string source, string value, CompareOptions options) in new[]
 }
 
 {
-    string source = "\u000B́q", value = "́q";
+    string source = "\u000B\u0301q", value = "\u0301q";
     bool first = compare.IsSuffix(source, value, CompareOptions.IgnoreKanaType);
     bool second = compare.IsSuffix(source, value, CompareOptions.IgnoreKanaType);
     Console.WriteLine($"IgnoreKanaType IsSuffix(\"{Escape(source)}\", \"{Escape(value)}\") twice: {first}, {second}");

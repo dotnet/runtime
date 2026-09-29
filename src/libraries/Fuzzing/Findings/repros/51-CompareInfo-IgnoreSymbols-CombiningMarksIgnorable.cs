@@ -1,9 +1,9 @@
 // Finding: on ICU, with CompareOptions.IgnoreSymbols, a search value made only of combining marks (optionally mixed with symbols
 // or punctuation) is treated as *ignorable* by IndexOf, LastIndexOf and IsPrefix, so it "matches" everywhere:
-//   CompareInfo.IndexOf("abc", "̈", IgnoreSymbols, out len) = 0, len = 0
-//   CompareInfo.LastIndexOf("abc", "̈", IgnoreSymbols)      = 3
-//   CompareInfo.IsPrefix("abc", "̈", IgnoreSymbols)         = true
-// while IsSuffix returns false and Compare("", "̈", IgnoreSymbols) says the value is *not* ignorable (it sorts after the
+//   CompareInfo.IndexOf("abc", "\u0308", IgnoreSymbols, out len) = 0, len = 0
+//   CompareInfo.LastIndexOf("abc", "\u0308", IgnoreSymbols)      = 3
+//   CompareInfo.IsPrefix("abc", "\u0308", IgnoreSymbols)         = true
+// while IsSuffix returns false and Compare("", "\u0308", IgnoreSymbols) says the value is *not* ignorable (it sorts after the
 // empty string at the secondary level). With CompareOptions.None the same searches correctly return -1/false.
 //
 // Root cause: IgnoreSymbols turns on alternate=shifted in the native collator. The search APIs use ICU usearch, whose getCE()
@@ -27,7 +27,7 @@ bool reproduced = false;
 foreach (string cultureName in new[] { "", "en-US", "de-DE" })
 {
     CompareInfo compare = CultureInfo.GetCultureInfo(cultureName).CompareInfo;
-    foreach ((string source, string value) in new[] { ("abc", "̈"), ("xyz", "́́"), ("hello", "̛-$") })
+    foreach ((string source, string value) in new[] { ("abc", "\u0308"), ("xyz", "\u0301\u0301"), ("hello", "\u031B-$") })
     {
         int index = compare.IndexOf(source, value, CompareOptions.IgnoreSymbols, out int matchLength);
         int lastIndex = compare.LastIndexOf(source, value, CompareOptions.IgnoreSymbols);

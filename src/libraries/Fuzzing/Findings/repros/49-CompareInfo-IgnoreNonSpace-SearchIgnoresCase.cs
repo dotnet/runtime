@@ -23,7 +23,7 @@ bool reproduced = false;
 foreach (string cultureName in new[] { "en-US", "ja-JP", "de-DE" })
 {
     CompareInfo compare = CultureInfo.GetCultureInfo(cultureName).CompareInfo;
-    foreach ((string source, string value) in new[] { ("a", "A"), ("ä", "A"), ("ä", "Å"), ("xǄy", "ǆ") })
+    foreach ((string source, string value) in new[] { ("a", "A"), ("ä", "A"), ("ä", "A\u030A"), ("xǄy", "ǆ") })
     {
         int index = compare.IndexOf(source, value, options, out int matchLength);
         bool isPrefix = compare.IsPrefix(source, value, options);

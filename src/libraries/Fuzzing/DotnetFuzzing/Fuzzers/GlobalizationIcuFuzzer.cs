@@ -183,7 +183,7 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
         {
             CheckMatch(compareInfo, options, source, value, 0, prefixLength, "IsPrefix", context);
             Check(index == 0 || value.Length == 0 || (options & CompareOptions.IgnoreSymbols) != 0 || IsIgnorable(compareInfo, source, index, options) ||
-                (!s_strict && (HasHangul(source) || HasMark(source))),
+                (!s_strict && (HasHangul(source) || HasMark(source) || Decompose(source) != source)),
                 () => $"IsPrefix is true but IndexOf={index}: {context}");
         }
 
@@ -219,8 +219,20 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
     // match that ends inside an expansion (a suffix U+0307 against U+0130) reports matchLength 0, which can't be checked.
     private static bool IsKnownMatchLengthIssue(CompareInfo compareInfo, CompareOptions options, string value, string matched, int matchLength, string what) =>
         (what == "IsSuffix" && (matchLength == 0 || compareInfo.Compare(value, string.Empty, options) == 0)) ||
-        (IsShifted(compareInfo, options) && (matchLength == 0 || compareInfo.Compare(StripMarks(matched), StripMarks(value), options) == 0)) ||
-        (what is "IsPrefix" or "IsSuffix" && (HasHangul(matched + value) || HasMark(matched + value)));
+        (IsShifted(compareInfo, options) && (matchLength == 0 || HasMark(Decompose(matched + value)))) ||
+        (what is "IsPrefix" or "IsSuffix" && (HasHangul(matched + value) || HasMark(matched + value) || Decompose(matched + value) != matched + value));
+
+    private static string Decompose(string text)
+    {
+        try
+        {
+            return text.Normalize(NormalizationForm.FormKD);
+        }
+        catch (ArgumentException)
+        {
+            return text; // lone surrogates
+        }
+    }
 
     private static bool IsShifted(CompareInfo compareInfo, CompareOptions options) =>
         (options & CompareOptions.IgnoreSymbols) != 0 || compareInfo.Name.StartsWith("th", StringComparison.Ordinal);
@@ -245,7 +257,9 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
         return string.Concat(text.Where(c => !IsMark(c)));
     }
 
-    private static bool HasHangul(string text) => text.Any(c => c is (>= '\u1100' and <= '\u11FF') or (>= '\uAC00' and <= '\uD7A3') or (>= '\u3130' and <= '\u318F'));
+    // Hangul syllables/jamo, and Thai/Lao prevowels, which the collation reorders with the following consonant.
+    private static bool HasHangul(string text) => text.Any(c => c is (>= '\u1100' and <= '\u11FF') or (>= '\uAC00' and <= '\uD7A3') or (>= '\u3130' and <= '\u318F')
+        or (>= '\u0E40' and <= '\u0E44') or (>= '\u0EC0' and <= '\u0EC4'));
 
     private static bool IsIgnorable(CompareInfo compareInfo, string source, int index, CompareOptions options) =>
         index > 0 && compareInfo.Compare(source.Substring(0, index), string.Empty, options) == 0;
@@ -335,7 +349,8 @@ internal sealed class GlobalizationIcuFuzzer : IFuzzer
 
     // Finding 48: GetAscii(string)/GetUnicode(string) hand back the caller's string when ICU's (lowercased) answer differs from it
     // only by case, while the span overloads return ICU's output. Lowercasing the string results lines them up.
-    private static string IcuCase(string text) => s_strict ? text : text.ToLowerInvariant();
+    // Only ASCII: UTS #46 maps some scripts to uppercase (Cherokee), so a full lowercase would differ from ICU's output.
+    private static string IcuCase(string text) => s_strict ? text : string.Concat(text.Select(c => char.IsAsciiLetterUpper(c) ? (char)(c | 0x20) : c));
 
     private static bool HasHyphen34Label(string ascii) =>
         ascii.Split('.').Any(label => label.Length >= 4 && label[2] == '-' && label[3] == '-');
