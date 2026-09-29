@@ -9,6 +9,7 @@ set(UTILCODE_COMMON_SOURCES
   sstring_com.cpp
   fstring.cpp
   namespaceutil.cpp
+  packedlen.cpp
   makepath.cpp
   splitpath.cpp
   clrconfig.cpp
@@ -25,6 +26,7 @@ set(UTILCODE_COMMON_SOURCES
   memorystreams.cpp
   loaderheap.cpp
   interleavedloaderheap.cpp
+  knowncaparser.cpp
   loaderheap_shared.cpp
   explicitcontrolloaderheap.cpp
   rangelist.cpp
@@ -36,6 +38,7 @@ set(UTILCODE_COMMON_SOURCES
   prettyprintsig.cpp
   sigbuilder.cpp
   sigparser.cpp
+  strongnameinternal.cpp
   sstring.cpp
   util_nodependencies.cpp
   safewrap.cpp

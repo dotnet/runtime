@@ -1,11 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// Strong name APIs which are not exposed publicly but are used by CLR code
+// Strong name APIs which are not exposed publicly but are used by CLR code.
 //
 
 #include "stdafx.h"
 #include "strongnameinternal.h"
+#include "contract.h"
+#include "corerror.h"
 #include <minipal/sha1.h>
 
 // Common keys used by libraries we ship are included here.

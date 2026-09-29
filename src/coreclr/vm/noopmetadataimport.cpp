@@ -1,11 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 //
-// NoopMetadataImport implementation.
+// NoopMetadataImport implementation for VM symbol binding.
 
-#include "stdafx.h"
-
-#ifdef FEATURE_METADATA_IN_VM
+#include "common.h"
 
 // This importer is only used to satisfy the symbol binder's non-null parameter.
 // It is intentionally inert so we do not materialize the module's real public importer.
@@ -154,5 +152,3 @@ IMetaDataImport2* GetNoopMetaDataImport2()
 
     return &g_NoopMetadataImport;
 }
-
-#endif // FEATURE_METADATA_IN_VM
