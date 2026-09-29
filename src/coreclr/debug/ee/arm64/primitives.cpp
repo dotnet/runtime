@@ -14,14 +14,14 @@ void CopyREGDISPLAY(REGDISPLAY* pDst, REGDISPLAY* pSrc)
 }
 
 #ifdef FEATURE_EMULATE_SINGLESTEP
-void SetSSFlag(DT_CONTEXT *, Thread *pThread)
+void SetSSFlag(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 
     pThread->EnableSingleStep();
 }
 
-void UnsetSSFlag(DT_CONTEXT *, Thread *pThread)
+void UnsetSSFlag(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 
@@ -29,25 +29,25 @@ void UnsetSSFlag(DT_CONTEXT *, Thread *pThread)
 }
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *, Thread *pThread)
+bool IsSSFlagEnabled(T_CONTEXT *, Thread *pThread)
 {
     _ASSERTE(pThread != NULL);
 
     return pThread->IsSingleStepEnabled();
 }
 #else // FEATURE_EMULATE_SINGLESTEP
-void SetSSFlag(DT_CONTEXT *pContext, Thread *)
+void SetSSFlag(T_CONTEXT *pContext, Thread *)
 {
     SetSSFlag(pContext);
 }
 
-void UnsetSSFlag(DT_CONTEXT *pContext, Thread *)
+void UnsetSSFlag(T_CONTEXT *pContext, Thread *)
 {
     UnsetSSFlag(pContext);
 }
 
 // Check if single stepping is enabled.
-bool IsSSFlagEnabled(DT_CONTEXT *pContext, Thread *)
+bool IsSSFlagEnabled(T_CONTEXT *pContext, Thread *)
 {
     return IsSSFlagEnabled(pContext);
 }
