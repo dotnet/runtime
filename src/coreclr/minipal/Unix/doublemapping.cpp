@@ -31,12 +31,6 @@
 #include <link.h>
 #endif
 #include <dlfcn.h>
-#if defined(TARGET_WASI)
-// pal_wasi_missing.h provides Dl_info for the struct InitializeTemplateThunkLocals
-// declaration below; the actual dladdr() call is FEATURE_MAP_THUNKS_FROM_IMAGE-only
-// (Apple) so the stub is never invoked on WASI.
-#include "../../pal/src/include/pal/wasi/pal_wasi_missing.h"
-#endif
 #endif // TARGET_APPLE
 
 #ifdef TARGET_APPLE
@@ -319,7 +313,7 @@ bool VMToOSInterface::ReleaseRWMapping(void* pStart, size_t size)
     return munmap(pStart, size) != -1;
 }
 
-#ifndef TARGET_APPLE
+#if !defined(TARGET_APPLE) && !defined(TARGET_WASM)
 #define MAX_TEMPLATE_THUNK_TYPES 3 // Maximum number of times the CreateTemplate api can be called
 struct TemplateThunkMappingData
 {
@@ -432,8 +426,8 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
 #else
         int fd = -1;
     
-#if !defined(TARGET_ANDROID) && !defined(TARGET_WASM)
-        // Bionic doesn't have shm_{open,unlink}, and template thunks are not used on Wasm
+#ifndef TARGET_ANDROID
+        // Bionic doesn't have shm_{open,unlink}
         // POSIX fallback
         if (fd == -1)
         {
@@ -444,7 +438,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
             fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
             shm_unlink(name);
         }
-#endif // !TARGET_ANDROID && !TARGET_WASM
+#endif // !TARGET_ANDROID
 #endif
         if (fd != -1)
         {
@@ -482,7 +476,7 @@ TemplateThunkMappingData *InitializeTemplateThunkMappingData(void* pTemplate)
         return __atomic_load_n(&s_pThunkData, __ATOMIC_ACQUIRE);
     }
 }
-#endif
+#endif // !TARGET_APPLE && !TARGET_WASM
 
 bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 {
@@ -495,7 +489,9 @@ bool VMToOSInterface::AllocateThunksFromTemplateRespectsStartAddress()
 
 void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize, void (*codePageGenerator)(uint8_t* pageBase, uint8_t* pageBaseRX, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_WASM)
+    return NULL;
+#elif defined(TARGET_APPLE)
     return pImageTemplate;
 #elif defined(TARGET_X86)
     return NULL; // X86 doesn't support high performance relative addressing, which makes the template system not work
@@ -543,7 +539,9 @@ void* VMToOSInterface::CreateTemplate(void* pImageTemplate, size_t templateSize,
 
 void* VMToOSInterface::AllocateThunksFromTemplate(void* pTemplate, size_t templateSize, void* pStartSpecification, void (*dataPageGenerator)(uint8_t* pageBase, size_t size))
 {
-#ifdef TARGET_APPLE
+#if defined(TARGET_WASM)
+    return NULL;
+#elif defined(TARGET_APPLE)
     vm_address_t addr, taddr;
     vm_prot_t prot, max_prot;
     kern_return_t ret;
