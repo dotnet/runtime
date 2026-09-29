@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -20,7 +21,7 @@ internal static partial class Interop
         // NOTE: `_isIPv6` cannot be of type `bool` because `bool` is not a blittable type and this struct is
         //       embedded in other structs for interop purposes.
         [StructLayout(LayoutKind.Sequential)]
-        internal unsafe struct IPAddress : IEquatable<IPAddress>
+        internal struct IPAddress : IEquatable<IPAddress>
         {
             public bool IsIPv6
             {
@@ -28,14 +29,14 @@ internal static partial class Interop
                 set { _isIPv6 = value ? 1u : 0u; }
             }
 
-            internal fixed byte Address[MAX_IP_ADDRESS_BYTES]; // Buffer to fit an IPv4 or IPv6 address
-            private  uint _isIPv6;                             // Non-zero if this is an IPv6 address; zero for IPv4.
-            internal uint ScopeId;                             // Scope ID (IPv6 only)
+            internal InlineArray16<byte> Address; // Buffer to fit an IPv4 or IPv6 address (MAX_IP_ADDRESS_BYTES)
+            private  uint _isIPv6;                // Non-zero if this is an IPv6 address; zero for IPv4.
+            internal uint ScopeId;                // Scope ID (IPv6 only)
 
             public override int GetHashCode()
             {
                 HashCode h = default;
-                h.AddBytes(MemoryMarshal.CreateReadOnlySpan(ref Address[0], IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes));
+                h.AddBytes(Address[..(IsIPv6 ? IPv6AddressBytes : IPv4AddressBytes)]);
                 return h.ToHashCode();
             }
 
@@ -68,8 +69,7 @@ internal static partial class Interop
                     addressByteCount = IPv4AddressBytes;
                 }
 
-                return MemoryMarshal.CreateReadOnlySpan(ref Address[0], addressByteCount).SequenceEqual(
-                       new ReadOnlySpan<byte>(other.Address, addressByteCount));
+                return Address[..addressByteCount].SequenceEqual(other.Address[..addressByteCount]);
             }
         }
     }
