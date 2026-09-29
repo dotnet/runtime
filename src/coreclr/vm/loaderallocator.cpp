@@ -196,7 +196,7 @@ BOOL LoaderAllocator::AddReferenceIfAlive()
 
 //---------------------------------------------------------------------------------------
 //
-BOOL LoaderAllocator::Release()
+BOOL LoaderAllocator::Release() noexcept
 {
     CONTRACTL
     {
