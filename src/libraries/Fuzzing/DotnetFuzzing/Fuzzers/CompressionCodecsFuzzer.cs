@@ -221,11 +221,6 @@ internal sealed class CompressionCodecsFuzzer : IFuzzer
         // Streaming with tiny buffers, placing each destination chunk against a guard page.
         (bool done, int consumed, byte[] streamed) = StreamingDecompress(codec, data, ref seed);
 
-        if (codec is ZstdCodec && oneShot is not null && ZstandardDecoder.TryGetMaxDecompressedLength(data, out long bound))
-        {
-            Check(bound >= oneShot.Length, $"TryGetMaxDecompressedLength={bound} but TryDecompress produced {oneShot.Length} bytes: {context}");
-        }
-
         if (oneShot is null)
         {
             return;
@@ -236,6 +231,12 @@ internal sealed class CompressionCodecsFuzzer : IFuzzer
             // Finding 56: zstd's one-shot path skips the block-size-vs-window check the streaming path makes, and (by design) the
             // maxWindowLog2 limit, so it accepts frames the streaming decoder rejects.
             return;
+        }
+
+        // Checked only for frames the streaming decoder also accepts: an oversized block (finding 56) exceeds the bound too.
+        if (codec is ZstdCodec && ZstandardDecoder.TryGetMaxDecompressedLength(data, out long bound))
+        {
+            Check(bound >= oneShot.Length, $"TryGetMaxDecompressedLength={bound} but TryDecompress produced {oneShot.Length} bytes: {context}");
         }
 
         // A complete stream that fits: streaming must finish, consume everything and produce the same bytes.

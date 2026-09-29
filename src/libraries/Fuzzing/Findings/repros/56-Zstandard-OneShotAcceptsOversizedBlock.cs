@@ -7,6 +7,8 @@
 // The comparison is upstream's, but .NET exposes both paths as equivalent APIs. A component that validates with one and
 // decodes with the other (a proxy checking a zstd Content-Encoding body one-shot, a backend streaming it) sees different data.
 // No memory-safety impact: the one-shot writes stay within the destination.
+// It also breaks ZstandardDecoder.TryGetMaxDecompressedLength, which bounds the output by the window-derived block maximum:
+// for this frame it reports 2048 bytes (two blocks of at most 1 KB) while TryDecompress produces 8255.
 // Related, by design: the one-shot path also ignores the maxWindowLog2 limit, since it doesn't allocate a window.
 // Run: dotnet run 56-Zstandard-OneShotAcceptsOversizedBlock.cs
 using System.Buffers;
@@ -39,7 +41,9 @@ catch (InvalidDataException ex)
     viaStream = $"InvalidDataException: {ex.Message}";
 }
 
+bool gotBound = ZstandardDecoder.TryGetMaxDecompressedLength(frame, out long bound);
 Console.WriteLine($"ZstandardDecoder.TryDecompress: {oneShot}, {written} bytes");
+Console.WriteLine($"TryGetMaxDecompressedLength:    {gotBound}, {bound} bytes");
 Console.WriteLine($"ZstandardDecoder.Decompress:    {streaming}, consumed {consumed}, wrote {streamedBytes}");
 Console.WriteLine($"ZstandardStream:                {viaStream}");
 Console.WriteLine("Expected: all three reject the frame (or all accept it).");
