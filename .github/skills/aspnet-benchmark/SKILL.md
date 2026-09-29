@@ -115,8 +115,6 @@ sleep 5
 curl -sS http://127.0.0.1:5000/todos
 ```
 
-These commands leave the terminal's working directory inside the selected app's `bin/Release/<tfm>` directory. Any later step that references a path relative to `<runtime-repo>` (such as copying `crossgen2` below) must either `cd` back to `<runtime-repo>` first or use an absolute/`<runtime-repo>`-anchored path — a bare relative path resolves under the benchmark output directory instead and the copy silently fails or copies nothing.
-
 Set whatever env var/`AppContext` switch you're comparing (e.g. `DOTNET_USE_IO_URING=1`/`=0`) *before* starting the process — it's read once at startup.
 
 ### Step 5: Run `wrk` (or `bombardier` on Windows) Against Each App
@@ -196,18 +194,9 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
 
 #### ⚠️ Symbol Resolution Warnings
 
-- **Precompiled (R2R/crossgen) framework symbols are not resolved automatically.** `perfcollect` needs a `crossgen2` tool matching the exact runtime build to map native framework code back to method names; without it, framework frames show up unresolved/hex-only in the trace. When profiling a **locally-built** runtime you don't need to hunt one down — your own build already produced the exact matching binary at `artifacts/bin/coreclr/<os>.<arch>.<config>/crossgen2-published/crossgen2`. Copy (or symlink) it next to `libcoreclr.so` in the directory you're actually running from (e.g. the testhost/SDK-overlay shared framework folder from Step 3) before collecting:
-
-  ```bash
-  # Use a path anchored to <runtime-repo> (or `cd` back there first) — a bare relative
-  # path resolves under the PlatformBenchmarks output directory left by Step 4 instead.
-  cp <runtime-repo>/artifacts/bin/coreclr/<os>.<arch>.Release/crossgen2-published/crossgen2 "$SDK_FX"/
-  ```
-
-  For a runtime you didn't build yourself, see the "Resolving Framework Symbols" section of [linux-performance-tracing.md](../../../docs/project/linux-performance-tracing.md) instead (it walks through obtaining a matching `crossgen2` via a self-contained publish).
+- **JIT-generated (Tier0/Tier1) and precompiled R2R framework symbols require `DOTNET_PerfMapEnabled=1` to be set *before* the process starts.** This makes the runtime emit the perf map and JIT dump that `perfcollect` uses for symbol resolution; no separate `crossgen2` copy is required. If you forget this and only realize partway through a run, the trace from that run cannot be fixed after the fact — kill the process, re-export the env var, and restart it before collecting again.
 - **Native runtime frames (`libcoreclr.so`, `libclrjit.so`, etc.) resolve out of the box, as long as you don't move or discard the build's `.dbg` files.** A Release native build ships each `.so` *stripped*, but the matching, un-stripped `libXyz.so.dbg` is written right alongside it in the same output directory (e.g. `artifacts/bin/coreclr/<rid>.<config>/`), linked via its `.gnu_debuglink` section and a matching Build ID. `perf`/`perfcollect` follow that link automatically as long as the `.dbg` file stays next to its `.so` — don't clean up or selectively copy only the `.so` files into a deployment layout, or you'll silently lose native symbolication.
-- **JIT-generated (Tier0/Tier1) symbols require `DOTNET_PerfMapEnabled=1` to be set *before* the process starts.** If you forget this and only realize partway through a run, the trace from that run cannot be fixed after the fact — kill the process, re-export the env var, and restart it before collecting again.
-- Even after doing all of the above, expect *some* residual unresolved frames from components you didn't build locally (e.g. the OS's own libraries, or a `crossgen2`/`.dbg` mismatch if you mixed binaries from different build configurations) — this doesn't mean the whole trace is useless; managed app-level and JIT-emitted frames still resolve correctly via the perf map regardless.
+- Even after doing all of the above, expect *some* residual unresolved frames from components you didn't build locally (e.g. the OS's own libraries, or a missing/mismatched `.dbg` file if you mixed binaries from different build configurations) — this doesn't mean the whole trace is useless; managed app-level, R2R, and JIT-emitted frames still resolve correctly via the generated symbol data.
 - `DOTNET_PerfMapEnabled=1` has a real (if usually small) overhead of its own — don't leave it set for the throughput (`wrk`/`bombardier`) runs themselves, only for the dedicated profiling run.
 
 ### Common Pitfalls
@@ -333,9 +322,9 @@ Run the command once for each implementation, setting these values:
 | PlatformBenchmarks | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/platform.benchmarks.yml` | `json` | `json-candidate-a` |
 | Minimal APIs | `https://raw.githubusercontent.com/aspnet/Benchmarks/main/scenarios/goldilocks.benchmarks.yml` | `basicminimalapivanilla` | `basicminimalapivanilla-candidate-a` |
 
-Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded output with the local manifest. Keep the scenario's configured connection count, warmup, and duration unless the experiment specifically requires changing them; the scenario owners tune these defaults and may update them over time.
+Create the results directory beforehand and use a unique run name for every launch. Replace angle-bracket placeholders before executing. Quote `"$OVERLAY/*"` so Crank, not the shell, expands the upload pattern. Extend the `sha256sum` list to cover the complete selected payload and compare the downloaded job output log with the local manifest. Keep the scenario's configured connection count, warmup, and duration unless the experiment specifically requires changing them; the scenario owners tune these defaults and may update them over time.
 
-`--application.selfContained true` still needs `--application.runtimeVersion`/`--application.aspNetCoreVersion` pinned to the versions matching your overlay's ABI, since the self-contained publish step is what brings those shared-framework files into `published/` in the first place — `outputFiles` only replaces specific files afterward, it doesn't provision the rest of the runtime. Confirm the `beforeScript`'s `sha256sum` output in the build log matches the overlay's own manifest to prove the substitution actually landed, and check the downloaded build log for the `--self-contained` publish flag.
+`--application.selfContained true` still needs `--application.runtimeVersion`/`--application.aspNetCoreVersion` pinned to the versions matching your overlay's ABI, since the self-contained publish step is what brings those shared-framework files into `published/` in the first place — `outputFiles` only replaces specific files afterward, it doesn't provision the rest of the runtime. Confirm the `beforeScript`'s `sha256sum` output in the downloaded job output log matches the overlay's own manifest to prove the substitution actually landed, and check the downloaded build log for the `--self-contained` publish flag.
 
 The example's `published/` paths and `/bin/sh` command are for the standard Linux jobs used by these scenarios; adapt them if the job uses a different layout or OS. Confirm the build logs show the intended framework versions and that the application uses the deployed replacements, not an incompatible or separately located shared framework. File presence alone is not proof that a module was loaded; use module paths/build IDs from a diagnostic trace when investigating binding.
 
