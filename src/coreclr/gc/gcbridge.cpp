@@ -261,6 +261,7 @@ static DynPtrArray g_scanStack, g_loopStack;
 // Objects from crossref handles registered with RegisterBridgeObject
 static DynPtrArray g_registeredBridges;
 static DynPtrArray g_registeredBridgesContexts;
+static DynPtrArray g_registeredBridgeHandles;
 
 // As we traverse the graph, which ColorData objects are accessible from our current position?
 static DynPtrArray g_colorMergeArray;
@@ -1086,10 +1087,12 @@ static void BridgeFinish()
 #endif
 }
 
-void BridgeResetData()
+void BridgeResetData(bool resetPendingBridgeHandles)
 {
     DynPtrArrayEmpty(&g_registeredBridges);
     DynPtrArrayEmpty(&g_registeredBridgesContexts);
+    if (resetPendingBridgeHandles)
+        DynPtrArrayEmpty(&g_registeredBridgeHandles);
     DynPtrArrayEmpty(&g_scanStack);
     DynPtrArrayEmpty(&g_loopStack);
     EmptyObjectBuckets();
@@ -1103,6 +1106,17 @@ void RegisterBridgeObject(Object* object, uintptr_t context)
 {
     DynPtrArrayAdd(&g_registeredBridges, object);
     DynPtrArrayAdd(&g_registeredBridgesContexts, (void*)context);
+}
+
+void RegisterPendingBridgeHandle(uintptr_t handle)
+{
+    DynPtrArrayAdd(&g_registeredBridgeHandles, (void*)handle);
+}
+
+uintptr_t* GetPendingBridgeHandles(size_t* count)
+{
+    *count = (size_t)DynPtrArraySize(&g_registeredBridgeHandles);
+    return (uintptr_t*)g_registeredBridgeHandles.data;
 }
 
 uint8_t** GetRegisteredBridges(size_t* pNumBridges)
@@ -1297,6 +1311,12 @@ MarkCrossReferencesArgs* ProcessBridgeObjects()
     MarkCrossReferencesArgs* args = BuildSccCallbackData();
 
     ResetObjectsHeader();
+
+    for (int i = 0; i < DynPtrArraySize(&g_registeredBridges); i++)
+    {
+        Object* object = (Object*)DynPtrArrayGet(&g_registeredBridges, i);
+        object->GetHeader()->SetBit(BIT_SBLK_BRIDGE_PENDING);
+    }
 
     BridgeFinish();
 
