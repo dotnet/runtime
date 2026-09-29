@@ -10,6 +10,8 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using Xunit;
 
+[assembly: DisableRuntimeMarshalling]
+
 namespace System.Runtime
 {
     [AttributeUsage(AttributeTargets.Method)]
@@ -42,6 +44,11 @@ public class WasmInterpreterTransitions
     {
         public int A;
         public int B;
+    }
+
+    public struct S4
+    {
+        public int Value;
     }
 
     public struct S12
@@ -106,6 +113,17 @@ public class WasmInterpreterTransitions
     {
         WasmInterpreterTransitions self = new();
 
+        // R2R -> native P/Invoke -> generated native-to-managed export -> R2R UCO.
+        Assert.Equal(A + C, Echo(A));
+        Assert.Equal(A + C, EchoSingleIntStruct(A).Value);
+        Assert.Equal((Wide >> 16) * F64 + F32, EchoMixedScalars(Wide >> 16, F32, F64));
+        unsafe
+        {
+            int value = A;
+            EchoPointer(&value, B);
+            Assert.Equal(A + B, value);
+        }
+
         // Reverse-pinvoke (UnmanagedCallersOnly) entry that re-enters managed code. crossgen2 must
         // thread the UCO method's $sp (loaded from the __stack_pointer global in its prolog) into the
         // R2R->interpreter thunk; passing 0 makes the thunk store below a null base and trap ("memory
@@ -122,6 +140,8 @@ public class WasmInterpreterTransitions
                     delegate* unmanaged<IntPtr, IntPtr, int> fp = &StreamLengthProxy;
                     Assert.Equal(C, fp(IntPtr.Zero, ctx));
                 }
+
+                Assert.Equal(42, R2RCallsNestingUco());
             }
             finally
             {
@@ -268,6 +288,30 @@ public class WasmInterpreterTransitions
     }
 
     private static int s_sideEffect;
+
+    [DllImport("echo", EntryPoint = "echo")]
+    private static extern int Echo(int value);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo")]
+    private static int ManagedEcho(int value) => value + C;
+
+    [DllImport("echo", EntryPoint = "echo_single_int_struct")]
+    private static extern S4 EchoSingleIntStruct(int value);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo_single_int_struct")]
+    private static S4 ManagedEchoSingleIntStruct(int value) => new() { Value = value + C };
+
+    [DllImport("echo", EntryPoint = "echo_mixed_scalars")]
+    private static extern double EchoMixedScalars(long value, float addend, double scale);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo_mixed_scalars")]
+    private static double ManagedEchoMixedScalars(long value, float addend, double scale) => value * scale + addend;
+
+    [DllImport("echo", EntryPoint = "echo_pointer")]
+    private static extern unsafe void EchoPointer(int* value, int delta);
+
+    [UnmanagedCallersOnly(EntryPoint = "managed_echo_pointer")]
+    private static unsafe void ManagedEchoPointer(int* value, int delta) => *value += delta;
 
     private static void VerifyDynamicClosedStaticDelegate()
     {
@@ -509,6 +553,26 @@ public class WasmInterpreterTransitions
         handle = GCHandle.FromIntPtr(ptr);
         return (T)handle.Target!;
     }
+
+    // R2R caller -> UCO -> UCO. Each calli is an inlined PInvoke; the inner one lowers the
+    // __stack_pointer global, and the outer one's epilog asserts that the global is back at the
+    // caller's SP, so this fails unless the UCO epilog restores the global before returning.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe int R2RCallsNestingUco()
+    {
+        delegate* unmanaged<int> fp = &UcoWithInlinedPInvoke;
+        return fp();
+    }
+
+    [UnmanagedCallersOnly]
+    private static unsafe int UcoWithInlinedPInvoke()
+    {
+        delegate* unmanaged<int> fp = &UcoLeaf;
+        return fp() + 1;
+    }
+
+    [UnmanagedCallersOnly]
+    private static int UcoLeaf() => 41;
 
     [UnmanagedCallersOnly]
     private static int StreamLengthProxy(IntPtr s, IntPtr context)

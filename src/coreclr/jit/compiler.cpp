@@ -9605,10 +9605,6 @@ JITDBGAPI void __cdecl cTreeFlags(Compiler* comp, GenTree* tree)
         {
             chars += printf("[NODE_SMALL]");
         }
-        if (tree->gtDebugFlags & GTF_DEBUG_NODE_MORPHED)
-        {
-            chars += printf("[MORPHED]");
-        }
 #endif // defined(DEBUG)
 
         if (tree->gtFlags & GTF_COLON_COND)

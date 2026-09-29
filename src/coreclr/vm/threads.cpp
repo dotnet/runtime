@@ -6367,6 +6367,7 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
     return total;
 }
 
+#if defined(FEATURE_MULTITHREADING) || defined(_DEBUG)
 DeadlockAwareLock::DeadlockAwareLock(const char *description)
   : m_pHoldingThread(NULL)
 #ifdef _DEBUG
@@ -6569,7 +6570,7 @@ void DeadlockAwareLock::LeaveLock()
 
     m_pHoldingThread = NULL;
 }
-
+#endif // FEATURE_MULTITHREADING || _DEBUG
 
 #ifdef _DEBUG
 
