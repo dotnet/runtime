@@ -436,6 +436,7 @@ HRESULT CLiteWeightStgdbRW::InitNew()
 //*****************************************************************************
 // Determine what the size of the saved data will be.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
 __checkReturn
 HRESULT CLiteWeightStgdbRW::GetSaveSize(// S_OK or error.
     CorSaveSize               fSave,                // Quick or accurate?
@@ -911,6 +912,7 @@ ErrExit:
         delete pStorage;
     return hr;
 } // CLiteWeightStgdbRW::Save
+#endif
 
 //*****************************************************************************
 // Pull the PEKind and Machine out of PE headers -- if we have PE headers.

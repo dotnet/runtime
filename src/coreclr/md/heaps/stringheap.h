@@ -174,7 +174,17 @@ public:
     inline HRESULT GetAlignedSize(
         _Out_ UINT32 *pcbSize) const
     {
-        return m_StringPool.GetSaveSize(pcbSize);
+        S_UINT32 size = S_UINT32(m_StringPool.GetRawSize());
+        size.AlignUp(4);
+        if (size.IsOverflow())
+        {
+            *pcbSize = 0;
+            Debug_ReportInternalError("Aligned size of string heap overflows - we should prevent creating such heaps.");
+            return CLDB_E_INTERNALERROR;
+        }
+
+        *pcbSize = size.Value();
+        return S_OK;
     }
     // Returns TRUE if the string heap is empty (even if it contains only default empty string).
     inline BOOL IsEmpty() const
@@ -189,6 +199,7 @@ public:
         return const_cast<StgStringPool &>(m_StringPool).IsValidCookie(nIndex);
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     inline HRESULT SaveToStream_Aligned(
              UINT32   nStartIndex,
@@ -208,6 +219,7 @@ public:
         _ASSERTE(nStartIndex == m_StringPool.GetOffsetOfEdit());
         return const_cast<StgStringPool &>(m_StringPool).PersistPartialToStream(pStream, nStartIndex);
     }
+#endif
 
 public:
     //
@@ -279,6 +291,7 @@ public:
         m_StringPool.ResetOffsetOfEdit();
     }
     // Gets size (in bytes) aligned to 4-bytes of adds made from the beginning of the last EnC session.
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     inline HRESULT GetEnCSessionAddedHeapSize_Aligned(
         _Out_ UINT32 *pcbSize) const
@@ -291,6 +304,7 @@ public:
         *pcbSize = 0;
         return S_OK;
     }
+#endif
 
 };  // class StringHeapRW
 

@@ -52,7 +52,7 @@ target_compile_definitions(mdcompiler_dac PRIVATE FEATURE_METADATA_PUBLIC_INTERF
 target_precompile_headers(mdcompiler_dac PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_wks OBJECT ${MDCOMPILER_SOURCES})
-target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
+target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_CORECLR FEATURE_METADATA_EMIT_ALL)
 if (FEATURE_CORPROFILER)
     target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_PUBLIC_INTERFACES)
 endif()
@@ -64,5 +64,5 @@ target_compile_definitions(mdcompiler-dbi PRIVATE FEATURE_METADATA_PUBLIC_INTERF
 target_precompile_headers(mdcompiler-dbi PRIVATE stdafx.h)
 
 add_library_clr(mdcompiler_ppdb ${MDCOMPILER_SOURCES})
-target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB FEATURE_METADATA_PUBLIC_INTERFACES SELF_NO_HOST)
+target_compile_definitions(mdcompiler_ppdb PRIVATE FEATURE_METADATA_EMIT_ALL FEATURE_METADATA_EMIT_PORTABLE_PDB FEATURE_METADATA_PERSISTENCE FEATURE_METADATA_PUBLIC_INTERFACES SELF_NO_HOST)
 target_precompile_headers(mdcompiler_ppdb PRIVATE stdafx.h)

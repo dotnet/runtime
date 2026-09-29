@@ -123,12 +123,10 @@ class RegMeta :
 #ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     public IMetaDataImport2,
     public IMetaDataAssemblyImport,
-#endif
     public IMetaDataTables2
-
     , public IMetaDataInfo
 
-#if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
+#ifdef FEATURE_METADATA_EMIT
 #ifndef FEATURE_METADATA_EMIT_PORTABLE_PDB
     , public IMetaDataEmit2
 #else
@@ -149,6 +147,17 @@ class RegMeta :
 #endif
 
     , public IMDCommon
+#else
+#ifdef FEATURE_METADATA_EMIT_ALL
+    public IMetaDataFilter,
+#endif
+#ifdef FEATURE_METADATA_INTERNAL_APIS
+    public IMetaDataHelper,
+    public IMDInternalEmit,
+    public IGetIMDInternalImport,
+#endif
+    public IMDCommon
+#endif
 {
     friend class CImportTlb;
     friend class MDInternalRW;
@@ -1318,6 +1327,7 @@ public:
 // IMetaDataTables
 //*****************************************************************************
 
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     // Fills size (*pcbStringsHeapSize) of internal strings heap (#String).
     // Returns S_OK or error code. Fills *pcbStringsHeapSize with 0 on error.
     // Implements public API code:IMetaDataTables::GetStringHeapSize.
@@ -1496,7 +1506,7 @@ public:
         const void ** ppvData,          // [out] Pointer to the start of the mapped file.
         ULONGLONG *   pcbData,          // [out] Size of the mapped memory region..
         DWORD *       pdwMappingType);  // [out] Type of file mapping (code:CorFileMapping).
-
+#endif
 
 //*****************************************************************************
 // IMDCommon methods
@@ -1592,9 +1602,6 @@ protected:
 
     HRESULT PreSave();
 
-    // Define a TypeRef given the name.
-    enum eCheckDups {eCheckDefault=0, eCheckNo=1, eCheckYes=2};
-
     HRESULT _DefinePermissionSet(
         mdToken     tk,                     // [IN] the object to be decorated.
         DWORD       dwAction,               // [IN] CorDeclSecurity.
@@ -1606,8 +1613,7 @@ protected:
         mdToken     tkResolutionScope,      // [IN] ModuleRef or AssemblyRef.
         const void  *szName,                // [IN] Name of the TypeRef.
         BOOL        isUnicode,              // [IN] Specifies whether the URL is unicode.
-        mdTypeRef   *ptk,                   // [OUT] Put mdTypeRef here.
-        eCheckDups  eCheck=eCheckDefault);  // [IN] Specifies whether to check for duplicates.
+        mdTypeRef   *ptk);                  // [OUT] Put mdTypeRef here.
 
     // Define MethodSemantics
     HRESULT _DefineMethodSemantics(         // S_OK or error.

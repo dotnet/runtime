@@ -1098,6 +1098,9 @@ HRESULT MDInternalRO::FindTypeRefByName(  // S_OK or error.
         mdToken     tkResolutionScope,      // [IN] Resolution Scope fo the TypeRef.
         mdTypeRef   *ptk)                   // [OUT] TypeRef token returned.
 {
+#ifdef FEATURE_METADATA_CORECLR
+    return E_NOTIMPL;
+#else
     HRESULT     hr = NOERROR;
 
     _ASSERTE(ptk);
@@ -1147,6 +1150,7 @@ HRESULT MDInternalRO::FindTypeRefByName(  // S_OK or error.
     hr = CLDB_E_RECORD_NOTFOUND;
 ErrExit:
     return hr;
+#endif
 }
 
 //*****************************************************************************

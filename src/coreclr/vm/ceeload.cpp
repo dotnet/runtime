@@ -2913,6 +2913,7 @@ void Module::SetJMCStatus(bool fStatus)
     m_debuggerSpecificData.m_fDefaultJMCStatus = fStatus;
 }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
 // Update the dynamic metadata if needed. Nop for non-dynamic modules
 void Module::UpdateDynamicMetadataIfNeeded()
 {
@@ -2945,6 +2946,7 @@ void Module::UpdateDynamicMetadataIfNeeded()
     }
 
 }
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 
@@ -2955,12 +2957,14 @@ BOOL Module::NotifyDebuggerLoad(Assembly * pAssembly, int flags, BOOL attaching)
 {
     WRAPPER_NO_CONTRACT;
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Always capture metadata, even if no debugger is attached. If a debugger later attaches, it will use
     // this data.
     {
         Module * pModule = pAssembly->GetModule();
         pModule->UpdateDynamicMetadataIfNeeded();
     }
+#endif
 
     //
     // Remaining work is only needed if a debugger is attached
@@ -3992,6 +3996,7 @@ private:
 //    Class-load events are high-volume and events are slow. We can avoid the chattiness by ensuring
 //    the debugger knows that Class-load also means "refresh metadata".
 //
+#ifdef FEATURE_METADATA_PERSISTENCE
 void ReflectionModule::CaptureModuleMetaDataToMemory()
 {
     CONTRACTL
@@ -4048,6 +4053,7 @@ void ReflectionModule::CaptureModuleMetaDataToMemory()
     // Will be S_FALSE if someone changed the MDUpdateMode (from MDUpdateExtension) meanwhile
     _ASSERTE(hr == S_OK);
 }
+#endif
 
 
 #endif // !DACCESS_COMPILE

@@ -72,7 +72,6 @@ HRESULT TranslateSigHelper(                 // S_OK or error.
                 cbHashValue,        // Size in bytes.
                 pCommon,            // The scope where signature is from.
                 pbSigBlob,          // signature from the imported scope
-                NULL,               // Internal OID mapping structure.
                 pqkSigEmit,         // [OUT] translated signature
                 0,               // start from first byte of the signature
                 NULL,               // don't care how many bytes consumed
@@ -1978,6 +1977,9 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     mdToken     tkResolutionScope,      // [IN] Resolution Scope fo the TypeRef.
     mdTypeRef   *ptk)                   // [OUT] TypeRef token returned.
 {
+#ifdef FEATURE_METADATA_CORECLR
+    return E_NOTIMPL;
+#else
     HRESULT     hr = NOERROR;
     ULONG       cTypeRefRecs;
     TypeRefRec *pTypeRefRec;
@@ -2027,6 +2029,7 @@ HRESULT MDInternalRW::FindTypeRefByName(  // S_OK or error.
     hr = CLDB_E_RECORD_NOTFOUND;
 ErrExit:
     return hr;
+#endif
 } // MDInternalRW::FindTypeRefByName
 
 //*****************************************************************************

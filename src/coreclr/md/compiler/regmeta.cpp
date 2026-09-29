@@ -497,6 +497,7 @@ RegMeta::QueryInterface(
         *ppUnk = (IMetaDataAssemblyImport *)this;
     }
 #endif
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
     else if (riid == IID_IMetaDataTables)
     {
         *ppUnk = static_cast<IMetaDataTables *>(this);
@@ -510,6 +511,7 @@ RegMeta::QueryInterface(
     {
         *ppUnk = static_cast<IMetaDataInfo *>(this);
     }
+#endif
 
 #if defined(FEATURE_METADATA_EMIT) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
     else if (riid == IID_IMetaDataEmit)
@@ -666,6 +668,7 @@ ErrExit:
 //          - The file is not NT PE file (e.g. it is NT OBJ = .obj file produced by managed C++).
 //    E_INVALIDARG       - NULL was passed as an argument value.
 //
+#ifdef FEATURE_METADATA_PUBLIC_INTERFACES
 HRESULT
 RegMeta::GetFileMapping(
     const void ** ppvData,
@@ -727,12 +730,13 @@ ErrExit:
 
     return hr;
 } // RegMeta::GetFileMapping
+#endif
 
 
 //------------------------------------------------------------------------------
 // Metadata dump
 //
-#ifdef _DEBUG
+#if defined(_DEBUG) && defined(FEATURE_METADATA_PUBLIC_INTERFACES)
 
 #define STRING_BUFFER_LEN 1024
 #define ENUM_BUFFER_SIZE 10
@@ -1273,7 +1277,7 @@ int DumpMD(UINT_PTR iMD)
     return DumpMD_impl(pMD);
 }
 
-#endif //_DEBUG
+#endif // _DEBUG && FEATURE_METADATA_PUBLIC_INTERFACES
 
 //*****************************************************************************
 // Using the existing RegMeta and reopen with another chuck of memory. Make sure that all stgdb

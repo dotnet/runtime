@@ -82,7 +82,6 @@ STDMETHODIMP RegMeta::TranslateSigWithScope(    // S_OK or error.
                 cbHashValue,                            // Size in bytes.
                 pImportMetaModelCommon,                 // The scope where signature is from.
                 pbSigBlob,                              // signature from the imported scope
-                NULL,                                   // Internal OID mapping structure.
                 &qkSigEmit,                             // [OUT] translated signature
                 0,                                      // start from first byte of the signature
                 0,                                      // don't care how many bytes consumed
@@ -343,7 +342,11 @@ RegMeta::GetMetadata(
 HRESULT RegMeta::ChangeMvid(            // S_OK or error.
     REFGUID newMvid)                    // GUID to use as the MVID
 {
+#ifdef FEATURE_METADATA_CORECLR
+    return E_NOTIMPL;
+#else
     return GetMiniMd()->ChangeMvid(newMvid);
+#endif
 }
 
 //*******************************************************************************

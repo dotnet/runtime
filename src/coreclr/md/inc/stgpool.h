@@ -512,6 +512,7 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -601,6 +602,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return 0;
     }
+#endif
 
 //*****************************************************************************
 // Return the size of the pool.
@@ -858,6 +860,7 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -890,6 +893,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         return ULONG( strlen( reinterpret_cast< LPCSTR >( data ) ) + 1 ); // using strlen since the string is UTF8
     }
+#endif
 
 private:
     __checkReturn
@@ -975,11 +979,13 @@ public:
 // Get the size of the GUID obtained from the pool.
 // Needed for generic persisting of data blocks.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
     virtual ULONG GetSizeOfData( void const * data )
     {
         LIMITED_METHOD_CONTRACT;
         return sizeof( GUID );
     }
+#endif
 
 //*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
@@ -1020,6 +1026,7 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -1035,6 +1042,7 @@ public:
         _ASSERTE(*pcbSaveSize == ALIGN4BYTE(*pcbSaveSize));
         return S_OK;
     }
+#endif
 
 private:
 
@@ -1133,6 +1141,7 @@ public:
 // Get the size of the blob obtained from the pool.
 // Needed for generic persisting of data blocks.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
     virtual ULONG GetSizeOfData( void const * data )
     {
         WRAPPER_NO_CONTRACT;
@@ -1141,6 +1150,7 @@ public:
         ULONG blobsize = CPackedLen::GetLength( data, & blobdata ); // the size is encoded at the beginning of the block
         return blobsize + static_cast< ULONG >( reinterpret_cast< BYTE const * >( blobdata ) - reinterpret_cast< BYTE const * >( data ) );
     }
+#endif
 
 //*****************************************************************************
 // How many objects are there in the pool?  If the count is 0, you don't need
@@ -1165,6 +1175,7 @@ public:
 // PersistToStream were the next call, the amount of bytes written to pIStream
 // has to be same as the return value from this function.
 //*****************************************************************************
+#ifdef FEATURE_METADATA_PERSISTENCE
     __checkReturn
     virtual HRESULT GetSaveSize(
         UINT32 *pcbSaveSize) const
@@ -1173,6 +1184,7 @@ public:
 
         return StgPool::GetSaveSize(pcbSaveSize);
     }
+#endif
 
 protected:
 

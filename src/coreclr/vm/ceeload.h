@@ -818,9 +818,11 @@ public:
     bool GetJMCStatus();
     void SetJMCStatus(bool fStatus);
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // If this is a dynamic module, eagerly serialize the metadata so that it is available for DAC.
     // This is a nop for non-dynamic modules.
     void UpdateDynamicMetadataIfNeeded();
+#endif
 
 #ifdef _DEBUG
     //
@@ -1792,8 +1794,10 @@ public:
         return m_pInMemoryWriter;
     }
 
+#ifdef FEATURE_METADATA_PERSISTENCE
     // Eagerly serialize the metadata to a buffer that the debugger can retrieve.
     void CaptureModuleMetaDataToMemory();
+#endif
 };
 
 struct ModuleHolderTraits final
