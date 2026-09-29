@@ -4636,11 +4636,11 @@ namespace System.Tests
         {
             var array = Array.CreateFilled<int>(10, index => index + 1);
             Assert.Equal(10, array.Length);
-            Assert.Equal(array, new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 });
+            Assert.Equal(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }, array);
         }
 
         [Fact]
-        public void CreateFilled_Empty_ValueType()
+        public void CreateFilled_Factory_Empty()
         {
             var array = Array.CreateFilled<int>(0, index => index);
             Assert.Empty(array);
@@ -4659,9 +4659,31 @@ namespace System.Tests
         }
 
         [Fact]
-        public void CreateFilled_Empty_ReferenceType()
+        public void CreateFilled_Factory_Empty_ReferenceType()
         {
             var array = Array.CreateFilled<Foo2>(0, index => new Foo2(index));
+            Assert.Empty(array);
+        }
+
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(5, 10)]
+        [InlineData(1000, 10)]
+        public void CreateFilled_FillValue(int length, int value)
+        {
+            var array = Array.CreateFilled<int>(length, value);
+            var expected = new int[length];
+            for (int i = 0; i < expected.Length; i++)
+                expected[i] = value;
+
+            Assert.Equal(length, array.Length);
+            Assert.Equal(expected, array);
+        }
+
+        [Fact]
+        public void CreateFilled_FillValue_Empty()
+        {
+            var array = Array.CreateFilled<int>(0, 0);
             Assert.Empty(array);
         }
 
