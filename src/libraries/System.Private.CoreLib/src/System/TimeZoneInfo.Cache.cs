@@ -505,19 +505,53 @@ namespace System
         /// <returns>The standard UTC offset ticks to subtract from the local time.</returns>
         private long GetStandardUtcOffsetTicks(DateTime localDateTime)
         {
+            int ruleIndex = FindRuleIndexForLocalTime(localDateTime);
+            return ruleIndex < 0
+                ? _baseUtcOffset.Ticks
+                : GetTransitionUtcOffsetTicks(_adjustmentRules![ruleIndex], includeDaylightDelta: false);
+        }
+
+        /// <summary>
+        /// Finds the index of the adjustment rule that applies to the specified local time, resolving the rule
+        /// adjacent to the exact timestamp rather than by calendar year. This matters for zones whose standard
+        /// offset changed between two rules within the same year (for example southern-hemisphere zones that
+        /// begin a year in daylight saving time), where a year-based lookup could return the wrong rule.
+        /// </summary>
+        /// <param name="localDateTime">The local time to resolve.</param>
+        /// <returns>The index of the applicable adjustment rule, or -1 if none applies.</returns>
+        private int FindRuleIndexForLocalTime(DateTime localDateTime)
+        {
             AdjustmentRule[]? rules = _adjustmentRules;
             if (rules is null || rules.Length == 0)
             {
-                return _baseUtcOffset.Ticks;
+                return -1;
             }
 
-            int ruleIndex = FindRuleForYear(localDateTime.Year);
-            if (ruleIndex < 0)
+            DateTime date = localDateTime.Date;
+            int low = 0;
+            int high = rules.Length - 1;
+            while (low <= high)
             {
-                return _baseUtcOffset.Ticks;
+                int median = low + (high - low) / 2;
+                AdjustmentRule rule = rules[median];
+                AdjustmentRule previousRule = median > 0 ? rules[median - 1] : rule;
+                int compareResult = CompareAdjustmentRuleToDateTime(rule, previousRule, localDateTime, date, dateTimeIsUtc: false);
+                if (compareResult == 0)
+                {
+                    return median;
+                }
+
+                if (compareResult < 0)
+                {
+                    low = median + 1;
+                }
+                else
+                {
+                    high = median - 1;
+                }
             }
 
-            return GetTransitionUtcOffsetTicks(rules[ruleIndex], includeDaylightDelta: false);
+            return -1;
         }
 
         /// <summary>
