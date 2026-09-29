@@ -93,7 +93,7 @@ rsync -a --delete "$SDK_FX"/ "$BACKUP_DIR"/
 rsync -a --delete "$TESTHOST_FX"/ "$SDK_FX"/
 ```
 
-**This mutates the repo's own SDK shared framework in place.** Never skip the backup step, and always restore it when done (Step 6) — leaving it mutated will silently break every other use of that SDK on the machine. Keep `$BACKUP_DIR` and the recorded checksum around until Step 6 has verified the restore.
+**This mutates the repo's own SDK shared framework in place.** Never skip the backup step, and always restore it when done (Step 6) — leaving it mutated will silently break every other use of that SDK on the machine. Keep `$BACKUP_DIR` until Step 6 has verified the restored contents.
 
 ### Step 4: Run Each App and Verify It's Serving Requests
 
@@ -150,7 +150,7 @@ Repeat Steps 4-5 for each configuration being compared (e.g. once with the env v
 ### Step 6: Clean Up
 
 1. Kill the server process — find the actual `dotnet exec ... PlatformBenchmarks.dll` or `dotnet exec ... BasicMinimalApi.dll` PID (not the shell that launched it) with `pgrep -af PlatformBenchmarks` or `pgrep -af BasicMinimalApi`, then use `kill <pid>`.
-2. **Restore the SDK's shared framework from the backup** and verify it via checksum before considering the machine clean:
+2. **Restore the SDK's shared framework from the backup** and verify it with a recursive content comparison before considering the machine clean:
 
    ```bash
    rsync -a --delete "$BACKUP_DIR"/ "$SDK_FX"/
@@ -204,7 +204,7 @@ If the load-test numbers show a difference (or don't, and you need to know why) 
 - **Running via `artifacts/bin/testhost` directly fails** with "no framework found" — that layout only has `Microsoft.NETCore.App`, not `Microsoft.AspNetCore.App`. Use the SDK-overlay approach in Step 3 instead.
 - **Forgetting to set the env var before starting the process** — most feature switches (like `DOTNET_USE_IO_URING`) are read once at startup, so changing it and re-`curl`-ing the same running process has no effect.
 - **Comparing a single run per configuration** — throughput varies run to run; always do at least two runs per configuration.
-- **Leaving the SDK shared framework overlaid** — always restore it (Step 6) and verify via checksum; a stale/mismatched overlay silently breaks unrelated work on the same machine later.
+- **Leaving the SDK shared framework overlaid** — always restore it (Step 6) and verify with a recursive content comparison; a stale/mismatched overlay silently breaks unrelated work on the same machine later.
 
 ## Benchmarking a Local Runtime Build on External Infrastructure with Crank
 
