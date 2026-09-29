@@ -6,9 +6,10 @@
 #                      UnitTests + DataGeneratorTests projects (tools.cdactests
 #                      subset). Independent of every other stage.
 #
-#   SOSTests           Per-platform Release runtime + cDAC build and SOS Helix
-#                      submission. SOS.Tests covers both legacy DAC and cDAC
-#                      modes. Independent of every other stage.
+#   SOSTests           Per-platform Release builds with the legacy DAC and the
+#                      EnumMemory provider, each with a matching SOS Helix submission.
+#                      Legacy builds cover both DAC modes; EnumMemory uses cDAC only.
+#                      Independent of every other stage.
 #
 #   CdacTests          Per-platform Checked runtime build + Dump / Stress /
 #                      XPlatDumpGen / XPlatDumpTest legs in one stage. Each dump
@@ -146,81 +147,85 @@ extends:
             testResultsFormat: 'xunit'
 
     # ----------------------------------------------------------------------
-    # SOS tests. Each platform builds a Release runtime and matching universal
-    # cDAC/DBI, then submits the diagnostics SOS.Tests payload to Helix.
+    # SOS tests. Each platform builds legacy and EnumMemory Release runtimes with
+    # matching universal cDAC/DBI, then submits each SOS.Tests payload to Helix.
     # ----------------------------------------------------------------------
     - stage: SOSTests
       dependsOn: []
       jobs:
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
-          platforms: ${{ parameters.sosPlatforms }}
-          jobParameters:
-            nameSuffix: SOSBuild
-            buildArgs: -s clr+libs+tools.cdac+host -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig)
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 180
-            postBuildSteps:
-            - pwsh: |
-                $runtimeDirs = @(Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-$(_BuildConfig)-$(archType)/shared/Microsoft.NETCore.App/*")
-                if ($runtimeDirs.Count -ne 1) {
-                  throw "Expected one SOS runtime directory, but found $($runtimeDirs.Count)."
-                }
-
-                Write-Host "##vso[task.setvariable variable=sosRuntimeDir]$($runtimeDirs[0].FullName)"
-
-                $sourceDir = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)"
-                $stagingDir = "$(Build.SourcesDirectory)/artifacts/sos-cdac"
-                New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
-
-                $fileNames = switch ("$(osGroup)") {
-                  "windows" { "mscordaccore_universal.dll", "mscordbi_universal.dll" }
-                  "linux" { "libmscordaccore_universal.so", "libmscordbi_universal.so" }
-                  "osx" { "libmscordaccore_universal.dylib", "libmscordbi_universal.dylib" }
-                  default { throw "Unsupported OS group '$(osGroup)'." }
-                }
-
-                foreach ($fileName in $fileNames) {
-                  $source = Join-Path $sourceDir $fileName
-                  if (-not (Test-Path -PathType Leaf $source)) {
-                    throw "Required private cDAC file '$source' was not found."
+      # An empty suffix preserves the standard build and artifact names.
+      - ${{ each suffix in split(',_EnumMemory', ',') }}:
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/common/global-build-job.yml
+            buildConfig: release
+            platforms: ${{ parameters.sosPlatforms }}
+            jobParameters:
+              nameSuffix: SOSBuild${{ suffix }}
+              buildArgs: -s clr+libs+tools.cdac+host -c $(_BuildConfig) -rc $(_BuildConfig) -lc $(_BuildConfig) /p:UseCdacDumpCollectProvider=${{ eq(suffix, '_EnumMemory') }}
+              isOfficialBuild: ${{ variables.isOfficialBuild }}
+              timeoutInMinutes: 180
+              postBuildSteps:
+              - pwsh: |
+                  $runtimeDirs = @(Get-ChildItem -Directory -Path "$(Build.SourcesDirectory)/artifacts/bin/testhost/net*-$(osGroup)-$(_BuildConfig)-$(archType)/shared/Microsoft.NETCore.App/*")
+                  if ($runtimeDirs.Count -ne 1) {
+                    throw "Expected one SOS runtime directory, but found $($runtimeDirs.Count)."
                   }
 
-                  Copy-Item -Path $source -Destination $stagingDir
-                }
-              displayName: 'Find SOS Runtime and cDAC'
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(sosRuntimeDir)
-                includeRootFolder: false
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
-                artifactName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)
-                displayName: SOS Runtime Artifacts
-            - template: /eng/pipelines/common/upload-artifact-step.yml
-              parameters:
-                rootFolder: $(Build.SourcesDirectory)/artifacts/sos-cdac
-                includeRootFolder: false
-                archiveType: $(archiveType)
-                archiveExtension: $(archiveExtension)
-                tarCompression: $(tarCompression)
-                artifactName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)
-                displayName: SOS cDAC Artifacts
+                  Write-Host "##vso[task.setvariable variable=sosRuntimeDir]$($runtimeDirs[0].FullName)"
 
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/diagnostics/sos-test-leg.yml
-          buildConfig: release
-          platforms: ${{ parameters.sosPlatforms }}
-          jobParameters:
-            nameSuffix: SOS
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            timeoutInMinutes: 360
-            dependsOnGlobalBuilds:
-            - nameSuffix: SOSBuild
+                  $sourceDir = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/$(osGroup).$(archType).$(_BuildConfig)"
+                  $stagingDir = "$(Build.SourcesDirectory)/artifacts/sos-cdac"
+                  New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+
+                  $fileNames = switch ("$(osGroup)") {
+                    "windows" { "mscordaccore_universal.dll", "mscordbi_universal.dll" }
+                    "linux" { "libmscordaccore_universal.so", "libmscordbi_universal.so" }
+                    "osx" { "libmscordaccore_universal.dylib", "libmscordbi_universal.dylib" }
+                    default { throw "Unsupported OS group '$(osGroup)'." }
+                  }
+
+                  foreach ($fileName in $fileNames) {
+                    $source = Join-Path $sourceDir $fileName
+                    if (-not (Test-Path -PathType Leaf $source)) {
+                      throw "Required private cDAC file '$source' was not found."
+                    }
+
+                    Copy-Item -Path $source -Destination $stagingDir
+                  }
+                displayName: 'Find SOS Runtime and cDAC'
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(sosRuntimeDir)
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)${{ suffix }}
+                  displayName: SOS Runtime Artifacts
+              - template: /eng/pipelines/common/upload-artifact-step.yml
+                parameters:
+                  rootFolder: $(Build.SourcesDirectory)/artifacts/sos-cdac
+                  includeRootFolder: false
+                  archiveType: $(archiveType)
+                  archiveExtension: $(archiveExtension)
+                  tarCompression: $(tarCompression)
+                  artifactName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)${{ suffix }}
+                  displayName: SOS cDAC Artifacts
+
+        - template: /eng/pipelines/common/platform-matrix.yml
+          parameters:
+            jobTemplate: /eng/pipelines/diagnostics/sos-test-leg.yml
+            buildConfig: release
+            platforms: ${{ parameters.sosPlatforms }}
+            jobParameters:
+              nameSuffix: SOS${{ suffix }}
+              artifactSuffix: ${{ suffix }}
+              useCdacDumpCollectProvider: ${{ eq(suffix, '_EnumMemory') }}
+              isOfficialBuild: ${{ variables.isOfficialBuild }}
+              timeoutInMinutes: 360
+              dependsOnGlobalBuilds:
+              - nameSuffix: SOSBuild${{ suffix }}
 
     # ----------------------------------------------------------------------
     # cDAC dump + stress + xplat-dump-gen tests.
@@ -248,7 +253,7 @@ extends:
           platforms: ${{ parameters.cdacDumpPlatforms }}
           jobParameters:
             nameSuffix: Build
-            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+            buildArgs: -s clr+libs+tools.cdac+tools.cdacdumptests+tools.cdacstresstests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0 /p:UseCdacDumpCollectProvider=true
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             timeoutInMinutes: 180
             postBuildSteps:

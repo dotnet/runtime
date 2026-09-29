@@ -23,6 +23,8 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_crashThread(options.CrashThread),
     m_signal(options.Signal),
     m_exceptionRecord(options.ExceptionRecord),
+    m_runtimeBaseAddress(0),
+    m_contractDescriptorAddress(0),
     m_moduleInfos(&ModuleInfoCompare),
     m_mainModule(nullptr),
     m_cbModuleMappings(0),
@@ -30,7 +32,6 @@ CrashInfo::CrashInfo(const CreateDumpOptions& options) :
     m_enumMemoryPagesAdded(0)
 {
     g_crashInfo = this;
-    m_runtimeBaseAddress = 0;
 #ifdef __APPLE__
     m_task = 0;
 #else

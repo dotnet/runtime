@@ -25,6 +25,8 @@ parameters:
   templatePath: 'templates'
   templateContext: ''
   disableComponentGovernance: ''
+  artifactSuffix: ''
+  useCdacDumpCollectProvider: false
 
 jobs:
 - template: /eng/common/${{ parameters.templatePath }}/job/job.yml
@@ -94,15 +96,15 @@ jobs:
 
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        artifactName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)
-        artifactFileName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+        artifactName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)${{ parameters.artifactSuffix }}
+        artifactFileName: SosRuntimeArtifacts_$(osGroup)$(osSubgroup)_$(archType)${{ parameters.artifactSuffix }}$(archiveExtension)
         unpackFolder: $(Build.SourcesDirectory)/artifacts/runtime
         displayName: 'SOS Runtime Artifacts'
 
     - template: /eng/pipelines/common/download-artifact-step.yml
       parameters:
-        artifactName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)
-        artifactFileName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)$(archiveExtension)
+        artifactName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)${{ parameters.artifactSuffix }}
+        artifactFileName: SosCdacArtifacts_$(osGroup)$(osSubgroup)_$(archType)${{ parameters.artifactSuffix }}$(archiveExtension)
         unpackFolder: $(Build.SourcesDirectory)/artifacts/private-cdac
         displayName: 'SOS cDAC Artifacts'
 
@@ -203,6 +205,12 @@ jobs:
           HelixConfiguration: ${{ parameters.targetRid }}_${{ parameters.buildConfig }}
           HelixTargetQueues: $(SOSHelixQueue)
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+          # The enumerator replaces the legacy DAC; select cDAC on the Helix worker.
+          ${{ if eq(parameters.useCdacDumpCollectProvider, true) }}:
+            ${{ if eq(parameters.osGroup, 'windows') }}:
+              HelixPreCommands: set SOSHARNESS_ONLY_DAC=CDac
+            ${{ else }}:
+              HelixPreCommands: export SOSHARNESS_ONLY_DAC=CDac
           ${{ if eq(variables['System.TeamProject'], 'public') }}:
             Creator: dotnet-bot
           ${{ else }}:
