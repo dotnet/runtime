@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO.Compression.Tests;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +17,8 @@ namespace System.IO.Compression
 {
     public class DeflateStreamUnitTests : CompressionStreamUnitTestBase
     {
+        private const int DeflaterPoolCapacity = 8;
+
         public override Stream CreateStream(Stream stream, CompressionMode mode) => new DeflateStream(stream, mode);
         public override Stream CreateStream(Stream stream, CompressionMode mode, bool leaveOpen) => new DeflateStream(stream, mode, leaveOpen);
         public override Stream CreateStream(Stream stream, CompressionLevel level) => new DeflateStream(stream, level);
@@ -25,31 +28,24 @@ namespace System.IO.Compression
         protected override string CompressedTestFile(string uncompressedPath) => Path.Combine("DeflateTestData", Path.GetFileName(uncompressedPath));
 
         [Fact]
-        public void DeflaterPool_ReusesDeflaterForSequentialStreams()
+        public void DeflaterPool_ReusesNativeStateForSequentialStreams()
         {
             const int Iterations = 16;
             byte[] input = Encoding.UTF8.GetBytes("Short-lived DeflateStream compression should reuse native state.");
-            FieldInfo? deflaterField = typeof(DeflateStream).GetField("_deflater", BindingFlags.Instance | BindingFlags.NonPublic);
-            Assert.NotNull(deflaterField);
+            HashSet<object> states = new();
 
             byte[]? expectedCompressedData = null;
-            object? previousDeflater = null;
-
             for (int i = 0; i < Iterations; i++)
             {
                 using var compressedData = new MemoryStream();
-                object? currentDeflater;
+                object currentState;
                 using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
                 {
-                    currentDeflater = deflaterField.GetValue(compressor);
+                    currentState = GetZLibStreamHandle(compressor);
                     compressor.Write(input);
                 }
 
-                Assert.NotNull(currentDeflater);
-                if (previousDeflater is not null)
-                {
-                    Assert.Same(previousDeflater, currentDeflater);
-                }
+                states.Add(currentState);
 
                 byte[] compressedBytes = compressedData.ToArray();
                 if (expectedCompressedData is null)
@@ -66,33 +62,233 @@ namespace System.IO.Compression
                 using var decompressedData = new MemoryStream();
                 decompressor.CopyTo(decompressedData);
                 Assert.Equal(input, decompressedData.ToArray());
+            }
 
-                previousDeflater = currentDeflater;
+            Assert.True(states.Count < Iterations, "Sequential streams should reuse native state.");
+        }
+
+        [Fact]
+        public void DeflaterPool_UsesRequestedCompressionStrategy()
+        {
+            byte[] input = Enumerable.Range(0, 4096).Select(i => (byte)(i % 17)).ToArray();
+            var defaultOptions = new ZLibCompressionOptions { CompressionLevel = 6 };
+            var huffmanOptions = new ZLibCompressionOptions
+            {
+                CompressionLevel = 6,
+                CompressionStrategy = ZLibCompressionStrategy.HuffmanOnly
+            };
+
+            (object defaultState, byte[] defaultData) = CompressWithHandle(input, defaultOptions);
+            (object huffmanState, byte[] huffmanData) = CompressWithHandle(input, huffmanOptions);
+            Assert.NotSame(defaultState, huffmanState);
+            Assert.NotEqual(defaultData, huffmanData);
+
+            Assert.Equal(defaultData, CompressWithHandle(input, defaultOptions).CompressedData);
+            Assert.Equal(huffmanData, CompressWithHandle(input, huffmanOptions).CompressedData);
+            Assert.Equal(input, Decompress(defaultData));
+            Assert.Equal(input, Decompress(huffmanData));
+        }
+
+        [Fact]
+        public void DeflaterPool_RotatesEvictionAcrossConfigurations()
+        {
+            byte[] input = Enumerable.Range(0, 4096).Select(i => (byte)(i % 17)).ToArray();
+            int warmCount = DeflaterPoolCapacity * 2;
+            DeflateStream[] warmCompressors = new DeflateStream[warmCount];
+            MemoryStream[] warmOutputs = new MemoryStream[warmCount];
+            SafeHandle[] warmStates = new SafeHandle[warmCount];
+
+            for (int i = 0; i < warmCount; i++)
+            {
+                warmOutputs[i] = new MemoryStream();
+                warmCompressors[i] = new DeflateStream(warmOutputs[i], CompressionLevel.Optimal, leaveOpen: true);
+                warmStates[i] = GetZLibStreamHandle(warmCompressors[i]);
+            }
+
+            for (int i = 0; i < warmCompressors.Length; i++)
+            {
+                warmCompressors[i].Dispose();
+                warmOutputs[i].Dispose();
+            }
+
+            for (int i = 0; i < DeflaterPoolCapacity; i++)
+            {
+                Assert.True(warmStates[i].IsClosed, "Evicted native state should be disposed.");
+            }
+
+            ZLibCompressionOptions[] options =
+            [
+                new() { CompressionLevel = 1, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+                new() { CompressionLevel = 1, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 13 },
+                new() { CompressionLevel = 2, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+                new() { CompressionLevel = 0, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+                new() { CompressionLevel = 3, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+                new() { CompressionLevel = 4, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+                new() { CompressionLevel = 5, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+                new() { CompressionLevel = 6, CompressionStrategy = ZLibCompressionStrategy.Filtered, WindowLog2 = 12 },
+            ];
+
+            object[] states = new object[DeflaterPoolCapacity];
+            byte[][] compressedData = new byte[DeflaterPoolCapacity][];
+            for (int i = 0; i < DeflaterPoolCapacity; i++)
+            {
+                (states[i], compressedData[i]) = CompressWithHandle(input, options[i]);
+                Assert.Equal(input, Decompress(compressedData[i]));
+
+                for (int j = 0; j < i; j++)
+                {
+                    Assert.NotSame(states[i], states[j]);
+                }
+            }
+
+            for (int i = DeflaterPoolCapacity; i < warmCount; i++)
+            {
+                Assert.True(warmStates[i].IsClosed, "Replacing cached native state should dispose the evicted state.");
+            }
+
+            for (int i = 0; i < DeflaterPoolCapacity; i++)
+            {
+                (object repeatedState, byte[] repeatedData) = CompressWithHandle(input, options[i]);
+                Assert.Same(states[i], repeatedState);
+                Assert.Equal(compressedData[i], repeatedData);
             }
         }
 
         [Fact]
-        public void DeflaterPool_ConcurrentShortLivedStreamsProduceCorrectOutput()
+        public void DeflaterPool_KeepsSimultaneouslyRentedStatesDistinct()
         {
-            Parallel.For(0, 8, worker =>
-            {
-                byte[] input = Encoding.UTF8.GetBytes($"Concurrent compression payload {worker}.");
+            const int BatchCount = 2;
+            int compressorCount = DeflaterPoolCapacity * 2;
 
-                for (int i = 0; i < 8; i++)
+            for (int batch = 0; batch < BatchCount; batch++)
+            {
+                byte[][] input = new byte[compressorCount][];
+                MemoryStream[] compressedData = new MemoryStream[compressorCount];
+                DeflateStream[] compressors = new DeflateStream[compressorCount];
+                object[] states = new object[compressorCount];
+
+                for (int i = 0; i < compressorCount; i++)
                 {
-                    using var compressedData = new MemoryStream();
-                    using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                    input[i] = Enumerable.Range(0, 2048).Select(j => (byte)(j + i + batch)).ToArray();
+                    compressedData[i] = new MemoryStream();
+                    compressors[i] = new DeflateStream(compressedData[i], CompressionLevel.Optimal, leaveOpen: true);
+                    states[i] = GetZLibStreamHandle(compressors[i]);
+                    compressors[i].Write(input[i]);
+                }
+
+                for (int i = 0; i < compressorCount; i++)
+                {
+                    for (int j = i + 1; j < compressorCount; j++)
+                    {
+                        Assert.NotSame(states[i], states[j]);
+                    }
+
+                    compressors[i].Dispose();
+                }
+
+                for (int i = 0; i < compressorCount; i++)
+                {
+                    compressedData[i].Position = 0;
+                    using var decompressor = new DeflateStream(compressedData[i], CompressionMode.Decompress);
+                    using var decompressedData = new MemoryStream();
+                    decompressor.CopyTo(decompressedData);
+                    Assert.Equal(input[i], decompressedData.ToArray());
+                    compressedData[i].Dispose();
+                }
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DeflaterPool_ReusesStateAfterDestinationFailure(bool useAsync)
+        {
+            byte[] input = new byte[32 * 1024];
+            new Random(1).NextBytes(input);
+            DeflateStream[] activeCompressors = new DeflateStream[DeflaterPoolCapacity];
+            MemoryStream[] activeOutputs = new MemoryStream[DeflaterPoolCapacity];
+
+            for (int i = 0; i < DeflaterPoolCapacity; i++)
+            {
+                activeOutputs[i] = new MemoryStream();
+                activeCompressors[i] = new DeflateStream(activeOutputs[i], CompressionLevel.Optimal, leaveOpen: true);
+            }
+
+            var failingDestination = new ThrowsAfterNWritesStream(writesAllowedBeforeThrow: 0);
+            var failingCompressor = new DeflateStream(failingDestination, CompressionLevel.Optimal, leaveOpen: true);
+            object failedState = GetZLibStreamHandle(failingCompressor);
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<IOException>(() => failingCompressor.WriteAsync(input).AsTask());
+                await Assert.ThrowsAsync<IOException>(async () => await failingCompressor.DisposeAsync());
+            }
+            else
+            {
+                Assert.Throws<IOException>(() => failingCompressor.Write(input));
+                Assert.Throws<IOException>(() => failingCompressor.Dispose());
+            }
+
+            Assert.True(failingDestination.DidThrow);
+            failingDestination.StopThrowing();
+
+            using (var compressedData = new MemoryStream())
+            {
+                object reusedState;
+                using (var compressor = new DeflateStream(compressedData, CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    reusedState = GetZLibStreamHandle(compressor);
+                    if (useAsync)
+                    {
+                        await compressor.WriteAsync(input);
+                    }
+                    else
                     {
                         compressor.Write(input);
                     }
-
-                    compressedData.Position = 0;
-                    using var decompressor = new DeflateStream(compressedData, CompressionMode.Decompress);
-                    using var decompressedData = new MemoryStream();
-                    decompressor.CopyTo(decompressedData);
-                    Assert.Equal(input, decompressedData.ToArray());
                 }
-            });
+
+                Assert.Same(failedState, reusedState);
+                Assert.Equal(input, Decompress(compressedData.ToArray()));
+            }
+
+            for (int i = 0; i < DeflaterPoolCapacity; i++)
+            {
+                activeCompressors[i].Dispose();
+                activeOutputs[i].Dispose();
+            }
+        }
+
+        private static SafeHandle GetZLibStreamHandle(DeflateStream stream)
+        {
+            FieldInfo deflaterField = typeof(DeflateStream).GetField("_deflater", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            object deflater = deflaterField.GetValue(stream)!;
+            FieldInfo stateField = deflater.GetType().GetField("_state", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            object state = stateField.GetValue(deflater)!;
+            FieldInfo streamField = state.GetType().GetField("_stream", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            return Assert.IsAssignableFrom<SafeHandle>(streamField.GetValue(state));
+        }
+
+        private static (object StreamHandle, byte[] CompressedData) CompressWithHandle(byte[] input, ZLibCompressionOptions options)
+        {
+            using var compressedData = new MemoryStream();
+            object state;
+            using (var compressor = new DeflateStream(compressedData, options, leaveOpen: true))
+            {
+                state = GetZLibStreamHandle(compressor);
+                compressor.Write(input);
+            }
+
+            return (state, compressedData.ToArray());
+        }
+
+        private static byte[] Decompress(byte[] compressedData)
+        {
+            using var compressedInput = new MemoryStream(compressedData);
+            using var decompressor = new DeflateStream(compressedInput, CompressionMode.Decompress);
+            using var decompressedData = new MemoryStream();
+            decompressor.CopyTo(decompressedData);
+            return decompressedData.ToArray();
         }
 
         public static IEnumerable<object[]> DecompressFailsWithWrapperStream_MemberData()
