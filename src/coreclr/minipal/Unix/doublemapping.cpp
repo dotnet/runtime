@@ -55,6 +55,10 @@ static const off_t MaxDoubleMappedSize = UINT_MAX;
 
 bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecutableCodeSize)
 {
+#ifdef TARGET_WASM
+    // Double mapping is not supported on Wasm
+    return false;
+#else // TARGET_WASM
     if (minipal_detect_rosetta())
     {
         // Rosetta doesn't support double mapping correctly
@@ -70,8 +74,8 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #else
     int fd = -1;
 
-#if !defined(TARGET_ANDROID) && !defined(TARGET_WASI)
-    // Bionic and wasi-libc don't have shm_{open,unlink}
+#ifndef TARGET_ANDROID
+    // Bionic doesn't have shm_{open,unlink}
     // POSIX fallback
     if (fd == -1)
     {
@@ -82,7 +86,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
         fd = shm_open(name, O_RDWR | O_CREAT | O_EXCL | O_NOFOLLOW, 0600);
         shm_unlink(name);
     }
-#endif // !TARGET_ANDROID && !TARGET_WASI
+#endif // !TARGET_ANDROID
 
     if (fd == -1)
     {
@@ -151,6 +155,7 @@ bool VMToOSInterface::CreateDoubleMemoryMapper(void** pHandle, size_t *pMaxExecu
 #endif // !TARGET_APPLE
 
     return true;
+#endif // TARGET_WASM
 }
 
 void VMToOSInterface::DestroyDoubleMemoryMapper(void *mapperHandle)
