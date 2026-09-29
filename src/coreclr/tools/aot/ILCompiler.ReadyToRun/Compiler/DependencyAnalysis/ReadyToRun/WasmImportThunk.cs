@@ -15,7 +15,7 @@ using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class WasmImportThunk : AssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmImportThunk : AssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode, IWasmFunctionBodyNode
     {
         private readonly TypeSystemContext _context;
         private readonly Import _helperCell;

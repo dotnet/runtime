@@ -14,7 +14,7 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, ObjectWriter.IWasmFunctionBodyNode
+    public class MethodWithGCInfo : ObjectNode, IMethodBodyNode, INodeWithFunclets, IMethodCodeNodeWithTypeSignature, IWasmFunctionBodyNode
     {
         public readonly MethodGCInfoNode GCInfoNode;
 
@@ -104,15 +104,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return _methodCode;
         }
 
-        bool ObjectWriter.IWasmFunctionBodyNode.IsShareableWasmFunctionBody =>
+        bool IWasmFunctionBodyNode.IsShareableWasmFunctionBody =>
             ColdCodeNode is null
             && _ehInfo?.Data is not { Length: > 0 }
             && GetFuncletKinds().Length == 0;
 
-        bool ObjectWriter.IWasmFunctionBodyNode.HasCompatibleWasmRuntimeMetadata(ObjectWriter.IWasmFunctionBodyNode other)
+        bool IWasmFunctionBodyNode.HasCompatibleWasmRuntimeMetadata(IWasmFunctionBodyNode other)
         {
-            MethodWithGCInfo otherMethod = (MethodWithGCInfo)other;
-            return ArraysEqual(_gcInfo, otherMethod._gcInfo)
+            return other is MethodWithGCInfo otherMethod
+                && ArraysEqual(_gcInfo, otherMethod._gcInfo)
                 && FrameInfosEqual(_frameInfos, otherMethod._frameInfos)
                 && FrameInfosEqual(_coldFrameInfos, otherMethod._coldFrameInfos)
                 && FixupsEqual(_fixups, otherMethod._fixups);

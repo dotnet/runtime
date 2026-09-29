@@ -2092,6 +2092,13 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasStringThunk(reader, "MS16Tp", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "IS16Tip", out diag), diag);
             Assert.True(R2RAssert.HasStringThunk(reader, "IS56Tip", out diag), diag);
+            Assert.True(
+                WasmR2RAssert.StringThunksShareFunctionDefinitionButRetainTableSlots(
+                    reader,
+                    "MS56Tp",
+                    "MS16Tp",
+                    out diag),
+                diag);
         }
     }
 

@@ -17,7 +17,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// <summary>
     /// Dispatches a virtual call through the vtable offsets stored in its portable entrypoint.
     /// </summary>
-    public sealed class WasmVirtualDispatchThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public sealed class WasmVirtualDispatchThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode, IWasmFunctionBodyNode
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _wasmSignature;

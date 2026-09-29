@@ -15,7 +15,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
-    public sealed class WasmUnboxingStubNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISortableSymbolNode
+    public sealed class WasmUnboxingStubNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISortableSymbolNode, IWasmFunctionBodyNode
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _signature;

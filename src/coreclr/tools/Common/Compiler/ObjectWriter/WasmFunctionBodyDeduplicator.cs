@@ -11,14 +11,6 @@ using Internal.JitInterface;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal interface IWasmFunctionBodyNode
-    {
-        // A shareable body must not encode its own table-slot or runtime-function identity.
-        bool IsShareableWasmFunctionBody { get; }
-
-        bool HasCompatibleWasmRuntimeMetadata(IWasmFunctionBodyNode other);
-    }
-
     internal sealed class WasmFunctionBodyDeduplicator
     {
         private readonly Dictionary<int, List<ObjectNode>> _buckets = [];
@@ -115,7 +107,8 @@ namespace ILCompiler.ObjectWriter
 
             IWasmFunctionBodyNode bodyNode = (IWasmFunctionBodyNode)node;
             IWasmFunctionBodyNode candidateBodyNode = (IWasmFunctionBodyNode)candidate;
-            if (!bodyNode.HasCompatibleWasmRuntimeMetadata(candidateBodyNode))
+            if (!bodyNode.HasCompatibleWasmRuntimeMetadata(candidateBodyNode)
+                || !candidateBodyNode.HasCompatibleWasmRuntimeMetadata(bodyNode))
             {
                 return false;
             }

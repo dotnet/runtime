@@ -22,7 +22,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
     /// READYTORUN_HELPER_R2RToInterpreter. This node is string-discoverable so the
     /// runtime can find it by WasmSignature string at execution time.
     /// </summary>
-    public class WasmR2RToInterpreterThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode
+    public class WasmR2RToInterpreterThunkNode : StringDiscoverableAssemblyStubNode, INodeWithTypeSignature, ISymbolDefinitionNode, ISortableSymbolNode, IWasmFunctionBodyNode
     {
         private readonly TypeSystemContext _context;
         private readonly WasmSignature _wasmSignature;
