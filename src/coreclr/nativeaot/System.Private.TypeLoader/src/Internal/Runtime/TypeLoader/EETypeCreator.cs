@@ -89,7 +89,6 @@ namespace Internal.Runtime.TypeLoader
         {
             Debug.Assert(componentSize > 0);
             Debug.Assert(rtth.ToEETypePtr()->IsArray || rtth.ToEETypePtr()->IsString);
-            rtth.ToEETypePtr()->HasComponentSize = true;
             rtth.ToEETypePtr()->ComponentSize = componentSize;
         }
     }
@@ -150,7 +149,7 @@ namespace Internal.Runtime.TypeLoader
                 bool isGeneric = pTemplateEEType->IsGeneric;
                 bool hasSealedVTable = pTemplateEEType->HasSealedVTableEntries;
                 ushort runtimeInterfacesLength = pTemplateEEType->NumInterfaces;
-                Debug.Assert(runtimeInterfacesLength == (state.RuntimeInterfaces?.Length ?? 0));
+                Debug.Assert(runtimeInterfacesLength == state.TypeBeingBuilt.RuntimeInterfaces.Length);
                 uint flags = pTemplateEEType->Flags | (uint)EETypeFlags.IsDynamicTypeFlag;
                 bool isMdArray = state.TypeBeingBuilt.IsMdArray;
 

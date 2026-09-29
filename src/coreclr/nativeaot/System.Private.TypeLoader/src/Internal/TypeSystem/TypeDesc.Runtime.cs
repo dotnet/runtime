@@ -202,16 +202,16 @@ namespace Internal.TypeSystem
             return;
         }
 
-        internal TypeDesc ComputeTemplate(bool templateRequired = true)
+        internal TypeDesc ComputeTemplate()
         {
-            return ComputeTemplate(GetOrCreateTypeBuilderState(), templateRequired);
+            return ComputeTemplate(GetOrCreateTypeBuilderState());
         }
 
-        internal static TypeDesc ComputeTemplate(TypeBuilderState state, bool templateRequired = true)
+        internal static TypeDesc ComputeTemplate(TypeBuilderState state)
         {
             TypeDesc templateType = state.TemplateType;
 
-            if (templateRequired && (templateType == null))
+            if (templateType is null)
             {
                 throw new TypeBuilder.MissingTemplateException();
             }

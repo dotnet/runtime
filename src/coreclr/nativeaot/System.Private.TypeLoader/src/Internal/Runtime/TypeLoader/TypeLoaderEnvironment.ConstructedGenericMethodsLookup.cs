@@ -167,13 +167,13 @@ namespace Internal.Runtime.TypeLoader
                 if (!_methodToLookup.NameAndSignature.Equals(nameAndSignature))
                     return false;
 
-                RuntimeTypeHandle[] parsedArgsHandles = GetTypeSequence(ref externalReferencesLookup, ref entryParser);
-                if (parsedArgsHandles.Length != _methodToLookup.Instantiation.Length)
+                if (entryParser.GetSequenceCount() != _methodToLookup.Instantiation.Length)
                     return false;
 
                 for (int i = 0; i < _methodToLookup.Instantiation.Length; i++)
                 {
-                    TypeDesc leftType = context.ResolveRuntimeTypeHandle(parsedArgsHandles[i]);
+                    RuntimeTypeHandle parsedArgHandle = externalReferencesLookup.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    TypeDesc leftType = context.ResolveRuntimeTypeHandle(parsedArgHandle);
                     TypeDesc rightType = _methodToLookup.Instantiation[i];
                     if (leftType != rightType)
                         return false;

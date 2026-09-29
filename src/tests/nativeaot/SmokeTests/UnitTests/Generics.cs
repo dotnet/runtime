@@ -789,6 +789,19 @@ class Generics
         class ValueDerived<T> : Middle<T, int> { }
         class NestedValueDerived<T> : Middle<T, Value<T>> { }
 
+        class EmptyDictionaryBase<T> : IHierarchy
+        {
+            public Type GetBaseArgument() => typeof(int);
+            public virtual Type GetDerivedArgument() => typeof(int);
+        }
+
+        class EmptyDictionaryDerived<T> : EmptyDictionaryBase<T>
+        {
+            public override Type GetDerivedArgument() => typeof(T);
+        }
+
+        class ReusedDictionaryDerived<T> : EmptyDictionaryDerived<T> { }
+
         private static Type s_argument = typeof(TestSlotsInHierarchy);
 
         public static void Run()
@@ -805,10 +818,14 @@ class Generics
             CheckHierarchy(new ReferenceDerived<object>(), typeof(object), typeof(string));
             CheckHierarchy(new ValueDerived<object>(), typeof(object), typeof(int));
             CheckHierarchy(new NestedValueDerived<object>(), typeof(object), typeof(Value<object>));
+            CheckHierarchy(new EmptyDictionaryDerived<object>(), typeof(object), typeof(int));
+            CheckHierarchy(new ReusedDictionaryDerived<object>(), typeof(object), typeof(int));
 
             CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ReferenceDerived<>).MakeGenericType(s_argument)), s_argument, typeof(string));
             CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ValueDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
             CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(NestedValueDerived<>).MakeGenericType(s_argument)), s_argument, typeof(Value<>).MakeGenericType(s_argument));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(EmptyDictionaryDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
+            CheckHierarchy((IHierarchy)Activator.CreateInstance(typeof(ReusedDictionaryDerived<>).MakeGenericType(s_argument)), s_argument, typeof(int));
         }
 
         private static void CheckHierarchy(IHierarchy value, Type derivedArgument, Type baseArgument)

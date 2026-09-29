@@ -435,41 +435,12 @@ namespace Internal.Runtime.TypeLoader
             return result;
         }
 
-        public static DefType GetBaseTypeUsingRuntimeTypeHandle(TypeDesc type)
-        {
-            type.RetrieveRuntimeTypeHandleIfPossible();
-            unsafe
-            {
-                RuntimeTypeHandle thBaseTypeTemplate = type.RuntimeTypeHandle.ToEETypePtr()->BaseType->ToRuntimeTypeHandle();
-                if (thBaseTypeTemplate.IsNull())
-                    return null;
-
-                return (DefType)type.Context.ResolveRuntimeTypeHandle(thBaseTypeTemplate);
-            }
-        }
-
-        public static DefType GetBaseTypeThatIsCorrectForMDArrays(TypeDesc type)
-        {
-            if (type.BaseType == type.Context.GetWellKnownType(WellKnownType.Array))
-            {
-                // Use the type from the template, the metadata we have will be inaccurate for multidimensional
-                // arrays, as we hide the MDArray infrastructure from the metadata.
-                TypeDesc template = type.ComputeTemplate(false);
-                return GetBaseTypeUsingRuntimeTypeHandle(template ?? type);
-            }
-
-            return type.BaseType;
-        }
-
         private void FinishInterfaces(TypeBuilderState state)
         {
-            DefType[] interfaces = state.RuntimeInterfaces;
-            if (interfaces != null)
+            DefType[] interfaces = state.TypeBeingBuilt.RuntimeInterfaces;
+            for (int i = 0; i < interfaces.Length; i++)
             {
-                for (int i = 0; i < interfaces.Length; i++)
-                {
-                    state.HalfBakedRuntimeTypeHandle.SetInterface(i, GetRuntimeTypeHandle(interfaces[i]));
-                }
+                state.HalfBakedRuntimeTypeHandle.SetInterface(i, GetRuntimeTypeHandle(interfaces[i]));
             }
         }
 
@@ -525,33 +496,26 @@ namespace Internal.Runtime.TypeLoader
 
         private void CopyDictionaryFromTypeToAppropriateSlotInDerivedType(DefType baseType, TypeBuilderState derivedTypeState)
         {
-            var baseTypeState = baseType.GetOrCreateTypeBuilderState();
+            if (!baseType.CanShareNormalGenericCode())
+                return;
 
-            if (baseTypeState.HasDictionaryInVTable)
-            {
-                RuntimeTypeHandle baseTypeHandle = GetRuntimeTypeHandle(baseType);
+            // An unpublished base may not have its base pointer or dictionary slot initialized yet.
+            RuntimeTypeHandle baseTypeHandle = baseType.RuntimeTypeHandle;
+            IntPtr dictionaryEntry = baseTypeHandle.IsNull()
+                ? baseType.GetTypeBuilderState().HalfBakedDictionary
+                : baseTypeHandle.GetDictionary();
+            if (dictionaryEntry == IntPtr.Zero)
+                return;
 
-                // If the basetype is currently being created by the TypeBuilder, we need to get its dictionary pointer from the
-                // TypeBuilder state (at this point, the dictionary has not yet been set on the baseTypeHandle). If
-                // the basetype is not a dynamic type, or has previously been dynamically allocated in the past, the TypeBuilder
-                // state will have a null dictionary pointer, in which case we need to read it directly from the basetype's vtable
-                IntPtr dictionaryEntry = baseTypeState.HalfBakedDictionary;
-                if (dictionaryEntry == IntPtr.Zero)
-                    dictionaryEntry = baseTypeHandle.GetDictionary();
-                Debug.Assert(dictionaryEntry != IntPtr.Zero);
-
-                // Compute the vtable slot for the dictionary entry to set
-                int dictionarySlot = EETypeCreator.GetDictionarySlotInVTable(baseType);
-                Debug.Assert(dictionarySlot >= 0);
-
-                derivedTypeState.HalfBakedRuntimeTypeHandle.SetDictionary(dictionarySlot, dictionaryEntry);
-                TypeLoaderLogger.WriteLine("Setting basetype " + baseType.ToString() + " dictionary on type " + derivedTypeState.TypeBeingBuilt.ToString());
-            }
+            int dictionarySlot = EETypeCreator.GetDictionarySlotInVTable(baseType);
+            Debug.Assert(dictionarySlot >= 0);
+            derivedTypeState.HalfBakedRuntimeTypeHandle.SetDictionary(dictionarySlot, dictionaryEntry);
+            TypeLoaderLogger.WriteLine("Setting basetype " + baseType.ToString() + " dictionary on type " + derivedTypeState.TypeBeingBuilt.ToString());
         }
 
         private void FinishBaseTypeAndDictionaries(TypeDesc type, TypeBuilderState state)
         {
-            DefType baseType = GetBaseTypeThatIsCorrectForMDArrays(type);
+            DefType baseType = type.BaseType;
             state.HalfBakedRuntimeTypeHandle.SetBaseType(baseType == null ? default(RuntimeTypeHandle) : GetRuntimeTypeHandle(baseType));
 
             if (baseType == null)
@@ -573,19 +537,11 @@ namespace Internal.Runtime.TypeLoader
 
             if (type is DefType typeAsDefType)
             {
-                if (type.HasInstantiation)
-                {
-                    // Type definitions don't need any further finishing once created by the EETypeCreator
-                    if (type.IsTypeDefinition)
-                        return;
-
-                    state.HalfBakedRuntimeTypeHandle.SetGenericDefinition(GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()));
-                    Instantiation instantiation = typeAsDefType.Instantiation;
-                    for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
-                    {
-                        state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));
-                    }
-                }
+                Debug.Assert(type.HasInstantiation && !type.IsTypeDefinition);
+                state.HalfBakedRuntimeTypeHandle.SetGenericDefinition(GetRuntimeTypeHandle(typeAsDefType.GetTypeDefinition()));
+                Instantiation instantiation = typeAsDefType.Instantiation;
+                for (int argIndex = 0; argIndex < instantiation.Length; argIndex++)
+                    state.HalfBakedRuntimeTypeHandle.SetGenericArgument(argIndex, GetRuntimeTypeHandle(instantiation[argIndex]));
 
                 FinishBaseTypeAndDictionaries(type, state);
 

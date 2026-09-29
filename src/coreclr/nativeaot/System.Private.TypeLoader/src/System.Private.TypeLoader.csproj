@@ -17,7 +17,6 @@
     <Compile Include="$(NativeFormatCommonPath)\NativeFormat.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Primitives.cs" />
-    <Compile Include="$(NativeFormatCommonPath)\NativeFormatWriter.Primitives.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.Metadata.cs" />
     <Compile Include="$(NativeFormatCommonPath)\NativeFormatReader.String.cs" />
     <Compile Include="$(AotCommonPath)\Internal\Runtime\MethodTable.cs">
@@ -257,7 +256,6 @@
     <Compile Include="Internal\TypeSystem\AssemblyNameInfo.Dummy.cs" />
     <Compile Include="Internal\TypeSystem\ArrayMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\CanonTypes.Runtime.cs" />
-    <Compile Include="Internal\TypeSystem\DefType.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\ExceptionTypeNameFormatter.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\InstantiatedMethod.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\MethodDesc.Runtime.cs" />

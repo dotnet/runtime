@@ -616,6 +616,10 @@ namespace Internal.Runtime.TypeLoader
 
             foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {
+                // Metadata handles cannot be compared across modules.
+                if (module.Handle != methodHandleModule)
+                    continue;
+
                 NativeReader invokeMapReader;
                 if (!TryGetNativeReaderForBlob(module, ReflectionMapBlob.InvokeMap, out invokeMapReader))
                 {
@@ -629,170 +633,67 @@ namespace Internal.Runtime.TypeLoader
                 externalReferences.InitializeCommonFixupsTable(module);
 
                 var lookup = invokeHashtable.Lookup(canonHelper.LookupHashCode);
-                var entryData = new InvokeMapEntryDataEnumerator(
-                    declaringTypeHandle,
-                    genericMethodTypeArgumentHandles,
-                    module.Handle,
-                    methodHandle,
-                    methodHandleModule);
-
                 NativeParser entryParser;
                 while (!(entryParser = lookup.GetNext()).IsNull)
                 {
-                    entryData.GetNext(ref entryParser, ref externalReferences, canonHelper);
-
-                    if (!entryData.IsMatchingOrCompatibleEntry())
+                    InvokeTableFlags flags = (InvokeTableFlags)entryParser.GetUnsigned();
+                    Handle entryMethodHandle = (((uint)HandleType.Method << 25) | entryParser.GetUnsigned()).AsHandle();
+                    if (!methodHandle.Equals(entryMethodHandle))
                         continue;
 
-                    if (entryData.GetMethodEntryPoint(out methodInvokeMetadata.MethodEntryPoint))
+                    RuntimeTypeHandle entryType = externalReferences.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
+                    if (!canonHelper.IsCanonicallyEquivalent(entryType))
+                        continue;
+
+                    bool hasEntryPoint = (flags & InvokeTableFlags.HasEntrypoint) != 0;
+                    IntPtr methodEntryPoint = hasEntryPoint
+                        ? externalReferences.GetFunctionPointerFromIndex(entryParser.GetUnsigned())
+                        : IntPtr.Zero;
+                    uint dynamicInvokeCookie = (flags & InvokeTableFlags.NeedsParameterInterpretation) == 0
+                        ? entryParser.GetUnsigned()
+                        : uint.MaxValue;
+
+                    bool isGenericMethod = (flags & InvokeTableFlags.IsGenericMethod) != 0;
+                    if (isGenericMethod)
                     {
-                        methodInvokeMetadata.MappingTableModule = module;
-                        methodInvokeMetadata.DynamicInvokeCookie = entryData._dynamicInvokeCookie;
-                        methodInvokeMetadata.InvokeTableFlags = entryData._flags;
-
-                        return true;
+                        RuntimeTypeHandle[] methodInstantiation = GetTypeSequence(ref externalReferences, ref entryParser);
+                        if (!TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(methodInstantiation, genericMethodTypeArgumentHandles))
+                            continue;
                     }
+
+                    if (hasEntryPoint && (flags & InvokeTableFlags.RequiresInstArg) != 0)
+                    {
+                        IntPtr dictionary;
+                        if (isGenericMethod)
+                        {
+                            if (!TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(
+                                declaringTypeHandle, genericMethodTypeArgumentHandles,
+                                new MethodNameAndSignature(metadataReader, methodHandle), out dictionary))
+                                continue;
+                        }
+                        else
+                        {
+                            dictionary = RuntimeAugments.GetPointerFromTypeHandle(declaringTypeHandle);
+                            Debug.Assert(dictionary != IntPtr.Zero);
+                        }
+
+                        if (dictionary != IntPtr.Zero)
+                            methodEntryPoint = FunctionPointerOps.GetGenericMethodFunctionPointer(methodEntryPoint, dictionary);
+                    }
+
+                    methodInvokeMetadata = new MethodInvokeMetadata
+                    {
+                        MappingTableModule = module,
+                        MethodEntryPoint = methodEntryPoint,
+                        DynamicInvokeCookie = dynamicInvokeCookie,
+                        InvokeTableFlags = flags,
+                    };
+                    return true;
                 }
             }
 
-            methodInvokeMetadata = default(MethodInvokeMetadata);
+            methodInvokeMetadata = default;
             return false;
-        }
-
-        private struct InvokeMapEntryDataEnumerator
-        {
-            // Read-only inputs
-            private readonly RuntimeTypeHandle _declaringTypeHandle;
-            private readonly RuntimeTypeHandle[] _genericMethodTypeArgumentHandles;
-            private readonly TypeManagerHandle _moduleHandle;
-            private readonly TypeManagerHandle _moduleForMethodHandle;
-            private readonly MethodHandle _methodHandle;
-
-            // Parsed data from entry in the hashtable
-            public InvokeTableFlags _flags;
-            public RuntimeTypeHandle _entryType;
-            public IntPtr _methodEntrypoint;
-            public uint _dynamicInvokeCookie;
-            public RuntimeTypeHandle[] _methodInstantiation;
-
-            // Computed data
-            private bool _hasEntryPoint;
-            private bool _isMatchingMethodHandleAndDeclaringType;
-
-            public InvokeMapEntryDataEnumerator(
-                RuntimeTypeHandle declaringTypeHandle,
-                RuntimeTypeHandle[] genericMethodTypeArgumentHandles,
-                TypeManagerHandle moduleHandle,
-                MethodHandle methodHandle,
-                TypeManagerHandle moduleForMethodHandle)
-            {
-                _declaringTypeHandle = declaringTypeHandle;
-                _genericMethodTypeArgumentHandles = genericMethodTypeArgumentHandles;
-                _moduleHandle = moduleHandle;
-                _methodHandle = methodHandle;
-                _moduleForMethodHandle = moduleForMethodHandle;
-
-                _flags = 0;
-                _entryType = default(RuntimeTypeHandle);
-                _methodEntrypoint = IntPtr.Zero;
-                _dynamicInvokeCookie = 0xffffffff;
-                _hasEntryPoint = false;
-                _isMatchingMethodHandleAndDeclaringType = false;
-                _methodInstantiation = null;
-            }
-
-            public void GetNext(
-                ref NativeParser entryParser,
-                ref ExternalReferencesTable extRefTable,
-                CanonicallyEquivalentEntryLocator canonHelper)
-            {
-                // Read flags and reset members data
-                _flags = (InvokeTableFlags)entryParser.GetUnsigned();
-                _hasEntryPoint = ((_flags & InvokeTableFlags.HasEntrypoint) != 0);
-                _isMatchingMethodHandleAndDeclaringType = false;
-                _entryType = default(RuntimeTypeHandle);
-                _methodEntrypoint = IntPtr.Zero;
-                _dynamicInvokeCookie = 0xffffffff;
-                _methodInstantiation = null;
-
-                // Metadata handles are not known cross module, and cannot be compared across modules.
-                if (_moduleHandle != _moduleForMethodHandle)
-                    return;
-
-                Handle entryMethodHandle = (((uint)HandleType.Method << 25) | entryParser.GetUnsigned()).AsHandle();
-                if (!_methodHandle.Equals(entryMethodHandle))
-                    return;
-
-                _entryType = extRefTable.GetRuntimeTypeHandleFromIndex(entryParser.GetUnsigned());
-                if (!canonHelper.IsCanonicallyEquivalent(_entryType))
-                    return;
-
-                // Method handle and entry type match at this point. Continue reading data from the entry...
-                _isMatchingMethodHandleAndDeclaringType = true;
-
-                if (_hasEntryPoint)
-                    _methodEntrypoint = extRefTable.GetFunctionPointerFromIndex(entryParser.GetUnsigned());
-
-                if ((_flags & InvokeTableFlags.NeedsParameterInterpretation) == 0)
-                    _dynamicInvokeCookie = entryParser.GetUnsigned();
-
-                if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
-                    return;
-
-                _methodInstantiation = GetTypeSequence(ref extRefTable, ref entryParser);
-            }
-
-            public bool IsMatchingOrCompatibleEntry()
-            {
-                // Check if method handle and entry type were matching or compatible
-                if (!_isMatchingMethodHandleAndDeclaringType)
-                    return false;
-
-                // Nothing special about non-generic methods.
-                if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
-                    return true;
-
-                return TypeLoaderEnvironment.Instance.CanInstantiationsShareCode(_methodInstantiation, _genericMethodTypeArgumentHandles);
-            }
-
-            public bool GetMethodEntryPoint(out IntPtr methodEntrypoint)
-            {
-                // Debug-only sanity check before proceeding (IsMatchingOrCompatibleEntry is called from TryGetDynamicMethodInvokeInfo)
-                Debug.Assert(IsMatchingOrCompatibleEntry());
-
-                methodEntrypoint = IntPtr.Zero;
-                if (!GetDictionaryComponent(out IntPtr dictionaryComponent))
-                    return false;
-
-                methodEntrypoint = dictionaryComponent == IntPtr.Zero
-                    ? _methodEntrypoint
-                    : FunctionPointerOps.GetGenericMethodFunctionPointer(_methodEntrypoint, dictionaryComponent);
-
-                return true;
-            }
-
-            private bool GetDictionaryComponent(out IntPtr dictionaryComponent)
-            {
-                dictionaryComponent = IntPtr.Zero;
-
-                if (((_flags & InvokeTableFlags.RequiresInstArg) == 0) || !_hasEntryPoint)
-                    return true;
-
-                // Dictionary for non-generic method is the type handle of the declaring type
-                if ((_flags & InvokeTableFlags.IsGenericMethod) == 0)
-                {
-                    dictionaryComponent = RuntimeAugments.GetPointerFromTypeHandle(_declaringTypeHandle);
-                    Debug.Assert(dictionaryComponent != IntPtr.Zero);
-                    return true;
-                }
-
-                // Dictionary for generic method (either found statically or constructed dynamically)
-                return TypeLoaderEnvironment.Instance.TryGetGenericMethodDictionaryForComponents(
-                    _declaringTypeHandle,
-                    _genericMethodTypeArgumentHandles,
-                    new MethodNameAndSignature(ModuleList.Instance.GetMetadataReaderForModule(_moduleHandle), _methodHandle),
-                    out dictionaryComponent);
-            }
         }
     }
 }

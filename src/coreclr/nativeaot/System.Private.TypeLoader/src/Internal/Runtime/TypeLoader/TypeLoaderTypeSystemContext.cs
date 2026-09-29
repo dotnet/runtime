@@ -29,11 +29,9 @@ namespace Internal.Runtime.TypeLoader
                 // its more efficient than loading from native layout or metadata.
                 return s_noMetadataRuntimeInterfacesAlgorithm;
             }
-            else if (type.HasNativeLayout)
-            {
-                return s_nativeLayoutInterfacesAlgorithm;
-            }
-            return s_noMetadataRuntimeInterfacesAlgorithm;
+
+            type.ComputeTemplate();
+            return s_nativeLayoutInterfacesAlgorithm;
         }
 
         protected internal sealed override bool IsIDynamicInterfaceCastableInterface(DefType type)
