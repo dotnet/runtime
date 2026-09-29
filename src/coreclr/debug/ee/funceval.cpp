@@ -1031,38 +1031,6 @@ static void* GetFuncEvalArgStorage(DebuggerEval *pDE,
             return pSource;
         }
     }
-
-#if defined(ENREGISTERED_PARAMTYPE_MAXSIZE)
-    if (!isByRef && (argSigType == ELEMENT_TYPE_VALUETYPE) && ArgIterator::IsArgPassedByRef(argTH))
-    {
-        unsigned size = argTH.GetMethodTable()->GetNumInstanceFieldBytes();
-        if (size > sizeof(ARG_SLOT))
-        {
-            // Copy both unboxed and boxed arguments outside the GC heap: the callee may
-            // overwrite the argument without write barriers. Smaller arguments already
-            // have a copy in the ARG_SLOT array.
-            _ASSERTE(ppProtectedValueClasses != nullptr);
-
-            SIZE_T allocSize;
-            if (!ClrSafeInt<SIZE_T>::addition(ALIGN_UP(sizeof(ValueClassInfo), 8), size, allocSize))
-            {
-                ThrowHR(COR_E_OVERFLOW);
-            }
-
-            BYTE* pTemp = new (interopsafe) BYTE[allocSize];
-            ValueClassInfo* pValueClassInfo = reinterpret_cast<ValueClassInfo*>(pTemp);
-            void* pData = pTemp + ALIGN_UP(sizeof(ValueClassInfo), 8);
-
-            memcpyNoGCRefs(pData, ArgSlotToPtr(*pArgument), size);
-            *pArgument = PtrToArgSlot(pData);
-
-            pValueClassInfo->pData = pData;
-            pValueClassInfo->pMT = argTH.GetMethodTable();
-            pValueClassInfo->pNext = *ppProtectedValueClasses;
-            *ppProtectedValueClasses = pValueClassInfo;
-        }
-    }
-#endif // ENREGISTERED_PARAMTYPE_MAXSIZE
 }
 
 static CorDebugRegister GetArgAddrFromReg( DebuggerIPCE_FuncEvalArgData *pFEAD)
