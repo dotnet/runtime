@@ -13,15 +13,24 @@ namespace System.Formats.Tar.Tests
 {
     public class TarFile_ExtractToDirectoryAsync_Stream_Tests : TarFile_ExtractToDirectory_Tests
     {
-        [Fact]
-        public async Task ExtractToDirectoryAsync_Cancel()
+        protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, CancellationToken cancellationToken = default) =>
+            useOptions
+                ? TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles }, cancellationToken)
+                : TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName, overwriteFiles, cancellationToken);
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ExtractToDirectoryAsync_Cancel(bool useOptions)
         {
-            CancellationTokenSource cs = new CancellationTokenSource();
+            using TempDirectory root = new TempDirectory();
+            using CancellationTokenSource cs = new CancellationTokenSource();
             cs.Cancel();
-            using (MemoryStream archiveStream = new MemoryStream())
-            {
-                await Assert.ThrowsAsync<TaskCanceledException>(() => TarFile.ExtractToDirectoryAsync(archiveStream, "directory", overwriteFiles: true, cs.Token));
-            }
+            using MemoryStream archive = new MemoryStream();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => ExtractArchive(archive, Path.Join(root.Path, "missing", "directory"), overwriteFiles: true, useOptions, cs.Token));
+            Assert.True(archive.CanRead);
+            Assert.Equal(0, archive.Position);
+            Assert.Empty(Directory.GetFileSystemEntries(root.Path));
         }
 
         [Fact]
@@ -46,20 +55,6 @@ namespace System.Formats.Tar.Tests
                 using (WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true))
                 {
                     await Assert.ThrowsAsync<ArgumentException>(() => TarFile.ExtractToDirectoryAsync(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
-                }
-            }
-        }
-
-        [Fact]
-        public async Task NonExistentDirectory_Throws_Async()
-        {
-            using (TempDirectory root = new TempDirectory())
-            {
-                string dirPath = Path.Join(root.Path, "dir");
-
-                using (MemoryStream archive = new MemoryStream())
-                {
-                    await Assert.ThrowsAsync<DirectoryNotFoundException>(() => TarFile.ExtractToDirectoryAsync(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
                 }
             }
         }

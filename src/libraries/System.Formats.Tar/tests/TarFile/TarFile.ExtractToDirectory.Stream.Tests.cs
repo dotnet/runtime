@@ -6,12 +6,27 @@ using System.IO;
 using System.IO.Compression;
 using System.IO.Enumeration;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
     public class TarFile_ExtractToDirectory_Stream_Tests : TarFile_ExtractToDirectory_Tests
     {
+        protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, CancellationToken cancellationToken = default)
+        {
+            if (useOptions)
+            {
+                TarFile.ExtractToDirectory(archive, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+            }
+            else
+            {
+                TarFile.ExtractToDirectory(archive, destinationDirectoryName, overwriteFiles);
+            }
+            return Task.CompletedTask;
+        }
+
         [Fact]
         public void NullStream_Throws()
         {
@@ -32,16 +47,6 @@ namespace System.Formats.Tar.Tests
             using MemoryStream archive = new MemoryStream();
             using WrappedStream unreadable = new WrappedStream(archive, canRead: false, canWrite: true, canSeek: true);
             Assert.Throws<ArgumentException>(() => TarFile.ExtractToDirectory(unreadable, destinationDirectoryName: "path", overwriteFiles: false));
-        }
-
-        [Fact]
-        public void NonExistentDirectory_Throws()
-        {
-            using TempDirectory root = new TempDirectory();
-            string dirPath = Path.Join(root.Path, "dir");
-
-            using MemoryStream archive = new MemoryStream();
-            Assert.Throws<DirectoryNotFoundException>(() => TarFile.ExtractToDirectory(archive, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
 
         [Fact]

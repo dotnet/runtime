@@ -4,12 +4,29 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarFile_ExtractToDirectory_File_Tests : TarTestsBase
+    public partial class TarFile_ExtractToDirectory_File_Tests : TarFile_ExtractToDirectory_Tests
     {
+        protected override Task ExtractArchive(MemoryStream archive, string destinationDirectoryName, bool overwriteFiles, bool useOptions, CancellationToken cancellationToken = default)
+        {
+            string archivePath = GetTestFilePath();
+            File.WriteAllBytes(archivePath, archive.ToArray());
+            if (useOptions)
+            {
+                TarFile.ExtractToDirectory(archivePath, destinationDirectoryName, new TarExtractOptions { OverwriteFiles = overwriteFiles });
+            }
+            else
+            {
+                TarFile.ExtractToDirectory(archivePath, destinationDirectoryName, overwriteFiles);
+            }
+            return Task.CompletedTask;
+        }
+
         [Fact]
         public void InvalidPaths_Throw()
         {
@@ -30,19 +47,6 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(dirPath);
 
             Assert.Throws<FileNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
-        }
-
-        [Fact]
-        public void NonExistentDirectory_Throws()
-        {
-            using TempDirectory root = new TempDirectory();
-
-            string filePath = Path.Join(root.Path, "file.tar");
-            string dirPath = Path.Join(root.Path, "dir");
-
-            File.Create(filePath).Dispose();
-
-            Assert.Throws<DirectoryNotFoundException>(() => TarFile.ExtractToDirectory(sourceFileName: filePath, destinationDirectoryName: dirPath, overwriteFiles: false));
         }
 
         [Fact]

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Formats.Tar.Tests
 {
-    public partial class TarFile_ExtractToDirectoryAsync_File_Tests : TarTestsBase
+    public partial class TarFile_ExtractToDirectoryAsync_File_Tests : TarFile_ExtractToDirectory_Tests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotPrivilegedProcess))]
         public async Task Extract_SpecialFiles_Unix_Unelevated_ThrowsUnauthorizedAccess_Async()
