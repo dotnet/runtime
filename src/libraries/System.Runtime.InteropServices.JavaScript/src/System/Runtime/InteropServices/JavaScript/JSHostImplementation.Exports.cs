@@ -44,13 +44,14 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             var (assemblyName, nameSpace, shortClassName, methodName) = ParseFQN(fullyQualifiedName);
             var wrapperName = $"__Wrapper_{methodName}_{signatureHash}";
-            shortClassName = shortClassName.Replace('/', '+');
+            // reflection wants '+' between nested types, but the JS side walks the export tree on '/', so keep shortClassName as parsed
+            var reflectionClassName = shortClassName.Replace('/', '+');
 
             // get MethodInfo from the fully qualified name
             var assembly = Assembly.Load(new AssemblyName(assemblyName));
             var clazz = string.IsNullOrEmpty(nameSpace)
-                ? assembly.GetType(shortClassName)
-                : assembly.GetType(nameSpace + "." + shortClassName);
+                ? assembly.GetType(reflectionClassName)
+                : assembly.GetType(nameSpace + "." + reflectionClassName);
             if (clazz == null)
             {
                 Environment.FailFast($"Can't find {nameSpace}{shortClassName} in {assemblyName} assembly");
@@ -74,10 +75,9 @@ namespace System.Runtime.InteropServices.JavaScript
         private static unsafe JSFunctionBinding BindManagedFunctionCore(string assemblyName, string nameSpace, string shortClassName, string methodName,
             int signatureHash, ReadOnlySpan<JSMarshalerType> signatures, JSExportCallback callback)
         {
-            var ctx = JSProxyContext.CurrentThreadContext;
-            int methodHandle = ctx.NextJSExportHandle++;
+            var ctx = JSProxyContext.BindingContextOrMain();
             // exception slot + result slot + one slot per argument
-            ctx.JSExportByHandle[methodHandle] = new JSProxyContext.JSExportEntry(callback, signatures.Length + 1);
+            int methodHandle = ctx.AllocJSExportHandle(new JSProxyContext.JSExportEntry(callback, signatures.Length + 1));
 
             var signature = GetMethodSignature(signatures, null, null);
 

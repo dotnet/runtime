@@ -339,6 +339,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 assert(varTypeIsIntegral(op1));
                 assert(varTypeIsIntegral(tree));
                 buildInternalIntRegisterDefForNode(tree);
+                setInternalRegsDelayFree = true;
                 buildInternalRegisterUses();
             }
             else

@@ -16,4 +16,11 @@
       <RuntimeCopyLocalItems Include="@(LibrariesRuntimeFiles)" />
     </ItemGroup>
   </Target>
+
+  <!-- Mobile test apps bundle their own dependencies instead of loading them from CORE_ROOT. -->
+  <Target Name="GetFSharpCoreRuntimeAssets" DependsOnTargets="ResolvePackageAssets" Returns="@(FSharpCoreRuntimeAsset)">
+    <ItemGroup>
+      <FSharpCoreRuntimeAsset Include="@(RuntimeCopyLocalItems)" Condition="'%(RuntimeCopyLocalItems.NuGetPackageId)' == 'FSharp.Core'" />
+    </ItemGroup>
+  </Target>
 </Project>

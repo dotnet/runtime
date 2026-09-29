@@ -3549,9 +3549,11 @@ public:
             ) = 0;
 
     // Notify EE about intent to use or not to use instruction set in the method. Returns true if the instruction set is supported unconditionally.
+    // preserveNegativeDependency requests that the absence of the instruction set be preserved as a prerequisite.
     virtual bool notifyInstructionSetUsage(
             CORINFO_InstructionSet      instructionSet,
-            bool                        supportEnabled
+            bool                        supportEnabled,
+            bool                        preserveNegativeDependency
             ) = 0;
 
     // Notify EE that JIT needs an entry-point that is tail-callable.

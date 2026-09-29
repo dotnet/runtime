@@ -261,6 +261,15 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             {
                 return InnerDumpMain();
             }
+            if (_command.CreateMibcFromMethodList)
+            {
+                return MethodListMibcWriter.Run(
+                    Get(_command.MethodListFilePath),
+                    Get(_command.OutputFilePath),
+                    Get(_command.Reference),
+                    Get(_command.Compressed),
+                    _command.ValidateOutputFile);
+            }
             if (_inputFilesToMerge.Count > 0)
             {
                 return InnerMergeMain();
