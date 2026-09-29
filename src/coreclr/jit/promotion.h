@@ -23,12 +23,6 @@ struct Replacement
     unsigned    LclNum = BAD_VAR_NUM;
     // Dense index into the inter-block pending-readback sets.
     unsigned ReadBackIndex = BAD_VAR_NUM;
-    // Is the replacement local (given by LclNum) fresher than the value in the struct local?
-    bool NeedsWriteBack = true;
-    // Is the value in the struct local fresher than the replacement local?
-    // This may remain true across blocks when all incoming paths agree that
-    // the struct local contains the current value.
-    bool NeedsReadBack = false;
 #ifdef DEBUG
     const char* Description = "";
 #endif
@@ -246,11 +240,10 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     Promotion*         m_promotion;
     AggregateInfoMap&  m_aggregates;
     PromotionLiveness* m_liveness;
-    bool               m_madeChanges         = false;
-    unsigned           m_numPendingReadBacks = 0;
-    bool               m_mayHaveForwardSub   = false;
-    Statement*         m_currentStmt         = nullptr;
-    BasicBlock*        m_currentBlock        = nullptr;
+    bool               m_madeChanges       = false;
+    bool               m_mayHaveForwardSub = false;
+    Statement*         m_currentStmt       = nullptr;
+    BasicBlock*        m_currentBlock      = nullptr;
 
     FlowGraphDfsTree* m_dfsTree;
     BitVecTraits*     m_readBackTraits;
@@ -260,6 +253,21 @@ class ReplaceVisitor : public GenTreeVisitor<ReplaceVisitor>
     BitVec            m_processedBlocks;
     BitVec            m_requiresAlreadyReadBackOnEntry;
     BitVec            m_requiresReadBackOnExit;
+    // Exact state while rewriting the current block.
+    BitVec m_needsReadBack;
+    BitVec m_structCurrent;
+    BitVec m_reconcileReadBacks;
+    BitVec m_entryReadBacks;
+    // Shared by empty exit snapshots; never modified after initialization.
+    BitVec m_emptyReadBacks;
+
+    struct ReplacementInfo
+    {
+        AggregateInfo* Aggregate;
+        unsigned       Index;
+    };
+
+    ReplacementInfo* m_replacementInfo;
 
 public:
     enum
@@ -296,6 +304,16 @@ private:
     void PlanReadBacks();
     bool MustMaterializeReadBacks(BasicBlock* block);
     void InsertReadBackAtEnd(BasicBlock* block, unsigned structLclNum, Replacement& rep);
+
+    bool NeedsReadBack(const Replacement& rep) const
+    {
+        return BitVecOps::IsMember(m_readBackTraits, m_needsReadBack, rep.ReadBackIndex);
+    }
+
+    bool NeedsWriteBack(const Replacement& rep) const
+    {
+        return !BitVecOps::IsMember(m_readBackTraits, m_structCurrent, rep.ReadBackIndex);
+    }
 
     void SetNeedsWriteBack(Replacement& rep);
     void ClearNeedsWriteBack(Replacement& rep);
