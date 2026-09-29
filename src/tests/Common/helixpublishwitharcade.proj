@@ -180,7 +180,7 @@
         SuperPmiCollect=$(_SuperPmiCollect)
       </_PropertiesToPass>
 
-      <_PropertiesToPass Condition="('$(TargetOS)' == 'browser' and  '$(RuntimeFlavor)' == 'Mono') Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true'">
+      <_PropertiesToPass Condition="('$(TargetOS)' == 'browser' and  '$(RuntimeFlavor)' == 'Mono') Or '$(TargetsAndroid)' == 'true' Or '$(TargetsAppleMobile)' == 'true' Or ('$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true')">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -250,7 +250,7 @@
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true'">
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' Or '$(TargetsAndroid)' == 'true' Or ('$(TargetsWasiOnCoreCLR)' == 'true' and '$(RunCrossGen2)' == 'true')">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
