@@ -35,23 +35,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             MetadataType containingType = _type.ContainingType;
             if (containingType != null)
-                dependencies.Add(factory.TypeMetadata(containingType), "Containing type of a reflectable type");
+                sink.Add(factory.TypeMetadata(containingType), "Containing type of a reflectable type");
             else
-                dependencies.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
+                sink.Add(factory.ModuleMetadata(_type.Module), "Containing module of a reflectable type");
 
             MetadataType baseType = _type.BaseType;
             if (baseType != null)
-                AddMetadataDependencies(dependencies, factory, baseType, "Base type of a reflectable type");
+                AddMetadataDependencies(sink, factory, baseType, "Base type of a reflectable type");
 
             foreach (GenericParameterDesc genericParameter in _type.Instantiation)
             {
                 foreach (TypeDesc typeConstraint in genericParameter.TypeConstraints)
                 {
-                    AddMetadataDependencies(dependencies, factory, typeConstraint, "Generic parameter constraint of a reflectable type");
+                    AddMetadataDependencies(sink, factory, typeConstraint, "Generic parameter constraint of a reflectable type");
                 }
             }
 
@@ -61,7 +59,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // A lot of the enum reflection actually happens on top of the respective MethodTable (e.g. getting the underlying type),
                 // so for enums also include their MethodTable.
-                dependencies.Add(factory.ReflectedType(_type), "Reflectable enum");
+                sink.Add(factory.ReflectedType(_type), "Reflectable enum");
 
                 // Enums are not useful without their literal fields. The literal fields are not referenced
                 // from anywhere (source code reference to enums compiles to the underlying numerical constants in IL).
@@ -69,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (enumField.IsLiteral)
                     {
-                        dependencies.Add(factory.FieldMetadata(enumField), "Value of a reflectable enum");
+                        sink.Add(factory.FieldMetadata(enumField), "Value of a reflectable enum");
                     }
                 }
             }
@@ -94,22 +92,21 @@ namespace ILCompiler.DependencyAnalysis
                             continue;
                         }
 
-                        dependencies.Add(factory.MethodMetadata(method), "Complete metadata for type");
+                        sink.Add(factory.MethodMetadata(method), "Complete metadata for type");
                     }
                 }
 
                 foreach (FieldDesc field in _type.GetFields())
                 {
                     if (!mdManager.IsReflectionBlocked(field))
-                        dependencies.Add(factory.FieldMetadata(field), "Complete metadata for type");
+                        sink.Add(factory.FieldMetadata(field), "Complete metadata for type");
                 }
             }
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, ((EcmaType)_type));
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, ((EcmaType)_type));
         }
 
         /// <summary>

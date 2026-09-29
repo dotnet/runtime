@@ -112,9 +112,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
-            dependencies.Add(_typeNode, "Wasm R2R to interpreter thunk requires type node");
+            sink.Add(_typeNode, "Wasm R2R to interpreter thunk requires type node");
         }
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)

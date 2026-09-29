@@ -34,8 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!factory.MetadataManager.IsReflectionBlocked(_field.GetTypicalFieldDefinition()));
 
-            DependencySink<NodeFactory> dependencies = sink;
-            factory.MetadataManager.GetDependenciesDueToReflectability(dependencies, factory, _field);
+            factory.MetadataManager.GetDependenciesDueToReflectability(sink, factory, _field);
 
             // No runtime artifacts needed if this is a generic definition or literal field
             if (_field.OwningType.IsGenericDefinition || _field.IsLiteral)
@@ -45,7 +44,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // readonly static fields are not reflection settable, the rest are
             if (!_field.IsInitOnly || !_field.IsStatic)
-                dependencies.Add(factory.NotReadOnlyField(_field), "Reflection writable field");
+                sink.Add(factory.NotReadOnlyField(_field), "Reflection writable field");
 
             FieldDesc typicalField = _field.GetTypicalFieldDefinition();
             if (typicalField != _field)
@@ -53,11 +52,11 @@ namespace ILCompiler.DependencyAnalysis
                 // Ensure we consistently apply reflectability to all fields sharing the same definition.
                 // Bases for different instantiations of the field have a conditional dependency on the definition node that
                 // brings a ReflectableField of the instantiated field if it's necessary for it to be reflectable.
-                dependencies.Add(factory.ReflectedField(typicalField), "Definition of the reflectable field");
+                sink.Add(factory.ReflectedField(typicalField), "Definition of the reflectable field");
             }
 
             // Runtime reflection stack needs to see the type handle of the owning type
-            dependencies.Add(factory.MaximallyConstructableType(_field.OwningType), "Instance base of a reflectable field");
+            sink.Add(factory.MaximallyConstructableType(_field.OwningType), "Instance base of a reflectable field");
 
             // Root the static base of the type
             if (_field.IsStatic && !_field.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -71,33 +70,33 @@ namespace ILCompiler.DependencyAnalysis
                 }
                 else if (_field.IsThreadStatic)
                 {
-                    dependencies.Add(factory.TypeThreadStaticIndex(_field.OwningType), "Threadstatic base of a reflectable field");
+                    sink.Add(factory.TypeThreadStaticIndex(_field.OwningType), "Threadstatic base of a reflectable field");
                 }
                 else if (_field.HasGCStaticBase)
                 {
-                    dependencies.Add(factory.TypeGCStaticsSymbol(_field.OwningType), "GC static base of a reflectable field");
+                    sink.Add(factory.TypeGCStaticsSymbol(_field.OwningType), "GC static base of a reflectable field");
                 }
                 else
                 {
-                    dependencies.Add(factory.TypeNonGCStaticsSymbol(_field.OwningType), "NonGC static base of a reflectable field");
+                    sink.Add(factory.TypeNonGCStaticsSymbol(_field.OwningType), "NonGC static base of a reflectable field");
                     needsNonGcStaticBase = false;
                 }
 
                 if (needsNonGcStaticBase)
                 {
-                    dependencies.Add(factory.TypeNonGCStaticsSymbol(_field.OwningType), "CCtor context");
+                    sink.Add(factory.TypeNonGCStaticsSymbol(_field.OwningType), "CCtor context");
                 }
 
                 // For generic types, the reflection mapping table only keeps track of information about offsets
                 // from the static bases. To locate the static base, we need the GenericStaticBaseInfo hashtable.
                 if (_field.OwningType.HasInstantiation)
                 {
-                    dependencies.Add(factory.GenericStaticBaseInfo(_field.OwningType), "Field on a generic type");
+                    sink.Add(factory.GenericStaticBaseInfo(_field.OwningType), "Field on a generic type");
                 }
             }
 
             TypeDesc fieldType = _field.FieldType.NormalizeInstantiation();
-            ReflectionInvokeMapNode.AddSignatureDependency(dependencies, factory, _field, fieldType, "Type of the field", isOut: true);
+            ReflectionInvokeMapNode.AddSignatureDependency(sink, factory, _field, fieldType, "Type of the field", isOut: true);
         }
 
         protected override string GetName(NodeFactory factory)

@@ -27,15 +27,13 @@ namespace ILCompiler.DependencyAnalysis
             FieldDefinition fieldDef = _module.MetadataReader.GetFieldDefinition(Handle);
             TypeDefinitionHandle declaringType = fieldDef.GetDeclaringType();
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             EcmaSignatureAnalyzer.AnalyzeFieldSignature(
                 _module,
                 _module.MetadataReader.GetBlobReader(fieldDef.Signature),
                 factory,
-                dependencies);
+                sink);
 
-            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
+            sink.Add(factory.TypeDefinition(_module, declaringType), "Field owning type");
 
             if ((fieldDef.Attributes & FieldAttributes.Static) != 0 &&
                 (fieldDef.Attributes & FieldAttributes.Literal) == 0)
@@ -44,16 +42,16 @@ namespace ILCompiler.DependencyAnalysis
                 if (declaringTypeDesc.IsBeforeFieldInit &&
                     declaringTypeDesc.GetStaticConstructor() is EcmaMethod cctor)
                 {
-                    dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static field initializer");
+                    sink.Add(factory.MethodDefinition(_module, cctor.Handle), "Static field initializer");
                 }
             }
 
             if ((fieldDef.Attributes & FieldAttributes.Literal) == FieldAttributes.Literal)
             {
-                dependencies.Add(factory.Constant(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
+                sink.Add(factory.Constant(_module, fieldDef.GetDefaultValue()), "Constant in field definition");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, fieldDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, fieldDef.GetCustomAttributes());
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

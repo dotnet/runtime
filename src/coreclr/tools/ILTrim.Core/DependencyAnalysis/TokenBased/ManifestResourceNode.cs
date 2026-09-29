@@ -33,8 +33,6 @@ namespace ILCompiler.DependencyAnalysis
 
             _skipWritingResource = false;
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             if (resource.Implementation.IsNil)
             {
                 string resourceName = _module.MetadataReader.GetString(resource.Name);
@@ -57,7 +55,7 @@ namespace ILCompiler.DependencyAnalysis
 
                         foreach (DependencyListEntry dependency in DescriptorMarker.GetDependencies(factory.Logger, factory, ms, resource, _module, "resource " + resourceName + " in " + _module.ToString(), factory.Settings.FeatureSettings))
                         {
-                            dependencies.Add(dependency);
+                            sink.Add(dependency);
                         }
                     }
                 }
@@ -68,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     case HandleKind.AssemblyReference:
                         var referencedAssembly = (EcmaAssembly)_module.GetObject(resource.Implementation);
-                        dependencies.Add(factory.AssemblyReference(_module, referencedAssembly), "Implementation of a manifest resource");
+                        sink.Add(factory.AssemblyReference(_module, referencedAssembly), "Implementation of a manifest resource");
                         break;
                     default:
                         // TODO: Handle AssemblyFile
@@ -76,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, resource.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, resource.GetCustomAttributes());
         }
 
         public override void BuildTokens(TokenMap.Builder builder)

@@ -24,9 +24,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(dependencies, factory, _method);
-            Debug.Assert(dependencies != null);
+            GenericMethodsHashtableNode.GetGenericMethodsHashtableDependenciesForMethod(sink, factory, _method);
+            Debug.Assert(sink != null);
         }
         protected override string GetName(NodeFactory factory)
         {

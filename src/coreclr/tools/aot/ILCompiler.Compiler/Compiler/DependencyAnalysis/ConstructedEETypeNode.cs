@@ -27,18 +27,17 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencyList = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
 
             if (_type.IsIDynamicInterfaceCastable)
             {
-                dependencyList.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
+                sink.Add(factory.AnalysisCharacteristic("DynamicInterfaceCastablePresent"), "Implements IDynamicInterfaceCastable");
             }
 
             // Ensure that we track the metadata type symbol if we are working with a constructed type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
-            dependencyList.Add(factory.MetadataTypeSymbol(_type), "MetadataType for constructed type");
+            sink.Add(factory.MetadataTypeSymbol(_type), "MetadataType for constructed type");
 
             DefType closestDefType = _type.GetClosestDefType();
 
@@ -46,22 +45,22 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // Array MethodTable depends on System.Array's virtuals. Array EETypes don't point to
                 // their base type (i.e. there's no reloc based dependency making this "just work").
-                dependencyList.Add(factory.ConstructedTypeSymbol(_type.BaseType), "Array base type");
+                sink.Add(factory.ConstructedTypeSymbol(_type.BaseType), "Array base type");
 
                 ArrayType arrayType = (ArrayType)_type;
                 if (arrayType.IsMdArray && arrayType.Rank == 1)
                 {
                     // Allocating an MDArray of Rank 1 with zero lower bounds results in allocating
                     // an SzArray instead. Make sure the type loader can find the SzArray type.
-                    dependencyList.Add(factory.ConstructedTypeSymbol(arrayType.ElementType.MakeArrayType()), "Rank 1 array");
+                    sink.Add(factory.ConstructedTypeSymbol(arrayType.ElementType.MakeArrayType()), "Rank 1 array");
                 }
             }
 
-            dependencyList.Add(factory.VTable(closestDefType), "VTable");
+            sink.Add(factory.VTable(closestDefType), "VTable");
 
             if (!_type.IsCanonicalSubtype(CanonicalFormKind.Any))
             {
-                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(dependencyList, factory, _type);
+                factory.InteropStubManager.AddInterestingInteropConstructedTypeDependencies(sink, factory, _type);
             }
         }
 

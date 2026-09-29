@@ -62,20 +62,18 @@ namespace ILCompiler.DependencyAnalysis
 #if !READYTORUN
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             MethodDesc canonDecl = _decl.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (canonDecl != _decl)
-                dependencies.Add(factory.VirtualMethodUse(canonDecl), "Canonical method");
+                sink.Add(factory.VirtualMethodUse(canonDecl), "Canonical method");
 
-            dependencies.Add(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse");
+            sink.Add(factory.VTable(_decl.OwningType), "VTable of a VirtualMethodUse");
 
             // Do not report things like Foo<object, __Canon>.Frob().
             if (!_decl.IsCanonicalMethod(CanonicalFormKind.Any) || canonDecl == _decl)
-                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, _decl);
+                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, _decl);
 
             if (VariantInterfaceMethodUseNode.IsVariantMethodCall(factory, _decl))
-                dependencies.Add(factory.VariantInterfaceMethodUse(_decl.GetTypicalMethodDefinition()), "Variant interface call");
+                sink.Add(factory.VariantInterfaceMethodUse(_decl.GetTypicalMethodDefinition()), "Variant interface call");
         }
 #else
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory) { }

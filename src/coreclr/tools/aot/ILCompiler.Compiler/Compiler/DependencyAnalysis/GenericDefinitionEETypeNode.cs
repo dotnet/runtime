@@ -100,15 +100,13 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencyList = sink;
-
             if (_type.IsInterface)
-                dependencyList.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
+                sink.Add(factory.InterfaceUse(_type.GetTypeDefinition()), "Interface is used");
 
-            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
+            sink.Add(factory.NecessaryTypeSymbol(_type), "Reflection invisible type for a visible type");
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(dependencyList, factory, _type);
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(sink, factory, _type);
         }
 
         public override int ClassCode => 983279111;

@@ -42,8 +42,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
             MetadataType szArrayHelper = factory.TypeSystemContext.SystemModule.GetType("System"u8, "SZArrayHelper"u8, throwIfNotFound: false);
             if (szArrayHelper == null)
                 return;
@@ -69,7 +67,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     if (!factory.CompilationModuleGroup.ContainsMethodBody(canonHelperMethod, false))
                         continue;
 
-                    result.Add(new CombinedDependencyListEntry(
+                    sink.Add(new CombinedDependencyListEntry(
                         factory.CompiledMethodNode(canonHelperMethod),
                         factory.VirtualMethodUse(interfaceMethod),
                         "Array generic interface method implemented by SZArrayHelper"));

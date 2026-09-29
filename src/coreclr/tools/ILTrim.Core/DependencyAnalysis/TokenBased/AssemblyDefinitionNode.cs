@@ -22,10 +22,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             AssemblyDefinition asmDef = _module.MetadataReader.GetAssemblyDefinition();
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, asmDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, asmDef.GetCustomAttributes());
 
         }
 

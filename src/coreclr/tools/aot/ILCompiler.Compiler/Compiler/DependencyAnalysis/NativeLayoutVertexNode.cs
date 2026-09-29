@@ -127,30 +127,28 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             if ((_flags & MethodEntryFlags.CreateInstantiatedSignature) != 0)
             {
-                dependencies.Add(new DependencyListEntry(context.NecessaryTypeSymbol(_method.OwningType), "NativeLayoutMethodEntryVertexNode containing type"));
+                sink.Add(new DependencyListEntry(context.NecessaryTypeSymbol(_method.OwningType), "NativeLayoutMethodEntryVertexNode containing type"));
                 foreach (var arg in _method.Instantiation)
-                    dependencies.Add(new DependencyListEntry(context.NecessaryTypeSymbol(arg), "NativeLayoutMethodEntryVertexNode instantiation argument type"));
+                    sink.Add(new DependencyListEntry(context.NecessaryTypeSymbol(arg), "NativeLayoutMethodEntryVertexNode instantiation argument type"));
             }
             else
             {
-                dependencies.Add(new DependencyListEntry(_containingTypeSig, "NativeLayoutMethodEntryVertexNode containing type signature"));
+                sink.Add(new DependencyListEntry(_containingTypeSig, "NativeLayoutMethodEntryVertexNode containing type signature"));
                 if (_method.HasInstantiation && !_method.IsMethodDefinition)
                 {
                     foreach (var arg in _instantiationArgsSig)
-                        dependencies.Add(new DependencyListEntry(arg, "NativeLayoutMethodEntryVertexNode instantiation argument signature"));
+                        sink.Add(new DependencyListEntry(arg, "NativeLayoutMethodEntryVertexNode instantiation argument signature"));
                 }
             }
 
             if ((_flags & MethodEntryFlags.SaveEntryPoint) != 0)
             {
                 IMethodNode methodEntryPointNode = GetMethodEntrypointNode(context);
-                dependencies.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
+                sink.Add(new DependencyListEntry(methodEntryPointNode, "NativeLayoutMethodEntryVertexNode entrypoint"));
             }
-            context.MetadataManager.AddNativeLayoutMetadataDependencies(dependencies, context, GetMethodForMetadata(_method, out _, out _));
+            context.MetadataManager.AddNativeLayoutMetadataDependencies(sink, context, GetMethodForMetadata(_method, out _, out _));
 
         }
 
@@ -266,11 +264,9 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
-            dependencies.Add(new DependencyListEntry(_returnTypeSig, "NativeLayoutMethodSignatureVertexNode return type signature"));
+            sink.Add(new DependencyListEntry(_returnTypeSig, "NativeLayoutMethodSignatureVertexNode return type signature"));
             foreach (var arg in _parametersSig)
-                dependencies.Add(new DependencyListEntry(arg, "NativeLayoutMethodSignatureVertexNode parameter signature"));
+                sink.Add(new DependencyListEntry(arg, "NativeLayoutMethodSignatureVertexNode parameter signature"));
 
         }
 
@@ -446,11 +442,9 @@ namespace ILCompiler.DependencyAnalysis
             }
             public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
-                DependencySink<NodeFactory> dependencies = sink;
-
-                dependencies.Add(new DependencyListEntry(_genericTypeDefSig, "NativeLayoutInstantiatedTypeSignatureVertexNode generic definition signature"));
+                sink.Add(new DependencyListEntry(_genericTypeDefSig, "NativeLayoutInstantiatedTypeSignatureVertexNode generic definition signature"));
                 foreach (var arg in _instantiationArgs)
-                    dependencies.Add(new DependencyListEntry(arg, "NativeLayoutInstantiatedTypeSignatureVertexNode instantiation argument signature"));
+                    sink.Add(new DependencyListEntry(arg, "NativeLayoutInstantiatedTypeSignatureVertexNode instantiation argument signature"));
 
             }
             public override Vertex WriteVertex(NodeFactory factory)
@@ -663,21 +657,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencySink<NodeFactory> dependencies = sink;
             base.AddStaticDependencies(sink, context);
 
             foreach (var arg in _method.Instantiation)
             {
                 foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(arg))
                 {
-                    dependencies.Add(new DependencyListEntry(dependency, "Dependencies to make a generic method template viable Method Instantiation"));
+                    sink.Add(new DependencyListEntry(dependency, "Dependencies to make a generic method template viable Method Instantiation"));
                 }
             }
 
 
             foreach (var dependency in context.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
-                dependencies.Add(new DependencyListEntry(dependency, "Dependencies to make a generic method template viable OwningType"));
+                sink.Add(new DependencyListEntry(dependency, "Dependencies to make a generic method template viable OwningType"));
             }
 
         }
@@ -1274,23 +1267,21 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
-                result.Add(dependency, "template construction dependency for method OwningType");
+                sink.Add(dependency, "template construction dependency for method OwningType");
             }
 
             foreach (var type in _method.Instantiation)
             {
                 foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
-                    result.Add(dependency, "template construction dependency for method Instantiation types");
+                    sink.Add(dependency, "template construction dependency for method Instantiation types");
             }
 
             MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
-            result.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
-            factory.MetadataManager.AddNativeLayoutMetadataDependencies(result, factory, GvmDispatchCellInfoSectionNode.GetMethodForMetadata(_method, out _));
-            result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
+            sink.Add(factory.GVMDependencies(canonMethod), "GVM dependencies");
+            factory.MetadataManager.AddNativeLayoutMetadataDependencies(sink, factory, GvmDispatchCellInfoSectionNode.GetMethodForMetadata(_method, out _));
+            sink.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
         }
 
@@ -1314,22 +1305,20 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.MethodDictionary;
         public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
-                dependencies.Add(dependency, "template construction dependency for method OwningType");
+                sink.Add(dependency, "template construction dependency for method OwningType");
             }
 
             foreach (var type in _method.Instantiation)
             {
                 foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
-                    dependencies.Add(dependency, "template construction dependency for method Instantiation types");
+                    sink.Add(dependency, "template construction dependency for method Instantiation types");
             }
 
-            GenericMethodsTemplateMap.AddTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            GenericMethodsTemplateMap.AddTemplateMethodDependencies(sink, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
-            dependencies.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
+            sink.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
         }
 
@@ -1392,27 +1381,25 @@ namespace ILCompiler.DependencyAnalysis
 
         public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
-                result.Add(dependency, "template construction dependency for method OwningType");
+                sink.Add(dependency, "template construction dependency for method OwningType");
             }
 
             foreach (var type in _method.Instantiation)
             {
                 foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
-                    result.Add(dependency, "template construction dependency for method Instantiation types");
+                    sink.Add(dependency, "template construction dependency for method Instantiation types");
             }
 
-            factory.MetadataManager.GetDependenciesDueToLdToken(result, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            factory.MetadataManager.GetDependenciesDueToLdToken(sink, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
             if (_method.IsVirtual && _method.HasInstantiation && !_method.IsGenericMethodDefinition && !_method.OwningType.IsGenericDefinition)
             {
-                result.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Potential dynamic GVM call");
+                sink.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Potential dynamic GVM call");
             }
 
-            result.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
+            sink.Add(factory.NativeLayout.MethodEntry(_method), "wrappednode");
 
         }
 
@@ -1553,21 +1540,19 @@ namespace ILCompiler.DependencyAnalysis
         protected sealed override FixupSignatureKind SignatureKind => FixupSignatureKind.Method;
         public sealed override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(_method.OwningType))
             {
-                dependencies.Add(dependency, "template construction dependency for method OwningType");
+                sink.Add(dependency, "template construction dependency for method OwningType");
             }
 
             foreach (var type in _method.Instantiation)
             {
                 foreach (var dependency in factory.NativeLayout.TemplateConstructableTypes(type))
-                    dependencies.Add(dependency, "template construction dependency for method Instantiation types");
+                    sink.Add(dependency, "template construction dependency for method Instantiation types");
             }
 
-            GenericMethodsTemplateMap.AddTemplateMethodDependencies(dependencies, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
-            dependencies.Add(_wrappedNode, "wrappednode");
+            GenericMethodsTemplateMap.AddTemplateMethodDependencies(sink, factory, _method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+            sink.Add(_wrappedNode, "wrappednode");
 
         }
 

@@ -25,26 +25,24 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
-            dependencies.Add(factory.ModuleDefinition(_module), "Owning module");
+            sink.Add(factory.ModuleDefinition(_module), "Owning module");
 
             TypeDefinition typeDef = _module.MetadataReader.GetTypeDefinition(Handle);
             if (!typeDef.BaseType.IsNil)
             {
-                dependencies.Add(factory.GetNodeForTypeToken(_module, typeDef.BaseType), "Base type of a type");
+                sink.Add(factory.GetNodeForTypeToken(_module, typeDef.BaseType), "Base type of a type");
             }
 
             foreach (var parameter in typeDef.GetGenericParameters())
             {
-                dependencies.Add(factory.GenericParameter(_module, parameter), "Generic parameter of type");
+                sink.Add(factory.GenericParameter(_module, parameter), "Generic parameter of type");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, typeDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, typeDef.GetCustomAttributes());
 
             if (typeDef.IsNested)
             {
-                dependencies.Add(factory.TypeDefinition(_module, typeDef.GetDeclaringType()), "Declaring type of a type");
+                sink.Add(factory.TypeDefinition(_module, typeDef.GetDeclaringType()), "Declaring type of a type");
             }
 
             var type = _module.GetType(Handle);
@@ -52,18 +50,18 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var invokeMethod = type.GetMethod("Invoke"u8, null) as EcmaMethod;
                 if (invokeMethod != null)
-                    dependencies.Add(factory.MethodDefinition(_module, invokeMethod.Handle), "Delegate invoke");
+                    sink.Add(factory.MethodDefinition(_module, invokeMethod.Handle), "Delegate invoke");
 
                 var ctorMethod = type.GetMethod(".ctor"u8, null) as EcmaMethod;
                 if (ctorMethod != null)
-                    dependencies.Add(factory.MethodDefinition(_module, ctorMethod.Handle), "Delegate ctor");
+                    sink.Add(factory.MethodDefinition(_module, ctorMethod.Handle), "Delegate ctor");
             }
 
             if (type.IsEnum)
             {
                 foreach (var field in typeDef.GetFields())
                 {
-                    dependencies.Add(factory.FieldDefinition(_module, field), "Field of enum type");
+                    sink.Add(factory.FieldDefinition(_module, field), "Field of enum type");
                 }
             }
 
@@ -73,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
             if ((!type.IsBeforeFieldInit || preserveBeforeFieldInit) &&
                 type.GetStaticConstructor() is EcmaMethod cctor)
             {
-                dependencies.Add(factory.MethodDefinition(_module, cctor.Handle), "Static constructor");
+                sink.Add(factory.MethodDefinition(_module, cctor.Handle), "Static constructor");
             }
 
             if (typeDef.Attributes.HasFlag(TypeAttributes.SequentialLayout) || typeDef.Attributes.HasFlag(TypeAttributes.ExplicitLayout))
@@ -84,7 +82,7 @@ namespace ILCompiler.DependencyAnalysis
                     var fieldDef = _module.MetadataReader.GetFieldDefinition(fieldHandle);
                     if (!fieldDef.Attributes.HasFlag(FieldAttributes.Static))
                     {
-                        dependencies.Add(factory.FieldDefinition(_module, fieldHandle), "Instance field of a type with sequential or explicit layout");
+                        sink.Add(factory.FieldDefinition(_module, fieldHandle), "Instance field of a type with sequential or explicit layout");
                     }
                 }
             }
@@ -94,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // It's difficult to track where a valuetype gets boxed so consider always constructed
                 // for now (it's on par with IL Linker).
-                dependencies.Add(factory.ConstructedType(ecmaType), "Implicitly constructed valuetype");
+                sink.Add(factory.ConstructedType(ecmaType), "Implicitly constructed valuetype");
             }
         }
 

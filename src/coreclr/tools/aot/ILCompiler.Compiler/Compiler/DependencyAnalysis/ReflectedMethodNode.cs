@@ -34,8 +34,7 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(!factory.MetadataManager.IsReflectionBlocked(_method.GetTypicalMethodDefinition()));
 
-            DependencySink<NodeFactory> dependencies = sink;
-            factory.MetadataManager.GetDependenciesDueToReflectability(dependencies, factory, _method);
+            factory.MetadataManager.GetDependenciesDueToReflectability(sink, factory, _method);
 
             // Ensure we consistently apply reflectability to all methods sharing the same definition.
             // Different instantiations of the method have a conditional dependency on the definition node that
@@ -43,7 +42,7 @@ namespace ILCompiler.DependencyAnalysis
             MethodDesc typicalMethod = _method.GetTypicalMethodDefinition();
             if (typicalMethod != _method)
             {
-                dependencies.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
+                sink.Add(factory.ReflectedMethod(typicalMethod), "Definition of the reflectable method");
             }
         }
         protected override string GetName(NodeFactory factory)

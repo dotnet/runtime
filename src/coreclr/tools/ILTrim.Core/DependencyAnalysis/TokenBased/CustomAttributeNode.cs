@@ -68,13 +68,11 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             CustomAttribute customAttribute = _module.MetadataReader.GetCustomAttribute(Handle);
 
             // We decided not to report parent as a dependency because we don't expect custom attributes to be needed outside of their parent references
 
-            dependencies.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
+            sink.Add(factory.GetNodeForMethodToken(_module, customAttribute.Constructor), "Custom attribute constructor");
 
             // Parse the custom attribute value blob and add dependencies from it
             CustomAttributeValue<TypeDesc> decodedValue;
@@ -91,7 +89,7 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (CustomAttributeTypedArgument<TypeDesc> fixedArg in decodedValue.FixedArguments)
             {
-                GetDependenciesFromCustomAttributeArgument(dependencies, factory, fixedArg.Type, fixedArg.Value);
+                GetDependenciesFromCustomAttributeArgument(sink, factory, fixedArg.Type, fixedArg.Value);
             }
 
             // Resolve the constructor once for the generic argument data flow and the named arguments
@@ -99,16 +97,16 @@ namespace ILCompiler.DependencyAnalysis
             if (constructor is null)
                 return;
 
-            AddGenericArgumentDataFlowDependencies(dependencies, factory, customAttribute.Parent, constructor.OwningType);
+            AddGenericArgumentDataFlowDependencies(sink, factory, customAttribute.Parent, constructor.OwningType);
 
             foreach (CustomAttributeNamedArgument<TypeDesc> namedArg in decodedValue.NamedArguments)
             {
                 if (namedArg.Kind == CustomAttributeNamedArgumentKind.Property)
-                    GetDependenciesFromPropertySetter(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    GetDependenciesFromPropertySetter(sink, factory, constructor.OwningType, namedArg.Name);
                 else if (namedArg.Kind == CustomAttributeNamedArgumentKind.Field)
-                    GetDependenciesFromField(dependencies, factory, constructor.OwningType, namedArg.Name);
+                    GetDependenciesFromField(sink, factory, constructor.OwningType, namedArg.Name);
 
-                GetDependenciesFromCustomAttributeArgument(dependencies, factory, namedArg.Type, namedArg.Value);
+                GetDependenciesFromCustomAttributeArgument(sink, factory, namedArg.Type, namedArg.Value);
             }
         }
 

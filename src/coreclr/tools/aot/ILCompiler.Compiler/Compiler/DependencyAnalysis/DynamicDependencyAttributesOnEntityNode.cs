@@ -52,7 +52,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
             try
             {
                 (TypeDesc owningType, IEnumerable<CustomAttributeValue<TypeDesc>> attributes) = _entity switch
@@ -63,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis
 
                 foreach (CustomAttributeValue<TypeDesc> attribute in attributes)
                 {
-                    AddDependenciesDueToDynamicDependencyAttribute(dependencies, factory, _entity, owningType, attribute);
+                    AddDependenciesDueToDynamicDependencyAttribute(sink, factory, _entity, owningType, attribute);
                 }
             }
             catch (TypeSystemException)

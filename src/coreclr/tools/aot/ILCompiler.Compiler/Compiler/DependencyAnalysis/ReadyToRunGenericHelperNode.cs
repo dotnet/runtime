@@ -231,46 +231,43 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             if (_dictionaryOwner is TypeDesc type)
             {
                 // The generic lookup will need to consult the vtable of the owning type to find the
                 // vtable slot where the generic dictionary is placed - report the dependency.
-                dependencies.Add(factory.VTable(type), "Owning type vtable");
+                sink.Add(factory.VTable(type), "Owning type vtable");
             }
 
-            dependencies.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
+            sink.Add(factory.GenericDictionaryLayout(_dictionaryOwner), "Layout");
 
             foreach (DependencyNodeCore<NodeFactory> dependency in _lookupSignature.NonRelocDependenciesFromUsage(factory))
             {
-                dependencies.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
+                sink.Add(new DependencyListEntry(dependency, "GenericLookupResultDependency"));
             }
 
             if (_id == ReadyToRunHelperId.DelegateCtor)
             {
                 var delegateCreationInfo = (DelegateCreationInfo)_target;
                 MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(dependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(sink, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
         }
 
         public override bool HasConditionalStaticDependencies => true;
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> conditionalDependencies = sink;
             NativeLayoutSavedVertexNode templateLayout;
             if (_dictionaryOwner is MethodDesc)
             {
                 templateLayout = factory.NativeLayout.TemplateMethodLayout((MethodDesc)_dictionaryOwner);
-                conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
+                sink.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
             else
             {
                 templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_dictionaryOwner);
-                conditionalDependencies.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
+                sink.Add(new CombinedDependencyListEntry(_lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
             }
@@ -284,7 +281,7 @@ namespace ILCompiler.DependencyAnalysis
                 if (TriggersLazyStaticConstructor(factory))
                 {
                     GenericLookupResult nonGcRegionLookup = factory.GenericLookup.TypeNonGCStaticBase(type);
-                    conditionalDependencies.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),
+                    sink.Add(new CombinedDependencyListEntry(nonGcRegionLookup.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
                 }
@@ -294,7 +291,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var delegateCreationInfo = (DelegateCreationInfo)_target;
                 MethodDesc targetMethod = delegateCreationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
-                factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(conditionalDependencies, factory, delegateCreationInfo.DelegateType, targetMethod);
+                factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(sink, factory, delegateCreationInfo.DelegateType, targetMethod);
             }
 
         }

@@ -54,9 +54,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
-            factory.AddVirtualMethodDiscoveryDependencies(dependencies, _arrayType);
+            factory.AddVirtualMethodDiscoveryDependencies(sink, _arrayType);
         }
     }
 }

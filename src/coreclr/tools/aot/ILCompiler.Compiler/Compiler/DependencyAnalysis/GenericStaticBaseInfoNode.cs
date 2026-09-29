@@ -26,8 +26,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            StaticsInfoHashtableNode.AddStaticsInfoDependencies(dependencies, factory, Type);
+            StaticsInfoHashtableNode.AddStaticsInfoDependencies(sink, factory, Type);
         }
 
         protected override string GetName(NodeFactory factory)

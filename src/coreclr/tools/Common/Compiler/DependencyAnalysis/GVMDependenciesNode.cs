@@ -78,8 +78,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void SearchDynamicDependencies(List<DependencyNodeCore<NodeFactory>> markedNodes, int firstNode, DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dynamicDependencies = sink;
-
             TypeDesc methodOwningType = _method.OwningType;
             bool methodIsShared = _method.IsSharedByGenericInstantiations;
 
@@ -165,7 +163,7 @@ namespace ILCompiler.DependencyAnalysis
 #if READYTORUN
                                 if (factory.NeedsUnboxingStub(canonImpl))
                                 {
-                                    dynamicDependencies.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), null, "Unboxing thunk for interface GVM"));
+                                    sink.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), null, "Unboxing thunk for interface GVM"));
                                 }
 #endif
 
@@ -174,7 +172,7 @@ namespace ILCompiler.DependencyAnalysis
                                 {
                                     DependencyNodeCore<NodeFactory> node = GetVirtualMethodImplNode(factory, canonImpl);
                                     if (node != null)
-                                        dynamicDependencies.Add(node, "ImplementingMethodInstantiation");
+                                        sink.Add(node, "ImplementingMethodInstantiation");
                                 }
                                 else
                                 {
@@ -182,14 +180,14 @@ namespace ILCompiler.DependencyAnalysis
                                     if (!factory.CanBeInGenericCycle(canonImpl))
 #endif
                                     {
-                                        dynamicDependencies.Add(factory.GVMDependencies(canonImpl), "ImplementingMethodInstantiation");
+                                        sink.Add(factory.GVMDependencies(canonImpl), "ImplementingMethodInstantiation");
                                     }
                                 }
 
 #if !READYTORUN
                                 TypeSystemEntity origin = (implementingMethodInstantiation.OwningType != potentialOverrideType) ? potentialOverrideType : null;
                                 factory.MetadataManager.NoteOverridingMethod(_method, implementingMethodInstantiation, origin);
-                                factory.MetadataManager.GetDependenciesForOverridingMethod(dynamicDependencies, factory, _method, implementingMethodInstantiation);
+                                factory.MetadataManager.GetDependenciesForOverridingMethod(sink, factory, _method, implementingMethodInstantiation);
 #endif
                             }
 
@@ -245,10 +243,10 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         DependencyNodeCore<NodeFactory> node = GetVirtualMethodImplNode(factory, instantiatedTargetMethod);
                         if (node != null)
-                            dynamicDependencies.Add(node, "DerivedMethodInstantiation");
+                            sink.Add(node, "DerivedMethodInstantiation");
 #if !READYTORUN
                         factory.MetadataManager.NoteOverridingMethod(_method, instantiatedTargetMethod);
-                        factory.MetadataManager.GetDependenciesForOverridingMethod(dynamicDependencies, factory, _method, instantiatedTargetMethod);
+                        factory.MetadataManager.GetDependenciesForOverridingMethod(sink, factory, _method, instantiatedTargetMethod);
 
                         foundImpl = true;
 #endif
@@ -261,7 +259,7 @@ namespace ILCompiler.DependencyAnalysis
                     TypeDesc currentType = potentialOverrideType;
                     do
                     {
-                        dynamicDependencies.Add(factory.TypeGVMEntries(currentType.GetTypeDefinition()), "Resolution metadata");
+                        sink.Add(factory.TypeGVMEntries(currentType.GetTypeDefinition()), "Resolution metadata");
                         currentType = currentType.BaseType;
                     }
                     while (currentType != null);

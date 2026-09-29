@@ -31,8 +31,6 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDefinitionHandle declaringTypeHandle = property.GetDeclaringType();
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             // We intentionally do NOT root accessor methods here. The accessor methods are kept
             // independently when they are called. The property definition is pulled in by the
             // accessor → property back-reference in MethodDefinitionNode. This avoids keeping
@@ -41,10 +39,10 @@ namespace ILCompiler.DependencyAnalysis
                 _module,
                 reader.GetBlobReader(property.Signature),
                 factory,
-                dependencies);
+                sink);
 
-            dependencies.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Property owning type");
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, property.GetCustomAttributes());
+            sink.Add(factory.TypeDefinition(_module, declaringTypeHandle), "Property owning type");
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, property.GetCustomAttributes());
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

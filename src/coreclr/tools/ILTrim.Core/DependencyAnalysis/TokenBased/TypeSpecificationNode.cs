@@ -25,13 +25,11 @@ namespace ILCompiler.DependencyAnalysis
         {
             TypeSpecification typeSpec = _module.MetadataReader.GetTypeSpecification(Handle);
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             EcmaSignatureAnalyzer.AnalyzeTypeSpecSignature(
                 _module,
                 _module.MetadataReader.GetBlobReader(typeSpec.Signature),
                 factory,
-                dependencies);
+                sink);
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

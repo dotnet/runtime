@@ -50,12 +50,10 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
             // VTable slots of implemented interfaces are consulted during emission
             foreach (TypeDesc runtimeInterface in _type.RuntimeInterfaces)
             {
-                result.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
+                sink.Add(factory.VTable(runtimeInterface), "Interface for a dispatch map");
             }
 
         }

@@ -47,8 +47,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             DefType defType = (DefType)_type;
 
-            DependencySink<NodeFactory> result = sink;
-
             // Class virtual method path: for each virtual slot, compile the implementation
             // on this type if the slot-defining method is used.
             foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
@@ -64,7 +62,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 MethodDesc canonImpl = impl.GetCanonMethodTarget(CanonicalFormKind.Specific);
                 if (factory.NeedsUnboxingStub(canonImpl))
                 {
-                    result.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), factory.VirtualMethodUse(decl), "Unbox for virtual method on VT"));
+                    sink.Add(new CombinedDependencyListEntry(factory.UnboxingStub(canonImpl), factory.VirtualMethodUse(decl), "Unbox for virtual method on VT"));
                 }
 
                 // Given we are scanning for non-GVMs here, if the type has no generic type arguments
@@ -77,7 +75,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 if (implNode is null)
                     continue;
 
-                result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
+                sink.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(decl), "Virtual method"));
             }
 
             try
@@ -123,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                             if (factory.NeedsUnboxingStub(implMethod))
                             {
-                                result.Add(new CombinedDependencyListEntry(factory.UnboxingStub(implMethod), factory.VirtualMethodUse(interfaceMethod), "Unbox for interface method on VT"));
+                                sink.Add(new CombinedDependencyListEntry(factory.UnboxingStub(implMethod), factory.VirtualMethodUse(interfaceMethod), "Unbox for interface method on VT"));
                             }
 
                             if (implMethod.IsVirtual && !implMethod.IsFinal && !implMethod.OwningType.IsInterface)
@@ -131,14 +129,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                                 // The interface resolves to a virtual method that can be overridden.
                                 // Mark the class virtual slot as used so the class path compiles the
                                 // actual final target (which may be an override further down the hierarchy).
-                                result.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                sink.Add(new CombinedDependencyListEntry(factory.VirtualMethodUse(implMethod), factory.VirtualMethodUse(interfaceMethod), "Interface method"));
                             }
                             else
                             {
                                 DependencyNodeCore<NodeFactory> implNode = GetVirtualMethodImplNode(factory, implMethod);
                                 if (implNode is not null)
                                 {
-                                    result.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(interfaceMethod), "Interface method"));
+                                    sink.Add(new CombinedDependencyListEntry(implNode, factory.VirtualMethodUse(interfaceMethod), "Interface method"));
                                 }
                             }
                         }

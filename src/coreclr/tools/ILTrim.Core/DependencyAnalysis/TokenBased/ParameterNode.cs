@@ -23,10 +23,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             Parameter parameter = _module.MetadataReader.GetParameter(Handle);
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, context, _module, parameter.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, context, _module, parameter.GetCustomAttributes());
 
         }
 

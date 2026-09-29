@@ -64,8 +64,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             if (_typeDefinition is MetadataType metadataType)
             {
                 // The generic instantiation in the interface list is only reachable through the members of
@@ -78,7 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                 foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)
                 {
                     GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(
-                        dependencies,
+                        sink,
                         factory,
                         new MessageOrigin(_typeDefinition),
                         interfaceType,

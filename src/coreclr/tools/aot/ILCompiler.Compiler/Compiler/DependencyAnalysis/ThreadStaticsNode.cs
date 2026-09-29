@@ -69,18 +69,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
-            result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
+            sink.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
 
             if (_type != null)
             {
                 if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
                 {
-                    result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
+                    sink.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
                 }
 
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(result, factory, _type.Module);
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, _type.Module);
             }
             else
             {
@@ -88,13 +86,13 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     if (factory.PreinitializationManager.HasEagerStaticConstructor(type))
                     {
-                        result.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
+                        sink.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
                     }
 
                     // inlined threadstatics do not need the index for execution, but may need it for debug visualization.
-                    result.Add(new DependencyListEntry(factory.TypeThreadStaticIndex(type), "ThreadStatic index for debug visualization"));
+                    sink.Add(new DependencyListEntry(factory.TypeThreadStaticIndex(type), "ThreadStatic index for debug visualization"));
 
-                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(result, factory, type.Module);
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, type.Module);
                 }
             }
         }

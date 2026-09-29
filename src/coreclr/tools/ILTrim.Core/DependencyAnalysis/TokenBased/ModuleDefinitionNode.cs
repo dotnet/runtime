@@ -27,18 +27,16 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             if (_module.MetadataReader.IsAssembly)
-                dependencies.Add(factory.AssemblyDefinition(_module), "Assembly definition of the module");
+                sink.Add(factory.AssemblyDefinition(_module), "Assembly definition of the module");
 
-            dependencies.Add(factory.TypeDefinition(_module, GlobalModuleTypeHandle), "Global module type");
+            sink.Add(factory.TypeDefinition(_module, GlobalModuleTypeHandle), "Global module type");
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, _module.MetadataReader.GetModuleDefinition().GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, _module.MetadataReader.GetModuleDefinition().GetCustomAttributes());
 
             foreach (var resourceHandle in _module.MetadataReader.ManifestResources)
             {
-                dependencies.Add(factory.ManifestResource(_module, resourceHandle), "Manifest resource of a module");
+                sink.Add(factory.ManifestResource(_module, resourceHandle), "Manifest resource of a module");
             }
         }
 

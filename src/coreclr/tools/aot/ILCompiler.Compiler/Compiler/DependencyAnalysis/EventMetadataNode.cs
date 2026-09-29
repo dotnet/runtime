@@ -31,8 +31,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, _event);
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, _event);
         }
 
         protected override string GetName(NodeFactory factory)

@@ -120,12 +120,10 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
             // Include the layout as a dependency if the canonical type isn't imported
             TypeDesc canonicalOwningType = _owningType.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (factory.CompilationModuleGroup.ContainsType(canonicalOwningType) || !factory.CompilationModuleGroup.ShouldReferenceThroughImportTable(canonicalOwningType))
-                result.Add(GetDictionaryLayout(factory), "Layout");
+                sink.Add(GetDictionaryLayout(factory), "Layout");
 
             // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
             if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningType))
@@ -136,7 +134,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (arg.IsValueType || arg.GetDefaultConstructor() == null || !ConstructedEETypeNode.CreationAllowed(arg))
                         continue;
 
-                    result.Add(new DependencyListEntry(
+                    sink.Add(new DependencyListEntry(
                         factory.ConstructedTypeSymbol(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Default constructor for lazy generics"));
                 }
@@ -207,15 +205,13 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             MethodDesc canonicalTarget = _owningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (factory.CompilationModuleGroup.ContainsMethodBody(canonicalTarget, false))
-                dependencies.Add(GetDictionaryLayout(factory), "Layout");
+                sink.Add(GetDictionaryLayout(factory), "Layout");
 
-            factory.MetadataManager.GetDependenciesDueToGenericDictionary(dependencies, factory, _owningMethod);
+            factory.MetadataManager.GetDependenciesDueToGenericDictionary(sink, factory, _owningMethod);
 
-            factory.InteropStubManager.AddMarshalAPIsGenericDependencies(dependencies, factory, _owningMethod);
+            factory.InteropStubManager.AddMarshalAPIsGenericDependencies(sink, factory, _owningMethod);
 
             // Lazy generic use of the Activator.CreateInstance<T> heuristic requires tracking type parameters that are used in lazy generics.
             if (factory.LazyGenericsPolicy.UsesLazyGenerics(_owningMethod))
@@ -226,7 +222,7 @@ namespace ILCompiler.DependencyAnalysis
                     if (arg.IsValueType || arg.GetDefaultConstructor() == null || !ConstructedEETypeNode.CreationAllowed(arg))
                         continue;
 
-                    dependencies.Add(new DependencyListEntry(
+                    sink.Add(new DependencyListEntry(
                         factory.ConstructedTypeSymbol(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Default constructor for lazy generics"));
                 }
@@ -236,14 +232,14 @@ namespace ILCompiler.DependencyAnalysis
                     if (arg.IsValueType || arg.GetDefaultConstructor() == null || !ConstructedEETypeNode.CreationAllowed(arg))
                         continue;
 
-                    dependencies.Add(new DependencyListEntry(
+                    sink.Add(new DependencyListEntry(
                         factory.ConstructedTypeSymbol(arg.ConvertToCanonForm(CanonicalFormKind.Specific)),
                         "Default constructor for lazy generics"));
                 }
             }
 
             // Make sure the dictionary can also be populated
-            dependencies.Add(factory.ShadowConcreteMethod(_owningMethod), "Dictionary contents");
+            sink.Add(factory.ShadowConcreteMethod(_owningMethod), "Dictionary contents");
         }
 
         public override DictionaryLayoutNode GetDictionaryLayout(NodeFactory factory)

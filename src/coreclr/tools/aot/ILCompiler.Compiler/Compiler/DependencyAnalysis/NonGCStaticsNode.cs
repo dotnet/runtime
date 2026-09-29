@@ -170,13 +170,11 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencyList = sink;
-
             if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
             {
-                dependencyList.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
+                sink.Add(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor");
             }
-            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencyList, factory, _type.Module);
+            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, _type.Module);
         }
 
         private static bool IsNonGcStaticField(FieldDesc field)

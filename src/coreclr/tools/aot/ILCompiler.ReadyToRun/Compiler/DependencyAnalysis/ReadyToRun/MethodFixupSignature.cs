@@ -54,7 +54,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> list = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
             MethodDesc canonMethod = Method.GetCanonMethodTarget(CanonicalFormKind.Specific);
             if (_fixupKind == ReadyToRunFixupKind.VirtualEntry &&
@@ -67,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 try
                 {
                     factory.DetectGenericCycles(_method.Method, canonMethod);
-                    list.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
+                    sink.Add(factory.CompiledMethodNode(canonMethod), "Virtual function dependency on cross module inlineable method");
                 }
                 catch (TypeSystemException)
                 {
@@ -88,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // instantiations of virtual methods that have at least one non-canonical argument (aka a valuetype).
                 if (HasNonCanonicalInstantiationArguments(canonMethod) && !factory.CanBeInGenericCycle(Method))
                 {
-                    list.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
+                    sink.Add(factory.GVMDependencies(Method), "Virtual dispatch dependency");
                 }
             }
 
@@ -101,7 +100,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 !Method.IsFinal &&
                 !Method.OwningType.IsGenericDefinition)
             {
-                list.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
+                sink.Add(factory.VirtualMethodUse(canonMethod), "Non-GVM virtual slot use");
             }
         }
 

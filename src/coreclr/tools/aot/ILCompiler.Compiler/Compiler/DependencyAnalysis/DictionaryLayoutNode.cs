@@ -165,11 +165,9 @@ namespace ILCompiler.DependencyAnalysis
                 templateLayout = factory.NativeLayout.TemplateTypeLayout((TypeDesc)_owningMethodOrType);
             }
 
-            DependencySink<NodeFactory> conditionalDependencies = sink;
-
             foreach (var lookupSignature in FixedEntries)
             {
-                conditionalDependencies.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
+                sink.Add(new CombinedDependencyListEntry(lookupSignature.TemplateDictionaryNode(factory),
                                                                 templateLayout,
                                                                 "Type loader template"));
             }

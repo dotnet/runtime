@@ -102,10 +102,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
-            dependencies.Add(_targetTypeNode, "Wasm interpreter-to-R2R thunk requires target type node");
-            dependencies.Add(factory.WasmTypeNode(sigForInterpToR2RThunks), "Wasm interpreter-to-R2R thunk requires type for the function entry point");
+            sink.Add(_targetTypeNode, "Wasm interpreter-to-R2R thunk requires target type node");
+            sink.Add(factory.WasmTypeNode(sigForInterpToR2RThunks), "Wasm interpreter-to-R2R thunk requires type for the function entry point");
         }
 
         protected override void EmitCode(NodeFactory factory, ref Wasm.WasmEmitter instructionEncoder, bool relocsOnly)

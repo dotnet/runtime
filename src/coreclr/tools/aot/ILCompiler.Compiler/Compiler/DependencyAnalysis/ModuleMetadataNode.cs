@@ -32,30 +32,27 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             // Global module type always generates metadata because it's really convenient to
             // have something in an assembly that always generates metadata.
-            dependencies.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
+            sink.Add(factory.TypeMetadata(_module.GetGlobalModuleType()), "Global module type");
             if (_module is EcmaModule ecmaModule
                 && ecmaModule.EntryPoint is MethodDesc entrypoint
                 && !factory.MetadataManager.IsReflectionBlocked(entrypoint))
             {
-                dependencies.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
+                sink.Add(factory.ReflectedMethod(entrypoint), "Reflectable entrypoint");
             }
 
             EcmaAssembly ecmaAssembly = (EcmaAssembly)_module;
 
             foreach (EcmaModule satelliteModule in ((UsageBasedMetadataManager)factory.MetadataManager).GetSatelliteAssemblies(ecmaAssembly))
             {
-                dependencies.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
+                sink.Add(factory.ModuleMetadata(satelliteModule), "Satellite assembly");
             }
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, (EcmaAssembly)_module);
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, (EcmaAssembly)_module);
         }
 
         protected override string GetName(NodeFactory factory)

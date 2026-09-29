@@ -126,15 +126,13 @@ namespace ILCompiler.DependencyAnalysis
             {
                 var targetMethod = (MethodDesc)_target;
 
-                DependencySink<NodeFactory> dependencyList = sink;
-
 #if !SUPPORT_JIT
-                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
+                factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, targetMethod);
 
                 if (!factory.VTable(targetMethod.OwningType).HasKnownVirtualMethodUse)
 
                 {
-                    dependencyList.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
+                    sink.Add(factory.VirtualMethodUse((MethodDesc)_target), "ReadyToRun Virtual Method Call");
                 }
 #endif
 
@@ -142,25 +140,23 @@ namespace ILCompiler.DependencyAnalysis
             }
             else if (_id == ReadyToRunHelperId.DelegateCtor)
             {
-                DependencySink<NodeFactory> dependencyList = sink;
-
                 var info = (DelegateCreationInfo)_target;
                 if (info.NeedsVirtualMethodUseTracking)
                 {
                     MethodDesc targetMethod = info.TargetMethod;
 
 #if !SUPPORT_JIT
-                    factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencyList, factory, targetMethod);
+                    factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, targetMethod);
 
                     if (!factory.VTable(info.TargetMethod.OwningType).HasKnownVirtualMethodUse)
                     {
 
-                        dependencyList.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
+                        sink.Add(factory.VirtualMethodUse(info.TargetMethod), "ReadyToRun Delegate to virtual method");
                     }
 #endif
                 }
 
-                factory.MetadataManager.GetDependenciesDueToDelegateCreation(dependencyList, factory, info.DelegateType,
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(sink, factory, info.DelegateType,
                     info.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific));
 
                 return;
@@ -171,9 +167,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencyList = sink;
             var info = (DelegateCreationInfo)_target;
-            factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(dependencyList, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);
+            factory.MetadataManager.GetConditionalDependenciesDueToDelegateCreation(sink, factory, info.DelegateType, info.PossiblyUnresolvedTargetMethod);
         }
 
 #if !SUPPORT_JIT

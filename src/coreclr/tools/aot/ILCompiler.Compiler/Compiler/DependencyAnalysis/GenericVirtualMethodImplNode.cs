@@ -36,9 +36,7 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
-            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(dependencies, factory, _method);
+            factory.MetadataManager.AddDependenciesDueToVirtualMethodReflectability(sink, factory, _method);
 
             bool validInstantiation =
                 _method.IsSharedByGenericInstantiations || (      // Non-exact methods are always valid instantiations (always pass constraints check)
@@ -50,17 +48,17 @@ namespace ILCompiler.DependencyAnalysis
             {
                 bool getUnboxingStub = _method.OwningType.IsValueType && !_method.Signature.IsStatic;
 
-                dependencies.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
+                sink.Add(factory.MethodEntrypoint(_method, getUnboxingStub), "GVM Dependency - Canon method");
 
                 if (_method.IsSharedByGenericInstantiations)
                 {
-                    dependencies.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
-                    dependencies.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
-                    dependencies.Add(factory.ShadowNonConcreteMethod(_method), "GVM Dependency - shadow generic method");
+                    sink.Add(factory.NativeLayout.TemplateMethodEntry(_method), "GVM Dependency - Template entry");
+                    sink.Add(factory.NativeLayout.TemplateMethodLayout(_method), "GVM Dependency - Template");
+                    sink.Add(factory.ShadowNonConcreteMethod(_method), "GVM Dependency - shadow generic method");
                 }
                 else
                 {
-                    dependencies.Add(factory.ExactMethodInstantiationsHashtableEntry(_method), "GVM Dependency - runtime lookups");
+                    sink.Add(factory.ExactMethodInstantiationsHashtableEntry(_method), "GVM Dependency - runtime lookups");
                 }
             }
 

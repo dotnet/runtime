@@ -48,15 +48,13 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-
-            result.Add(
+            sink.Add(
                 factory.ConstructedTypeSymbol(factory.TypeSystemContext.GetWellKnownType(WellKnownType.String)),
                 "String constructor call");
-            result.Add(
+            sink.Add(
                 factory.MethodEntrypoint(_allocationMethod),
                 "String constructor call");
-            factory.MetadataManager.GetDependenciesDueToMethodCodePresence(result, factory, _constructorMethod, methodIL: null);
+            factory.MetadataManager.GetDependenciesDueToMethodCodePresence(sink, factory, _constructorMethod, methodIL: null);
         }
 
         public override bool HasConditionalStaticDependencies => false;

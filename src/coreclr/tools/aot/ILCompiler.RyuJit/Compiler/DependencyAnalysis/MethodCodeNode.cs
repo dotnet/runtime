@@ -111,29 +111,28 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
             if (_nonRelocationDependencies is not null)
             {
                 foreach (DependencyListEntry dependency in _nonRelocationDependencies)
                 {
-                    dependencies.Add(dependency);
+                    sink.Add(dependency);
                 }
             }
 
             TypeDesc owningType = _method.OwningType;
             if (factory.PreinitializationManager.HasEagerStaticConstructor(owningType))
             {
-                dependencies.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
+                sink.Add(factory.EagerCctorIndirection(owningType.GetStaticConstructor()), "Eager .cctor");
             }
 
             if (_ehInfo != null)
             {
-                dependencies.Add(_ehInfo, "Exception handling information");
+                sink.Add(_ehInfo, "Exception handling information");
             }
 
             if (MethodAssociatedDataNode.MethodHasAssociatedData(this))
             {
-                dependencies.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
+                sink.Add(new DependencyListEntry(factory.MethodAssociatedData(this), "Method associated data"));
             }
         }
 

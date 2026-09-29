@@ -31,10 +31,9 @@ namespace ILCompiler.DependencyAnalysis
         {
             GenericParameterConstraint genericParamConstraint = _module.MetadataReader.GetGenericParameterConstraint(Handle);
 
-            DependencySink<NodeFactory> dependencies = sink;
-            dependencies.Add(factory.GetNodeForTypeToken(_module, genericParamConstraint.Type), "Parameter constrained to type");
+            sink.Add(factory.GetNodeForTypeToken(_module, genericParamConstraint.Type), "Parameter constrained to type");
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, genericParamConstraint.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, genericParamConstraint.GetCustomAttributes());
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)

@@ -33,8 +33,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             foreach (MethodDesc method in Type.GetAllMethods())
             {
                 if (!method.IsGenericMethodDefinition &&
@@ -43,7 +41,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     try
                     {
                         context.DetectGenericCycles(Type, method);
-                        dependencies.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
+                        sink.Add(context.CompiledMethodNode(method), $"Method on type {Type.ToString()}");
                     }
                     catch (TypeSystemException)
                     {

@@ -204,21 +204,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             if (_typeDesc.HasInstantiation &&
                 !_typeDesc.IsGenericDefinition &&
                 (factory.CompilationCurrentPhase == 0) &&
                 factory.CompilationModuleGroup.VersionsWithType(_typeDesc))
             {
-                dependencies.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
+                sink.Add(factory.AllMethodsOnType(_typeDesc), "Methods on generic type instantiation");
             }
 
-            factory.AddVirtualMethodDiscoveryDependencies(dependencies, _typeDesc);
+            factory.AddVirtualMethodDiscoveryDependencies(sink, _typeDesc);
 
             if (_fixupKind == ReadyToRunFixupKind.TypeHandle)
             {
-                AddDependenciesForAsyncStateMachineBox(dependencies, factory, _typeDesc);
+                AddDependenciesForAsyncStateMachineBox(sink, factory, _typeDesc);
             }
         }
 

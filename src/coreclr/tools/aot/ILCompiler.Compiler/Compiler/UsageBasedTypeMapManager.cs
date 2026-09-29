@@ -28,11 +28,10 @@ namespace ILCompiler
 
             public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
-                DependencySink<NodeFactory> entries = sink;
                 foreach ((TypeDesc typeMapGroup, TypeMapMetadata.Map typeMap) in typeMapState.Maps)
                 {
-                    entries.Add(new CombinedDependencyListEntry(GetExternalTypeMapNode(typeMapGroup, typeMap), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
-                    entries.Add(new CombinedDependencyListEntry(GetProxyTypeMapNode(typeMapGroup, typeMap), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
+                    sink.Add(new CombinedDependencyListEntry(GetExternalTypeMapNode(typeMapGroup, typeMap), context.ExternalTypeMapRequest(typeMapGroup), "ExternalTypeMap"));
+                    sink.Add(new CombinedDependencyListEntry(GetProxyTypeMapNode(typeMapGroup, typeMap), context.ProxyTypeMapRequest(typeMapGroup), "ProxyTypeMap"));
                 }
             }
 

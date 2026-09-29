@@ -33,8 +33,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-
             foreach (var entry in _mapEntries)
             {
                 TypeDesc targetType = entry.Value.Type;
@@ -43,12 +41,12 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
 
-                    dependencies.Add(new CombinedDependencyListEntry(
+                    sink.Add(new CombinedDependencyListEntry(
                         context.MetadataTypeSymbol(targetType),
                         effectiveTrimTargetType,
                         "Type in external type map is cast target"));
 
-                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "External type map trim target that could be loaded at runtime");
                 }
             }
 

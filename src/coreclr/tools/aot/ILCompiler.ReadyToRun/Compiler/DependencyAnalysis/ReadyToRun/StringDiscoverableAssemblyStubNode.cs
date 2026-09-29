@@ -24,8 +24,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            dependencies.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
+            sink.Add(factory.InjectStringThunksImport, "StringDiscoverableAssemblyStubNode requires InjectStringThunks fixup");
         }
 
         protected override void OnMarked(NodeFactory factory)

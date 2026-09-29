@@ -31,32 +31,31 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencyList = sink;
             base.ComputeNonRelocationBasedDependencies(sink, factory);
 
             // Ensure that we track the necessary type symbol if we are working with a metadata type symbol.
             // The emitter will ensure we don't emit both, but this allows us assert that we only generate
             // relocs to nodes we emit.
-            dependencyList.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for metadata type");
+            sink.Add(factory.NecessaryTypeSymbol(_type), "NecessaryType for metadata type");
 
             if (_type is MetadataType mdType)
-                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(dependencyList, factory, mdType.Module);
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(sink, factory, mdType.Module);
 
             // Ask the metadata manager if we have any dependencies due to the presence of the EEType.
-            factory.MetadataManager.GetDependenciesDueToEETypePresence(dependencyList, factory, _type);
+            factory.MetadataManager.GetDependenciesDueToEETypePresence(sink, factory, _type);
 
             // Reflection-visible valuetypes are considered constructed due to APIs like RuntimeHelpers.Box,
             // or Enum.ToObject.
             if (_type.IsValueType)
-                dependencyList.Add(factory.MaximallyConstructableType(_type), "Reflection visible valuetype");
+                sink.Add(factory.MaximallyConstructableType(_type), "Reflection visible valuetype");
 
             // Delegates can be constructed through runtime magic APIs so consider constructed.
             if (_type.IsDelegate)
-                dependencyList.Add(factory.MaximallyConstructableType(_type), "Reflection visible delegate");
+                sink.Add(factory.MaximallyConstructableType(_type), "Reflection visible delegate");
 
             // Arrays can be constructed through Array.CreateInstanceFromArrayType so consider constructed.
             if (_type.IsArray)
-                dependencyList.Add(factory.MaximallyConstructableType(_type), "Reflection visible array");
+                sink.Add(factory.MaximallyConstructableType(_type), "Reflection visible array");
 
             // TODO-SIZE: We need to separate tracking the use of static and instance virtual methods
             // Unconstructed MethodTables only need to track the static virtuals.
@@ -74,7 +73,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
             if (hasStaticVirtuals)
-                dependencyList.Add(factory.MaximallyConstructableType(_type), "Has static virtual methods");
+                sink.Add(factory.MaximallyConstructableType(_type), "Has static virtual methods");
         }
 
         protected override ISymbolNode GetBaseTypeNode(NodeFactory factory)

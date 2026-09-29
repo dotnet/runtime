@@ -37,32 +37,30 @@ namespace ILCompiler.DependencyAnalysis
 
         public override void AddStaticDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            dependencies.Add(factory.TypeMetadata(_field.OwningType), "Owning type metadata");
+            sink.Add(factory.TypeMetadata(_field.OwningType), "Owning type metadata");
 
             if (_field is EcmaField ecmaField)
             {
-                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(dependencies, factory, ecmaField);
+                DynamicDependencyAttributesOnEntityNode.AddDependenciesDueToDynamicDependencyAttribute(sink, factory, ecmaField);
 
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(dependencies, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(sink, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
             }
 
             if (_field.HasEmbeddedSignatureData)
             {
                 foreach (var sigData in _field.GetEmbeddedSignatureData())
                     if (sigData.type != null)
-                        TypeMetadataNode.AddMetadataDependencies(dependencies, factory, sigData.type, "Modifier in a field signature");
+                        TypeMetadataNode.AddMetadataDependencies(sink, factory, sigData.type, "Modifier in a field signature");
             }
 
-            TypeMetadataNode.AddMetadataDependencies(dependencies, factory, _field.FieldType, "Type of the field");
+            TypeMetadataNode.AddMetadataDependencies(sink, factory, _field.FieldType, "Type of the field");
         }
 
         public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> dependencies = sink;
-            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(dependencies, factory, (EcmaField)_field);
+            CustomAttributeBasedDependencyAlgorithm.AddDependenciesDueToCustomAttributes(sink, factory, (EcmaField)_field);
         }
 
         protected override string GetName(NodeFactory factory)

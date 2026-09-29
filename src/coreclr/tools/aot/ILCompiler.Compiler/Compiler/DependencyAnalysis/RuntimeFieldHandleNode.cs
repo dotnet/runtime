@@ -41,8 +41,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override void ComputeNonRelocationBasedDependencies(DependencySink<NodeFactory> sink, NodeFactory factory)
         {
-            DependencySink<NodeFactory> result = sink;
-            factory.MetadataManager.GetDependenciesDueToLdToken(result, factory, _targetField);
+            factory.MetadataManager.GetDependenciesDueToLdToken(sink, factory, _targetField);
         }
 
         protected override ObjectData GetDehydratableData(NodeFactory factory, bool relocsOnly = false)

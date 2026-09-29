@@ -46,46 +46,44 @@ namespace ILCompiler.DependencyAnalysis
             MethodDefinition methodDef = reader.GetMethodDefinition(Handle);
             TypeDefinitionHandle declaringType = methodDef.GetDeclaringType();
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             EcmaSignatureAnalyzer.AnalyzeMethodSignature(
                 _module,
                 reader.GetBlobReader(methodDef.Signature),
                 factory,
-                dependencies);
+                sink);
 
-            dependencies.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
+            sink.Add(factory.TypeDefinition(_module, declaringType), "Method owning type");
 
             if (!IsInstanceMethodOnReferenceType)
             {
                 // Static methods and methods on value types are not subject to the unused method body optimization.
-                dependencies.Add(factory.MethodBody(_module, Handle), "Method body");
+                sink.Add(factory.MethodBody(_module, Handle), "Method body");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, methodDef.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, methodDef.GetCustomAttributes());
 
             foreach (ParameterHandle parameter in methodDef.GetParameters())
             {
-                dependencies.Add(factory.Parameter(_module, parameter), "Parameter of method");
+                sink.Add(factory.Parameter(_module, parameter), "Parameter of method");
             }
 
             foreach (GenericParameterHandle parameter in methodDef.GetGenericParameters())
             {
-                dependencies.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
+                sink.Add(factory.GenericParameter(_module, parameter), "Generic Parameter of method");
             }
 
             if ((methodDef.Attributes & MethodAttributes.PinvokeImpl) != 0)
             {
                 MethodImport import = methodDef.GetImport();
-                dependencies.Add(factory.ModuleReference(_module, import.Module), "DllImport");
+                sink.Add(factory.ModuleReference(_module, import.Module), "DllImport");
 
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
                 if (method.Signature.ReturnType.GetTypeDefinition() is EcmaType ecmaReturnType)
-                    AddInteropAllocatedType(factory, dependencies, ecmaReturnType);
+                    AddInteropAllocatedType(factory, sink, ecmaReturnType);
                 foreach (var parameter in method.Signature)
                 {
                     if (parameter.IsByRef && ((ByRefType)parameter).ParameterType.GetTypeDefinition() is EcmaType ecmaByRefParam)
-                        AddInteropAllocatedType(factory, dependencies, ecmaByRefParam);
+                        AddInteropAllocatedType(factory, sink, ecmaByRefParam);
                 }
 
                 static void AddInteropAllocatedType(NodeFactory factory, DependencySink<NodeFactory> dependencies, EcmaType type)
@@ -100,7 +98,7 @@ namespace ILCompiler.DependencyAnalysis
                 reader.StringComparer.Equals(methodDef.Name, ".ctor"))
             {
                 EcmaMethod method = (EcmaMethod)_module.GetMethod(Handle);
-                dependencies.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
+                sink.Add(factory.ConstructedType((EcmaType)method.OwningType), "Type with a kept constructor");
             }
 
             // TODO-SIZE: Property/event metadata is not strictly necessary for accessor method calls —
@@ -114,7 +112,7 @@ namespace ILCompiler.DependencyAnalysis
                     PropertyAccessors propertyAccessors = reader.GetPropertyDefinition(propertyHandle).GetAccessors();
                     if (propertyAccessors.Getter == Handle || propertyAccessors.Setter == Handle)
                     {
-                        dependencies.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
+                        sink.Add(factory.PropertyDefinition(_module, propertyHandle), "Owning property of accessor method");
                         break;
                     }
                 }
@@ -123,7 +121,7 @@ namespace ILCompiler.DependencyAnalysis
                     EventAccessors eventAccessors = reader.GetEventDefinition(eventHandle).GetAccessors();
                     if (eventAccessors.Adder == Handle || eventAccessors.Remover == Handle || eventAccessors.Raiser == Handle)
                     {
-                        dependencies.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
+                        sink.Add(factory.EventDefinition(_module, eventHandle), "Owning event of accessor method");
                         break;
                     }
                 }
@@ -142,7 +140,7 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     var pairMethod = ecmaOwningType.GetMethod(methodPairName, null) as EcmaMethod;
                     if (pairMethod != null)
-                        dependencies.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
+                        sink.Add(factory.MethodDefinition(_module, pairMethod.Handle), "Delegate BeginInvoke/EndInvoke pair");
                 }
             }
         }

@@ -30,15 +30,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             GenericParameter genericParam = _module.MetadataReader.GetGenericParameter(Handle);
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             foreach (var genericParamConstrain in genericParam.GetConstraints())
             {
 
-                dependencies.Add(factory.GenericParameterConstraint(_module, genericParamConstrain), "Generic Parameter Constraint of Generic Parameter");
+                sink.Add(factory.GenericParameterConstraint(_module, genericParamConstrain), "Generic Parameter Constraint of Generic Parameter");
             }
 
-            CustomAttributeNode.AddDependenciesDueToCustomAttributes(dependencies, factory, _module, genericParam.GetCustomAttributes());
+            CustomAttributeNode.AddDependenciesDueToCustomAttributes(sink, factory, _module, genericParam.GetCustomAttributes());
 
         }
 

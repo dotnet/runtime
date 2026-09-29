@@ -127,8 +127,6 @@ namespace ILCompiler
 
             public override void AddConditionalDependencies(DependencySink<NodeFactory> sink, NodeFactory context)
             {
-                DependencySink<NodeFactory> dependencies = sink;
-
                 foreach (EcmaMethod method in GetExportedMethods(_module))
                 {
                     if (!TryGetAssociatedSourceType(method, out TypeDesc associatedSourceType) || associatedSourceType is null)
@@ -138,12 +136,12 @@ namespace ILCompiler
 
                     IMethodNode methodEntryPoint = GetMethodEntrypointAndAddAlias(context, method, new Utf8String(method.GetUnmanagedCallersOnlyExportName()));
 
-                    dependencies.Add(new CombinedDependencyListEntry(
+                    sink.Add(new CombinedDependencyListEntry(
                         methodEntryPoint,
                         effectiveTrimTargetType,
                         "Native callable with associated source type"));
 
-                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(dependencies, context, effectiveTrimTargetType, "Associated source type that could be loaded at runtime");
+                    RuntimeConstructableTypeDependencies.AddTypeLoaderDependencies(sink, context, effectiveTrimTargetType, "Associated source type that could be loaded at runtime");
                 }
 
             }

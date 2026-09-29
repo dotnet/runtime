@@ -25,15 +25,13 @@ namespace ILCompiler.DependencyAnalysis
         {
             MethodSpecification methodSpec = _module.MetadataReader.GetMethodSpecification(Handle);
 
-            DependencySink<NodeFactory> dependencies = sink;
-
             EcmaSignatureAnalyzer.AnalyzeMethodSpecSignature(
                 _module,
                 _module.MetadataReader.GetBlobReader(methodSpec.Signature),
                 factory,
-                dependencies);
+                sink);
                 
-            dependencies.Add(factory.GetNodeForMethodToken(_module, methodSpec.Method), "Instantiated method");
+            sink.Add(factory.GetNodeForMethodToken(_module, methodSpec.Method), "Instantiated method");
         }
 
         protected override EntityHandle WriteInternal(ModuleWritingContext writeContext)
