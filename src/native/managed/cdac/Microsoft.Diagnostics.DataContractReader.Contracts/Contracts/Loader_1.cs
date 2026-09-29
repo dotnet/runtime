@@ -393,7 +393,7 @@ internal readonly struct Loader_1 : ILoader
         return methodHashTable.Entries.Select(entry => entry.MethodDesc);
     }
 
-    private bool IsProbeExtensionResultValid(ModuleHandle handle)
+    bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle)
     {
         if (!TryGetPEImage(handle, out Data.PEImage? peImage))
             return false; // no PE image
@@ -401,8 +401,6 @@ internal readonly struct Loader_1 : ILoader
         // 0 is the invalid type. See assemblyprobeextension.h for details
         return peImage.ProbeExtensionResult.Type != 0;
     }
-
-    bool ILoader.IsProbeExtensionResultValid(ModuleHandle handle) => IsProbeExtensionResultValid(handle);
 
     private static ModuleFlags GetFlags(Data.Module module)
     {
@@ -485,7 +483,7 @@ internal readonly struct Loader_1 : ILoader
     string ILoader.GetPath(ModuleHandle handle)
     {
         Data.Module module = _target.ProcessedData.GetOrAdd<Data.Module>(handle.Address);
-        if (GetFlags(module).HasFlag(ModuleFlags.ReflectionEmit) || IsProbeExtensionResultValid(handle))
+        if (GetFlags(module).HasFlag(ModuleFlags.ReflectionEmit) || ((ILoader)this).IsProbeExtensionResultValid(handle))
             return string.Empty;
 
         return module.Path != TargetPointer.Null
