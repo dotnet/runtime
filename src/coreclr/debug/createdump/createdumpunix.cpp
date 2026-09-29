@@ -7,8 +7,8 @@
 //
 // The Linux/MacOS create dump code
 //
-// There is a simplified version of the original CreateDump function available in nativeaot_createdump_main.cpp.
-// Consider updating the original CreateDump if changes are made to the simplified version.
+// There is a simplified version of this CreateDump function available in nativeaot_createdump_main.cpp.
+// If changes are made to this function, consider updating the other one.
 bool
 CreateDump(const CreateDumpOptions& options)
 {
@@ -36,11 +36,6 @@ CreateDump(const CreateDumpOptions& options)
 
     processInitialized = true;
 
-    // Initialize the crash info
-    if (!crashInfo->Initialize())
-    {
-        goto exit;
-    }
     printf_status("Gathering state for process %d %s\n", options.Pid, crashInfo->Name());
 
     if (options.Signal != 0 || options.CrashThread != 0)
@@ -48,10 +43,13 @@ CreateDump(const CreateDumpOptions& options)
         printf_status("Crashing thread %04x signal %d (%04x)\n", options.CrashThread, options.Signal, options.Signal);
     }
 
+    // Suspend all the threads in the target process and build the list of threads
     if (!processInfo.EnumerateAndSuspendThreads())
     {
         goto exit;
     }
+
+    // The following three steps gather all the info about the process, threads (registers, etc.) and memory regions
     if (!processInfo.GatherCrashInfo(crashInfo->GetDumpRegionStore()))
     {
         goto exit;
@@ -60,17 +58,18 @@ CreateDump(const CreateDumpOptions& options)
     {
         goto exit;
     }
-    // Gather external-only DAC, unwind, and managed module information.
     if (!crashInfo->GatherCrashInfo(options.DumpType))
     {
         goto exit;
     }
 
+    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
     if (!AddSpecialDiagInfoRegion(crashInfo->GetDumpRegionStore()))
     {
         goto exit;
     }
 
+    // Determine which memory regions should be included in the dump based on the dump type
     if (!processInfo.SelectDumpRegions(crashInfo->GetDumpRegionStore(), options.DumpType))
     {
         goto exit;

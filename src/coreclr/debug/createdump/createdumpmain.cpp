@@ -17,6 +17,7 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
 {
     if (bufferSize > MAXDWORD || GetTempPathWrapper(static_cast<DWORD>(bufferSize), buffer) == 0)
     {
+        printf_error("GetTempPath failed\n");
         return false;
     }
     int exitCode = strcat_s(buffer, bufferSize, DEFAULT_DUMP_TEMPLATE);
@@ -50,8 +51,12 @@ int createdump_main(const int argc, const char* argv[])
         return exitCode;
     }
 
+    g_ticksPerMS = minipal_hires_tick_frequency() / 1000UL;
+    g_startTime = minipal_hires_ticks();
+    TRACE("TickFrequency: %" PRIu64 " ticks per ms\n", g_ticksPerMS);
+
     char defaultDumpPath[MAX_LONGPATH];
-    if (options.DumpPathTemplate == NULL)
+    if (options.DumpPathTemplate == nullptr)
     {
         if (!GetDefaultDumpPath(defaultDumpPath, MAX_LONGPATH))
         {
@@ -60,10 +65,6 @@ int createdump_main(const int argc, const char* argv[])
         }
         options.DumpPathTemplate = defaultDumpPath;
     }
-
-    g_ticksPerMS = minipal_hires_tick_frequency() / 1000UL;
-    g_startTime = minipal_hires_ticks();
-    TRACE("TickFrequency: %" PRIu64 " ticks per ms\n", g_ticksPerMS);
 
     if (CreateDump(options))
     {

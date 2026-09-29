@@ -117,7 +117,6 @@ bool ProcessInfo::AddMapping(const ModuleRegion& region)
 
 bool AddSpecialDiagInfoRegion(DumpRegionStore& regionStore)
 {
-    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
     MemoryRegion special(PF_R, SpecialDiagInfoAddress, SpecialDiagInfoAddress + SpecialDiagInfoSize, /* offset */ 0);
     return regionStore.Insert(&special);
 }
@@ -137,13 +136,13 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
         return 0;
     }
     uint64_t pageStart = memoryRegion.StartAddress();
-    uint64_t numberPages = memoryRegion.Size() / m_pageSize;
+    uint64_t numberPages = memoryRegion.Size() / PAGE_SIZE;
     uint64_t subRegionStart, subRegionEnd;
     int pagesAdded = 0;
     subRegionStart = subRegionEnd = pageStart;
-    for (size_t p = 0; p < numberPages; p++, pageStart += m_pageSize)
+    for (size_t p = 0; p < numberPages; p++, pageStart += PAGE_SIZE)
     {
-        MemoryRegion pageRegion(memoryRegion.Flags(), pageStart, pageStart + m_pageSize);
+        MemoryRegion pageRegion(memoryRegion.Flags(), pageStart, pageStart + PAGE_SIZE);
         // avoid searching for conflicts if we know we don't have one
         bool pageHasConflicts = hasConflict && 
                                 regionStore.FindOverlap(pageRegion.StartAddress(), pageRegion.EndAddress(), &conflictingRegion);
@@ -166,7 +165,7 @@ int ProcessInfo::InsertMemoryRegion(DumpRegionStore& regionStore, const MemoryRe
                     return -1;
                 }
             }
-            subRegionStart = subRegionEnd = pageStart + m_pageSize;
+            subRegionStart = subRegionEnd = pageStart + PAGE_SIZE;
         }
     }
 

@@ -81,7 +81,6 @@ class ProcessInfo
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
-    uint64_t m_pageSize;
     uint64_t m_runtimeBaseAddress;                  // base address of the runtime module
 
     char m_exeName[MAX_LONGPATH]; // prefer a constant here
@@ -93,9 +92,9 @@ class ProcessInfo
 #ifdef __APPLE__
     vm_map_t m_task = 0;                            // the mach task for the process
 #else
-    int m_fdMemory = -1;                            // /proc/<pid>/mem handle
+    int m_fdMem = -1;                               // /proc/<pid>/mem handle
     int m_fdPagemap = -1;                           // /proc/<pid>/pagemap handle
-    bool m_canUseProcVmReadSyscall = true;
+    bool m_canUseProcVmReadSyscall;
     DynamicArray<elf_aux_entry> m_auxvEntries;
     elf_aux_val_t m_auxvValues[AT_MAX]{};
 #endif
@@ -108,7 +107,6 @@ public:
         m_pid(options.Pid),
         m_ppid(0),
         m_tgid(0),
-        m_pageSize(0),
         m_runtimeBaseAddress(0),
         m_exeName{},
         m_crashSignal(options.Signal),
@@ -142,7 +140,6 @@ public:
     int Signal() const { return m_crashSignal; }
     const siginfo_t* SigInfo() const { return &m_siginfo; }
     uint64_t ExceptionRecord() const { return m_exceptionRecord; }
-    uint64_t PageSize() const { return m_pageSize; }
     uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
     const char* Name() const { return m_exeName; }
     void SetRuntimeBaseAddress(uint64_t address) { m_runtimeBaseAddress = address; }

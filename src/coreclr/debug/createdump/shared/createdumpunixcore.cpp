@@ -3,32 +3,118 @@
 
 #include "createdumpcore.h"
 
-// Try reading the executable name from the /proc/<pid>/exe link. Prefer this name to the
-// one reported by status if it is available because the status name is often truncated
-void TryGetExecutableName(pid_t pid, char* name, size_t nameSize)
+bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize);
+
+bool ProcessInfo::Initialize()
 {
-    char exePath[128];
-    int written = snprintf(exePath, sizeof(exePath), "/proc/%d/exe", pid);
-    if (written <= 0 || (size_t)written >= sizeof(exePath))
+#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
+    // g_pageSize may have been initialized in the external createdump
+    if (g_pageSize == 0)
     {
-        return;
+        long pageSize = sysconf(_SC_PAGESIZE);
+        if (pageSize <= 0 || ((uint64_t)pageSize & ((uint64_t)pageSize - 1)) != 0)
+        {
+            fprintf(stderr, "[createdump] Invalid system page size: %ld\n", pageSize);
+            return false;
+        }
+        g_pageSize = pageSize;
+    }
+#endif
+
+    char memPath[128];
+    int chars = snprintf(memPath, sizeof(memPath), "/proc/%u/mem", m_pid);
+    if (chars <= 0 || (size_t)chars >= sizeof(memPath))
+    {
+        printf_error("snprintf failed building /proc/<pid>/mem name\n");
+        return false;
     }
 
-    char path[4096];
-    ssize_t length = readlink(exePath, path, sizeof(path) - 1);
-    if (length < 0)
+    m_fdMem = open(memPath, O_RDONLY);
+    if (m_fdMem == -1)
     {
-        return;
+        int err = errno;
+        const char* message = "Problem accessing memory";
+        if (err == EPERM || err == EACCES)
+        {
+            message = "The process or container does not have permissions or access";
+        }
+        else if (err == ENOENT)
+        {
+            message = "Invalid process id";
+        }
+        printf_error("%s: open(%s) FAILED %s (%d)\n", message, memPath, strerror(err), err);
+        return false;
     }
 
-    path[length] = '\0';
+#ifndef __APPLE__
+    const char* disablePagemapUse = getenv("DOTNET_DbgDisablePagemapUse");
+    if (disablePagemapUse == nullptr)
+    {
+        disablePagemapUse = getenv("COMPlus_DbgDisablePagemapUse");
+    }
+    char* end = nullptr;
+    errno = 0;
+    unsigned long value = disablePagemapUse != nullptr ? strtoul(disablePagemapUse, &end, 10) : 1;
+    if (disablePagemapUse != nullptr && end != disablePagemapUse && errno != ERANGE && value == 0)
+    {
+        TRACE("DbgDisablePagemapUse detected - pagemap file checking is enabled\n");
+        char pagemapPath[128];
+        chars = snprintf(pagemapPath, sizeof(pagemapPath), "/proc/%u/pagemap", m_pid);
+        if (chars <= 0 || (size_t)chars >= sizeof(pagemapPath))
+        {
+            printf_error("snprintf failed building /proc/<pid>/pagemap name\n");
+            CleanupAndResumeProcess();
+            return false;
+        }
+        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        if (m_fdPagemap == -1)
+        {
+            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        }
+    }
+    else
+    {
+        m_fdPagemap = -1;
+    }
+#endif
 
-    const char* executableName = strrchr(path, '/');
-    executableName = executableName != NULL ? executableName + 1 : path;
+    if (!GetProcessInfo(m_pid, &m_ppid, &m_tgid, m_exeName, sizeof(m_exeName)))
+    {
+        CleanupAndResumeProcess();
+        return false;
+    }
 
-    snprintf(name, nameSize, "%s", executableName);
+    m_canUseProcVmReadSyscall = true;
+    return true;
 }
 
+void ProcessInfo::CleanupAndResumeProcess()
+{
+    for (const ThreadSnapshot& thread : m_threads)
+    {
+        pid_t tid = thread.Tid();
+        if (ptrace(PTRACE_DETACH, tid, nullptr, nullptr) != -1)
+        {
+            int waitStatus;
+            waitpid(tid, &waitStatus, __WALL);
+        }
+    }
+
+    if (m_fdMem != -1)
+    {
+        close(m_fdMem);
+        m_fdMem = -1;
+    }
+    if (m_fdPagemap != -1)
+    {
+        close(m_fdPagemap);
+        m_fdPagemap = -1;
+    }
+}
+
+//
+// Get the process or thread status
+//
 bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize)
 {
     char statusPath[128];
@@ -48,7 +134,7 @@ bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize)
 
     *ppid = -1;
 
-    char *line = NULL;
+    char *line = nullptr;
     size_t lineLen = 0;
     ssize_t read;
     while ((read = getline(&line, &lineLen, statusFile)) != -1)
@@ -63,7 +149,7 @@ bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize)
         }
         else if (strncmp("Name:\t", line, 6) == 0)
         {
-            if (name != NULL && nameSize > 0)
+            if (name != nullptr && nameSize > 0)
             {
                 const char* source = line + 6;
                 size_t length = strcspn(source, "\n");
@@ -84,75 +170,29 @@ bool GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize)
     return true;
 }
 
-bool ProcessInfo::Initialize()
+bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, char *name, size_t nameSize)
 {
-    long pageSize = sysconf(_SC_PAGESIZE);
-    if (pageSize <= 0 || ((uint64_t)pageSize & ((uint64_t)pageSize - 1)) != 0)
+    if (!GetStatus(pid, ppid, tgid, name, nameSize))
     {
-        fprintf(stderr, "[createdump] Invalid system page size: %ld\n", pageSize);
-        return false;
-    }
-#ifdef CREATEDUMP_RUNTIME_PAGE_SIZE
-    // it may have been initialized in the external createdump
-    if (g_pageSize == 0)
-    {
-        g_pageSize = pageSize;
-    }
-#endif
-    m_pageSize = (uint64_t)pageSize;
-    char memPath[128];
-    int chars = snprintf(memPath, sizeof(memPath), "/proc/%u/mem", m_pid);
-    if (chars <= 0 || (size_t)chars >= sizeof(memPath))
-    {
-        printf_error("snprintf failed building /proc/<pid>/mem name\n");
         return false;
     }
 
-    m_fdMemory = open(memPath, O_RDONLY);
-    if (m_fdMemory == -1)
+    // Try reading the executable name from the /proc/<pid>/exe link. Prefer this name to the
+    // one reported by status if it is available because the status name is often truncated
+    char exePath[128];
+    int chars = snprintf(exePath, sizeof(exePath), "/proc/%d/exe", pid);
+    if (chars > 0 && (size_t)chars < sizeof(exePath))
     {
-        int err = errno;
-        const char* message = "Problem accessing memory";
-        if (err == EPERM || err == EACCES)
+        char buf[4096];
+        ssize_t nbytes = readlink(exePath, buf, sizeof(buf) - 1);
+        if (nbytes != -1)
         {
-            message = "The process or container does not have permissions or access";
+            buf[nbytes] = '\0';
+            const char* executableName = strrchr(buf, '/');
+            executableName = executableName != nullptr ? executableName + 1 : buf;
+            snprintf(name, nameSize, "%s", executableName);
         }
-        else if (err == ENOENT)
-        {
-            message = "Invalid process id";
-        }
-        printf_error("%s: open(%s) FAILED %s (%d)\n", message, memPath, strerror(err), err);
-        return false;
     }
-
-    GetStatus(m_pid, &m_ppid, &m_tgid, m_exeName, sizeof(m_exeName));
-    TryGetExecutableName(m_pid, m_exeName, sizeof(m_exeName));
 
     return true;
-}
-
-// verify later that it matches external createdump
-void ProcessInfo::CleanupAndResumeProcess()
-{
-    for (const ThreadSnapshot& thread : m_threads)
-    {
-        pid_t tid = thread.Tid();
-        if (ptrace(PTRACE_DETACH, tid, nullptr, nullptr) != -1)
-        {
-            int waitStatus;
-            waitpid(tid, &waitStatus, __WALL);
-        }
-    }
-
-    if (m_fdMemory != -1)
-    {
-        close(m_fdMemory);
-        m_fdMemory = -1;
-    }
-    if (m_fdPagemap != -1)
-    {
-        close(m_fdPagemap);
-        m_fdPagemap = -1;
-    }
-
 }

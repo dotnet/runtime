@@ -27,8 +27,6 @@ private:
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
-#else
-    int m_fdPagemap;                                // /proc/<pid>/pagemap handle
 #endif
     std::vector<ThreadInfo*> m_threads;             // threads found and suspended
     std::set<ModuleRegion> m_moduleMappings;        // module memory mappings
@@ -52,7 +50,6 @@ public:
     int m_dataTargetPagesAdded;
     int m_enumMemoryPagesAdded;
 
-    bool Initialize();
     bool PopulateFromProcessInfo();
     void AddThreadStacks();
     void CleanupAndResumeProcess();

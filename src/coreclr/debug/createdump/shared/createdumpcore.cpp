@@ -31,7 +31,7 @@ const char* g_help = "createdump [options]\n"
 #endif
 ;
 
-FILE *g_logfile = NULL;
+FILE *g_logfile = nullptr;
 FILE *g_stdout = stdout;
 bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
@@ -247,7 +247,7 @@ void
 trace_prefix(const char* format, va_list args)
 {
     // Only add this prefix if logging to the console
-    if (g_logfile == NULL)
+    if (g_logfile == nullptr)
     {
         fprintf(g_stdout, "[createdump] ");
     }

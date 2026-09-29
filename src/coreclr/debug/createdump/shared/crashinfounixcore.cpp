@@ -20,20 +20,20 @@ bool ProcessInfo::EnumerateAndSuspendThreads()
     }
 
     DIR* taskDir = opendir(taskPath);
-    if (taskDir == NULL)
+    if (taskDir == nullptr)
     {
         printf_error("Problem enumerating threads: opendir(%s) FAILED %s (%d)\n", taskPath, strerror(errno), errno);
         return false;
     }
 
     struct dirent* entry;
-    while ((entry = readdir(taskDir)) != NULL)
+    while ((entry = readdir(taskDir)) != nullptr)
     {
-        pid_t tid = (pid_t)strtol(entry->d_name, NULL, 10);
+        pid_t tid = static_cast<pid_t>(strtol(entry->d_name, nullptr, 10));
         if (tid != 0)
         {
             // Reference: http://stackoverflow.com/questions/18577956/how-to-use-ptrace-to-get-a-consistent-view-of-multiple-threads
-            if (ptrace(PTRACE_ATTACH, tid, NULL, NULL) != -1)
+            if (ptrace(PTRACE_ATTACH, tid, nullptr, nullptr) != -1)
             {
                 int waitStatus;
                 waitpid(tid, &waitStatus, __WALL);
@@ -42,19 +42,18 @@ bool ProcessInfo::EnumerateAndSuspendThreads()
             {
                 printf_error("Problem suspending thread: ptrace(ATTACH, %d) FAILED %s (%d)\n", tid, strerror(errno), errno);
                 // If the ptrace on a thread that has already terminated, skip/ignore
-                if (errno == ESRCH && tid != m_crashThread)
+                if (errno == ESRCH && tid != CrashThread())
                 {
                     continue;
                 }
                 closedir(taskDir);
                 return false;
             }
-
+            // Add to the list of threads
             ThreadSnapshot thread(tid);
-
             if (!m_threads.Add(thread))
             {
-                ptrace(PTRACE_DETACH, tid, NULL, NULL);
+                ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
                 closedir(taskDir);
                 return false;
             }
@@ -148,7 +147,7 @@ void ProcessInfo::CalculateRuntimeBaseAddress()
 
 bool HasDeletedSuffix(const char* fileName)
 {
-    if (fileName == NULL)
+    if (fileName == nullptr)
         return false;
     size_t len = strlen(fileName);
     if (len < 10) // " (deleted)" is 10 characters
@@ -179,7 +178,7 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
     // 35b1dac000-35b1fac000 ---p 001ac000 08:02 135870  /usr/lib64/libc-2.15.so
     // 35b1fac000-35b1fb0000 r--p 001ac000 08:02 135870  /usr/lib64/libc-2.15.so
     // 35b1fb0000-35b1fb2000 rw-p 001b0000 08:02 135870  /usr/lib64/libc-2.15.so
-    char* line = NULL;
+    char* line = nullptr;
     size_t lineLen = 0;
     ssize_t read;
     uint64_t cbModuleMappings = 0;
@@ -193,7 +192,7 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
         return false;
     }
     FILE* mapsFile = fopen(mapPath, "rb");
-    if (mapsFile == NULL)
+    if (mapsFile == nullptr)
     {
         printf_error("Problem reading maps file: fopen(%s) FAILED %s (%d)\n", mapPath, strerror(errno), errno);
         return false;
@@ -211,8 +210,8 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
     while ((read = getline(&line, &lineLen, mapsFile)) != -1)
     {
         uint64_t start, end, offset;
-        char* permissions = NULL;
-        char* moduleName = NULL;
+        char* permissions = nullptr;
+        char* moduleName = nullptr;
 
         int c = sscanf(line, "%" PRIx64 "-%" PRIx64 " %m[-rwxsp] %" PRIx64 " %*[:0-9a-f] %*d %m[^\n]\n", &start, &end, &permissions, &offset, &moduleName);
         if (c == 4 || c == 5)
@@ -238,12 +237,12 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
             if (strchr(permissions, 'p')) {
                 regionFlags |= MEMORY_REGION_FLAG_PRIVATE;
             }
-            bool includeInNtFile = (moduleName != NULL && *moduleName == '/') && !HasDeletedSuffix(moduleName);
+            bool includeInNtFile = (moduleName != nullptr && *moduleName == '/') && !HasDeletedSuffix(moduleName);
             if (includeInNtFile)
             {
                 ModuleRegion moduleRegion(regionFlags, start, end, offset);
                 moduleRegion.TakeFileNameOwnership(moduleName);
-                moduleName = NULL;
+                moduleName = nullptr;
 
                 if (!m_moduleMappings.Add(Move(moduleRegion)))
                 {
@@ -281,7 +280,7 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
 
     if (g_diagnostics)
     {
-        TRACE("Module mappings (%06" PRIx64 "):\n", cbModuleMappings / m_pageSize);
+        TRACE("Module mappings (%06" PRIx64 "):\n", cbModuleMappings / PAGE_SIZE);
         for (const ModuleRegion& mapping : m_moduleMappings)
         {
             mapping.Trace();
@@ -304,8 +303,8 @@ bool ProcessInfo::EnumerateMemoryRegions(DumpRegionStore& regionStore)
 //
 bool ProcessInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size, size_t* read)
 {
-    assert(buffer != NULL);
-    assert(read != NULL);
+    assert(buffer != nullptr);
+    assert(read != nullptr);
     *read = 0;
 
 #ifdef HAVE_PROCESS_VM_READV
@@ -323,7 +322,7 @@ bool ProcessInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size,
         // After all, the use of process_vm_readv is largely as a
         // performance optimization.
         m_canUseProcVmReadSyscall = false;
-        assert(m_fdMemory != -1);
+        assert(m_fdMem != -1);
 #ifdef TARGET_ARM64
         // Android's heap allocator (scudo) uses ARM64 Top-Byte Ignore (TBI) for memory tagging.
         // pread on /proc/<pid>/mem treats the offset as a file position, not a virtual address,
@@ -335,7 +334,7 @@ bool ProcessInfo::ReadProcessMemory(uint64_t address, void* buffer, size_t size,
         // on other Linux distros would hit the same issue.
         address &= 0x00FFFFFFFFFFFFFFULL;
 #endif
-        *read = pread(m_fdMemory, buffer, size, (off_t)address);
+        *read = pread(m_fdMem, buffer, size, (off_t)address);
     }
 
     if (*read == (size_t)-1)

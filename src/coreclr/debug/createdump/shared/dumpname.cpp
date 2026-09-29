@@ -56,15 +56,8 @@ static bool AppendFormat(
 bool
 FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exeName, int pid)
 {
-    if (name == NULL ||
-        nameSize == 0 ||
-        pattern == NULL ||
-        exeName == NULL)
-    {
-        return false;
-    }
-    // We dont handle variable name sizes, so we ensure that the name size is MAX_LONGPATH
-    assert(nameSize == MAX_LONGPATH);
+    assert(name != nullptr && nameSize == MAX_LONGPATH && pattern != nullptr && exeName != nullptr);
+
     const char* p = pattern;
     if (*p == '|')
     {
@@ -95,7 +88,7 @@ FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exe
             {
                 case '\0':
                     return true;
-                
+
                 case '%':
                     if (!AppendFormat(&output, &remaining, "%%"))
                     {
@@ -168,7 +161,6 @@ FormatDumpName(char* name, size_t nameSize, const char* pattern, const char* exe
                 // pid of dumped process
                 case 'P':
                 default:
-
                     printf_error("Invalid dump name format char '%c'\n", *p);
                     return false;
             }

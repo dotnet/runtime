@@ -8,7 +8,6 @@ int g_readProcessMemoryResult = KERN_SUCCESS;
 bool
 ProcessInfo::Initialize()
 {
-    m_pageSize = PAGE_SIZE;
     kern_return_t result = ::task_for_pid(mach_task_self(), m_pid, &m_task);
     if (result != KERN_SUCCESS)
     {
@@ -17,13 +16,6 @@ ProcessInfo::Initialize()
         printf_error("This failure may be because createdump or the application is not properly signed and entitled.\n");
         return false;
     }
-    return true;
-}
-
-bool
-CrashInfo::Initialize()
-{
-    // On Apple platforms, all the initialization was done in the constructor of CrashInfo and ProcessInfo::Initialize().
     return true;
 }
 

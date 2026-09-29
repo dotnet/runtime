@@ -11,43 +11,10 @@ extern CrashInfo* g_crashInfo;
 
 bool GetProcessInfo(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name);
 
-bool
-CrashInfo::Initialize()
-{
-    CLRConfigNoCache disablePagemapUse = CLRConfigNoCache::Get("DbgDisablePagemapUse", /*noprefix*/ false, &getenv);
-    DWORD val = 0;
-    if (disablePagemapUse.IsSet() && disablePagemapUse.TryAsInteger(10, val) && val == 0)
-    {
-        TRACE("DbgDisablePagemapUse detected - pagemap file checking is enabled\n");
-        char pagemapPath[128];
-        int chars = snprintf(pagemapPath, sizeof(pagemapPath), "/proc/%u/pagemap", Pid());
-        if (chars <= 0 || (size_t)chars >= sizeof(pagemapPath))
-        {
-            printf_error("snprintf failed building /proc/<pid>/pagemap name\n");
-            return false;
-        }
-        m_fdPagemap = open(pagemapPath, O_RDONLY);
-        if (m_fdPagemap == -1)
-        {
-            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
-        }
-    }
-    else
-    {
-        m_fdPagemap = -1;
-    }
-
-    return true;
-}
-
 void
 CrashInfo::CleanupAndResumeProcess()
 {
-    if (m_fdPagemap != -1)
-    {
-        close(m_fdPagemap);
-        m_fdPagemap = -1;
-    }
+    // Nothing to clean up on linux
 }
 
 bool

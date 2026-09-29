@@ -94,8 +94,8 @@ bool GetDefaultDumpPath(char* buffer, size_t bufferSize)
     return true;
 }
 
-// This method is a simplified version of the original CreateDump function.
-// Consider updating the original CreateDump if changes are made to this simplified version.
+// This method is a simplified version of the original CreateDump function in createdumpunix.cpp.
+// If changes are made to this function, consider updating the other one.
 bool LinkedCreateDump(const CreateDumpOptions* options)
 {
     assert(options->CreateDump);
@@ -117,6 +117,8 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
         return false;
     }
 
+    processInitialized = true;
+
     printf_status("Gathering state for process %d %s\n", options->Pid, processInfo.Name());
 
     if (options->Signal != 0 || options->CrashThread != 0)
@@ -124,29 +126,32 @@ bool LinkedCreateDump(const CreateDumpOptions* options)
         printf_status("Crashing thread %04x signal %d (%04x)\n", options->CrashThread, options->Signal, options->Signal);
     }
 
-    processInitialized = true;
-
+    // Suspend all the threads in the target process and build the list of threads
     if (!processInfo.EnumerateAndSuspendThreads())
     {
         goto exit;
     }
 
+    // Gather all the info about the process, threads (registers, etc.) and memory regions
     if (!processInfo.GatherCrashInfo(regionStore))
     {
         goto exit;
     }
 
+    // Add the special (fake) memory region for the special diagnostics info. Use constructor that doesn't assert PAGE_SIZE alignment.
     if (!AddSpecialDiagInfoRegion(regionStore))
     {
         goto exit;
     }
 
+    // Determine which memory regions should be included in the dump based on the dump type
     if (!processInfo.SelectDumpRegions(regionStore, options->DumpType))
     {
         goto exit;
     }
 
     char dumpPath[MAX_LONGPATH + 1];
+    // Format the dump pattern template
     if (!FormatDumpName(dumpPath, MAX_LONGPATH, options->DumpPathTemplate, processInfo.Name(), options->Pid))
     {
         goto exit;
@@ -201,7 +206,7 @@ extern "C" int nativeaot_createdump_main(int argc, const char* argv[])
     }
 
     char defaultDumpPath[MAX_LONGPATH];
-    if (options.DumpPathTemplate == NULL)
+    if (options.DumpPathTemplate == nullptr)
     {
         if (!GetDefaultDumpPath(defaultDumpPath, MAX_LONGPATH))
         {
