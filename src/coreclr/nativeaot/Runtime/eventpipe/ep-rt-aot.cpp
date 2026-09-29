@@ -486,13 +486,6 @@ ep_rt_aot_thread_sleep (uint64_t ns)
     minipal_sleep(static_cast<uint32_t>(ns/1000000));
 }
 
-void
-ep_rt_aot_thread_yield (void)
-{
-    STATIC_CONTRACT_NOTHROW;
-    PalSwitchToThread ();
-}
-
 uint32_t
 ep_rt_aot_current_process_get_id (void)
 {

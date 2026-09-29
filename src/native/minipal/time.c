@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
+#include <minipal/thread.h>
 #include <minipal/time.h>
 #include "minipalconfig.h"
 
@@ -183,6 +184,36 @@ void minipal_sleep(uint32_t milliseconds)
     {
         requested = remaining;
     }
+#endif
+}
+
+bool minipal_switch_to_thread(uint32_t sleepMilliseconds, uint32_t switchCount)
+{
+    if (sleepMilliseconds > 0)
+    {
+        minipal_sleep(sleepMilliseconds);
+        return true;
+    }
+
+    // Short yield loops avoid sleeps; prolonged contention must eventually
+    // sleep so that a lower-priority thread can make progress. These thresholds
+    // correspond to roughly the same spinning time on ARM and other CPUs.
+#if defined(HOST_ARM)
+    const uint32_t sleepStartThreshold = 5 * 1024;
+#else
+    const uint32_t sleepStartThreshold = 32 * 1024;
+#endif
+    if (switchCount >= sleepStartThreshold)
+    {
+        minipal_sleep(1);
+    }
+
+#if HOST_WINDOWS
+    return SwitchToThread() != 0;
+#elif defined(TARGET_WASM) && !defined(FEATURE_MULTITHREADING)
+    return false;
+#else
+    return sched_yield() == 0;
 #endif
 }
 
